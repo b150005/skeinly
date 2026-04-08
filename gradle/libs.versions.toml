@@ -15,6 +15,7 @@ sqlDelight = "2.3.2"
 ktor = "3.4.2"
 koin = "4.2.0"
 navigationCompose = "2.9.2"
+supabase = "3.5.0"
 turbine = "1.2.1"
 
 [libraries]
@@ -50,6 +51,13 @@ koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", ver
 
 # Navigation
 navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
+
+# Supabase
+supabase-bom = { module = "io.github.jan-tennert.supabase:bom", version.ref = "supabase" }
+supabase-auth = { module = "io.github.jan-tennert.supabase:auth-kt" }
+supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt" }
+supabase-compose-auth = { module = "io.github.jan-tennert.supabase:compose-auth" }
+supabase-compose-auth-ui = { module = "io.github.jan-tennert.supabase:compose-auth-ui" }
 
 # Testing
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
