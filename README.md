@@ -1,6 +1,6 @@
-# ECC Base Template
+# Knit Note
 
-A framework-agnostic base repository template powered by [Everything Claude Code (ECC)](https://github.com/anthropics/claude-code). Use this template to start new projects with an agent team, TDD workflow, CI/CD, and standardized project structure already in place.
+A Kotlin Multiplatform knitting app for managing patterns, tracking progress, and sharing with others.
 
 [English](#english) | [日本語](#japanese)
 
@@ -10,42 +10,63 @@ A framework-agnostic base repository template powered by [Everything Claude Code
 
 ## English
 
-### What's Included
+### Features
 
-- **Agent Team** — 14 specialized agents covering the full product lifecycle: planning, design, implementation, testing, and release
-- **Claude Code Configuration** — `.claude/CLAUDE.md` with development workflow, testing standards, and code quality rules
-- **CI/CD Pipelines** — Reusable GitHub Actions workflows for lint, test, build, and security scanning
-- **DevContainer Template** — Commented template ready for customization per framework
-- **Bilingual Documentation** — Technology guides in English (`docs/en/`) and Japanese (`docs/ja/`)
-- **Community Health Files** — Issue templates, PR template, CODEOWNERS, Dependabot
+- **Pattern Management** — Store, organize, and browse knitting charts and patterns
+- **Progress Tracking** — Track row-by-row or section-based progress on your knitting projects
+- **Sharing** — Share patterns and progress snapshots with other knitters
 
-### Agent Team
+### Platforms
 
-| Agent | Phase | Role |
-|-------|-------|------|
-| **orchestrator** | All | Coordinates the team. Analyzes issues, plans work, delegates to specialists |
-| **product-manager** | Planning | PRD, user stories, acceptance criteria, backlog prioritization |
-| **market-analyst** | Planning | Market research, competitor analysis, user segment identification |
-| **monetization-strategist** | Planning | Business model design, pricing strategy, revenue analysis |
-| **ui-ux-designer** | Design | UI/UX design, usability review, accessibility compliance |
-| **architect** | Design | System architecture, technology decisions, ADR creation |
-| **implementer** | Build | Code implementation following architecture specs and TDD |
-| **code-reviewer** | Quality | Code quality, maintainability, and standards review |
-| **test-runner** | Quality | Test execution, coverage reporting, TDD support |
-| **linter** | Quality | Static analysis and code style enforcement |
-| **security-reviewer** | Quality | Vulnerability detection, secret scanning, OWASP Top 10 |
-| **performance-engineer** | Quality | Profiling, bottleneck identification, optimization |
-| **devops-engineer** | Release | CI/CD, deployment strategy, release management |
-| **technical-writer** | Release | Documentation, changelog, bilingual docs maintenance |
+| Platform | UI Framework | Status |
+|----------|-------------|--------|
+| Android | Jetpack Compose + Material 3 | Planned |
+| iOS | SwiftUI | Planned |
+| macOS | SwiftUI | Stretch goal |
 
-All agents are ecosystem-agnostic. They detect the project's language and framework at runtime by reading `.claude/CLAUDE.md` and project manifest files.
+### Architecture
 
-### Quick Start
+- **Kotlin Multiplatform (KMP)** shared module for business logic, domain models, and data access
+- **Platform-native UI**: Jetpack Compose (Android) and SwiftUI (iOS/macOS)
+- **Local-first** data storage with SQLDelight, with cloud sync planned
+- **Clean Architecture**: UI -> ViewModel -> UseCase -> Repository -> DataSource
 
-1. Click **"Use this template"** on GitHub
-2. Choose your repository name and visibility
-3. Clone your new repository
-4. Follow the [Template Usage Guide](docs/en/template-usage.md) to customize
+### Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Shared Logic | Kotlin Multiplatform |
+| Android UI | Jetpack Compose, Material 3 |
+| iOS/macOS UI | SwiftUI |
+| Local DB | SQLDelight |
+| Networking | Ktor Client |
+| Serialization | kotlinx.serialization |
+| Async | Kotlin Coroutines + Flow / Swift async-await |
+| DI | Koin Multiplatform |
+
+### Development
+
+This project uses an [ECC agent team](https://github.com/b150005/ecc-base-template) with 14 specialized agents for planning, design, implementation, testing, and release.
+
+#### Prerequisites
+
+- JDK 17+
+- Android Studio or IntelliJ IDEA
+- Xcode 16+ (for iOS/macOS)
+- Kotlin 2.1+
+
+#### Build
+
+```bash
+# Shared module tests
+./gradlew :shared:allTests
+
+# Android
+./gradlew :androidApp:assembleDebug
+
+# iOS (via Xcode)
+open iosApp/iosApp.xcodeproj
+```
 
 ### Documentation
 
@@ -53,10 +74,8 @@ All agents are ecosystem-agnostic. They detect the project's language and framew
 |----------|-------------|
 | [ECC Overview](docs/en/ecc-overview.md) | What is ECC and how it works |
 | [TDD Workflow](docs/en/tdd-workflow.md) | Test-driven development with ECC agents |
-| [CI/CD Pipeline](docs/en/ci-cd-pipeline.md) | GitHub Actions workflows explained |
-| [DevContainer](docs/en/devcontainer.md) | Development container setup guide |
-| [GitHub Features](docs/en/github-features.md) | CODEOWNERS, Dependabot, templates, Actions |
-| [Template Usage](docs/en/template-usage.md) | How to use and customize this template |
+| [CI/CD Pipeline](docs/en/ci-cd-pipeline.md) | GitHub Actions workflows |
+| [Template Usage](docs/en/template-usage.md) | How this template was customized |
 
 ### License
 
@@ -68,42 +87,50 @@ All agents are ecosystem-agnostic. They detect the project's language and framew
 
 ## 日本語
 
-### 含まれるもの
+### 機能
 
-- **エージェントチーム** — 14体の専門エージェントがプロダクトの全ライフサイクル（企画・設計・実装・テスト・リリース）をカバー
-- **Claude Code 設定** — `.claude/CLAUDE.md` に開発ワークフロー、テスト基準、コード品質ルールを定義
-- **CI/CD パイプライン** — lint、test、build、セキュリティスキャンの再利用可能な GitHub Actions ワークフロー
-- **DevContainer テンプレート** — フレームワークに応じてカスタマイズ可能なコメント付きテンプレート
-- **バイリンガルドキュメント** — 英語 (`docs/en/`) と日本語 (`docs/ja/`) の技術ガイド
-- **コミュニティヘルスファイル** — Issue テンプレート、PR テンプレート、CODEOWNERS、Dependabot
+- **編み図管理** — 編み図やパターンの保存、整理、閲覧
+- **進捗記録** — 段ごと・セクションごとの進捗トラッキング
+- **共有** — 編み図や進捗のスナップショットを他の編み物愛好者と共有
 
-### エージェントチーム
+### 対応プラットフォーム
 
-| エージェント | フェーズ | 役割 |
-|-------------|---------|------|
-| **orchestrator** | 全体 | チームを統括。Issue を分析し、作業を計画し、各専門エージェントに委任 |
-| **product-manager** | 企画 | PRD、ユーザーストーリー、受け入れ基準、バックログ優先順位付け |
-| **market-analyst** | 企画 | 市場調査、競合分析、ユーザーセグメントの特定 |
-| **monetization-strategist** | 企画 | ビジネスモデル設計、価格戦略、収益分析 |
-| **ui-ux-designer** | 設計 | UI/UX 設計、ユーザビリティレビュー、アクセシビリティ準拠 |
-| **architect** | 設計 | システムアーキテクチャ、技術選定、ADR 作成 |
-| **implementer** | 実装 | アーキテクチャ仕様と TDD に基づくコード実装 |
-| **code-reviewer** | 品質 | コード品質、保守性、規約準拠のレビュー |
-| **test-runner** | 品質 | テスト実行、カバレッジ報告、TDD サポート |
-| **linter** | 品質 | 静的解析とコードスタイルの強制 |
-| **security-reviewer** | 品質 | 脆弱性検出、シークレットスキャン、OWASP Top 10 |
-| **performance-engineer** | 品質 | プロファイリング、ボトルネック特定、最適化 |
-| **devops-engineer** | リリース | CI/CD、デプロイ戦略、リリース管理 |
-| **technical-writer** | リリース | ドキュメント、CHANGELOG、バイリンガルドキュメント管理 |
+| プラットフォーム | UI フレームワーク | 状態 |
+|----------------|-----------------|------|
+| Android | Jetpack Compose + Material 3 | 予定 |
+| iOS | SwiftUI | 予定 |
+| macOS | SwiftUI | 将来目標 |
 
-すべてのエージェントはエコシステム非依存です。`.claude/CLAUDE.md` とプロジェクトのマニフェストファイルを読み取り、実行時に言語やフレームワークを検出します。
+### アーキテクチャ
 
-### クイックスタート
+- **Kotlin Multiplatform (KMP)** 共有モジュールでビジネスロジック、ドメインモデル、データアクセスを共有
+- **プラットフォームネイティブ UI**: Jetpack Compose (Android)、SwiftUI (iOS/macOS)
+- **ローカルファースト** のデータ保存 (SQLDelight) + クラウド同期予定
+- **クリーンアーキテクチャ**: UI -> ViewModel -> UseCase -> Repository -> DataSource
 
-1. GitHub で **「Use this template」** をクリック
-2. リポジトリ名と公開設定を選択
-3. 新しいリポジトリをクローン
-4. [テンプレート利用ガイド](docs/ja/template-usage.md) に従ってカスタマイズ
+### 開発
+
+このプロジェクトは [ECC エージェントチーム](https://github.com/b150005/ecc-base-template)（14体の専門エージェント）を使用しています。
+
+#### 前提条件
+
+- JDK 17+
+- Android Studio または IntelliJ IDEA
+- Xcode 16+（iOS/macOS 向け）
+- Kotlin 2.1+
+
+#### ビルド
+
+```bash
+# 共有モジュールテスト
+./gradlew :shared:allTests
+
+# Android
+./gradlew :androidApp:assembleDebug
+
+# iOS（Xcode 経由）
+open iosApp/iosApp.xcodeproj
+```
 
 ### ドキュメント
 
@@ -112,9 +139,7 @@ All agents are ecosystem-agnostic. They detect the project's language and framew
 | [ECC 概要](docs/ja/ecc-overview.md) | ECC とは何か、どのように機能するか |
 | [TDD ワークフロー](docs/ja/tdd-workflow.md) | ECC エージェントによるテスト駆動開発 |
 | [CI/CD パイプライン](docs/ja/ci-cd-pipeline.md) | GitHub Actions ワークフローの解説 |
-| [DevContainer](docs/ja/devcontainer.md) | 開発コンテナのセットアップガイド |
-| [GitHub の機能](docs/ja/github-features.md) | CODEOWNERS、Dependabot、テンプレート、Actions |
-| [テンプレート利用ガイド](docs/ja/template-usage.md) | テンプレートの使い方とカスタマイズ方法 |
+| [テンプレート利用ガイド](docs/ja/template-usage.md) | テンプレートのカスタマイズ方法 |
 
 ### ライセンス
 
