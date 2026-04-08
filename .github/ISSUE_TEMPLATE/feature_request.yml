@@ -1,0 +1,37 @@
+name: "Feature Request / 機能リクエスト"
+description: "Suggest a new feature or improvement / 新機能や改善を提案"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a feature. Please fill in the details below.
+        機能提案ありがとうございます。以下の詳細を記入してください。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Problem Statement / 課題"
+      description: "What problem does this feature solve? / この機能はどのような問題を解決しますか？"
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: "Proposed Solution / 提案する解決策"
+      description: "Describe your proposed solution / 提案する解決策を説明してください"
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "Alternatives Considered / 検討した代替案"
+      description: "What alternatives have you considered? / どのような代替案を検討しましたか？"
+
+  - type: textarea
+    id: context
+    attributes:
+      label: "Additional Context / 追加情報"
+      description: "Any other context, mockups, or references / その他の文脈、モックアップ、参考情報"

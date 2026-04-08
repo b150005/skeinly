@@ -1,0 +1,64 @@
+name: CI Base
+
+# Reusable workflow — derived repositories call this with project-specific inputs.
+# See docs/en/ci-cd-pipeline.md for details.
+
+on:
+  workflow_call:
+    inputs:
+      install-command:
+        description: "Command to install dependencies"
+        required: false
+        type: string
+        default: ""
+      lint-command:
+        description: "Command to run linter"
+        required: false
+        type: string
+        default: ""
+      test-command:
+        description: "Command to run tests"
+        required: false
+        type: string
+        default: ""
+      build-command:
+        description: "Command to build the project"
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ----------------------------------------------------------------
+      # Language / framework setup
+      # ----------------------------------------------------------------
+      # Derived repositories should add their own setup steps here
+      # BEFORE the CI steps below.
+      #
+      # This reusable workflow intentionally does NOT include
+      # language-specific setup because versions and toolchains
+      # change frequently. Each derived repo knows its own stack best.
+      # ----------------------------------------------------------------
+
+      - name: Install dependencies
+        if: inputs.install-command != ''
+        run: ${{ inputs.install-command }}
+
+      - name: Lint
+        if: inputs.lint-command != ''
+        run: ${{ inputs.lint-command }}
+
+      - name: Test
+        if: inputs.test-command != ''
+        run: ${{ inputs.test-command }}
+
+      - name: Build
+        if: inputs.build-command != ''
+        run: ${{ inputs.build-command }}

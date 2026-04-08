@@ -1,0 +1,61 @@
+name: "Bug Report / バグ報告"
+description: "Report a bug or unexpected behavior / バグや予期しない動作を報告"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug. Please fill in the details below.
+        バグ報告ありがとうございます。以下の詳細を記入してください。
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "Description / 説明"
+      description: "A clear description of the bug / バグの明確な説明"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: "Steps to Reproduce / 再現手順"
+      description: "Steps to reproduce the behavior / 動作を再現する手順"
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Expected Behavior / 期待される動作"
+      description: "What you expected to happen / 期待される動作"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: "Actual Behavior / 実際の動作"
+      description: "What actually happened / 実際に起きたこと"
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: "Environment / 環境"
+      description: "OS, browser, runtime version, etc. / OS、ブラウザ、ランタイムバージョンなど"
+      placeholder: |
+        - OS: macOS 15.x
+        - Runtime: Node.js 20.x
+        - Browser: Chrome 130
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: "Screenshots / スクリーンショット"
+      description: "If applicable, add screenshots / 該当する場合、スクリーンショットを追加"
