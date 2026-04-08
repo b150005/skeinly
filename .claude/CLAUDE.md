@@ -71,6 +71,7 @@ This project uses an agent team for structured development. The **orchestrator**
 | market-analyst | Market research, competitor analysis |
 | monetization-strategist | Business model, pricing, revenue strategy |
 | ui-ux-designer | UI/UX design, accessibility, usability review |
+| docs-researcher | Documentation research, API verification, freshness-safe search |
 | architect | System architecture, technology decisions |
 | implementer | Code implementation following architecture and TDD |
 | code-reviewer | Code quality and standards review |
@@ -165,8 +166,10 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 - **Phase 3a**: UX Polish — ViewModel stateIn unification, error channel consolidation, date formatting, Progress.note non-null (103 tests)
 - **Phase 3b-pre**: Android UX Finish — Manual complete/reopen status transitions, swipe-to-delete for projects and notes (118 tests)
 
+### In Progress
+- **Phase 4a**: iOS App Shell — iosApp/ Xcode project, ComposeUIViewController host, Koin iOS init, framework build verified (118 tests)
+
 ### Planned
-- **Phase 4a**: iOS SwiftUI UI (feature parity with Android)
 - **Phase 3b**: Supabase Foundation — Auth, remote data sources, SyncManager
 - **Phase 4b**: Sharing — Share entity, fork, deep links
 - **Phase 5**: Social Layer — Comments, Activity feed, User profiles, polish
