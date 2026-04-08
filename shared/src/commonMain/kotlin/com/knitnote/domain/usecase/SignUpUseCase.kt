@@ -1,0 +1,21 @@
+package com.knitnote.domain.usecase
+
+import com.knitnote.domain.repository.AuthRepository
+
+class SignUpUseCase(
+    private val authRepository: AuthRepository,
+) {
+    suspend operator fun invoke(email: String, password: String): UseCaseResult<Unit> =
+        try {
+            if (email.isBlank()) {
+                return UseCaseResult.Failure(UseCaseError.Validation("Email is required"))
+            }
+            if (password.length < 6) {
+                return UseCaseResult.Failure(UseCaseError.Validation("Password must be at least 6 characters"))
+            }
+            authRepository.signUpWithEmail(email, password)
+            UseCaseResult.Success(Unit)
+        } catch (e: Exception) {
+            UseCaseResult.Failure(UseCaseError.Unknown(e))
+        }
+}
