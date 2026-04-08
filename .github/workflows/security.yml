@@ -19,9 +19,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Override this list in derived repos to match your languages
-        # Supported: javascript, python, go, ruby, java, csharp, cpp, swift
-        language: ["javascript"]
+        # Supported: javascript, python, go, ruby, java, csharp, cpp, swift, actions
+        # Example: language: ["javascript", "python"]
+        language: ["java-kotlin", "swift"]
     steps:
       - name: Checkout
         uses: actions/checkout@v6
