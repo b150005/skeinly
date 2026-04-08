@@ -1,5 +1,6 @@
 package com.knitnote.ui.projectlist
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,25 +16,32 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -96,16 +104,30 @@ fun ProjectListScreen(
                     }
                 }
                 else -> {
+                    var projectToDelete by rememberSaveable { mutableStateOf<String?>(null) }
+
+                    if (projectToDelete != null) {
+                        val projectName = state.projects.find { it.id == projectToDelete }?.title ?: ""
+                        DeleteConfirmDialog(
+                            itemName = projectName,
+                            onConfirm = {
+                                viewModel.onEvent(ProjectListEvent.DeleteProject(projectToDelete!!))
+                                projectToDelete = null
+                            },
+                            onDismiss = { projectToDelete = null },
+                        )
+                    }
+
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
                     ) {
                         items(state.projects, key = { it.id }) { project ->
-                            ProjectCard(
+                            SwipeToDismissProjectCard(
                                 project = project,
                                 onClick = { onProjectClick(project.id) },
-                                onDelete = { viewModel.onEvent(ProjectListEvent.DeleteProject(project.id)) },
+                                onDeleteRequest = { projectToDelete = project.id },
                             )
                         }
                     }
@@ -124,11 +146,51 @@ fun ProjectListScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SwipeToDismissProjectCard(
+    project: Project,
+    onClick: () -> Unit,
+    onDeleteRequest: () -> Unit,
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                onDeleteRequest()
+                false // Don't actually dismiss — wait for dialog confirmation
+            } else {
+                false
+            }
+        },
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .padding(horizontal = 24.dp),
+                contentAlignment = Alignment.CenterEnd,
+            ) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Delete",
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                )
+            }
+        },
+        enableDismissFromStartToEnd = false,
+    ) {
+        ProjectCard(project = project, onClick = onClick)
+    }
+}
+
 @Composable
 private fun ProjectCard(
     project: Project,
     onClick: () -> Unit,
-    onDelete: () -> Unit,
 ) {
     Card(
         modifier = Modifier
@@ -148,13 +210,6 @@ private fun ProjectCard(
                     modifier = Modifier.weight(1f),
                 )
                 StatusChip(project.status)
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = MaterialTheme.colorScheme.error,
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -178,6 +233,29 @@ private fun ProjectCard(
             }
         }
     }
+}
+
+@Composable
+private fun DeleteConfirmDialog(
+    itemName: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Delete Project") },
+        text = { Text("Are you sure you want to delete \"$itemName\"? This cannot be undone.") },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("Delete", color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+    )
 }
 
 @Composable

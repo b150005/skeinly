@@ -1,5 +1,6 @@
 package com.knitnote.ui.projectdetail
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,11 +16,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -28,6 +32,9 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -161,6 +168,15 @@ fun ProjectDetailScreen(
                             )
                         }
 
+                        // Status toggle button
+                        item {
+                            StatusToggleButton(
+                                status = project.status,
+                                onComplete = { viewModel.onEvent(ProjectDetailEvent.CompleteProject) },
+                                onReopen = { viewModel.onEvent(ProjectDetailEvent.ReopenProject) },
+                            )
+                        }
+
                         // Notes header
                         item {
                             Spacer(modifier = Modifier.height(32.dp))
@@ -197,12 +213,9 @@ fun ProjectDetailScreen(
                                 items = progressNotes,
                                 key = { it.id },
                             ) { note ->
-                                val onDelete = remember(note.id) {
-                                    { viewModel.onEvent(ProjectDetailEvent.DeleteNote(note.id)) }
-                                }
-                                NoteItem(
+                                SwipeToDismissNoteItem(
                                     note = note,
-                                    onDelete = onDelete,
+                                    onDelete = { viewModel.onEvent(ProjectDetailEvent.DeleteNote(note.id)) },
                                 )
                             }
                         }
@@ -303,11 +316,48 @@ private fun CounterSection(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun NoteItem(
+private fun SwipeToDismissNoteItem(
     note: Progress,
     onDelete: () -> Unit,
 ) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                onDelete()
+                true
+            } else {
+                false
+            }
+        },
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .padding(horizontal = 24.dp),
+                contentAlignment = Alignment.CenterEnd,
+            ) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Delete note",
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                )
+            }
+        },
+        enableDismissFromStartToEnd = false,
+    ) {
+        NoteItem(note = note)
+    }
+}
+
+@Composable
+private fun NoteItem(note: Progress) {
     val timestamp = remember(note.createdAt) {
         val dt = note.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
         val month = dt.monthNumber.toString().padStart(2, '0')
@@ -324,16 +374,46 @@ private fun NoteItem(
         supportingContent = {
             Text(text = "Row ${note.rowNumber} - $timestamp")
         },
-        trailingContent = {
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Delete note",
-                    tint = MaterialTheme.colorScheme.error,
-                )
-            }
-        },
     )
+}
+
+@Composable
+private fun StatusToggleButton(
+    status: ProjectStatus,
+    onComplete: () -> Unit,
+    onReopen: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        when (status) {
+            ProjectStatus.COMPLETED -> {
+                FilledTonalButton(onClick = onReopen) {
+                    Icon(
+                        Icons.Default.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text("Reopen")
+                }
+            }
+            else -> {
+                Button(onClick = onComplete) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text("Mark Complete")
+                }
+            }
+        }
+    }
 }
 
 @Composable
