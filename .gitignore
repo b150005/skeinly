@@ -4,18 +4,28 @@ build/
 !gradle-wrapper.jar
 !gradle-wrapper.properties
 
-# Claude Code local settings (user-specific permissions)
-.claude/settings.local.json
-
-# IDE
+# IDE — IntelliJ / Android Studio
 .idea/
 *.iml
 *.ipr
 *.iws
+.navigation/
+captures/
+
+# Build outputs
+bin/
+gen/
+out/
+**/production/
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# System files
 .DS_Store
 Thumbs.db
 
-# Kotlin
+# Kotlin / JVM
 *.class
 *.jar
 *.war
@@ -28,10 +38,15 @@ local.properties
 *.dex
 
 # iOS / Xcode
-iosApp/build/
-iosApp/Pods/
+## Generated Xcode project (XcodeGen regenerates from project.yml)
+iosApp/*.xcodeproj
 iosApp/*.xcworkspace
 iosApp/DerivedData/
+iosApp/Pods/
+
+## Xcode user data
+xcuserdata/
+*.xcuserstate
 *.pbxuser
 !default.pbxuser
 *.mode1v3
@@ -40,13 +55,16 @@ iosApp/DerivedData/
 !default.mode2v3
 *.perspectivev3
 !default.perspectivev3
-xcuserdata/
 *.xccheckout
 *.moved-aside
 *.hmap
 *.ipa
 *.dSYM.zip
 *.dSYM
+
+# Supabase local
+supabase/.branches
+supabase/.temp
 
 # Environment
 .env
