@@ -1,0 +1,97 @@
+// Dev Container Configuration Template
+// See: https://containers.dev/implementors/json_reference/
+//
+// This is a template. Uncomment and customize the sections
+// that match your project's framework and language.
+// See docs/en/devcontainer.md (or docs/ja/devcontainer.md) for guidance.
+{
+  "name": "Project Dev Container",
+
+  // ==========================================================================
+  // Base Image — Choose ONE that matches your project
+  // ==========================================================================
+
+  // Option A: Generic base (smallest, add features below)
+  // "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+
+  // Option B: Language-specific images
+  // "image": "mcr.microsoft.com/devcontainers/typescript-node:20",
+  // "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  // "image": "mcr.microsoft.com/devcontainers/go:1.22",
+  // "image": "mcr.microsoft.com/devcontainers/rust:latest",
+  // "image": "mcr.microsoft.com/devcontainers/java:21",
+
+  // Option C: Dockerfile (for complex setups)
+  // "build": {
+  //   "dockerfile": "Dockerfile"
+  // },
+
+  // ==========================================================================
+  // Features — Add language runtimes and tools
+  // See: https://containers.dev/features
+  // ==========================================================================
+  "features": {
+    // --- Always recommended ---
+    // "ghcr.io/devcontainers/features/git:1": {},
+    // "ghcr.io/devcontainers/features/github-cli:1": {},
+
+    // --- Language runtimes (uncomment as needed) ---
+    // "ghcr.io/devcontainers/features/node:1": { "version": "20" },
+    // "ghcr.io/devcontainers/features/python:1": { "version": "3.12" },
+    // "ghcr.io/devcontainers/features/go:1": { "version": "1.22" },
+    // "ghcr.io/devcontainers/features/rust:1": {},
+    // "ghcr.io/devcontainers/features/java:1": { "version": "21" },
+
+    // --- Flutter/Dart ---
+    // "ghcr.io/aspect-build/devcontainer-features/flutter:0": {},
+
+    // --- Tools ---
+    // "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    // "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {}
+  },
+
+  // ==========================================================================
+  // IDE Extensions
+  // ==========================================================================
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // --- Uncomment extensions for your stack ---
+        // "EditorConfig.EditorConfig",
+        // "dbaeumer.vscode-eslint",
+        // "esbenp.prettier-vscode",
+        // "ms-python.python",
+        // "golang.go",
+        // "rust-lang.rust-analyzer",
+        // "Dart-Code.dart-code",
+        // "Dart-Code.flutter"
+      ]
+    }
+  },
+
+  // ==========================================================================
+  // Lifecycle Commands
+  // ==========================================================================
+
+  // Run after container is created (install dependencies, etc.)
+  // "postCreateCommand": "",
+
+  // Run after container is started (start services, etc.)
+  // "postStartCommand": "",
+
+  // ==========================================================================
+  // Port Forwarding
+  // ==========================================================================
+
+  // "forwardPorts": [3000, 8080],
+
+  // ==========================================================================
+  // Environment Variables
+  // ==========================================================================
+
+  // "remoteEnv": {
+  //   "APP_ENV": "development"
+  // },
+
+  "remoteUser": "vscode"
+}

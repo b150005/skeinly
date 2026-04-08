@@ -1,0 +1,43 @@
+# Auto detect text files and normalize line endings
+* text=auto
+
+# Documents
+*.md text diff=markdown
+*.txt text
+*.csv text
+
+# Scripts
+*.sh text eol=lf
+
+# Serialization
+*.json text
+*.yaml text
+*.yml text
+*.toml text
+*.xml text
+
+# Docker
+Dockerfile text
+*.dockerignore text
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text
+*.webp binary
+*.avif binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.otf binary
+*.zip binary
+*.tar.gz binary
+*.gz binary
+*.pdf binary
+
+# Linguist overrides — exclude from language stats
+docs/** linguist-documentation
