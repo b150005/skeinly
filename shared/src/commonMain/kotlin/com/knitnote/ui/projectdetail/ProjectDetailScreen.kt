@@ -10,31 +10,47 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
+import com.knitnote.domain.model.Progress
 import com.knitnote.domain.model.ProjectStatus
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -47,13 +63,25 @@ fun ProjectDetailScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val error by viewModel.error.collectAsState()
+    val progressNotes by viewModel.progressNotes.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showAddNoteDialog by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(error) {
         error?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(ProjectDetailEvent.ClearError)
         }
+    }
+
+    if (showAddNoteDialog) {
+        AddNoteDialog(
+            onDismiss = { showAddNoteDialog = false },
+            onConfirm = { note ->
+                viewModel.onEvent(ProjectDetailEvent.AddNote(note))
+                showAddNoteDialog = false
+            },
+        )
     }
 
     Scaffold(
@@ -93,90 +121,72 @@ fun ProjectDetailScreen(
                 }
                 else -> {
                     val project = checkNotNull(state.project)
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp),
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
                     ) {
-                        val statusText = when (project.status) {
-                            ProjectStatus.NOT_STARTED -> "Not Started"
-                            ProjectStatus.IN_PROGRESS -> "In Progress"
-                            ProjectStatus.COMPLETED -> "Completed!"
-                        }
-                        Text(
-                            text = statusText,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = when (project.status) {
-                                ProjectStatus.COMPLETED -> MaterialTheme.colorScheme.tertiary
-                                ProjectStatus.IN_PROGRESS -> MaterialTheme.colorScheme.primary
-                                else -> MaterialTheme.colorScheme.outline
-                            },
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Text(
-                            text = "${project.currentRow}",
-                            fontSize = 96.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-
-                        if (project.totalRows != null) {
-                            Text(
-                                text = "of ${project.totalRows} rows",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            LinearProgressIndicator(
-                                progress = {
-                                    if (project.totalRows > 0) {
-                                        project.currentRow.toFloat() / project.totalRows.toFloat()
-                                    } else {
-                                        0f
-                                    }
+                        // Counter section
+                        item {
+                            CounterSection(
+                                statusText = when (project.status) {
+                                    ProjectStatus.NOT_STARTED -> "Not Started"
+                                    ProjectStatus.IN_PROGRESS -> "In Progress"
+                                    ProjectStatus.COMPLETED -> "Completed!"
                                 },
+                                statusColor = when (project.status) {
+                                    ProjectStatus.COMPLETED -> MaterialTheme.colorScheme.tertiary
+                                    ProjectStatus.IN_PROGRESS -> MaterialTheme.colorScheme.primary
+                                    else -> MaterialTheme.colorScheme.outline
+                                },
+                                currentRow = project.currentRow,
+                                totalRows = project.totalRows,
+                                onIncrement = { viewModel.onEvent(ProjectDetailEvent.IncrementRow) },
+                                onDecrement = { viewModel.onEvent(ProjectDetailEvent.DecrementRow) },
+                            )
+                        }
+
+                        // Notes header
+                        item {
+                            Spacer(modifier = Modifier.height(32.dp))
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp))
+                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(8.dp),
-                            )
-                        } else {
-                            Text(
-                                text = "rows",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = "Notes",
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                IconButton(onClick = { showAddNoteDialog = true }) {
+                                    Icon(Icons.Default.Add, contentDescription = "Add note")
+                                }
+                            }
                         }
 
-                        Spacer(modifier = Modifier.height(48.dp))
-
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(24.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            FilledTonalButton(
-                                onClick = { viewModel.onEvent(ProjectDetailEvent.DecrementRow) },
-                                modifier = Modifier.size(72.dp),
-                                enabled = project.currentRow > 0,
-                            ) {
+                        // Notes list or empty state
+                        if (progressNotes.isEmpty()) {
+                            item {
                                 Text(
-                                    text = "-",
-                                    fontSize = 28.sp,
-                                    fontWeight = FontWeight.Bold,
+                                    text = "No notes yet",
+                                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
-
-                            FilledTonalButton(
-                                onClick = { viewModel.onEvent(ProjectDetailEvent.IncrementRow) },
-                                modifier = Modifier.size(96.dp),
-                            ) {
-                                Text(
-                                    text = "+",
-                                    fontSize = 36.sp,
-                                    fontWeight = FontWeight.Bold,
+                        } else {
+                            items(
+                                items = progressNotes,
+                                key = { it.id },
+                            ) { note ->
+                                val onDelete = remember(note.id) {
+                                    { viewModel.onEvent(ProjectDetailEvent.DeleteNote(note.id)) }
+                                }
+                                NoteItem(
+                                    note = note,
+                                    onDelete = onDelete,
                                 )
                             }
                         }
@@ -185,4 +195,161 @@ fun ProjectDetailScreen(
             }
         }
     }
+}
+
+@Composable
+private fun CounterSection(
+    statusText: String,
+    statusColor: Color,
+    currentRow: Int,
+    totalRows: Int?,
+    onIncrement: () -> Unit,
+    onDecrement: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = statusText,
+            style = MaterialTheme.typography.labelLarge,
+            color = statusColor,
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "$currentRow",
+            fontSize = 96.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+        )
+
+        if (totalRows != null) {
+            Text(
+                text = "of $totalRows rows",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            LinearProgressIndicator(
+                progress = {
+                    if (totalRows > 0) {
+                        currentRow.toFloat() / totalRows.toFloat()
+                    } else {
+                        0f
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp),
+            )
+        } else {
+            Text(
+                text = "rows",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FilledTonalButton(
+                onClick = onDecrement,
+                modifier = Modifier.size(72.dp),
+                enabled = currentRow > 0,
+            ) {
+                Text(
+                    text = "-",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+
+            FilledTonalButton(
+                onClick = onIncrement,
+                modifier = Modifier.size(96.dp),
+            ) {
+                Text(
+                    text = "+",
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun NoteItem(
+    note: Progress,
+    onDelete: () -> Unit,
+) {
+    val timestamp = remember(note.createdAt) {
+        val localDateTime = note.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
+        "${localDateTime.monthNumber}/${localDateTime.dayOfMonth} " +
+            "${localDateTime.hour}:${localDateTime.minute.toString().padStart(2, '0')}"
+    }
+
+    ListItem(
+        headlineContent = {
+            Text(text = note.note ?: "")
+        },
+        supportingContent = {
+            Text(text = "Row ${note.rowNumber} - $timestamp")
+        },
+        trailingContent = {
+            IconButton(onClick = onDelete) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Delete note",
+                    tint = MaterialTheme.colorScheme.error,
+                )
+            }
+        },
+    )
+}
+
+@Composable
+private fun AddNoteDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var noteText by rememberSaveable { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Note") },
+        text = {
+            OutlinedTextField(
+                value = noteText,
+                onValueChange = { noteText = it },
+                label = { Text("Note") },
+                placeholder = { Text("e.g., Decreased stitch, changed color...") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = false,
+                maxLines = 3,
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(noteText) },
+                enabled = noteText.isNotBlank(),
+            ) {
+                Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+    )
 }

@@ -4,8 +4,12 @@ import app.cash.turbine.test
 import com.knitnote.domain.LocalUser
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
+import com.knitnote.domain.usecase.AddProgressNoteUseCase
 import com.knitnote.domain.usecase.DecrementRowUseCase
+import com.knitnote.domain.usecase.DeleteProgressNoteUseCase
+import com.knitnote.domain.usecase.FakeProgressRepository
 import com.knitnote.domain.usecase.FakeProjectRepository
+import com.knitnote.domain.usecase.GetProgressNotesUseCase
 import com.knitnote.domain.usecase.IncrementRowUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -20,17 +24,20 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProjectDetailViewModelTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
-    private lateinit var repository: FakeProjectRepository
+    private lateinit var projectRepository: FakeProjectRepository
+    private lateinit var progressRepository: FakeProgressRepository
 
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        repository = FakeProjectRepository()
+        projectRepository = FakeProjectRepository()
+        progressRepository = FakeProgressRepository()
     }
 
     @AfterTest
@@ -54,14 +61,17 @@ class ProjectDetailViewModelTest {
     private fun createViewModel(): ProjectDetailViewModel =
         ProjectDetailViewModel(
             projectId = "test-project",
-            projectRepository = repository,
-            incrementRow = IncrementRowUseCase(repository),
-            decrementRow = DecrementRowUseCase(repository),
+            projectRepository = projectRepository,
+            incrementRow = IncrementRowUseCase(projectRepository),
+            decrementRow = DecrementRowUseCase(projectRepository),
+            addProgressNote = AddProgressNoteUseCase(progressRepository),
+            getProgressNotes = GetProgressNotesUseCase(progressRepository),
+            deleteProgressNote = DeleteProgressNoteUseCase(progressRepository),
         )
 
     @Test
     fun `initial state loads project`() = runTest(testDispatcher) {
-        repository.create(createTestProject())
+        projectRepository.create(createTestProject())
         val viewModel = createViewModel()
 
         viewModel.state.test {
@@ -76,7 +86,7 @@ class ProjectDetailViewModelTest {
 
     @Test
     fun `increment row updates state`() = runTest(testDispatcher) {
-        repository.create(createTestProject())
+        projectRepository.create(createTestProject())
         val viewModel = createViewModel()
 
         viewModel.state.test {
@@ -98,7 +108,7 @@ class ProjectDetailViewModelTest {
             status = ProjectStatus.IN_PROGRESS,
             startedAt = Clock.System.now(),
         )
-        repository.create(project)
+        projectRepository.create(project)
         val viewModel = createViewModel()
 
         viewModel.state.test {
@@ -108,6 +118,118 @@ class ProjectDetailViewModelTest {
 
             val updated = awaitItem()
             assertEquals(4, updated.project?.currentRow)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    // --- Progress Notes tests ---
+
+    @Test
+    fun `initial progress notes is empty`() = runTest(testDispatcher) {
+        projectRepository.create(createTestProject())
+        val viewModel = createViewModel()
+
+        viewModel.progressNotes.test {
+            val notes = awaitItem()
+            assertTrue(notes.isEmpty())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `add note creates progress note for current row`() = runTest(testDispatcher) {
+        val project = createTestProject().copy(
+            currentRow = 5,
+            status = ProjectStatus.IN_PROGRESS,
+            startedAt = Clock.System.now(),
+        )
+        projectRepository.create(project)
+        val viewModel = createViewModel()
+
+        // Ensure state is loaded before adding note
+        viewModel.state.test {
+            val loaded = awaitItem()
+            assertEquals(5, loaded.project?.currentRow)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        viewModel.progressNotes.test {
+            awaitItem() // initial empty
+
+            viewModel.onEvent(ProjectDetailEvent.AddNote("Decrease stitch"))
+
+            val notes = awaitItem()
+            assertEquals(1, notes.size)
+            assertEquals("Decrease stitch", notes.first().note)
+            assertEquals(5, notes.first().rowNumber)
+            assertEquals("test-project", notes.first().projectId)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `delete note removes progress note`() = runTest(testDispatcher) {
+        val project = createTestProject().copy(
+            currentRow = 3,
+            status = ProjectStatus.IN_PROGRESS,
+            startedAt = Clock.System.now(),
+        )
+        projectRepository.create(project)
+        val viewModel = createViewModel()
+
+        viewModel.progressNotes.test {
+            awaitItem() // initial empty
+
+            viewModel.onEvent(ProjectDetailEvent.AddNote("Color change"))
+            val notesAfterAdd = awaitItem()
+            assertEquals(1, notesAfterAdd.size)
+            val noteId = notesAfterAdd.first().id
+
+            viewModel.onEvent(ProjectDetailEvent.DeleteNote(noteId))
+            val notesAfterDelete = awaitItem()
+            assertTrue(notesAfterDelete.isEmpty())
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `add note uses row 0 when project not loaded`() = runTest(testDispatcher) {
+        // Do NOT create project — state.value.project will be null
+        val viewModel = createViewModel()
+
+        viewModel.progressNotes.test {
+            awaitItem() // initial empty
+
+            viewModel.onEvent(ProjectDetailEvent.AddNote("Early note"))
+
+            val notes = awaitItem()
+            assertEquals(1, notes.size)
+            assertEquals(0, notes.first().rowNumber)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `add multiple notes maintains all`() = runTest(testDispatcher) {
+        val project = createTestProject().copy(
+            currentRow = 2,
+            status = ProjectStatus.IN_PROGRESS,
+            startedAt = Clock.System.now(),
+        )
+        projectRepository.create(project)
+        val viewModel = createViewModel()
+
+        viewModel.progressNotes.test {
+            awaitItem() // initial empty
+
+            viewModel.onEvent(ProjectDetailEvent.AddNote("First note"))
+            assertEquals(1, awaitItem().size)
+
+            viewModel.onEvent(ProjectDetailEvent.AddNote("Second note"))
+            val notes = awaitItem()
+            assertEquals(2, notes.size)
+
             cancelAndIgnoreRemainingEvents()
         }
     }

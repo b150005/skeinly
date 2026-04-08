@@ -14,6 +14,9 @@ val viewModelModule = module {
             projectRepository = get(),
             incrementRow = get(),
             decrementRow = get(),
+            addProgressNote = get(),
+            getProgressNotes = get(),
+            deleteProgressNote = get(),
         )
     }
 }

@@ -2,9 +2,13 @@ package com.knitnote.ui.projectdetail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.knitnote.domain.model.Progress
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.repository.ProjectRepository
+import com.knitnote.domain.usecase.AddProgressNoteUseCase
 import com.knitnote.domain.usecase.DecrementRowUseCase
+import com.knitnote.domain.usecase.DeleteProgressNoteUseCase
+import com.knitnote.domain.usecase.GetProgressNotesUseCase
 import com.knitnote.domain.usecase.IncrementRowUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -27,6 +31,8 @@ sealed interface ProjectDetailEvent {
     data object IncrementRow : ProjectDetailEvent
     data object DecrementRow : ProjectDetailEvent
     data object ClearError : ProjectDetailEvent
+    data class AddNote(val note: String) : ProjectDetailEvent
+    data class DeleteNote(val progressId: String) : ProjectDetailEvent
 }
 
 class ProjectDetailViewModel(
@@ -34,6 +40,9 @@ class ProjectDetailViewModel(
     private val projectRepository: ProjectRepository,
     private val incrementRow: IncrementRowUseCase,
     private val decrementRow: DecrementRowUseCase,
+    private val addProgressNote: AddProgressNoteUseCase,
+    private val getProgressNotes: GetProgressNotesUseCase,
+    private val deleteProgressNote: DeleteProgressNoteUseCase,
 ) : ViewModel() {
 
     private val counterMutex = Mutex()
@@ -52,6 +61,18 @@ class ProjectDetailViewModel(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = ProjectDetailState(isLoading = true),
+            )
+
+    val progressNotes: StateFlow<List<Progress>> =
+        getProgressNotes(projectId)
+            .catch { e ->
+                _error.value = e.message ?: "Failed to load notes"
+                emit(emptyList())
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = emptyList(),
             )
 
     fun onEvent(event: ProjectDetailEvent) {
@@ -74,6 +95,19 @@ class ProjectDetailViewModel(
             }
             ProjectDetailEvent.ClearError -> {
                 _error.value = null
+            }
+            is ProjectDetailEvent.AddNote -> {
+                val currentRow = state.value.project?.currentRow ?: 0
+                viewModelScope.launch {
+                    runCatching { addProgressNote(projectId, currentRow, event.note) }
+                        .onFailure { e -> _error.value = e.message ?: "Failed to add note" }
+                }
+            }
+            is ProjectDetailEvent.DeleteNote -> {
+                viewModelScope.launch {
+                    runCatching { deleteProgressNote(event.progressId) }
+                        .onFailure { e -> _error.value = e.message ?: "Failed to delete note" }
+                }
             }
         }
     }
