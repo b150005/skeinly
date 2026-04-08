@@ -163,9 +163,10 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 - **Phase 2b**: Result Pattern — Unify UseCase error handling with `UseCaseResult<T>` (92 tests)
 - **Phase 2c**: Project Edit — Update title/totalRows from detail screen (103 tests)
 - **Phase 3a**: UX Polish — ViewModel stateIn unification, error channel consolidation, date formatting, Progress.note non-null (103 tests)
+- **Phase 3b-pre**: Android UX Finish — Manual complete/reopen status transitions, swipe-to-delete for projects and notes (118 tests)
 
 ### Planned
-- **Phase 3b**: Supabase Foundation — Auth, remote data sources, SyncManager
 - **Phase 4a**: iOS SwiftUI UI (feature parity with Android)
+- **Phase 3b**: Supabase Foundation — Auth, remote data sources, SyncManager
 - **Phase 4b**: Sharing — Share entity, fork, deep links
 - **Phase 5**: Social Layer — Comments, Activity feed, User profiles, polish
