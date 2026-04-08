@@ -139,3 +139,32 @@ Agents detect this project as **Kotlin Multiplatform** by finding:
 - Claude reads `docs/en/` only to minimize context window usage
 - Japanese files include a header linking to the English source
 - ADRs in `docs/en/adr/` and `docs/ja/adr/`
+
+## Session Handoff Protocol
+
+Each session MUST output a **Next Session Instructions** block at the end of every task boundary (phase completion, significant milestone, or session end). This ensures continuity across sessions.
+
+The instructions should include:
+1. **Current state**: Branch, latest commit hash, test count, build status
+2. **What was completed**: Summary of the phase/task just finished
+3. **Next task**: Exact phase/task to execute next, with file-level detail
+4. **Known issues**: Any blockers, technical debt, or deferred items
+5. **Architecture context**: Relevant ADRs, design decisions, or constraints
+
+Format: A fenced code block titled `## Next Session Instructions` that can be copy-pasted directly as the next session's prompt.
+
+## Development Roadmap
+
+### Completed
+- **Phase 1**: Row Counter — Project CRUD, increment/decrement, status tracking (62 tests)
+- **Phase 1.5**: Progress Notes — row-level memos via ProgressRepository (79 tests)
+- **Phase 2a**: Technical Debt — `updated_at` column on ProjectEntity (ADR-003 prerequisite)
+- **Phase 2b**: Result Pattern — Unify UseCase error handling with `UseCaseResult<T>` (92 tests)
+- **Phase 2c**: Project Edit — Update title/totalRows from detail screen (103 tests)
+
+### Planned
+- **Phase 3a**: Project Edit UX polish + status transitions
+- **Phase 3b**: Supabase Foundation — Auth, remote data sources, SyncManager
+- **Phase 4a**: iOS SwiftUI UI (feature parity with Android)
+- **Phase 4b**: Sharing — Share entity, fork, deep links
+- **Phase 5**: Social Layer — Comments, Activity feed, User profiles, polish
