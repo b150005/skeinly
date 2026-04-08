@@ -9,9 +9,11 @@ import com.knitnote.domain.usecase.GetProjectsUseCase
 import com.knitnote.domain.usecase.UseCaseResult
 import com.knitnote.domain.usecase.toMessage
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -27,7 +29,13 @@ sealed interface ProjectListEvent {
     data class DeleteProject(val id: String) : ProjectListEvent
     data object ShowCreateDialog : ProjectListEvent
     data object DismissCreateDialog : ProjectListEvent
+    data object ClearError : ProjectListEvent
 }
+
+private data class UiFlags(
+    val error: String? = null,
+    val showCreateDialog: Boolean = false,
+)
 
 class ProjectListViewModel(
     private val getProjects: GetProjectsUseCase,
@@ -35,20 +43,27 @@ class ProjectListViewModel(
     private val deleteProject: DeleteProjectUseCase,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(ProjectListState())
-    val state: StateFlow<ProjectListState> = _state.asStateFlow()
+    private val uiFlags = MutableStateFlow(UiFlags())
 
-    init {
-        viewModelScope.launch {
-            getProjects()
-                .catch { e ->
-                    _state.update { it.copy(isLoading = false, error = e.message) }
-                }
-                .collect { projects ->
-                    _state.update { it.copy(projects = projects, isLoading = false, error = null) }
-                }
-        }
-    }
+    val state: StateFlow<ProjectListState> =
+        combine(
+            getProjects().catch { e ->
+                uiFlags.update { it.copy(error = e.message) }
+                emit(emptyList())
+            },
+            uiFlags,
+        ) { projects, flags ->
+            ProjectListState(
+                projects = projects,
+                isLoading = false,
+                error = flags.error,
+                showCreateDialog = flags.showCreateDialog,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = ProjectListState(),
+        )
 
     fun onEvent(event: ProjectListEvent) {
         when (event) {
@@ -56,10 +71,10 @@ class ProjectListViewModel(
                 viewModelScope.launch {
                     when (val result = createProject(event.title, event.totalRows)) {
                         is UseCaseResult.Success -> {
-                            _state.update { it.copy(showCreateDialog = false) }
+                            uiFlags.update { it.copy(showCreateDialog = false) }
                         }
                         is UseCaseResult.Failure -> {
-                            _state.update { it.copy(error = result.error.toMessage()) }
+                            uiFlags.update { it.copy(error = result.error.toMessage()) }
                         }
                     }
                 }
@@ -69,16 +84,19 @@ class ProjectListViewModel(
                     when (val result = deleteProject(event.id)) {
                         is UseCaseResult.Success -> { /* list updates via Flow */ }
                         is UseCaseResult.Failure -> {
-                            _state.update { it.copy(error = result.error.toMessage()) }
+                            uiFlags.update { it.copy(error = result.error.toMessage()) }
                         }
                     }
                 }
             }
             ProjectListEvent.ShowCreateDialog -> {
-                _state.update { it.copy(showCreateDialog = true) }
+                uiFlags.update { it.copy(showCreateDialog = true) }
             }
             ProjectListEvent.DismissCreateDialog -> {
-                _state.update { it.copy(showCreateDialog = false) }
+                uiFlags.update { it.copy(showCreateDialog = false) }
+            }
+            ProjectListEvent.ClearError -> {
+                uiFlags.update { it.copy(error = null) }
             }
         }
     }

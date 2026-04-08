@@ -51,7 +51,10 @@ fun ProjectListScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(state.error) {
-        state.error?.let { snackbarHostState.showSnackbar(it) }
+        state.error?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.onEvent(ProjectListEvent.ClearError)
+        }
     }
 
     Scaffold(

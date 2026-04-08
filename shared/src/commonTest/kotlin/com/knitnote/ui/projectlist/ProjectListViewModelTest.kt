@@ -43,37 +43,57 @@ class ProjectListViewModelTest {
 
     @Test
     fun `initial state loads empty project list`() = runTest(testDispatcher) {
-        val state = viewModel.state.value
-        assertFalse(state.isLoading)
-        assertTrue(state.projects.isEmpty())
+        viewModel.state.test {
+            val state = awaitItem()
+            assertFalse(state.isLoading)
+            assertTrue(state.projects.isEmpty())
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test
     fun `create project adds to list`() = runTest(testDispatcher) {
-        viewModel.onEvent(ProjectListEvent.CreateProject("Test Scarf", 100))
+        viewModel.state.test {
+            awaitItem() // initial empty
 
-        val state = viewModel.state.value
-        assertEquals(1, state.projects.size)
-        assertEquals("Test Scarf", state.projects[0].title)
+            viewModel.onEvent(ProjectListEvent.CreateProject("Test Scarf", 100))
+
+            val state = awaitItem()
+            assertEquals(1, state.projects.size)
+            assertEquals("Test Scarf", state.projects[0].title)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test
     fun `delete project removes from list`() = runTest(testDispatcher) {
-        viewModel.onEvent(ProjectListEvent.CreateProject("To Delete", null))
-        val projectId = viewModel.state.value.projects[0].id
+        viewModel.state.test {
+            awaitItem() // initial empty
 
-        viewModel.onEvent(ProjectListEvent.DeleteProject(projectId))
+            viewModel.onEvent(ProjectListEvent.CreateProject("To Delete", null))
+            val stateAfterCreate = awaitItem()
+            val projectId = stateAfterCreate.projects[0].id
 
-        val state = viewModel.state.value
-        assertTrue(state.projects.isEmpty())
+            viewModel.onEvent(ProjectListEvent.DeleteProject(projectId))
+
+            val state = awaitItem()
+            assertTrue(state.projects.isEmpty())
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test
     fun `show and dismiss create dialog`() = runTest(testDispatcher) {
-        viewModel.onEvent(ProjectListEvent.ShowCreateDialog)
-        assertTrue(viewModel.state.value.showCreateDialog)
+        viewModel.state.test {
+            awaitItem() // initial empty
 
-        viewModel.onEvent(ProjectListEvent.DismissCreateDialog)
-        assertFalse(viewModel.state.value.showCreateDialog)
+            viewModel.onEvent(ProjectListEvent.ShowCreateDialog)
+            assertTrue(awaitItem().showCreateDialog)
+
+            viewModel.onEvent(ProjectListEvent.DismissCreateDialog)
+            assertFalse(awaitItem().showCreateDialog)
+
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 }

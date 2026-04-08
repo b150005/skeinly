@@ -27,7 +27,6 @@ import kotlinx.coroutines.sync.withLock
 data class ProjectDetailState(
     val project: Project? = null,
     val isLoading: Boolean = true,
-    val error: String? = null,
 )
 
 sealed interface ProjectDetailEvent {
@@ -60,7 +59,8 @@ class ProjectDetailViewModel(
                 ProjectDetailState(project = project, isLoading = false)
             }
             .catch { e ->
-                emit(ProjectDetailState(isLoading = false, error = e.message))
+                _error.value = e.message ?: "Failed to load project"
+                emit(ProjectDetailState(isLoading = false))
             }
             .stateIn(
                 scope = viewModelScope,
