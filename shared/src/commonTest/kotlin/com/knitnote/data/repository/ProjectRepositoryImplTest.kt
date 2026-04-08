@@ -1,9 +1,11 @@
 package com.knitnote.data.repository
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.knitnote.data.local.LocalProjectDataSource
 import com.knitnote.db.KnitNoteDatabase
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Clock
@@ -17,13 +19,18 @@ class ProjectRepositoryImplTest {
 
     private lateinit var db: KnitNoteDatabase
     private lateinit var repository: ProjectRepositoryImpl
+    private val isOnline = MutableStateFlow(false)
 
     @BeforeTest
     fun setUp() {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         KnitNoteDatabase.Schema.create(driver)
         db = KnitNoteDatabase(driver)
-        repository = ProjectRepositoryImpl(db)
+        repository = ProjectRepositoryImpl(
+            local = LocalProjectDataSource(db),
+            remote = null, // local-only mode for tests
+            isOnline = isOnline,
+        )
     }
 
     private fun createTestProject(

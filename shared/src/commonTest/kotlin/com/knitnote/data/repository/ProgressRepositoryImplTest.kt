@@ -1,10 +1,13 @@
 package com.knitnote.data.repository
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.knitnote.data.local.LocalProgressDataSource
+import com.knitnote.data.local.LocalProjectDataSource
 import com.knitnote.db.KnitNoteDatabase
 import com.knitnote.domain.model.Progress
 import com.knitnote.domain.model.ProjectStatus
 import com.knitnote.domain.model.Project
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Clock
@@ -18,15 +21,20 @@ class ProgressRepositoryImplTest {
 
     private lateinit var db: KnitNoteDatabase
     private lateinit var progressRepository: ProgressRepositoryImpl
-    private lateinit var projectRepository: ProjectRepositoryImpl
+    private lateinit var localProjectDataSource: LocalProjectDataSource
+    private val isOnline = MutableStateFlow(false)
 
     @BeforeTest
     fun setUp() {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         KnitNoteDatabase.Schema.create(driver)
         db = KnitNoteDatabase(driver)
-        progressRepository = ProgressRepositoryImpl(db)
-        projectRepository = ProjectRepositoryImpl(db)
+        localProjectDataSource = LocalProjectDataSource(db)
+        progressRepository = ProgressRepositoryImpl(
+            local = LocalProgressDataSource(db),
+            remote = null,
+            isOnline = isOnline,
+        )
     }
 
     private suspend fun createParentProject(): Project {
@@ -43,7 +51,7 @@ class ProgressRepositoryImplTest {
             createdAt = Clock.System.now(),
             updatedAt = Clock.System.now(),
         )
-        projectRepository.create(project)
+        localProjectDataSource.insert(project)
         return project
     }
 

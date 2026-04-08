@@ -3,6 +3,7 @@ package com.knitnote.ui.projectlist
 import app.cash.turbine.test
 import com.knitnote.domain.usecase.CreateProjectUseCase
 import com.knitnote.domain.usecase.DeleteProjectUseCase
+import com.knitnote.domain.usecase.FakeAuthRepository
 import com.knitnote.domain.usecase.FakeProjectRepository
 import com.knitnote.domain.usecase.GetProjectsUseCase
 import kotlinx.coroutines.Dispatchers
@@ -24,14 +25,15 @@ class ProjectListViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var repository: FakeProjectRepository
     private lateinit var viewModel: ProjectListViewModel
+    private val fakeAuth = FakeAuthRepository()
 
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         repository = FakeProjectRepository()
         viewModel = ProjectListViewModel(
-            getProjects = GetProjectsUseCase(repository),
-            createProject = CreateProjectUseCase(repository),
+            getProjects = GetProjectsUseCase(repository, fakeAuth),
+            createProject = CreateProjectUseCase(repository, fakeAuth),
             deleteProject = DeleteProjectUseCase(repository),
         )
     }

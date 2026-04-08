@@ -15,12 +15,14 @@ import kotlin.test.assertTrue
 class CreateProjectUseCaseTest {
 
     private lateinit var repository: FakeProjectRepository
+    private lateinit var authRepository: FakeAuthRepository
     private lateinit var useCase: CreateProjectUseCase
 
     @BeforeTest
     fun setUp() {
         repository = FakeProjectRepository()
-        useCase = CreateProjectUseCase(repository)
+        authRepository = FakeAuthRepository()
+        useCase = CreateProjectUseCase(repository, authRepository)
     }
 
     @Test

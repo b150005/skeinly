@@ -10,13 +10,21 @@ import com.knitnote.domain.usecase.GetProgressNotesUseCase
 import com.knitnote.domain.usecase.GetProjectByIdUseCase
 import com.knitnote.domain.usecase.GetProjectsUseCase
 import com.knitnote.domain.usecase.IncrementRowUseCase
+import com.knitnote.domain.usecase.ObserveAuthStateUseCase
 import com.knitnote.domain.usecase.ReopenProjectUseCase
+import com.knitnote.domain.usecase.SignInUseCase
+import com.knitnote.domain.usecase.SignOutUseCase
+import com.knitnote.domain.usecase.SignUpUseCase
 import com.knitnote.domain.usecase.UpdateProjectUseCase
 import org.koin.dsl.module
 
 val useCaseModule = module {
-    factory { GetProjectsUseCase(get()) }
-    factory { CreateProjectUseCase(get()) }
+    factory { ObserveAuthStateUseCase(get()) }
+    factory { SignInUseCase(get()) }
+    factory { SignUpUseCase(get()) }
+    factory { SignOutUseCase(get()) }
+    factory { GetProjectsUseCase(get(), get()) }
+    factory { CreateProjectUseCase(get(), get()) }
     factory { IncrementRowUseCase(get()) }
     factory { DecrementRowUseCase(get()) }
     factory { GetProjectByIdUseCase(get()) }

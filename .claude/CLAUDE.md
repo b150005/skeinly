@@ -167,8 +167,9 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 - **Phase 3b-pre**: Android UX Finish — Manual complete/reopen status transitions, swipe-to-delete for projects and notes (118 tests)
 
 - **Phase 4a**: iOS App Shell — iosApp/ Xcode project, ComposeUIViewController host, Koin iOS init, simulator verified (118 tests)
+- **Phase 3b**: Supabase Foundation MVP — supabase-kt 3.5.0 integration, Auth (Email/Social), Local/Remote DataSource refactor, ConnectivityMonitor, coordinator repositories, SQL migration, ADR-004 (130 tests)
 
 ### Planned
-- **Phase 3b**: Supabase Foundation — Auth, remote data sources, SyncManager
+- **Phase 3b+**: Supabase Sync — PendingSync queue, offline write support, Realtime subscriptions
 - **Phase 4b**: Sharing — Share entity, fork, deep links
 - **Phase 5**: Social Layer — Comments, Activity feed, User profiles, polish
