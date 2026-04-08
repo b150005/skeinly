@@ -5,12 +5,14 @@ import com.knitnote.domain.LocalUser
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
 import com.knitnote.domain.usecase.AddProgressNoteUseCase
+import com.knitnote.domain.usecase.CompleteProjectUseCase
 import com.knitnote.domain.usecase.DecrementRowUseCase
 import com.knitnote.domain.usecase.DeleteProgressNoteUseCase
 import com.knitnote.domain.usecase.FakeProgressRepository
 import com.knitnote.domain.usecase.FakeProjectRepository
 import com.knitnote.domain.usecase.GetProgressNotesUseCase
 import com.knitnote.domain.usecase.IncrementRowUseCase
+import com.knitnote.domain.usecase.ReopenProjectUseCase
 import com.knitnote.domain.usecase.UpdateProjectUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -70,6 +72,8 @@ class ProjectDetailViewModelTest {
             getProgressNotes = GetProgressNotesUseCase(progressRepository),
             deleteProgressNote = DeleteProgressNoteUseCase(progressRepository),
             updateProject = UpdateProjectUseCase(projectRepository),
+            completeProject = CompleteProjectUseCase(projectRepository),
+            reopenProject = ReopenProjectUseCase(projectRepository),
         )
 
     @Test
@@ -267,6 +271,53 @@ class ProjectDetailViewModelTest {
 
             val updated = awaitItem()
             assertEquals(200, updated.project?.totalRows)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    // --- Status transition tests ---
+
+    @Test
+    fun `complete project sets COMPLETED status`() = runTest(testDispatcher) {
+        val project = createTestProject().copy(
+            currentRow = 5,
+            status = ProjectStatus.IN_PROGRESS,
+            startedAt = Clock.System.now(),
+        )
+        projectRepository.create(project)
+        val viewModel = createViewModel()
+
+        viewModel.state.test {
+            awaitItem() // initial loaded state
+
+            viewModel.onEvent(ProjectDetailEvent.CompleteProject)
+
+            val updated = awaitItem()
+            assertEquals(ProjectStatus.COMPLETED, updated.project?.status)
+            assertNotNull(updated.project?.completedAt)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `reopen project sets IN_PROGRESS status`() = runTest(testDispatcher) {
+        val project = createTestProject().copy(
+            currentRow = 50,
+            status = ProjectStatus.COMPLETED,
+            startedAt = Clock.System.now(),
+            completedAt = Clock.System.now(),
+        )
+        projectRepository.create(project)
+        val viewModel = createViewModel()
+
+        viewModel.state.test {
+            awaitItem() // initial loaded state
+
+            viewModel.onEvent(ProjectDetailEvent.ReopenProject)
+
+            val updated = awaitItem()
+            assertEquals(ProjectStatus.IN_PROGRESS, updated.project?.status)
+            assertEquals(null, updated.project?.completedAt)
             cancelAndIgnoreRemainingEvents()
         }
     }

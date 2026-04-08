@@ -6,10 +6,12 @@ import com.knitnote.domain.model.Progress
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.repository.ProjectRepository
 import com.knitnote.domain.usecase.AddProgressNoteUseCase
+import com.knitnote.domain.usecase.CompleteProjectUseCase
 import com.knitnote.domain.usecase.DecrementRowUseCase
 import com.knitnote.domain.usecase.DeleteProgressNoteUseCase
 import com.knitnote.domain.usecase.GetProgressNotesUseCase
 import com.knitnote.domain.usecase.IncrementRowUseCase
+import com.knitnote.domain.usecase.ReopenProjectUseCase
 import com.knitnote.domain.usecase.UpdateProjectUseCase
 import com.knitnote.domain.usecase.UseCaseResult
 import com.knitnote.domain.usecase.toMessage
@@ -36,6 +38,8 @@ sealed interface ProjectDetailEvent {
     data class AddNote(val note: String) : ProjectDetailEvent
     data class DeleteNote(val progressId: String) : ProjectDetailEvent
     data class EditProject(val title: String, val totalRows: Int?) : ProjectDetailEvent
+    data object CompleteProject : ProjectDetailEvent
+    data object ReopenProject : ProjectDetailEvent
 }
 
 class ProjectDetailViewModel(
@@ -47,6 +51,8 @@ class ProjectDetailViewModel(
     private val getProgressNotes: GetProgressNotesUseCase,
     private val deleteProgressNote: DeleteProgressNoteUseCase,
     private val updateProject: UpdateProjectUseCase,
+    private val completeProject: CompleteProjectUseCase,
+    private val reopenProject: ReopenProjectUseCase,
 ) : ViewModel() {
 
     private val counterMutex = Mutex()
@@ -125,6 +131,22 @@ class ProjectDetailViewModel(
             is ProjectDetailEvent.EditProject -> {
                 viewModelScope.launch {
                     when (val result = updateProject(projectId, event.title, event.totalRows)) {
+                        is UseCaseResult.Success -> { /* state updates via Flow */ }
+                        is UseCaseResult.Failure -> _error.value = result.error.toMessage()
+                    }
+                }
+            }
+            ProjectDetailEvent.CompleteProject -> {
+                viewModelScope.launch {
+                    when (val result = completeProject(projectId)) {
+                        is UseCaseResult.Success -> { /* state updates via Flow */ }
+                        is UseCaseResult.Failure -> _error.value = result.error.toMessage()
+                    }
+                }
+            }
+            ProjectDetailEvent.ReopenProject -> {
+                viewModelScope.launch {
+                    when (val result = reopenProject(projectId)) {
                         is UseCaseResult.Success -> { /* state updates via Flow */ }
                         is UseCaseResult.Failure -> _error.value = result.error.toMessage()
                     }

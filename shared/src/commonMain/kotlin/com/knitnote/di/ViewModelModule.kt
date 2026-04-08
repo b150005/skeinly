@@ -18,6 +18,8 @@ val viewModelModule = module {
             getProgressNotes = get(),
             deleteProgressNote = get(),
             updateProject = get(),
+            completeProject = get(),
+            reopenProject = get(),
         )
     }
 }
