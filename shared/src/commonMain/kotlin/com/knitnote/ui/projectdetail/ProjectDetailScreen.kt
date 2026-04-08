@@ -128,14 +128,6 @@ fun ProjectDetailScreen(
                         modifier = Modifier.align(Alignment.Center),
                     )
                 }
-                state.error != null -> {
-                    Text(
-                        text = state.error ?: "Unknown error",
-                        modifier = Modifier.align(Alignment.Center),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
                 state.project == null -> {
                     Text(
                         text = "Project not found",
@@ -317,14 +309,17 @@ private fun NoteItem(
     onDelete: () -> Unit,
 ) {
     val timestamp = remember(note.createdAt) {
-        val localDateTime = note.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
-        "${localDateTime.monthNumber}/${localDateTime.dayOfMonth} " +
-            "${localDateTime.hour}:${localDateTime.minute.toString().padStart(2, '0')}"
+        val dt = note.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
+        val month = dt.monthNumber.toString().padStart(2, '0')
+        val day = dt.dayOfMonth.toString().padStart(2, '0')
+        val hour = dt.hour.toString().padStart(2, '0')
+        val minute = dt.minute.toString().padStart(2, '0')
+        "$month/$day $hour:$minute"
     }
 
     ListItem(
         headlineContent = {
-            Text(text = note.note ?: "")
+            Text(text = note.note)
         },
         supportingContent = {
             Text(text = "Row ${note.rowNumber} - $timestamp")
@@ -364,7 +359,7 @@ private fun AddNoteDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(noteText) },
+                onClick = { onConfirm(noteText.trim()) },
                 enabled = noteText.isNotBlank(),
             ) {
                 Text("Add")
