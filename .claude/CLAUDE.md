@@ -142,7 +142,7 @@ Agents detect this project as **Kotlin Multiplatform** by finding:
 
 ## Session Handoff Protocol
 
-Each session MUST output a **Next Session Instructions** block at the end of every task boundary (phase completion, significant milestone, or session end). This ensures continuity across sessions.
+Each session MUST output a **Next Session Instructions** block **as conversation output** (NOT written to CLAUDE.md or any file) at the end of every task boundary (phase completion, significant milestone, or session end). This ensures continuity across sessions.
 
 The instructions should include:
 1. **Current state**: Branch, latest commit hash, test count, build status
@@ -151,7 +151,7 @@ The instructions should include:
 4. **Known issues**: Any blockers, technical debt, or deferred items
 5. **Architecture context**: Relevant ADRs, design decisions, or constraints
 
-Format: A fenced code block titled `## Next Session Instructions` that can be copy-pasted directly as the next session's prompt.
+Format: A fenced code block titled `## Next Session Instructions` that can be copy-pasted directly as the next session's prompt. This block is output in the chat reply only — CLAUDE.md should only be updated with roadmap status changes (moving phases from Planned to Completed), not with session-specific handoff instructions.
 
 ## Development Roadmap
 
