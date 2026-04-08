@@ -51,7 +51,7 @@ knit-note/
 | Async | Kotlin Coroutines + Flow (shared), Swift async/await (iOS) |
 | DI | Koin Multiplatform |
 | Image Loading | Coil (Android), platform-native (iOS) |
-| Build System | Gradle (KMP), Xcode (iOS) |
+| Build System | Gradle (KMP), Xcode via XcodeGen (iOS) |
 
 ## Domain Model (Core Concepts)
 
@@ -166,8 +166,7 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 - **Phase 3a**: UX Polish — ViewModel stateIn unification, error channel consolidation, date formatting, Progress.note non-null (103 tests)
 - **Phase 3b-pre**: Android UX Finish — Manual complete/reopen status transitions, swipe-to-delete for projects and notes (118 tests)
 
-### In Progress
-- **Phase 4a**: iOS App Shell — iosApp/ Xcode project, ComposeUIViewController host, Koin iOS init, framework build verified (118 tests)
+- **Phase 4a**: iOS App Shell — iosApp/ Xcode project, ComposeUIViewController host, Koin iOS init, simulator verified (118 tests)
 
 ### Planned
 - **Phase 3b**: Supabase Foundation — Auth, remote data sources, SyncManager
