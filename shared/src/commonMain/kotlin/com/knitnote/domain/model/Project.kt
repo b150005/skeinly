@@ -23,4 +23,5 @@ data class Project(
     @SerialName("started_at") val startedAt: Instant?,
     @SerialName("completed_at") val completedAt: Instant?,
     @SerialName("created_at") val createdAt: Instant,
+    @SerialName("updated_at") val updatedAt: Instant,
 )

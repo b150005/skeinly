@@ -16,6 +16,7 @@ fun ProjectEntity.toDomain(): Project = Project(
     startedAt = started_at?.let { Instant.parse(it) },
     completedAt = completed_at?.let { Instant.parse(it) },
     createdAt = Instant.parse(created_at),
+    updatedAt = Instant.parse(updated_at),
 )
 
 private fun String.toProjectStatus(): ProjectStatus = when (this) {

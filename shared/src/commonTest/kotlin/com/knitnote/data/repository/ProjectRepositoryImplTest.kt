@@ -43,6 +43,7 @@ class ProjectRepositoryImplTest {
         startedAt = null,
         completedAt = null,
         createdAt = Clock.System.now(),
+        updatedAt = Clock.System.now(),
     )
 
     @Test

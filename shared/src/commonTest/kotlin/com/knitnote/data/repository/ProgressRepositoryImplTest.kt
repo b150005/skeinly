@@ -41,6 +41,7 @@ class ProgressRepositoryImplTest {
             startedAt = Clock.System.now(),
             completedAt = null,
             createdAt = Clock.System.now(),
+            updatedAt = Clock.System.now(),
         )
         projectRepository.create(project)
         return project

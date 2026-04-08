@@ -56,6 +56,7 @@ class ProjectRepositoryImpl(
             started_at = project.startedAt?.toString(),
             completed_at = project.completedAt?.toString(),
             created_at = project.createdAt.toString(),
+            updated_at = project.updatedAt.toString(),
         )
         project
     }
@@ -68,6 +69,7 @@ class ProjectRepositoryImpl(
             total_rows = project.totalRows?.toLong(),
             started_at = project.startedAt?.toString(),
             completed_at = project.completedAt?.toString(),
+            updated_at = project.updatedAt.toString(),
             id = project.id,
         )
         project

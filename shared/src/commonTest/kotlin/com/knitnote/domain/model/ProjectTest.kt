@@ -25,6 +25,7 @@ class ProjectTest {
             startedAt = now,
             completedAt = null,
             createdAt = now,
+            updatedAt = now,
         )
 
         assertEquals("proj-001", project.id)
@@ -47,6 +48,7 @@ class ProjectTest {
             startedAt = null,
             completedAt = null,
             createdAt = now,
+            updatedAt = now,
         )
 
         assertNull(project.totalRows)
@@ -66,6 +68,7 @@ class ProjectTest {
             startedAt = now,
             completedAt = Instant.parse("2026-02-15T10:30:00Z"),
             createdAt = now,
+            updatedAt = now,
         )
 
         val encoded = json.encodeToString(Project.serializer(), project)

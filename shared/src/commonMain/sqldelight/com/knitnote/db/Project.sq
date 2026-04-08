@@ -8,7 +8,8 @@ CREATE TABLE ProjectEntity (
     total_rows INTEGER,
     started_at TEXT,
     completed_at TEXT,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
 );
 
 getById:
@@ -21,12 +22,12 @@ getByPatternId:
 SELECT * FROM ProjectEntity WHERE pattern_id = ?;
 
 insert:
-INSERT INTO ProjectEntity(id, owner_id, pattern_id, title, status, current_row, total_rows, started_at, completed_at, created_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO ProjectEntity(id, owner_id, pattern_id, title, status, current_row, total_rows, started_at, completed_at, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 update:
 UPDATE ProjectEntity
-SET title = ?, status = ?, current_row = ?, total_rows = ?, started_at = ?, completed_at = ?
+SET title = ?, status = ?, current_row = ?, total_rows = ?, started_at = ?, completed_at = ?, updated_at = ?
 WHERE id = ?;
 
 observeById:
