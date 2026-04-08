@@ -4,12 +4,16 @@ build/
 !gradle-wrapper.jar
 !gradle-wrapper.properties
 
+# Claude Code local settings (user-specific permissions)
+.claude/settings.local.json
+
 # IDE
 .idea/
 *.iml
 *.ipr
 *.iws
 .DS_Store
+Thumbs.db
 
 # Kotlin
 *.class
@@ -58,4 +62,5 @@ coverage/
 *.log
 *.tmp
 *.swp
+*.swo
 *~
