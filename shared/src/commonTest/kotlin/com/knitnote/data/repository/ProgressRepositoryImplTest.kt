@@ -56,7 +56,7 @@ class ProgressRepositoryImplTest {
         projectId = projectId,
         rowNumber = rowNumber,
         photoUrl = null,
-        note = null,
+        note = "",
         createdAt = Clock.System.now(),
     )
 

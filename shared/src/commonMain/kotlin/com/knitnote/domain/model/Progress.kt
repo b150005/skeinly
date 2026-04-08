@@ -10,6 +10,6 @@ data class Progress(
     @SerialName("project_id") val projectId: String,
     @SerialName("row_number") val rowNumber: Int,
     @SerialName("photo_url") val photoUrl: String?,
-    val note: String?,
+    val note: String,
     @SerialName("created_at") val createdAt: Instant,
 )

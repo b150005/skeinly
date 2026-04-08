@@ -31,18 +31,18 @@ class ProgressTest {
     }
 
     @Test
-    fun `create progress with nullable fields as null`() {
+    fun `create progress with optional fields`() {
         val progress = Progress(
             id = "prog-002",
             projectId = "proj-001",
             rowNumber = 1,
             photoUrl = null,
-            note = null,
+            note = "",
             createdAt = now,
         )
 
         assertNull(progress.photoUrl)
-        assertNull(progress.note)
+        assertEquals("", progress.note)
     }
 
     @Test

@@ -9,6 +9,6 @@ fun ProgressEntity.toDomain(): Progress = Progress(
     projectId = project_id,
     rowNumber = row_number.toInt(),
     photoUrl = photo_url,
-    note = note,
+    note = note.orEmpty(),
     createdAt = Instant.parse(created_at),
 )
