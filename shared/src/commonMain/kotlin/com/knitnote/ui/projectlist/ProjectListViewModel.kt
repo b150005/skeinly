@@ -6,6 +6,7 @@ import com.knitnote.domain.model.Project
 import com.knitnote.domain.usecase.CreateProjectUseCase
 import com.knitnote.domain.usecase.DeleteProjectUseCase
 import com.knitnote.domain.usecase.GetProjectsUseCase
+import com.knitnote.domain.usecase.SignOutUseCase
 import com.knitnote.domain.usecase.UseCaseResult
 import com.knitnote.domain.usecase.toMessage
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +31,7 @@ sealed interface ProjectListEvent {
     data object ShowCreateDialog : ProjectListEvent
     data object DismissCreateDialog : ProjectListEvent
     data object ClearError : ProjectListEvent
+    data object SignOut : ProjectListEvent
 }
 
 private data class UiFlags(
@@ -41,6 +43,7 @@ class ProjectListViewModel(
     private val getProjects: GetProjectsUseCase,
     private val createProject: CreateProjectUseCase,
     private val deleteProject: DeleteProjectUseCase,
+    private val signOut: SignOutUseCase,
 ) : ViewModel() {
 
     private val uiFlags = MutableStateFlow(UiFlags())
@@ -97,6 +100,16 @@ class ProjectListViewModel(
             }
             ProjectListEvent.ClearError -> {
                 uiFlags.update { it.copy(error = null) }
+            }
+            ProjectListEvent.SignOut -> {
+                viewModelScope.launch {
+                    when (val result = signOut()) {
+                        is UseCaseResult.Success -> { /* NavGraph observes AuthState.Unauthenticated */ }
+                        is UseCaseResult.Failure -> {
+                            uiFlags.update { it.copy(error = result.error.toMessage()) }
+                        }
+                    }
+                }
             }
         }
     }

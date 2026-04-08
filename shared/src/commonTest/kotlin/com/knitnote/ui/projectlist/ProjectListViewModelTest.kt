@@ -1,11 +1,13 @@
 package com.knitnote.ui.projectlist
 
 import app.cash.turbine.test
+import com.knitnote.domain.model.AuthState
 import com.knitnote.domain.usecase.CreateProjectUseCase
 import com.knitnote.domain.usecase.DeleteProjectUseCase
 import com.knitnote.domain.usecase.FakeAuthRepository
 import com.knitnote.domain.usecase.FakeProjectRepository
 import com.knitnote.domain.usecase.GetProjectsUseCase
+import com.knitnote.domain.usecase.SignOutUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -17,6 +19,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -31,10 +34,12 @@ class ProjectListViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         repository = FakeProjectRepository()
+        fakeAuth.setAuthState(AuthState.Authenticated("user-1", "test@example.com"))
         viewModel = ProjectListViewModel(
             getProjects = GetProjectsUseCase(repository, fakeAuth),
             createProject = CreateProjectUseCase(repository, fakeAuth),
             deleteProject = DeleteProjectUseCase(repository),
+            signOut = SignOutUseCase(fakeAuth),
         )
     }
 
@@ -80,6 +85,34 @@ class ProjectListViewModelTest {
 
             val state = awaitItem()
             assertTrue(state.projects.isEmpty())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `sign out clears auth state`() = runTest(testDispatcher) {
+        viewModel.state.test {
+            awaitItem() // initial
+
+            viewModel.onEvent(ProjectListEvent.SignOut)
+
+            // Auth state should be cleared (NavGraph handles navigation)
+            assertNull(fakeAuth.getCurrentUserId())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `sign out failure shows error`() = runTest(testDispatcher) {
+        fakeAuth.signOutError = RuntimeException("Network error")
+
+        viewModel.state.test {
+            awaitItem() // initial
+
+            viewModel.onEvent(ProjectListEvent.SignOut)
+
+            val state = awaitItem()
+            assertEquals("Network error", state.error)
             cancelAndIgnoreRemainingEvents()
         }
     }
