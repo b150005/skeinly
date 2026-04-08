@@ -1,0 +1,24 @@
+CREATE TABLE ProgressEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    row_number INTEGER NOT NULL,
+    photo_url TEXT,
+    note TEXT,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (project_id) REFERENCES ProjectEntity(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_progress_project_id ON ProgressEntity(project_id);
+
+getById:
+SELECT * FROM ProgressEntity WHERE id = ?;
+
+getByProjectId:
+SELECT * FROM ProgressEntity WHERE project_id = ? ORDER BY created_at DESC;
+
+insert:
+INSERT INTO ProgressEntity(id, project_id, row_number, photo_url, note, created_at)
+VALUES (?, ?, ?, ?, ?, ?);
+
+deleteById:
+DELETE FROM ProgressEntity WHERE id = ?;
