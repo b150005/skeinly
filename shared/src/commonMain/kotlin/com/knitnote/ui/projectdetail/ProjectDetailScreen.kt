@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -66,11 +67,27 @@ fun ProjectDetailScreen(
     val progressNotes by viewModel.progressNotes.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showAddNoteDialog by rememberSaveable { mutableStateOf(false) }
+    var showEditDialog by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(error) {
         error?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(ProjectDetailEvent.ClearError)
+        }
+    }
+
+    if (showEditDialog) {
+        val project = state.project
+        if (project != null) {
+            EditProjectDialog(
+                currentTitle = project.title,
+                currentTotalRows = project.totalRows,
+                onDismiss = { showEditDialog = false },
+                onConfirm = { title, totalRows ->
+                    viewModel.onEvent(ProjectDetailEvent.EditProject(title, totalRows))
+                    showEditDialog = false
+                },
+            )
         }
     }
 
@@ -91,6 +108,13 @@ fun ProjectDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (state.project != null) {
+                        IconButton(onClick = { showEditDialog = true }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit project")
+                        }
                     }
                 },
             )
@@ -344,6 +368,58 @@ private fun AddNoteDialog(
                 enabled = noteText.isNotBlank(),
             ) {
                 Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+    )
+}
+
+@Composable
+private fun EditProjectDialog(
+    currentTitle: String,
+    currentTotalRows: Int?,
+    onDismiss: () -> Unit,
+    onConfirm: (title: String, totalRows: Int?) -> Unit,
+) {
+    var title by remember(currentTitle) { mutableStateOf(currentTitle) }
+    var totalRowsText by remember(currentTotalRows) {
+        mutableStateOf(currentTotalRows?.toString() ?: "")
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Project") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Title") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = totalRowsText,
+                    onValueChange = { totalRowsText = it.filter { c -> c.isDigit() } },
+                    label = { Text("Total Rows (optional)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val totalRows = totalRowsText.toIntOrNull()
+                    onConfirm(title, totalRows)
+                },
+                enabled = title.isNotBlank(),
+            ) {
+                Text("Save")
             }
         },
         dismissButton = {
