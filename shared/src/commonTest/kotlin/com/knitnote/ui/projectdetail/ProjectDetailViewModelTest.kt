@@ -11,6 +11,7 @@ import com.knitnote.domain.usecase.FakeProgressRepository
 import com.knitnote.domain.usecase.FakeProjectRepository
 import com.knitnote.domain.usecase.GetProgressNotesUseCase
 import com.knitnote.domain.usecase.IncrementRowUseCase
+import com.knitnote.domain.usecase.UpdateProjectUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -56,6 +57,7 @@ class ProjectDetailViewModelTest {
         startedAt = null,
         completedAt = null,
         createdAt = Clock.System.now(),
+        updatedAt = Clock.System.now(),
     )
 
     private fun createViewModel(): ProjectDetailViewModel =
@@ -67,6 +69,7 @@ class ProjectDetailViewModelTest {
             addProgressNote = AddProgressNoteUseCase(progressRepository),
             getProgressNotes = GetProgressNotesUseCase(progressRepository),
             deleteProgressNote = DeleteProgressNoteUseCase(progressRepository),
+            updateProject = UpdateProjectUseCase(projectRepository),
         )
 
     @Test
@@ -230,6 +233,59 @@ class ProjectDetailViewModelTest {
             val notes = awaitItem()
             assertEquals(2, notes.size)
 
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    // --- Edit Project tests ---
+
+    @Test
+    fun `edit project updates title`() = runTest(testDispatcher) {
+        projectRepository.create(createTestProject())
+        val viewModel = createViewModel()
+
+        viewModel.state.test {
+            awaitItem() // initial loaded state
+
+            viewModel.onEvent(ProjectDetailEvent.EditProject(title = "Updated Title", totalRows = 100))
+
+            val updated = awaitItem()
+            assertEquals("Updated Title", updated.project?.title)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `edit project updates totalRows`() = runTest(testDispatcher) {
+        projectRepository.create(createTestProject())
+        val viewModel = createViewModel()
+
+        viewModel.state.test {
+            awaitItem() // initial loaded state
+
+            viewModel.onEvent(ProjectDetailEvent.EditProject(title = "Test Scarf", totalRows = 200))
+
+            val updated = awaitItem()
+            assertEquals(200, updated.project?.totalRows)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `edit project with blank title sets error`() = runTest(testDispatcher) {
+        projectRepository.create(createTestProject())
+        val viewModel = createViewModel()
+
+        viewModel.state.test {
+            awaitItem() // initial loaded state
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        viewModel.onEvent(ProjectDetailEvent.EditProject(title = "", totalRows = 100))
+
+        viewModel.error.test {
+            val err = awaitItem()
+            assertNotNull(err)
             cancelAndIgnoreRemainingEvents()
         }
     }

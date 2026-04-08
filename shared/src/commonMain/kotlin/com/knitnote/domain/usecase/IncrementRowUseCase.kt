@@ -7,10 +7,11 @@ import kotlinx.datetime.Clock
 
 class IncrementRowUseCase(private val repository: ProjectRepository) {
 
-    suspend operator fun invoke(projectId: String): Project {
-        val project = requireNotNull(repository.getById(projectId)) {
-            "Project not found: $projectId"
-        }
+    suspend operator fun invoke(projectId: String): UseCaseResult<Project> {
+        val project = repository.getById(projectId)
+            ?: return UseCaseResult.Failure(UseCaseError.NotFound("Project not found: $projectId"))
+
+        val now = Clock.System.now()
         val incremented = project.copy(
             currentRow = project.currentRow + 1,
             status = if (project.status == ProjectStatus.NOT_STARTED) {
@@ -18,16 +19,17 @@ class IncrementRowUseCase(private val repository: ProjectRepository) {
             } else {
                 project.status
             },
-            startedAt = project.startedAt ?: Clock.System.now(),
+            startedAt = project.startedAt ?: now,
+            updatedAt = now,
         )
         val result = if (incremented.totalRows != null && incremented.currentRow >= incremented.totalRows) {
             incremented.copy(
                 status = ProjectStatus.COMPLETED,
-                completedAt = Clock.System.now(),
+                completedAt = now,
             )
         } else {
             incremented
         }
-        return repository.update(result)
+        return UseCaseResult.Success(repository.update(result))
     }
 }

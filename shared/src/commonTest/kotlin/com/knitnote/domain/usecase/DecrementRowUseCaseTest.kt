@@ -8,7 +8,9 @@ import kotlinx.datetime.Clock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class DecrementRowUseCaseTest {
 
@@ -37,36 +39,37 @@ class DecrementRowUseCaseTest {
         startedAt = Clock.System.now(),
         completedAt = null,
         createdAt = Clock.System.now(),
+        updatedAt = Clock.System.now(),
     )
 
     @Test
     fun `decrement from 0 does nothing`() = runTest {
         repository.create(createProject(currentRow = 0, status = ProjectStatus.NOT_STARTED))
 
-        val result = useCase("test-project")
+        val result = assertIs<UseCaseResult.Success<Project>>(useCase("test-project"))
 
-        assertEquals(0, result.currentRow)
-        assertEquals(ProjectStatus.NOT_STARTED, result.status)
+        assertEquals(0, result.value.currentRow)
+        assertEquals(ProjectStatus.NOT_STARTED, result.value.status)
     }
 
     @Test
     fun `decrement reduces current row by 1`() = runTest {
         repository.create(createProject(currentRow = 5))
 
-        val result = useCase("test-project")
+        val result = assertIs<UseCaseResult.Success<Project>>(useCase("test-project"))
 
-        assertEquals(4, result.currentRow)
+        assertEquals(4, result.value.currentRow)
     }
 
     @Test
     fun `decrement from 1 to 0 sets NOT_STARTED and clears startedAt`() = runTest {
         repository.create(createProject(currentRow = 1))
 
-        val result = useCase("test-project")
+        val result = assertIs<UseCaseResult.Success<Project>>(useCase("test-project"))
 
-        assertEquals(0, result.currentRow)
-        assertEquals(ProjectStatus.NOT_STARTED, result.status)
-        assertNull(result.startedAt)
+        assertEquals(0, result.value.currentRow)
+        assertEquals(ProjectStatus.NOT_STARTED, result.value.status)
+        assertNull(result.value.startedAt)
     }
 
     @Test
@@ -78,10 +81,28 @@ class DecrementRowUseCaseTest {
         ).copy(completedAt = Clock.System.now())
         repository.create(project)
 
-        val result = useCase("test-project")
+        val result = assertIs<UseCaseResult.Success<Project>>(useCase("test-project"))
 
-        assertEquals(99, result.currentRow)
-        assertEquals(ProjectStatus.IN_PROGRESS, result.status)
-        assertNull(result.completedAt)
+        assertEquals(99, result.value.currentRow)
+        assertEquals(ProjectStatus.IN_PROGRESS, result.value.status)
+        assertNull(result.value.completedAt)
+    }
+
+    @Test
+    fun `decrement updates updatedAt`() = runTest {
+        repository.create(createProject(currentRow = 5))
+        val before = Clock.System.now()
+
+        val result = assertIs<UseCaseResult.Success<Project>>(useCase("test-project"))
+
+        assertTrue(result.value.updatedAt >= before)
+    }
+
+    @Test
+    fun `decrement returns NotFound for missing project`() = runTest {
+        val result = useCase("non-existent")
+
+        assertIs<UseCaseResult.Failure>(result)
+        assertIs<UseCaseError.NotFound>(result.error)
     }
 }

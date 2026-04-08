@@ -6,6 +6,8 @@ import com.knitnote.domain.model.Project
 import com.knitnote.domain.usecase.CreateProjectUseCase
 import com.knitnote.domain.usecase.DeleteProjectUseCase
 import com.knitnote.domain.usecase.GetProjectsUseCase
+import com.knitnote.domain.usecase.UseCaseResult
+import com.knitnote.domain.usecase.toMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,21 +54,24 @@ class ProjectListViewModel(
         when (event) {
             is ProjectListEvent.CreateProject -> {
                 viewModelScope.launch {
-                    runCatching { createProject(event.title, event.totalRows) }
-                        .onFailure { e ->
-                            _state.update { it.copy(error = e.message) }
-                        }
-                        .onSuccess {
+                    when (val result = createProject(event.title, event.totalRows)) {
+                        is UseCaseResult.Success -> {
                             _state.update { it.copy(showCreateDialog = false) }
                         }
+                        is UseCaseResult.Failure -> {
+                            _state.update { it.copy(error = result.error.toMessage()) }
+                        }
+                    }
                 }
             }
             is ProjectListEvent.DeleteProject -> {
                 viewModelScope.launch {
-                    runCatching { deleteProject(event.id) }
-                        .onFailure { e ->
-                            _state.update { it.copy(error = e.message) }
+                    when (val result = deleteProject(event.id)) {
+                        is UseCaseResult.Success -> { /* list updates via Flow */ }
+                        is UseCaseResult.Failure -> {
+                            _state.update { it.copy(error = result.error.toMessage()) }
                         }
+                    }
                 }
             }
             ProjectListEvent.ShowCreateDialog -> {

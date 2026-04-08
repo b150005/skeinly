@@ -10,6 +10,9 @@ import com.knitnote.domain.usecase.DecrementRowUseCase
 import com.knitnote.domain.usecase.DeleteProgressNoteUseCase
 import com.knitnote.domain.usecase.GetProgressNotesUseCase
 import com.knitnote.domain.usecase.IncrementRowUseCase
+import com.knitnote.domain.usecase.UpdateProjectUseCase
+import com.knitnote.domain.usecase.UseCaseResult
+import com.knitnote.domain.usecase.toMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +36,7 @@ sealed interface ProjectDetailEvent {
     data object ClearError : ProjectDetailEvent
     data class AddNote(val note: String) : ProjectDetailEvent
     data class DeleteNote(val progressId: String) : ProjectDetailEvent
+    data class EditProject(val title: String, val totalRows: Int?) : ProjectDetailEvent
 }
 
 class ProjectDetailViewModel(
@@ -43,6 +47,7 @@ class ProjectDetailViewModel(
     private val addProgressNote: AddProgressNoteUseCase,
     private val getProgressNotes: GetProgressNotesUseCase,
     private val deleteProgressNote: DeleteProgressNoteUseCase,
+    private val updateProject: UpdateProjectUseCase,
 ) : ViewModel() {
 
     private val counterMutex = Mutex()
@@ -80,16 +85,20 @@ class ProjectDetailViewModel(
             ProjectDetailEvent.IncrementRow -> {
                 viewModelScope.launch {
                     counterMutex.withLock {
-                        runCatching { incrementRow(projectId) }
-                            .onFailure { e -> _error.value = e.message ?: "Failed to increment" }
+                        when (val result = incrementRow(projectId)) {
+                            is UseCaseResult.Success -> { /* state updates via Flow */ }
+                            is UseCaseResult.Failure -> _error.value = result.error.toMessage()
+                        }
                     }
                 }
             }
             ProjectDetailEvent.DecrementRow -> {
                 viewModelScope.launch {
                     counterMutex.withLock {
-                        runCatching { decrementRow(projectId) }
-                            .onFailure { e -> _error.value = e.message ?: "Failed to decrement" }
+                        when (val result = decrementRow(projectId)) {
+                            is UseCaseResult.Success -> { /* state updates via Flow */ }
+                            is UseCaseResult.Failure -> _error.value = result.error.toMessage()
+                        }
                     }
                 }
             }
@@ -99,14 +108,26 @@ class ProjectDetailViewModel(
             is ProjectDetailEvent.AddNote -> {
                 val currentRow = state.value.project?.currentRow ?: 0
                 viewModelScope.launch {
-                    runCatching { addProgressNote(projectId, currentRow, event.note) }
-                        .onFailure { e -> _error.value = e.message ?: "Failed to add note" }
+                    when (val result = addProgressNote(projectId, currentRow, event.note)) {
+                        is UseCaseResult.Success -> { /* notes update via Flow */ }
+                        is UseCaseResult.Failure -> _error.value = result.error.toMessage()
+                    }
                 }
             }
             is ProjectDetailEvent.DeleteNote -> {
                 viewModelScope.launch {
-                    runCatching { deleteProgressNote(event.progressId) }
-                        .onFailure { e -> _error.value = e.message ?: "Failed to delete note" }
+                    when (val result = deleteProgressNote(event.progressId)) {
+                        is UseCaseResult.Success -> { /* notes update via Flow */ }
+                        is UseCaseResult.Failure -> _error.value = result.error.toMessage()
+                    }
+                }
+            }
+            is ProjectDetailEvent.EditProject -> {
+                viewModelScope.launch {
+                    when (val result = updateProject(projectId, event.title, event.totalRows)) {
+                        is UseCaseResult.Success -> { /* state updates via Flow */ }
+                        is UseCaseResult.Failure -> _error.value = result.error.toMessage()
+                    }
                 }
             }
         }

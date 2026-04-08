@@ -11,7 +11,11 @@ import kotlin.uuid.Uuid
 class CreateProjectUseCase(private val repository: ProjectRepository) {
 
     @OptIn(ExperimentalUuidApi::class)
-    suspend operator fun invoke(title: String, totalRows: Int?): Project {
+    suspend operator fun invoke(title: String, totalRows: Int?): UseCaseResult<Project> {
+        if (title.isBlank()) {
+            return UseCaseResult.Failure(UseCaseError.Validation("Title must not be blank"))
+        }
+        val now = Clock.System.now()
         val project = Project(
             id = Uuid.random().toString(),
             ownerId = LocalUser.ID,
@@ -22,8 +26,9 @@ class CreateProjectUseCase(private val repository: ProjectRepository) {
             totalRows = totalRows,
             startedAt = null,
             completedAt = null,
-            createdAt = Clock.System.now(),
+            createdAt = now,
+            updatedAt = now,
         )
-        return repository.create(project)
+        return UseCaseResult.Success(repository.create(project))
     }
 }
