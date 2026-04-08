@@ -103,6 +103,7 @@ Agents detect this project as **Kotlin Multiplatform** by finding:
 7. **Documentation**: The technical-writer updates docs and changelog
 8. **Release**: The devops-engineer manages deployment and release
 9. **Commit**: Conventional commits format (feat, fix, refactor, docs, test, chore, perf, ci)
+10. **Next Step Planning**: At each task boundary (phase completion, milestone), convene the agent team (architect, product-manager, implementer, etc.) to discuss and agree on the next priority. Output the result as Next Session Instructions for handoff.
 
 ## Testing Requirements
 
@@ -161,9 +162,9 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 - **Phase 2a**: Technical Debt — `updated_at` column on ProjectEntity (ADR-003 prerequisite)
 - **Phase 2b**: Result Pattern — Unify UseCase error handling with `UseCaseResult<T>` (92 tests)
 - **Phase 2c**: Project Edit — Update title/totalRows from detail screen (103 tests)
+- **Phase 3a**: UX Polish — ViewModel stateIn unification, error channel consolidation, date formatting, Progress.note non-null (103 tests)
 
 ### Planned
-- **Phase 3a**: Project Edit UX polish + status transitions
 - **Phase 3b**: Supabase Foundation — Auth, remote data sources, SyncManager
 - **Phase 4a**: iOS SwiftUI UI (feature parity with Android)
 - **Phase 4b**: Sharing — Share entity, fork, deep links
