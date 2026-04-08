@@ -2,7 +2,7 @@ package com.knitnote.domain.usecase
 
 import com.knitnote.domain.model.Progress
 import com.knitnote.domain.repository.ProgressRepository
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 

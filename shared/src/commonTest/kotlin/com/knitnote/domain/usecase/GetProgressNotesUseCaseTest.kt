@@ -3,7 +3,7 @@ package com.knitnote.domain.usecase
 import app.cash.turbine.test
 import com.knitnote.domain.model.Progress
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

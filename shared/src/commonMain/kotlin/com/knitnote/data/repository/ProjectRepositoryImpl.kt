@@ -75,7 +75,7 @@ class ProjectRepositoryImpl(
         project
     }
 
-    override suspend fun delete(id: String) = withContext(Dispatchers.IO) {
+    override suspend fun delete(id: String): Unit = withContext(Dispatchers.IO) {
         queries.deleteById(id)
     }
 }

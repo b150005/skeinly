@@ -3,7 +3,7 @@ package com.knitnote.domain.usecase
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
 import com.knitnote.domain.repository.ProjectRepository
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 class CompleteProjectUseCase(private val repository: ProjectRepository) {
 
