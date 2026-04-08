@@ -1,0 +1,32 @@
+package com.knitnote.data.mapper
+
+import com.knitnote.db.ProjectEntity
+import com.knitnote.domain.model.Project
+import com.knitnote.domain.model.ProjectStatus
+import kotlinx.datetime.Instant
+
+fun ProjectEntity.toDomain(): Project = Project(
+    id = id,
+    ownerId = owner_id,
+    patternId = pattern_id,
+    title = title,
+    status = status.toProjectStatus(),
+    currentRow = current_row.toInt(),
+    totalRows = total_rows?.toInt(),
+    startedAt = started_at?.let { Instant.parse(it) },
+    completedAt = completed_at?.let { Instant.parse(it) },
+    createdAt = Instant.parse(created_at),
+)
+
+private fun String.toProjectStatus(): ProjectStatus = when (this) {
+    "not_started" -> ProjectStatus.NOT_STARTED
+    "in_progress" -> ProjectStatus.IN_PROGRESS
+    "completed" -> ProjectStatus.COMPLETED
+    else -> throw IllegalStateException("Unknown ProjectStatus in database: '$this'")
+}
+
+fun ProjectStatus.toDbString(): String = when (this) {
+    ProjectStatus.NOT_STARTED -> "not_started"
+    ProjectStatus.IN_PROGRESS -> "in_progress"
+    ProjectStatus.COMPLETED -> "completed"
+}
