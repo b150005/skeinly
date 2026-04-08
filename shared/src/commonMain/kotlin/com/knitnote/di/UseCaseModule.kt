@@ -9,6 +9,7 @@ import com.knitnote.domain.usecase.GetProgressNotesUseCase
 import com.knitnote.domain.usecase.GetProjectByIdUseCase
 import com.knitnote.domain.usecase.GetProjectsUseCase
 import com.knitnote.domain.usecase.IncrementRowUseCase
+import com.knitnote.domain.usecase.UpdateProjectUseCase
 import org.koin.dsl.module
 
 val useCaseModule = module {
@@ -21,4 +22,5 @@ val useCaseModule = module {
     factory { AddProgressNoteUseCase(get()) }
     factory { GetProgressNotesUseCase(get()) }
     factory { DeleteProgressNoteUseCase(get()) }
+    factory { UpdateProjectUseCase(get()) }
 }
