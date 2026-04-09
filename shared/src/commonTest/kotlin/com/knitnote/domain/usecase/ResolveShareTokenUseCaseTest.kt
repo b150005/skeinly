@@ -41,6 +41,17 @@ class ResolveShareTokenUseCaseTest {
         sharedAt = Instant.fromEpochMilliseconds(3000),
     )
 
+    private val directShare = Share(
+        id = "s-direct",
+        patternId = "pat-1",
+        fromUserId = "user-1",
+        toUserId = "recipient-id",
+        permission = SharePermission.FORK,
+        status = ShareStatus.PENDING,
+        shareToken = null,
+        sharedAt = Instant.fromEpochMilliseconds(3000),
+    )
+
     private val testProject = Project(
         id = "p-1",
         ownerId = "user-1",
@@ -58,14 +69,22 @@ class ResolveShareTokenUseCaseTest {
     @Test
     fun `returns failure when share repository is null`() = runTest {
         val useCase = ResolveShareTokenUseCase(null, FakePatternRepository(), FakeProjectRepository())
-        val result = useCase("token-abc")
+        val result = useCase(token = "token-abc")
         assertIs<UseCaseResult.Failure>(result)
+    }
+
+    @Test
+    fun `returns failure when neither token nor shareId provided`() = runTest {
+        val useCase = ResolveShareTokenUseCase(FakeShareRepository(), FakePatternRepository(), FakeProjectRepository())
+        val result = useCase()
+        assertIs<UseCaseResult.Failure>(result)
+        assertIs<UseCaseError.Validation>(result.error)
     }
 
     @Test
     fun `returns failure for blank token`() = runTest {
         val useCase = ResolveShareTokenUseCase(FakeShareRepository(), FakePatternRepository(), FakeProjectRepository())
-        val result = useCase("  ")
+        val result = useCase(token = "  ")
         assertIs<UseCaseResult.Failure>(result)
         assertIs<UseCaseError.Validation>(result.error)
     }
@@ -73,7 +92,7 @@ class ResolveShareTokenUseCaseTest {
     @Test
     fun `returns failure when token not found`() = runTest {
         val useCase = ResolveShareTokenUseCase(FakeShareRepository(), FakePatternRepository(), FakeProjectRepository())
-        val result = useCase("non-existent-token")
+        val result = useCase(token = "non-existent-token")
         assertIs<UseCaseResult.Failure>(result)
         assertIs<UseCaseError.NotFound>(result.error)
     }
@@ -84,7 +103,7 @@ class ResolveShareTokenUseCaseTest {
         shareRepo.addShare(testShare)
         val useCase = ResolveShareTokenUseCase(shareRepo, FakePatternRepository(), FakeProjectRepository())
 
-        val result = useCase("token-abc")
+        val result = useCase(token = "token-abc")
         assertIs<UseCaseResult.Failure>(result)
         assertIs<UseCaseError.NotFound>(result.error)
     }
@@ -99,7 +118,7 @@ class ResolveShareTokenUseCaseTest {
         projectRepo.create(testProject)
         val useCase = ResolveShareTokenUseCase(shareRepo, patternRepo, projectRepo)
 
-        val result = useCase("token-abc")
+        val result = useCase(token = "token-abc")
 
         assertIs<UseCaseResult.Success<SharedContent>>(result)
         assertEquals("pat-1", result.value.pattern.id)
@@ -116,9 +135,35 @@ class ResolveShareTokenUseCaseTest {
         patternRepo.create(testPattern)
         val useCase = ResolveShareTokenUseCase(shareRepo, patternRepo, FakeProjectRepository())
 
-        val result = useCase("token-abc")
+        val result = useCase(token = "token-abc")
 
         assertIs<UseCaseResult.Success<SharedContent>>(result)
         assertEquals(0, result.value.projects.size)
+    }
+
+    @Test
+    fun `resolves shareId to pattern and projects`() = runTest {
+        val shareRepo = FakeShareRepository()
+        shareRepo.addShare(directShare)
+        val patternRepo = FakePatternRepository()
+        patternRepo.create(testPattern)
+        val projectRepo = FakeProjectRepository()
+        projectRepo.create(testProject)
+        val useCase = ResolveShareTokenUseCase(shareRepo, patternRepo, projectRepo)
+
+        val result = useCase(shareId = "s-direct")
+
+        assertIs<UseCaseResult.Success<SharedContent>>(result)
+        assertEquals("pat-1", result.value.pattern.id)
+        assertEquals(SharePermission.FORK, result.value.share.permission)
+        assertEquals("recipient-id", result.value.share.toUserId)
+    }
+
+    @Test
+    fun `returns failure when shareId not found`() = runTest {
+        val useCase = ResolveShareTokenUseCase(FakeShareRepository(), FakePatternRepository(), FakeProjectRepository())
+        val result = useCase(shareId = "non-existent")
+        assertIs<UseCaseResult.Failure>(result)
+        assertIs<UseCaseError.NotFound>(result.error)
     }
 }

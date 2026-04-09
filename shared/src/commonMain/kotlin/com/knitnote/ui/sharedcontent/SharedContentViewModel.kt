@@ -31,7 +31,8 @@ sealed interface SharedContentEvent {
 }
 
 class SharedContentViewModel(
-    private val token: String,
+    private val token: String? = null,
+    private val shareId: String? = null,
     private val resolveShareToken: ResolveShareTokenUseCase,
     private val forkSharedPattern: ForkSharedPatternUseCase,
 ) : ViewModel() {
@@ -40,7 +41,7 @@ class SharedContentViewModel(
     val state: StateFlow<SharedContentState> = _state.asStateFlow()
 
     init {
-        resolveToken()
+        resolveContent()
     }
 
     fun onEvent(event: SharedContentEvent) {
@@ -50,11 +51,11 @@ class SharedContentViewModel(
         }
     }
 
-    private fun resolveToken() {
+    private fun resolveContent() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
-            when (val result = resolveShareToken(token)) {
+            when (val result = resolveShareToken(token = token, shareId = shareId)) {
                 is UseCaseResult.Success -> {
                     _state.update {
                         it.copy(

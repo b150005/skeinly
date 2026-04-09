@@ -27,10 +27,11 @@ val viewModelModule = module {
             shareProject = get(),
         )
     }
-    viewModel { SharedWithMeViewModel(get(), get()) }
+    viewModel { SharedWithMeViewModel(get(), get(), get()) }
     viewModel { params ->
         SharedContentViewModel(
-            token = params.get(),
+            token = params.get<String?>(0),
+            shareId = params.get<String?>(1),
             resolveShareToken = get(),
             forkSharedPattern = get(),
         )

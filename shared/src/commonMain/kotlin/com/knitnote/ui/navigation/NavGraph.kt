@@ -36,7 +36,7 @@ data class ProjectDetail(val projectId: String)
 data object SharedWithMe
 
 @Serializable
-data class SharedContent(val token: String)
+data class SharedContent(val token: String? = null, val shareId: String? = null)
 
 @Composable
 fun KnitNoteNavHost(
@@ -107,6 +107,9 @@ fun KnitNoteNavHost(
         composable<SharedWithMe> {
             SharedWithMeScreen(
                 onBack = { navController.popBackStack() },
+                onShareClick = { shareId ->
+                    navController.navigate(SharedContent(shareId = shareId))
+                },
             )
         }
         composable<ProjectDetail> { backStackEntry ->
@@ -120,6 +123,7 @@ fun KnitNoteNavHost(
             val route = backStackEntry.toRoute<SharedContent>()
             SharedContentScreen(
                 token = route.token,
+                shareId = route.shareId,
                 onBack = { navController.popBackStack() },
                 onForked = { projectId ->
                     navController.navigate(ProjectDetail(projectId = projectId)) {

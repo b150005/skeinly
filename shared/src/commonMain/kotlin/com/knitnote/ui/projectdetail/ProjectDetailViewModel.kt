@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.knitnote.domain.model.Progress
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ShareLink
+import com.knitnote.domain.model.SharePermission
 import com.knitnote.domain.repository.ProjectRepository
 import com.knitnote.domain.usecase.AddProgressNoteUseCase
 import com.knitnote.domain.usecase.CompleteProjectUseCase
@@ -44,6 +45,11 @@ sealed interface ProjectDetailEvent {
     data object ReopenProject : ProjectDetailEvent
     data object ShareProject : ProjectDetailEvent
     data object DismissShareDialog : ProjectDetailEvent
+    data class ShareWithUser(
+        val userId: String,
+        val permission: SharePermission,
+    ) : ProjectDetailEvent
+    data object DismissShareResult : ProjectDetailEvent
 }
 
 class ProjectDetailViewModel(
@@ -66,6 +72,9 @@ class ProjectDetailViewModel(
 
     private val _shareLink = MutableStateFlow<ShareLink?>(null)
     val shareLink: StateFlow<ShareLink?> = _shareLink.asStateFlow()
+
+    private val _directShareSuccess = MutableStateFlow(false)
+    val directShareSuccess: StateFlow<Boolean> = _directShareSuccess.asStateFlow()
 
     val state: StateFlow<ProjectDetailState> =
         projectRepository.observeById(projectId)
@@ -170,6 +179,21 @@ class ProjectDetailViewModel(
             }
             ProjectDetailEvent.DismissShareDialog -> {
                 _shareLink.value = null
+            }
+            is ProjectDetailEvent.ShareWithUser -> {
+                viewModelScope.launch {
+                    when (val result = shareProject(
+                        projectId = projectId,
+                        toUserId = event.userId,
+                        permission = event.permission,
+                    )) {
+                        is UseCaseResult.Success -> _directShareSuccess.value = true
+                        is UseCaseResult.Failure -> _error.value = result.error.toMessage()
+                    }
+                }
+            }
+            ProjectDetailEvent.DismissShareResult -> {
+                _directShareSuccess.value = false
             }
         }
     }

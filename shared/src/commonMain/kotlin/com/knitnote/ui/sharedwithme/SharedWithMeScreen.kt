@@ -1,13 +1,17 @@
 package com.knitnote.ui.sharedwithme
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -15,6 +19,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -27,7 +32,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.knitnote.domain.model.Share
+import com.knitnote.domain.model.ShareStatus
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
@@ -36,6 +43,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun SharedWithMeScreen(
     onBack: () -> Unit,
+    onShareClick: (shareId: String) -> Unit = {},
     viewModel: SharedWithMeViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -90,6 +98,13 @@ fun SharedWithMeScreen(
                             ShareListItem(
                                 share = share,
                                 patternTitle = state.patternTitles[share.patternId],
+                                onClick = { onShareClick(share.id) },
+                                onAccept = {
+                                    viewModel.onEvent(SharedWithMeEvent.AcceptShare(share.id))
+                                },
+                                onDecline = {
+                                    viewModel.onEvent(SharedWithMeEvent.DeclineShare(share.id))
+                                },
                             )
                             HorizontalDivider()
                         }
@@ -104,11 +119,21 @@ fun SharedWithMeScreen(
 private fun ShareListItem(
     share: Share,
     patternTitle: String?,
+    onClick: () -> Unit,
+    onAccept: () -> Unit,
+    onDecline: () -> Unit,
 ) {
     val dateTime = share.sharedAt.toLocalDateTime(TimeZone.currentSystemDefault())
     val dateText = "${dateTime.year}/${dateTime.monthNumber}/${dateTime.dayOfMonth}"
 
+    val statusText = when (share.status) {
+        ShareStatus.PENDING -> " | Pending"
+        ShareStatus.ACCEPTED -> ""
+        ShareStatus.DECLINED -> " | Declined"
+    }
+
     ListItem(
+        modifier = Modifier.clickable(onClick = onClick),
         headlineContent = {
             Text(
                 text = patternTitle ?: "Unknown Pattern",
@@ -116,10 +141,29 @@ private fun ShareListItem(
             )
         },
         supportingContent = {
-            Text(
-                text = "Shared on $dateText | ${share.permission.name}",
-                style = MaterialTheme.typography.bodySmall,
-            )
+            Column {
+                Text(
+                    text = "Shared on $dateText | ${share.permission.name}$statusText",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                if (share.status == ShareStatus.PENDING) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(top = 4.dp),
+                    ) {
+                        Button(
+                            onClick = onAccept,
+                        ) {
+                            Text("Accept")
+                        }
+                        OutlinedButton(
+                            onClick = onDecline,
+                        ) {
+                            Text("Decline")
+                        }
+                    }
+                }
+            }
         },
     )
 }

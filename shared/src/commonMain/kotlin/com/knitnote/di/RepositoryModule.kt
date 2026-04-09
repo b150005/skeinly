@@ -8,16 +8,19 @@ import com.knitnote.data.remote.RemotePatternDataSource
 import com.knitnote.data.remote.RemoteProgressDataSource
 import com.knitnote.data.remote.RemoteProjectDataSource
 import com.knitnote.data.remote.RemoteShareDataSource
+import com.knitnote.data.remote.RemoteUserDataSource
 import com.knitnote.data.repository.AuthRepositoryImpl
 import com.knitnote.data.repository.PatternRepositoryImpl
 import com.knitnote.data.repository.ProjectRepositoryImpl
 import com.knitnote.data.repository.ProgressRepositoryImpl
 import com.knitnote.data.repository.ShareRepositoryImpl
+import com.knitnote.data.repository.UserRepositoryImpl
 import com.knitnote.domain.repository.AuthRepository
 import com.knitnote.domain.repository.PatternRepository
 import com.knitnote.domain.repository.ProjectRepository
 import com.knitnote.domain.repository.ProgressRepository
 import com.knitnote.domain.repository.ShareRepository
+import com.knitnote.domain.repository.UserRepository
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,6 +48,9 @@ val repositoryModule = module {
     }
     single<RemoteShareDataSource?> {
         getOrNull<SupabaseClient>()?.let { RemoteShareDataSource(it) }
+    }
+    single<RemoteUserDataSource?> {
+        getOrNull<SupabaseClient>()?.let { RemoteUserDataSource(it) }
     }
 
     // Coordinator repositories
@@ -74,6 +80,10 @@ val repositoryModule = module {
             syncManager = get(),
             json = get(),
         )
+    }
+    // User profiles — remote-only (nullable: cloud-only)
+    single<UserRepository?> {
+        getOrNull<RemoteUserDataSource>()?.let { UserRepositoryImpl(it) }
     }
     // Share is remote-only — requires Supabase (nullable: use cases handle absence)
     single<ShareRepository?> {
