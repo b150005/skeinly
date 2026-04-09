@@ -12,7 +12,10 @@ import com.knitnote.domain.usecase.FakeProgressRepository
 import com.knitnote.domain.usecase.FakeProjectRepository
 import com.knitnote.domain.usecase.GetProgressNotesUseCase
 import com.knitnote.domain.usecase.IncrementRowUseCase
+import com.knitnote.domain.usecase.FakeAuthRepository
+import com.knitnote.domain.usecase.FakePatternRepository
 import com.knitnote.domain.usecase.ReopenProjectUseCase
+import com.knitnote.domain.usecase.ShareProjectUseCase
 import com.knitnote.domain.usecase.UpdateProjectUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -74,6 +77,12 @@ class ProjectDetailViewModelTest {
             updateProject = UpdateProjectUseCase(projectRepository),
             completeProject = CompleteProjectUseCase(projectRepository),
             reopenProject = ReopenProjectUseCase(projectRepository),
+            shareProject = ShareProjectUseCase(
+                projectRepository = projectRepository,
+                patternRepository = FakePatternRepository(),
+                shareRepository = null,
+                authRepository = FakeAuthRepository(),
+            ),
         )
 
     @Test

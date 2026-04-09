@@ -15,6 +15,7 @@ import com.knitnote.ui.auth.AuthViewModel
 import com.knitnote.ui.auth.LoginScreen
 import com.knitnote.ui.projectdetail.ProjectDetailScreen
 import com.knitnote.ui.projectlist.ProjectListScreen
+import com.knitnote.ui.sharedwithme.SharedWithMeScreen
 import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -26,6 +27,9 @@ data object ProjectList
 
 @Serializable
 data class ProjectDetail(val projectId: String)
+
+@Serializable
+data object SharedWithMe
 
 @Composable
 fun KnitNoteNavHost(navController: NavHostController) {
@@ -64,6 +68,14 @@ fun KnitNoteNavHost(navController: NavHostController) {
                 onProjectClick = { projectId ->
                     navController.navigate(ProjectDetail(projectId = projectId))
                 },
+                onSharedWithMeClick = {
+                    navController.navigate(SharedWithMe)
+                },
+            )
+        }
+        composable<SharedWithMe> {
+            SharedWithMeScreen(
+                onBack = { navController.popBackStack() },
             )
         }
         composable<ProjectDetail> { backStackEntry ->
