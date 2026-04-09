@@ -2,23 +2,26 @@ package com.knitnote.data.repository
 
 import com.knitnote.data.local.LocalProjectDataSource
 import com.knitnote.data.remote.RemoteProjectDataSource
+import com.knitnote.data.sync.SyncManagerOperations
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.repository.ProjectRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 class ProjectRepositoryImpl(
     private val local: LocalProjectDataSource,
     private val remote: RemoteProjectDataSource?,
     private val isOnline: StateFlow<Boolean>,
+    private val syncManager: SyncManagerOperations,
+    private val json: Json,
 ) : ProjectRepository {
 
     override suspend fun getById(id: String): Project? {
-        // Try local first
         val localProject = local.getById(id)
         if (localProject != null || remote == null || !isOnline.value) return localProject
 
-        // Refresh from remote
         return try {
             remote.getById(id)?.also { local.update(it) }
         } catch (_: Exception) {
@@ -48,42 +51,19 @@ class ProjectRepositoryImpl(
         local.observeByOwnerId(ownerId)
 
     override suspend fun create(project: Project): Project {
-        // Always write to local
         local.insert(project)
-
-        // If online and remote available, also write to remote
-        if (remote != null && isOnline.value) {
-            try {
-                remote.insert(project)
-            } catch (_: Exception) {
-                // MVP: silent fail for remote, data is in local
-            }
-        }
+        syncManager.syncOrEnqueue("project", project.id, "insert", json.encodeToString(project))
         return project
     }
 
     override suspend fun update(project: Project): Project {
         local.update(project)
-
-        if (remote != null && isOnline.value) {
-            try {
-                remote.update(project)
-            } catch (_: Exception) {
-                // MVP: silent fail
-            }
-        }
+        syncManager.syncOrEnqueue("project", project.id, "update", json.encodeToString(project))
         return project
     }
 
     override suspend fun delete(id: String) {
         local.delete(id)
-
-        if (remote != null && isOnline.value) {
-            try {
-                remote.delete(id)
-            } catch (_: Exception) {
-                // MVP: silent fail
-            }
-        }
+        syncManager.syncOrEnqueue("project", id, "delete", "")
     }
 }
