@@ -87,7 +87,10 @@ fun SharedWithMeScreen(
                 else -> {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
                         items(state.shares, key = { it.id }) { share ->
-                            ShareListItem(share = share)
+                            ShareListItem(
+                                share = share,
+                                patternTitle = state.patternTitles[share.patternId],
+                            )
                             HorizontalDivider()
                         }
                     }
@@ -98,14 +101,17 @@ fun SharedWithMeScreen(
 }
 
 @Composable
-private fun ShareListItem(share: Share) {
+private fun ShareListItem(
+    share: Share,
+    patternTitle: String?,
+) {
     val dateTime = share.sharedAt.toLocalDateTime(TimeZone.currentSystemDefault())
     val dateText = "${dateTime.year}/${dateTime.monthNumber}/${dateTime.dayOfMonth}"
 
     ListItem(
         headlineContent = {
             Text(
-                text = "Pattern: ${share.patternId.take(8)}...",
+                text = patternTitle ?: "Unknown Pattern",
                 style = MaterialTheme.typography.bodyLarge,
             )
         },

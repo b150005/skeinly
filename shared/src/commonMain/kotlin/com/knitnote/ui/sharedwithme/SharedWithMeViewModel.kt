@@ -3,6 +3,7 @@ package com.knitnote.ui.sharedwithme
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.knitnote.domain.model.Share
+import com.knitnote.domain.repository.PatternRepository
 import com.knitnote.domain.usecase.GetReceivedSharesUseCase
 import com.knitnote.domain.usecase.UseCaseResult
 import com.knitnote.domain.usecase.toMessage
@@ -14,6 +15,7 @@ import kotlinx.coroutines.launch
 
 data class SharedWithMeState(
     val shares: List<Share> = emptyList(),
+    val patternTitles: Map<String, String> = emptyMap(),
     val isLoading: Boolean = true,
     val error: String? = null,
 )
@@ -25,6 +27,7 @@ sealed interface SharedWithMeEvent {
 
 class SharedWithMeViewModel(
     private val getReceivedShares: GetReceivedSharesUseCase,
+    private val patternRepository: PatternRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SharedWithMeState())
@@ -41,8 +44,13 @@ class SharedWithMeViewModel(
                     _state.update { it.copy(isLoading = true, error = null) }
                     when (val result = getReceivedShares()) {
                         is UseCaseResult.Success -> {
+                            val titles = resolvePatternTitles(result.value)
                             _state.update {
-                                it.copy(shares = result.value, isLoading = false)
+                                it.copy(
+                                    shares = result.value,
+                                    patternTitles = titles,
+                                    isLoading = false,
+                                )
                             }
                         }
                         is UseCaseResult.Failure -> {
@@ -60,5 +68,14 @@ class SharedWithMeViewModel(
                 _state.update { it.copy(error = null) }
             }
         }
+    }
+
+    private suspend fun resolvePatternTitles(shares: List<Share>): Map<String, String> {
+        val distinctIds = shares.map { it.patternId }.distinct()
+        return distinctIds.mapNotNull { patternId ->
+            patternRepository.getById(patternId)?.let { pattern ->
+                patternId to pattern.title
+            }
+        }.toMap()
     }
 }

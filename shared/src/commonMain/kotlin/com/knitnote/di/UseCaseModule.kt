@@ -6,6 +6,7 @@ import com.knitnote.domain.usecase.CreateProjectUseCase
 import com.knitnote.domain.usecase.DecrementRowUseCase
 import com.knitnote.domain.usecase.DeleteProgressNoteUseCase
 import com.knitnote.domain.usecase.DeleteProjectUseCase
+import com.knitnote.domain.usecase.ForkSharedPatternUseCase
 import com.knitnote.domain.usecase.GetProgressNotesUseCase
 import com.knitnote.domain.usecase.GetProjectByIdUseCase
 import com.knitnote.domain.usecase.GetProjectsUseCase
@@ -43,4 +44,5 @@ val useCaseModule = module {
     factory { ShareProjectUseCase(get(), get(), getOrNull(), get()) }
     factory { ResolveShareTokenUseCase(getOrNull(), get(), get()) }
     factory { GetReceivedSharesUseCase(getOrNull(), get()) }
+    factory { ForkSharedPatternUseCase(getOrNull(), get(), get(), get()) }
 }

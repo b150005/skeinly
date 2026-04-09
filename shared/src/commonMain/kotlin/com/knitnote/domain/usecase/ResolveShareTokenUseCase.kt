@@ -2,11 +2,13 @@ package com.knitnote.domain.usecase
 
 import com.knitnote.domain.model.Pattern
 import com.knitnote.domain.model.Project
+import com.knitnote.domain.model.Share
 import com.knitnote.domain.repository.PatternRepository
 import com.knitnote.domain.repository.ProjectRepository
 import com.knitnote.domain.repository.ShareRepository
 
 data class SharedContent(
+    val share: Share,
     val pattern: Pattern,
     val projects: List<Project>,
 )
@@ -34,6 +36,6 @@ class ResolveShareTokenUseCase(
 
         val projects = projectRepository.getByPatternId(share.patternId)
 
-        return UseCaseResult.Success(SharedContent(pattern = pattern, projects = projects))
+        return UseCaseResult.Success(SharedContent(share = share, pattern = pattern, projects = projects))
     }
 }
