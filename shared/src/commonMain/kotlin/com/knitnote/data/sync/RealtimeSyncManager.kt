@@ -1,8 +1,10 @@
 package com.knitnote.data.sync
 
+import com.knitnote.data.local.LocalPatternDataSource
 import com.knitnote.data.local.LocalProgressDataSource
 import com.knitnote.data.local.LocalProjectDataSource
 import com.knitnote.domain.model.AuthState
+import com.knitnote.domain.model.Pattern
 import com.knitnote.domain.model.Progress
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.repository.AuthRepository
@@ -27,12 +29,14 @@ class RealtimeSyncManager(
     private val supabaseClient: SupabaseClient,
     private val localProject: LocalProjectDataSource,
     private val localProgress: LocalProgressDataSource,
+    private val localPattern: LocalPatternDataSource,
     private val authRepository: AuthRepository,
     private val scope: CoroutineScope,
 ) {
 
     private var projectChannel: RealtimeChannel? = null
     private var progressChannel: RealtimeChannel? = null
+    private var patternChannel: RealtimeChannel? = null
     private var authObserverJob: Job? = null
     private val channelMutex = Mutex()
 
@@ -60,6 +64,7 @@ class RealtimeSyncManager(
         unsubscribeInternal()
         subscribeToProjects(ownerId)
         subscribeToProgress(ownerId)
+        subscribeToPatterns(ownerId)
     }
 
     internal suspend fun unsubscribe() = channelMutex.withLock {
@@ -71,6 +76,8 @@ class RealtimeSyncManager(
         projectChannel = null
         progressChannel?.unsubscribe()
         progressChannel = null
+        patternChannel?.unsubscribe()
+        patternChannel = null
     }
 
     private suspend fun subscribeToProjects(ownerId: String) {
@@ -120,6 +127,40 @@ class RealtimeSyncManager(
             is PostgresAction.Delete -> {
                 val old = action.decodeOldRecord<Project>()
                 localProject.delete(old.id)
+            }
+            is PostgresAction.Select -> { /* no-op */ }
+        }
+    }
+
+    private suspend fun subscribeToPatterns(ownerId: String) {
+        val channel = supabaseClient.channel("patterns-$ownerId")
+        patternChannel = channel
+
+        channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "patterns"
+            filter("owner_id", FilterOperator.EQ, ownerId)
+        }.onEach { action ->
+            handlePatternAction(action)
+        }.catch { e ->
+            if (e is CancellationException) throw e
+        }.launchIn(scope)
+
+        channel.subscribe()
+    }
+
+    private suspend fun handlePatternAction(action: PostgresAction) {
+        when (action) {
+            is PostgresAction.Insert -> {
+                val pattern = action.decodeRecord<Pattern>()
+                localPattern.upsert(pattern)
+            }
+            is PostgresAction.Update -> {
+                val pattern = action.decodeRecord<Pattern>()
+                localPattern.upsert(pattern)
+            }
+            is PostgresAction.Delete -> {
+                val old = action.decodeOldRecord<Pattern>()
+                localPattern.delete(old.id)
             }
             is PostgresAction.Select -> { /* no-op */ }
         }

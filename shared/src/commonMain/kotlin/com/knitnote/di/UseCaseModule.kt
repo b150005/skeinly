@@ -9,9 +9,12 @@ import com.knitnote.domain.usecase.DeleteProjectUseCase
 import com.knitnote.domain.usecase.GetProgressNotesUseCase
 import com.knitnote.domain.usecase.GetProjectByIdUseCase
 import com.knitnote.domain.usecase.GetProjectsUseCase
+import com.knitnote.domain.usecase.GetReceivedSharesUseCase
 import com.knitnote.domain.usecase.IncrementRowUseCase
 import com.knitnote.domain.usecase.ObserveAuthStateUseCase
 import com.knitnote.domain.usecase.ReopenProjectUseCase
+import com.knitnote.domain.usecase.ResolveShareTokenUseCase
+import com.knitnote.domain.usecase.ShareProjectUseCase
 import com.knitnote.domain.usecase.SignInUseCase
 import com.knitnote.domain.usecase.SignOutUseCase
 import com.knitnote.domain.usecase.SignUpUseCase
@@ -35,4 +38,9 @@ val useCaseModule = module {
     factory { UpdateProjectUseCase(get()) }
     factory { CompleteProjectUseCase(get()) }
     factory { ReopenProjectUseCase(get()) }
+
+    // Share use cases (ShareRepository is nullable — only available with Supabase)
+    factory { ShareProjectUseCase(get(), get(), getOrNull(), get()) }
+    factory { ResolveShareTokenUseCase(getOrNull(), get(), get()) }
+    factory { GetReceivedSharesUseCase(getOrNull(), get()) }
 }

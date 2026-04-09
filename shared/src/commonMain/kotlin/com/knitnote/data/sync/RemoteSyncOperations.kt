@@ -1,5 +1,6 @@
 package com.knitnote.data.sync
 
+import com.knitnote.domain.model.Pattern
 import com.knitnote.domain.model.Progress
 import com.knitnote.domain.model.Project
 
@@ -17,5 +18,14 @@ interface RemoteProjectSyncOperations {
  */
 interface RemoteProgressSyncOperations {
     suspend fun insert(progress: Progress): Progress
+    suspend fun delete(id: String)
+}
+
+/**
+ * Interface for pattern remote write operations needed by the sync system.
+ */
+interface RemotePatternSyncOperations {
+    suspend fun insert(pattern: Pattern): Pattern
+    suspend fun update(pattern: Pattern): Pattern
     suspend fun delete(id: String)
 }
