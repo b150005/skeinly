@@ -11,6 +11,7 @@ import com.knitnote.domain.usecase.DeleteProgressNoteUseCase
 import com.knitnote.domain.usecase.DeleteProjectUseCase
 import com.knitnote.domain.usecase.ForkSharedPatternUseCase
 import com.knitnote.domain.usecase.GetActivitiesUseCase
+import com.knitnote.domain.usecase.GetCurrentUserUseCase
 import com.knitnote.domain.usecase.GetCommentsUseCase
 import com.knitnote.domain.usecase.GetProgressNotesUseCase
 import com.knitnote.domain.usecase.GetProjectByIdUseCase
@@ -24,6 +25,7 @@ import com.knitnote.domain.usecase.ShareProjectUseCase
 import com.knitnote.domain.usecase.SignInUseCase
 import com.knitnote.domain.usecase.SignOutUseCase
 import com.knitnote.domain.usecase.SignUpUseCase
+import com.knitnote.domain.usecase.UpdateProfileUseCase
 import com.knitnote.domain.usecase.UpdateProjectUseCase
 import com.knitnote.domain.usecase.UpdateShareStatusUseCase
 import org.koin.dsl.module
@@ -45,6 +47,10 @@ val useCaseModule = module {
     factory { UpdateProjectUseCase(get()) }
     factory { CompleteProjectUseCase(get(), getOrNull()) }
     factory { ReopenProjectUseCase(get()) }
+
+    // Profile use cases (UserRepository is nullable — only available with Supabase)
+    factory { GetCurrentUserUseCase(get(), getOrNull()) }
+    factory { UpdateProfileUseCase(get(), getOrNull()) }
 
     // Activity use cases (ActivityRepository is nullable — only available with Supabase)
     factory { CreateActivityUseCase(getOrNull()) }

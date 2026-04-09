@@ -19,4 +19,17 @@ class RemoteUserDataSource(
             filter { ilike("display_name", "%$query%") }
             limit(limit.toLong())
         }.decodeList()
+
+    suspend fun getByIds(ids: List<String>): List<User> {
+        if (ids.isEmpty()) return emptyList()
+        return table.select {
+            filter { isIn("id", ids) }
+        }.decodeList()
+    }
+
+    suspend fun update(user: User): User =
+        table.update(user) {
+            select()
+            filter { eq("id", user.id) }
+        }.decodeSingle()
 }
