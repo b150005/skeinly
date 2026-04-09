@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -55,6 +56,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun ProjectListScreen(
     onProjectClick: (String) -> Unit,
+    onSharedWithMeClick: () -> Unit = {},
     viewModel: ProjectListViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -72,6 +74,12 @@ fun ProjectListScreen(
             TopAppBar(
                 title = { Text("Knit Note") },
                 actions = {
+                    IconButton(onClick = onSharedWithMeClick) {
+                        Icon(
+                            Icons.Default.People,
+                            contentDescription = "Shared With Me",
+                        )
+                    }
                     IconButton(onClick = { viewModel.onEvent(ProjectListEvent.SignOut) }) {
                         Icon(
                             Icons.AutoMirrored.Filled.ExitToApp,

@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -72,6 +73,7 @@ fun ProjectDetailScreen(
     val state by viewModel.state.collectAsState()
     val error by viewModel.error.collectAsState()
     val progressNotes by viewModel.progressNotes.collectAsState()
+    val shareLink by viewModel.shareLink.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showAddNoteDialog by rememberSaveable { mutableStateOf(false) }
     var showEditDialog by rememberSaveable { mutableStateOf(false) }
@@ -108,6 +110,13 @@ fun ProjectDetailScreen(
         )
     }
 
+    if (shareLink != null) {
+        ShareLinkDialog(
+            shareToken = shareLink!!.shareToken,
+            onDismiss = { viewModel.onEvent(ProjectDetailEvent.DismissShareDialog) },
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -119,6 +128,11 @@ fun ProjectDetailScreen(
                 },
                 actions = {
                     if (state.project != null) {
+                        IconButton(
+                            onClick = { viewModel.onEvent(ProjectDetailEvent.ShareProject) },
+                        ) {
+                            Icon(Icons.Default.Share, contentDescription = "Share project")
+                        }
                         IconButton(onClick = { showEditDialog = true }) {
                             Icon(Icons.Default.Edit, contentDescription = "Edit project")
                         }

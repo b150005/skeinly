@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.knitnote.domain.model.Progress
 import com.knitnote.domain.model.Project
+import com.knitnote.domain.model.ShareLink
 import com.knitnote.domain.repository.ProjectRepository
 import com.knitnote.domain.usecase.AddProgressNoteUseCase
 import com.knitnote.domain.usecase.CompleteProjectUseCase
@@ -12,6 +13,7 @@ import com.knitnote.domain.usecase.DeleteProgressNoteUseCase
 import com.knitnote.domain.usecase.GetProgressNotesUseCase
 import com.knitnote.domain.usecase.IncrementRowUseCase
 import com.knitnote.domain.usecase.ReopenProjectUseCase
+import com.knitnote.domain.usecase.ShareProjectUseCase
 import com.knitnote.domain.usecase.UpdateProjectUseCase
 import com.knitnote.domain.usecase.UseCaseResult
 import com.knitnote.domain.usecase.toMessage
@@ -40,6 +42,8 @@ sealed interface ProjectDetailEvent {
     data class EditProject(val title: String, val totalRows: Int?) : ProjectDetailEvent
     data object CompleteProject : ProjectDetailEvent
     data object ReopenProject : ProjectDetailEvent
+    data object ShareProject : ProjectDetailEvent
+    data object DismissShareDialog : ProjectDetailEvent
 }
 
 class ProjectDetailViewModel(
@@ -53,11 +57,15 @@ class ProjectDetailViewModel(
     private val updateProject: UpdateProjectUseCase,
     private val completeProject: CompleteProjectUseCase,
     private val reopenProject: ReopenProjectUseCase,
+    private val shareProject: ShareProjectUseCase,
 ) : ViewModel() {
 
     private val counterMutex = Mutex()
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
+
+    private val _shareLink = MutableStateFlow<ShareLink?>(null)
+    val shareLink: StateFlow<ShareLink?> = _shareLink.asStateFlow()
 
     val state: StateFlow<ProjectDetailState> =
         projectRepository.observeById(projectId)
@@ -151,6 +159,17 @@ class ProjectDetailViewModel(
                         is UseCaseResult.Failure -> _error.value = result.error.toMessage()
                     }
                 }
+            }
+            ProjectDetailEvent.ShareProject -> {
+                viewModelScope.launch {
+                    when (val result = shareProject(projectId)) {
+                        is UseCaseResult.Success -> _shareLink.value = result.value
+                        is UseCaseResult.Failure -> _error.value = result.error.toMessage()
+                    }
+                }
+            }
+            ProjectDetailEvent.DismissShareDialog -> {
+                _shareLink.value = null
             }
         }
     }
