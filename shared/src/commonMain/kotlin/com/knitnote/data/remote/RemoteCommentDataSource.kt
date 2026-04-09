@@ -24,10 +24,10 @@ class RemoteCommentDataSource(
             order("created_at", io.github.jan.supabase.postgrest.query.Order.ASCENDING)
         }.decodeList()
 
-    suspend fun insert(comment: Comment): Comment {
-        table.insert(comment)
-        return comment
-    }
+    suspend fun insert(comment: Comment): Comment =
+        table.insert(comment) {
+            select()
+        }.decodeSingle()
 
     suspend fun delete(id: String) {
         table.delete {

@@ -16,8 +16,8 @@ class RemoteActivityDataSource(
             limit(limit.toLong())
         }.decodeList()
 
-    suspend fun insert(activity: Activity): Activity {
-        table.insert(activity)
-        return activity
-    }
+    suspend fun insert(activity: Activity): Activity =
+        table.insert(activity) {
+            select()
+        }.decodeSingle()
 }

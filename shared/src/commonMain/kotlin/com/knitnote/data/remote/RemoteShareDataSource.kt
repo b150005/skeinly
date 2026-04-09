@@ -35,10 +35,10 @@ class RemoteShareDataSource(
             filter { eq("from_user_id", userId) }
         }.decodeList()
 
-    suspend fun insert(share: Share): Share {
-        table.insert(share)
-        return share
-    }
+    suspend fun insert(share: Share): Share =
+        table.insert(share) {
+            select()
+        }.decodeSingle()
 
     suspend fun updateStatus(id: String, status: ShareStatus) {
         table.update({ set("status", status.name.lowercase()) }) {

@@ -20,17 +20,16 @@ class RemoteProjectDataSource(
             filter { eq("id", id) }
         }.decodeSingleOrNull()
 
-    override suspend fun insert(project: Project): Project {
-        table.insert(project)
-        return project
-    }
+    override suspend fun insert(project: Project): Project =
+        table.insert(project) {
+            select()
+        }.decodeSingle()
 
-    override suspend fun update(project: Project): Project {
+    override suspend fun update(project: Project): Project =
         table.update(project) {
+            select()
             filter { eq("id", project.id) }
-        }
-        return project
-    }
+        }.decodeSingle()
 
     override suspend fun delete(id: String) {
         table.delete {
