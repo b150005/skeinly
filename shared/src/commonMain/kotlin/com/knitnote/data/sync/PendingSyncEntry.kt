@@ -3,6 +3,7 @@ package com.knitnote.data.sync
 enum class SyncEntityType(val value: String) {
     PROJECT("project"),
     PROGRESS("progress"),
+    PATTERN("pattern"),
     ;
 
     companion object {

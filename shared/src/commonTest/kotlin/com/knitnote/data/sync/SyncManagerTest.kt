@@ -46,7 +46,7 @@ class SyncManagerTest {
         fakePendingSync = FakeLocalPendingSyncDataSource()
         fakeRemoteProject = FakeRemoteProjectDataSource()
         fakeRemoteProgress = FakeRemoteProgressDataSource()
-        syncExecutor = SyncExecutor(fakeRemoteProject, fakeRemoteProgress, json)
+        syncExecutor = SyncExecutor(fakeRemoteProject, fakeRemoteProgress, null, json)
         isOnline.value = false
     }
 

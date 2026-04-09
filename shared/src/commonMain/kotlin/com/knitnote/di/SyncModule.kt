@@ -1,13 +1,16 @@
 package com.knitnote.di
 
+import com.knitnote.data.local.LocalPatternDataSource
 import com.knitnote.data.local.LocalPendingSyncDataSource
 import com.knitnote.data.local.LocalProgressDataSource
 import com.knitnote.data.local.LocalProjectDataSource
 import com.knitnote.data.remote.ConnectivityMonitor
+import com.knitnote.data.remote.RemotePatternDataSource
 import com.knitnote.data.remote.RemoteProgressDataSource
 import com.knitnote.data.remote.RemoteProjectDataSource
 import com.knitnote.data.sync.PendingSyncDataSource
 import com.knitnote.data.sync.RealtimeSyncManager
+import com.knitnote.data.sync.RemotePatternSyncOperations
 import com.knitnote.data.sync.RemoteProgressSyncOperations
 import com.knitnote.data.sync.RemoteProjectSyncOperations
 import com.knitnote.data.sync.SyncExecutor
@@ -29,8 +32,9 @@ val syncModule = module {
     // Sync interfaces backed by the remote data sources
     single<RemoteProjectSyncOperations?> { getOrNull<RemoteProjectDataSource>() }
     single<RemoteProgressSyncOperations?> { getOrNull<RemoteProgressDataSource>() }
+    single<RemotePatternSyncOperations?> { getOrNull<RemotePatternDataSource>() }
 
-    single { SyncExecutor(getOrNull(), getOrNull(), get()) }
+    single { SyncExecutor(getOrNull(), getOrNull(), getOrNull(), get()) }
 
     single<SyncManagerOperations> {
         SyncManager(
@@ -47,6 +51,7 @@ val syncModule = module {
             supabaseClient = client,
             localProject = get<LocalProjectDataSource>(),
             localProgress = get<LocalProgressDataSource>(),
+            localPattern = get<LocalPatternDataSource>(),
             authRepository = get<AuthRepository>(),
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
         ).also { it.start() }

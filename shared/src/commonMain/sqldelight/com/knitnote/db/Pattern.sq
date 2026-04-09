@@ -1,0 +1,31 @@
+CREATE TABLE PatternEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    owner_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    difficulty TEXT,
+    visibility TEXT NOT NULL DEFAULT 'private',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+getById:
+SELECT * FROM PatternEntity WHERE id = ?;
+
+getByOwnerId:
+SELECT * FROM PatternEntity WHERE owner_id = ? ORDER BY created_at DESC;
+
+insert:
+INSERT INTO PatternEntity(id, owner_id, title, description, difficulty, visibility, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE PatternEntity
+SET title = ?, description = ?, difficulty = ?, visibility = ?, updated_at = ?
+WHERE id = ?;
+
+observeById:
+SELECT * FROM PatternEntity WHERE id = ?;
+
+deleteById:
+DELETE FROM PatternEntity WHERE id = ?;
