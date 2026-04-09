@@ -4,6 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -15,6 +18,7 @@ import com.knitnote.ui.auth.AuthViewModel
 import com.knitnote.ui.auth.LoginScreen
 import com.knitnote.ui.projectdetail.ProjectDetailScreen
 import com.knitnote.ui.projectlist.ProjectListScreen
+import com.knitnote.ui.sharedcontent.SharedContentScreen
 import com.knitnote.ui.sharedwithme.SharedWithMeScreen
 import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
@@ -31,10 +35,24 @@ data class ProjectDetail(val projectId: String)
 @Serializable
 data object SharedWithMe
 
+@Serializable
+data class SharedContent(val token: String)
+
 @Composable
-fun KnitNoteNavHost(navController: NavHostController) {
+fun KnitNoteNavHost(
+    navController: NavHostController,
+    deepLinkToken: String? = null,
+) {
     // If Supabase is not configured, skip auth entirely (local-only mode)
     val requiresAuth = SupabaseConfig.isConfigured
+    var pendingDeepLinkToken by remember { mutableStateOf(deepLinkToken) }
+
+    // Sync parameter changes (e.g., from onNewIntent) into local state
+    LaunchedEffect(deepLinkToken) {
+        if (deepLinkToken != null) {
+            pendingDeepLinkToken = deepLinkToken
+        }
+    }
 
     if (requiresAuth) {
         val authViewModel: AuthViewModel = koinViewModel()
@@ -46,6 +64,11 @@ fun KnitNoteNavHost(navController: NavHostController) {
                     navController.navigate(ProjectList) {
                         popUpTo(Login) { inclusive = true }
                     }
+                    // Navigate to deep link after authentication
+                    pendingDeepLinkToken?.let { token ->
+                        navController.navigate(SharedContent(token = token))
+                        pendingDeepLinkToken = null
+                    }
                 }
                 is AuthState.Unauthenticated -> {
                     navController.navigate(Login) {
@@ -53,6 +76,14 @@ fun KnitNoteNavHost(navController: NavHostController) {
                     }
                 }
                 else -> { /* Loading / Error — stay on current screen */ }
+            }
+        }
+    } else {
+        // No auth required — handle deep link immediately
+        LaunchedEffect(pendingDeepLinkToken) {
+            pendingDeepLinkToken?.let { token ->
+                navController.navigate(SharedContent(token = token))
+                pendingDeepLinkToken = null
             }
         }
     }
@@ -83,6 +114,18 @@ fun KnitNoteNavHost(navController: NavHostController) {
             ProjectDetailScreen(
                 projectId = route.projectId,
                 onBack = { navController.popBackStack() },
+            )
+        }
+        composable<SharedContent> { backStackEntry ->
+            val route = backStackEntry.toRoute<SharedContent>()
+            SharedContentScreen(
+                token = route.token,
+                onBack = { navController.popBackStack() },
+                onForked = { projectId ->
+                    navController.navigate(ProjectDetail(projectId = projectId)) {
+                        popUpTo(ProjectList)
+                    }
+                },
             )
         }
     }

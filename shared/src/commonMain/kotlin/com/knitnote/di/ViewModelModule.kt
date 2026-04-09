@@ -3,6 +3,7 @@ package com.knitnote.di
 import com.knitnote.ui.auth.AuthViewModel
 import com.knitnote.ui.projectdetail.ProjectDetailViewModel
 import com.knitnote.ui.projectlist.ProjectListViewModel
+import com.knitnote.ui.sharedcontent.SharedContentViewModel
 import com.knitnote.ui.sharedwithme.SharedWithMeViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
@@ -26,5 +27,12 @@ val viewModelModule = module {
             shareProject = get(),
         )
     }
-    viewModelOf(::SharedWithMeViewModel)
+    viewModel { SharedWithMeViewModel(get(), get()) }
+    viewModel { params ->
+        SharedContentViewModel(
+            token = params.get(),
+            resolveShareToken = get(),
+            forkSharedPattern = get(),
+        )
+    }
 }

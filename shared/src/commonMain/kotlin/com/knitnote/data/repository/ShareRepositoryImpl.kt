@@ -4,17 +4,42 @@ import com.knitnote.data.remote.RemoteShareDataSource
 import com.knitnote.domain.model.Share
 import com.knitnote.domain.model.ShareStatus
 import com.knitnote.domain.repository.ShareRepository
-import kotlinx.coroutines.delay
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.postgrest.query.filter.FilterOperator
+import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.RealtimeChannel
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.decodeOldRecord
+import io.github.jan.supabase.realtime.decodeRecord
+import io.github.jan.supabase.realtime.postgresChangeFlow
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Remote-only Share repository. Sharing is inherently online — no local SQLDelight cache.
- * Operations require network connectivity; callers should handle failures gracefully.
+ * Uses Supabase Realtime for live updates instead of polling.
+ *
+ * Call [closeChannel] on user logout to release the Realtime subscription and clear cached state.
  */
 class ShareRepositoryImpl(
     private val remote: RemoteShareDataSource,
+    private val supabaseClient: SupabaseClient,
+    private val scope: CoroutineScope,
 ) : ShareRepository {
+
+    private var shareChannel: RealtimeChannel? = null
+    private var subscribedUserId: String? = null
+    private val channelMutex = Mutex()
+    private val _receivedShares = MutableStateFlow<List<Share>>(emptyList())
 
     override suspend fun getById(id: String): Share? =
         remote.getById(id)
@@ -28,10 +53,10 @@ class ShareRepositoryImpl(
     override suspend fun getReceivedByUserId(userId: String): List<Share> =
         remote.getReceivedByUserId(userId)
 
-    override fun observeReceivedByUserId(userId: String): Flow<List<Share>> = flow {
-        while (true) {
-            emit(remote.getReceivedByUserId(userId))
-            delay(POLLING_INTERVAL_MS)
+    override fun observeReceivedByUserId(userId: String): Flow<List<Share>> {
+        launchRealtimeSubscription(userId)
+        return _receivedShares.map { shares ->
+            shares.filter { it.toUserId == userId }
         }
     }
 
@@ -46,7 +71,84 @@ class ShareRepositoryImpl(
     override suspend fun delete(id: String) =
         remote.delete(id)
 
-    companion object {
-        private const val POLLING_INTERVAL_MS = 30_000L
+    /**
+     * Unsubscribe from the Realtime channel and clear cached state.
+     * Call on user logout to prevent stale data for the next user.
+     */
+    suspend fun closeChannel() = channelMutex.withLock {
+        closeChannelInternal()
+    }
+
+    private suspend fun closeChannelInternal() {
+        shareChannel?.unsubscribe()
+        shareChannel = null
+        subscribedUserId = null
+        _receivedShares.value = emptyList()
+    }
+
+    private fun launchRealtimeSubscription(userId: String) {
+        scope.launch {
+            channelMutex.withLock {
+                // If already subscribed for a different user, close the old channel
+                if (shareChannel != null && subscribedUserId != userId) {
+                    closeChannelInternal()
+                }
+                if (shareChannel != null) return@withLock
+
+                val channel = supabaseClient.channel("shares-received-$userId")
+                shareChannel = channel
+                subscribedUserId = userId
+
+                // Seed with initial remote fetch after channel is assigned
+                _receivedShares.value = remote.getReceivedByUserId(userId)
+
+                channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+                    table = "shares"
+                    filter("to_user_id", FilterOperator.EQ, userId)
+                }.onEach { action ->
+                    handleShareAction(action, userId)
+                }.catch { e ->
+                    if (e is CancellationException) throw e
+                    // Realtime error — flow terminates; will recover on next subscribe
+                }.launchIn(scope)
+
+                channel.subscribe()
+            }
+        }
+    }
+
+    private fun handleShareAction(action: PostgresAction, userId: String) {
+        when (action) {
+            is PostgresAction.Insert -> {
+                val share = action.decodeRecord<Share>()
+                // Defensive: verify this share is actually for the subscribed user
+                if (share.toUserId == userId) {
+                    _receivedShares.value = _receivedShares.value + share
+                }
+            }
+            is PostgresAction.Update -> {
+                val share = action.decodeRecord<Share>()
+                if (share.toUserId == userId) {
+                    _receivedShares.value = _receivedShares.value.map {
+                        if (it.id == share.id) share else it
+                    }
+                }
+            }
+            is PostgresAction.Delete -> {
+                // DELETE payloads may only contain PK if REPLICA IDENTITY is DEFAULT.
+                // Use filter-by-absence as a fallback: re-fetch on next observe call.
+                // For now, attempt decode and filter by ID.
+                try {
+                    val old = action.decodeOldRecord<Share>()
+                    _receivedShares.value = _receivedShares.value.filter { it.id != old.id }
+                } catch (_: Exception) {
+                    // If decode fails (REPLICA IDENTITY DEFAULT), trigger a full re-fetch
+                    scope.launch {
+                        _receivedShares.value = remote.getReceivedByUserId(userId)
+                    }
+                }
+            }
+            is PostgresAction.Select -> { /* no-op */ }
+        }
     }
 }

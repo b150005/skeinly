@@ -19,6 +19,9 @@ import com.knitnote.domain.repository.ProjectRepository
 import com.knitnote.domain.repository.ProgressRepository
 import com.knitnote.domain.repository.ShareRepository
 import io.github.jan.supabase.SupabaseClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.koin.dsl.module
 
 val repositoryModule = module {
@@ -74,6 +77,12 @@ val repositoryModule = module {
     }
     // Share is remote-only — requires Supabase (nullable: use cases handle absence)
     single<ShareRepository?> {
-        getOrNull<RemoteShareDataSource>()?.let { ShareRepositoryImpl(it) }
+        val remoteDs = getOrNull<RemoteShareDataSource>() ?: return@single null
+        val client = getOrNull<SupabaseClient>() ?: return@single null
+        ShareRepositoryImpl(
+            remote = remoteDs,
+            supabaseClient = client,
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+        )
     }
 }
