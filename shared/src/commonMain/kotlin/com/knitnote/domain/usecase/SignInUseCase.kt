@@ -1,6 +1,7 @@
 package com.knitnote.domain.usecase
 
 import com.knitnote.domain.repository.AuthRepository
+import kotlin.coroutines.cancellation.CancellationException
 
 class SignInUseCase(
     private val authRepository: AuthRepository,
@@ -9,6 +10,8 @@ class SignInUseCase(
         try {
             authRepository.signInWithEmail(email, password)
             UseCaseResult.Success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             UseCaseResult.Failure(UseCaseError.Unknown(e))
         }
