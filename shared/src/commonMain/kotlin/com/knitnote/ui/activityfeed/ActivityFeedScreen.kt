@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.knitnote.domain.model.Activity
 import com.knitnote.domain.model.ActivityType
+import com.knitnote.domain.model.User
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
@@ -95,7 +96,10 @@ fun ActivityFeedScreen(
                 else -> {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
                         items(state.activities, key = { it.id }) { activity ->
-                            ActivityListItem(activity = activity)
+                            ActivityListItem(
+                                activity = activity,
+                                user = state.users[activity.userId],
+                            )
                             HorizontalDivider()
                         }
                     }
@@ -106,7 +110,7 @@ fun ActivityFeedScreen(
 }
 
 @Composable
-private fun ActivityListItem(activity: Activity) {
+private fun ActivityListItem(activity: Activity, user: User?) {
     val dateTime = activity.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
     val dateText = "%04d/%02d/%02d %02d:%02d".format(
         dateTime.year,
@@ -116,20 +120,21 @@ private fun ActivityListItem(activity: Activity) {
         dateTime.minute,
     )
 
-    val (icon, description) = activityDisplay(activity.type)
+    val displayName = user?.displayName ?: "You"
+    val (icon, verb) = activityVerb(activity.type)
 
     ListItem(
         modifier = Modifier.fillMaxWidth(),
         leadingContent = {
             Icon(
                 imageVector = icon,
-                contentDescription = description,
+                contentDescription = verb,
                 tint = MaterialTheme.colorScheme.primary,
             )
         },
         headlineContent = {
             Text(
-                text = description,
+                text = "$displayName $verb",
                 style = MaterialTheme.typography.bodyLarge,
             )
         },
@@ -143,10 +148,10 @@ private fun ActivityListItem(activity: Activity) {
     )
 }
 
-private fun activityDisplay(type: ActivityType): Pair<ImageVector, String> = when (type) {
-    ActivityType.STARTED -> Icons.Default.Add to "Started a new project"
-    ActivityType.COMPLETED -> Icons.Default.Check to "Completed a project"
-    ActivityType.SHARED -> Icons.Default.Share to "Shared a pattern"
-    ActivityType.COMMENTED -> Icons.AutoMirrored.Filled.Comment to "Commented on a project"
-    ActivityType.FORKED -> Icons.AutoMirrored.Filled.CallSplit to "Forked a pattern"
+private fun activityVerb(type: ActivityType): Pair<ImageVector, String> = when (type) {
+    ActivityType.STARTED -> Icons.Default.Add to "started a new project"
+    ActivityType.COMPLETED -> Icons.Default.Check to "completed a project"
+    ActivityType.SHARED -> Icons.Default.Share to "shared a pattern"
+    ActivityType.COMMENTED -> Icons.AutoMirrored.Filled.Comment to "commented on a project"
+    ActivityType.FORKED -> Icons.AutoMirrored.Filled.CallSplit to "forked a pattern"
 }

@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -59,6 +60,7 @@ fun ProjectListScreen(
     onProjectClick: (String) -> Unit,
     onSharedWithMeClick: () -> Unit = {},
     onActivityFeedClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
     viewModel: ProjectListViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -76,6 +78,12 @@ fun ProjectListScreen(
             TopAppBar(
                 title = { Text("Knit Note") },
                 actions = {
+                    IconButton(onClick = onProfileClick) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = "Profile",
+                        )
+                    }
                     IconButton(onClick = onActivityFeedClick) {
                         Icon(
                             Icons.Default.Notifications,

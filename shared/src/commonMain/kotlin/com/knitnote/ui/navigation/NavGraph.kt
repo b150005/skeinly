@@ -17,6 +17,7 @@ import com.knitnote.domain.model.AuthState
 import com.knitnote.ui.activityfeed.ActivityFeedScreen
 import com.knitnote.ui.auth.AuthViewModel
 import com.knitnote.ui.auth.LoginScreen
+import com.knitnote.ui.profile.ProfileScreen
 import com.knitnote.ui.projectdetail.ProjectDetailScreen
 import com.knitnote.ui.projectlist.ProjectListScreen
 import com.knitnote.ui.sharedcontent.SharedContentScreen
@@ -38,6 +39,9 @@ data object SharedWithMe
 
 @Serializable
 data object ActivityFeed
+
+@Serializable
+data object Profile
 
 @Serializable
 data class SharedContent(val token: String? = null, val shareId: String? = null)
@@ -109,6 +113,14 @@ fun KnitNoteNavHost(
                 onActivityFeedClick = {
                     navController.navigate(ActivityFeed)
                 },
+                onProfileClick = {
+                    navController.navigate(Profile)
+                },
+            )
+        }
+        composable<Profile> {
+            ProfileScreen(
+                onBack = { navController.popBackStack() },
             )
         }
         composable<ActivityFeed> {

@@ -98,6 +98,7 @@ fun SharedWithMeScreen(
                             ShareListItem(
                                 share = share,
                                 patternTitle = state.patternTitles[share.patternId],
+                                sharerName = state.sharers[share.fromUserId]?.displayName,
                                 onClick = { onShareClick(share.id) },
                                 onAccept = {
                                     viewModel.onEvent(SharedWithMeEvent.AcceptShare(share.id))
@@ -119,6 +120,7 @@ fun SharedWithMeScreen(
 private fun ShareListItem(
     share: Share,
     patternTitle: String?,
+    sharerName: String?,
     onClick: () -> Unit,
     onAccept: () -> Unit,
     onDecline: () -> Unit,
@@ -132,6 +134,8 @@ private fun ShareListItem(
         ShareStatus.DECLINED -> " | Declined"
     }
 
+    val fromText = sharerName?.let { "From $it | " } ?: ""
+
     ListItem(
         modifier = Modifier.clickable(onClick = onClick),
         headlineContent = {
@@ -143,7 +147,7 @@ private fun ShareListItem(
         supportingContent = {
             Column {
                 Text(
-                    text = "Shared on $dateText | ${share.permission.name}$statusText",
+                    text = "${fromText}Shared on $dateText | ${share.permission.name}$statusText",
                     style = MaterialTheme.typography.bodySmall,
                 )
                 if (share.status == ShareStatus.PENDING) {
