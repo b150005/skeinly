@@ -6,9 +6,9 @@ package com.knitnote.data.sync
  */
 interface PendingSyncDataSource {
     suspend fun enqueue(
-        entityType: String,
+        entityType: SyncEntityType,
         entityId: String,
-        operation: String,
+        operation: SyncOperation,
         payload: String,
         createdAt: Long,
     )

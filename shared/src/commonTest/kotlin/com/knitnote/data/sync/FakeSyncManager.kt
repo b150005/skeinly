@@ -6,18 +6,18 @@ package com.knitnote.data.sync
  */
 class FakeSyncManager : SyncManagerOperations {
     data class SyncCall(
-        val entityType: String,
+        val entityType: SyncEntityType,
         val entityId: String,
-        val operation: String,
+        val operation: SyncOperation,
         val payload: String,
     )
 
     val calls = mutableListOf<SyncCall>()
 
     override suspend fun syncOrEnqueue(
-        entityType: String,
+        entityType: SyncEntityType,
         entityId: String,
-        operation: String,
+        operation: SyncOperation,
         payload: String,
     ) {
         calls.add(SyncCall(entityType, entityId, operation, payload))

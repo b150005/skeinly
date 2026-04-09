@@ -2,7 +2,9 @@ package com.knitnote.data.repository
 
 import com.knitnote.data.local.LocalProjectDataSource
 import com.knitnote.data.remote.RemoteProjectDataSource
+import com.knitnote.data.sync.SyncEntityType
 import com.knitnote.data.sync.SyncManagerOperations
+import com.knitnote.data.sync.SyncOperation
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.repository.ProjectRepository
 import kotlinx.coroutines.flow.Flow
@@ -52,18 +54,18 @@ class ProjectRepositoryImpl(
 
     override suspend fun create(project: Project): Project {
         local.insert(project)
-        syncManager.syncOrEnqueue("project", project.id, "insert", json.encodeToString(project))
+        syncManager.syncOrEnqueue(SyncEntityType.PROJECT, project.id, SyncOperation.INSERT, json.encodeToString(project))
         return project
     }
 
     override suspend fun update(project: Project): Project {
         local.update(project)
-        syncManager.syncOrEnqueue("project", project.id, "update", json.encodeToString(project))
+        syncManager.syncOrEnqueue(SyncEntityType.PROJECT, project.id, SyncOperation.UPDATE, json.encodeToString(project))
         return project
     }
 
     override suspend fun delete(id: String) {
         local.delete(id)
-        syncManager.syncOrEnqueue("project", id, "delete", "")
+        syncManager.syncOrEnqueue(SyncEntityType.PROJECT, id, SyncOperation.DELETE, "")
     }
 }

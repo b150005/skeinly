@@ -1,6 +1,9 @@
 package com.knitnote.data.local
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.knitnote.data.sync.SyncEntityType
+import com.knitnote.data.sync.SyncOperation
+import com.knitnote.data.sync.SyncStatus
 import com.knitnote.db.KnitNoteDatabase
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -25,24 +28,24 @@ class LocalPendingSyncDataSourceTest {
 
     @Test
     fun `enqueue and retrieve pending entries`() = runTest {
-        dataSource.enqueue("project", "p-1", "insert", """{"id":"p-1"}""", now())
-        dataSource.enqueue("progress", "pr-1", "insert", """{"id":"pr-1"}""", now())
+        dataSource.enqueue(SyncEntityType.PROJECT, "p-1", SyncOperation.INSERT, """{"id":"p-1"}""", now())
+        dataSource.enqueue(SyncEntityType.PROGRESS, "pr-1", SyncOperation.INSERT, """{"id":"pr-1"}""", now())
 
         val entries = dataSource.getAllPending()
 
         assertEquals(2, entries.size)
-        assertEquals("project", entries[0].entityType)
+        assertEquals(SyncEntityType.PROJECT, entries[0].entityType)
         assertEquals("p-1", entries[0].entityId)
-        assertEquals("insert", entries[0].operation)
+        assertEquals(SyncOperation.INSERT, entries[0].operation)
         assertEquals(0, entries[0].retryCount)
-        assertEquals("pending", entries[0].status)
+        assertEquals(SyncStatus.PENDING, entries[0].status)
     }
 
     @Test
     fun `getAllPending returns entries in created_at ASC order`() = runTest {
-        dataSource.enqueue("project", "p-1", "insert", "{}", 1000L)
-        dataSource.enqueue("project", "p-2", "insert", "{}", 500L)
-        dataSource.enqueue("project", "p-3", "insert", "{}", 2000L)
+        dataSource.enqueue(SyncEntityType.PROJECT, "p-1", SyncOperation.INSERT, "{}", 1000L)
+        dataSource.enqueue(SyncEntityType.PROJECT, "p-2", SyncOperation.INSERT, "{}", 500L)
+        dataSource.enqueue(SyncEntityType.PROJECT, "p-3", SyncOperation.INSERT, "{}", 2000L)
 
         val entries = dataSource.getAllPending()
 
@@ -53,7 +56,7 @@ class LocalPendingSyncDataSourceTest {
 
     @Test
     fun `getById returns correct entry`() = runTest {
-        dataSource.enqueue("project", "p-1", "insert", """{"id":"p-1"}""", now())
+        dataSource.enqueue(SyncEntityType.PROJECT, "p-1", SyncOperation.INSERT, """{"id":"p-1"}""", now())
 
         val entries = dataSource.getAllPending()
         val entry = dataSource.getById(entries[0].id)
@@ -70,9 +73,9 @@ class LocalPendingSyncDataSourceTest {
 
     @Test
     fun `getByEntityId filters correctly`() = runTest {
-        dataSource.enqueue("project", "p-1", "insert", "{}", now())
-        dataSource.enqueue("project", "p-2", "update", "{}", now())
-        dataSource.enqueue("project", "p-1", "update", "{}", now())
+        dataSource.enqueue(SyncEntityType.PROJECT, "p-1", SyncOperation.INSERT, "{}", now())
+        dataSource.enqueue(SyncEntityType.PROJECT, "p-2", SyncOperation.UPDATE, "{}", now())
+        dataSource.enqueue(SyncEntityType.PROJECT, "p-1", SyncOperation.UPDATE, "{}", now())
 
         val entries = dataSource.getByEntityId("p-1")
 
@@ -82,7 +85,7 @@ class LocalPendingSyncDataSourceTest {
 
     @Test
     fun `incrementRetry increases retry count`() = runTest {
-        dataSource.enqueue("project", "p-1", "insert", "{}", now())
+        dataSource.enqueue(SyncEntityType.PROJECT, "p-1", SyncOperation.INSERT, "{}", now())
 
         val entry = dataSource.getAllPending()[0]
         assertEquals(0, entry.retryCount)
@@ -97,8 +100,8 @@ class LocalPendingSyncDataSourceTest {
 
     @Test
     fun `markFailed changes status and excludes from getAllPending`() = runTest {
-        dataSource.enqueue("project", "p-1", "insert", "{}", now())
-        dataSource.enqueue("project", "p-2", "insert", "{}", now())
+        dataSource.enqueue(SyncEntityType.PROJECT, "p-1", SyncOperation.INSERT, "{}", now())
+        dataSource.enqueue(SyncEntityType.PROJECT, "p-2", SyncOperation.INSERT, "{}", now())
 
         val entries = dataSource.getAllPending()
         dataSource.markFailed(entries[0].id)
@@ -109,12 +112,12 @@ class LocalPendingSyncDataSourceTest {
 
         val failed = dataSource.getById(entries[0].id)
         assertNotNull(failed)
-        assertEquals("failed", failed.status)
+        assertEquals(SyncStatus.FAILED, failed.status)
     }
 
     @Test
     fun `delete removes entry`() = runTest {
-        dataSource.enqueue("project", "p-1", "insert", "{}", now())
+        dataSource.enqueue(SyncEntityType.PROJECT, "p-1", SyncOperation.INSERT, "{}", now())
 
         val entry = dataSource.getAllPending()[0]
         dataSource.delete(entry.id)
@@ -128,8 +131,8 @@ class LocalPendingSyncDataSourceTest {
     fun `countPending returns correct count`() = runTest {
         assertEquals(0, dataSource.countPending())
 
-        dataSource.enqueue("project", "p-1", "insert", "{}", now())
-        dataSource.enqueue("project", "p-2", "insert", "{}", now())
+        dataSource.enqueue(SyncEntityType.PROJECT, "p-1", SyncOperation.INSERT, "{}", now())
+        dataSource.enqueue(SyncEntityType.PROJECT, "p-2", SyncOperation.INSERT, "{}", now())
 
         assertEquals(2, dataSource.countPending())
 
@@ -141,7 +144,7 @@ class LocalPendingSyncDataSourceTest {
 
     @Test
     fun `updatePayload changes payload for entry`() = runTest {
-        dataSource.enqueue("project", "p-1", "insert", """{"v":1}""", now())
+        dataSource.enqueue(SyncEntityType.PROJECT, "p-1", SyncOperation.INSERT, """{"v":1}""", now())
 
         val entry = dataSource.getAllPending()[0]
         dataSource.updatePayload(entry.id, """{"v":2}""")

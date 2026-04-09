@@ -6,9 +6,9 @@ package com.knitnote.data.sync
  */
 interface SyncManagerOperations {
     suspend fun syncOrEnqueue(
-        entityType: String,
+        entityType: SyncEntityType,
         entityId: String,
-        operation: String,
+        operation: SyncOperation,
         payload: String,
     )
 }

@@ -17,18 +17,16 @@ class SyncExecutor(
      */
     suspend fun execute(entry: PendingSyncEntry): Boolean =
         when (entry.entityType) {
-            "project" -> executeProject(entry)
-            "progress" -> executeProgress(entry)
-            else -> true // unknown type, skip
+            SyncEntityType.PROJECT -> executeProject(entry)
+            SyncEntityType.PROGRESS -> executeProgress(entry)
         }
 
     private suspend fun executeProject(entry: PendingSyncEntry): Boolean {
         val remote = remoteProject ?: return true
         when (entry.operation) {
-            "insert" -> remote.insert(json.decodeFromString<Project>(entry.payload))
-            "update" -> remote.update(json.decodeFromString<Project>(entry.payload))
-            "delete" -> remote.delete(entry.entityId)
-            else -> return true
+            SyncOperation.INSERT -> remote.insert(json.decodeFromString<Project>(entry.payload))
+            SyncOperation.UPDATE -> remote.update(json.decodeFromString<Project>(entry.payload))
+            SyncOperation.DELETE -> remote.delete(entry.entityId)
         }
         return true
     }
@@ -36,9 +34,9 @@ class SyncExecutor(
     private suspend fun executeProgress(entry: PendingSyncEntry): Boolean {
         val remote = remoteProgress ?: return true
         when (entry.operation) {
-            "insert" -> remote.insert(json.decodeFromString<Progress>(entry.payload))
-            "delete" -> remote.delete(entry.entityId)
-            else -> return true
+            SyncOperation.INSERT -> remote.insert(json.decodeFromString<Progress>(entry.payload))
+            SyncOperation.DELETE -> remote.delete(entry.entityId)
+            SyncOperation.UPDATE -> return true // no-op: progress update not yet supported; no code path enqueues this
         }
         return true
     }

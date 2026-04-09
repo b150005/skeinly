@@ -2,6 +2,9 @@ package com.knitnote.data.local
 
 import com.knitnote.data.sync.PendingSyncDataSource
 import com.knitnote.data.sync.PendingSyncEntry
+import com.knitnote.data.sync.SyncEntityType
+import com.knitnote.data.sync.SyncOperation
+import com.knitnote.data.sync.SyncStatus
 import com.knitnote.db.KnitNoteDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -14,13 +17,13 @@ class LocalPendingSyncDataSource(
     private val queries get() = db.pendingSyncQueries
 
     override suspend fun enqueue(
-        entityType: String,
+        entityType: SyncEntityType,
         entityId: String,
-        operation: String,
+        operation: SyncOperation,
         payload: String,
         createdAt: Long,
     ): Unit = withContext(Dispatchers.IO) {
-        queries.insert(entityType, entityId, operation, payload, createdAt)
+        queries.insert(entityType.value, entityId, operation.value, payload, createdAt)
     }
 
     override suspend fun getAllPending(): List<PendingSyncEntry> = withContext(Dispatchers.IO) {
@@ -59,11 +62,11 @@ class LocalPendingSyncDataSource(
 private fun com.knitnote.db.PendingSyncEntity.toDomain(): PendingSyncEntry =
     PendingSyncEntry(
         id = id,
-        entityType = entity_type,
+        entityType = SyncEntityType.fromValue(entity_type),
         entityId = entity_id,
-        operation = operation,
+        operation = SyncOperation.fromValue(operation),
         payload = payload,
         createdAt = created_at,
         retryCount = retry_count.toInt(),
-        status = status,
+        status = SyncStatus.fromValue(status),
     )

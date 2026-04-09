@@ -8,9 +8,9 @@ class FakeLocalPendingSyncDataSource : PendingSyncDataSource {
     private val entries = mutableListOf<PendingSyncEntry>()
 
     override suspend fun enqueue(
-        entityType: String,
+        entityType: SyncEntityType,
         entityId: String,
-        operation: String,
+        operation: SyncOperation,
         payload: String,
         createdAt: Long,
     ) {
@@ -23,19 +23,19 @@ class FakeLocalPendingSyncDataSource : PendingSyncDataSource {
                 payload = payload,
                 createdAt = createdAt,
                 retryCount = 0,
-                status = "pending",
+                status = SyncStatus.PENDING,
             ),
         )
     }
 
     override suspend fun getAllPending(): List<PendingSyncEntry> =
-        entries.filter { it.status == "pending" }.sortedBy { it.createdAt }
+        entries.filter { it.status == SyncStatus.PENDING }.sortedBy { it.createdAt }
 
     override suspend fun getById(id: Long): PendingSyncEntry? =
         entries.find { it.id == id }
 
     override suspend fun getByEntityId(entityId: String): List<PendingSyncEntry> =
-        entries.filter { it.entityId == entityId && it.status == "pending" }
+        entries.filter { it.entityId == entityId && it.status == SyncStatus.PENDING }
 
     override suspend fun updatePayload(id: Long, payload: String) {
         val index = entries.indexOfFirst { it.id == id }
@@ -49,7 +49,7 @@ class FakeLocalPendingSyncDataSource : PendingSyncDataSource {
 
     override suspend fun markFailed(id: Long) {
         val index = entries.indexOfFirst { it.id == id }
-        if (index >= 0) entries[index] = entries[index].copy(status = "failed")
+        if (index >= 0) entries[index] = entries[index].copy(status = SyncStatus.FAILED)
     }
 
     override suspend fun delete(id: Long) {
@@ -57,7 +57,7 @@ class FakeLocalPendingSyncDataSource : PendingSyncDataSource {
     }
 
     override suspend fun countPending(): Long =
-        entries.count { it.status == "pending" }.toLong()
+        entries.count { it.status == SyncStatus.PENDING }.toLong()
 
     /** Test helper: get all entries regardless of status */
     fun allEntries(): List<PendingSyncEntry> = entries.toList()

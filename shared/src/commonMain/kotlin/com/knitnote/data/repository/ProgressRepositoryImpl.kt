@@ -2,7 +2,9 @@ package com.knitnote.data.repository
 
 import com.knitnote.data.local.LocalProgressDataSource
 import com.knitnote.data.remote.RemoteProgressDataSource
+import com.knitnote.data.sync.SyncEntityType
 import com.knitnote.data.sync.SyncManagerOperations
+import com.knitnote.data.sync.SyncOperation
 import com.knitnote.domain.model.Progress
 import com.knitnote.domain.repository.ProgressRepository
 import kotlinx.coroutines.flow.Flow
@@ -29,12 +31,12 @@ class ProgressRepositoryImpl(
 
     override suspend fun create(progress: Progress): Progress {
         local.insert(progress)
-        syncManager.syncOrEnqueue("progress", progress.id, "insert", json.encodeToString(progress))
+        syncManager.syncOrEnqueue(SyncEntityType.PROGRESS, progress.id, SyncOperation.INSERT, json.encodeToString(progress))
         return progress
     }
 
     override suspend fun delete(id: String) {
         local.delete(id)
-        syncManager.syncOrEnqueue("progress", id, "delete", "")
+        syncManager.syncOrEnqueue(SyncEntityType.PROGRESS, id, SyncOperation.DELETE, "")
     }
 }

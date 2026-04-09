@@ -75,9 +75,9 @@ class SyncManager(
      * Called by repositories after a local write.
      */
     override suspend fun syncOrEnqueue(
-        entityType: String,
+        entityType: SyncEntityType,
         entityId: String,
-        operation: String,
+        operation: SyncOperation,
         payload: String,
     ) {
         if (isOnline.value) {
@@ -89,7 +89,7 @@ class SyncManager(
                 payload = payload,
                 createdAt = clock.now().toEpochMilliseconds(),
                 retryCount = 0,
-                status = "pending",
+                status = SyncStatus.PENDING,
             )
             try {
                 syncExecutor.execute(entry)
@@ -116,9 +116,9 @@ class SyncManager(
      * - no existing → enqueue new entry
      */
     private suspend fun enqueueWithCoalescing(
-        entityType: String,
+        entityType: SyncEntityType,
         entityId: String,
-        operation: String,
+        operation: SyncOperation,
         payload: String,
     ) {
         coalescingMutex.withLock {
@@ -133,15 +133,15 @@ class SyncManager(
             val prior = existing.first()
 
             when {
-                prior.operation == "insert" && operation == "delete" -> {
+                prior.operation == SyncOperation.INSERT && operation == SyncOperation.DELETE -> {
                     pendingSyncDataSource.delete(prior.id)
                 }
-                prior.operation == "insert" && operation == "update" -> {
+                prior.operation == SyncOperation.INSERT && operation == SyncOperation.UPDATE -> {
                     pendingSyncDataSource.updatePayload(prior.id, payload)
                 }
-                operation == "delete" -> {
+                operation == SyncOperation.DELETE -> {
                     pendingSyncDataSource.delete(prior.id)
-                    pendingSyncDataSource.enqueue(entityType, entityId, "delete", "", clock.now().toEpochMilliseconds())
+                    pendingSyncDataSource.enqueue(entityType, entityId, SyncOperation.DELETE, "", clock.now().toEpochMilliseconds())
                 }
                 else -> {
                     pendingSyncDataSource.updatePayload(prior.id, payload)
