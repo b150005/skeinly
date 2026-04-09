@@ -3,13 +3,15 @@ package com.knitnote.data.repository
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.knitnote.data.local.LocalProjectDataSource
 import com.knitnote.data.sync.FakeSyncManager
+import com.knitnote.data.sync.SyncEntityType
+import com.knitnote.data.sync.SyncOperation
 import com.knitnote.db.KnitNoteDatabase
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
+import com.knitnote.testJson
 import kotlin.time.Clock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -24,7 +26,7 @@ class ProjectRepositoryImplTest {
     private lateinit var repository: ProjectRepositoryImpl
     private lateinit var fakeSyncManager: FakeSyncManager
     private val isOnline = MutableStateFlow(false)
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = testJson
 
     @BeforeTest
     fun setUp() {
@@ -154,9 +156,9 @@ class ProjectRepositoryImplTest {
 
         assertEquals(1, fakeSyncManager.calls.size)
         val call = fakeSyncManager.calls[0]
-        assertEquals("project", call.entityType)
+        assertEquals(SyncEntityType.PROJECT, call.entityType)
         assertEquals(project.id, call.entityId)
-        assertEquals("insert", call.operation)
+        assertEquals(SyncOperation.INSERT, call.operation)
         assertTrue(call.payload.contains(project.id))
     }
 
@@ -170,7 +172,7 @@ class ProjectRepositoryImplTest {
         repository.update(updated)
 
         assertEquals(1, fakeSyncManager.calls.size)
-        assertEquals("update", fakeSyncManager.calls[0].operation)
+        assertEquals(SyncOperation.UPDATE, fakeSyncManager.calls[0].operation)
     }
 
     @Test
@@ -183,9 +185,9 @@ class ProjectRepositoryImplTest {
 
         assertEquals(1, fakeSyncManager.calls.size)
         val call = fakeSyncManager.calls[0]
-        assertEquals("project", call.entityType)
+        assertEquals(SyncEntityType.PROJECT, call.entityType)
         assertEquals(project.id, call.entityId)
-        assertEquals("delete", call.operation)
+        assertEquals(SyncOperation.DELETE, call.operation)
         assertEquals("", call.payload)
     }
 }

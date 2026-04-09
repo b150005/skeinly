@@ -5,7 +5,7 @@ import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
 import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import com.knitnote.testJson
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -14,7 +14,7 @@ import kotlin.test.assertTrue
 
 class SyncExecutorTest {
 
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = testJson
 
     private val testProject = Project(
         id = "p-1",
@@ -40,9 +40,9 @@ class SyncExecutorTest {
     )
 
     private fun entry(
-        entityType: String,
+        entityType: SyncEntityType,
         entityId: String,
-        operation: String,
+        operation: SyncOperation,
         payload: String = "",
     ) = PendingSyncEntry(
         id = 1,
@@ -52,7 +52,7 @@ class SyncExecutorTest {
         payload = payload,
         createdAt = 1000L,
         retryCount = 0,
-        status = "pending",
+        status = SyncStatus.PENDING,
     )
 
     // --- Null remote tests ---
@@ -60,21 +60,14 @@ class SyncExecutorTest {
     @Test
     fun `null remoteProject returns true`() = runTest {
         val executor = SyncExecutor(remoteProject = null, remoteProgress = null, json = json)
-        val result = executor.execute(entry("project", "p-1", "insert", json.encodeToString(testProject)))
+        val result = executor.execute(entry(SyncEntityType.PROJECT, "p-1", SyncOperation.INSERT, json.encodeToString(testProject)))
         assertTrue(result)
     }
 
     @Test
     fun `null remoteProgress returns true`() = runTest {
         val executor = SyncExecutor(remoteProject = null, remoteProgress = null, json = json)
-        val result = executor.execute(entry("progress", "pr-1", "insert", json.encodeToString(testProgress)))
-        assertTrue(result)
-    }
-
-    @Test
-    fun `unknown entity type returns true`() = runTest {
-        val executor = SyncExecutor(remoteProject = null, remoteProgress = null, json = json)
-        val result = executor.execute(entry("unknown", "x-1", "insert"))
+        val result = executor.execute(entry(SyncEntityType.PROGRESS, "pr-1", SyncOperation.INSERT, json.encodeToString(testProgress)))
         assertTrue(result)
     }
 
@@ -86,7 +79,7 @@ class SyncExecutorTest {
         val executor = SyncExecutor(remoteProject = fakeRemote, remoteProgress = null, json = json)
 
         val result = executor.execute(
-            entry("project", "p-1", "insert", json.encodeToString(testProject)),
+            entry(SyncEntityType.PROJECT, "p-1", SyncOperation.INSERT, json.encodeToString(testProject)),
         )
 
         assertTrue(result)
@@ -100,7 +93,7 @@ class SyncExecutorTest {
         val executor = SyncExecutor(remoteProject = fakeRemote, remoteProgress = null, json = json)
 
         val result = executor.execute(
-            entry("project", "p-1", "update", json.encodeToString(testProject)),
+            entry(SyncEntityType.PROJECT, "p-1", SyncOperation.UPDATE, json.encodeToString(testProject)),
         )
 
         assertTrue(result)
@@ -112,7 +105,7 @@ class SyncExecutorTest {
         val fakeRemote = FakeRemoteProjectDataSource()
         val executor = SyncExecutor(remoteProject = fakeRemote, remoteProgress = null, json = json)
 
-        val result = executor.execute(entry("project", "p-1", "delete"))
+        val result = executor.execute(entry(SyncEntityType.PROJECT, "p-1", SyncOperation.DELETE))
 
         assertTrue(result)
         assertEquals(1, fakeRemote.deletedIds.size)
@@ -126,7 +119,7 @@ class SyncExecutorTest {
         val executor = SyncExecutor(remoteProject = fakeRemote, remoteProgress = null, json = json)
 
         val result = try {
-            executor.execute(entry("project", "p-1", "insert", json.encodeToString(testProject)))
+            executor.execute(entry(SyncEntityType.PROJECT, "p-1", SyncOperation.INSERT, json.encodeToString(testProject)))
         } catch (_: Exception) {
             false
         }
@@ -142,7 +135,7 @@ class SyncExecutorTest {
         val executor = SyncExecutor(remoteProject = null, remoteProgress = fakeRemote, json = json)
 
         val result = executor.execute(
-            entry("progress", "pr-1", "insert", json.encodeToString(testProgress)),
+            entry(SyncEntityType.PROGRESS, "pr-1", SyncOperation.INSERT, json.encodeToString(testProgress)),
         )
 
         assertTrue(result)
@@ -155,7 +148,7 @@ class SyncExecutorTest {
         val fakeRemote = FakeRemoteProgressDataSource()
         val executor = SyncExecutor(remoteProject = null, remoteProgress = fakeRemote, json = json)
 
-        val result = executor.execute(entry("progress", "pr-1", "delete"))
+        val result = executor.execute(entry(SyncEntityType.PROGRESS, "pr-1", SyncOperation.DELETE))
 
         assertTrue(result)
         assertEquals(1, fakeRemote.deletedIds.size)

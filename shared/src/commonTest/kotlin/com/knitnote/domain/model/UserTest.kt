@@ -1,14 +1,14 @@
 package com.knitnote.domain.model
 
 import kotlinx.datetime.Instant
-import kotlinx.serialization.json.Json
+import com.knitnote.testJson
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class UserTest {
 
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = testJson
 
     @Test
     fun `create user with all fields`() {

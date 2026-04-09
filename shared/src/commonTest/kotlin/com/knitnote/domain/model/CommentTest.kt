@@ -1,13 +1,13 @@
 package com.knitnote.domain.model
 
 import kotlinx.datetime.Instant
-import kotlinx.serialization.json.Json
+import com.knitnote.testJson
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class CommentTest {
 
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = testJson
 
     private val now = Instant.parse("2026-01-15T10:30:00Z")
 
