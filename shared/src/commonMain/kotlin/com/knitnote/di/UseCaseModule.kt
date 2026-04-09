@@ -2,11 +2,14 @@ package com.knitnote.di
 
 import com.knitnote.domain.usecase.AddProgressNoteUseCase
 import com.knitnote.domain.usecase.CompleteProjectUseCase
+import com.knitnote.domain.usecase.CreateCommentUseCase
 import com.knitnote.domain.usecase.CreateProjectUseCase
+import com.knitnote.domain.usecase.DeleteCommentUseCase
 import com.knitnote.domain.usecase.DecrementRowUseCase
 import com.knitnote.domain.usecase.DeleteProgressNoteUseCase
 import com.knitnote.domain.usecase.DeleteProjectUseCase
 import com.knitnote.domain.usecase.ForkSharedPatternUseCase
+import com.knitnote.domain.usecase.GetCommentsUseCase
 import com.knitnote.domain.usecase.GetProgressNotesUseCase
 import com.knitnote.domain.usecase.GetProjectByIdUseCase
 import com.knitnote.domain.usecase.GetProjectsUseCase
@@ -27,7 +30,7 @@ val useCaseModule = module {
     factory { ObserveAuthStateUseCase(get()) }
     factory { SignInUseCase(get()) }
     factory { SignUpUseCase(get()) }
-    factory { SignOutUseCase(get()) }
+    factory { SignOutUseCase(get(), getOrNull(), getOrNull(), getOrNull()) }
     factory { GetProjectsUseCase(get(), get()) }
     factory { CreateProjectUseCase(get(), get()) }
     factory { IncrementRowUseCase(get()) }
@@ -40,6 +43,11 @@ val useCaseModule = module {
     factory { UpdateProjectUseCase(get()) }
     factory { CompleteProjectUseCase(get()) }
     factory { ReopenProjectUseCase(get()) }
+
+    // Comment use cases (CommentRepository is nullable — only available with Supabase)
+    factory { GetCommentsUseCase(getOrNull()) }
+    factory { CreateCommentUseCase(getOrNull(), get()) }
+    factory { DeleteCommentUseCase(getOrNull(), get()) }
 
     // Share use cases (ShareRepository is nullable — only available with Supabase)
     factory { ShareProjectUseCase(get(), get(), getOrNull(), get()) }

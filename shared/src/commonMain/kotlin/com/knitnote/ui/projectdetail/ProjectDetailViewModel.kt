@@ -103,6 +103,11 @@ class ProjectDetailViewModel(
                 initialValue = emptyList(),
             )
 
+    /** Show an error from an external component (e.g., CommentSection) via the shared snackbar. */
+    fun showExternalError(message: String) {
+        _error.value = message
+    }
+
     fun onEvent(event: ProjectDetailEvent) {
         when (event) {
             ProjectDetailEvent.IncrementRow -> {
