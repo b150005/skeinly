@@ -78,9 +78,21 @@ class LocalProjectDataSource(
         queries.deleteById(id)
     }
 
-    suspend fun upsertAll(projects: List<Project>) = withContext(Dispatchers.IO) {
+    suspend fun upsert(project: Project): Unit = withContext(Dispatchers.IO) {
         db.transaction {
-            projects.forEach { project ->
+            val exists = queries.getById(project.id).executeAsOneOrNull() != null
+            if (exists) {
+                queries.update(
+                    title = project.title,
+                    status = project.status.toDbString(),
+                    current_row = project.currentRow.toLong(),
+                    total_rows = project.totalRows?.toLong(),
+                    started_at = project.startedAt?.toString(),
+                    completed_at = project.completedAt?.toString(),
+                    updated_at = project.updatedAt.toString(),
+                    id = project.id,
+                )
+            } else {
                 queries.insert(
                     id = project.id,
                     owner_id = project.ownerId,
@@ -94,6 +106,40 @@ class LocalProjectDataSource(
                     created_at = project.createdAt.toString(),
                     updated_at = project.updatedAt.toString(),
                 )
+            }
+        }
+    }
+
+    suspend fun upsertAll(projects: List<Project>) = withContext(Dispatchers.IO) {
+        db.transaction {
+            projects.forEach { project ->
+                val exists = queries.getById(project.id).executeAsOneOrNull() != null
+                if (exists) {
+                    queries.update(
+                        title = project.title,
+                        status = project.status.toDbString(),
+                        current_row = project.currentRow.toLong(),
+                        total_rows = project.totalRows?.toLong(),
+                        started_at = project.startedAt?.toString(),
+                        completed_at = project.completedAt?.toString(),
+                        updated_at = project.updatedAt.toString(),
+                        id = project.id,
+                    )
+                } else {
+                    queries.insert(
+                        id = project.id,
+                        owner_id = project.ownerId,
+                        pattern_id = project.patternId,
+                        title = project.title,
+                        status = project.status.toDbString(),
+                        current_row = project.currentRow.toLong(),
+                        total_rows = project.totalRows?.toLong(),
+                        started_at = project.startedAt?.toString(),
+                        completed_at = project.completedAt?.toString(),
+                        created_at = project.createdAt.toString(),
+                        updated_at = project.updatedAt.toString(),
+                    )
+                }
             }
         }
     }

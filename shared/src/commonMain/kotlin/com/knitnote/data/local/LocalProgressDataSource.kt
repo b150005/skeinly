@@ -43,6 +43,23 @@ class LocalProgressDataSource(
         progress
     }
 
+    suspend fun upsert(progress: Progress): Unit = withContext(Dispatchers.IO) {
+        db.transaction {
+            val exists = queries.getById(progress.id).executeAsOneOrNull() != null
+            if (exists) {
+                queries.deleteById(progress.id)
+            }
+            queries.insert(
+                id = progress.id,
+                project_id = progress.projectId,
+                row_number = progress.rowNumber.toLong(),
+                photo_url = progress.photoUrl,
+                note = progress.note,
+                created_at = progress.createdAt.toString(),
+            )
+        }
+    }
+
     suspend fun delete(id: String): Unit = withContext(Dispatchers.IO) {
         queries.deleteById(id)
     }

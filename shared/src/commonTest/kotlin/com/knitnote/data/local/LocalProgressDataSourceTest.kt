@@ -1,0 +1,116 @@
+package com.knitnote.data.local
+
+import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.knitnote.db.KnitNoteDatabase
+import com.knitnote.domain.model.Progress
+import com.knitnote.domain.model.Project
+import com.knitnote.domain.model.ProjectStatus
+import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+
+class LocalProgressDataSourceTest {
+
+    private lateinit var progressDataSource: LocalProgressDataSource
+    private lateinit var projectDataSource: LocalProjectDataSource
+
+    @BeforeTest
+    fun setUp() {
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        KnitNoteDatabase.Schema.create(driver)
+        val db = KnitNoteDatabase(driver)
+        progressDataSource = LocalProgressDataSource(db)
+        projectDataSource = LocalProjectDataSource(db)
+    }
+
+    private suspend fun insertParentProject(id: String = "proj-1") {
+        projectDataSource.insert(
+            Project(
+                id = id,
+                ownerId = "owner-1",
+                patternId = "pattern-1",
+                title = "Test",
+                status = ProjectStatus.IN_PROGRESS,
+                currentRow = 5,
+                totalRows = 100,
+                startedAt = null,
+                completedAt = null,
+                createdAt = Instant.parse("2026-01-01T00:00:00Z"),
+                updatedAt = Instant.parse("2026-01-01T00:00:00Z"),
+            ),
+        )
+    }
+
+    private fun testProgress(
+        id: String = "prog-1",
+        projectId: String = "proj-1",
+        rowNumber: Int = 5,
+        note: String = "Test note",
+    ) = Progress(
+        id = id,
+        projectId = projectId,
+        rowNumber = rowNumber,
+        photoUrl = null,
+        note = note,
+        createdAt = Instant.parse("2026-01-01T12:00:00Z"),
+    )
+
+    @Test
+    fun `upsert inserts new progress`() = runTest {
+        insertParentProject()
+        val progress = testProgress()
+        progressDataSource.upsert(progress)
+
+        val result = progressDataSource.getById("prog-1")
+        assertNotNull(result)
+        assertEquals("Test note", result.note)
+        assertEquals(5, result.rowNumber)
+    }
+
+    @Test
+    fun `upsert replaces existing progress`() = runTest {
+        insertParentProject()
+        progressDataSource.insert(testProgress())
+
+        val updated = testProgress(note = "Updated note", rowNumber = 10)
+        progressDataSource.upsert(updated)
+
+        val result = progressDataSource.getById("prog-1")
+        assertNotNull(result)
+        assertEquals("Updated note", result.note)
+        assertEquals(10, result.rowNumber)
+    }
+
+    @Test
+    fun `delete removes progress`() = runTest {
+        insertParentProject()
+        progressDataSource.insert(testProgress())
+        progressDataSource.delete("prog-1")
+
+        assertNull(progressDataSource.getById("prog-1"))
+    }
+
+    @Test
+    fun `getByProjectId returns entries ordered by created_at desc`() = runTest {
+        insertParentProject()
+        progressDataSource.insert(
+            testProgress(id = "prog-1", note = "First").copy(
+                createdAt = Instant.parse("2026-01-01T10:00:00Z"),
+            ),
+        )
+        progressDataSource.insert(
+            testProgress(id = "prog-2", note = "Second").copy(
+                createdAt = Instant.parse("2026-01-01T12:00:00Z"),
+            ),
+        )
+
+        val results = progressDataSource.getByProjectId("proj-1")
+        assertEquals(2, results.size)
+        assertEquals("Second", results[0].note)
+        assertEquals("First", results[1].note)
+    }
+}

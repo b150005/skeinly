@@ -56,6 +56,7 @@ kotlin {
             implementation(libs.supabase.postgrest)
             implementation(libs.supabase.compose.auth)
             implementation(libs.supabase.compose.auth.ui)
+            implementation(libs.supabase.realtime)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

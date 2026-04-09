@@ -7,6 +7,7 @@ import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.FlowType
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.realtime.Realtime
 import org.koin.dsl.module
 
 val supabaseModule = module {
@@ -21,6 +22,7 @@ val supabaseModule = module {
                 flowType = FlowType.PKCE
             }
             install(Postgrest)
+            install(Realtime)
         }
     }
 }
