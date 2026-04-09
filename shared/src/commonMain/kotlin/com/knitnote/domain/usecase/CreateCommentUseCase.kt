@@ -1,5 +1,7 @@
 package com.knitnote.domain.usecase
 
+import com.knitnote.domain.model.ActivityTargetType
+import com.knitnote.domain.model.ActivityType
 import com.knitnote.domain.model.Comment
 import com.knitnote.domain.model.CommentTargetType
 import com.knitnote.domain.repository.AuthRepository
@@ -14,6 +16,7 @@ private val UUID_REGEX = Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}
 class CreateCommentUseCase(
     private val commentRepository: CommentRepository?,
     private val authRepository: AuthRepository,
+    private val createActivity: CreateActivityUseCase? = null,
 ) {
 
     @OptIn(ExperimentalUuidApi::class)
@@ -60,6 +63,19 @@ class CreateCommentUseCase(
             createdAt = Clock.System.now(),
         )
 
-        return UseCaseResult.Success(commentRepository.create(comment))
+        val created = commentRepository.create(comment)
+
+        val activityTargetType = when (targetType) {
+            CommentTargetType.PROJECT -> ActivityTargetType.PROJECT
+            CommentTargetType.PATTERN -> ActivityTargetType.PATTERN
+        }
+        createActivity?.invoke(
+            userId = userId,
+            type = ActivityType.COMMENTED,
+            targetType = activityTargetType,
+            targetId = targetId,
+        )
+
+        return UseCaseResult.Success(created)
     }
 }

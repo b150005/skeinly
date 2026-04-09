@@ -1,6 +1,8 @@
 package com.knitnote.domain.usecase
 
 import com.knitnote.domain.LocalUser
+import com.knitnote.domain.model.ActivityTargetType
+import com.knitnote.domain.model.ActivityType
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
 import com.knitnote.domain.repository.AuthRepository
@@ -12,6 +14,7 @@ import kotlin.uuid.Uuid
 class CreateProjectUseCase(
     private val repository: ProjectRepository,
     private val authRepository: AuthRepository,
+    private val createActivity: CreateActivityUseCase? = null,
 ) {
 
     @OptIn(ExperimentalUuidApi::class)
@@ -34,6 +37,17 @@ class CreateProjectUseCase(
             createdAt = now,
             updatedAt = now,
         )
-        return UseCaseResult.Success(repository.create(project))
+        val created = repository.create(project)
+
+        if (ownerId != LocalUser.ID) {
+            createActivity?.invoke(
+                userId = ownerId,
+                type = ActivityType.STARTED,
+                targetType = ActivityTargetType.PROJECT,
+                targetId = created.id,
+            )
+        }
+
+        return UseCaseResult.Success(created)
     }
 }

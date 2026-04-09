@@ -1,11 +1,16 @@
 package com.knitnote.domain.usecase
 
+import com.knitnote.domain.model.ActivityTargetType
+import com.knitnote.domain.model.ActivityType
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
 import com.knitnote.domain.repository.ProjectRepository
 import kotlin.time.Clock
 
-class CompleteProjectUseCase(private val repository: ProjectRepository) {
+class CompleteProjectUseCase(
+    private val repository: ProjectRepository,
+    private val createActivity: CreateActivityUseCase? = null,
+) {
 
     suspend operator fun invoke(projectId: String): UseCaseResult<Project> {
         val project = repository.getById(projectId)
@@ -21,6 +26,15 @@ class CompleteProjectUseCase(private val repository: ProjectRepository) {
             completedAt = now,
             updatedAt = now,
         )
-        return UseCaseResult.Success(repository.update(completed))
+        val updated = repository.update(completed)
+
+        createActivity?.invoke(
+            userId = project.ownerId,
+            type = ActivityType.COMPLETED,
+            targetType = ActivityTargetType.PROJECT,
+            targetId = projectId,
+        )
+
+        return UseCaseResult.Success(updated)
     }
 }

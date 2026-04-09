@@ -1,5 +1,7 @@
 package com.knitnote.domain.usecase
 
+import com.knitnote.domain.model.ActivityTargetType
+import com.knitnote.domain.model.ActivityType
 import com.knitnote.domain.model.Pattern
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
@@ -24,6 +26,7 @@ class ForkSharedPatternUseCase(
     private val patternRepository: PatternRepository,
     private val projectRepository: ProjectRepository,
     private val authRepository: AuthRepository,
+    private val createActivity: CreateActivityUseCase? = null,
 ) {
 
     @OptIn(ExperimentalUuidApi::class)
@@ -80,6 +83,13 @@ class ForkSharedPatternUseCase(
             updatedAt = now,
         )
         projectRepository.create(forkedProject)
+
+        createActivity?.invoke(
+            userId = userId,
+            type = ActivityType.FORKED,
+            targetType = ActivityTargetType.PATTERN,
+            targetId = forkedPattern.id,
+        )
 
         return UseCaseResult.Success(ForkedProject(pattern = forkedPattern, project = forkedProject))
     }

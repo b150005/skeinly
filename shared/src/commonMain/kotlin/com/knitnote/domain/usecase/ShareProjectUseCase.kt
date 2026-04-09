@@ -1,6 +1,8 @@
 package com.knitnote.domain.usecase
 
 import com.knitnote.domain.LocalUser
+import com.knitnote.domain.model.ActivityTargetType
+import com.knitnote.domain.model.ActivityType
 import com.knitnote.domain.model.Pattern
 import com.knitnote.domain.model.Share
 import com.knitnote.domain.model.ShareLink
@@ -20,6 +22,7 @@ class ShareProjectUseCase(
     private val patternRepository: PatternRepository,
     private val shareRepository: ShareRepository?,
     private val authRepository: AuthRepository,
+    private val createActivity: CreateActivityUseCase? = null,
 ) {
 
     @OptIn(ExperimentalUuidApi::class)
@@ -87,6 +90,13 @@ class ShareProjectUseCase(
             sharedAt = now,
         )
         shareRepository.create(share)
+
+        createActivity?.invoke(
+            userId = userId,
+            type = ActivityType.SHARED,
+            targetType = ActivityTargetType.PATTERN,
+            targetId = patternId,
+        )
 
         return UseCaseResult.Success(
             ShareLink(
