@@ -3,6 +3,7 @@ package com.knitnote.di
 import com.knitnote.ui.activityfeed.ActivityFeedViewModel
 import com.knitnote.ui.auth.AuthViewModel
 import com.knitnote.ui.comments.CommentSectionViewModel
+import com.knitnote.ui.profile.ProfileViewModel
 import com.knitnote.ui.projectdetail.ProjectDetailViewModel
 import com.knitnote.ui.projectlist.ProjectListViewModel
 import com.knitnote.ui.sharedcontent.SharedContentViewModel
@@ -13,7 +14,8 @@ import org.koin.dsl.module
 
 val viewModelModule = module {
     viewModelOf(::AuthViewModel)
-    viewModel { ActivityFeedViewModel(get(), get()) }
+    viewModelOf(::ProfileViewModel)
+    viewModel { ActivityFeedViewModel(get(), get(), getOrNull()) }
     viewModelOf(::ProjectListViewModel)
     viewModel { params ->
         ProjectDetailViewModel(
@@ -30,7 +32,7 @@ val viewModelModule = module {
             shareProject = get(),
         )
     }
-    viewModel { SharedWithMeViewModel(get(), get(), get()) }
+    viewModel { SharedWithMeViewModel(get(), get(), get(), getOrNull()) }
     viewModel { params ->
         CommentSectionViewModel(
             targetType = params.get(),

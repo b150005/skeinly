@@ -3,7 +3,9 @@ package com.knitnote.ui.activityfeed
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.knitnote.domain.model.Activity
+import com.knitnote.domain.model.User
 import com.knitnote.domain.repository.AuthRepository
+import com.knitnote.domain.repository.UserRepository
 import com.knitnote.domain.usecase.GetActivitiesUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,6 +17,7 @@ import kotlinx.coroutines.flow.update
 
 data class ActivityFeedState(
     val activities: List<Activity> = emptyList(),
+    val users: Map<String, User> = emptyMap(),
     val isLoading: Boolean = true,
     val error: String? = null,
 )
@@ -26,6 +29,7 @@ sealed interface ActivityFeedEvent {
 class ActivityFeedViewModel(
     private val getActivities: GetActivitiesUseCase,
     private val authRepository: AuthRepository,
+    private val userRepository: UserRepository? = null,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ActivityFeedState())
@@ -55,6 +59,7 @@ class ActivityFeedViewModel(
                 _state.update {
                     it.copy(activities = activities, isLoading = false)
                 }
+                resolveUsers(activities)
             }
             .catch { e ->
                 _state.update {
@@ -62,5 +67,14 @@ class ActivityFeedViewModel(
                 }
             }
             .launchIn(viewModelScope)
+    }
+
+    private suspend fun resolveUsers(activities: List<Activity>) {
+        val currentUsers = _state.value.users
+        val newUserIds = activities.map { it.userId }.distinct() - currentUsers.keys
+        if (newUserIds.isEmpty() || userRepository == null) return
+
+        val resolved = userRepository.getByIds(newUserIds).associateBy { it.id }
+        _state.update { it.copy(users = currentUsers + resolved) }
     }
 }

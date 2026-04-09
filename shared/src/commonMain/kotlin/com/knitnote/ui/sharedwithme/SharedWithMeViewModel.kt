@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.knitnote.domain.model.Share
 import com.knitnote.domain.model.ShareStatus
+import com.knitnote.domain.model.User
 import com.knitnote.domain.repository.PatternRepository
+import com.knitnote.domain.repository.UserRepository
 import com.knitnote.domain.usecase.GetReceivedSharesUseCase
 import com.knitnote.domain.usecase.UpdateShareStatusUseCase
 import com.knitnote.domain.usecase.UseCaseResult
@@ -18,6 +20,7 @@ import kotlinx.coroutines.launch
 data class SharedWithMeState(
     val shares: List<Share> = emptyList(),
     val patternTitles: Map<String, String> = emptyMap(),
+    val sharers: Map<String, User> = emptyMap(),
     val isLoading: Boolean = true,
     val error: String? = null,
 )
@@ -33,6 +36,7 @@ class SharedWithMeViewModel(
     private val getReceivedShares: GetReceivedSharesUseCase,
     private val patternRepository: PatternRepository,
     private val updateShareStatus: UpdateShareStatusUseCase,
+    private val userRepository: UserRepository? = null,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SharedWithMeState())
@@ -50,10 +54,12 @@ class SharedWithMeViewModel(
                     when (val result = getReceivedShares()) {
                         is UseCaseResult.Success -> {
                             val titles = resolvePatternTitles(result.value)
+                            val sharers = resolveSharers(result.value)
                             _state.update {
                                 it.copy(
                                     shares = result.value,
                                     patternTitles = titles,
+                                    sharers = sharers,
                                     isLoading = false,
                                 )
                             }
@@ -102,5 +108,11 @@ class SharedWithMeViewModel(
                 patternId to pattern.title
             }
         }.toMap()
+    }
+
+    private suspend fun resolveSharers(shares: List<Share>): Map<String, User> {
+        if (userRepository == null) return emptyMap()
+        val distinctIds = shares.map { it.fromUserId }.distinct()
+        return userRepository.getByIds(distinctIds).associateBy { it.id }
     }
 }
