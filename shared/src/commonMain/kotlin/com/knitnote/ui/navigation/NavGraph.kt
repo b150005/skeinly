@@ -14,6 +14,7 @@ import androidx.navigation.toRoute
 import com.knitnote.data.remote.SupabaseConfig
 import com.knitnote.data.remote.isConfigured
 import com.knitnote.domain.model.AuthState
+import com.knitnote.ui.activityfeed.ActivityFeedScreen
 import com.knitnote.ui.auth.AuthViewModel
 import com.knitnote.ui.auth.LoginScreen
 import com.knitnote.ui.projectdetail.ProjectDetailScreen
@@ -34,6 +35,9 @@ data class ProjectDetail(val projectId: String)
 
 @Serializable
 data object SharedWithMe
+
+@Serializable
+data object ActivityFeed
 
 @Serializable
 data class SharedContent(val token: String? = null, val shareId: String? = null)
@@ -102,6 +106,14 @@ fun KnitNoteNavHost(
                 onSharedWithMeClick = {
                     navController.navigate(SharedWithMe)
                 },
+                onActivityFeedClick = {
+                    navController.navigate(ActivityFeed)
+                },
+            )
+        }
+        composable<ActivityFeed> {
+            ActivityFeedScreen(
+                onBack = { navController.popBackStack() },
             )
         }
         composable<SharedWithMe> {

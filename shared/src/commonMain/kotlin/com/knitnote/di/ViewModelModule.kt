@@ -1,5 +1,6 @@
 package com.knitnote.di
 
+import com.knitnote.ui.activityfeed.ActivityFeedViewModel
 import com.knitnote.ui.auth.AuthViewModel
 import com.knitnote.ui.comments.CommentSectionViewModel
 import com.knitnote.ui.projectdetail.ProjectDetailViewModel
@@ -12,6 +13,7 @@ import org.koin.dsl.module
 
 val viewModelModule = module {
     viewModelOf(::AuthViewModel)
+    viewModel { ActivityFeedViewModel(get(), get()) }
     viewModelOf(::ProjectListViewModel)
     viewModel { params ->
         ProjectDetailViewModel(
