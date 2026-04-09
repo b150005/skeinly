@@ -2,34 +2,42 @@ package com.knitnote.data.repository
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.knitnote.data.local.LocalProjectDataSource
+import com.knitnote.data.sync.FakeSyncManager
 import com.knitnote.db.KnitNoteDatabase
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import kotlin.time.Clock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class ProjectRepositoryImplTest {
 
     private lateinit var db: KnitNoteDatabase
     private lateinit var repository: ProjectRepositoryImpl
+    private lateinit var fakeSyncManager: FakeSyncManager
     private val isOnline = MutableStateFlow(false)
+    private val json = Json { ignoreUnknownKeys = true }
 
     @BeforeTest
     fun setUp() {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         KnitNoteDatabase.Schema.create(driver)
         db = KnitNoteDatabase(driver)
+        fakeSyncManager = FakeSyncManager()
         repository = ProjectRepositoryImpl(
             local = LocalProjectDataSource(db),
-            remote = null, // local-only mode for tests
+            remote = null,
             isOnline = isOnline,
+            syncManager = fakeSyncManager,
+            json = json,
         )
     }
 
@@ -135,5 +143,49 @@ class ProjectRepositoryImplTest {
 
         val noResults = repository.getByPatternId("other-pattern")
         assertEquals(0, noResults.size)
+    }
+
+    // --- SyncManager integration tests ---
+
+    @Test
+    fun `create calls syncOrEnqueue with insert operation`() = runTest {
+        val project = createTestProject()
+        repository.create(project)
+
+        assertEquals(1, fakeSyncManager.calls.size)
+        val call = fakeSyncManager.calls[0]
+        assertEquals("project", call.entityType)
+        assertEquals(project.id, call.entityId)
+        assertEquals("insert", call.operation)
+        assertTrue(call.payload.contains(project.id))
+    }
+
+    @Test
+    fun `update calls syncOrEnqueue with update operation`() = runTest {
+        val project = createTestProject()
+        repository.create(project)
+        fakeSyncManager.calls.clear()
+
+        val updated = project.copy(currentRow = 10)
+        repository.update(updated)
+
+        assertEquals(1, fakeSyncManager.calls.size)
+        assertEquals("update", fakeSyncManager.calls[0].operation)
+    }
+
+    @Test
+    fun `delete calls syncOrEnqueue with delete operation`() = runTest {
+        val project = createTestProject()
+        repository.create(project)
+        fakeSyncManager.calls.clear()
+
+        repository.delete(project.id)
+
+        assertEquals(1, fakeSyncManager.calls.size)
+        val call = fakeSyncManager.calls[0]
+        assertEquals("project", call.entityType)
+        assertEquals(project.id, call.entityId)
+        assertEquals("delete", call.operation)
+        assertEquals("", call.payload)
     }
 }

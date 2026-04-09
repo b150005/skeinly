@@ -36,6 +36,8 @@ val repositoryModule = module {
             local = get(),
             remote = getOrNull(),
             isOnline = get<ConnectivityMonitor>().isOnline,
+            syncManager = get(),
+            json = get(),
         )
     }
     single<ProgressRepository> {
@@ -43,6 +45,8 @@ val repositoryModule = module {
             local = get(),
             remote = getOrNull(),
             isOnline = get<ConnectivityMonitor>().isOnline,
+            syncManager = get(),
+            json = get(),
         )
     }
 }

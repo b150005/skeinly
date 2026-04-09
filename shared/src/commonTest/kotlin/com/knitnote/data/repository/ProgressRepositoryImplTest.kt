@@ -3,6 +3,7 @@ package com.knitnote.data.repository
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.knitnote.data.local.LocalProgressDataSource
 import com.knitnote.data.local.LocalProjectDataSource
+import com.knitnote.data.sync.FakeSyncManager
 import com.knitnote.db.KnitNoteDatabase
 import com.knitnote.domain.model.Progress
 import com.knitnote.domain.model.ProjectStatus
@@ -10,19 +11,23 @@ import com.knitnote.domain.model.Project
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import kotlin.time.Clock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class ProgressRepositoryImplTest {
 
     private lateinit var db: KnitNoteDatabase
     private lateinit var progressRepository: ProgressRepositoryImpl
     private lateinit var localProjectDataSource: LocalProjectDataSource
+    private lateinit var fakeSyncManager: FakeSyncManager
     private val isOnline = MutableStateFlow(false)
+    private val json = Json { ignoreUnknownKeys = true }
 
     @BeforeTest
     fun setUp() {
@@ -30,10 +35,13 @@ class ProgressRepositoryImplTest {
         KnitNoteDatabase.Schema.create(driver)
         db = KnitNoteDatabase(driver)
         localProjectDataSource = LocalProjectDataSource(db)
+        fakeSyncManager = FakeSyncManager()
         progressRepository = ProgressRepositoryImpl(
             local = LocalProgressDataSource(db),
             remote = null,
             isOnline = isOnline,
+            syncManager = fakeSyncManager,
+            json = json,
         )
     }
 
@@ -121,5 +129,38 @@ class ProgressRepositoryImplTest {
 
         assertEquals(1, entries.size)
         assertEquals(progress.id, entries[0].id)
+    }
+
+    // --- SyncManager integration tests ---
+
+    @Test
+    fun `create calls syncOrEnqueue with insert operation`() = runTest {
+        createParentProject()
+        val progress = createTestProgress()
+        progressRepository.create(progress)
+
+        assertEquals(1, fakeSyncManager.calls.size)
+        val call = fakeSyncManager.calls[0]
+        assertEquals("progress", call.entityType)
+        assertEquals(progress.id, call.entityId)
+        assertEquals("insert", call.operation)
+        assertTrue(call.payload.contains(progress.id))
+    }
+
+    @Test
+    fun `delete calls syncOrEnqueue with delete operation`() = runTest {
+        createParentProject()
+        val progress = createTestProgress()
+        progressRepository.create(progress)
+        fakeSyncManager.calls.clear()
+
+        progressRepository.delete(progress.id)
+
+        assertEquals(1, fakeSyncManager.calls.size)
+        val call = fakeSyncManager.calls[0]
+        assertEquals("progress", call.entityType)
+        assertEquals(progress.id, call.entityId)
+        assertEquals("delete", call.operation)
+        assertEquals("", call.payload)
     }
 }
