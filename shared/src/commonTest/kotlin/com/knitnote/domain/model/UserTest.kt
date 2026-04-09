@@ -1,6 +1,6 @@
 package com.knitnote.domain.model
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import com.knitnote.testJson
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -3,7 +3,7 @@ package com.knitnote.data.mapper
 import com.knitnote.db.ProjectEntity
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 fun ProjectEntity.toDomain(): Project = Project(
     id = id,

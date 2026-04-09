@@ -2,7 +2,7 @@ package com.knitnote.data.mapper
 
 import com.knitnote.db.ProgressEntity
 import com.knitnote.domain.model.Progress
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 fun ProgressEntity.toDomain(): Progress = Progress(
     id = id,

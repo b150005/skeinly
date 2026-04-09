@@ -5,7 +5,7 @@ import com.knitnote.domain.model.Progress
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
 import com.knitnote.domain.model.Visibility
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.encodeToString
 import com.knitnote.testJson
 import kotlinx.coroutines.test.runTest

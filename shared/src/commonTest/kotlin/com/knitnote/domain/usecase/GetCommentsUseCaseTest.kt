@@ -5,7 +5,7 @@ import com.knitnote.domain.model.Comment
 import com.knitnote.domain.model.CommentTargetType
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

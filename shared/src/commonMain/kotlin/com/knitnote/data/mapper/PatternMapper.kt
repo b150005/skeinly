@@ -4,7 +4,7 @@ import com.knitnote.db.PatternEntity
 import com.knitnote.domain.model.Difficulty
 import com.knitnote.domain.model.Pattern
 import com.knitnote.domain.model.Visibility
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 fun PatternEntity.toDomain(): Pattern = Pattern(
     id = id,
