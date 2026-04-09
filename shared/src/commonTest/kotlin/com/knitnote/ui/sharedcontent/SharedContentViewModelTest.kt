@@ -101,10 +101,18 @@ class SharedContentViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel(token: String): SharedContentViewModel {
+    private fun createViewModel(
+        token: String? = null,
+        shareId: String? = null,
+    ): SharedContentViewModel {
         val resolveShareToken = ResolveShareTokenUseCase(shareRepo, patternRepo, projectRepo)
         val forkSharedPattern = ForkSharedPatternUseCase(shareRepo, patternRepo, projectRepo, authRepo)
-        return SharedContentViewModel(token, resolveShareToken, forkSharedPattern)
+        return SharedContentViewModel(
+            token = token,
+            shareId = shareId,
+            resolveShareToken = resolveShareToken,
+            forkSharedPattern = forkSharedPattern,
+        )
     }
 
     @Test
@@ -113,7 +121,7 @@ class SharedContentViewModelTest {
         projectRepo.create(testProject)
         shareRepo.addShare(forkableShare)
 
-        val viewModel = createViewModel("valid-token")
+        val viewModel = createViewModel(token = "valid-token")
         val state = viewModel.state.value
 
         assertFalse(state.isLoading)
@@ -126,7 +134,7 @@ class SharedContentViewModelTest {
 
     @Test
     fun `shows error when token is invalid`() = runTest {
-        val viewModel = createViewModel("invalid-token")
+        val viewModel = createViewModel(token = "invalid-token")
         val state = viewModel.state.value
 
         assertFalse(state.isLoading)
@@ -140,7 +148,7 @@ class SharedContentViewModelTest {
         projectRepo.create(testProject)
         shareRepo.addShare(forkableShare)
 
-        val viewModel = createViewModel("valid-token")
+        val viewModel = createViewModel(token = "valid-token")
         assertNull(viewModel.state.value.forkedProjectId)
 
         viewModel.onEvent(SharedContentEvent.Fork)
@@ -156,7 +164,7 @@ class SharedContentViewModelTest {
         projectRepo.create(testProject)
         shareRepo.addShare(viewOnlyShare)
 
-        val viewModel = createViewModel("view-token")
+        val viewModel = createViewModel(token = "view-token")
 
         viewModel.onEvent(SharedContentEvent.Fork)
         val state = viewModel.state.value
@@ -166,7 +174,7 @@ class SharedContentViewModelTest {
 
     @Test
     fun `clears error on ClearError event`() = runTest {
-        val viewModel = createViewModel("invalid-token")
+        val viewModel = createViewModel(token = "invalid-token")
         assertNotNull(viewModel.state.value.error)
 
         viewModel.onEvent(SharedContentEvent.ClearError)
@@ -174,10 +182,34 @@ class SharedContentViewModelTest {
     }
 
     @Test
+    fun `resolves shareId for direct shares`() = runTest {
+        val directShare = forkableShare.copy(
+            id = "direct-share-1",
+            shareToken = null,
+        )
+        patternRepo.create(testPattern)
+        projectRepo.create(testProject)
+        shareRepo.addShare(directShare)
+
+        val viewModel = createViewModel(shareId = "direct-share-1")
+        val state = viewModel.state.value
+
+        assertFalse(state.isLoading)
+        assertNotNull(state.pattern)
+        assertEquals("Cable Knit Sweater", state.pattern?.title)
+        assertNotNull(state.share)
+        assertEquals("direct-share-1", state.share?.id)
+    }
+
+    @Test
     fun `handles null share repository gracefully`() = runTest {
         val resolveShareToken = ResolveShareTokenUseCase(null, patternRepo, projectRepo)
         val forkSharedPattern = ForkSharedPatternUseCase(null, patternRepo, projectRepo, authRepo)
-        val viewModel = SharedContentViewModel("some-token", resolveShareToken, forkSharedPattern)
+        val viewModel = SharedContentViewModel(
+            token = "some-token",
+            resolveShareToken = resolveShareToken,
+            forkSharedPattern = forkSharedPattern,
+        )
 
         val state = viewModel.state.value
         assertFalse(state.isLoading)

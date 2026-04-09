@@ -20,6 +20,7 @@ import com.knitnote.domain.usecase.SignInUseCase
 import com.knitnote.domain.usecase.SignOutUseCase
 import com.knitnote.domain.usecase.SignUpUseCase
 import com.knitnote.domain.usecase.UpdateProjectUseCase
+import com.knitnote.domain.usecase.UpdateShareStatusUseCase
 import org.koin.dsl.module
 
 val useCaseModule = module {
@@ -45,4 +46,5 @@ val useCaseModule = module {
     factory { ResolveShareTokenUseCase(getOrNull(), get(), get()) }
     factory { GetReceivedSharesUseCase(getOrNull(), get()) }
     factory { ForkSharedPatternUseCase(getOrNull(), get(), get(), get()) }
+    factory { UpdateShareStatusUseCase(getOrNull(), get()) }
 }

@@ -11,6 +11,7 @@ import com.knitnote.domain.usecase.FakeAuthRepository
 import com.knitnote.domain.usecase.FakePatternRepository
 import com.knitnote.domain.usecase.FakeShareRepository
 import com.knitnote.domain.usecase.GetReceivedSharesUseCase
+import com.knitnote.domain.usecase.UpdateShareStatusUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -50,13 +51,17 @@ class SharedWithMeViewModelTest {
         updatedAt = Instant.fromEpochMilliseconds(2000),
     )
 
-    private fun makeShare(id: String, patternId: String = "pat-1") = Share(
+    private fun makeShare(
+        id: String,
+        patternId: String = "pat-1",
+        status: ShareStatus = ShareStatus.ACCEPTED,
+    ) = Share(
         id = id,
         patternId = patternId,
         fromUserId = "other-user",
         toUserId = "user-1",
         permission = SharePermission.VIEW,
-        status = ShareStatus.ACCEPTED,
+        status = status,
         shareToken = "token-$id",
         sharedAt = Instant.fromEpochMilliseconds(1000),
     )
@@ -76,8 +81,9 @@ class SharedWithMeViewModelTest {
     }
 
     private fun createViewModel(): SharedWithMeViewModel {
-        val useCase = GetReceivedSharesUseCase(shareRepo, authRepo)
-        return SharedWithMeViewModel(useCase, patternRepo)
+        val getReceivedShares = GetReceivedSharesUseCase(shareRepo, authRepo)
+        val updateShareStatus = UpdateShareStatusUseCase(shareRepo, authRepo)
+        return SharedWithMeViewModel(getReceivedShares, patternRepo, updateShareStatus)
     }
 
     @Test
@@ -151,5 +157,39 @@ class SharedWithMeViewModelTest {
 
         viewModel.onEvent(SharedWithMeEvent.ClearError)
         assertNull(viewModel.state.value.error)
+    }
+
+    @Test
+    fun `accepts pending share and updates local state`() = runTest {
+        shareRepo.addShare(makeShare("s-1", status = ShareStatus.PENDING))
+
+        val viewModel = createViewModel()
+        assertEquals(ShareStatus.PENDING, viewModel.state.value.shares.first().status)
+
+        viewModel.onEvent(SharedWithMeEvent.AcceptShare("s-1"))
+
+        val updatedShare = viewModel.state.value.shares.first()
+        assertEquals(ShareStatus.ACCEPTED, updatedShare.status)
+    }
+
+    @Test
+    fun `declines pending share and updates local state`() = runTest {
+        shareRepo.addShare(makeShare("s-1", status = ShareStatus.PENDING))
+
+        val viewModel = createViewModel()
+        viewModel.onEvent(SharedWithMeEvent.DeclineShare("s-1"))
+
+        val updatedShare = viewModel.state.value.shares.first()
+        assertEquals(ShareStatus.DECLINED, updatedShare.status)
+    }
+
+    @Test
+    fun `accept non-pending share shows error`() = runTest {
+        shareRepo.addShare(makeShare("s-1", status = ShareStatus.ACCEPTED))
+
+        val viewModel = createViewModel()
+        viewModel.onEvent(SharedWithMeEvent.AcceptShare("s-1"))
+
+        assertNotNull(viewModel.state.value.error)
     }
 }

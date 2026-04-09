@@ -74,9 +74,11 @@ fun ProjectDetailScreen(
     val error by viewModel.error.collectAsState()
     val progressNotes by viewModel.progressNotes.collectAsState()
     val shareLink by viewModel.shareLink.collectAsState()
+    val directShareSuccess by viewModel.directShareSuccess.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showAddNoteDialog by rememberSaveable { mutableStateOf(false) }
     var showEditDialog by rememberSaveable { mutableStateOf(false) }
+    var showUserPickerDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(error) {
         error?.let {
@@ -110,11 +112,29 @@ fun ProjectDetailScreen(
         )
     }
 
-    if (shareLink != null) {
+    val shareLinkToken = shareLink?.shareToken
+    if (shareLinkToken != null) {
         ShareLinkDialog(
-            shareToken = shareLink!!.shareToken,
+            shareToken = shareLinkToken,
             onDismiss = { viewModel.onEvent(ProjectDetailEvent.DismissShareDialog) },
         )
+    }
+
+    if (showUserPickerDialog) {
+        UserPickerDialog(
+            onDismiss = { showUserPickerDialog = false },
+            onUserSelected = { userId, permission ->
+                viewModel.onEvent(ProjectDetailEvent.ShareWithUser(userId, permission))
+                showUserPickerDialog = false
+            },
+        )
+    }
+
+    LaunchedEffect(directShareSuccess) {
+        if (directShareSuccess) {
+            snackbarHostState.showSnackbar("Shared successfully!")
+            viewModel.onEvent(ProjectDetailEvent.DismissShareResult)
+        }
     }
 
     Scaffold(
@@ -131,7 +151,12 @@ fun ProjectDetailScreen(
                         IconButton(
                             onClick = { viewModel.onEvent(ProjectDetailEvent.ShareProject) },
                         ) {
-                            Icon(Icons.Default.Share, contentDescription = "Share project")
+                            Icon(Icons.Default.Share, contentDescription = "Share link")
+                        }
+                        IconButton(
+                            onClick = { showUserPickerDialog = true },
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Share with user")
                         }
                         IconButton(onClick = { showEditDialog = true }) {
                             Icon(Icons.Default.Edit, contentDescription = "Edit project")

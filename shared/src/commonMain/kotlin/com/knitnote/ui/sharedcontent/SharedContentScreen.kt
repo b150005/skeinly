@@ -39,10 +39,11 @@ import org.koin.core.parameter.parametersOf
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SharedContentScreen(
-    token: String,
+    token: String? = null,
+    shareId: String? = null,
     onBack: () -> Unit,
     onForked: (projectId: String) -> Unit,
-    viewModel: SharedContentViewModel = koinViewModel { parametersOf(token) },
+    viewModel: SharedContentViewModel = koinViewModel { parametersOf(token, shareId) },
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }

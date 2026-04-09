@@ -3,8 +3,10 @@ package com.knitnote.ui.sharedwithme
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.knitnote.domain.model.Share
+import com.knitnote.domain.model.ShareStatus
 import com.knitnote.domain.repository.PatternRepository
 import com.knitnote.domain.usecase.GetReceivedSharesUseCase
+import com.knitnote.domain.usecase.UpdateShareStatusUseCase
 import com.knitnote.domain.usecase.UseCaseResult
 import com.knitnote.domain.usecase.toMessage
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,11 +25,14 @@ data class SharedWithMeState(
 sealed interface SharedWithMeEvent {
     data object Load : SharedWithMeEvent
     data object ClearError : SharedWithMeEvent
+    data class AcceptShare(val shareId: String) : SharedWithMeEvent
+    data class DeclineShare(val shareId: String) : SharedWithMeEvent
 }
 
 class SharedWithMeViewModel(
     private val getReceivedShares: GetReceivedSharesUseCase,
     private val patternRepository: PatternRepository,
+    private val updateShareStatus: UpdateShareStatusUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SharedWithMeState())
@@ -38,9 +43,9 @@ class SharedWithMeViewModel(
     }
 
     fun onEvent(event: SharedWithMeEvent) {
-        when (event) {
-            SharedWithMeEvent.Load -> {
-                viewModelScope.launch {
+        viewModelScope.launch {
+            when (event) {
+                SharedWithMeEvent.Load -> {
                     _state.update { it.copy(isLoading = true, error = null) }
                     when (val result = getReceivedShares()) {
                         is UseCaseResult.Success -> {
@@ -55,17 +60,37 @@ class SharedWithMeViewModel(
                         }
                         is UseCaseResult.Failure -> {
                             _state.update {
-                                it.copy(
-                                    isLoading = false,
-                                    error = result.error.toMessage(),
-                                )
+                                it.copy(isLoading = false, error = result.error.toMessage())
                             }
                         }
                     }
                 }
+                SharedWithMeEvent.ClearError -> {
+                    _state.update { it.copy(error = null) }
+                }
+                is SharedWithMeEvent.AcceptShare -> {
+                    handleStatusUpdate(event.shareId, ShareStatus.ACCEPTED)
+                }
+                is SharedWithMeEvent.DeclineShare -> {
+                    handleStatusUpdate(event.shareId, ShareStatus.DECLINED)
+                }
             }
-            SharedWithMeEvent.ClearError -> {
-                _state.update { it.copy(error = null) }
+        }
+    }
+
+    private suspend fun handleStatusUpdate(shareId: String, status: ShareStatus) {
+        when (val result = updateShareStatus(shareId, status)) {
+            is UseCaseResult.Success -> {
+                _state.update { state ->
+                    state.copy(
+                        shares = state.shares.map { share ->
+                            if (share.id == shareId) result.value else share
+                        },
+                    )
+                }
+            }
+            is UseCaseResult.Failure -> {
+                _state.update { it.copy(error = result.error.toMessage()) }
             }
         }
     }

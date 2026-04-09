@@ -23,7 +23,11 @@ class ShareProjectUseCase(
 ) {
 
     @OptIn(ExperimentalUuidApi::class)
-    suspend operator fun invoke(projectId: String): UseCaseResult<ShareLink> {
+    suspend operator fun invoke(
+        projectId: String,
+        toUserId: String? = null,
+        permission: SharePermission = SharePermission.VIEW,
+    ): UseCaseResult<ShareLink> {
         if (shareRepository == null) {
             return UseCaseResult.Failure(UseCaseError.Validation("Sharing requires cloud connectivity"))
         }
@@ -36,6 +40,10 @@ class ShareProjectUseCase(
 
         if (project.ownerId != userId) {
             return UseCaseResult.Failure(UseCaseError.Validation("Can only share your own projects"))
+        }
+
+        if (toUserId == userId) {
+            return UseCaseResult.Failure(UseCaseError.Validation("Cannot share with yourself"))
         }
 
         val now = Clock.System.now()
@@ -66,14 +74,15 @@ class ShareProjectUseCase(
             project.patternId
         }
 
-        val shareToken = Uuid.random().toString()
+        val isDirectShare = toUserId != null
+        val shareToken = if (isDirectShare) null else Uuid.random().toString()
         val share = Share(
             id = Uuid.random().toString(),
             patternId = patternId,
             fromUserId = userId,
-            toUserId = null,
-            permission = SharePermission.VIEW,
-            status = ShareStatus.ACCEPTED,
+            toUserId = toUserId,
+            permission = permission,
+            status = if (isDirectShare) ShareStatus.PENDING else ShareStatus.ACCEPTED,
             shareToken = shareToken,
             sharedAt = now,
         )
