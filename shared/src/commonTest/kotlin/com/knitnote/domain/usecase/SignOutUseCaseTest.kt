@@ -8,7 +8,7 @@ import kotlinx.coroutines.test.runTest
 class SignOutUseCaseTest {
 
     private val fakeAuth = FakeAuthRepository()
-    private val signOut = SignOutUseCase(fakeAuth)
+    private val signOut = SignOutUseCase(fakeAuth, null, null, null)
 
     @Test
     fun `sign out returns Success`() = runTest {

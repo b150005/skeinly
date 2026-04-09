@@ -75,7 +75,7 @@ class ShareRepositoryImpl(
      * Unsubscribe from the Realtime channel and clear cached state.
      * Call on user logout to prevent stale data for the next user.
      */
-    suspend fun closeChannel() = channelMutex.withLock {
+    override suspend fun closeChannel() = channelMutex.withLock {
         closeChannelInternal()
     }
 

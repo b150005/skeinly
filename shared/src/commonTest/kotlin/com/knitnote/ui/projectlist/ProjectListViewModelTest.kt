@@ -39,7 +39,7 @@ class ProjectListViewModelTest {
             getProjects = GetProjectsUseCase(repository, fakeAuth),
             createProject = CreateProjectUseCase(repository, fakeAuth),
             deleteProject = DeleteProjectUseCase(repository),
-            signOut = SignOutUseCase(fakeAuth),
+            signOut = SignOutUseCase(fakeAuth, null, null, null),
         )
     }
 

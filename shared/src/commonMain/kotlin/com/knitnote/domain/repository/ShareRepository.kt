@@ -13,4 +13,7 @@ interface ShareRepository {
     suspend fun create(share: Share): Share
     suspend fun updateStatus(id: String, status: ShareStatus): Share
     suspend fun delete(id: String)
+
+    /** Release Realtime subscription and clear cached state. Call on user logout. */
+    suspend fun closeChannel() {}
 }

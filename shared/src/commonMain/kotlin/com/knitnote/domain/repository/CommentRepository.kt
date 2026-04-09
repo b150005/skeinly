@@ -10,4 +10,7 @@ interface CommentRepository {
     fun observeByTarget(targetType: CommentTargetType, targetId: String): Flow<List<Comment>>
     suspend fun create(comment: Comment): Comment
     suspend fun delete(id: String)
+
+    /** Release Realtime subscription and clear cached state. Call on user logout. */
+    suspend fun closeChannel() {}
 }

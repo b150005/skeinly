@@ -56,12 +56,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
+import com.knitnote.domain.model.CommentTargetType
 import com.knitnote.domain.model.Progress
 import com.knitnote.domain.model.ProjectStatus
+import com.knitnote.domain.repository.AuthRepository
+import com.knitnote.ui.comments.CommentSection
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
+import org.koin.core.qualifier.named
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -257,6 +262,25 @@ fun ProjectDetailScreen(
                                     onDelete = { viewModel.onEvent(ProjectDetailEvent.DeleteNote(note.id)) },
                                 )
                             }
+                        }
+
+                        // Comments section
+                        item {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            val authRepository = koinInject<AuthRepository>()
+                            val currentUserId = remember(authRepository) {
+                                authRepository.getCurrentUserId()
+                            }
+                            CommentSection(
+                                targetType = CommentTargetType.PROJECT,
+                                targetId = projectId,
+                                currentUserId = currentUserId,
+                                onError = { message ->
+                                    viewModel.onEvent(ProjectDetailEvent.ClearError)
+                                    viewModel.showExternalError(message)
+                                },
+                            )
+                            Spacer(modifier = Modifier.height(32.dp))
                         }
                     }
                 }
