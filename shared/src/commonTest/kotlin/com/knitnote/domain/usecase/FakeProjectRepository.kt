@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.map
 class FakeProjectRepository : ProjectRepository {
 
     private val projects = MutableStateFlow<List<Project>>(emptyList())
+    var shouldThrowOnDelete = false
 
     override suspend fun getById(id: String): Project? =
         projects.value.find { it.id == id }
@@ -36,6 +37,7 @@ class FakeProjectRepository : ProjectRepository {
     }
 
     override suspend fun delete(id: String) {
+        if (shouldThrowOnDelete) throw RuntimeException("Delete failed")
         projects.value = projects.value.filter { it.id != id }
     }
 }
