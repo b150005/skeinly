@@ -29,7 +29,7 @@ sealed interface ActivityFeedEvent {
 class ActivityFeedViewModel(
     private val getActivities: GetActivitiesUseCase,
     private val authRepository: AuthRepository,
-    private val userRepository: UserRepository? = null,
+    private val userRepository: UserRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ActivityFeedState())
@@ -72,7 +72,7 @@ class ActivityFeedViewModel(
     private suspend fun resolveUsers(activities: List<Activity>) {
         val currentUsers = _state.value.users
         val newUserIds = activities.map { it.userId }.distinct() - currentUsers.keys
-        if (newUserIds.isEmpty() || userRepository == null) return
+        if (newUserIds.isEmpty()) return
 
         val resolved = userRepository.getByIds(newUserIds).associateBy { it.id }
         _state.update { it.copy(users = currentUsers + resolved) }

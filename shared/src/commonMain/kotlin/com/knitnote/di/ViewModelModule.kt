@@ -15,7 +15,7 @@ import org.koin.dsl.module
 val viewModelModule = module {
     viewModelOf(::AuthViewModel)
     viewModelOf(::ProfileViewModel)
-    viewModel { ActivityFeedViewModel(get(), get(), getOrNull()) }
+    viewModel { ActivityFeedViewModel(get(), get(), get()) }
     viewModelOf(::ProjectListViewModel)
     viewModel { params ->
         ProjectDetailViewModel(
@@ -32,7 +32,7 @@ val viewModelModule = module {
             shareProject = get(),
         )
     }
-    viewModel { SharedWithMeViewModel(get(), get(), get(), getOrNull()) }
+    viewModel { SharedWithMeViewModel(get(), get(), get(), get()) }
     viewModel { params ->
         CommentSectionViewModel(
             targetType = params.get(),
@@ -40,7 +40,7 @@ val viewModelModule = module {
             getComments = get(),
             createComment = get(),
             deleteCommentUseCase = get(),
-            userRepository = getOrNull(),
+            userRepository = get(),
         )
     }
     viewModel { params ->

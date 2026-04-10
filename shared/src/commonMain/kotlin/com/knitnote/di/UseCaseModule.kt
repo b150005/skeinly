@@ -48,9 +48,9 @@ val useCaseModule = module {
     factory { CompleteProjectUseCase(get(), getOrNull()) }
     factory { ReopenProjectUseCase(get()) }
 
-    // Profile use cases (UserRepository is nullable — only available with Supabase)
-    factory { GetCurrentUserUseCase(get(), getOrNull()) }
-    factory { UpdateProfileUseCase(get(), getOrNull()) }
+    // Profile use cases (UserRepository with offline fallback)
+    factory { GetCurrentUserUseCase(get(), get()) }
+    factory { UpdateProfileUseCase(get(), get()) }
 
     // Activity use cases (ActivityRepository is nullable — only available with Supabase)
     factory { CreateActivityUseCase(getOrNull()) }

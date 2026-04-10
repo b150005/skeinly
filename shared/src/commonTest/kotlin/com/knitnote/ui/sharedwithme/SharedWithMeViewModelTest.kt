@@ -7,6 +7,7 @@ import com.knitnote.domain.model.Share
 import com.knitnote.domain.model.SharePermission
 import com.knitnote.domain.model.ShareStatus
 import com.knitnote.domain.model.Visibility
+import com.knitnote.data.repository.OfflineUserRepository
 import com.knitnote.domain.usecase.FakeAuthRepository
 import com.knitnote.domain.usecase.FakePatternRepository
 import com.knitnote.domain.usecase.FakeShareRepository
@@ -83,7 +84,7 @@ class SharedWithMeViewModelTest {
     private fun createViewModel(): SharedWithMeViewModel {
         val getReceivedShares = GetReceivedSharesUseCase(shareRepo, authRepo)
         val updateShareStatus = UpdateShareStatusUseCase(shareRepo, authRepo)
-        return SharedWithMeViewModel(getReceivedShares, patternRepo, updateShareStatus)
+        return SharedWithMeViewModel(getReceivedShares, patternRepo, updateShareStatus, OfflineUserRepository())
     }
 
     @Test

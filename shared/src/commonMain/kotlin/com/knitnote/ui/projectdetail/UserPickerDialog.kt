@@ -30,14 +30,14 @@ import com.knitnote.domain.model.SharePermission
 import com.knitnote.domain.model.User
 import com.knitnote.domain.repository.UserRepository
 import kotlinx.coroutines.delay
-import org.koin.compose.getKoin
+import org.koin.compose.koinInject
 
 @Composable
 fun UserPickerDialog(
     onDismiss: () -> Unit,
     onUserSelected: (userId: String, permission: SharePermission) -> Unit,
 ) {
-    val userRepository: UserRepository? = getKoin().getOrNull()
+    val userRepository: UserRepository = koinInject()
     var query by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf<List<User>>(emptyList()) }
     var selectedUser by remember { mutableStateOf<User?>(null) }
@@ -50,9 +50,7 @@ fun UserPickerDialog(
             return@LaunchedEffect
         }
         delay(300)
-        userRepository?.let { repo ->
-            searchResults = repo.searchByDisplayName(query)
-        }
+        searchResults = userRepository.searchByDisplayName(query)
     }
 
     AlertDialog(

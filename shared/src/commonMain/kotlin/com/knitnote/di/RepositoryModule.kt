@@ -13,6 +13,7 @@ import com.knitnote.data.remote.RemoteShareDataSource
 import com.knitnote.data.remote.RemoteUserDataSource
 import com.knitnote.data.repository.ActivityRepositoryImpl
 import com.knitnote.data.repository.AuthRepositoryImpl
+import com.knitnote.data.repository.OfflineUserRepository
 import com.knitnote.data.repository.CommentRepositoryImpl
 import com.knitnote.data.repository.PatternRepositoryImpl
 import com.knitnote.data.repository.ProjectRepositoryImpl
@@ -93,9 +94,10 @@ val repositoryModule = module {
             json = get(),
         )
     }
-    // User profiles — remote-only (nullable: cloud-only)
-    single<UserRepository?> {
+    // User profiles — remote-only with offline fallback
+    single<UserRepository> {
         getOrNull<RemoteUserDataSource>()?.let { UserRepositoryImpl(it) }
+            ?: OfflineUserRepository()
     }
     // Comment is remote-only with Realtime (nullable: use cases handle absence)
     single<CommentRepository?> {

@@ -21,11 +21,10 @@ fun Instant.formatShort(): String {
  */
 fun Instant.formatFull(): String {
     val dt = toLocalDateTime(TimeZone.currentSystemDefault())
-    return "%04d/%02d/%02d %02d:%02d".format(
-        dt.year,
-        dt.monthNumber,
-        dt.dayOfMonth,
-        dt.hour,
-        dt.minute,
-    )
+    val year = dt.year.toString().padStart(4, '0')
+    val month = dt.monthNumber.toString().padStart(2, '0')
+    val day = dt.dayOfMonth.toString().padStart(2, '0')
+    val hour = dt.hour.toString().padStart(2, '0')
+    val minute = dt.minute.toString().padStart(2, '0')
+    return "$year/$month/$day $hour:$minute"
 }

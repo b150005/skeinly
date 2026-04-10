@@ -9,7 +9,7 @@ private const val MAX_BIO_LENGTH = 500
 
 class UpdateProfileUseCase(
     private val authRepository: AuthRepository,
-    private val userRepository: UserRepository?,
+    private val userRepository: UserRepository,
 ) {
 
     suspend operator fun invoke(
@@ -21,12 +21,6 @@ class UpdateProfileUseCase(
             ?: return UseCaseResult.Failure(
                 UseCaseError.Validation("Must be signed in to update profile"),
             )
-
-        if (userRepository == null) {
-            return UseCaseResult.Failure(
-                UseCaseError.Validation("Profile requires cloud connectivity"),
-            )
-        }
 
         val trimmedName = displayName.trim()
         if (trimmedName.isEmpty()) {

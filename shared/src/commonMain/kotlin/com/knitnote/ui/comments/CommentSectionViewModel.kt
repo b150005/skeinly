@@ -40,7 +40,7 @@ class CommentSectionViewModel(
     private val getComments: GetCommentsUseCase,
     private val createComment: CreateCommentUseCase,
     private val deleteCommentUseCase: DeleteCommentUseCase,
-    private val userRepository: UserRepository?,
+    private val userRepository: UserRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CommentSectionState())
@@ -110,7 +110,7 @@ class CommentSectionViewModel(
     private suspend fun resolveAuthors(comments: List<Comment>) {
         val currentAuthors = _state.value.authors
         val newAuthorIds = comments.map { it.authorId }.distinct() - currentAuthors.keys
-        if (newAuthorIds.isEmpty() || userRepository == null) return
+        if (newAuthorIds.isEmpty()) return
 
         val resolved = newAuthorIds.mapNotNull { authorId ->
             userRepository.getById(authorId)?.let { authorId to it }

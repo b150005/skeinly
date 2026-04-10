@@ -10,6 +10,7 @@ import com.knitnote.domain.usecase.FakeAuthRepository
 import com.knitnote.domain.usecase.FakeCommentRepository
 import com.knitnote.domain.usecase.FakeUserRepository
 import com.knitnote.domain.usecase.GetCommentsUseCase
+import com.knitnote.data.repository.OfflineUserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -166,7 +167,7 @@ class CommentSectionViewModelTest {
     }
 
     @Test
-    fun `works with null user repository`() = runTest {
+    fun `works with offline user repository`() = runTest {
         commentRepo.addComment(makeComment("c-1"))
 
         val getComments = GetCommentsUseCase(commentRepo)
@@ -178,7 +179,7 @@ class CommentSectionViewModelTest {
             getComments = getComments,
             createComment = createComment,
             deleteCommentUseCase = deleteCommentUseCase,
-            userRepository = null,
+            userRepository = OfflineUserRepository(),
         )
 
         val state = viewModel.state.value

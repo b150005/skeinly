@@ -1,5 +1,6 @@
 package com.knitnote.domain.usecase
 
+import com.knitnote.data.repository.OfflineUserRepository
 import com.knitnote.domain.model.AuthState
 import com.knitnote.domain.model.User
 import kotlinx.coroutines.test.runTest
@@ -55,15 +56,15 @@ class UpdateProfileUseCaseTest {
     }
 
     @Test
-    fun `fails when user repository is null`() = runTest {
+    fun `fails when offline and profile not found`() = runTest {
         val authRepo = FakeAuthRepository()
         authRepo.setAuthState(AuthState.Authenticated("user-1", "test@example.com"))
-        val useCase = UpdateProfileUseCase(authRepo, null)
+        val useCase = UpdateProfileUseCase(authRepo, OfflineUserRepository())
 
         val result = useCase("Name", null, null)
 
         assertIs<UseCaseResult.Failure>(result)
-        assertIs<UseCaseError.Validation>(result.error)
+        assertIs<UseCaseError.NotFound>(result.error)
     }
 
     @Test

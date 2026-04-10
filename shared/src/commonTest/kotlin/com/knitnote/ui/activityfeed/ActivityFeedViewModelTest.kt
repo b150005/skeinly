@@ -5,6 +5,7 @@ import com.knitnote.domain.model.ActivityTargetType
 import com.knitnote.domain.model.ActivityType
 import com.knitnote.domain.model.AuthState
 import com.knitnote.domain.usecase.FakeActivityRepository
+import com.knitnote.data.repository.OfflineUserRepository
 import com.knitnote.domain.usecase.FakeAuthRepository
 import com.knitnote.domain.usecase.GetActivitiesUseCase
 import kotlinx.coroutines.Dispatchers
@@ -63,7 +64,7 @@ class ActivityFeedViewModelTest {
 
     private fun createViewModel(): ActivityFeedViewModel {
         val getActivities = GetActivitiesUseCase(activityRepo)
-        return ActivityFeedViewModel(getActivities, authRepo)
+        return ActivityFeedViewModel(getActivities, authRepo, OfflineUserRepository())
     }
 
     @Test
@@ -123,7 +124,7 @@ class ActivityFeedViewModelTest {
     @Test
     fun `works with null activity repository`() = runTest {
         val getActivities = GetActivitiesUseCase(null)
-        val viewModel = ActivityFeedViewModel(getActivities, authRepo)
+        val viewModel = ActivityFeedViewModel(getActivities, authRepo, OfflineUserRepository())
         val state = viewModel.state.value
 
         assertFalse(state.isLoading)

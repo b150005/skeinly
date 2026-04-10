@@ -36,7 +36,7 @@ class SharedWithMeViewModel(
     private val getReceivedShares: GetReceivedSharesUseCase,
     private val patternRepository: PatternRepository,
     private val updateShareStatus: UpdateShareStatusUseCase,
-    private val userRepository: UserRepository? = null,
+    private val userRepository: UserRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SharedWithMeState())
@@ -111,7 +111,6 @@ class SharedWithMeViewModel(
     }
 
     private suspend fun resolveSharers(shares: List<Share>): Map<String, User> {
-        if (userRepository == null) return emptyMap()
         val distinctIds = shares.map { it.fromUserId }.distinct()
         return userRepository.getByIds(distinctIds).associateBy { it.id }
     }
