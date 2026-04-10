@@ -61,7 +61,6 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
-            implementation(libs.sqldelight.sqlite.driver)
             implementation(libs.turbine)
         }
         androidMain.dependencies {
@@ -69,9 +68,20 @@ kotlin {
             implementation(libs.sqldelight.android.driver)
             implementation(libs.ktor.client.android)
         }
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.sqldelight.sqlite.driver)
+            }
+        }
         iosMain.dependencies {
             implementation(libs.sqldelight.native.driver)
             implementation(libs.ktor.client.darwin)
+        }
+        val iosTest by creating {
+            dependsOn(commonTest.get())
+            dependencies {
+                implementation(libs.sqldelight.native.driver)
+            }
         }
     }
 }

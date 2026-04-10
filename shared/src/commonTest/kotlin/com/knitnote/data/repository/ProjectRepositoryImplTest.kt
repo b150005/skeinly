@@ -1,11 +1,11 @@
 package com.knitnote.data.repository
 
-import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.knitnote.data.local.LocalProjectDataSource
 import com.knitnote.data.sync.FakeSyncManager
 import com.knitnote.data.sync.SyncEntityType
 import com.knitnote.data.sync.SyncOperation
 import com.knitnote.db.KnitNoteDatabase
+import com.knitnote.db.createTestDriver
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,8 +30,7 @@ class ProjectRepositoryImplTest {
 
     @BeforeTest
     fun setUp() {
-        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
-        KnitNoteDatabase.Schema.create(driver)
+        val driver = createTestDriver()
         db = KnitNoteDatabase(driver)
         fakeSyncManager = FakeSyncManager()
         repository = ProjectRepositoryImpl(

@@ -1,7 +1,7 @@
 package com.knitnote.data.local
 
-import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.knitnote.db.KnitNoteDatabase
+import com.knitnote.db.createTestDriver
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
 import kotlinx.coroutines.test.runTest
@@ -18,8 +18,7 @@ class LocalProjectDataSourceTest {
 
     @BeforeTest
     fun setUp() {
-        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
-        KnitNoteDatabase.Schema.create(driver)
+        val driver = createTestDriver()
         val db = KnitNoteDatabase(driver)
         dataSource = LocalProjectDataSource(db)
     }

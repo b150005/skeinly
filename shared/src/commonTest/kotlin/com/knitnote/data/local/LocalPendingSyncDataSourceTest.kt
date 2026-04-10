@@ -1,10 +1,10 @@
 package com.knitnote.data.local
 
-import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.knitnote.data.sync.SyncEntityType
 import com.knitnote.data.sync.SyncOperation
 import com.knitnote.data.sync.SyncStatus
 import com.knitnote.db.KnitNoteDatabase
+import com.knitnote.db.createTestDriver
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -20,8 +20,7 @@ class LocalPendingSyncDataSourceTest {
 
     @BeforeTest
     fun setUp() {
-        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
-        KnitNoteDatabase.Schema.create(driver)
+        val driver = createTestDriver()
         val db = KnitNoteDatabase(driver)
         dataSource = LocalPendingSyncDataSource(db)
     }
