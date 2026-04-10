@@ -2,7 +2,7 @@ name: iosApp
 options:
   bundleIdPrefix: com.knitnote
   deploymentTarget:
-    iOS: "16.0"
+    iOS: "17.0"
   xcodeVersion: "16.0"
   generateEmptyDirectories: true
 
@@ -29,6 +29,10 @@ targets:
           UIApplicationSupportsMultipleScenes: false
         CADisableMinimumFrameDurationOnPhone: true
         UILaunchScreen: {}
+        CFBundleURLTypes:
+          - CFBundleURLName: "com.knitnote.share"
+            CFBundleURLSchemes:
+              - knitnote
         UIRequiredDeviceCapabilities:
           - armv7
         UISupportedInterfaceOrientations:

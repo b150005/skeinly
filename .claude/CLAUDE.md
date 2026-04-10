@@ -175,6 +175,7 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 - **Phase 5c**: User Profiles — UserRepository, OfflineUserRepository fallback, Profile screen, GetCurrentUser/UpdateProfile UseCases
 - **Phase 5d**: UX Polish — Channel-based one-shot events, delete confirmations, DateTimeFormat KMP compat, sqlite-driver platform fix, nullable UserRepository elimination
 
+- **Phase 6**: iOS SwiftUI — Native SwiftUI screens (7 screens + CommentSection), FlowWrapper StateFlow bridge, KoinHelper ViewModel accessors, NavigationStack routing, deep linking, default hierarchy template fix, ContentView.swift Compose bridge removed
+
 ### Planned
-- **Phase 6**: iOS SwiftUI — Native SwiftUI screens, resolve expect/actual gaps (Platform, SupabaseConfig)
 - **Phase 7**: E2E / UI Tests — Compose UI tests, critical user flow validation

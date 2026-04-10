@@ -3,13 +3,18 @@ import Shared
 
 @main
 struct iOSApp: App {
+    @State private var appRoot = AppRootView()
+
     init() {
         KoinHelperKt.doInitKoin()
     }
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            appRoot
+                .onOpenURL { url in
+                    appRoot.handleDeepLink(url: url)
+                }
         }
     }
 }

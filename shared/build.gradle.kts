@@ -16,6 +16,8 @@ val localProps = Properties().also { props ->
 }
 
 kotlin {
+    applyDefaultHierarchyTemplate()
+
     androidTarget {
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
@@ -77,11 +79,8 @@ kotlin {
             implementation(libs.sqldelight.native.driver)
             implementation(libs.ktor.client.darwin)
         }
-        val iosTest by creating {
-            dependsOn(commonTest.get())
-            dependencies {
-                implementation(libs.sqldelight.native.driver)
-            }
+        iosTest.dependencies {
+            implementation(libs.sqldelight.native.driver)
         }
     }
 }
