@@ -343,9 +343,9 @@ class ProjectDetailViewModelTest {
 
         viewModel.onEvent(ProjectDetailEvent.EditProject(title = "", totalRows = 100))
 
-        viewModel.error.test {
-            val err = awaitItem()
-            assertNotNull(err)
+        viewModel.state.test {
+            val s = awaitItem()
+            assertNotNull(s.error)
             cancelAndIgnoreRemainingEvents()
         }
     }

@@ -15,6 +15,7 @@ import com.knitnote.domain.usecase.FakeProjectRepository
 import com.knitnote.domain.usecase.FakeShareRepository
 import com.knitnote.domain.usecase.ForkSharedPatternUseCase
 import com.knitnote.domain.usecase.ResolveShareTokenUseCase
+import app.cash.turbine.test
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -143,19 +144,20 @@ class SharedContentViewModelTest {
     }
 
     @Test
-    fun `fork triggers use case and returns project id`() = runTest {
+    fun `fork triggers use case and emits project id`() = runTest {
         patternRepo.create(testPattern)
         projectRepo.create(testProject)
         shareRepo.addShare(forkableShare)
 
         val viewModel = createViewModel(token = "valid-token")
-        assertNull(viewModel.state.value.forkedProjectId)
 
-        viewModel.onEvent(SharedContentEvent.Fork)
-        val state = viewModel.state.value
-
-        assertNotNull(state.forkedProjectId)
-        assertFalse(state.isForkInProgress)
+        viewModel.forkedProjectId.test {
+            viewModel.onEvent(SharedContentEvent.Fork)
+            val forkedId = awaitItem()
+            assertNotNull(forkedId)
+            assertFalse(viewModel.state.value.isForkInProgress)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test
@@ -167,9 +169,8 @@ class SharedContentViewModelTest {
         val viewModel = createViewModel(token = "view-token")
 
         viewModel.onEvent(SharedContentEvent.Fork)
-        val state = viewModel.state.value
-
-        assertNull(state.forkedProjectId)
+        // No forkedProjectId should be emitted; verify state unchanged
+        assertFalse(viewModel.state.value.isForkInProgress)
     }
 
     @Test

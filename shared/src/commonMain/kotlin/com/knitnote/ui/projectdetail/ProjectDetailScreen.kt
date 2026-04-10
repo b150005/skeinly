@@ -50,6 +50,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.flow.collect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -61,8 +62,7 @@ import com.knitnote.domain.model.Progress
 import com.knitnote.domain.model.ProjectStatus
 import com.knitnote.domain.repository.AuthRepository
 import com.knitnote.ui.comments.CommentSection
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import com.knitnote.ui.util.formatShort
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -76,17 +76,15 @@ fun ProjectDetailScreen(
     viewModel: ProjectDetailViewModel = koinViewModel { parametersOf(projectId) },
 ) {
     val state by viewModel.state.collectAsState()
-    val error by viewModel.error.collectAsState()
     val progressNotes by viewModel.progressNotes.collectAsState()
-    val shareLink by viewModel.shareLink.collectAsState()
-    val directShareSuccess by viewModel.directShareSuccess.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showAddNoteDialog by rememberSaveable { mutableStateOf(false) }
     var showEditDialog by rememberSaveable { mutableStateOf(false) }
     var showUserPickerDialog by remember { mutableStateOf(false) }
+    var noteToDelete by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(error) {
-        error?.let {
+    LaunchedEffect(state.error) {
+        state.error?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(ProjectDetailEvent.ClearError)
         }
@@ -117,7 +115,7 @@ fun ProjectDetailScreen(
         )
     }
 
-    val shareLinkToken = shareLink?.shareToken
+    val shareLinkToken = state.shareLink?.shareToken
     if (shareLinkToken != null) {
         ShareLinkDialog(
             shareToken = shareLinkToken,
@@ -135,11 +133,27 @@ fun ProjectDetailScreen(
         )
     }
 
-    LaunchedEffect(directShareSuccess) {
-        if (directShareSuccess) {
+    LaunchedEffect(Unit) {
+        viewModel.directShareSuccess.collect {
             snackbarHostState.showSnackbar("Shared successfully!")
-            viewModel.onEvent(ProjectDetailEvent.DismissShareResult)
         }
+    }
+
+    noteToDelete?.let { progressId ->
+        AlertDialog(
+            onDismissRequest = { noteToDelete = null },
+            title = { Text("Delete Note") },
+            text = { Text("Are you sure you want to delete this note?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.onEvent(ProjectDetailEvent.DeleteNote(progressId))
+                    noteToDelete = null
+                }) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { noteToDelete = null }) { Text("Cancel") }
+            },
+        )
     }
 
     Scaffold(
@@ -259,7 +273,7 @@ fun ProjectDetailScreen(
                             ) { note ->
                                 SwipeToDismissNoteItem(
                                     note = note,
-                                    onDelete = { viewModel.onEvent(ProjectDetailEvent.DeleteNote(note.id)) },
+                                    onDelete = { noteToDelete = note.id },
                                 )
                             }
                         }
@@ -389,10 +403,8 @@ private fun SwipeToDismissNoteItem(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.EndToStart) {
                 onDelete()
-                true
-            } else {
-                false
             }
+            false // Always return false — deletion is confirmed via dialog
         },
     )
 
@@ -421,14 +433,7 @@ private fun SwipeToDismissNoteItem(
 
 @Composable
 private fun NoteItem(note: Progress) {
-    val timestamp = remember(note.createdAt) {
-        val dt = note.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
-        val month = dt.monthNumber.toString().padStart(2, '0')
-        val day = dt.dayOfMonth.toString().padStart(2, '0')
-        val hour = dt.hour.toString().padStart(2, '0')
-        val minute = dt.minute.toString().padStart(2, '0')
-        "$month/$day $hour:$minute"
-    }
+    val timestamp = remember(note.createdAt) { note.createdAt.formatShort() }
 
     ListItem(
         headlineContent = {

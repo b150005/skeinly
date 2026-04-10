@@ -9,9 +9,12 @@ import com.knitnote.domain.usecase.ForkSharedPatternUseCase
 import com.knitnote.domain.usecase.ResolveShareTokenUseCase
 import com.knitnote.domain.usecase.UseCaseResult
 import com.knitnote.domain.usecase.toMessage
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -21,7 +24,6 @@ data class SharedContentState(
     val projectCount: Int = 0,
     val isLoading: Boolean = true,
     val error: String? = null,
-    val forkedProjectId: String? = null,
     val isForkInProgress: Boolean = false,
 )
 
@@ -39,6 +41,9 @@ class SharedContentViewModel(
 
     private val _state = MutableStateFlow(SharedContentState())
     val state: StateFlow<SharedContentState> = _state.asStateFlow()
+
+    private val _forkedProjectChannel = Channel<String>(Channel.BUFFERED)
+    val forkedProjectId: Flow<String> = _forkedProjectChannel.receiveAsFlow()
 
     init {
         resolveContent()
@@ -84,12 +89,8 @@ class SharedContentViewModel(
 
             when (val result = forkSharedPattern(share.id)) {
                 is UseCaseResult.Success -> {
-                    _state.update {
-                        it.copy(
-                            isForkInProgress = false,
-                            forkedProjectId = result.value.project.id,
-                        )
-                    }
+                    _state.update { it.copy(isForkInProgress = false) }
+                    _forkedProjectChannel.send(result.value.project.id)
                 }
                 is UseCaseResult.Failure -> {
                     _state.update {

@@ -35,6 +35,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import kotlinx.coroutines.flow.collect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -57,10 +58,9 @@ fun ProfileScreen(
         }
     }
 
-    LaunchedEffect(state.saveSuccess) {
-        if (state.saveSuccess) {
+    LaunchedEffect(Unit) {
+        viewModel.saveSuccess.collect {
             snackbarHostState.showSnackbar("Profile updated")
-            viewModel.onEvent(ProfileEvent.ClearSaveSuccess)
         }
     }
 

@@ -18,13 +18,17 @@ import com.knitnote.domain.usecase.ShareProjectUseCase
 import com.knitnote.domain.usecase.UpdateProjectUseCase
 import com.knitnote.domain.usecase.UseCaseResult
 import com.knitnote.domain.usecase.toMessage
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -32,6 +36,8 @@ import kotlinx.coroutines.sync.withLock
 data class ProjectDetailState(
     val project: Project? = null,
     val isLoading: Boolean = true,
+    val error: String? = null,
+    val shareLink: ShareLink? = null,
 )
 
 sealed interface ProjectDetailEvent {
@@ -49,7 +55,6 @@ sealed interface ProjectDetailEvent {
         val userId: String,
         val permission: SharePermission,
     ) : ProjectDetailEvent
-    data object DismissShareResult : ProjectDetailEvent
 }
 
 class ProjectDetailViewModel(
@@ -67,34 +72,36 @@ class ProjectDetailViewModel(
 ) : ViewModel() {
 
     private val counterMutex = Mutex()
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
 
-    private val _shareLink = MutableStateFlow<ShareLink?>(null)
-    val shareLink: StateFlow<ShareLink?> = _shareLink.asStateFlow()
-
-    private val _directShareSuccess = MutableStateFlow(false)
-    val directShareSuccess: StateFlow<Boolean> = _directShareSuccess.asStateFlow()
+    private val _uiOverlay = MutableStateFlow(UiOverlay())
+    private val _directShareSuccessChannel = Channel<Unit>(Channel.BUFFERED)
+    val directShareSuccess: Flow<Unit> = _directShareSuccessChannel.receiveAsFlow()
 
     val state: StateFlow<ProjectDetailState> =
-        projectRepository.observeById(projectId)
-            .map { project ->
-                ProjectDetailState(project = project, isLoading = false)
-            }
-            .catch { e ->
-                _error.value = e.message ?: "Failed to load project"
-                emit(ProjectDetailState(isLoading = false))
-            }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = ProjectDetailState(isLoading = true),
+        combine(
+            projectRepository.observeById(projectId)
+                .catch { e ->
+                    _uiOverlay.update { it.copy(error = e.message ?: "Failed to load project") }
+                    emit(null)
+                },
+            _uiOverlay,
+        ) { project, overlay ->
+            ProjectDetailState(
+                project = project,
+                isLoading = false,
+                error = overlay.error,
+                shareLink = overlay.shareLink,
             )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = ProjectDetailState(isLoading = true),
+        )
 
     val progressNotes: StateFlow<List<Progress>> =
         getProgressNotes(projectId)
             .catch { e ->
-                _error.value = e.message ?: "Failed to load notes"
+                _uiOverlay.update { it.copy(error = e.message ?: "Failed to load notes") }
                 emit(emptyList())
             }
             .stateIn(
@@ -105,7 +112,7 @@ class ProjectDetailViewModel(
 
     /** Show an error from an external component (e.g., CommentSection) via the shared snackbar. */
     fun showExternalError(message: String) {
-        _error.value = message
+        _uiOverlay.update { it.copy(error = message) }
     }
 
     fun onEvent(event: ProjectDetailEvent) {
@@ -115,7 +122,7 @@ class ProjectDetailViewModel(
                     counterMutex.withLock {
                         when (val result = incrementRow(projectId)) {
                             is UseCaseResult.Success -> { /* state updates via Flow */ }
-                            is UseCaseResult.Failure -> _error.value = result.error.toMessage()
+                            is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
                         }
                     }
                 }
@@ -125,20 +132,20 @@ class ProjectDetailViewModel(
                     counterMutex.withLock {
                         when (val result = decrementRow(projectId)) {
                             is UseCaseResult.Success -> { /* state updates via Flow */ }
-                            is UseCaseResult.Failure -> _error.value = result.error.toMessage()
+                            is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
                         }
                     }
                 }
             }
             ProjectDetailEvent.ClearError -> {
-                _error.value = null
+                _uiOverlay.update { it.copy(error = null) }
             }
             is ProjectDetailEvent.AddNote -> {
                 val currentRow = state.value.project?.currentRow ?: 0
                 viewModelScope.launch {
                     when (val result = addProgressNote(projectId, currentRow, event.note)) {
                         is UseCaseResult.Success -> { /* notes update via Flow */ }
-                        is UseCaseResult.Failure -> _error.value = result.error.toMessage()
+                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
                     }
                 }
             }
@@ -146,7 +153,7 @@ class ProjectDetailViewModel(
                 viewModelScope.launch {
                     when (val result = deleteProgressNote(event.progressId)) {
                         is UseCaseResult.Success -> { /* notes update via Flow */ }
-                        is UseCaseResult.Failure -> _error.value = result.error.toMessage()
+                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
                     }
                 }
             }
@@ -154,7 +161,7 @@ class ProjectDetailViewModel(
                 viewModelScope.launch {
                     when (val result = updateProject(projectId, event.title, event.totalRows)) {
                         is UseCaseResult.Success -> { /* state updates via Flow */ }
-                        is UseCaseResult.Failure -> _error.value = result.error.toMessage()
+                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
                     }
                 }
             }
@@ -162,7 +169,7 @@ class ProjectDetailViewModel(
                 viewModelScope.launch {
                     when (val result = completeProject(projectId)) {
                         is UseCaseResult.Success -> { /* state updates via Flow */ }
-                        is UseCaseResult.Failure -> _error.value = result.error.toMessage()
+                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
                     }
                 }
             }
@@ -170,20 +177,20 @@ class ProjectDetailViewModel(
                 viewModelScope.launch {
                     when (val result = reopenProject(projectId)) {
                         is UseCaseResult.Success -> { /* state updates via Flow */ }
-                        is UseCaseResult.Failure -> _error.value = result.error.toMessage()
+                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
                     }
                 }
             }
             ProjectDetailEvent.ShareProject -> {
                 viewModelScope.launch {
                     when (val result = shareProject(projectId)) {
-                        is UseCaseResult.Success -> _shareLink.value = result.value
-                        is UseCaseResult.Failure -> _error.value = result.error.toMessage()
+                        is UseCaseResult.Success -> _uiOverlay.update { it.copy(shareLink = result.value) }
+                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
                     }
                 }
             }
             ProjectDetailEvent.DismissShareDialog -> {
-                _shareLink.value = null
+                _uiOverlay.update { it.copy(shareLink = null) }
             }
             is ProjectDetailEvent.ShareWithUser -> {
                 viewModelScope.launch {
@@ -192,14 +199,16 @@ class ProjectDetailViewModel(
                         toUserId = event.userId,
                         permission = event.permission,
                     )) {
-                        is UseCaseResult.Success -> _directShareSuccess.value = true
-                        is UseCaseResult.Failure -> _error.value = result.error.toMessage()
+                        is UseCaseResult.Success -> _directShareSuccessChannel.send(Unit)
+                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
                     }
                 }
-            }
-            ProjectDetailEvent.DismissShareResult -> {
-                _directShareSuccess.value = false
             }
         }
     }
 }
+
+private data class UiOverlay(
+    val error: String? = null,
+    val shareLink: ShareLink? = null,
+)

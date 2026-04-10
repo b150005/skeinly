@@ -8,9 +8,12 @@ import com.knitnote.domain.usecase.UpdateProfileUseCase
 import com.knitnote.domain.usecase.UseCaseError
 import com.knitnote.domain.usecase.UseCaseResult
 import com.knitnote.domain.usecase.toMessage
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -22,7 +25,6 @@ data class ProfileState(
     val editDisplayName: String = "",
     val editBio: String = "",
     val error: String? = null,
-    val saveSuccess: Boolean = false,
 )
 
 sealed interface ProfileEvent {
@@ -33,7 +35,6 @@ sealed interface ProfileEvent {
     data class UpdateDisplayName(val value: String) : ProfileEvent
     data class UpdateBio(val value: String) : ProfileEvent
     data object ClearError : ProfileEvent
-    data object ClearSaveSuccess : ProfileEvent
 }
 
 class ProfileViewModel(
@@ -43,6 +44,9 @@ class ProfileViewModel(
 
     private val _state = MutableStateFlow(ProfileState())
     val state: StateFlow<ProfileState> = _state.asStateFlow()
+
+    private val _saveSuccessChannel = Channel<Unit>(Channel.BUFFERED)
+    val saveSuccess: Flow<Unit> = _saveSuccessChannel.receiveAsFlow()
 
     init {
         loadProfile()
@@ -57,7 +61,6 @@ class ProfileViewModel(
             is ProfileEvent.UpdateDisplayName -> _state.update { it.copy(editDisplayName = event.value) }
             is ProfileEvent.UpdateBio -> _state.update { it.copy(editBio = event.value) }
             ProfileEvent.ClearError -> _state.update { it.copy(error = null) }
-            ProfileEvent.ClearSaveSuccess -> _state.update { it.copy(saveSuccess = false) }
         }
     }
 
@@ -99,13 +102,15 @@ class ProfileViewModel(
                 bio = currentState.editBio.takeIf { it.isNotBlank() },
                 avatarUrl = currentState.user?.avatarUrl,
             )) {
-                is UseCaseResult.Success -> _state.update {
-                    it.copy(
-                        user = result.value,
-                        isEditing = false,
-                        isSaving = false,
-                        saveSuccess = true,
-                    )
+                is UseCaseResult.Success -> {
+                    _state.update {
+                        it.copy(
+                            user = result.value,
+                            isEditing = false,
+                            isSaving = false,
+                        )
+                    }
+                    _saveSuccessChannel.send(Unit)
                 }
                 is UseCaseResult.Failure -> _state.update {
                     it.copy(isSaving = false, error = result.error.toMessage())

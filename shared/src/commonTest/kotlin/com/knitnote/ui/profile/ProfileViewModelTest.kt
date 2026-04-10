@@ -8,6 +8,7 @@ import com.knitnote.domain.usecase.GetCurrentUserUseCase
 import com.knitnote.domain.usecase.UpdateProfileUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import app.cash.turbine.test
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -118,7 +119,6 @@ class ProfileViewModelTest {
         val state = viewModel.state.value
         assertFalse(state.isEditing)
         assertFalse(state.isSaving)
-        assertTrue(state.saveSuccess)
         assertEquals("New Name", state.user?.displayName)
         assertEquals("New bio", state.user?.bio)
     }
@@ -136,5 +136,21 @@ class ProfileViewModelTest {
         val state = viewModel.state.value
         assertNotNull(state.error)
         assertFalse(state.isSaving)
+    }
+
+    @Test
+    fun `save profile emits saveSuccess event`() = runTest {
+        authRepo.setAuthState(AuthState.Authenticated("user-1", "test@example.com"))
+        userRepo.addUser(testUser)
+
+        val viewModel = createViewModel()
+        viewModel.onEvent(ProfileEvent.StartEditing)
+        viewModel.onEvent(ProfileEvent.UpdateDisplayName("New Name"))
+
+        viewModel.saveSuccess.test {
+            viewModel.onEvent(ProfileEvent.SaveProfile)
+            awaitItem()
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 }
