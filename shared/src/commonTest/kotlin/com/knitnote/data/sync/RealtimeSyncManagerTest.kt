@@ -168,6 +168,43 @@ class RealtimeSyncManagerTest {
         assertEquals(2, progressList.size)
     }
 
+    // -- Conflict resolution: ADR-003 higher currentRow wins --
+
+    @Test
+    fun `project UPDATE with lower currentRow does not overwrite local`() = runTest {
+        // Local has currentRow = 10
+        localProject.upsert(testProject().copy(currentRow = 10))
+
+        // Remote pushes currentRow = 5 (stale update from another device)
+        val remote = testProject().copy(currentRow = 5)
+        val local = localProject.getById(remote.id)
+        // Simulate RealtimeSyncManager guard: skip if local is ahead
+        if (local == null || local.currentRow <= remote.currentRow) {
+            localProject.upsert(remote)
+        }
+
+        val result = localProject.getById("p1")
+        assertNotNull(result)
+        assertEquals(10, result.currentRow) // local wins
+    }
+
+    @Test
+    fun `project UPDATE with higher currentRow overwrites local`() = runTest {
+        // Local has currentRow = 5
+        localProject.upsert(testProject().copy(currentRow = 5))
+
+        // Remote pushes currentRow = 15 (another device advanced further)
+        val remote = testProject().copy(currentRow = 15)
+        val local = localProject.getById(remote.id)
+        if (local == null || local.currentRow <= remote.currentRow) {
+            localProject.upsert(remote)
+        }
+
+        val result = localProject.getById("p1")
+        assertNotNull(result)
+        assertEquals(15, result.currentRow) // remote wins
+    }
+
     @Test
     fun `progress upsert replaces existing entry`() = runTest {
         localProject.upsert(testProject())

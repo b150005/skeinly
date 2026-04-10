@@ -121,8 +121,11 @@ class RealtimeSyncManager(
                 localProject.upsert(project)
             }
             is PostgresAction.Update -> {
-                val project = action.decodeRecord<Project>()
-                localProject.upsert(project)
+                val remote = action.decodeRecord<Project>()
+                val local = localProject.getById(remote.id)
+                // ADR-003: higher currentRow wins (knitters don't un-knit rows)
+                if (local != null && local.currentRow > remote.currentRow) return
+                localProject.upsert(remote)
             }
             is PostgresAction.Delete -> {
                 val old = action.decodeOldRecord<Project>()

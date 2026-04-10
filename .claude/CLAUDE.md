@@ -168,8 +168,13 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 4a**: iOS App Shell — iosApp/ Xcode project, ComposeUIViewController host, Koin iOS init, simulator verified (118 tests)
 - **Phase 3b**: Supabase Foundation MVP — supabase-kt 3.5.0 integration, Auth (Email/Social), Local/Remote DataSource refactor, ConnectivityMonitor, coordinator repositories, SQL migration, ADR-004 (130 tests)
+- **Phase 3b+**: Supabase Sync — PendingSync queue with coalescing/backoff, offline write support (local-first + syncOrEnqueue), RealtimeSyncManager (auth-aware 3-table subscriptions), SyncExecutor, ConnectivityMonitor (Android/iOS), currentRow conflict guard (ADR-003)
+- **Phase 4b**: Sharing — Share entity, ShareRepository (remote-only with inline Realtime), fork, deep links
+- **Phase 5a**: Comments — CommentRepository with Realtime subscriptions, CommentSectionViewModel
+- **Phase 5b**: Activity Feed — ActivityRepository with Realtime, ActivityFeedViewModel
+- **Phase 5c**: User Profiles — UserRepository, OfflineUserRepository fallback, Profile screen, GetCurrentUser/UpdateProfile UseCases
+- **Phase 5d**: UX Polish — Channel-based one-shot events, delete confirmations, DateTimeFormat KMP compat, sqlite-driver platform fix, nullable UserRepository elimination
 
 ### Planned
-- **Phase 3b+**: Supabase Sync — PendingSync queue, offline write support, Realtime subscriptions
-- **Phase 4b**: Sharing — Share entity, fork, deep links
-- **Phase 5**: Social Layer — Comments, Activity feed, User profiles, polish
+- **Phase 6**: iOS SwiftUI — Native SwiftUI screens, resolve expect/actual gaps (Platform, SupabaseConfig)
+- **Phase 7**: E2E / UI Tests — Compose UI tests, critical user flow validation
