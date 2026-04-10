@@ -18,6 +18,11 @@ navigationCompose = "2.9.2"
 supabase = "3.5.0"
 turbine = "1.2.1"
 
+# AndroidX Testing
+androidx-test-runner = "1.7.0"
+androidx-test-rules = "1.7.0"
+androidx-test-espresso = "3.7.0"
+
 [libraries]
 # AndroidX
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
@@ -64,6 +69,11 @@ supabase-realtime = { module = "io.github.jan-tennert.supabase:realtime-kt" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+
+# Android UI Testing
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test-runner" }
+androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidx-test-rules" }
+androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidx-test-espresso" }
 
 [plugins]
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }

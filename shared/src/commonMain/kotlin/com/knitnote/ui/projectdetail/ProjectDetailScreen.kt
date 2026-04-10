@@ -53,6 +53,7 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.flow.collect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -332,6 +333,7 @@ private fun CounterSection(
             fontSize = 96.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.testTag("rowCounter"),
         )
 
         if (totalRows != null) {
