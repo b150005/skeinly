@@ -1,4 +1,5 @@
 @file:Suppress("DEPRECATION")
+@file:OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
 
 plugins {
     alias(libs.plugins.androidApplication)
@@ -17,6 +18,7 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildFeatures {
@@ -63,4 +65,11 @@ dependencies {
     implementation(libs.navigation.compose)
     implementation(projects.shared)
     debugImplementation(compose.uiTooling)
+
+    // Android UI Testing
+    androidTestImplementation(compose.uiTest)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.androidx.test.espresso.core)
 }
