@@ -35,8 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.knitnote.domain.model.Share
 import com.knitnote.domain.model.ShareStatus
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import com.knitnote.ui.util.formatFull
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -125,8 +124,7 @@ private fun ShareListItem(
     onAccept: () -> Unit,
     onDecline: () -> Unit,
 ) {
-    val dateTime = share.sharedAt.toLocalDateTime(TimeZone.currentSystemDefault())
-    val dateText = "${dateTime.year}/${dateTime.monthNumber}/${dateTime.dayOfMonth}"
+    val dateText = share.sharedAt.formatFull()
 
     val statusText = when (share.status) {
         ShareStatus.PENDING -> " | Pending"

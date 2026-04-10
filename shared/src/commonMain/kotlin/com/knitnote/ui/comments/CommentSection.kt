@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -19,6 +20,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -34,8 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.knitnote.domain.model.Comment
 import com.knitnote.domain.model.CommentTargetType
 import com.knitnote.domain.model.User
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import com.knitnote.ui.util.formatShort
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -50,6 +51,24 @@ fun CommentSection(
     ) { parametersOf(targetType, targetId) },
 ) {
     val state by viewModel.state.collectAsState()
+    var commentToDelete by remember { mutableStateOf<String?>(null) }
+
+    commentToDelete?.let { commentId ->
+        AlertDialog(
+            onDismissRequest = { commentToDelete = null },
+            title = { Text("Delete Comment") },
+            text = { Text("Are you sure you want to delete this comment?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.onEvent(CommentSectionEvent.DeleteComment(commentId))
+                    commentToDelete = null
+                }) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { commentToDelete = null }) { Text("Cancel") }
+            },
+        )
+    }
 
     LaunchedEffect(state.error) {
         state.error?.let {
@@ -101,9 +120,7 @@ fun CommentSection(
                     comment = comment,
                     author = state.authors[comment.authorId],
                     isOwn = comment.authorId == currentUserId,
-                    onDelete = {
-                        viewModel.onEvent(CommentSectionEvent.DeleteComment(comment.id))
-                    },
+                    onDelete = { commentToDelete = comment.id },
                 )
             }
         }
@@ -158,14 +175,7 @@ private fun CommentItem(
     isOwn: Boolean,
     onDelete: () -> Unit,
 ) {
-    val timestamp = remember(comment.createdAt) {
-        val dt = comment.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
-        val month = dt.monthNumber.toString().padStart(2, '0')
-        val day = dt.dayOfMonth.toString().padStart(2, '0')
-        val hour = dt.hour.toString().padStart(2, '0')
-        val minute = dt.minute.toString().padStart(2, '0')
-        "$month/$day $hour:$minute"
-    }
+    val timestamp = remember(comment.createdAt) { comment.createdAt.formatShort() }
 
     Column(
         modifier = Modifier

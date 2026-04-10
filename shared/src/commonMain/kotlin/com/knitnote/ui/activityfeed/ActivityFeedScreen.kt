@@ -37,8 +37,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.knitnote.domain.model.Activity
 import com.knitnote.domain.model.ActivityType
 import com.knitnote.domain.model.User
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import com.knitnote.ui.util.formatFull
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -111,14 +110,7 @@ fun ActivityFeedScreen(
 
 @Composable
 private fun ActivityListItem(activity: Activity, user: User?) {
-    val dateTime = activity.createdAt.toLocalDateTime(TimeZone.currentSystemDefault())
-    val dateText = "%04d/%02d/%02d %02d:%02d".format(
-        dateTime.year,
-        dateTime.monthNumber,
-        dateTime.dayOfMonth,
-        dateTime.hour,
-        dateTime.minute,
-    )
+    val dateText = activity.createdAt.formatFull()
 
     val displayName = user?.displayName ?: "You"
     val (icon, verb) = activityVerb(activity.type)
