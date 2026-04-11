@@ -1,5 +1,6 @@
 package com.knitnote.data.remote
 
+import com.knitnote.domain.repository.StorageOperations
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.storage.storage
 import io.ktor.http.ContentType
@@ -32,7 +33,12 @@ class RemoteStorageDataSource(
     override suspend fun createSignedUrls(
         paths: List<String>,
         expiresIn: Duration,
-    ): List<String> = paths.map { createSignedUrl(it, expiresIn) }
+    ): List<String> =
+        if (paths.isEmpty()) {
+            emptyList()
+        } else {
+            bucket.createSignedUrls(expiresIn, paths).map { it.signedURL }
+        }
 
     override suspend fun delete(paths: List<String>) {
         if (paths.isNotEmpty()) {

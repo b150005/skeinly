@@ -5,6 +5,9 @@ import com.knitnote.data.remote.isConfigured
 import com.knitnote.di.platformModule
 import com.knitnote.di.sharedModules
 import com.knitnote.domain.model.CommentTargetType
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.usePinned
 import com.knitnote.ui.activityfeed.ActivityFeedViewModel
 import com.knitnote.ui.auth.AuthViewModel
 import com.knitnote.ui.comments.CommentSectionViewModel
@@ -88,6 +91,18 @@ fun wrapCommentSectionState(
 ): FlowWrapper<com.knitnote.ui.comments.CommentSectionState> = FlowWrapper(flow)
 
 fun wrapForkedProjectIdFlow(flow: kotlinx.coroutines.flow.Flow<String>): EventFlowWrapper<String> = EventFlowWrapper(flow)
+
+@OptIn(ExperimentalForeignApi::class)
+fun nsDataToByteArray(data: platform.Foundation.NSData): ByteArray {
+    val size = data.length.toInt()
+    val byteArray = ByteArray(size)
+    if (size > 0) {
+        byteArray.usePinned { pinned ->
+            platform.posix.memcpy(pinned.addressOf(0), data.bytes, data.length)
+        }
+    }
+    return byteArray
+}
 
 // Generic wrappers (deprecated — prefer typed variants above)
 

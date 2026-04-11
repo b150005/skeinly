@@ -17,11 +17,13 @@ import platform.PhotosUI.PHPickerViewControllerDelegateProtocol
 import platform.UIKit.UIApplication
 import platform.UIKit.UIImage
 import platform.UIKit.UIImageJPEGRepresentation
+import platform.UIKit.UIWindow
+import platform.UIKit.UIWindowScene
 import platform.UniformTypeIdentifiers.UTTypeImage
 import platform.darwin.NSObject
+import platform.darwin.dispatch_async
+import platform.darwin.dispatch_get_main_queue
 import platform.posix.memcpy
-
-private const val MAX_IMAGE_SIZE = 2 * 1024 * 1024 // 2MB
 
 @Composable
 actual fun rememberImagePickerLauncher(onResult: (ImagePickerResult?) -> Unit): ImagePickerLauncher {
@@ -44,7 +46,11 @@ actual class ImagePickerLauncher(
         val picker = PHPickerViewController(configuration = configuration)
         picker.delegate = delegate
 
-        UIApplication.sharedApplication.keyWindow
+        val keyWindow =
+            (UIApplication.sharedApplication.connectedScenes.firstOrNull() as? UIWindowScene)
+                ?.windows
+                ?.firstOrNull { (it as? UIWindow)?.isKeyWindow() == true } as? UIWindow
+        keyWindow
             ?.rootViewController
             ?.presentViewController(picker, animated = true, completion = null)
     }
@@ -61,38 +67,41 @@ private class PickerDelegate(
 
         val result = didFinishPicking.firstOrNull() as? PHPickerResult
         if (result == null) {
-            onResult(null)
+            dispatch_async(dispatch_get_main_queue()) { onResult(null) }
             return
         }
 
         val provider = result.itemProvider
         if (!provider.hasItemConformingToTypeIdentifier(UTTypeImage.identifier)) {
-            onResult(null)
+            dispatch_async(dispatch_get_main_queue()) { onResult(null) }
             return
         }
 
         provider.loadDataRepresentationForTypeIdentifier(UTTypeImage.identifier) { data, error ->
             if (error != null || data == null) {
-                onResult(null)
+                dispatch_async(dispatch_get_main_queue()) { onResult(null) }
                 return@loadDataRepresentationForTypeIdentifier
             }
 
             val image = UIImage(data = data)
-            val jpegData = compressToJpeg(image, MAX_IMAGE_SIZE)
+            val maxSize = com.knitnote.domain.usecase.UploadChartImageUseCase.MAX_IMAGE_SIZE
+            val jpegData = compressToJpeg(image, maxSize)
             if (jpegData == null) {
-                onResult(null)
+                dispatch_async(dispatch_get_main_queue()) { onResult(null) }
                 return@loadDataRepresentationForTypeIdentifier
             }
 
             val timestamp = NSDate().timeIntervalSince1970.toLong()
             val fileName = "chart_$timestamp.jpg"
-            onResult(
-                ImagePickerResult(
-                    data = jpegData,
-                    fileName = fileName,
-                    mimeType = "image/jpeg",
-                ),
-            )
+            dispatch_async(dispatch_get_main_queue()) {
+                onResult(
+                    ImagePickerResult(
+                        data = jpegData,
+                        fileName = fileName,
+                        mimeType = "image/jpeg",
+                    ),
+                )
+            }
         }
     }
 }

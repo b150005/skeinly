@@ -1,4 +1,4 @@
-package com.knitnote.data.remote
+package com.knitnote.domain.repository
 
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours

@@ -45,15 +45,16 @@ fun ChartImageGrid(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
 
+        val zippedImages = signedUrls.zip(storagePaths)
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            itemsIndexed(signedUrls) { index, url ->
+            itemsIndexed(zippedImages) { index, (url, path) ->
                 ChartImageThumbnail(
                     imageUrl = url,
                     onClick = { onImageClick(index) },
-                    onDelete = { onDeleteClick(storagePaths[index]) },
+                    onDelete = { onDeleteClick(path) },
                 )
             }
 

@@ -49,6 +49,6 @@ CREATE POLICY "Users can read shared pattern chart images"
         AND EXISTS (
             SELECT 1 FROM public.patterns p
             WHERE p.visibility IN ('shared', 'public')
-            AND p.chart_image_urls @> to_jsonb((storage.foldername(name))[1] || '/' || (storage.foldername(name))[2] || '/' || name)
+            AND p.chart_image_urls @> to_jsonb(name)
         )
     );

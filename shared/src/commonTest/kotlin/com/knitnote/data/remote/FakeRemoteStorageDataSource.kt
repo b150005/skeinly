@@ -1,5 +1,6 @@
 package com.knitnote.data.remote
 
+import com.knitnote.domain.repository.StorageOperations
 import kotlin.time.Duration
 
 class FakeRemoteStorageDataSource : StorageOperations {

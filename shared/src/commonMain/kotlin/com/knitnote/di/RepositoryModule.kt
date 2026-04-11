@@ -12,7 +12,7 @@ import com.knitnote.data.remote.RemoteProjectDataSource
 import com.knitnote.data.remote.RemoteShareDataSource
 import com.knitnote.data.remote.RemoteStorageDataSource
 import com.knitnote.data.remote.RemoteUserDataSource
-import com.knitnote.data.remote.StorageOperations
+import com.knitnote.domain.repository.StorageOperations
 import com.knitnote.data.remote.SupabaseConfig
 import com.knitnote.data.remote.isConfigured
 import com.knitnote.data.repository.ActivityRepositoryImpl

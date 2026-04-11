@@ -14,9 +14,8 @@ import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.knitnote.domain.usecase.UploadChartImageUseCase
 import java.io.ByteArrayOutputStream
-
-private const val MAX_IMAGE_SIZE = 2 * 1024 * 1024 // 2MB
 
 @Composable
 actual fun rememberImagePickerLauncher(onResult: (ImagePickerResult?) -> Unit): ImagePickerLauncher {
@@ -40,7 +39,7 @@ actual fun rememberImagePickerLauncher(onResult: (ImagePickerResult?) -> Unit): 
                         val originalBytes = inputStream.use { it.readBytes() }
 
                         val compressed =
-                            compressToJpeg(originalBytes, MAX_IMAGE_SIZE)
+                            compressToJpeg(originalBytes, UploadChartImageUseCase.MAX_IMAGE_SIZE)
                                 ?: return@withContext null
 
                         val fileName = "chart_${System.currentTimeMillis()}.jpg"
@@ -76,16 +75,20 @@ private fun compressToJpeg(
     val bitmap =
         BitmapFactory.decodeByteArray(originalBytes, 0, originalBytes.size)
             ?: return null
-    var quality = 90
-    while (quality >= 10) {
+    try {
+        var quality = 90
+        while (quality >= 10) {
+            val outputStream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
+            val compressed = outputStream.toByteArray()
+            if (compressed.size <= maxSize) return compressed
+            quality -= 10
+        }
+        // Last resort: return lowest quality (UseCase validates size)
         val outputStream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
-        val compressed = outputStream.toByteArray()
-        if (compressed.size <= maxSize) return compressed
-        quality -= 10
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 10, outputStream)
+        return outputStream.toByteArray()
+    } finally {
+        bitmap.recycle()
     }
-    // Last resort: return lowest quality
-    val outputStream = ByteArrayOutputStream()
-    bitmap.compress(Bitmap.CompressFormat.JPEG, 10, outputStream)
-    return outputStream.toByteArray()
 }

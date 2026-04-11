@@ -1,8 +1,7 @@
 package com.knitnote.domain.usecase
 
-import com.knitnote.data.remote.StorageOperations
-import com.knitnote.domain.LocalUser
 import com.knitnote.domain.model.Pattern
+import com.knitnote.domain.repository.StorageOperations
 import com.knitnote.domain.repository.AuthRepository
 import com.knitnote.domain.repository.PatternRepository
 import kotlin.time.Clock
@@ -37,8 +36,20 @@ class UploadChartImageUseCase(
                 ?: return UseCaseResult.Failure(UseCaseError.NotFound("Pattern not found"))
 
         return try {
-            val userId = authRepository.getCurrentUserId() ?: LocalUser.ID
-            val storagePath = storage.upload(userId, patternId, fileName, imageData)
+            val userId =
+                authRepository.getCurrentUserId()
+                    ?: return UseCaseResult.Failure(
+                        UseCaseError.Validation("Must be signed in to upload images"),
+                    )
+
+            if (!isValidJpeg(imageData)) {
+                return UseCaseResult.Failure(
+                    UseCaseError.Validation("File is not a valid JPEG image"),
+                )
+            }
+
+            val safeFileName = sanitizeFileName(fileName)
+            val storagePath = storage.upload(userId, patternId, safeFileName, imageData)
             val updatedPattern =
                 pattern.copy(
                     chartImageUrls = pattern.chartImageUrls + storagePath,
@@ -53,5 +64,16 @@ class UploadChartImageUseCase(
 
     companion object {
         const val MAX_IMAGE_SIZE = 2 * 1024 * 1024 // 2MB
+
+        private val SAFE_FILENAME_REGEX = Regex("[^a-zA-Z0-9._-]")
+
+        fun sanitizeFileName(fileName: String): String =
+            fileName.replace(SAFE_FILENAME_REGEX, "_").trimStart('.')
+
+        fun isValidJpeg(data: ByteArray): Boolean =
+            data.size >= 3 &&
+                data[0] == 0xFF.toByte() &&
+                data[1] == 0xD8.toByte() &&
+                data[2] == 0xFF.toByte()
     }
 }

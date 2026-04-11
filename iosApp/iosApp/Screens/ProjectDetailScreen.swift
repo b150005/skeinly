@@ -386,8 +386,6 @@ struct ProjectDetailScreen: View {
     }
 }
 
-// MARK: - Note Row
-
 // MARK: - Image Helpers
 
 private func compressImageToJpeg(data: Data, maxSize: Int) -> Data {
@@ -404,14 +402,9 @@ private func compressImageToJpeg(data: Data, maxSize: Int) -> Data {
 }
 
 private func dataToKotlinByteArray(_ data: Data) -> KotlinByteArray {
-    let array = KotlinByteArray(size: Int32(data.count))
-    data.withUnsafeBytes { buffer in
-        guard let ptr = buffer.baseAddress else { return }
-        for i in 0..<data.count {
-            array.set(index: Int32(i), value: Int8(bitPattern: ptr.load(fromByteOffset: i, as: UInt8.self)))
-        }
-    }
-    return array
+    // Convert via NSData → Kotlin ByteArray using the KMP helper which uses memcpy
+    let nsData = data as NSData
+    return KoinHelperKt.nsDataToByteArray(nsData)
 }
 
 // MARK: - Note Row

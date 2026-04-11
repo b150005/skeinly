@@ -2,7 +2,7 @@ package com.knitnote.ui.projectdetail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.knitnote.data.remote.StorageOperations
+import com.knitnote.domain.repository.StorageOperations
 import com.knitnote.domain.model.Progress
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ShareLink
@@ -73,7 +73,7 @@ sealed interface ProjectDetailEvent {
         val permission: SharePermission,
     ) : ProjectDetailEvent
 
-    data class UploadChartImage(val data: ByteArray, val fileName: String) : ProjectDetailEvent
+    class UploadChartImage(val data: ByteArray, val fileName: String) : ProjectDetailEvent
 
     data class DeleteChartImage(val imagePath: String) : ProjectDetailEvent
 
@@ -316,11 +316,12 @@ class ProjectDetailViewModel(
     }
 
     private suspend fun resolveSignedUrls(paths: List<String>): List<String> {
-        val storage = remoteStorage ?: return paths
+        val storage = remoteStorage ?: return emptyList()
         return try {
             storage.createSignedUrls(paths)
         } catch (_: Exception) {
-            paths // Fallback: use raw paths (won't display but won't crash)
+            _uiOverlay.update { it.copy(error = "Failed to load chart images") }
+            emptyList()
         }
     }
 }
