@@ -21,8 +21,6 @@ import com.knitnote.data.sync.SyncManagerOperations
 import com.knitnote.domain.repository.AuthRepository
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 
@@ -46,7 +44,7 @@ val syncModule = module {
             pendingSyncDataSource = get(),
             syncExecutor = get(),
             isOnline = get<ConnectivityMonitor>().isOnline,
-            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+            scope = get<CoroutineScope>(applicationScopeQualifier),
         ).also { it.start() }
     }
 
@@ -60,7 +58,7 @@ val syncModule = module {
                 localProgress = get<LocalProgressDataSource>(),
                 localPattern = get<LocalPatternDataSource>(),
                 authRepository = get<AuthRepository>(),
-                scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+                scope = get<CoroutineScope>(applicationScopeQualifier),
             ).also { it.start() }
         }
     }

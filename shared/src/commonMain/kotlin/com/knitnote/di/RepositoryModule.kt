@@ -32,8 +32,6 @@ import com.knitnote.domain.repository.ShareRepository
 import com.knitnote.domain.repository.UserRepository
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import org.koin.dsl.module
 
 val repositoryModule = module {
@@ -61,7 +59,7 @@ val repositoryModule = module {
             CommentRepositoryImpl(
                 remote = get<RemoteCommentDataSource>(),
                 supabaseClient = get<SupabaseClient>(),
-                scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+                scope = get<CoroutineScope>(applicationScopeQualifier),
             )
         }
         // Activity — remote-only with Realtime
@@ -69,7 +67,7 @@ val repositoryModule = module {
             ActivityRepositoryImpl(
                 remote = get<RemoteActivityDataSource>(),
                 supabaseClient = get<SupabaseClient>(),
-                scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+                scope = get<CoroutineScope>(applicationScopeQualifier),
             )
         }
         // Share — remote-only
@@ -77,7 +75,7 @@ val repositoryModule = module {
             ShareRepositoryImpl(
                 remote = get<RemoteShareDataSource>(),
                 supabaseClient = get<SupabaseClient>(),
-                scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+                scope = get<CoroutineScope>(applicationScopeQualifier),
             )
         }
     }
