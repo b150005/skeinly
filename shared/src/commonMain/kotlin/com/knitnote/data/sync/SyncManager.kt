@@ -19,6 +19,7 @@ class SyncManager(
     private val scope: CoroutineScope,
     private val config: SyncConfig = SyncConfig(),
     private val clock: Clock = Clock.System,
+    private val random: kotlin.random.Random = kotlin.random.Random.Default,
 ) : SyncManagerOperations {
     private val processingMutex = Mutex()
     private val coalescingMutex = Mutex()
@@ -188,7 +189,7 @@ class SyncManager(
     private fun calculateBackoff(retryCount: Int): Long {
         val delayMs = config.baseDelayMs * (1L shl retryCount.coerceAtMost(20))
         val capped = min(delayMs, config.maxDelayMs)
-        val jitter = (capped * config.jitterFactor * kotlin.random.Random.nextDouble()).toLong()
+        val jitter = (capped * config.jitterFactor * random.nextDouble()).toLong()
         return capped + jitter
     }
 }

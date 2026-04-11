@@ -135,10 +135,10 @@ class RealtimeSyncManager(
                 logger.log(TAG, "Max retries ($retryCount) reached, waiting for connectivity/auth event")
                 return
             }
-            retryCount++
+            val currentRetry = retryCount++
             retryJob =
                 scope.launch {
-                    val backoff = calculateBackoff(retryCount - 1)
+                    val backoff = calculateBackoff(currentRetry)
                     delay(backoff)
                     // Guard: if the user changed (e.g., sign-out/sign-in during backoff),
                     // skip this retry. RLS enforces data isolation server-side regardless.
