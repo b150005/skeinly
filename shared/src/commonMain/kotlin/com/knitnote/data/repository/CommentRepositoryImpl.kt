@@ -1,17 +1,15 @@
 package com.knitnote.data.repository
 
-import com.knitnote.data.remote.RemoteCommentDataSource
+import com.knitnote.data.realtime.ChangeFilter
+import com.knitnote.data.realtime.ChannelHandle
+import com.knitnote.data.realtime.RealtimeChannelProvider
+import com.knitnote.data.remote.CommentDataSourceOperations
 import com.knitnote.domain.model.Comment
 import com.knitnote.domain.model.CommentTargetType
 import com.knitnote.domain.repository.CommentRepository
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.realtime.PostgresAction
-import io.github.jan.supabase.realtime.RealtimeChannel
-import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.decodeOldRecord
 import io.github.jan.supabase.realtime.decodeRecord
-import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -30,11 +28,11 @@ import kotlinx.coroutines.sync.withLock
  * Call [closeChannel] on user logout to release subscriptions and clear cached state.
  */
 class CommentRepositoryImpl(
-    private val remote: RemoteCommentDataSource,
-    private val supabaseClient: SupabaseClient,
+    private val remote: CommentDataSourceOperations,
+    private val channelProvider: RealtimeChannelProvider,
     private val scope: CoroutineScope,
 ) : CommentRepository {
-    private var commentChannel: RealtimeChannel? = null
+    private var commentChannel: ChannelHandle? = null
     private var subscribedTargetKey: String? = null
     private val channelMutex = Mutex()
     private val _comments = MutableStateFlow<List<Comment>>(emptyList())
@@ -88,15 +86,15 @@ class CommentRepositoryImpl(
                 }
                 if (commentChannel != null) return@withLock
 
-                val channel = supabaseClient.channel("comments-$targetKey")
-                commentChannel = channel
+                val handle = channelProvider.createChannel("comments-$targetKey")
+                commentChannel = handle
                 subscribedTargetKey = targetKey
 
                 // Set up the change flow before subscribing
-                channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-                    table = "comments"
-                    filter("target_id", FilterOperator.EQ, targetId)
-                }.onEach { action ->
+                handle.postgresChangeFlow(
+                    table = "comments",
+                    filter = ChangeFilter("target_id", targetId),
+                ).onEach { action ->
                     handleCommentAction(action, targetType, targetId)
                 }.catch { e ->
                     if (e is CancellationException) throw e
@@ -104,7 +102,7 @@ class CommentRepositoryImpl(
 
                 // Subscribe first, then seed — subscribe-then-fetch pattern
                 // prevents missed events between fetch and subscribe
-                channel.subscribe()
+                handle.subscribe()
 
                 // Seed with initial fetch after subscription is active
                 _comments.value = remote.getByTarget(targetType, targetId)

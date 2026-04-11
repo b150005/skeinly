@@ -3,19 +3,17 @@ package com.knitnote.data.sync
 import com.knitnote.data.local.LocalPatternDataSource
 import com.knitnote.data.local.LocalProgressDataSource
 import com.knitnote.data.local.LocalProjectDataSource
+import com.knitnote.data.realtime.ChangeFilter
+import com.knitnote.data.realtime.ChannelHandle
+import com.knitnote.data.realtime.RealtimeChannelProvider
 import com.knitnote.domain.model.AuthState
 import com.knitnote.domain.model.Pattern
 import com.knitnote.domain.model.Progress
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.repository.AuthRepository
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.realtime.PostgresAction
-import io.github.jan.supabase.realtime.RealtimeChannel
-import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.decodeOldRecord
 import io.github.jan.supabase.realtime.decodeRecord
-import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -26,16 +24,16 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 class RealtimeSyncManager(
-    private val supabaseClient: SupabaseClient,
+    private val channelProvider: RealtimeChannelProvider,
     private val localProject: LocalProjectDataSource,
     private val localProgress: LocalProgressDataSource,
     private val localPattern: LocalPatternDataSource,
     private val authRepository: AuthRepository,
     private val scope: CoroutineScope,
 ) {
-    private var projectChannel: RealtimeChannel? = null
-    private var progressChannel: RealtimeChannel? = null
-    private var patternChannel: RealtimeChannel? = null
+    private var projectChannel: ChannelHandle? = null
+    private var progressChannel: ChannelHandle? = null
+    private var patternChannel: ChannelHandle? = null
     private var authObserverJob: Job? = null
     private val channelMutex = Mutex()
 
@@ -84,13 +82,13 @@ class RealtimeSyncManager(
     }
 
     private suspend fun subscribeToProjects(ownerId: String) {
-        val channel = supabaseClient.channel("projects-$ownerId")
-        projectChannel = channel
+        val handle = channelProvider.createChannel("projects-$ownerId")
+        projectChannel = handle
 
-        channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-            table = "projects"
-            filter("owner_id", FilterOperator.EQ, ownerId)
-        }.onEach { action ->
+        handle.postgresChangeFlow(
+            table = "projects",
+            filter = ChangeFilter("owner_id", ownerId),
+        ).onEach { action ->
             handleProjectAction(action)
         }.catch { e ->
             if (e is CancellationException) throw e
@@ -98,23 +96,23 @@ class RealtimeSyncManager(
             // The flow terminates here; a re-subscribe on next auth event will recover
         }.launchIn(scope)
 
-        channel.subscribe()
+        handle.subscribe()
     }
 
     private suspend fun subscribeToProgress(ownerId: String) {
-        val channel = supabaseClient.channel("progress-$ownerId")
-        progressChannel = channel
+        val handle = channelProvider.createChannel("progress-$ownerId")
+        progressChannel = handle
 
-        channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-            table = "progress"
-        }.onEach { action ->
+        handle.postgresChangeFlow(
+            table = "progress",
+        ).onEach { action ->
             handleProgressAction(action)
         }.catch { e ->
             if (e is CancellationException) throw e
             // Realtime decode/handling error — log and continue
         }.launchIn(scope)
 
-        channel.subscribe()
+        handle.subscribe()
     }
 
     private suspend fun handleProjectAction(action: PostgresAction) {
@@ -139,19 +137,19 @@ class RealtimeSyncManager(
     }
 
     private suspend fun subscribeToPatterns(ownerId: String) {
-        val channel = supabaseClient.channel("patterns-$ownerId")
-        patternChannel = channel
+        val handle = channelProvider.createChannel("patterns-$ownerId")
+        patternChannel = handle
 
-        channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-            table = "patterns"
-            filter("owner_id", FilterOperator.EQ, ownerId)
-        }.onEach { action ->
+        handle.postgresChangeFlow(
+            table = "patterns",
+            filter = ChangeFilter("owner_id", ownerId),
+        ).onEach { action ->
             handlePatternAction(action)
         }.catch { e ->
             if (e is CancellationException) throw e
         }.launchIn(scope)
 
-        channel.subscribe()
+        handle.subscribe()
     }
 
     private suspend fun handlePatternAction(action: PostgresAction) {
