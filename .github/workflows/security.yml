@@ -60,7 +60,7 @@ jobs:
       # --- Traced builds (after init) ---
       - name: Build (java-kotlin)
         if: matrix.language == 'java-kotlin'
-        run: ./gradlew :shared:compileDebugKotlinAndroid :androidApp:compileDebugKotlin
+        run: ./gradlew --no-daemon -Dorg.gradle.jvmargs="-Xmx4g" :shared:compileDebugKotlinAndroid :androidApp:compileDebugKotlin
 
       - name: Resolve iOS Simulator destination
         if: matrix.language == 'swift'
