@@ -101,6 +101,11 @@ Agents detect this project as **Kotlin Multiplatform** by finding:
    - Android UI in `androidApp/`
    - iOS UI in `iosApp/`
 6. **Quality Gate**: The code-reviewer, linter, security-reviewer, and performance-engineer validate the implementation
+   - After task completion, request a code review from the code-reviewer agent
+   - Fix ALL reported issues (CRITICAL, HIGH, MEDIUM, and LOW)
+   - Re-run the code review after fixes
+   - Repeat the review-fix cycle until no issues remain (APPROVED)
+   - Only then proceed to commit
 7. **Documentation**: The technical-writer updates docs and changelog
 8. **Release**: The devops-engineer manages deployment and release
 9. **Commit**: Conventional commits format (feat, fix, refactor, docs, test, chore, perf, ci)
