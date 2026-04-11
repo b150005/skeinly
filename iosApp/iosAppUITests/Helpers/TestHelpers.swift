@@ -18,7 +18,7 @@ func createProject(
     app.buttons["createProjectButton"].tap()
 
     let titleField = app.textFields["Project Title"]
-    _ = titleField.waitForExistence(timeout: 3)
+    XCTAssertTrue(titleField.waitForExistence(timeout: 3), "Project Title field not found")
     titleField.tap()
     titleField.typeText(title)
 
@@ -32,5 +32,5 @@ func createProject(
 
     // Wait for the project to appear in the list
     let projectCell = app.staticTexts[title]
-    _ = projectCell.waitForExistence(timeout: 5)
+    XCTAssertTrue(projectCell.waitForExistence(timeout: 5), "Project '\(title)' did not appear in the list after creation")
 }

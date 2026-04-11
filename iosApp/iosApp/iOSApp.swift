@@ -1,5 +1,6 @@
 import SwiftUI
 import Shared
+import os.log
 
 @main
 struct iOSApp: App {
@@ -25,10 +26,18 @@ struct iOSApp: App {
             searchDirs.append(docURL)
         }
 
+        let logger = Logger(subsystem: "com.knitnote", category: "database")
         for dir in searchDirs {
             for name in dbNames {
                 let url = dir.appendingPathComponent(name)
-                try? fileManager.removeItem(at: url)
+                do {
+                    try fileManager.removeItem(at: url)
+                    logger.info("Removed \(url.path)")
+                } catch let error as NSError where error.domain == NSCocoaErrorDomain && error.code == NSFileNoSuchFileError {
+                    // File doesn't exist — expected, no action needed
+                } catch {
+                    logger.error("Failed to remove \(url.path): \(error.localizedDescription)")
+                }
             }
         }
     }
