@@ -160,6 +160,8 @@ The instructions should include:
 
 Format: A fenced code block titled `## Next Session Instructions` that can be copy-pasted directly as the next session's prompt. This block is output in the chat reply only — CLAUDE.md should only be updated with roadmap status changes (moving phases from Planned to Completed), not with session-specific handoff instructions.
 
+**IMPORTANT**: Next Session Instructions MUST be output at the very end of the conversation — never in the middle. Outputting it mid-session risks stale information since subsequent tasks may change state (commits, test counts, known issues). Always wait until the session's final response to emit the handoff block.
+
 ## Development Roadmap
 
 ### Completed
@@ -192,6 +194,8 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 - **Phase 10**: Chart Image Support — Chart image upload, storage, and zoom viewer
 - **Phase 11**: Test Coverage 80% — Kover exclusions, 428 tests, sanitizeFileName security hardening
 - **Phase 12**: CI/CD Hardening — koverVerify enforcement in CI, iOS test failure propagation fix, Swift CodeQL runner fix
+- **Phase 13**: Realtime Testability — RealtimeChannelProvider/ChannelHandle/ChangeFilter abstraction, DataSourceOperations extraction, 34 new tests (462 shared total)
+- **Phase 14**: Offline-First Hardening — Progress owner_id denormalization + Realtime filter, idempotent upsert, SyncLogger, auto-reconnect with backoff/jitter/ConnectivityMonitor, security review fixes (469 shared tests)
 
 ### Planned
-- **Phase 13**: TBD — Agent team to determine next priority (candidates: Realtime testability, E2E tests, offline-first improvements, macOS target)
+- **Phase 15**: TBD — Agent team to determine next priority (candidates: E2E tests, macOS target, UI improvements)
