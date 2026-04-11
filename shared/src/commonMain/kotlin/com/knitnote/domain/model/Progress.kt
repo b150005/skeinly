@@ -12,4 +12,5 @@ data class Progress(
     @SerialName("photo_url") val photoUrl: String?,
     val note: String,
     @SerialName("created_at") val createdAt: Instant,
+    @SerialName("owner_id") val ownerId: String = "",
 )

@@ -187,6 +187,8 @@ class SyncManager(
 
     private fun calculateBackoff(retryCount: Int): Long {
         val delayMs = config.baseDelayMs * (1L shl retryCount.coerceAtMost(20))
-        return min(delayMs, config.maxDelayMs)
+        val capped = min(delayMs, config.maxDelayMs)
+        val jitter = (capped * config.jitterFactor * kotlin.random.Random.nextDouble()).toLong()
+        return capped + jitter
     }
 }

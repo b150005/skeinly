@@ -17,7 +17,7 @@ class RemoteProgressDataSource(
         }.decodeList()
 
     override suspend fun insert(progress: Progress): Progress =
-        table.insert(progress) {
+        table.upsert(progress) {
             select()
         }.decodeSingle()
 

@@ -12,4 +12,5 @@ fun ProgressEntity.toDomain(): Progress =
         photoUrl = photo_url,
         note = note.orEmpty(),
         createdAt = Instant.parse(created_at),
+        ownerId = owner_id,
     )

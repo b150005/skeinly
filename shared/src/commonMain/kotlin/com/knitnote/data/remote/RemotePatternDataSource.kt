@@ -21,7 +21,7 @@ class RemotePatternDataSource(
         }.decodeSingleOrNull()
 
     override suspend fun insert(pattern: Pattern): Pattern =
-        table.insert(pattern) {
+        table.upsert(pattern) {
             select()
         }.decodeSingle()
 

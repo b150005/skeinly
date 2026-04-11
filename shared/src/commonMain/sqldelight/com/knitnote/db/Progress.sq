@@ -5,6 +5,7 @@ CREATE TABLE ProgressEntity (
     photo_url TEXT,
     note TEXT,
     created_at TEXT NOT NULL,
+    owner_id TEXT NOT NULL DEFAULT '',
     FOREIGN KEY (project_id) REFERENCES ProjectEntity(id) ON DELETE CASCADE
 );
 
@@ -17,8 +18,8 @@ getByProjectId:
 SELECT * FROM ProgressEntity WHERE project_id = ? ORDER BY created_at DESC;
 
 insert:
-INSERT INTO ProgressEntity(id, project_id, row_number, photo_url, note, created_at)
-VALUES (?, ?, ?, ?, ?, ?);
+INSERT INTO ProgressEntity(id, project_id, row_number, photo_url, note, created_at, owner_id)
+VALUES (?, ?, ?, ?, ?, ?, ?);
 
 deleteById:
 DELETE FROM ProgressEntity WHERE id = ?;

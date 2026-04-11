@@ -12,6 +12,7 @@ import com.knitnote.domain.model.ProjectStatus
 import com.knitnote.domain.usecase.FakeAuthRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -213,12 +214,23 @@ class RealtimeSyncManagerTest {
 
     // ===== Part 2: Subscription lifecycle tests via FakeRealtimeChannelProvider =====
 
-    private fun createManager(): Pair<RealtimeSyncManager, FakeRealtimeChannelProvider> {
+    private data class ManagerSetup(
+        val manager: RealtimeSyncManager,
+        val channelProvider: FakeRealtimeChannelProvider,
+        val logger: CapturingSyncLogger,
+    )
+
+    private fun createManager(
+        isOnline: kotlinx.coroutines.flow.StateFlow<Boolean>? = null,
+        config: RealtimeConfig = RealtimeConfig(),
+        scope: CoroutineScope = CoroutineScope(Dispatchers.Unconfined),
+    ): ManagerSetup {
         val driver = createTestDriver()
         val db = KnitNoteDatabase(driver)
         val testDispatcher = Dispatchers.Unconfined
         val channelProvider = FakeRealtimeChannelProvider()
         val fakeAuth = FakeAuthRepository()
+        val logger = CapturingSyncLogger()
 
         val manager =
             RealtimeSyncManager(
@@ -227,9 +239,18 @@ class RealtimeSyncManagerTest {
                 localProgress = LocalProgressDataSource(db, testDispatcher),
                 localPattern = LocalPatternDataSource(db, testDispatcher),
                 authRepository = fakeAuth,
-                scope = CoroutineScope(Dispatchers.Unconfined),
+                scope = scope,
+                logger = logger,
+                isOnline = isOnline,
+                config = config,
+                random = kotlin.random.Random(seed = 42),
             )
-        return manager to channelProvider
+        return ManagerSetup(manager, channelProvider, logger)
+    }
+
+    private fun createManager(): Pair<RealtimeSyncManager, FakeRealtimeChannelProvider> {
+        val setup = createManager(isOnline = null)
+        return setup.manager to setup.channelProvider
     }
 
     @Test
@@ -284,7 +305,8 @@ class RealtimeSyncManagerTest {
 
             val progressHandle = channelProvider.channelFor("progress-owner-1")!!
             assertEquals("progress", progressHandle.subscribedTable)
-            assertNull(progressHandle.subscribedFilter)
+            assertEquals("owner_id", progressHandle.subscribedFilter?.column)
+            assertEquals("owner-1", progressHandle.subscribedFilter?.value)
 
             val patternHandle = channelProvider.channelFor("patterns-owner-1")!!
             assertEquals("patterns", patternHandle.subscribedTable)
@@ -310,5 +332,173 @@ class RealtimeSyncManagerTest {
             assertNotNull(channelProvider.channelFor("projects-owner-2"))
             assertNotNull(channelProvider.channelFor("progress-owner-2"))
             assertNotNull(channelProvider.channelFor("patterns-owner-2"))
+        }
+
+    // ===== Part 3: Reconnect and error logging tests =====
+
+    @Test
+    fun `channel flow error logs the error`() =
+        runTest {
+            val setup =
+                createManager(
+                    isOnline = null,
+                    scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+                )
+
+            setup.manager.subscribe("owner-1")
+            testScheduler.advanceUntilIdle()
+
+            setup.channelProvider.channelFor("projects-owner-1")!!.completeWithError(RuntimeException("WebSocket closed"))
+            testScheduler.advanceUntilIdle()
+
+            assertTrue(setup.logger.entries.isNotEmpty())
+            val entry = setup.logger.entries.first()
+            assertEquals("RealtimeSyncManager", entry.tag)
+            assertTrue(entry.message.contains("projects"))
+            assertNotNull(entry.throwable)
+        }
+
+    @Test
+    fun `channel flow error triggers resubscription`() =
+        runTest {
+            val setup =
+                createManager(
+                    isOnline = null,
+                    config = RealtimeConfig(baseDelayMs = 10),
+                    scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+                )
+
+            setup.manager.subscribe("owner-1")
+            testScheduler.advanceUntilIdle()
+            assertEquals(3, setup.channelProvider.createCount)
+
+            setup.channelProvider.channelFor("projects-owner-1")!!.completeWithError(RuntimeException("connection lost"))
+            testScheduler.advanceUntilIdle()
+
+            // After error + retry, 3 new channels should be created (total 6)
+            assertTrue(setup.channelProvider.createCount > 3)
+        }
+
+    @Test
+    fun `max retry exhaustion stops auto-retry`() =
+        runTest {
+            val setup =
+                createManager(
+                    isOnline = null,
+                    config = RealtimeConfig(maxRetries = 1, baseDelayMs = 10),
+                    scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+                )
+
+            setup.manager.subscribe("owner-1")
+            testScheduler.advanceUntilIdle()
+
+            // Trigger 1st error → should retry (retryCount becomes 1)
+            setup.channelProvider.channelFor("projects-owner-1")!!.completeWithError(RuntimeException("error 1"))
+            testScheduler.advanceUntilIdle()
+
+            val countAfterFirstRetry = setup.channelProvider.createCount
+
+            // Trigger 2nd error on the new channel → should NOT retry (retryCount >= maxRetries)
+            setup.channelProvider.channelFor("projects-owner-1")!!.completeWithError(RuntimeException("error 2"))
+            testScheduler.advanceUntilIdle()
+
+            // No additional channels created — retry exhausted
+            assertEquals(countAfterFirstRetry, setup.channelProvider.createCount)
+
+            // Verify the log shows max retries reached
+            val maxRetryLog = setup.logger.entries.any { it.message.contains("Max retries") }
+            assertTrue(maxRetryLog)
+        }
+
+    @Test
+    fun `retry count increments on error and persists across retries`() =
+        runTest {
+            val setup =
+                createManager(
+                    isOnline = null,
+                    config = RealtimeConfig(baseDelayMs = 10),
+                    scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+                )
+
+            setup.manager.subscribe("owner-1")
+            testScheduler.advanceUntilIdle()
+            assertEquals(0, setup.manager.retryCount)
+
+            // Trigger error — retryCount should increment
+            setup.channelProvider.channelFor("projects-owner-1")!!.completeWithError(RuntimeException("err"))
+            testScheduler.advanceUntilIdle()
+
+            assertTrue(setup.manager.retryCount > 0)
+        }
+
+    @Test
+    fun `connectivity online transition triggers resubscription`() =
+        runTest {
+            val onlineState = kotlinx.coroutines.flow.MutableStateFlow(false)
+            val setup =
+                createManager(
+                    isOnline = onlineState,
+                    scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+                )
+
+            setup.manager.subscribe("owner-1")
+            testScheduler.advanceUntilIdle()
+            val countAfterSubscribe = setup.channelProvider.createCount
+
+            setup.manager.start()
+            testScheduler.advanceUntilIdle()
+
+            onlineState.value = true
+            testScheduler.advanceUntilIdle()
+
+            // Should have re-subscribed (3 new channels)
+            assertTrue(setup.channelProvider.createCount > countAfterSubscribe)
+            assertEquals("owner-1", setup.manager.lastOwnerId)
+        }
+
+    @Test
+    fun `connectivity online with no prior subscription is no-op`() =
+        runTest {
+            val onlineState = kotlinx.coroutines.flow.MutableStateFlow(false)
+            val setup =
+                createManager(
+                    isOnline = onlineState,
+                    scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+                )
+
+            setup.manager.start()
+            testScheduler.advanceUntilIdle()
+
+            onlineState.value = true
+            testScheduler.advanceUntilIdle()
+
+            // No channels should be created (no lastOwnerId)
+            assertTrue(setup.channelProvider.createdChannels.isEmpty())
+        }
+
+    @Test
+    fun `connectivity recovery resets retry count`() =
+        runTest {
+            val onlineState = kotlinx.coroutines.flow.MutableStateFlow(true)
+            val setup =
+                createManager(
+                    isOnline = onlineState,
+                    config = RealtimeConfig(maxRetries = 1, baseDelayMs = 10),
+                    scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+                )
+
+            setup.manager.subscribe("owner-1")
+            setup.manager.start()
+            testScheduler.advanceUntilIdle()
+
+            setup.channelProvider.channelFor("projects-owner-1")!!.completeWithError(RuntimeException("err"))
+            testScheduler.advanceUntilIdle()
+
+            onlineState.value = false
+            testScheduler.advanceUntilIdle()
+            onlineState.value = true
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(0, setup.manager.retryCount)
         }
 }

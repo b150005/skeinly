@@ -21,7 +21,7 @@ class RemoteProjectDataSource(
         }.decodeSingleOrNull()
 
     override suspend fun insert(project: Project): Project =
-        table.insert(project) {
+        table.upsert(project) {
             select()
         }.decodeSingle()
 

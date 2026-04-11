@@ -41,6 +41,7 @@ class LocalProgressDataSource(
                 photo_url = progress.photoUrl,
                 note = progress.note,
                 created_at = progress.createdAt.toString(),
+                owner_id = progress.ownerId,
             )
             progress
         }
@@ -59,6 +60,7 @@ class LocalProgressDataSource(
                     photo_url = progress.photoUrl,
                     note = progress.note,
                     created_at = progress.createdAt.toString(),
+                    owner_id = progress.ownerId,
                 )
             }
         }

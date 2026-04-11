@@ -60,6 +60,7 @@ val syncModule =
                     localPattern = get<LocalPatternDataSource>(),
                     authRepository = get<AuthRepository>(),
                     scope = get<CoroutineScope>(applicationScopeQualifier),
+                    isOnline = get<ConnectivityMonitor>().isOnline,
                 ).also { it.start() }
             }
         }

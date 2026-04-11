@@ -17,11 +17,16 @@ import io.github.jan.supabase.realtime.decodeRecord
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.math.min
+import kotlin.random.Random
 
 class RealtimeSyncManager(
     private val channelProvider: RealtimeChannelProvider,
@@ -30,12 +35,23 @@ class RealtimeSyncManager(
     private val localPattern: LocalPatternDataSource,
     private val authRepository: AuthRepository,
     private val scope: CoroutineScope,
+    private val logger: SyncLogger = DefaultSyncLogger,
+    private val isOnline: StateFlow<Boolean>? = null,
+    private val config: RealtimeConfig = RealtimeConfig(),
+    private val random: Random = Random.Default,
 ) {
     private var projectChannel: ChannelHandle? = null
     private var progressChannel: ChannelHandle? = null
     private var patternChannel: ChannelHandle? = null
     private var authObserverJob: Job? = null
+    private var connectivityJob: Job? = null
+    private var retryJob: Job? = null
     private val channelMutex = Mutex()
+
+    internal var lastOwnerId: String? = null
+        private set
+    internal var retryCount: Int = 0
+        private set
 
     fun start() {
         authObserverJob?.cancel()
@@ -43,7 +59,10 @@ class RealtimeSyncManager(
             authRepository.observeAuthState()
                 .onEach { state ->
                     when (state) {
-                        is AuthState.Authenticated -> subscribe(state.userId)
+                        is AuthState.Authenticated -> {
+                            retryCount = 0
+                            subscribe(state.userId)
+                        }
                         is AuthState.Unauthenticated,
                         is AuthState.Error,
                         -> unsubscribe()
@@ -51,17 +70,37 @@ class RealtimeSyncManager(
                     }
                 }
                 .launchIn(scope)
+
+        connectivityJob?.cancel()
+        connectivityJob =
+            isOnline
+                ?.onEach { online ->
+                    if (online) {
+                        lastOwnerId?.let { ownerId ->
+                            retryCount = 0
+                            subscribe(ownerId)
+                        }
+                    }
+                }
+                ?.launchIn(scope)
     }
 
     suspend fun stop() {
         authObserverJob?.cancel()
         authObserverJob = null
+        connectivityJob?.cancel()
+        connectivityJob = null
+        retryJob?.cancel()
+        retryJob = null
         unsubscribe()
     }
 
     internal suspend fun subscribe(ownerId: String) =
         channelMutex.withLock {
+            retryJob?.cancel()
+            retryJob = null
             unsubscribeInternal()
+            lastOwnerId = ownerId
             subscribeToProjects(ownerId)
             subscribeToProgress(ownerId)
             subscribeToPatterns(ownerId)
@@ -81,6 +120,41 @@ class RealtimeSyncManager(
         patternChannel = null
     }
 
+    /**
+     * Schedule a retry with exponential backoff. Synchronized via [channelMutex]
+     * to prevent concurrent [.catch] blocks from racing on [retryCount]/[retryJob].
+     * The [subscribe] call inside the launched coroutine acquires [channelMutex]
+     * separately — no deadlock since this function releases the lock first.
+     */
+    private suspend fun scheduleRetry(ownerId: String) =
+        channelMutex.withLock {
+            // If a retry is already in flight, skip — avoids triple-increment
+            // when all 3 channels fail simultaneously from the same network drop.
+            if (retryJob?.isActive == true) return
+            if (retryCount >= config.maxRetries) {
+                logger.log(TAG, "Max retries ($retryCount) reached, waiting for connectivity/auth event")
+                return
+            }
+            retryCount++
+            retryJob =
+                scope.launch {
+                    val backoff = calculateBackoff(retryCount - 1)
+                    delay(backoff)
+                    // Guard: if the user changed (e.g., sign-out/sign-in during backoff),
+                    // skip this retry. RLS enforces data isolation server-side regardless.
+                    if (lastOwnerId == ownerId) {
+                        subscribe(ownerId)
+                    }
+                }
+        }
+
+    private fun calculateBackoff(retryRound: Int): Long {
+        val baseDelay = config.baseDelayMs * (1L shl retryRound.coerceAtMost(20))
+        val capped = min(baseDelay, config.maxDelayMs)
+        val jitter = (capped * config.jitterFactor * random.nextDouble()).toLong()
+        return capped + jitter
+    }
+
     private suspend fun subscribeToProjects(ownerId: String) {
         val handle = channelProvider.createChannel("projects-$ownerId")
         projectChannel = handle
@@ -92,8 +166,8 @@ class RealtimeSyncManager(
             handleProjectAction(action)
         }.catch { e ->
             if (e is CancellationException) throw e
-            // Realtime decode/handling error — log and continue
-            // The flow terminates here; a re-subscribe on next auth event will recover
+            logger.log(TAG, "Channel flow error on projects", e)
+            scheduleRetry(ownerId)
         }.launchIn(scope)
 
         handle.subscribe()
@@ -105,11 +179,31 @@ class RealtimeSyncManager(
 
         handle.postgresChangeFlow(
             table = "progress",
+            filter = ChangeFilter("owner_id", ownerId),
         ).onEach { action ->
             handleProgressAction(action)
         }.catch { e ->
             if (e is CancellationException) throw e
-            // Realtime decode/handling error — log and continue
+            logger.log(TAG, "Channel flow error on progress", e)
+            scheduleRetry(ownerId)
+        }.launchIn(scope)
+
+        handle.subscribe()
+    }
+
+    private suspend fun subscribeToPatterns(ownerId: String) {
+        val handle = channelProvider.createChannel("patterns-$ownerId")
+        patternChannel = handle
+
+        handle.postgresChangeFlow(
+            table = "patterns",
+            filter = ChangeFilter("owner_id", ownerId),
+        ).onEach { action ->
+            handlePatternAction(action)
+        }.catch { e ->
+            if (e is CancellationException) throw e
+            logger.log(TAG, "Channel flow error on patterns", e)
+            scheduleRetry(ownerId)
         }.launchIn(scope)
 
         handle.subscribe()
@@ -134,22 +228,6 @@ class RealtimeSyncManager(
             }
             is PostgresAction.Select -> { /* no-op */ }
         }
-    }
-
-    private suspend fun subscribeToPatterns(ownerId: String) {
-        val handle = channelProvider.createChannel("patterns-$ownerId")
-        patternChannel = handle
-
-        handle.postgresChangeFlow(
-            table = "patterns",
-            filter = ChangeFilter("owner_id", ownerId),
-        ).onEach { action ->
-            handlePatternAction(action)
-        }.catch { e ->
-            if (e is CancellationException) throw e
-        }.launchIn(scope)
-
-        handle.subscribe()
     }
 
     private suspend fun handlePatternAction(action: PostgresAction) {
@@ -194,5 +272,9 @@ class RealtimeSyncManager(
 
     private suspend fun isKnownProject(projectId: String): Boolean {
         return localProject.getById(projectId) != null
+    }
+
+    companion object {
+        private const val TAG = "RealtimeSyncManager"
     }
 }

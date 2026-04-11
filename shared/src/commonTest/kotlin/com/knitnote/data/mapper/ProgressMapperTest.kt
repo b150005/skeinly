@@ -19,6 +19,7 @@ class ProgressMapperTest {
         photo_url = photoUrl,
         note = note,
         created_at = now,
+        owner_id = "owner-1",
     )
 
     @Test
