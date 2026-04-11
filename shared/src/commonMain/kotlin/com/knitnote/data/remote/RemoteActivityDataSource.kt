@@ -4,14 +4,24 @@ import com.knitnote.domain.model.Activity
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 
-class RemoteActivityDataSource(
-    private val supabaseClient: SupabaseClient,
-) {
-    private val table get() = supabaseClient.postgrest["activities"]
-
+/** Testable contract for remote activity operations. */
+interface ActivityDataSourceOperations {
     suspend fun getByUserId(
         userId: String,
         limit: Int = 50,
+    ): List<Activity>
+
+    suspend fun insert(activity: Activity): Activity
+}
+
+class RemoteActivityDataSource(
+    private val supabaseClient: SupabaseClient,
+) : ActivityDataSourceOperations {
+    private val table get() = supabaseClient.postgrest["activities"]
+
+    override suspend fun getByUserId(
+        userId: String,
+        limit: Int,
     ): List<Activity> =
         table.select {
             filter { eq("user_id", userId) }
@@ -19,7 +29,7 @@ class RemoteActivityDataSource(
             limit(limit.toLong())
         }.decodeList()
 
-    suspend fun insert(activity: Activity): Activity =
+    override suspend fun insert(activity: Activity): Activity =
         table.insert(activity) {
             select()
         }.decodeSingle()

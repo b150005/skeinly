@@ -4,6 +4,7 @@ import com.knitnote.data.local.LocalPatternDataSource
 import com.knitnote.data.local.LocalPendingSyncDataSource
 import com.knitnote.data.local.LocalProgressDataSource
 import com.knitnote.data.local.LocalProjectDataSource
+import com.knitnote.data.realtime.RealtimeChannelProvider
 import com.knitnote.data.remote.ConnectivityMonitor
 import com.knitnote.data.remote.RemotePatternDataSource
 import com.knitnote.data.remote.RemoteProgressDataSource
@@ -19,7 +20,6 @@ import com.knitnote.data.sync.SyncExecutor
 import com.knitnote.data.sync.SyncManager
 import com.knitnote.data.sync.SyncManagerOperations
 import com.knitnote.domain.repository.AuthRepository
-import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
@@ -54,7 +54,7 @@ val syncModule =
         if (SupabaseConfig.isConfigured) {
             single<RealtimeSyncManager> {
                 RealtimeSyncManager(
-                    supabaseClient = get<SupabaseClient>(),
+                    channelProvider = get<RealtimeChannelProvider>(),
                     localProject = get<LocalProjectDataSource>(),
                     localProgress = get<LocalProgressDataSource>(),
                     localPattern = get<LocalPatternDataSource>(),

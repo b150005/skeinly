@@ -1,15 +1,13 @@
 package com.knitnote.data.repository
 
-import com.knitnote.data.remote.RemoteActivityDataSource
+import com.knitnote.data.realtime.ChangeFilter
+import com.knitnote.data.realtime.ChannelHandle
+import com.knitnote.data.realtime.RealtimeChannelProvider
+import com.knitnote.data.remote.ActivityDataSourceOperations
 import com.knitnote.domain.model.Activity
 import com.knitnote.domain.repository.ActivityRepository
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.realtime.PostgresAction
-import io.github.jan.supabase.realtime.RealtimeChannel
-import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.decodeRecord
-import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -28,11 +26,11 @@ import kotlinx.coroutines.sync.withLock
  * Call [closeChannel] on user logout.
  */
 class ActivityRepositoryImpl(
-    private val remote: RemoteActivityDataSource,
-    private val supabaseClient: SupabaseClient,
+    private val remote: ActivityDataSourceOperations,
+    private val channelProvider: RealtimeChannelProvider,
     private val scope: CoroutineScope,
 ) : ActivityRepository {
-    private var activityChannel: RealtimeChannel? = null
+    private var activityChannel: ChannelHandle? = null
     private var subscribedUserId: String? = null
     private val channelMutex = Mutex()
     private val _activities = MutableStateFlow<List<Activity>>(emptyList())
@@ -71,22 +69,22 @@ class ActivityRepositoryImpl(
                 }
                 if (activityChannel != null) return@withLock
 
-                val channel = supabaseClient.channel("activities-$userId")
-                activityChannel = channel
+                val handle = channelProvider.createChannel("activities-$userId")
+                activityChannel = handle
                 subscribedUserId = userId
 
                 // Set up change flow before subscribing
-                channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-                    table = "activities"
-                    filter("user_id", FilterOperator.EQ, userId)
-                }.onEach { action ->
+                handle.postgresChangeFlow(
+                    table = "activities",
+                    filter = ChangeFilter("user_id", userId),
+                ).onEach { action ->
                     handleActivityAction(action, userId)
                 }.catch { e ->
                     if (e is CancellationException) throw e
                 }.launchIn(scope)
 
                 // Subscribe first, then seed
-                channel.subscribe()
+                handle.subscribe()
                 _activities.value = remote.getByUserId(userId)
             }
         }

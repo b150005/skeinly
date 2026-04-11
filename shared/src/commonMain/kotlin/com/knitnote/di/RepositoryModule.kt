@@ -3,6 +3,10 @@ package com.knitnote.di
 import com.knitnote.data.local.LocalPatternDataSource
 import com.knitnote.data.local.LocalProgressDataSource
 import com.knitnote.data.local.LocalProjectDataSource
+import com.knitnote.data.realtime.RealtimeChannelProvider
+import com.knitnote.data.realtime.SupabaseRealtimeChannelProvider
+import com.knitnote.data.remote.ActivityDataSourceOperations
+import com.knitnote.data.remote.CommentDataSourceOperations
 import com.knitnote.data.remote.ConnectivityMonitor
 import com.knitnote.data.remote.RemoteActivityDataSource
 import com.knitnote.data.remote.RemoteCommentDataSource
@@ -12,7 +16,7 @@ import com.knitnote.data.remote.RemoteProjectDataSource
 import com.knitnote.data.remote.RemoteShareDataSource
 import com.knitnote.data.remote.RemoteStorageDataSource
 import com.knitnote.data.remote.RemoteUserDataSource
-import com.knitnote.domain.repository.StorageOperations
+import com.knitnote.data.remote.ShareDataSourceOperations
 import com.knitnote.data.remote.SupabaseConfig
 import com.knitnote.data.remote.isConfigured
 import com.knitnote.data.repository.ActivityRepositoryImpl
@@ -31,6 +35,7 @@ import com.knitnote.domain.repository.PatternRepository
 import com.knitnote.domain.repository.ProgressRepository
 import com.knitnote.domain.repository.ProjectRepository
 import com.knitnote.domain.repository.ShareRepository
+import com.knitnote.domain.repository.StorageOperations
 import com.knitnote.domain.repository.UserRepository
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.CoroutineScope
@@ -52,33 +57,34 @@ val repositoryModule =
             single { RemoteProjectDataSource(get<SupabaseClient>()) }
             single { RemoteProgressDataSource(get<SupabaseClient>()) }
             single { RemotePatternDataSource(get<SupabaseClient>()) }
-            single { RemoteShareDataSource(get<SupabaseClient>()) }
+            single<ShareDataSourceOperations> { RemoteShareDataSource(get<SupabaseClient>()) }
             single { RemoteUserDataSource(get<SupabaseClient>()) }
-            single { RemoteCommentDataSource(get<SupabaseClient>()) }
-            single { RemoteActivityDataSource(get<SupabaseClient>()) }
+            single<CommentDataSourceOperations> { RemoteCommentDataSource(get<SupabaseClient>()) }
+            single<ActivityDataSourceOperations> { RemoteActivityDataSource(get<SupabaseClient>()) }
             single<StorageOperations> { RemoteStorageDataSource(get<SupabaseClient>()) }
+            single<RealtimeChannelProvider> { SupabaseRealtimeChannelProvider(get<SupabaseClient>()) }
 
             // Comment — remote-only with Realtime
             single<CommentRepository> {
                 CommentRepositoryImpl(
-                    remote = get<RemoteCommentDataSource>(),
-                    supabaseClient = get<SupabaseClient>(),
+                    remote = get<CommentDataSourceOperations>(),
+                    channelProvider = get<RealtimeChannelProvider>(),
                     scope = get<CoroutineScope>(applicationScopeQualifier),
                 )
             }
             // Activity — remote-only with Realtime
             single<ActivityRepository> {
                 ActivityRepositoryImpl(
-                    remote = get<RemoteActivityDataSource>(),
-                    supabaseClient = get<SupabaseClient>(),
+                    remote = get<ActivityDataSourceOperations>(),
+                    channelProvider = get<RealtimeChannelProvider>(),
                     scope = get<CoroutineScope>(applicationScopeQualifier),
                 )
             }
             // Share — remote-only
             single<ShareRepository> {
                 ShareRepositoryImpl(
-                    remote = get<RemoteShareDataSource>(),
-                    supabaseClient = get<SupabaseClient>(),
+                    remote = get<ShareDataSourceOperations>(),
+                    channelProvider = get<RealtimeChannelProvider>(),
                     scope = get<CoroutineScope>(applicationScopeQualifier),
                 )
             }

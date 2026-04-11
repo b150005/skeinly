@@ -1,17 +1,15 @@
 package com.knitnote.data.repository
 
-import com.knitnote.data.remote.RemoteShareDataSource
+import com.knitnote.data.realtime.ChangeFilter
+import com.knitnote.data.realtime.ChannelHandle
+import com.knitnote.data.realtime.RealtimeChannelProvider
+import com.knitnote.data.remote.ShareDataSourceOperations
 import com.knitnote.domain.model.Share
 import com.knitnote.domain.model.ShareStatus
 import com.knitnote.domain.repository.ShareRepository
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.realtime.PostgresAction
-import io.github.jan.supabase.realtime.RealtimeChannel
-import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.decodeOldRecord
 import io.github.jan.supabase.realtime.decodeRecord
-import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -31,11 +29,11 @@ import kotlinx.coroutines.sync.withLock
  * Call [closeChannel] on user logout to release the Realtime subscription and clear cached state.
  */
 class ShareRepositoryImpl(
-    private val remote: RemoteShareDataSource,
-    private val supabaseClient: SupabaseClient,
+    private val remote: ShareDataSourceOperations,
+    private val channelProvider: RealtimeChannelProvider,
     private val scope: CoroutineScope,
 ) : ShareRepository {
-    private var shareChannel: RealtimeChannel? = null
+    private var shareChannel: ChannelHandle? = null
     private var subscribedUserId: String? = null
     private val channelMutex = Mutex()
     private val _receivedShares = MutableStateFlow<List<Share>>(emptyList())
@@ -92,24 +90,27 @@ class ShareRepositoryImpl(
                 }
                 if (shareChannel != null) return@withLock
 
-                val channel = supabaseClient.channel("shares-received-$userId")
-                shareChannel = channel
+                val handle = channelProvider.createChannel("shares-received-$userId")
+                shareChannel = handle
                 subscribedUserId = userId
 
-                // Seed with initial remote fetch after channel is assigned
-                _receivedShares.value = remote.getReceivedByUserId(userId)
-
-                channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-                    table = "shares"
-                    filter("to_user_id", FilterOperator.EQ, userId)
-                }.onEach { action ->
+                // Set up the change flow before subscribing
+                handle.postgresChangeFlow(
+                    table = "shares",
+                    filter = ChangeFilter("to_user_id", userId),
+                ).onEach { action ->
                     handleShareAction(action, userId)
                 }.catch { e ->
                     if (e is CancellationException) throw e
                     // Realtime error — flow terminates; will recover on next subscribe
                 }.launchIn(scope)
 
-                channel.subscribe()
+                // Subscribe first, then seed — subscribe-then-fetch pattern
+                // prevents missed events between fetch and subscribe
+                handle.subscribe()
+
+                // Seed with initial fetch after subscription is active
+                _receivedShares.value = remote.getReceivedByUserId(userId)
             }
         }
     }
