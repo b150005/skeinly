@@ -33,8 +33,54 @@ jobs:
         with:
           languages: ${{ matrix.language }}
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v4
+      # --- java-kotlin build steps ---
+      - name: Set up JDK 17
+        if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Gradle
+        if: matrix.language == 'java-kotlin'
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Build (java-kotlin)
+        if: matrix.language == 'java-kotlin'
+        run: ./gradlew testClasses
+
+      # --- swift build steps ---
+      - name: Set up JDK 17
+        if: matrix.language == 'swift'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Gradle (swift)
+        if: matrix.language == 'swift'
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Build shared framework (swift)
+        if: matrix.language == 'swift'
+        run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
+
+      - name: Install XcodeGen
+        if: matrix.language == 'swift'
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        if: matrix.language == 'swift'
+        run: cd iosApp && xcodegen generate
+
+      - name: Build iOS app (swift)
+        if: matrix.language == 'swift'
+        run: |
+          xcodebuild build \
+            -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
