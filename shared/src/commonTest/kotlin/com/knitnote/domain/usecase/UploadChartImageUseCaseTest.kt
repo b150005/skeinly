@@ -152,7 +152,7 @@ class UploadChartImageUseCaseTest {
     @Test
     fun `sanitizeFileName strips unsafe characters`() {
         assertEquals("chart_123.jpg", UploadChartImageUseCase.sanitizeFileName("chart_123.jpg"))
-        assertEquals("_.._other_.._chart.jpg", UploadChartImageUseCase.sanitizeFileName("../../other/../chart.jpg"))
+        assertEquals("____other___chart.jpg", UploadChartImageUseCase.sanitizeFileName("../../other/../chart.jpg"))
         assertEquals("file__name.jpg", UploadChartImageUseCase.sanitizeFileName("file<>name.jpg"))
     }
 

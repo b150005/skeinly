@@ -1,9 +1,14 @@
 package com.knitnote.ui.projectdetail
 
 import app.cash.turbine.test
+import com.knitnote.data.remote.FakeRemoteStorageDataSource
 import com.knitnote.domain.LocalUser
+import com.knitnote.domain.model.AuthState
+import com.knitnote.domain.model.Pattern
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
+import com.knitnote.domain.model.SharePermission
+import com.knitnote.domain.model.Visibility
 import com.knitnote.domain.usecase.AddProgressNoteUseCase
 import com.knitnote.domain.usecase.CompleteProjectUseCase
 import com.knitnote.domain.usecase.DecrementRowUseCase
@@ -13,6 +18,7 @@ import com.knitnote.domain.usecase.FakeAuthRepository
 import com.knitnote.domain.usecase.FakePatternRepository
 import com.knitnote.domain.usecase.FakeProgressRepository
 import com.knitnote.domain.usecase.FakeProjectRepository
+import com.knitnote.domain.usecase.FakeShareRepository
 import com.knitnote.domain.usecase.GetProgressNotesUseCase
 import com.knitnote.domain.usecase.IncrementRowUseCase
 import com.knitnote.domain.usecase.ReopenProjectUseCase
@@ -31,6 +37,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Clock
 
@@ -378,4 +385,309 @@ class ProjectDetailViewModelTest {
                 cancelAndIgnoreRemainingEvents()
             }
         }
+
+    // --- Share tests ---
+
+    @Test
+    fun `ShareProject sets error when share repo is null`() =
+        runTest(testDispatcher) {
+            projectRepository.create(createTestProject())
+            val viewModel = createViewModel()
+
+            viewModel.state.test {
+                awaitItem() // initial loaded
+                viewModel.onEvent(ProjectDetailEvent.ShareProject)
+                val updated = awaitItem()
+                assertNotNull(updated.error)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `ShareProject success sets shareLink`() =
+        runTest(testDispatcher) {
+            authRepository.setAuthState(AuthState.Authenticated(userId = LocalUser.ID, email = "test@test.com"))
+            projectRepository.create(createTestProject())
+            val shareRepo = FakeShareRepository()
+            val viewModel = createViewModelWithShare(shareRepo)
+
+            viewModel.state.test {
+                awaitItem() // initial loaded
+                viewModel.onEvent(ProjectDetailEvent.ShareProject)
+                val updated = awaitItem()
+                assertNotNull(updated.shareLink)
+                assertNotNull(updated.shareLink?.patternId)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `DismissShareDialog clears shareLink`() =
+        runTest(testDispatcher) {
+            authRepository.setAuthState(AuthState.Authenticated(userId = LocalUser.ID, email = "test@test.com"))
+            projectRepository.create(createTestProject())
+            val shareRepo = FakeShareRepository()
+            val viewModel = createViewModelWithShare(shareRepo)
+
+            viewModel.state.test {
+                awaitItem()
+                viewModel.onEvent(ProjectDetailEvent.ShareProject)
+                val withLink = awaitItem()
+                assertNotNull(withLink.shareLink)
+
+                viewModel.onEvent(ProjectDetailEvent.DismissShareDialog)
+                val dismissed = awaitItem()
+                assertNull(dismissed.shareLink)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `ShareWithUser success sends channel event`() =
+        runTest(testDispatcher) {
+            authRepository.setAuthState(AuthState.Authenticated(userId = LocalUser.ID, email = "test@test.com"))
+            projectRepository.create(createTestProject())
+            val shareRepo = FakeShareRepository()
+            val viewModel = createViewModelWithShare(shareRepo)
+
+            viewModel.state.test {
+                awaitItem() // loaded
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            viewModel.directShareSuccess.test {
+                viewModel.onEvent(ProjectDetailEvent.ShareWithUser("other-user", SharePermission.VIEW))
+                awaitItem() // Unit event received
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    // --- Chart Image tests ---
+
+    @Test
+    fun `SelectChartImage updates selected index`() =
+        runTest(testDispatcher) {
+            projectRepository.create(createTestProject())
+            val viewModel = createViewModel()
+
+            viewModel.state.test {
+                awaitItem() // loaded
+                viewModel.onEvent(ProjectDetailEvent.SelectChartImage(2))
+                val updated = awaitItem()
+                assertEquals(2, updated.selectedChartImageIndex)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `CloseChartViewer clears selected index`() =
+        runTest(testDispatcher) {
+            projectRepository.create(createTestProject())
+            val viewModel = createViewModel()
+
+            viewModel.state.test {
+                awaitItem()
+                viewModel.onEvent(ProjectDetailEvent.SelectChartImage(1))
+                awaitItem()
+                viewModel.onEvent(ProjectDetailEvent.CloseChartViewer)
+                val updated = awaitItem()
+                assertNull(updated.selectedChartImageIndex)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `UploadChartImage sets error when storage is null`() =
+        runTest(testDispatcher) {
+            projectRepository.create(createTestProject())
+            val viewModel = createViewModel()
+
+            viewModel.state.test {
+                awaitItem() // loaded
+                viewModel.onEvent(ProjectDetailEvent.UploadChartImage(jpegHeader(), "test.jpg"))
+                val updated = awaitItem()
+                assertFalse(updated.isUploadingImage) // upload finished
+                assertNotNull(updated.error)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `UploadChartImage sets error when project not loaded`() =
+        runTest(testDispatcher) {
+            // Don't create project — state.project will be null
+            val viewModel = createViewModelWithStorage()
+
+            viewModel.state.test {
+                awaitItem() // initial (no project)
+                viewModel.onEvent(ProjectDetailEvent.UploadChartImage(jpegHeader(), "test.jpg"))
+                val updated = awaitItem()
+                assertNotNull(updated.error)
+                assertFalse(updated.isUploadingImage)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `UploadChartImage success updates chart paths`() =
+        runTest(testDispatcher) {
+            authRepository.setAuthState(AuthState.Authenticated(userId = LocalUser.ID, email = "test@test.com"))
+            val pattern = createTestPattern()
+            patternRepository.create(pattern)
+            projectRepository.create(createTestProject())
+            val storage = FakeRemoteStorageDataSource()
+            val viewModel = createViewModelWithStorage(storage)
+
+            viewModel.state.test {
+                awaitItem() // loaded
+                viewModel.onEvent(ProjectDetailEvent.UploadChartImage(jpegHeader(), "chart.jpg"))
+                // UnconfinedTestDispatcher collapses intermediate states — collect final state
+                val final = awaitItem()
+                assertFalse(final.isUploadingImage)
+                assertTrue(final.chartImagePaths.isNotEmpty())
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `DeleteChartImage sets error when project not loaded`() =
+        runTest(testDispatcher) {
+            // Don't create project
+            val viewModel = createViewModel()
+
+            viewModel.state.test {
+                val initial = awaitItem()
+                viewModel.onEvent(ProjectDetailEvent.DeleteChartImage("some/path.jpg"))
+                // Silent no-op: early return with null project, no error set
+                assertNull(initial.error)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `DeleteChartImage sets error when storage is null`() =
+        runTest(testDispatcher) {
+            val pattern = createTestPattern()
+            patternRepository.create(pattern)
+            projectRepository.create(createTestProject())
+            val viewModel = createViewModel() // remoteStorage = null
+
+            viewModel.state.test {
+                awaitItem() // loaded
+                viewModel.onEvent(ProjectDetailEvent.DeleteChartImage("some/path.jpg"))
+                val updated = awaitItem()
+                assertNotNull(updated.error)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `ClearError clears error state`() =
+        runTest(testDispatcher) {
+            projectRepository.create(createTestProject())
+            val viewModel = createViewModel()
+
+            viewModel.state.test {
+                awaitItem()
+                // Trigger an error first
+                viewModel.onEvent(ProjectDetailEvent.ShareProject)
+                val withError = awaitItem()
+                assertNotNull(withError.error)
+
+                viewModel.onEvent(ProjectDetailEvent.ClearError)
+                val cleared = awaitItem()
+                assertNull(cleared.error)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `loadChartImages populates paths when pattern has chart urls`() =
+        runTest(testDispatcher) {
+            val pattern = createTestPattern().copy(chartImageUrls = listOf("user/pat/chart.jpg"))
+            patternRepository.create(pattern)
+            val storage = FakeRemoteStorageDataSource()
+            projectRepository.create(createTestProject())
+            val viewModel = createViewModelWithStorage(storage)
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertTrue(state.chartImagePaths.isNotEmpty())
+                assertEquals("user/pat/chart.jpg", state.chartImagePaths.first())
+                assertTrue(state.chartImageSignedUrls.isNotEmpty())
+                assertTrue(state.chartImageSignedUrls.first().contains("signed"))
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    // --- Helpers ---
+
+    private fun createTestPattern(): Pattern =
+        Pattern(
+            id = LocalUser.DEFAULT_PATTERN_ID,
+            ownerId = LocalUser.ID,
+            title = "Test Pattern",
+            description = null,
+            difficulty = null,
+            gauge = null,
+            yarnInfo = null,
+            needleSize = null,
+            chartImageUrls = emptyList(),
+            visibility = Visibility.PRIVATE,
+            createdAt = Clock.System.now(),
+            updatedAt = Clock.System.now(),
+        )
+
+    private fun createViewModelWithShare(shareRepo: FakeShareRepository): ProjectDetailViewModel =
+        ProjectDetailViewModel(
+            projectId = "test-project",
+            projectRepository = projectRepository,
+            patternRepository = patternRepository,
+            incrementRow = IncrementRowUseCase(projectRepository),
+            decrementRow = DecrementRowUseCase(projectRepository),
+            addProgressNote = AddProgressNoteUseCase(progressRepository),
+            getProgressNotes = GetProgressNotesUseCase(progressRepository),
+            deleteProgressNote = DeleteProgressNoteUseCase(progressRepository),
+            updateProject = UpdateProjectUseCase(projectRepository),
+            completeProject = CompleteProjectUseCase(projectRepository),
+            reopenProject = ReopenProjectUseCase(projectRepository),
+            shareProject = ShareProjectUseCase(
+                projectRepository = projectRepository,
+                patternRepository = patternRepository,
+                shareRepository = shareRepo,
+                authRepository = authRepository,
+            ),
+            uploadChartImage = UploadChartImageUseCase(patternRepository, null, authRepository),
+            deleteChartImage = DeleteChartImageUseCase(patternRepository, null),
+            remoteStorage = null,
+        )
+
+    private fun createViewModelWithStorage(
+        storage: FakeRemoteStorageDataSource = FakeRemoteStorageDataSource(),
+    ): ProjectDetailViewModel =
+        ProjectDetailViewModel(
+            projectId = "test-project",
+            projectRepository = projectRepository,
+            patternRepository = patternRepository,
+            incrementRow = IncrementRowUseCase(projectRepository),
+            decrementRow = DecrementRowUseCase(projectRepository),
+            addProgressNote = AddProgressNoteUseCase(progressRepository),
+            getProgressNotes = GetProgressNotesUseCase(progressRepository),
+            deleteProgressNote = DeleteProgressNoteUseCase(progressRepository),
+            updateProject = UpdateProjectUseCase(projectRepository),
+            completeProject = CompleteProjectUseCase(projectRepository),
+            reopenProject = ReopenProjectUseCase(projectRepository),
+            shareProject = ShareProjectUseCase(
+                projectRepository = projectRepository,
+                patternRepository = patternRepository,
+                shareRepository = null,
+                authRepository = authRepository,
+            ),
+            uploadChartImage = UploadChartImageUseCase(patternRepository, storage, authRepository),
+            deleteChartImage = DeleteChartImageUseCase(patternRepository, storage),
+            remoteStorage = storage,
+        )
+
+    /** Minimal valid JPEG header bytes for test data. */
+    private fun jpegHeader(): ByteArray = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte())
 }

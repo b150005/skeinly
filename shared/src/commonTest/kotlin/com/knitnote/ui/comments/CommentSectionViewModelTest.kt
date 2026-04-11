@@ -218,4 +218,51 @@ class CommentSectionViewModelTest {
             assertEquals(1, state.comments.size)
             assertEquals("c-1", state.comments.first().id)
         }
+
+    @Test
+    fun `post comment over max length sets error`() =
+        runTest {
+            val viewModel = createViewModel()
+            val longBody = "a".repeat(2001) // Over MAX_COMMENT_LENGTH
+
+            viewModel.onEvent(CommentSectionEvent.PostComment(longBody))
+
+            val state = viewModel.state.value
+            assertNotNull(state.error)
+            assertFalse(state.isSending)
+        }
+
+    @Test
+    fun `post comment with invalid target id sets error`() =
+        runTest {
+            // Create a VM with a non-UUID target ID
+            val getComments = GetCommentsUseCase(commentRepo)
+            val createComment = CreateCommentUseCase(commentRepo, authRepo)
+            val deleteComment = DeleteCommentUseCase(commentRepo, authRepo)
+            val viewModel = CommentSectionViewModel(
+                targetType = CommentTargetType.PROJECT,
+                targetId = "not-a-uuid",
+                getComments = getComments,
+                createComment = createComment,
+                deleteCommentUseCase = deleteComment,
+                userRepository = userRepo,
+            )
+
+            viewModel.onEvent(CommentSectionEvent.PostComment("Hello"))
+
+            val state = viewModel.state.value
+            assertNotNull(state.error)
+        }
+
+    @Test
+    fun `post comment when not authenticated sets error`() =
+        runTest {
+            authRepo.setAuthState(AuthState.Unauthenticated)
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(CommentSectionEvent.PostComment("Hello"))
+
+            val state = viewModel.state.value
+            assertNotNull(state.error)
+        }
 }

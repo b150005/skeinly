@@ -1,12 +1,90 @@
 package com.knitnote.data.mapper
 
+import com.knitnote.db.PatternEntity
 import com.knitnote.domain.model.Difficulty
 import com.knitnote.domain.model.Visibility
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class PatternMapperTest {
+    private val now = "2024-06-15T10:30:00Z"
+
+    private fun entity(
+        difficulty: String? = "beginner",
+        chartImageUrls: String? = null,
+        visibility: String = "private",
+    ) = PatternEntity(
+        id = "pat1",
+        owner_id = "owner1",
+        title = "Test Pattern",
+        description = "A test",
+        difficulty = difficulty,
+        chart_image_urls = chartImageUrls,
+        visibility = visibility,
+        created_at = now,
+        updated_at = now,
+    )
+
+    @Test
+    fun `toDomain maps null chartImageUrls to empty list`() {
+        val pattern = entity(chartImageUrls = null).toDomain()
+        assertTrue(pattern.chartImageUrls.isEmpty())
+    }
+
+    @Test
+    fun `toDomain maps blank chartImageUrls to empty list`() {
+        val pattern = entity(chartImageUrls = "  ").toDomain()
+        assertTrue(pattern.chartImageUrls.isEmpty())
+    }
+
+    @Test
+    fun `toDomain maps malformed JSON chartImageUrls to empty list`() {
+        val pattern = entity(chartImageUrls = "not json").toDomain()
+        assertTrue(pattern.chartImageUrls.isEmpty())
+    }
+
+    @Test
+    fun `toDomain maps valid JSON chartImageUrls`() {
+        val pattern = entity(chartImageUrls = """["a.jpg","b.jpg"]""").toDomain()
+        assertEquals(listOf("a.jpg", "b.jpg"), pattern.chartImageUrls)
+    }
+
+    @Test
+    fun `toDomain maps null difficulty to null`() {
+        val pattern = entity(difficulty = null).toDomain()
+        assertNull(pattern.difficulty)
+    }
+
+    @Test
+    fun `toDomain throws on unknown difficulty`() {
+        assertFailsWith<IllegalStateException> {
+            entity(difficulty = "expert").toDomain()
+        }
+    }
+
+    @Test
+    fun `toDomain throws on unknown visibility`() {
+        assertFailsWith<IllegalStateException> {
+            entity(visibility = "hidden").toDomain()
+        }
+    }
+
+    @Test
+    fun `toDomain maps all difficulty values`() {
+        assertEquals(Difficulty.BEGINNER, entity(difficulty = "beginner").toDomain().difficulty)
+        assertEquals(Difficulty.INTERMEDIATE, entity(difficulty = "intermediate").toDomain().difficulty)
+        assertEquals(Difficulty.ADVANCED, entity(difficulty = "advanced").toDomain().difficulty)
+    }
+
+    @Test
+    fun `toDomain maps all visibility values`() {
+        assertEquals(Visibility.PRIVATE, entity(visibility = "private").toDomain().visibility)
+        assertEquals(Visibility.SHARED, entity(visibility = "shared").toDomain().visibility)
+        assertEquals(Visibility.PUBLIC, entity(visibility = "public").toDomain().visibility)
+    }
     @Test
     fun `chartImageUrls empty list maps to null db string`() {
         val result = emptyList<String>().toChartImageUrlsDbString()

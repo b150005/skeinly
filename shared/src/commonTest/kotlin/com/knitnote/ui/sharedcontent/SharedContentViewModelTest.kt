@@ -227,4 +227,35 @@ class SharedContentViewModelTest {
             assertFalse(state.isLoading)
             assertNotNull(state.error)
         }
+
+    @Test
+    fun `fork does nothing when share is null`() =
+        runTest {
+            // Resolve with valid token but don't set FORK permission — use VIEW
+            patternRepo.create(testPattern)
+            projectRepo.create(testProject)
+            shareRepo.addShare(viewOnlyShare)
+
+            val viewModel = createViewModel(token = "view-token")
+            // share is VIEW-only, so fork should be a no-op
+            viewModel.onEvent(SharedContentEvent.Fork)
+            assertFalse(viewModel.state.value.isForkInProgress)
+            assertNull(viewModel.state.value.error)
+        }
+
+    @Test
+    fun `fork when not authenticated sets error`() =
+        runTest {
+            authRepo.setAuthState(AuthState.Unauthenticated)
+            patternRepo.create(testPattern)
+            projectRepo.create(testProject)
+            shareRepo.addShare(forkableShare)
+
+            val viewModel = createViewModel(token = "valid-token")
+
+            viewModel.onEvent(SharedContentEvent.Fork)
+            val state = viewModel.state.value
+            assertNotNull(state.error)
+            assertFalse(state.isForkInProgress)
+        }
 }

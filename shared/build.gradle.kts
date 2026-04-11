@@ -127,16 +127,38 @@ kover {
         filters {
             excludes {
                 classes(
+                    // Generated / infra
                     "com.knitnote.db.*",
                     "com.knitnote.di.*",
                     "com.knitnote.ui.navigation.*",
                     "*.BuildConfig",
+                    // Remote data sources — thin Supabase SDK wrappers, untestable without MockEngine.
+                    // Security validation (auth, input sanitization, size limits) is covered at the UseCase layer.
+                    "com.knitnote.data.remote.Remote*DataSource",
+                    "com.knitnote.data.remote.SupabaseConfig",
+                    "com.knitnote.data.remote.SupabaseConfigKt",
+                    "com.knitnote.data.remote.ConnectivityMonitor",
+                    // Compose UI — untestable on JVM (covered by Android instrumented tests)
+                    "*.ComposableSingletons\$*",
+                    "com.knitnote.ui.chartviewer.*",
+                    "com.knitnote.ui.imagepicker.*",
+                    "com.knitnote.ui.activityfeed.ActivityFeedScreenKt*",
+                    "com.knitnote.ui.auth.LoginScreenKt*",
+                    "com.knitnote.ui.comments.CommentSectionKt*",
+                    "com.knitnote.ui.profile.ProfileScreenKt*",
+                    "com.knitnote.ui.projectdetail.ProjectDetailScreenKt*",
+                    "com.knitnote.ui.projectdetail.ShareLinkDialogKt*",
+                    "com.knitnote.ui.projectdetail.UserPickerDialogKt*",
+                    "com.knitnote.ui.projectlist.CreateProjectDialogKt*",
+                    "com.knitnote.ui.projectlist.ProjectListScreenKt*",
+                    "com.knitnote.ui.sharedcontent.SharedContentScreenKt*",
+                    "com.knitnote.ui.sharedwithme.SharedWithMeScreenKt*",
                 )
             }
         }
         verify {
             rule {
-                minBound(40)
+                minBound(80)
             }
         }
     }

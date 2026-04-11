@@ -66,9 +66,13 @@ class UploadChartImageUseCase(
         const val MAX_IMAGE_SIZE = 2 * 1024 * 1024 // 2MB
 
         private val SAFE_FILENAME_REGEX = Regex("[^a-zA-Z0-9._-]")
+        private val DOT_DOT_REGEX = Regex("\\.{2,}")
 
         fun sanitizeFileName(fileName: String): String =
-            fileName.replace(SAFE_FILENAME_REGEX, "_").trimStart('.')
+            fileName
+                .replace(SAFE_FILENAME_REGEX, "_")
+                .replace(DOT_DOT_REGEX, "_")
+                .trimStart('.')
 
         fun isValidJpeg(data: ByteArray): Boolean =
             data.size >= 3 &&

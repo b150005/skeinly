@@ -19,6 +19,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -134,6 +135,36 @@ class ProjectListViewModelTest {
                 viewModel.onEvent(ProjectListEvent.DismissCreateDialog)
                 assertFalse(awaitItem().showCreateDialog)
 
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `create project with blank title shows error`() =
+        runTest(testDispatcher) {
+            viewModel.state.test {
+                awaitItem() // initial
+
+                viewModel.onEvent(ProjectListEvent.CreateProject("", null))
+
+                val state = awaitItem()
+                assertNotNull(state.error)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `ClearError clears error`() =
+        runTest(testDispatcher) {
+            viewModel.state.test {
+                awaitItem()
+                viewModel.onEvent(ProjectListEvent.CreateProject("", null))
+                val withError = awaitItem()
+                assertNotNull(withError.error)
+
+                viewModel.onEvent(ProjectListEvent.ClearError)
+                val cleared = awaitItem()
+                assertNull(cleared.error)
                 cancelAndIgnoreRemainingEvents()
             }
         }
