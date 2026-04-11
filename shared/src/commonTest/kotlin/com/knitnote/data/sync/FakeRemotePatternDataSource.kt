@@ -3,14 +3,14 @@ package com.knitnote.data.sync
 import com.knitnote.domain.model.Pattern
 
 class FakeRemotePatternDataSource : RemotePatternSyncOperations {
-    val insertedPatterns = mutableListOf<Pattern>()
+    val upsertedPatterns = mutableListOf<Pattern>()
     val updatedPatterns = mutableListOf<Pattern>()
     val deletedIds = mutableListOf<String>()
     var shouldFail = false
 
-    override suspend fun insert(pattern: Pattern): Pattern {
-        if (shouldFail) throw RuntimeException("Fake remote insert failure")
-        insertedPatterns.add(pattern)
+    override suspend fun upsert(pattern: Pattern): Pattern {
+        if (shouldFail) throw RuntimeException("Fake remote upsert failure")
+        upsertedPatterns.add(pattern)
         return pattern
     }
 

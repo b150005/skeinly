@@ -1,12 +1,17 @@
 package com.knitnote.domain.usecase
 
+import com.knitnote.domain.LocalUser
 import com.knitnote.domain.model.Progress
+import com.knitnote.domain.repository.AuthRepository
 import com.knitnote.domain.repository.ProgressRepository
 import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-class AddProgressNoteUseCase(private val repository: ProgressRepository) {
+class AddProgressNoteUseCase(
+    private val repository: ProgressRepository,
+    private val authRepository: AuthRepository,
+) {
     @OptIn(ExperimentalUuidApi::class)
     suspend operator fun invoke(
         projectId: String,
@@ -16,6 +21,7 @@ class AddProgressNoteUseCase(private val repository: ProgressRepository) {
         if (note.isBlank()) {
             return UseCaseResult.Failure(UseCaseError.Validation("Note must not be blank"))
         }
+        val ownerId = authRepository.getCurrentUserId() ?: LocalUser.ID
         val progress =
             Progress(
                 id = Uuid.random().toString(),
@@ -24,6 +30,7 @@ class AddProgressNoteUseCase(private val repository: ProgressRepository) {
                 photoUrl = null,
                 note = note,
                 createdAt = Clock.System.now(),
+                ownerId = ownerId,
             )
         return UseCaseResult.Success(repository.create(progress))
     }

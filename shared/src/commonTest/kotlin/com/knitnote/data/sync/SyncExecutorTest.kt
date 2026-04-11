@@ -90,8 +90,8 @@ class SyncExecutorTest {
                 )
 
             assertTrue(result)
-            assertEquals(1, fakeRemote.insertedProjects.size)
-            assertEquals("p-1", fakeRemote.insertedProjects[0].id)
+            assertEquals(1, fakeRemote.upsertedProjects.size)
+            assertEquals("p-1", fakeRemote.upsertedProjects[0].id)
         }
 
     @Test
@@ -153,8 +153,8 @@ class SyncExecutorTest {
                 )
 
             assertTrue(result)
-            assertEquals(1, fakeRemote.insertedProgress.size)
-            assertEquals("pr-1", fakeRemote.insertedProgress[0].id)
+            assertEquals(1, fakeRemote.upsertedProgress.size)
+            assertEquals("pr-1", fakeRemote.upsertedProgress[0].id)
         }
 
     @Test
@@ -208,8 +208,8 @@ class SyncExecutorTest {
                 )
 
             assertTrue(result)
-            assertEquals(1, fakeRemote.insertedPatterns.size)
-            assertEquals("pat-1", fakeRemote.insertedPatterns[0].id)
+            assertEquals(1, fakeRemote.upsertedPatterns.size)
+            assertEquals("pat-1", fakeRemote.upsertedPatterns[0].id)
         }
 
     @Test

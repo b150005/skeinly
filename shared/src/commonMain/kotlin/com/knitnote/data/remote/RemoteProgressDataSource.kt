@@ -16,7 +16,7 @@ class RemoteProgressDataSource(
             order("created_at", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
         }.decodeList()
 
-    override suspend fun insert(progress: Progress): Progress =
+    override suspend fun upsert(progress: Progress): Progress =
         table.upsert(progress) {
             select()
         }.decodeSingle()

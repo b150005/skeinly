@@ -8,7 +8,7 @@ import com.knitnote.domain.model.Project
  * Interface for project remote write operations needed by the sync system.
  */
 interface RemoteProjectSyncOperations {
-    suspend fun insert(project: Project): Project
+    suspend fun upsert(project: Project): Project
 
     suspend fun update(project: Project): Project
 
@@ -19,7 +19,7 @@ interface RemoteProjectSyncOperations {
  * Interface for progress remote write operations needed by the sync system.
  */
 interface RemoteProgressSyncOperations {
-    suspend fun insert(progress: Progress): Progress
+    suspend fun upsert(progress: Progress): Progress
 
     suspend fun delete(id: String)
 }
@@ -28,7 +28,7 @@ interface RemoteProgressSyncOperations {
  * Interface for pattern remote write operations needed by the sync system.
  */
 interface RemotePatternSyncOperations {
-    suspend fun insert(pattern: Pattern): Pattern
+    suspend fun upsert(pattern: Pattern): Pattern
 
     suspend fun update(pattern: Pattern): Pattern
 

@@ -5,7 +5,7 @@ CREATE TABLE ProgressEntity (
     photo_url TEXT,
     note TEXT,
     created_at TEXT NOT NULL,
-    owner_id TEXT NOT NULL DEFAULT '',
+    owner_id TEXT NOT NULL DEFAULT 'local-user',
     FOREIGN KEY (project_id) REFERENCES ProjectEntity(id) ON DELETE CASCADE
 );
 

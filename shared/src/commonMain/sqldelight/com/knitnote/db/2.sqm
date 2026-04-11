@@ -1,2 +1,2 @@
 -- Phase 14: Add owner_id to ProgressEntity for Realtime filtering
-ALTER TABLE ProgressEntity ADD COLUMN owner_id TEXT NOT NULL DEFAULT '';
+ALTER TABLE ProgressEntity ADD COLUMN owner_id TEXT NOT NULL DEFAULT 'local-user';

@@ -72,7 +72,7 @@ class SyncManagerTest {
 
             manager.syncOrEnqueue(SyncEntityType.PROJECT, "p-1", SyncOperation.INSERT, json.encodeToString(testProject))
 
-            assertEquals(1, fakeRemoteProject.insertedProjects.size)
+            assertEquals(1, fakeRemoteProject.upsertedProjects.size)
             assertEquals(0, fakePendingSync.countPending())
         }
 
@@ -84,7 +84,7 @@ class SyncManagerTest {
 
             manager.syncOrEnqueue(SyncEntityType.PROJECT, "p-1", SyncOperation.INSERT, json.encodeToString(testProject))
 
-            assertTrue(fakeRemoteProject.insertedProjects.isEmpty())
+            assertTrue(fakeRemoteProject.upsertedProjects.isEmpty())
             assertEquals(1, fakePendingSync.countPending())
         }
 
@@ -114,7 +114,7 @@ class SyncManagerTest {
             // Process
             manager.processQueue()
 
-            assertEquals(1, fakeRemoteProject.insertedProjects.size)
+            assertEquals(1, fakeRemoteProject.upsertedProjects.size)
             assertEquals(0, fakePendingSync.countPending())
         }
 
@@ -164,9 +164,9 @@ class SyncManagerTest {
 
             manager.processQueue()
 
-            assertEquals(2, fakeRemoteProject.insertedProjects.size)
-            assertEquals("p-1", fakeRemoteProject.insertedProjects[0].id)
-            assertEquals("p-2", fakeRemoteProject.insertedProjects[1].id)
+            assertEquals(2, fakeRemoteProject.upsertedProjects.size)
+            assertEquals("p-1", fakeRemoteProject.upsertedProjects[0].id)
+            assertEquals("p-2", fakeRemoteProject.upsertedProjects[1].id)
         }
 
     // --- start/connectivity tests ---
@@ -186,7 +186,7 @@ class SyncManagerTest {
             advanceUntilIdle()
 
             assertEquals(0, fakePendingSync.countPending())
-            assertEquals(1, fakeRemoteProject.insertedProjects.size)
+            assertEquals(1, fakeRemoteProject.upsertedProjects.size)
 
             manager.stop()
         }

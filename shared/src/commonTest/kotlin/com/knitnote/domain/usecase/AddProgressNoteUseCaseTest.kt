@@ -1,5 +1,7 @@
 package com.knitnote.domain.usecase
 
+import com.knitnote.domain.LocalUser
+import com.knitnote.domain.model.AuthState
 import com.knitnote.domain.model.Progress
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -10,7 +12,8 @@ import kotlin.time.Clock
 
 class AddProgressNoteUseCaseTest {
     private val repository = FakeProgressRepository()
-    private val useCase = AddProgressNoteUseCase(repository)
+    private val authRepository = FakeAuthRepository()
+    private val useCase = AddProgressNoteUseCase(repository, authRepository)
 
     @Test
     fun `creates progress note with correct projectId and rowNumber`() =
@@ -91,5 +94,29 @@ class AddProgressNoteUseCaseTest {
 
             assertIs<UseCaseResult.Failure>(result)
             assertIs<UseCaseError.Validation>(result.error)
+        }
+
+    @Test
+    fun `sets ownerId from authenticated user`() =
+        runTest {
+            authRepository.setAuthState(AuthState.Authenticated(userId = "user-42", email = "a@b.com"))
+
+            val result =
+                assertIs<UseCaseResult.Success<Progress>>(
+                    useCase(projectId = "proj-1", rowNumber = 1, note = "Test"),
+                )
+
+            assertEquals("user-42", result.value.ownerId)
+        }
+
+    @Test
+    fun `sets ownerId to LocalUser ID when unauthenticated`() =
+        runTest {
+            val result =
+                assertIs<UseCaseResult.Success<Progress>>(
+                    useCase(projectId = "proj-1", rowNumber = 1, note = "Test"),
+                )
+
+            assertEquals(LocalUser.ID, result.value.ownerId)
         }
 }

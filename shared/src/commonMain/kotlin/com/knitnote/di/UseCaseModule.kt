@@ -44,7 +44,7 @@ val useCaseModule =
         factory { DecrementRowUseCase(get()) }
         factory { GetProjectByIdUseCase(get()) }
         factory { DeleteProjectUseCase(get()) }
-        factory { AddProgressNoteUseCase(get()) }
+        factory { AddProgressNoteUseCase(get(), get()) }
         factory { GetProgressNotesUseCase(get()) }
         factory { DeleteProgressNoteUseCase(get()) }
         factory { UpdateProjectUseCase(get()) }

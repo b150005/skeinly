@@ -26,7 +26,7 @@ class SyncExecutor(
     private suspend fun executeProject(entry: PendingSyncEntry): Boolean {
         val remote = remoteProject ?: return true
         when (entry.operation) {
-            SyncOperation.INSERT -> remote.insert(json.decodeFromString<Project>(entry.payload))
+            SyncOperation.INSERT -> remote.upsert(json.decodeFromString<Project>(entry.payload)) // idempotent create: safe to retry
             SyncOperation.UPDATE -> remote.update(json.decodeFromString<Project>(entry.payload))
             SyncOperation.DELETE -> remote.delete(entry.entityId)
         }
@@ -36,7 +36,7 @@ class SyncExecutor(
     private suspend fun executeProgress(entry: PendingSyncEntry): Boolean {
         val remote = remoteProgress ?: return true
         when (entry.operation) {
-            SyncOperation.INSERT -> remote.insert(json.decodeFromString<Progress>(entry.payload))
+            SyncOperation.INSERT -> remote.upsert(json.decodeFromString<Progress>(entry.payload)) // idempotent create: safe to retry
             SyncOperation.DELETE -> remote.delete(entry.entityId)
             SyncOperation.UPDATE -> return true // no-op: progress update not yet supported; no code path enqueues this
         }
@@ -46,7 +46,7 @@ class SyncExecutor(
     private suspend fun executePattern(entry: PendingSyncEntry): Boolean {
         val remote = remotePattern ?: return true
         when (entry.operation) {
-            SyncOperation.INSERT -> remote.insert(json.decodeFromString<Pattern>(entry.payload))
+            SyncOperation.INSERT -> remote.upsert(json.decodeFromString<Pattern>(entry.payload)) // idempotent create: safe to retry
             SyncOperation.UPDATE -> remote.update(json.decodeFromString<Pattern>(entry.payload))
             SyncOperation.DELETE -> remote.delete(entry.entityId)
         }

@@ -2,7 +2,8 @@ package com.knitnote.data.sync
 
 /**
  * Minimal logger for sync subsystem diagnostics.
- * Uses println by default; tests can supply a capturing implementation.
+ * Platform-specific implementations use native logging (Android: Log.d, iOS: NSLog).
+ * Tests can supply a capturing implementation.
  */
 interface SyncLogger {
     fun log(
@@ -12,14 +13,12 @@ interface SyncLogger {
     )
 }
 
-internal val DefaultSyncLogger =
-    object : SyncLogger {
-        override fun log(
-            tag: String,
-            message: String,
-            throwable: Throwable?,
-        ) {
-            println("[$tag] $message")
-            throwable?.let { println("[$tag] ${it.stackTraceToString()}") }
-        }
-    }
+/**
+ * Platform-specific default logger for the sync subsystem.
+ * - Android: uses android.util.Log
+ * - iOS: uses platform.Foundation.NSLog
+ *
+ * Note: When adding a new KMP target (JVM, desktop, etc.), provide an `actual val`
+ * in the corresponding source set or the build will fail to resolve this expect.
+ */
+internal expect val DefaultSyncLogger: SyncLogger

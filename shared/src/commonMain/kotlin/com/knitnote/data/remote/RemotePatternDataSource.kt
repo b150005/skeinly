@@ -20,7 +20,7 @@ class RemotePatternDataSource(
             filter { eq("id", id) }
         }.decodeSingleOrNull()
 
-    override suspend fun insert(pattern: Pattern): Pattern =
+    override suspend fun upsert(pattern: Pattern): Pattern =
         table.upsert(pattern) {
             select()
         }.decodeSingle()
