@@ -1,7 +1,10 @@
 package com.knitnote
 
+import com.knitnote.data.remote.SupabaseConfig
+import com.knitnote.data.remote.isConfigured
 import com.knitnote.di.platformModule
 import com.knitnote.di.sharedModules
+import platform.Foundation.NSLog
 import com.knitnote.domain.model.CommentTargetType
 import com.knitnote.ui.activityfeed.ActivityFeedViewModel
 import com.knitnote.ui.auth.AuthViewModel
@@ -19,6 +22,7 @@ fun initKoin() {
     startKoin {
         modules(listOf(platformModule) + sharedModules)
     }
+    NSLog("[KnitNote] Koin initialized — Supabase configured: %d", if (SupabaseConfig.isConfigured) 1 else 0)
 }
 
 // ViewModel accessors for Swift interop

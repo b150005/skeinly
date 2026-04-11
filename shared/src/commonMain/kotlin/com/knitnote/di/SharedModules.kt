@@ -1,6 +1,7 @@
 package com.knitnote.di
 
 val sharedModules = listOf(
+    applicationScopeModule,
     supabaseModule,
     databaseModule,
     syncModule,
