@@ -1,0 +1,15 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_size = 4
+indent_style = space
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+# Allow PascalCase function names for @Composable functions
+ktlint_function_naming_ignore_when_annotated_with = Composable
+# Allow underscore-prefixed backing properties (_state, _uiState) — standard Kotlin convention
+ktlint_standard_property-naming = disabled

@@ -8,12 +8,17 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.sqldelight)
+    alias(libs.plugins.kover)
 }
 
-val localProps = Properties().also { props ->
-    val localFile = rootProject.file("local.properties")
-    if (localFile.exists()) props.load(FileInputStream(localFile))
-}
+val localProps =
+    Properties().also { props ->
+        val localFile = rootProject.file("local.properties")
+        if (localFile.exists()) props.load(FileInputStream(localFile))
+        // CI fallback: read from environment variables when local.properties is absent
+        System.getenv("SUPABASE_URL")?.let { props.setProperty("SUPABASE_URL", it) }
+        System.getenv("SUPABASE_ANON_KEY")?.let { props.setProperty("SUPABASE_ANON_KEY", it) }
+    }
 
 kotlin {
     applyDefaultHierarchyTemplate()
@@ -110,5 +115,25 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+kover {
+    reports {
+        filters {
+            excludes {
+                classes(
+                    "com.knitnote.db.*",
+                    "com.knitnote.di.*",
+                    "com.knitnote.ui.navigation.*",
+                    "*.BuildConfig",
+                )
+            }
+        }
+        verify {
+            rule {
+                minBound(40)
+            }
+        }
     }
 }

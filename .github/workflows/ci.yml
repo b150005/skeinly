@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   shared-checks:
-    name: Shared Module (Lint + Test + Build)
+    name: Shared Module (Lint + Test + Coverage + Build)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -33,6 +33,16 @@ jobs:
 
       - name: Test shared module
         run: ./gradlew :shared:allTests
+
+      - name: Generate coverage report
+        run: ./gradlew :shared:koverXmlReport
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: shared/build/reports/kover/report.xml
+          retention-days: 30
 
       - name: Build shared module
         run: ./gradlew :shared:build
@@ -57,6 +67,9 @@ jobs:
         run: ./gradlew :androidApp:testDebugUnitTest
 
       - name: Build Android debug APK
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: ./gradlew :androidApp:assembleDebug
 
       - name: Upload APK artifact

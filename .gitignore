@@ -37,6 +37,8 @@ local.properties
 *.aab
 *.ap_
 *.dex
+*.jks
+*.keystore
 
 # iOS / Xcode
 ## Generated Xcode project (XcodeGen regenerates from project.yml)
