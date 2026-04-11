@@ -7,43 +7,43 @@ import com.knitnote.data.mapper.toDomain
 import com.knitnote.data.mapper.toDbString
 import com.knitnote.db.KnitNoteDatabase
 import com.knitnote.domain.model.Project
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 class LocalProjectDataSource(
     private val db: KnitNoteDatabase,
+    private val ioDispatcher: CoroutineDispatcher,
 ) {
 
     private val queries get() = db.projectQueries
 
-    suspend fun getById(id: String): Project? = withContext(Dispatchers.IO) {
+    suspend fun getById(id: String): Project? = withContext(ioDispatcher) {
         queries.getById(id).executeAsOneOrNull()?.toDomain()
     }
 
-    suspend fun getByOwnerId(ownerId: String): List<Project> = withContext(Dispatchers.IO) {
+    suspend fun getByOwnerId(ownerId: String): List<Project> = withContext(ioDispatcher) {
         queries.getByOwnerId(ownerId).executeAsList().map { it.toDomain() }
     }
 
-    suspend fun getByPatternId(patternId: String): List<Project> = withContext(Dispatchers.IO) {
+    suspend fun getByPatternId(patternId: String): List<Project> = withContext(ioDispatcher) {
         queries.getByPatternId(patternId).executeAsList().map { it.toDomain() }
     }
 
     fun observeById(id: String): Flow<Project?> =
         queries.observeById(id)
             .asFlow()
-            .mapToOneOrNull(Dispatchers.IO)
+            .mapToOneOrNull(ioDispatcher)
             .map { it?.toDomain() }
 
     fun observeByOwnerId(ownerId: String): Flow<List<Project>> =
         queries.getByOwnerId(ownerId)
             .asFlow()
-            .mapToList(Dispatchers.IO)
+            .mapToList(ioDispatcher)
             .map { list -> list.map { it.toDomain() } }
 
-    suspend fun insert(project: Project): Project = withContext(Dispatchers.IO) {
+    suspend fun insert(project: Project): Project = withContext(ioDispatcher) {
         queries.insert(
             id = project.id,
             owner_id = project.ownerId,
@@ -60,7 +60,7 @@ class LocalProjectDataSource(
         project
     }
 
-    suspend fun update(project: Project): Project = withContext(Dispatchers.IO) {
+    suspend fun update(project: Project): Project = withContext(ioDispatcher) {
         queries.update(
             title = project.title,
             status = project.status.toDbString(),
@@ -74,11 +74,11 @@ class LocalProjectDataSource(
         project
     }
 
-    suspend fun delete(id: String): Unit = withContext(Dispatchers.IO) {
+    suspend fun delete(id: String): Unit = withContext(ioDispatcher) {
         queries.deleteById(id)
     }
 
-    suspend fun upsert(project: Project): Unit = withContext(Dispatchers.IO) {
+    suspend fun upsert(project: Project): Unit = withContext(ioDispatcher) {
         db.transaction {
             val exists = queries.getById(project.id).executeAsOneOrNull() != null
             if (exists) {
@@ -110,7 +110,7 @@ class LocalProjectDataSource(
         }
     }
 
-    suspend fun upsertAll(projects: List<Project>) = withContext(Dispatchers.IO) {
+    suspend fun upsertAll(projects: List<Project>) = withContext(ioDispatcher) {
         db.transaction {
             projects.forEach { project ->
                 val exists = queries.getById(project.id).executeAsOneOrNull() != null

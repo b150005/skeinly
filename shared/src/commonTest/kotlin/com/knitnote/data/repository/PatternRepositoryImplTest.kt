@@ -12,6 +12,7 @@ import com.knitnote.domain.model.Visibility
 import com.knitnote.testJson
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -35,7 +36,7 @@ class PatternRepositoryImplTest {
         db = KnitNoteDatabase(driver)
         fakeSyncManager = FakeSyncManager()
         repository = PatternRepositoryImpl(
-            local = LocalPatternDataSource(db),
+            local = LocalPatternDataSource(db, Dispatchers.Unconfined),
             remote = null,
             isOnline = isOnline,
             syncManager = fakeSyncManager,

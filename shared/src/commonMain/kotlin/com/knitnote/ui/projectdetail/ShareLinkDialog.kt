@@ -27,7 +27,11 @@ fun ShareLinkDialog(
     shareToken: String,
     onDismiss: () -> Unit,
 ) {
-    @Suppress("DEPRECATION") // LocalClipboardManager → LocalClipboard migration deferred (suspend API)
+    // LocalClipboardManager is deprecated in favor of LocalClipboard + ClipEntry, but
+    // ClipEntry's constructor is expect/actual (Android: ClipData, iOS: no-arg) — there is
+    // no commonMain-compatible factory for plain-text entries in CMP 1.10.3.
+    // Migrate when JetBrains adds a multiplatform ClipEntry text constructor.
+    @Suppress("DEPRECATION")
     val clipboardManager = LocalClipboardManager.current
     val shareUrl = "knitnote://share/$shareToken"
     var copied by remember { mutableStateOf(false) }

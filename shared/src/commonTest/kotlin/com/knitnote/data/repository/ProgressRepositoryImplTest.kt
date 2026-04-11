@@ -12,6 +12,7 @@ import com.knitnote.domain.model.ProjectStatus
 import com.knitnote.domain.model.Project
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import com.knitnote.testJson
 import kotlin.time.Clock
@@ -35,10 +36,10 @@ class ProgressRepositoryImplTest {
     fun setUp() {
         val driver = createTestDriver()
         db = KnitNoteDatabase(driver)
-        localProjectDataSource = LocalProjectDataSource(db)
+        localProjectDataSource = LocalProjectDataSource(db, Dispatchers.Unconfined)
         fakeSyncManager = FakeSyncManager()
         progressRepository = ProgressRepositoryImpl(
-            local = LocalProgressDataSource(db),
+            local = LocalProgressDataSource(db, Dispatchers.Unconfined),
             remote = null,
             isOnline = isOnline,
             syncManager = fakeSyncManager,

@@ -7,6 +7,7 @@ import com.knitnote.db.createTestDriver
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
 import com.knitnote.domain.model.Progress
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Instant
 import kotlin.test.BeforeTest
@@ -36,8 +37,9 @@ class RealtimeSyncManagerTest {
     fun setUp() {
         val driver = createTestDriver()
         val db = KnitNoteDatabase(driver)
-        localProject = LocalProjectDataSource(db)
-        localProgress = LocalProgressDataSource(db)
+        val testDispatcher = Dispatchers.Unconfined
+        localProject = LocalProjectDataSource(db, testDispatcher)
+        localProgress = LocalProgressDataSource(db, testDispatcher)
     }
 
     private fun testProject(id: String = "p1") = Project(

@@ -39,9 +39,9 @@ val repositoryModule = module {
     single<AuthRepository> { AuthRepositoryImpl(getOrNull<SupabaseClient>()) }
 
     // Local data sources
-    single { LocalProjectDataSource(get()) }
-    single { LocalProgressDataSource(get()) }
-    single { LocalPatternDataSource(get()) }
+    single { LocalProjectDataSource(get(), get(ioDispatcherQualifier)) }
+    single { LocalProgressDataSource(get(), get(ioDispatcherQualifier)) }
+    single { LocalPatternDataSource(get(), get(ioDispatcherQualifier)) }
 
     // Remote data sources & repositories — only registered when Supabase is configured.
     // Consumers use getOrNull() to handle their absence in local-only mode.

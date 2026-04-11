@@ -7,39 +7,39 @@ import com.knitnote.data.mapper.toDomain
 import com.knitnote.data.mapper.toDbString
 import com.knitnote.db.KnitNoteDatabase
 import com.knitnote.domain.model.Pattern
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 class LocalPatternDataSource(
     private val db: KnitNoteDatabase,
+    private val ioDispatcher: CoroutineDispatcher,
 ) {
 
     private val queries get() = db.patternQueries
 
-    suspend fun getById(id: String): Pattern? = withContext(Dispatchers.IO) {
+    suspend fun getById(id: String): Pattern? = withContext(ioDispatcher) {
         queries.getById(id).executeAsOneOrNull()?.toDomain()
     }
 
-    suspend fun getByOwnerId(ownerId: String): List<Pattern> = withContext(Dispatchers.IO) {
+    suspend fun getByOwnerId(ownerId: String): List<Pattern> = withContext(ioDispatcher) {
         queries.getByOwnerId(ownerId).executeAsList().map { it.toDomain() }
     }
 
     fun observeById(id: String): Flow<Pattern?> =
         queries.observeById(id)
             .asFlow()
-            .mapToOneOrNull(Dispatchers.IO)
+            .mapToOneOrNull(ioDispatcher)
             .map { it?.toDomain() }
 
     fun observeByOwnerId(ownerId: String): Flow<List<Pattern>> =
         queries.getByOwnerId(ownerId)
             .asFlow()
-            .mapToList(Dispatchers.IO)
+            .mapToList(ioDispatcher)
             .map { list -> list.map { it.toDomain() } }
 
-    suspend fun insert(pattern: Pattern): Pattern = withContext(Dispatchers.IO) {
+    suspend fun insert(pattern: Pattern): Pattern = withContext(ioDispatcher) {
         queries.insert(
             id = pattern.id,
             owner_id = pattern.ownerId,
@@ -53,7 +53,7 @@ class LocalPatternDataSource(
         pattern
     }
 
-    suspend fun update(pattern: Pattern): Pattern = withContext(Dispatchers.IO) {
+    suspend fun update(pattern: Pattern): Pattern = withContext(ioDispatcher) {
         queries.update(
             title = pattern.title,
             description = pattern.description,
@@ -65,11 +65,11 @@ class LocalPatternDataSource(
         pattern
     }
 
-    suspend fun delete(id: String): Unit = withContext(Dispatchers.IO) {
+    suspend fun delete(id: String): Unit = withContext(ioDispatcher) {
         queries.deleteById(id)
     }
 
-    suspend fun upsert(pattern: Pattern): Unit = withContext(Dispatchers.IO) {
+    suspend fun upsert(pattern: Pattern): Unit = withContext(ioDispatcher) {
         db.transaction {
             val exists = queries.getById(pattern.id).executeAsOneOrNull() != null
             if (exists) {
@@ -96,7 +96,7 @@ class LocalPatternDataSource(
         }
     }
 
-    suspend fun upsertAll(patterns: List<Pattern>) = withContext(Dispatchers.IO) {
+    suspend fun upsertAll(patterns: List<Pattern>) = withContext(ioDispatcher) {
         db.transaction {
             patterns.forEach { pattern ->
                 val exists = queries.getById(pattern.id).executeAsOneOrNull() != null

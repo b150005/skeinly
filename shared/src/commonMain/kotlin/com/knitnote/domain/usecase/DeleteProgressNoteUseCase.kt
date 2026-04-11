@@ -12,6 +12,6 @@ class DeleteProgressNoteUseCase(private val repository: ProgressRepository) {
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            UseCaseResult.Failure(UseCaseError.Unknown(e))
+            UseCaseResult.Failure(e.toUseCaseError())
         }
 }

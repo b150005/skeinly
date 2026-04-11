@@ -10,6 +10,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class ReopenProjectUseCaseTest {
 
@@ -98,7 +99,7 @@ class ReopenProjectUseCaseTest {
 
         val result = assertIs<UseCaseResult.Success<Project>>(useCase("test-project"))
 
-        assert(result.value.updatedAt >= before)
+        assertTrue(result.value.updatedAt >= before)
     }
 
     @Test

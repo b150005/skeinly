@@ -10,6 +10,7 @@ import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import com.knitnote.testJson
 import kotlin.time.Clock
@@ -34,7 +35,7 @@ class ProjectRepositoryImplTest {
         db = KnitNoteDatabase(driver)
         fakeSyncManager = FakeSyncManager()
         repository = ProjectRepositoryImpl(
-            local = LocalProjectDataSource(db),
+            local = LocalProjectDataSource(db, Dispatchers.Unconfined),
             remote = null,
             isOnline = isOnline,
             syncManager = fakeSyncManager,

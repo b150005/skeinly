@@ -122,7 +122,7 @@ class ForkSharedPatternUseCaseTest {
     }
 
     @Test
-    fun `allows fork when toUserId is null (link share)`() = runTest {
+    fun `allows fork when toUserId is null for link share`() = runTest {
         val authRepo = FakeAuthRepository()
         authRepo.setAuthState(AuthState.Authenticated("any-user", "test@test.com"))
         val shareRepo = FakeShareRepository()

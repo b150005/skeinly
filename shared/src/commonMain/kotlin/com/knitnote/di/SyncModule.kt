@@ -27,7 +27,7 @@ import org.koin.dsl.module
 val syncModule = module {
     single { Json { ignoreUnknownKeys = true } }
 
-    single<PendingSyncDataSource> { LocalPendingSyncDataSource(get()) }
+    single<PendingSyncDataSource> { LocalPendingSyncDataSource(get(), get(ioDispatcherQualifier)) }
 
     // Sync interfaces backed by the remote data sources.
     // Only registered when Supabase is configured — consumers use getOrNull().

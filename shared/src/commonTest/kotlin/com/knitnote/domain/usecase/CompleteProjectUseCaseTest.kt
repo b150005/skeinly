@@ -8,6 +8,7 @@ import kotlin.time.Clock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 
@@ -89,7 +90,7 @@ class CompleteProjectUseCaseTest {
 
         val result = assertIs<UseCaseResult.Success<Project>>(useCase("test-project"))
 
-        assert(result.value.updatedAt >= before)
+        assertTrue(result.value.updatedAt >= before)
     }
 
     @Test
