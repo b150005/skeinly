@@ -185,8 +185,13 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 - **Phase 7a**: Android Compose UI Tests — 19 instrumented tests (ProjectList, ProjectDetail, Navigation, Profile screens)
 - **Phase 7b**: iOS XCTest — 19 tests (UI + unit), ApplicationScope singleton, Koin startup diagnostics, resetDatabase error handling, UITest reliability improvements
 
-### In Progress
 - **Phase 7.5**: Technical Debt Cleanup — Dependency updates (AGP 9.1.0, Koin 4.2.1, Navigation 2.9.7), ProGuard/R8 rules, network security config, iOS safe casting, code quality improvements, SQLDelight indices
 
+- **Phase 8**: Dispatcher Injection — Inject IO dispatcher via Koin, typed UseCaseError mapping
+- **Phase 9**: CI/CD Foundation — ktlint, Kover coverage reporting, signing config, release workflow
+- **Phase 10**: Chart Image Support — Chart image upload, storage, and zoom viewer
+- **Phase 11**: Test Coverage 80% — Kover exclusions, 428 tests, sanitizeFileName security hardening
+- **Phase 12**: CI/CD Hardening — koverVerify enforcement in CI, iOS test failure propagation fix, Swift CodeQL runner fix
+
 ### Planned
-- **Phase 8**: TBD — Agent team to determine next priority (candidates: offline-first improvements, image/chart support, macOS target, CI/CD pipeline)
+- **Phase 13**: TBD — Agent team to determine next priority (candidates: Realtime testability, E2E tests, offline-first improvements, macOS target)

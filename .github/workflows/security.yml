@@ -11,7 +11,6 @@ on:
 jobs:
   codeql:
     name: CodeQL Analysis
-    runs-on: ubuntu-latest
     permissions:
       security-events: write
       actions: read
@@ -19,9 +18,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Supported: javascript, python, go, ruby, java, csharp, cpp, swift, actions
-        # Example: language: ["javascript", "python"]
-        language: ["java-kotlin", "swift"]
+        include:
+          - language: java-kotlin
+            runner: ubuntu-latest
+          - language: swift
+            runner: macos-latest
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6

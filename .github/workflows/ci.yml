@@ -34,10 +34,11 @@ jobs:
       - name: Test shared module
         run: ./gradlew :shared:allTests
 
-      - name: Generate coverage report
-        run: ./gradlew :shared:koverXmlReport
+      - name: Generate coverage report and verify threshold (80%)
+        run: ./gradlew :shared:koverXmlReport :shared:koverVerify
 
       - name: Upload coverage report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
@@ -100,10 +101,11 @@ jobs:
 
       - name: Build and test iOS app
         run: |
+          set -o pipefail
           xcodebuild test \
             -project iosApp/iosApp.xcodeproj \
             -scheme iosApp \
             -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
             -resultBundlePath TestResults \
             CODE_SIGNING_ALLOWED=NO \
-            | xcpretty || true
+            | xcpretty; exit ${PIPESTATUS[0]}
