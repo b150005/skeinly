@@ -75,6 +75,9 @@ struct AppRootView: View {
                 LoginScreen(viewModel: authViewModel)
             }
         }
+        .onOpenURL { url in
+            handleDeepLink(url: url)
+        }
     }
 
     @ViewBuilder
@@ -97,7 +100,7 @@ struct AppRootView: View {
         guard url.scheme == "knitnote",
               url.host == "share",
               let token = url.pathComponents.dropFirst().first,
-              isValidUUID(token) else {
+              isValidShareToken(token) else {
             return
         }
 
@@ -109,8 +112,4 @@ struct AppRootView: View {
         }
     }
 
-    private func isValidUUID(_ string: String) -> Bool {
-        let pattern = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
-        return string.range(of: pattern, options: .regularExpression) != nil
-    }
 }

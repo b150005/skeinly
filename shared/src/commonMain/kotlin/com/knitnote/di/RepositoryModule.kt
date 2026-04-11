@@ -11,6 +11,8 @@ import com.knitnote.data.remote.RemoteActivityDataSource
 import com.knitnote.data.remote.RemoteCommentDataSource
 import com.knitnote.data.remote.RemoteShareDataSource
 import com.knitnote.data.remote.RemoteUserDataSource
+import com.knitnote.data.remote.SupabaseConfig
+import com.knitnote.data.remote.isConfigured
 import com.knitnote.data.repository.ActivityRepositoryImpl
 import com.knitnote.data.repository.AuthRepositoryImpl
 import com.knitnote.data.repository.OfflineUserRepository
@@ -43,30 +45,44 @@ val repositoryModule = module {
     single { LocalProgressDataSource(get()) }
     single { LocalPatternDataSource(get()) }
 
-    // Remote data sources (nullable — only created when Supabase is configured)
-    single<RemoteProjectDataSource?> {
-        getOrNull<SupabaseClient>()?.let { RemoteProjectDataSource(it) }
-    }
-    single<RemoteProgressDataSource?> {
-        getOrNull<SupabaseClient>()?.let { RemoteProgressDataSource(it) }
-    }
-    single<RemotePatternDataSource?> {
-        getOrNull<SupabaseClient>()?.let { RemotePatternDataSource(it) }
-    }
-    single<RemoteShareDataSource?> {
-        getOrNull<SupabaseClient>()?.let { RemoteShareDataSource(it) }
-    }
-    single<RemoteUserDataSource?> {
-        getOrNull<SupabaseClient>()?.let { RemoteUserDataSource(it) }
-    }
-    single<RemoteCommentDataSource?> {
-        getOrNull<SupabaseClient>()?.let { RemoteCommentDataSource(it) }
-    }
-    single<RemoteActivityDataSource?> {
-        getOrNull<SupabaseClient>()?.let { RemoteActivityDataSource(it) }
+    // Remote data sources & repositories — only registered when Supabase is configured.
+    // Consumers use getOrNull() to handle their absence in local-only mode.
+    if (SupabaseConfig.isConfigured) {
+        single { RemoteProjectDataSource(get<SupabaseClient>()) }
+        single { RemoteProgressDataSource(get<SupabaseClient>()) }
+        single { RemotePatternDataSource(get<SupabaseClient>()) }
+        single { RemoteShareDataSource(get<SupabaseClient>()) }
+        single { RemoteUserDataSource(get<SupabaseClient>()) }
+        single { RemoteCommentDataSource(get<SupabaseClient>()) }
+        single { RemoteActivityDataSource(get<SupabaseClient>()) }
+
+        // Comment — remote-only with Realtime
+        single<CommentRepository> {
+            CommentRepositoryImpl(
+                remote = get<RemoteCommentDataSource>(),
+                supabaseClient = get<SupabaseClient>(),
+                scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+            )
+        }
+        // Activity — remote-only with Realtime
+        single<ActivityRepository> {
+            ActivityRepositoryImpl(
+                remote = get<RemoteActivityDataSource>(),
+                supabaseClient = get<SupabaseClient>(),
+                scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+            )
+        }
+        // Share — remote-only
+        single<ShareRepository> {
+            ShareRepositoryImpl(
+                remote = get<RemoteShareDataSource>(),
+                supabaseClient = get<SupabaseClient>(),
+                scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+            )
+        }
     }
 
-    // Coordinator repositories
+    // Coordinator repositories (local-first + optional remote sync)
     single<ProjectRepository> {
         ProjectRepositoryImpl(
             local = get(),
@@ -94,39 +110,9 @@ val repositoryModule = module {
             json = get(),
         )
     }
-    // User profiles — remote-only with offline fallback
+    // User profiles — remote with offline fallback
     single<UserRepository> {
         getOrNull<RemoteUserDataSource>()?.let { UserRepositoryImpl(it) }
             ?: OfflineUserRepository()
-    }
-    // Comment is remote-only with Realtime (nullable: use cases handle absence)
-    single<CommentRepository?> {
-        val remoteDs = getOrNull<RemoteCommentDataSource>() ?: return@single null
-        val client = getOrNull<SupabaseClient>() ?: return@single null
-        CommentRepositoryImpl(
-            remote = remoteDs,
-            supabaseClient = client,
-            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-        )
-    }
-    // Activity is remote-only with Realtime (nullable: use cases handle absence)
-    single<ActivityRepository?> {
-        val remoteDs = getOrNull<RemoteActivityDataSource>() ?: return@single null
-        val client = getOrNull<SupabaseClient>() ?: return@single null
-        ActivityRepositoryImpl(
-            remote = remoteDs,
-            supabaseClient = client,
-            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-        )
-    }
-    // Share is remote-only — requires Supabase (nullable: use cases handle absence)
-    single<ShareRepository?> {
-        val remoteDs = getOrNull<RemoteShareDataSource>() ?: return@single null
-        val client = getOrNull<SupabaseClient>() ?: return@single null
-        ShareRepositoryImpl(
-            remote = remoteDs,
-            supabaseClient = client,
-            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-        )
     }
 }

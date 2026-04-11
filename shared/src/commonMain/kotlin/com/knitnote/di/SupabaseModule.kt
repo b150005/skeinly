@@ -11,18 +11,20 @@ import io.github.jan.supabase.realtime.Realtime
 import org.koin.dsl.module
 
 val supabaseModule = module {
-    single<SupabaseClient?> {
-        if (!SupabaseConfig.isConfigured) return@single null
-
-        createSupabaseClient(
-            supabaseUrl = SupabaseConfig.url,
-            supabaseKey = SupabaseConfig.anonKey,
-        ) {
-            install(Auth) {
-                flowType = FlowType.PKCE
+    // Only register SupabaseClient when configured.
+    // Consumers use getOrNull<SupabaseClient>() to handle its absence.
+    if (SupabaseConfig.isConfigured) {
+        single<SupabaseClient> {
+            createSupabaseClient(
+                supabaseUrl = SupabaseConfig.url,
+                supabaseKey = SupabaseConfig.anonKey,
+            ) {
+                install(Auth) {
+                    flowType = FlowType.PKCE
+                }
+                install(Postgrest)
+                install(Realtime)
             }
-            install(Postgrest)
-            install(Realtime)
         }
     }
 }

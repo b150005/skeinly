@@ -8,6 +8,8 @@ import com.knitnote.data.remote.ConnectivityMonitor
 import com.knitnote.data.remote.RemotePatternDataSource
 import com.knitnote.data.remote.RemoteProgressDataSource
 import com.knitnote.data.remote.RemoteProjectDataSource
+import com.knitnote.data.remote.SupabaseConfig
+import com.knitnote.data.remote.isConfigured
 import com.knitnote.data.sync.PendingSyncDataSource
 import com.knitnote.data.sync.RealtimeSyncManager
 import com.knitnote.data.sync.RemotePatternSyncOperations
@@ -29,10 +31,13 @@ val syncModule = module {
 
     single<PendingSyncDataSource> { LocalPendingSyncDataSource(get()) }
 
-    // Sync interfaces backed by the remote data sources
-    single<RemoteProjectSyncOperations?> { getOrNull<RemoteProjectDataSource>() }
-    single<RemoteProgressSyncOperations?> { getOrNull<RemoteProgressDataSource>() }
-    single<RemotePatternSyncOperations?> { getOrNull<RemotePatternDataSource>() }
+    // Sync interfaces backed by the remote data sources.
+    // Only registered when Supabase is configured — consumers use getOrNull().
+    if (SupabaseConfig.isConfigured) {
+        single<RemoteProjectSyncOperations> { get<RemoteProjectDataSource>() }
+        single<RemoteProgressSyncOperations> { get<RemoteProgressDataSource>() }
+        single<RemotePatternSyncOperations> { get<RemotePatternDataSource>() }
+    }
 
     single { SyncExecutor(getOrNull(), getOrNull(), getOrNull(), get()) }
 
@@ -45,15 +50,18 @@ val syncModule = module {
         ).also { it.start() }
     }
 
-    single<RealtimeSyncManager?> {
-        val client = getOrNull<SupabaseClient>() ?: return@single null
-        RealtimeSyncManager(
-            supabaseClient = client,
-            localProject = get<LocalProjectDataSource>(),
-            localProgress = get<LocalProgressDataSource>(),
-            localPattern = get<LocalPatternDataSource>(),
-            authRepository = get<AuthRepository>(),
-            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-        ).also { it.start() }
+    // RealtimeSyncManager — only registered when Supabase is configured.
+    // Consumers use getOrNull<RealtimeSyncManager>().
+    if (SupabaseConfig.isConfigured) {
+        single<RealtimeSyncManager> {
+            RealtimeSyncManager(
+                supabaseClient = get<SupabaseClient>(),
+                localProject = get<LocalProjectDataSource>(),
+                localProgress = get<LocalProgressDataSource>(),
+                localPattern = get<LocalPatternDataSource>(),
+                authRepository = get<AuthRepository>(),
+                scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+            ).also { it.start() }
+        }
     }
 }

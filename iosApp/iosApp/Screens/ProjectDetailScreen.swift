@@ -168,6 +168,7 @@ struct ProjectDetailScreen: View {
             Text("\(project.currentRow)")
                 .font(.system(size: 72, weight: .bold, design: .rounded))
                 .monospacedDigit()
+                .accessibilityIdentifier("rowCounter")
 
             if let total = project.totalRows?.intValue {
                 Text("of \(total) rows")
@@ -189,6 +190,7 @@ struct ProjectDetailScreen: View {
                         .font(.system(size: 48))
                 }
                 .disabled(project.currentRow <= 0 || project.status == .completed)
+                .accessibilityIdentifier("decrementButton")
 
                 Button {
                     viewModel.onEvent(event: ProjectDetailEventIncrementRow.shared)
@@ -197,6 +199,7 @@ struct ProjectDetailScreen: View {
                         .font(.system(size: 64))
                 }
                 .disabled(project.status == .completed)
+                .accessibilityIdentifier("incrementButton")
             }
         }
         .frame(maxWidth: .infinity)

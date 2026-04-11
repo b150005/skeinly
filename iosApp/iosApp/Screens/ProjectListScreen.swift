@@ -60,6 +60,7 @@ struct ProjectListScreen: View {
                 } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityIdentifier("createProjectButton")
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
@@ -81,6 +82,7 @@ struct ProjectListScreen: View {
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
+                .accessibilityIdentifier("moreMenu")
             }
         }
         .sheet(isPresented: $showCreateSheet) {
