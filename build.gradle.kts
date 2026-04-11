@@ -15,6 +15,10 @@ subprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
 
     configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-        baseline.set(file("ktlint-baseline.xml"))
+        filter {
+            exclude { element ->
+                element.file.path.contains("/build/")
+            }
+        }
     }
 }
