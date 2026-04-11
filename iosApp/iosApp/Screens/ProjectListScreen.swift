@@ -98,8 +98,8 @@ struct ProjectListScreen: View {
         } message: {
             Text("This action cannot be undone.")
         }
-        .onChange(of: state.error) { error in
-            showError = error != nil
+        .onChange(of: state.error) { _, newError in
+            showError = newError != nil
         }
         .alert("Error", isPresented: $showError) {
             Button("OK") { viewModel.onEvent(event: ProjectListEventClearError.shared) }

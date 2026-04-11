@@ -46,80 +46,26 @@ struct ProjectDetailScreen: View {
             if state.isLoading {
                 ProgressView()
             } else if let project = state.project {
-                projectContent(project)
+                projectContent(project, state: state)
             }
         }
         .navigationTitle(state.project?.title ?? "Project")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItemGroup(placement: .navigationBarTrailing) {
-                Button { viewModel.onEvent(event: ProjectDetailEventShareProject.shared) } label: {
-                    Image(systemName: "square.and.arrow.up")
-                }
-                Button { prepareEdit(state.project) } label: {
-                    Image(systemName: "pencil")
-                }
-            }
-        }
+        .toolbar { toolbarItems(state) }
         .sheet(isPresented: $showEditSheet) { editSheet(state.project) }
         .sheet(isPresented: $showAddNoteSheet) { addNoteSheet }
-        .alert("Share Link", isPresented: $showShareLink) {
-            Button("Copy") {
-                if let link = state.shareLink {
-                    UIPasteboard.general.string = "knitnote://share/\(link.shareToken)"
-                }
-                viewModel.onEvent(event: ProjectDetailEventDismissShareDialog.shared)
-            }
-            Button("Close", role: .cancel) {
-                viewModel.onEvent(event: ProjectDetailEventDismissShareDialog.shared)
-            }
-        } message: {
-            if let link = state.shareLink {
-                Text("knitnote://share/\(link.shareToken)")
-            }
+        .shareLinkAlert(state: state, isPresented: $showShareLink, viewModel: viewModel)
+        .deleteChartImageAlert(isPresented: $showDeleteChartImageConfirmation, chartImageToDelete: chartImageToDelete, viewModel: viewModel)
+        .chartViewerCover(isPresented: $showChartViewer, urls: state.chartImageSignedUrls, index: chartViewerIndex)
+        .onChange(of: selectedPhotoItem) { _, newItem in
+            handlePhotoSelection(newItem)
         }
-        .alert("Remove Chart Image?", isPresented: $showDeleteChartImageConfirmation) {
-            Button("Remove", role: .destructive) {
-                if let path = chartImageToDelete {
-                    viewModel.onEvent(event: ProjectDetailEventDeleteChartImage(imagePath: path))
-                }
-            }
-            Button("Cancel", role: .cancel) {}
+        .deleteNoteAlert(isPresented: $showDeleteNoteConfirmation, noteToDelete: noteToDelete, viewModel: viewModel)
+        .onChange(of: state.error) { _, newError in
+            showError = newError != nil
         }
-        .fullScreenCover(isPresented: $showChartViewer) {
-            let urls = stateObserver.state.chartImageSignedUrls as? [String] ?? []
-            if chartViewerIndex < urls.count {
-                ChartImageViewer(
-                    imageUrl: urls[chartViewerIndex],
-                    onDismiss: { showChartViewer = false }
-                )
-            }
-        }
-        .onChange(of: selectedPhotoItem) { item in
-            guard let item else { return }
-            Task {
-                if let data = try? await item.loadTransferable(type: Data.self) {
-                    let compressed = compressImageToJpeg(data: data, maxSize: 2 * 1024 * 1024)
-                    let fileName = "chart_\(Int(Date().timeIntervalSince1970)).jpg"
-                    let kotlinData = dataToKotlinByteArray(compressed)
-                    viewModel.onEvent(event: ProjectDetailEventUploadChartImage(data: kotlinData, fileName: fileName))
-                }
-                selectedPhotoItem = nil
-            }
-        }
-        .alert("Delete Note?", isPresented: $showDeleteNoteConfirmation) {
-            Button("Delete", role: .destructive) {
-                if let note = noteToDelete {
-                    viewModel.onEvent(event: ProjectDetailEventDeleteNote(progressId: note.id))
-                }
-            }
-            Button("Cancel", role: .cancel) {}
-        }
-        .onChange(of: state.error) { error in
-            showError = error != nil
-        }
-        .onChange(of: state.shareLink) { link in
-            showShareLink = link != nil
+        .onChange(of: state.shareLink) { _, newLink in
+            showShareLink = newLink != nil
         }
         .alert("Error", isPresented: $showError) {
             Button("OK") { viewModel.onEvent(event: ProjectDetailEventClearError.shared) }
@@ -128,10 +74,40 @@ struct ProjectDetailScreen: View {
         }
     }
 
+    // MARK: - Toolbar
+
+    @ToolbarContentBuilder
+    private func toolbarItems(_ state: ProjectDetailState) -> some ToolbarContent {
+        ToolbarItemGroup(placement: .navigationBarTrailing) {
+            Button { viewModel.onEvent(event: ProjectDetailEventShareProject.shared) } label: {
+                Image(systemName: "square.and.arrow.up")
+            }
+            Button { prepareEdit(state.project) } label: {
+                Image(systemName: "pencil")
+            }
+        }
+    }
+
+    // MARK: - Photo Handling
+
+    private func handlePhotoSelection(_ item: PhotosPickerItem?) {
+        guard let item else { return }
+        Task {
+            if let data = try? await item.loadTransferable(type: Data.self) {
+                let compressed = compressImageToJpeg(data: data, maxSize: 2 * 1024 * 1024)
+                let timestamp = Int(Date().timeIntervalSince1970)
+                let fileName = "chart_\(timestamp).jpg"
+                let kotlinData = dataToKotlinByteArray(compressed)
+                viewModel.onEvent(event: ProjectDetailEventUploadChartImage(data: kotlinData, fileName: fileName))
+            }
+            selectedPhotoItem = nil
+        }
+    }
+
     // MARK: - Project Content
 
     @ViewBuilder
-    private func projectContent(_ project: Project) -> some View {
+    private func projectContent(_ project: Project, state: ProjectDetailState) -> some View {
         List {
             // Counter section
             Section {
@@ -250,8 +226,8 @@ struct ProjectDetailScreen: View {
 
     @ViewBuilder
     private func chartImagesSection(_ state: ProjectDetailState) -> some View {
-        let signedUrls = state.chartImageSignedUrls as? [String] ?? []
-        let storagePaths = state.chartImagePaths as? [String] ?? []
+        let signedUrls = state.chartImageSignedUrls
+        let storagePaths = state.chartImagePaths
 
         HStack {
             Text("Chart Images")
@@ -402,9 +378,7 @@ private func compressImageToJpeg(data: Data, maxSize: Int) -> Data {
 }
 
 private func dataToKotlinByteArray(_ data: Data) -> KotlinByteArray {
-    // Convert via NSData → Kotlin ByteArray using the KMP helper which uses memcpy
-    let nsData = data as NSData
-    return KoinHelperKt.nsDataToByteArray(nsData)
+    return KoinHelperKt.nsDataToByteArray(data: data)
 }
 
 // MARK: - Note Row
@@ -426,5 +400,76 @@ private struct NoteRow: View {
         let epochSeconds = note.createdAt.epochSeconds
         let date = Date(timeIntervalSince1970: TimeInterval(epochSeconds))
         return date.formatted(date: .abbreviated, time: .shortened)
+    }
+}
+
+// MARK: - View Modifier Helpers (break up type-check complexity)
+
+private extension View {
+    func shareLinkAlert(
+        state: ProjectDetailState,
+        isPresented: Binding<Bool>,
+        viewModel: ProjectDetailViewModel
+    ) -> some View {
+        self.alert("Share Link", isPresented: isPresented) {
+            Button("Copy") {
+                if let link = state.shareLink, let token = link.shareToken {
+                    UIPasteboard.general.string = "knitnote://share/\(token)"
+                }
+                viewModel.onEvent(event: ProjectDetailEventDismissShareDialog.shared)
+            }
+            Button("Close", role: .cancel) {
+                viewModel.onEvent(event: ProjectDetailEventDismissShareDialog.shared)
+            }
+        } message: {
+            if let link = state.shareLink, let token = link.shareToken {
+                Text(verbatim: "knitnote://share/\(token)")
+            }
+        }
+    }
+
+    func deleteChartImageAlert(
+        isPresented: Binding<Bool>,
+        chartImageToDelete: String?,
+        viewModel: ProjectDetailViewModel
+    ) -> some View {
+        self.alert("Remove Chart Image?", isPresented: isPresented) {
+            Button("Remove", role: .destructive) {
+                if let path = chartImageToDelete {
+                    viewModel.onEvent(event: ProjectDetailEventDeleteChartImage(imagePath: path))
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+    }
+
+    func chartViewerCover(
+        isPresented: Binding<Bool>,
+        urls: [String],
+        index: Int
+    ) -> some View {
+        self.fullScreenCover(isPresented: isPresented) {
+            if index < urls.count {
+                ChartImageViewer(
+                    imageUrl: urls[index],
+                    onDismiss: { isPresented.wrappedValue = false }
+                )
+            }
+        }
+    }
+
+    func deleteNoteAlert(
+        isPresented: Binding<Bool>,
+        noteToDelete: Shared.Progress?,
+        viewModel: ProjectDetailViewModel
+    ) -> some View {
+        self.alert("Delete Note?", isPresented: isPresented) {
+            Button("Delete", role: .destructive) {
+                if let note = noteToDelete {
+                    viewModel.onEvent(event: ProjectDetailEventDeleteNote(progressId: note.id))
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        }
     }
 }

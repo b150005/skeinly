@@ -76,8 +76,8 @@ struct LoginScreen: View {
 
             Spacer()
         }
-        .onChange(of: state.error) { error in
-            showError = error != nil
+        .onChange(of: state.error) { _, newError in
+            showError = newError != nil
         }
         .alert("Error", isPresented: $showError) {
             Button("OK") {

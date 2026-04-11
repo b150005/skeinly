@@ -38,8 +38,8 @@ struct ProfileScreen: View {
                 }
             }
         }
-        .onChange(of: state.error) { error in
-            showError = error != nil
+        .onChange(of: state.error) { _, newError in
+            showError = newError != nil
         }
         .alert("Error", isPresented: $showError) {
             Button("OK") { viewModel.onEvent(event: ProfileEventClearError.shared) }

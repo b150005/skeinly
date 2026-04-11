@@ -37,8 +37,8 @@ struct SharedContentScreen: View {
         }
         .navigationTitle("Shared Pattern")
         .navigationBarTitleDisplayMode(.inline)
-        .onChange(of: state.error) { error in
-            showError = error != nil
+        .onChange(of: state.error) { _, newError in
+            showError = newError != nil
         }
         .alert("Error", isPresented: $showError) {
             Button("OK") { viewModel.onEvent(event: SharedContentEventClearError.shared) }
@@ -55,7 +55,7 @@ struct SharedContentScreen: View {
                 Task { @MainActor in
                     // Pop to root and navigate to the forked project
                     path = NavigationPath()
-                    path.append(Route.projectDetail(projectId: projectId))
+                    path.append(Route.projectDetail(projectId: projectId as String))
                 }
             }
             // Keep closeable alive for the task duration — will be cancelled on view disappear
