@@ -1,13 +1,16 @@
 package com.knitnote.domain.model
 
-import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 @Serializable
 enum class CommentTargetType {
-    @SerialName("pattern") PATTERN,
-    @SerialName("project") PROJECT,
+    @SerialName("pattern")
+    PATTERN,
+
+    @SerialName("project")
+    PROJECT,
 }
 
 @Serializable

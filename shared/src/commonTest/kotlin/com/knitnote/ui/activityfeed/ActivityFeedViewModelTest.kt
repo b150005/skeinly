@@ -1,11 +1,11 @@
 package com.knitnote.ui.activityfeed
 
+import com.knitnote.data.repository.OfflineUserRepository
 import com.knitnote.domain.model.Activity
 import com.knitnote.domain.model.ActivityTargetType
 import com.knitnote.domain.model.ActivityType
 import com.knitnote.domain.model.AuthState
 import com.knitnote.domain.usecase.FakeActivityRepository
-import com.knitnote.data.repository.OfflineUserRepository
 import com.knitnote.domain.usecase.FakeAuthRepository
 import com.knitnote.domain.usecase.GetActivitiesUseCase
 import kotlinx.coroutines.Dispatchers
@@ -14,7 +14,6 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlin.time.Instant
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -23,10 +22,10 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ActivityFeedViewModelTest {
-
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var activityRepo: FakeActivityRepository
     private lateinit var authRepo: FakeAuthRepository
@@ -68,66 +67,72 @@ class ActivityFeedViewModelTest {
     }
 
     @Test
-    fun `loads activities for authenticated user`() = runTest {
-        activityRepo.addActivity(makeActivity("a-1"))
-        activityRepo.addActivity(makeActivity("a-2"))
+    fun `loads activities for authenticated user`() =
+        runTest {
+            activityRepo.addActivity(makeActivity("a-1"))
+            activityRepo.addActivity(makeActivity("a-2"))
 
-        val viewModel = createViewModel()
-        val state = viewModel.state.value
+            val viewModel = createViewModel()
+            val state = viewModel.state.value
 
-        assertFalse(state.isLoading)
-        assertEquals(2, state.activities.size)
-    }
-
-    @Test
-    fun `shows empty state when no activities`() = runTest {
-        val viewModel = createViewModel()
-        val state = viewModel.state.value
-
-        assertFalse(state.isLoading)
-        assertTrue(state.activities.isEmpty())
-    }
+            assertFalse(state.isLoading)
+            assertEquals(2, state.activities.size)
+        }
 
     @Test
-    fun `shows error when not authenticated`() = runTest {
-        authRepo.setAuthState(AuthState.Unauthenticated)
+    fun `shows empty state when no activities`() =
+        runTest {
+            val viewModel = createViewModel()
+            val state = viewModel.state.value
 
-        val viewModel = createViewModel()
-        val state = viewModel.state.value
-
-        assertFalse(state.isLoading)
-        assertNotNull(state.error)
-    }
-
-    @Test
-    fun `filters activities by current user`() = runTest {
-        activityRepo.addActivity(makeActivity("a-1", userId = "user-1"))
-        activityRepo.addActivity(makeActivity("a-2", userId = "other-user"))
-
-        val viewModel = createViewModel()
-        val state = viewModel.state.value
-
-        assertEquals(1, state.activities.size)
-        assertEquals("a-1", state.activities.first().id)
-    }
+            assertFalse(state.isLoading)
+            assertTrue(state.activities.isEmpty())
+        }
 
     @Test
-    fun `clears error on ClearError event`() = runTest {
-        authRepo.setAuthState(AuthState.Unauthenticated)
-        val viewModel = createViewModel()
-        assertNotNull(viewModel.state.value.error)
+    fun `shows error when not authenticated`() =
+        runTest {
+            authRepo.setAuthState(AuthState.Unauthenticated)
 
-        viewModel.onEvent(ActivityFeedEvent.ClearError)
-        assertNull(viewModel.state.value.error)
-    }
+            val viewModel = createViewModel()
+            val state = viewModel.state.value
+
+            assertFalse(state.isLoading)
+            assertNotNull(state.error)
+        }
 
     @Test
-    fun `works with null activity repository`() = runTest {
-        val getActivities = GetActivitiesUseCase(null)
-        val viewModel = ActivityFeedViewModel(getActivities, authRepo, OfflineUserRepository())
-        val state = viewModel.state.value
+    fun `filters activities by current user`() =
+        runTest {
+            activityRepo.addActivity(makeActivity("a-1", userId = "user-1"))
+            activityRepo.addActivity(makeActivity("a-2", userId = "other-user"))
 
-        assertFalse(state.isLoading)
-        assertTrue(state.activities.isEmpty())
-    }
+            val viewModel = createViewModel()
+            val state = viewModel.state.value
+
+            assertEquals(1, state.activities.size)
+            assertEquals("a-1", state.activities.first().id)
+        }
+
+    @Test
+    fun `clears error on ClearError event`() =
+        runTest {
+            authRepo.setAuthState(AuthState.Unauthenticated)
+            val viewModel = createViewModel()
+            assertNotNull(viewModel.state.value.error)
+
+            viewModel.onEvent(ActivityFeedEvent.ClearError)
+            assertNull(viewModel.state.value.error)
+        }
+
+    @Test
+    fun `works with null activity repository`() =
+        runTest {
+            val getActivities = GetActivitiesUseCase(null)
+            val viewModel = ActivityFeedViewModel(getActivities, authRepo, OfflineUserRepository())
+            val state = viewModel.state.value
+
+            assertFalse(state.isLoading)
+            assertTrue(state.activities.isEmpty())
+        }
 }

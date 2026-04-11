@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.flowOf
 class GetCommentsUseCase(
     private val commentRepository: CommentRepository?,
 ) {
-
     fun observe(
         targetType: CommentTargetType,
         targetId: String,

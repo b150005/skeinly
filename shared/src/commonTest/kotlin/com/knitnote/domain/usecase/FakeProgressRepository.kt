@@ -7,14 +7,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 
 class FakeProgressRepository : ProgressRepository {
-
     private val progressNotes = MutableStateFlow<List<Progress>>(emptyList())
 
-    override suspend fun getById(id: String): Progress? =
-        progressNotes.value.find { it.id == id }
+    override suspend fun getById(id: String): Progress? = progressNotes.value.find { it.id == id }
 
-    override suspend fun getByProjectId(projectId: String): List<Progress> =
-        progressNotes.value.filter { it.projectId == projectId }
+    override suspend fun getByProjectId(projectId: String): List<Progress> = progressNotes.value.filter { it.projectId == projectId }
 
     override fun observeByProjectId(projectId: String): Flow<List<Progress>> =
         progressNotes.map { list -> list.filter { it.projectId == projectId } }

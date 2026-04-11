@@ -24,42 +24,43 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 
-val syncModule = module {
-    single { Json { ignoreUnknownKeys = true } }
+val syncModule =
+    module {
+        single { Json { ignoreUnknownKeys = true } }
 
-    single<PendingSyncDataSource> { LocalPendingSyncDataSource(get(), get(ioDispatcherQualifier)) }
+        single<PendingSyncDataSource> { LocalPendingSyncDataSource(get(), get(ioDispatcherQualifier)) }
 
-    // Sync interfaces backed by the remote data sources.
-    // Only registered when Supabase is configured — consumers use getOrNull().
-    if (SupabaseConfig.isConfigured) {
-        single<RemoteProjectSyncOperations> { get<RemoteProjectDataSource>() }
-        single<RemoteProgressSyncOperations> { get<RemoteProgressDataSource>() }
-        single<RemotePatternSyncOperations> { get<RemotePatternDataSource>() }
-    }
+        // Sync interfaces backed by the remote data sources.
+        // Only registered when Supabase is configured — consumers use getOrNull().
+        if (SupabaseConfig.isConfigured) {
+            single<RemoteProjectSyncOperations> { get<RemoteProjectDataSource>() }
+            single<RemoteProgressSyncOperations> { get<RemoteProgressDataSource>() }
+            single<RemotePatternSyncOperations> { get<RemotePatternDataSource>() }
+        }
 
-    single { SyncExecutor(getOrNull(), getOrNull(), getOrNull(), get()) }
+        single { SyncExecutor(getOrNull(), getOrNull(), getOrNull(), get()) }
 
-    single<SyncManagerOperations> {
-        SyncManager(
-            pendingSyncDataSource = get(),
-            syncExecutor = get(),
-            isOnline = get<ConnectivityMonitor>().isOnline,
-            scope = get<CoroutineScope>(applicationScopeQualifier),
-        ).also { it.start() }
-    }
-
-    // RealtimeSyncManager — only registered when Supabase is configured.
-    // Consumers use getOrNull<RealtimeSyncManager>().
-    if (SupabaseConfig.isConfigured) {
-        single<RealtimeSyncManager> {
-            RealtimeSyncManager(
-                supabaseClient = get<SupabaseClient>(),
-                localProject = get<LocalProjectDataSource>(),
-                localProgress = get<LocalProgressDataSource>(),
-                localPattern = get<LocalPatternDataSource>(),
-                authRepository = get<AuthRepository>(),
+        single<SyncManagerOperations> {
+            SyncManager(
+                pendingSyncDataSource = get(),
+                syncExecutor = get(),
+                isOnline = get<ConnectivityMonitor>().isOnline,
                 scope = get<CoroutineScope>(applicationScopeQualifier),
             ).also { it.start() }
         }
+
+        // RealtimeSyncManager — only registered when Supabase is configured.
+        // Consumers use getOrNull<RealtimeSyncManager>().
+        if (SupabaseConfig.isConfigured) {
+            single<RealtimeSyncManager> {
+                RealtimeSyncManager(
+                    supabaseClient = get<SupabaseClient>(),
+                    localProject = get<LocalProjectDataSource>(),
+                    localProgress = get<LocalProgressDataSource>(),
+                    localPattern = get<LocalPatternDataSource>(),
+                    authRepository = get<AuthRepository>(),
+                    scope = get<CoroutineScope>(applicationScopeQualifier),
+                ).also { it.start() }
+            }
+        }
     }
-}

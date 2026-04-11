@@ -9,7 +9,10 @@ class RemoteActivityDataSource(
 ) {
     private val table get() = supabaseClient.postgrest["activities"]
 
-    suspend fun getByUserId(userId: String, limit: Int = 50): List<Activity> =
+    suspend fun getByUserId(
+        userId: String,
+        limit: Int = 50,
+    ): List<Activity> =
         table.select {
             filter { eq("user_id", userId) }
             order("created_at", io.github.jan.supabase.postgrest.query.Order.DESCENDING)

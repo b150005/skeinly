@@ -1,20 +1,28 @@
 package com.knitnote.domain.model
 
-import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 @Serializable
 enum class SharePermission {
-    @SerialName("view") VIEW,
-    @SerialName("fork") FORK,
+    @SerialName("view")
+    VIEW,
+
+    @SerialName("fork")
+    FORK,
 }
 
 @Serializable
 enum class ShareStatus {
-    @SerialName("pending") PENDING,
-    @SerialName("accepted") ACCEPTED,
-    @SerialName("declined") DECLINED,
+    @SerialName("pending")
+    PENDING,
+
+    @SerialName("accepted")
+    ACCEPTED,
+
+    @SerialName("declined")
+    DECLINED,
 }
 
 @Serializable

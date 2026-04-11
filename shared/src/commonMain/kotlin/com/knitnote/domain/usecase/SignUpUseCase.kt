@@ -6,7 +6,10 @@ import kotlin.coroutines.cancellation.CancellationException
 class SignUpUseCase(
     private val authRepository: AuthRepository,
 ) {
-    suspend operator fun invoke(email: String, password: String): UseCaseResult<Unit> =
+    suspend operator fun invoke(
+        email: String,
+        password: String,
+    ): UseCaseResult<Unit> =
         try {
             if (email.isBlank()) {
                 return UseCaseResult.Failure(UseCaseError.Validation("Email is required"))

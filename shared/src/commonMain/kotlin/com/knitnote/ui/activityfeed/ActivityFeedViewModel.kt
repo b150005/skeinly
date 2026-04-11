@@ -31,7 +31,6 @@ class ActivityFeedViewModel(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
 ) : ViewModel() {
-
     private val _state = MutableStateFlow(ActivityFeedState())
     val state: StateFlow<ActivityFeedState> = _state.asStateFlow()
 

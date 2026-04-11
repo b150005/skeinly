@@ -20,7 +20,6 @@ class SyncManager(
     private val config: SyncConfig = SyncConfig(),
     private val clock: Clock = Clock.System,
 ) : SyncManagerOperations {
-
     private val processingMutex = Mutex()
     private val coalescingMutex = Mutex()
     private var monitorJob: Job? = null
@@ -30,13 +29,14 @@ class SyncManager(
      */
     fun start() {
         monitorJob?.cancel()
-        monitorJob = scope.launch {
-            isOnline.collect { online ->
-                if (online) {
-                    drainWithRetry()
+        monitorJob =
+            scope.launch {
+                isOnline.collect { online ->
+                    if (online) {
+                        drainWithRetry()
+                    }
                 }
             }
-        }
     }
 
     /**
@@ -81,16 +81,17 @@ class SyncManager(
         payload: String,
     ) {
         if (isOnline.value) {
-            val entry = PendingSyncEntry(
-                id = 0,
-                entityType = entityType,
-                entityId = entityId,
-                operation = operation,
-                payload = payload,
-                createdAt = clock.now().toEpochMilliseconds(),
-                retryCount = 0,
-                status = SyncStatus.PENDING,
-            )
+            val entry =
+                PendingSyncEntry(
+                    id = 0,
+                    entityType = entityType,
+                    entityId = entityId,
+                    operation = operation,
+                    payload = payload,
+                    createdAt = clock.now().toEpochMilliseconds(),
+                    retryCount = 0,
+                    status = SyncStatus.PENDING,
+                )
             try {
                 syncExecutor.execute(entry)
                 return
@@ -122,8 +123,9 @@ class SyncManager(
         payload: String,
     ) {
         coalescingMutex.withLock {
-            val existing = pendingSyncDataSource.getByEntityId(entityId)
-                .filter { it.entityType == entityType }
+            val existing =
+                pendingSyncDataSource.getByEntityId(entityId)
+                    .filter { it.entityType == entityType }
 
             if (existing.isEmpty()) {
                 pendingSyncDataSource.enqueue(entityType, entityId, operation, payload, clock.now().toEpochMilliseconds())

@@ -17,7 +17,6 @@ import kotlin.uuid.Uuid
 class CreateActivityUseCase(
     private val activityRepository: ActivityRepository?,
 ) {
-
     @OptIn(ExperimentalUuidApi::class)
     suspend operator fun invoke(
         userId: String,
@@ -27,15 +26,16 @@ class CreateActivityUseCase(
         metadata: String? = null,
     ) {
         if (activityRepository == null) return
-        val activity = Activity(
-            id = Uuid.random().toString(),
-            userId = userId,
-            type = type,
-            targetType = targetType,
-            targetId = targetId,
-            metadata = metadata,
-            createdAt = Clock.System.now(),
-        )
+        val activity =
+            Activity(
+                id = Uuid.random().toString(),
+                userId = userId,
+                type = type,
+                targetType = targetType,
+                targetId = targetId,
+                metadata = metadata,
+                createdAt = Clock.System.now(),
+            )
         try {
             activityRepository.create(activity)
         } catch (e: CancellationException) {

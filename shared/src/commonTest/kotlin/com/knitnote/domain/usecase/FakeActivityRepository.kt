@@ -7,14 +7,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 
 class FakeActivityRepository : ActivityRepository {
-
     private val activities = MutableStateFlow<List<Activity>>(emptyList())
 
-    override suspend fun getByUserId(userId: String): List<Activity> =
-        activities.value.filter { it.userId == userId }
+    override suspend fun getByUserId(userId: String): List<Activity> = activities.value.filter { it.userId == userId }
 
-    override fun observeByUserId(userId: String): Flow<List<Activity>> =
-        activities.map { list -> list.filter { it.userId == userId } }
+    override fun observeByUserId(userId: String): Flow<List<Activity>> = activities.map { list -> list.filter { it.userId == userId } }
 
     override suspend fun create(activity: Activity): Activity {
         activities.value = activities.value + activity

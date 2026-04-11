@@ -14,16 +14,17 @@ class LocalProgressDataSource(
     private val db: KnitNoteDatabase,
     private val ioDispatcher: CoroutineDispatcher,
 ) {
-
     private val queries get() = db.progressQueries
 
-    suspend fun getById(id: String): Progress? = withContext(ioDispatcher) {
-        queries.getById(id).executeAsOneOrNull()?.toDomain()
-    }
+    suspend fun getById(id: String): Progress? =
+        withContext(ioDispatcher) {
+            queries.getById(id).executeAsOneOrNull()?.toDomain()
+        }
 
-    suspend fun getByProjectId(projectId: String): List<Progress> = withContext(ioDispatcher) {
-        queries.getByProjectId(projectId).executeAsList().map { it.toDomain() }
-    }
+    suspend fun getByProjectId(projectId: String): List<Progress> =
+        withContext(ioDispatcher) {
+            queries.getByProjectId(projectId).executeAsList().map { it.toDomain() }
+        }
 
     fun observeByProjectId(projectId: String): Flow<List<Progress>> =
         queries.getByProjectId(projectId)
@@ -31,24 +32,8 @@ class LocalProgressDataSource(
             .mapToList(ioDispatcher)
             .map { list -> list.map { it.toDomain() } }
 
-    suspend fun insert(progress: Progress): Progress = withContext(ioDispatcher) {
-        queries.insert(
-            id = progress.id,
-            project_id = progress.projectId,
-            row_number = progress.rowNumber.toLong(),
-            photo_url = progress.photoUrl,
-            note = progress.note,
-            created_at = progress.createdAt.toString(),
-        )
-        progress
-    }
-
-    suspend fun upsert(progress: Progress): Unit = withContext(ioDispatcher) {
-        db.transaction {
-            val exists = queries.getById(progress.id).executeAsOneOrNull() != null
-            if (exists) {
-                queries.deleteById(progress.id)
-            }
+    suspend fun insert(progress: Progress): Progress =
+        withContext(ioDispatcher) {
             queries.insert(
                 id = progress.id,
                 project_id = progress.projectId,
@@ -57,10 +42,29 @@ class LocalProgressDataSource(
                 note = progress.note,
                 created_at = progress.createdAt.toString(),
             )
+            progress
         }
-    }
 
-    suspend fun delete(id: String): Unit = withContext(ioDispatcher) {
-        queries.deleteById(id)
-    }
+    suspend fun upsert(progress: Progress): Unit =
+        withContext(ioDispatcher) {
+            db.transaction {
+                val exists = queries.getById(progress.id).executeAsOneOrNull() != null
+                if (exists) {
+                    queries.deleteById(progress.id)
+                }
+                queries.insert(
+                    id = progress.id,
+                    project_id = progress.projectId,
+                    row_number = progress.rowNumber.toLong(),
+                    photo_url = progress.photoUrl,
+                    note = progress.note,
+                    created_at = progress.createdAt.toString(),
+                )
+            }
+        }
+
+    suspend fun delete(id: String): Unit =
+        withContext(ioDispatcher) {
+            queries.deleteById(id)
+        }
 }

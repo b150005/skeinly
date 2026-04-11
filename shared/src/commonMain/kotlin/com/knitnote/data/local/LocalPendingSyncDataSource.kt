@@ -13,7 +13,6 @@ class LocalPendingSyncDataSource(
     private val db: KnitNoteDatabase,
     private val ioDispatcher: CoroutineDispatcher,
 ) : PendingSyncDataSource {
-
     private val queries get() = db.pendingSyncQueries
 
     override suspend fun enqueue(
@@ -22,41 +21,53 @@ class LocalPendingSyncDataSource(
         operation: SyncOperation,
         payload: String,
         createdAt: Long,
-    ): Unit = withContext(ioDispatcher) {
-        queries.insert(entityType.value, entityId, operation.value, payload, createdAt)
-    }
+    ): Unit =
+        withContext(ioDispatcher) {
+            queries.insert(entityType.value, entityId, operation.value, payload, createdAt)
+        }
 
-    override suspend fun getAllPending(): List<PendingSyncEntry> = withContext(ioDispatcher) {
-        queries.getAllPending().executeAsList().map { it.toDomain() }
-    }
+    override suspend fun getAllPending(): List<PendingSyncEntry> =
+        withContext(ioDispatcher) {
+            queries.getAllPending().executeAsList().map { it.toDomain() }
+        }
 
-    override suspend fun getById(id: Long): PendingSyncEntry? = withContext(ioDispatcher) {
-        queries.getById(id).executeAsOneOrNull()?.toDomain()
-    }
+    override suspend fun getById(id: Long): PendingSyncEntry? =
+        withContext(ioDispatcher) {
+            queries.getById(id).executeAsOneOrNull()?.toDomain()
+        }
 
-    override suspend fun getByEntityId(entityId: String): List<PendingSyncEntry> = withContext(ioDispatcher) {
-        queries.getByEntityId(entityId).executeAsList().map { it.toDomain() }
-    }
+    override suspend fun getByEntityId(entityId: String): List<PendingSyncEntry> =
+        withContext(ioDispatcher) {
+            queries.getByEntityId(entityId).executeAsList().map { it.toDomain() }
+        }
 
-    override suspend fun updatePayload(id: Long, payload: String): Unit = withContext(ioDispatcher) {
-        queries.updatePayload(payload, id)
-    }
+    override suspend fun updatePayload(
+        id: Long,
+        payload: String,
+    ): Unit =
+        withContext(ioDispatcher) {
+            queries.updatePayload(payload, id)
+        }
 
-    override suspend fun incrementRetry(id: Long): Unit = withContext(ioDispatcher) {
-        queries.incrementRetry(id)
-    }
+    override suspend fun incrementRetry(id: Long): Unit =
+        withContext(ioDispatcher) {
+            queries.incrementRetry(id)
+        }
 
-    override suspend fun markFailed(id: Long): Unit = withContext(ioDispatcher) {
-        queries.markFailed(id)
-    }
+    override suspend fun markFailed(id: Long): Unit =
+        withContext(ioDispatcher) {
+            queries.markFailed(id)
+        }
 
-    override suspend fun delete(id: Long): Unit = withContext(ioDispatcher) {
-        queries.deleteById(id)
-    }
+    override suspend fun delete(id: Long): Unit =
+        withContext(ioDispatcher) {
+            queries.deleteById(id)
+        }
 
-    override suspend fun countPending(): Long = withContext(ioDispatcher) {
-        queries.countPending().executeAsOne()
-    }
+    override suspend fun countPending(): Long =
+        withContext(ioDispatcher) {
+            queries.countPending().executeAsOne()
+        }
 }
 
 private fun com.knitnote.db.PendingSyncEntity.toDomain(): PendingSyncEntry =

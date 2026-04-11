@@ -29,6 +29,7 @@ data class SharedContentState(
 
 sealed interface SharedContentEvent {
     data object Fork : SharedContentEvent
+
     data object ClearError : SharedContentEvent
 }
 
@@ -38,7 +39,6 @@ class SharedContentViewModel(
     private val resolveShareToken: ResolveShareTokenUseCase,
     private val forkSharedPattern: ForkSharedPatternUseCase,
 ) : ViewModel() {
-
     private val _state = MutableStateFlow(SharedContentState())
     val state: StateFlow<SharedContentState> = _state.asStateFlow()
 

@@ -1,0 +1,3 @@
+-- Phase 10: Add chart_image_urls column to PatternEntity
+-- Stores JSON-encoded list of Supabase Storage paths
+ALTER TABLE PatternEntity ADD COLUMN chart_image_urls TEXT;

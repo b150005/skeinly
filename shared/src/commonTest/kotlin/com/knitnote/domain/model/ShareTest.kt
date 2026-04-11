@@ -1,29 +1,29 @@
 package com.knitnote.domain.model
 
-import kotlin.time.Instant
 import com.knitnote.testJson
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.time.Instant
 
 class ShareTest {
-
     private val json = testJson
 
     private val now = Instant.parse("2026-01-15T10:30:00Z")
 
     @Test
     fun `create share with direct recipient`() {
-        val share = Share(
-            id = "share-001",
-            patternId = "pat-001",
-            fromUserId = "user-001",
-            toUserId = "user-002",
-            permission = SharePermission.VIEW,
-            status = ShareStatus.PENDING,
-            shareToken = null,
-            sharedAt = now,
-        )
+        val share =
+            Share(
+                id = "share-001",
+                patternId = "pat-001",
+                fromUserId = "user-001",
+                toUserId = "user-002",
+                permission = SharePermission.VIEW,
+                status = ShareStatus.PENDING,
+                shareToken = null,
+                sharedAt = now,
+            )
 
         assertEquals("share-001", share.id)
         assertEquals("user-002", share.toUserId)
@@ -34,16 +34,17 @@ class ShareTest {
 
     @Test
     fun `create share with link token and no recipient`() {
-        val share = Share(
-            id = "share-002",
-            patternId = "pat-001",
-            fromUserId = "user-001",
-            toUserId = null,
-            permission = SharePermission.FORK,
-            status = ShareStatus.ACCEPTED,
-            shareToken = "abc123token",
-            sharedAt = now,
-        )
+        val share =
+            Share(
+                id = "share-002",
+                patternId = "pat-001",
+                fromUserId = "user-001",
+                toUserId = null,
+                permission = SharePermission.FORK,
+                status = ShareStatus.ACCEPTED,
+                shareToken = "abc123token",
+                sharedAt = now,
+            )
 
         assertNull(share.toUserId)
         assertEquals("abc123token", share.shareToken)
@@ -52,16 +53,17 @@ class ShareTest {
 
     @Test
     fun `serialize and deserialize share round-trip`() {
-        val share = Share(
-            id = "share-001",
-            patternId = "pat-001",
-            fromUserId = "user-001",
-            toUserId = "user-002",
-            permission = SharePermission.VIEW,
-            status = ShareStatus.ACCEPTED,
-            shareToken = null,
-            sharedAt = now,
-        )
+        val share =
+            Share(
+                id = "share-001",
+                patternId = "pat-001",
+                fromUserId = "user-001",
+                toUserId = "user-002",
+                permission = SharePermission.VIEW,
+                status = ShareStatus.ACCEPTED,
+                shareToken = null,
+                sharedAt = now,
+            )
 
         val encoded = json.encodeToString(Share.serializer(), share)
         val decoded = json.decodeFromString(Share.serializer(), encoded)

@@ -3,7 +3,6 @@ package com.knitnote.data.sync
 import com.knitnote.domain.model.Pattern
 
 class FakeRemotePatternDataSource : RemotePatternSyncOperations {
-
     val insertedPatterns = mutableListOf<Pattern>()
     val updatedPatterns = mutableListOf<Pattern>()
     val deletedIds = mutableListOf<String>()

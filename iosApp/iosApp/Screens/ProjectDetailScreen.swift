@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 import Shared
 
 struct ProjectDetailScreen: View {
@@ -14,6 +15,11 @@ struct ProjectDetailScreen: View {
     @State private var showDeleteNoteConfirmation = false
     @State private var noteToDelete: Shared.Progress?
     @State private var showCompleteConfirmation = false
+    @State private var showDeleteChartImageConfirmation = false
+    @State private var chartImageToDelete: String?
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var showChartViewer = false
+    @State private var chartViewerIndex: Int = 0
     @State private var editTitle = ""
     @State private var editTotalRows = ""
     @State private var newNote = ""
@@ -72,6 +78,35 @@ struct ProjectDetailScreen: View {
                 Text("knitnote://share/\(link.shareToken)")
             }
         }
+        .alert("Remove Chart Image?", isPresented: $showDeleteChartImageConfirmation) {
+            Button("Remove", role: .destructive) {
+                if let path = chartImageToDelete {
+                    viewModel.onEvent(event: ProjectDetailEventDeleteChartImage(imagePath: path))
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .fullScreenCover(isPresented: $showChartViewer) {
+            let urls = stateObserver.state.chartImageSignedUrls as? [String] ?? []
+            if chartViewerIndex < urls.count {
+                ChartImageViewer(
+                    imageUrl: urls[chartViewerIndex],
+                    onDismiss: { showChartViewer = false }
+                )
+            }
+        }
+        .onChange(of: selectedPhotoItem) { item in
+            guard let item else { return }
+            Task {
+                if let data = try? await item.loadTransferable(type: Data.self) {
+                    let compressed = compressImageToJpeg(data: data, maxSize: 2 * 1024 * 1024)
+                    let fileName = "chart_\(Int(Date().timeIntervalSince1970)).jpg"
+                    let kotlinData = dataToKotlinByteArray(compressed)
+                    viewModel.onEvent(event: ProjectDetailEventUploadChartImage(data: kotlinData, fileName: fileName))
+                }
+                selectedPhotoItem = nil
+            }
+        }
         .alert("Delete Note?", isPresented: $showDeleteNoteConfirmation) {
             Button("Delete", role: .destructive) {
                 if let note = noteToDelete {
@@ -114,6 +149,11 @@ struct ProjectDetailScreen: View {
                         viewModel.onEvent(event: ProjectDetailEventCompleteProject.shared)
                     }
                 }
+            }
+
+            // Chart images section
+            Section {
+                chartImagesSection(state)
             }
 
             // Notes section
@@ -206,6 +246,76 @@ struct ProjectDetailScreen: View {
         .padding(.vertical)
     }
 
+    // MARK: - Chart Images Section
+
+    @ViewBuilder
+    private func chartImagesSection(_ state: ProjectDetailState) -> some View {
+        let signedUrls = state.chartImageSignedUrls as? [String] ?? []
+        let storagePaths = state.chartImagePaths as? [String] ?? []
+
+        HStack {
+            Text("Chart Images")
+                .font(.headline)
+            Spacer()
+            PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                Image(systemName: "plus.circle")
+            }
+        }
+
+        if state.isUploadingImage {
+            HStack {
+                ProgressView()
+                    .padding(.trailing, 8)
+                Text("Uploading...")
+                    .foregroundStyle(.secondary)
+            }
+        }
+
+        if signedUrls.isEmpty && !state.isUploadingImage {
+            Text("No chart images yet")
+                .foregroundStyle(.secondary)
+                .font(.subheadline)
+        } else {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(Array(signedUrls.enumerated()), id: \.offset) { index, url in
+                        AsyncImage(url: URL(string: url)) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                            default:
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.2))
+                                    .overlay {
+                                        ProgressView()
+                                    }
+                            }
+                        }
+                        .frame(width: 100, height: 100)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .onTapGesture {
+                            chartViewerIndex = index
+                            showChartViewer = true
+                        }
+                        .contextMenu {
+                            if index < storagePaths.count {
+                                Button(role: .destructive) {
+                                    chartImageToDelete = storagePaths[index]
+                                    showDeleteChartImageConfirmation = true
+                                } label: {
+                                    Label("Remove", systemImage: "trash")
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        }
+    }
+
     // MARK: - Edit Sheet
 
     private func prepareEdit(_ project: Project?) {
@@ -274,6 +384,34 @@ struct ProjectDetailScreen: View {
         }
         .presentationDetents([.medium])
     }
+}
+
+// MARK: - Note Row
+
+// MARK: - Image Helpers
+
+private func compressImageToJpeg(data: Data, maxSize: Int) -> Data {
+    guard let image = UIImage(data: data) else { return data }
+    var quality: CGFloat = 0.9
+    while quality >= 0.1 {
+        if let compressed = image.jpegData(compressionQuality: quality),
+           compressed.count <= maxSize {
+            return compressed
+        }
+        quality -= 0.1
+    }
+    return image.jpegData(compressionQuality: 0.1) ?? data
+}
+
+private func dataToKotlinByteArray(_ data: Data) -> KotlinByteArray {
+    let array = KotlinByteArray(size: Int32(data.count))
+    data.withUnsafeBytes { buffer in
+        guard let ptr = buffer.baseAddress else { return }
+        for i in 0..<data.count {
+            array.set(index: Int32(i), value: Int8(bitPattern: ptr.load(fromByteOffset: i, as: UInt8.self)))
+        }
+    }
+    return array
 }
 
 // MARK: - Note Row

@@ -1,22 +1,34 @@
 package com.knitnote.domain.model
 
-import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 @Serializable
 enum class ActivityType {
-    @SerialName("shared") SHARED,
-    @SerialName("commented") COMMENTED,
-    @SerialName("forked") FORKED,
-    @SerialName("completed") COMPLETED,
-    @SerialName("started") STARTED,
+    @SerialName("shared")
+    SHARED,
+
+    @SerialName("commented")
+    COMMENTED,
+
+    @SerialName("forked")
+    FORKED,
+
+    @SerialName("completed")
+    COMPLETED,
+
+    @SerialName("started")
+    STARTED,
 }
 
 @Serializable
 enum class ActivityTargetType {
-    @SerialName("pattern") PATTERN,
-    @SerialName("project") PROJECT,
+    @SerialName("pattern")
+    PATTERN,
+
+    @SerialName("project")
+    PROJECT,
 }
 
 @Serializable

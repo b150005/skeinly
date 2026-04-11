@@ -35,11 +35,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import kotlinx.coroutines.flow.collect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.knitnote.domain.model.User
+import kotlinx.coroutines.flow.collect
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -132,10 +132,11 @@ private fun ProfileAvatar() {
 @Composable
 private fun ViewProfileContent(user: User) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         ProfileAvatar()
@@ -164,10 +165,11 @@ private fun EditProfileContent(
     onEvent: (ProfileEvent) -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         ProfileAvatar()

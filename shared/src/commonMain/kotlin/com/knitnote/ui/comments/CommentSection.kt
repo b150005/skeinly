@@ -5,13 +5,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -46,9 +45,10 @@ fun CommentSection(
     targetId: String,
     currentUserId: String?,
     onError: (String) -> Unit,
-    viewModel: CommentSectionViewModel = koinViewModel(
-        key = "$targetType:$targetId",
-    ) { parametersOf(targetType, targetId) },
+    viewModel: CommentSectionViewModel =
+        koinViewModel(
+            key = "$targetType:$targetId",
+        ) { parametersOf(targetType, targetId) },
 ) {
     val state by viewModel.state.collectAsState()
     var commentToDelete by remember { mutableStateOf<String?>(null) }
@@ -81,9 +81,10 @@ fun CommentSection(
         HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp))
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 12.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -135,9 +136,10 @@ private fun CommentInput(
     var text by rememberSaveable { mutableStateOf("") }
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         OutlinedTextField(
@@ -178,9 +180,10 @@ private fun CommentItem(
     val timestamp = remember(comment.createdAt) { comment.createdAt.formatShort() }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 8.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

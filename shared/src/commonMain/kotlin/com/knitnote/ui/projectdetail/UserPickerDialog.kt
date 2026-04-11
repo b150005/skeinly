@@ -83,10 +83,11 @@ fun UserPickerDialog(
                     ) {
                         items(searchResults, key = { it.id }) { user ->
                             ListItem(
-                                modifier = Modifier.clickable {
-                                    selectedUser = user
-                                    query = user.displayName
-                                },
+                                modifier =
+                                    Modifier.clickable {
+                                        selectedUser = user
+                                        query = user.displayName
+                                    },
                                 headlineContent = {
                                     Text(user.displayName.ifBlank { "(no name)" })
                                 },

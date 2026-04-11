@@ -7,15 +7,14 @@ import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
-import kotlin.time.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.time.Instant
 
 class LocalProgressDataSourceTest {
-
     private lateinit var progressDataSource: LocalProgressDataSource
     private lateinit var projectDataSource: LocalProjectDataSource
 
@@ -62,57 +61,61 @@ class LocalProgressDataSourceTest {
     )
 
     @Test
-    fun `upsert inserts new progress`() = runTest {
-        insertParentProject()
-        val progress = testProgress()
-        progressDataSource.upsert(progress)
+    fun `upsert inserts new progress`() =
+        runTest {
+            insertParentProject()
+            val progress = testProgress()
+            progressDataSource.upsert(progress)
 
-        val result = progressDataSource.getById("prog-1")
-        assertNotNull(result)
-        assertEquals("Test note", result.note)
-        assertEquals(5, result.rowNumber)
-    }
-
-    @Test
-    fun `upsert replaces existing progress`() = runTest {
-        insertParentProject()
-        progressDataSource.insert(testProgress())
-
-        val updated = testProgress(note = "Updated note", rowNumber = 10)
-        progressDataSource.upsert(updated)
-
-        val result = progressDataSource.getById("prog-1")
-        assertNotNull(result)
-        assertEquals("Updated note", result.note)
-        assertEquals(10, result.rowNumber)
-    }
+            val result = progressDataSource.getById("prog-1")
+            assertNotNull(result)
+            assertEquals("Test note", result.note)
+            assertEquals(5, result.rowNumber)
+        }
 
     @Test
-    fun `delete removes progress`() = runTest {
-        insertParentProject()
-        progressDataSource.insert(testProgress())
-        progressDataSource.delete("prog-1")
+    fun `upsert replaces existing progress`() =
+        runTest {
+            insertParentProject()
+            progressDataSource.insert(testProgress())
 
-        assertNull(progressDataSource.getById("prog-1"))
-    }
+            val updated = testProgress(note = "Updated note", rowNumber = 10)
+            progressDataSource.upsert(updated)
+
+            val result = progressDataSource.getById("prog-1")
+            assertNotNull(result)
+            assertEquals("Updated note", result.note)
+            assertEquals(10, result.rowNumber)
+        }
 
     @Test
-    fun `getByProjectId returns entries ordered by created_at desc`() = runTest {
-        insertParentProject()
-        progressDataSource.insert(
-            testProgress(id = "prog-1", note = "First").copy(
-                createdAt = Instant.parse("2026-01-01T10:00:00Z"),
-            ),
-        )
-        progressDataSource.insert(
-            testProgress(id = "prog-2", note = "Second").copy(
-                createdAt = Instant.parse("2026-01-01T12:00:00Z"),
-            ),
-        )
+    fun `delete removes progress`() =
+        runTest {
+            insertParentProject()
+            progressDataSource.insert(testProgress())
+            progressDataSource.delete("prog-1")
 
-        val results = progressDataSource.getByProjectId("proj-1")
-        assertEquals(2, results.size)
-        assertEquals("Second", results[0].note)
-        assertEquals("First", results[1].note)
-    }
+            assertNull(progressDataSource.getById("prog-1"))
+        }
+
+    @Test
+    fun `getByProjectId returns entries ordered by created_at desc`() =
+        runTest {
+            insertParentProject()
+            progressDataSource.insert(
+                testProgress(id = "prog-1", note = "First").copy(
+                    createdAt = Instant.parse("2026-01-01T10:00:00Z"),
+                ),
+            )
+            progressDataSource.insert(
+                testProgress(id = "prog-2", note = "Second").copy(
+                    createdAt = Instant.parse("2026-01-01T12:00:00Z"),
+                ),
+            )
+
+            val results = progressDataSource.getByProjectId("proj-1")
+            assertEquals(2, results.size)
+            assertEquals("Second", results[0].note)
+            assertEquals("First", results[1].note)
+        }
 }

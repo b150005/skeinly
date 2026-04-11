@@ -18,7 +18,6 @@ class CreateCommentUseCase(
     private val authRepository: AuthRepository,
     private val createActivity: CreateActivityUseCase? = null,
 ) {
-
     @OptIn(ExperimentalUuidApi::class)
     suspend operator fun invoke(
         targetType: CommentTargetType,
@@ -31,10 +30,11 @@ class CreateCommentUseCase(
             )
         }
 
-        val userId = authRepository.getCurrentUserId()
-            ?: return UseCaseResult.Failure(
-                UseCaseError.Validation("Must be signed in to comment"),
-            )
+        val userId =
+            authRepository.getCurrentUserId()
+                ?: return UseCaseResult.Failure(
+                    UseCaseError.Validation("Must be signed in to comment"),
+                )
 
         if (!UUID_REGEX.matches(targetId)) {
             return UseCaseResult.Failure(
@@ -54,21 +54,23 @@ class CreateCommentUseCase(
             )
         }
 
-        val comment = Comment(
-            id = Uuid.random().toString(),
-            authorId = userId,
-            targetType = targetType,
-            targetId = targetId,
-            body = trimmedBody,
-            createdAt = Clock.System.now(),
-        )
+        val comment =
+            Comment(
+                id = Uuid.random().toString(),
+                authorId = userId,
+                targetType = targetType,
+                targetId = targetId,
+                body = trimmedBody,
+                createdAt = Clock.System.now(),
+            )
 
         val created = commentRepository.create(comment)
 
-        val activityTargetType = when (targetType) {
-            CommentTargetType.PROJECT -> ActivityTargetType.PROJECT
-            CommentTargetType.PATTERN -> ActivityTargetType.PATTERN
-        }
+        val activityTargetType =
+            when (targetType) {
+                CommentTargetType.PROJECT -> ActivityTargetType.PROJECT
+                CommentTargetType.PATTERN -> ActivityTargetType.PATTERN
+            }
         createActivity?.invoke(
             userId = userId,
             type = ActivityType.COMMENTED,

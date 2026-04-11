@@ -6,7 +6,10 @@ import kotlin.coroutines.cancellation.CancellationException
 class SignInUseCase(
     private val authRepository: AuthRepository,
 ) {
-    suspend operator fun invoke(email: String, password: String): UseCaseResult<Unit> =
+    suspend operator fun invoke(
+        email: String,
+        password: String,
+    ): UseCaseResult<Unit> =
         try {
             authRepository.signInWithEmail(email, password)
             UseCaseResult.Success(Unit)

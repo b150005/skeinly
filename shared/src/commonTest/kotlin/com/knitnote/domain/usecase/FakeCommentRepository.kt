@@ -8,17 +8,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 
 class FakeCommentRepository : CommentRepository {
-
     private val comments = MutableStateFlow<List<Comment>>(emptyList())
 
-    override suspend fun getById(id: String): Comment? =
-        comments.value.find { it.id == id }
+    override suspend fun getById(id: String): Comment? = comments.value.find { it.id == id }
 
     override suspend fun getByTarget(
         targetType: CommentTargetType,
         targetId: String,
-    ): List<Comment> =
-        comments.value.filter { it.targetType == targetType && it.targetId == targetId }
+    ): List<Comment> = comments.value.filter { it.targetType == targetType && it.targetId == targetId }
 
     override fun observeByTarget(
         targetType: CommentTargetType,

@@ -12,43 +12,48 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
-val viewModelModule = module {
-    viewModelOf(::AuthViewModel)
-    viewModelOf(::ProfileViewModel)
-    viewModel { ActivityFeedViewModel(get(), get(), get()) }
-    viewModelOf(::ProjectListViewModel)
-    viewModel { params ->
-        ProjectDetailViewModel(
-            projectId = params.get(),
-            projectRepository = get(),
-            incrementRow = get(),
-            decrementRow = get(),
-            addProgressNote = get(),
-            getProgressNotes = get(),
-            deleteProgressNote = get(),
-            updateProject = get(),
-            completeProject = get(),
-            reopenProject = get(),
-            shareProject = get(),
-        )
+val viewModelModule =
+    module {
+        viewModelOf(::AuthViewModel)
+        viewModelOf(::ProfileViewModel)
+        viewModel { ActivityFeedViewModel(get(), get(), get()) }
+        viewModelOf(::ProjectListViewModel)
+        viewModel { params ->
+            ProjectDetailViewModel(
+                projectId = params.get(),
+                projectRepository = get(),
+                patternRepository = get(),
+                incrementRow = get(),
+                decrementRow = get(),
+                addProgressNote = get(),
+                getProgressNotes = get(),
+                deleteProgressNote = get(),
+                updateProject = get(),
+                completeProject = get(),
+                reopenProject = get(),
+                shareProject = get(),
+                uploadChartImage = get(),
+                deleteChartImage = get(),
+                remoteStorage = getOrNull(),
+            )
+        }
+        viewModel { SharedWithMeViewModel(get(), get(), get(), get()) }
+        viewModel { params ->
+            CommentSectionViewModel(
+                targetType = params.get(),
+                targetId = params.get(),
+                getComments = get(),
+                createComment = get(),
+                deleteCommentUseCase = get(),
+                userRepository = get(),
+            )
+        }
+        viewModel { params ->
+            SharedContentViewModel(
+                token = params.get<String?>(0),
+                shareId = params.get<String?>(1),
+                resolveShareToken = get(),
+                forkSharedPattern = get(),
+            )
+        }
     }
-    viewModel { SharedWithMeViewModel(get(), get(), get(), get()) }
-    viewModel { params ->
-        CommentSectionViewModel(
-            targetType = params.get(),
-            targetId = params.get(),
-            getComments = get(),
-            createComment = get(),
-            deleteCommentUseCase = get(),
-            userRepository = get(),
-        )
-    }
-    viewModel { params ->
-        SharedContentViewModel(
-            token = params.get<String?>(0),
-            shareId = params.get<String?>(1),
-            resolveShareToken = get(),
-            forkSharedPattern = get(),
-        )
-    }
-}

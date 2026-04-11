@@ -12,7 +12,6 @@ import platform.Network.nw_path_status_satisfied
 import platform.darwin.dispatch_get_main_queue
 
 actual class ConnectivityMonitor {
-
     private val _isOnline = MutableStateFlow(true) // assume online initially
     actual val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
 

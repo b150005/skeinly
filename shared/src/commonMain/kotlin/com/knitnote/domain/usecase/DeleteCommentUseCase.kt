@@ -7,7 +7,6 @@ class DeleteCommentUseCase(
     private val commentRepository: CommentRepository?,
     private val authRepository: AuthRepository,
 ) {
-
     suspend operator fun invoke(commentId: String): UseCaseResult<Unit> {
         if (commentRepository == null) {
             return UseCaseResult.Failure(
@@ -15,10 +14,11 @@ class DeleteCommentUseCase(
             )
         }
 
-        val userId = authRepository.getCurrentUserId()
-            ?: return UseCaseResult.Failure(
-                UseCaseError.Validation("Must be signed in to delete comments"),
-            )
+        val userId =
+            authRepository.getCurrentUserId()
+                ?: return UseCaseResult.Failure(
+                    UseCaseError.Validation("Must be signed in to delete comments"),
+                )
 
         val comment = commentRepository.getById(commentId)
 

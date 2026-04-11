@@ -15,7 +15,10 @@ class RemoteCommentDataSource(
             filter { eq("id", id) }
         }.decodeSingleOrNull()
 
-    suspend fun getByTarget(targetType: CommentTargetType, targetId: String): List<Comment> =
+    suspend fun getByTarget(
+        targetType: CommentTargetType,
+        targetId: String,
+    ): List<Comment> =
         table.select {
             filter {
                 eq("target_type", targetType.name.lowercase())

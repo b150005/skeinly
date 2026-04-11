@@ -9,17 +9,21 @@ class UpdateShareStatusUseCase(
     private val shareRepository: ShareRepository?,
     private val authRepository: AuthRepository,
 ) {
-
-    suspend operator fun invoke(shareId: String, status: ShareStatus): UseCaseResult<Share> {
+    suspend operator fun invoke(
+        shareId: String,
+        status: ShareStatus,
+    ): UseCaseResult<Share> {
         if (shareRepository == null) {
             return UseCaseResult.Failure(UseCaseError.Validation("Sharing requires cloud connectivity"))
         }
 
-        val userId = authRepository.getCurrentUserId()
-            ?: return UseCaseResult.Failure(UseCaseError.Validation("Must be signed in"))
+        val userId =
+            authRepository.getCurrentUserId()
+                ?: return UseCaseResult.Failure(UseCaseError.Validation("Must be signed in"))
 
-        val share = shareRepository.getById(shareId)
-            ?: return UseCaseResult.Failure(UseCaseError.NotFound("Share not found"))
+        val share =
+            shareRepository.getById(shareId)
+                ?: return UseCaseResult.Failure(UseCaseError.NotFound("Share not found"))
 
         if (share.toUserId != userId) {
             return UseCaseResult.Failure(UseCaseError.Validation("Only the recipient can update share status"))

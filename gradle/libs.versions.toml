@@ -17,6 +17,7 @@ koin = "4.2.1"
 navigationCompose = "2.9.2"
 supabase = "3.5.0"
 turbine = "1.2.1"
+coil = "3.3.0"
 
 # Build Plugins
 ktlint = "12.3.0"
@@ -68,6 +69,11 @@ supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt" }
 supabase-compose-auth = { module = "io.github.jan-tennert.supabase:compose-auth" }
 supabase-compose-auth-ui = { module = "io.github.jan-tennert.supabase:compose-auth-ui" }
 supabase-realtime = { module = "io.github.jan-tennert.supabase:realtime-kt" }
+supabase-storage = { module = "io.github.jan-tennert.supabase:storage-kt" }
+
+# Image Loading
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 
 # Testing
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }

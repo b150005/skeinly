@@ -28,18 +28,19 @@ class ForkSharedPatternUseCase(
     private val authRepository: AuthRepository,
     private val createActivity: CreateActivityUseCase? = null,
 ) {
-
     @OptIn(ExperimentalUuidApi::class)
     suspend operator fun invoke(shareId: String): UseCaseResult<ForkedProject> {
         if (shareRepository == null) {
             return UseCaseResult.Failure(UseCaseError.Validation("Sharing requires cloud connectivity"))
         }
 
-        val userId = authRepository.getCurrentUserId()
-            ?: return UseCaseResult.Failure(UseCaseError.Validation("Must be signed in to fork"))
+        val userId =
+            authRepository.getCurrentUserId()
+                ?: return UseCaseResult.Failure(UseCaseError.Validation("Must be signed in to fork"))
 
-        val share = shareRepository.getById(shareId)
-            ?: return UseCaseResult.Failure(UseCaseError.NotFound("Share not found"))
+        val share =
+            shareRepository.getById(shareId)
+                ?: return UseCaseResult.Failure(UseCaseError.NotFound("Share not found"))
 
         // Verify ownership: only the intended recipient can fork
         if (share.toUserId != null && share.toUserId != userId) {
@@ -55,33 +56,36 @@ class ForkSharedPatternUseCase(
             return UseCaseResult.Failure(UseCaseError.Validation("This share does not allow forking"))
         }
 
-        val sourcePattern = patternRepository.getById(share.patternId)
-            ?: return UseCaseResult.Failure(UseCaseError.NotFound("Shared pattern not found"))
+        val sourcePattern =
+            patternRepository.getById(share.patternId)
+                ?: return UseCaseResult.Failure(UseCaseError.NotFound("Shared pattern not found"))
 
         val now = Clock.System.now()
 
-        val forkedPattern = sourcePattern.copy(
-            id = Uuid.random().toString(),
-            ownerId = userId,
-            visibility = Visibility.PRIVATE,
-            createdAt = now,
-            updatedAt = now,
-        )
+        val forkedPattern =
+            sourcePattern.copy(
+                id = Uuid.random().toString(),
+                ownerId = userId,
+                visibility = Visibility.PRIVATE,
+                createdAt = now,
+                updatedAt = now,
+            )
         patternRepository.create(forkedPattern)
 
-        val forkedProject = Project(
-            id = Uuid.random().toString(),
-            ownerId = userId,
-            patternId = forkedPattern.id,
-            title = forkedPattern.title,
-            status = ProjectStatus.NOT_STARTED,
-            currentRow = 0,
-            totalRows = null,
-            startedAt = null,
-            completedAt = null,
-            createdAt = now,
-            updatedAt = now,
-        )
+        val forkedProject =
+            Project(
+                id = Uuid.random().toString(),
+                ownerId = userId,
+                patternId = forkedPattern.id,
+                title = forkedPattern.title,
+                status = ProjectStatus.NOT_STARTED,
+                currentRow = 0,
+                totalRows = null,
+                startedAt = null,
+                completedAt = null,
+                createdAt = now,
+                updatedAt = now,
+            )
         projectRepository.create(forkedProject)
 
         createActivity?.invoke(

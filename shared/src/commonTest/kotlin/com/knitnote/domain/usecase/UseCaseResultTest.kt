@@ -5,7 +5,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class UseCaseResultTest {
-
     @Test
     fun `Success wraps value correctly`() {
         val result: UseCaseResult<String> = UseCaseResult.Success("hello")

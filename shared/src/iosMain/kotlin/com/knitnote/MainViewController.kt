@@ -7,9 +7,10 @@ import androidx.navigation.compose.rememberNavController
 import com.knitnote.ui.navigation.KnitNoteNavHost
 
 @Suppress("ktlint:standard:function-naming")
-fun MainViewController() = ComposeUIViewController {
-    KnitNoteApp()
-}
+fun MainViewController() =
+    ComposeUIViewController {
+        KnitNoteApp()
+    }
 
 @Composable
 private fun KnitNoteApp() {
