@@ -6,12 +6,12 @@ import com.knitnote.data.sync.SyncEntityType
 import com.knitnote.data.sync.SyncOperation
 import com.knitnote.data.sync.SyncStatus
 import com.knitnote.db.KnitNoteDatabase
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 
 class LocalPendingSyncDataSource(
     private val db: KnitNoteDatabase,
+    private val ioDispatcher: CoroutineDispatcher,
 ) : PendingSyncDataSource {
 
     private val queries get() = db.pendingSyncQueries
@@ -22,39 +22,39 @@ class LocalPendingSyncDataSource(
         operation: SyncOperation,
         payload: String,
         createdAt: Long,
-    ): Unit = withContext(Dispatchers.IO) {
+    ): Unit = withContext(ioDispatcher) {
         queries.insert(entityType.value, entityId, operation.value, payload, createdAt)
     }
 
-    override suspend fun getAllPending(): List<PendingSyncEntry> = withContext(Dispatchers.IO) {
+    override suspend fun getAllPending(): List<PendingSyncEntry> = withContext(ioDispatcher) {
         queries.getAllPending().executeAsList().map { it.toDomain() }
     }
 
-    override suspend fun getById(id: Long): PendingSyncEntry? = withContext(Dispatchers.IO) {
+    override suspend fun getById(id: Long): PendingSyncEntry? = withContext(ioDispatcher) {
         queries.getById(id).executeAsOneOrNull()?.toDomain()
     }
 
-    override suspend fun getByEntityId(entityId: String): List<PendingSyncEntry> = withContext(Dispatchers.IO) {
+    override suspend fun getByEntityId(entityId: String): List<PendingSyncEntry> = withContext(ioDispatcher) {
         queries.getByEntityId(entityId).executeAsList().map { it.toDomain() }
     }
 
-    override suspend fun updatePayload(id: Long, payload: String): Unit = withContext(Dispatchers.IO) {
+    override suspend fun updatePayload(id: Long, payload: String): Unit = withContext(ioDispatcher) {
         queries.updatePayload(payload, id)
     }
 
-    override suspend fun incrementRetry(id: Long): Unit = withContext(Dispatchers.IO) {
+    override suspend fun incrementRetry(id: Long): Unit = withContext(ioDispatcher) {
         queries.incrementRetry(id)
     }
 
-    override suspend fun markFailed(id: Long): Unit = withContext(Dispatchers.IO) {
+    override suspend fun markFailed(id: Long): Unit = withContext(ioDispatcher) {
         queries.markFailed(id)
     }
 
-    override suspend fun delete(id: Long): Unit = withContext(Dispatchers.IO) {
+    override suspend fun delete(id: Long): Unit = withContext(ioDispatcher) {
         queries.deleteById(id)
     }
 
-    override suspend fun countPending(): Long = withContext(Dispatchers.IO) {
+    override suspend fun countPending(): Long = withContext(ioDispatcher) {
         queries.countPending().executeAsOne()
     }
 }

@@ -4,6 +4,7 @@ import com.knitnote.db.KnitNoteDatabase
 import com.knitnote.db.createTestDriver
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Instant
 import kotlin.test.BeforeTest
@@ -20,7 +21,7 @@ class LocalProjectDataSourceTest {
     fun setUp() {
         val driver = createTestDriver()
         val db = KnitNoteDatabase(driver)
-        dataSource = LocalProjectDataSource(db)
+        dataSource = LocalProjectDataSource(db, Dispatchers.Unconfined)
     }
 
     private fun testProject(

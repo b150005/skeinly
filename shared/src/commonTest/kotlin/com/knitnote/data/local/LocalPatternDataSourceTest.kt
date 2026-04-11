@@ -5,6 +5,7 @@ import com.knitnote.db.createTestDriver
 import com.knitnote.domain.model.Difficulty
 import com.knitnote.domain.model.Pattern
 import com.knitnote.domain.model.Visibility
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Instant
 import kotlin.test.BeforeTest
@@ -36,7 +37,7 @@ class LocalPatternDataSourceTest {
     fun setUp() {
         val driver = createTestDriver()
         val db = KnitNoteDatabase(driver)
-        dataSource = LocalPatternDataSource(db)
+        dataSource = LocalPatternDataSource(db, Dispatchers.Unconfined)
     }
 
     @Test

@@ -1,7 +1,9 @@
 package com.knitnote.di
 
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import org.koin.core.qualifier.named
@@ -9,6 +11,7 @@ import org.koin.dsl.module
 import org.koin.dsl.onClose
 
 val applicationScopeQualifier = named("applicationScope")
+val ioDispatcherQualifier = named("ioDispatcher")
 
 val applicationScopeModule = module {
     single(applicationScopeQualifier) {
@@ -16,4 +19,6 @@ val applicationScopeModule = module {
     }.onClose { scope ->
         scope?.cancel()
     }
+
+    single<CoroutineDispatcher>(ioDispatcherQualifier) { Dispatchers.IO }
 }

@@ -5,6 +5,7 @@ import com.knitnote.db.createTestDriver
 import com.knitnote.domain.model.Progress
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Instant
 import kotlin.test.BeforeTest
@@ -18,12 +19,14 @@ class LocalProgressDataSourceTest {
     private lateinit var progressDataSource: LocalProgressDataSource
     private lateinit var projectDataSource: LocalProjectDataSource
 
+    private val testDispatcher = Dispatchers.Unconfined
+
     @BeforeTest
     fun setUp() {
         val driver = createTestDriver()
         val db = KnitNoteDatabase(driver)
-        progressDataSource = LocalProgressDataSource(db)
-        projectDataSource = LocalProjectDataSource(db)
+        progressDataSource = LocalProgressDataSource(db, testDispatcher)
+        projectDataSource = LocalProjectDataSource(db, testDispatcher)
     }
 
     private suspend fun insertParentProject(id: String = "proj-1") {

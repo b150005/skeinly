@@ -5,6 +5,7 @@ import com.knitnote.data.sync.SyncOperation
 import com.knitnote.data.sync.SyncStatus
 import com.knitnote.db.KnitNoteDatabase
 import com.knitnote.db.createTestDriver
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -22,7 +23,7 @@ class LocalPendingSyncDataSourceTest {
     fun setUp() {
         val driver = createTestDriver()
         val db = KnitNoteDatabase(driver)
-        dataSource = LocalPendingSyncDataSource(db)
+        dataSource = LocalPendingSyncDataSource(db, Dispatchers.Unconfined)
     }
 
     @Test
