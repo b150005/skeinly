@@ -77,10 +77,10 @@ android {
             val releaseSigning = signingConfigs.getByName("release")
             signingConfig =
                 if (releaseSigning.storeFile?.exists() == true) {
-                releaseSigning
-            } else {
-                signingConfigs.getByName("debug")
-            }
+                    releaseSigning
+                } else {
+                    signingConfigs.getByName("debug")
+                }
         }
     }
 

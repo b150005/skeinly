@@ -85,6 +85,7 @@ class PatternMapperTest {
         assertEquals(Visibility.SHARED, entity(visibility = "shared").toDomain().visibility)
         assertEquals(Visibility.PUBLIC, entity(visibility = "public").toDomain().visibility)
     }
+
     @Test
     fun `chartImageUrls empty list maps to null db string`() {
         val result = emptyList<String>().toChartImageUrlsDbString()

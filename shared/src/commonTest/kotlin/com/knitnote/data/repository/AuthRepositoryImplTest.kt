@@ -10,36 +10,40 @@ import kotlin.test.assertNull
 
 class AuthRepositoryImplTest {
     @Test
-    fun `observeAuthState returns Unauthenticated when client is null`() = runTest {
-        val repo = AuthRepositoryImpl(supabaseClient = null)
-        repo.observeAuthState().test {
-            assertEquals(AuthState.Unauthenticated, awaitItem())
-            awaitComplete()
+    fun `observeAuthState returns Unauthenticated when client is null`() =
+        runTest {
+            val repo = AuthRepositoryImpl(supabaseClient = null)
+            repo.observeAuthState().test {
+                assertEquals(AuthState.Unauthenticated, awaitItem())
+                awaitComplete()
+            }
         }
-    }
 
     @Test
-    fun `signInWithEmail throws when client is null`() = runTest {
-        val repo = AuthRepositoryImpl(supabaseClient = null)
-        assertFailsWith<IllegalStateException> {
-            repo.signInWithEmail("test@example.com", "password")
+    fun `signInWithEmail throws when client is null`() =
+        runTest {
+            val repo = AuthRepositoryImpl(supabaseClient = null)
+            assertFailsWith<IllegalStateException> {
+                repo.signInWithEmail("test@example.com", "password")
+            }
         }
-    }
 
     @Test
-    fun `signUpWithEmail throws when client is null`() = runTest {
-        val repo = AuthRepositoryImpl(supabaseClient = null)
-        assertFailsWith<IllegalStateException> {
-            repo.signUpWithEmail("test@example.com", "password")
+    fun `signUpWithEmail throws when client is null`() =
+        runTest {
+            val repo = AuthRepositoryImpl(supabaseClient = null)
+            assertFailsWith<IllegalStateException> {
+                repo.signUpWithEmail("test@example.com", "password")
+            }
         }
-    }
 
     @Test
-    fun `signOut does nothing when client is null`() = runTest {
-        val repo = AuthRepositoryImpl(supabaseClient = null)
-        // Should not throw
-        repo.signOut()
-    }
+    fun `signOut does nothing when client is null`() =
+        runTest {
+            val repo = AuthRepositoryImpl(supabaseClient = null)
+            // Should not throw
+            repo.signOut()
+        }
 
     @Test
     fun `getCurrentUserId returns null when client is null`() {
