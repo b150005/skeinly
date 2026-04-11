@@ -1,8 +1,6 @@
 # Gradle
 .gradle/
 build/
-!gradle-wrapper.jar
-!gradle-wrapper.properties
 
 # IDE — IntelliJ / Android Studio
 .idea/
@@ -30,6 +28,9 @@ Thumbs.db
 *.class
 *.jar
 *.war
+
+# Gradle wrapper must be committed (override *.jar above)
+!gradle-wrapper.jar
 
 # Android
 local.properties
