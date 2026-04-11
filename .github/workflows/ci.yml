@@ -39,7 +39,7 @@ jobs:
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: shared/build/reports/kover/report.xml
@@ -74,7 +74,7 @@ jobs:
         run: ./gradlew :androidApp:assembleDebug
 
       - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: android-debug-apk
           path: androidApp/build/outputs/apk/debug/*.apk
