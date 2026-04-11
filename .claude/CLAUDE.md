@@ -32,7 +32,7 @@ knit-note/
 
 - **Clean Architecture** with clear separation: UI → ViewModel → UseCase → Repository → DataSource
 - **KMP shared module** contains: domain models, use cases, repository interfaces, and common utilities
-- **Platform-native UI**: Android uses Jetpack Compose, iOS/macOS uses SwiftUI
+- **Platform-native UI**: Android uses Jetpack Compose, iOS/macOS uses SwiftUI + UIKit (via `UIViewControllerRepresentable`/`UIViewRepresentable` where SwiftUI alone is insufficient)
 - **Repository pattern** for data access abstraction (local DB + remote sync)
 - **Immutable data structures**: use Kotlin `data class` with `copy()`, Swift structs
 - **Dependency injection**: Koin for shared/Android, native DI patterns for iOS
@@ -44,7 +44,7 @@ knit-note/
 |-------|-----------|
 | Shared Logic | Kotlin Multiplatform |
 | Android UI | Jetpack Compose + Material 3 |
-| iOS/macOS UI | SwiftUI |
+| iOS/macOS UI | SwiftUI + UIKit (interop as needed) |
 | Local Database | SQLDelight (multiplatform) |
 | Networking | Ktor Client (multiplatform) |
 | Serialization | kotlinx.serialization |
@@ -182,5 +182,11 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 6**: iOS SwiftUI — Native SwiftUI screens (7 screens + CommentSection), FlowWrapper StateFlow bridge, KoinHelper ViewModel accessors, NavigationStack routing, deep linking, default hierarchy template fix, ContentView.swift Compose bridge removed
 
+- **Phase 7a**: Android Compose UI Tests — 19 instrumented tests (ProjectList, ProjectDetail, Navigation, Profile screens)
+- **Phase 7b**: iOS XCTest — 19 tests (UI + unit), ApplicationScope singleton, Koin startup diagnostics, resetDatabase error handling, UITest reliability improvements
+
+### In Progress
+- **Phase 7.5**: Technical Debt Cleanup — Dependency updates (AGP 9.1.0, Koin 4.2.1, Navigation 2.9.7), ProGuard/R8 rules, network security config, iOS safe casting, code quality improvements, SQLDelight indices
+
 ### Planned
-- **Phase 7**: E2E / UI Tests — Compose UI tests, critical user flow validation
+- **Phase 8**: TBD — Agent team to determine next priority (candidates: offline-first improvements, image/chart support, macOS target, CI/CD pipeline)

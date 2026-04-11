@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.3.20"
-agp = "9.0.0"
+agp = "9.1.0"
 compose-multiplatform = "1.10.3"
 
 # AndroidX
@@ -13,7 +13,7 @@ kotlinx-datetime = "0.7.1"
 kotlinx-serialization = "1.10.0"
 sqlDelight = "2.3.2"
 ktor = "3.4.2"
-koin = "4.2.0"
+koin = "4.2.1"
 navigationCompose = "2.9.2"
 supabase = "3.5.0"
 turbine = "1.2.1"

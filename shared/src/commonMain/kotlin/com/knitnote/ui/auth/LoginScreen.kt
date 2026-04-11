@@ -128,21 +128,23 @@ fun LoginScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // Social login buttons (placeholder — functional when Supabase project is configured)
+            // Social login buttons (coming soon)
             OutlinedButton(
-                onClick = { /* TODO: Google sign in */ },
+                onClick = { },
                 modifier = Modifier.fillMaxWidth(),
+                enabled = false,
             ) {
-                Text("Continue with Google")
+                Text("Continue with Google (Coming soon)")
             }
 
             Spacer(Modifier.height(8.dp))
 
             OutlinedButton(
-                onClick = { /* TODO: Apple sign in */ },
+                onClick = { },
                 modifier = Modifier.fillMaxWidth(),
+                enabled = false,
             ) {
-                Text("Continue with Apple")
+                Text("Continue with Apple (Coming soon)")
             }
         }
     }

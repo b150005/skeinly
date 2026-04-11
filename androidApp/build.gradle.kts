@@ -1,4 +1,3 @@
-@file:Suppress("DEPRECATION")
 @file:OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
 
 plugins {

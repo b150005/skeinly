@@ -27,6 +27,7 @@ fun ShareLinkDialog(
     shareToken: String,
     onDismiss: () -> Unit,
 ) {
+    @Suppress("DEPRECATION") // LocalClipboardManager → LocalClipboard migration deferred (suspend API)
     val clipboardManager = LocalClipboardManager.current
     val shareUrl = "knitnote://share/$shareToken"
     var copied by remember { mutableStateOf(false) }

@@ -9,6 +9,8 @@ CREATE TABLE PatternEntity (
     updated_at TEXT NOT NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_pattern_owner_id ON PatternEntity(owner_id);
+
 getById:
 SELECT * FROM PatternEntity WHERE id = ?;
 

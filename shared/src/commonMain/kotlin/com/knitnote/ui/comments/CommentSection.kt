@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -162,7 +162,7 @@ private fun CommentInput(
                 },
                 enabled = text.isNotBlank(),
             ) {
-                Icon(Icons.Default.Send, contentDescription = "Send comment")
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send comment")
             }
         }
     }

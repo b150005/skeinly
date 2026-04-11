@@ -12,6 +12,9 @@ CREATE TABLE ProjectEntity (
     updated_at TEXT NOT NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_project_owner_id ON ProjectEntity(owner_id);
+CREATE INDEX IF NOT EXISTS idx_project_pattern_id ON ProjectEntity(pattern_id);
+
 getById:
 SELECT * FROM ProjectEntity WHERE id = ?;
 

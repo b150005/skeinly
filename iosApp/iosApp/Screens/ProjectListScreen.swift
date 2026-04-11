@@ -16,7 +16,7 @@ struct ProjectListScreen: View {
         self._path = path
         let vm = ViewModelFactory.projectListViewModel()
         self.viewModel = vm
-        let wrapper = KoinHelperKt.wrapStateFlow(flow: vm.state) as! FlowWrapper<ProjectListState>
+        let wrapper = KoinHelperKt.wrapProjectListState(flow: vm.state)
         _observer = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
     }
 

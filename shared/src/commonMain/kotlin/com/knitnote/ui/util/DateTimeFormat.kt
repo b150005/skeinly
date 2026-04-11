@@ -1,6 +1,7 @@
 package com.knitnote.ui.util
 
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
 
@@ -9,8 +10,8 @@ import kotlin.time.Instant
  */
 fun Instant.formatShort(): String {
     val dt = toLocalDateTime(TimeZone.currentSystemDefault())
-    val month = dt.monthNumber.toString().padStart(2, '0')
-    val day = dt.dayOfMonth.toString().padStart(2, '0')
+    val month = dt.month.number.toString().padStart(2, '0')
+    val day = dt.day.toString().padStart(2, '0')
     val hour = dt.hour.toString().padStart(2, '0')
     val minute = dt.minute.toString().padStart(2, '0')
     return "$month/$day $hour:$minute"
@@ -22,8 +23,8 @@ fun Instant.formatShort(): String {
 fun Instant.formatFull(): String {
     val dt = toLocalDateTime(TimeZone.currentSystemDefault())
     val year = dt.year.toString().padStart(4, '0')
-    val month = dt.monthNumber.toString().padStart(2, '0')
-    val day = dt.dayOfMonth.toString().padStart(2, '0')
+    val month = dt.month.number.toString().padStart(2, '0')
+    val day = dt.day.toString().padStart(2, '0')
     val hour = dt.hour.toString().padStart(2, '0')
     val minute = dt.minute.toString().padStart(2, '0')
     return "$year/$month/$day $hour:$minute"

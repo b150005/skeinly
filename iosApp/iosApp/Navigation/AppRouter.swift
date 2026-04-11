@@ -39,7 +39,7 @@ struct AppRootView: View {
     init() {
         let vm = ViewModelFactory.authViewModel()
         self.authViewModel = vm
-        let wrapper = KoinHelperKt.wrapStateFlow(flow: vm.state) as! FlowWrapper<AuthUiState>
+        let wrapper = KoinHelperKt.wrapAuthState(flow: vm.state)
         _authObserver = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
     }
 

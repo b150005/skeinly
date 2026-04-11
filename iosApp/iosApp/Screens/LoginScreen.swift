@@ -8,7 +8,7 @@ struct LoginScreen: View {
 
     init(viewModel: AuthViewModel) {
         self.viewModel = viewModel
-        let wrapper = KoinHelperKt.wrapStateFlow(flow: viewModel.state) as! FlowWrapper<AuthUiState>
+        let wrapper = KoinHelperKt.wrapAuthState(flow: viewModel.state)
         _observer = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
     }
 

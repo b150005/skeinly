@@ -9,7 +9,7 @@ struct ProfileScreen: View {
     init() {
         let vm = ViewModelFactory.profileViewModel()
         self.viewModel = vm
-        let wrapper = KoinHelperKt.wrapStateFlow(flow: vm.state) as! FlowWrapper<ProfileState>
+        let wrapper = KoinHelperKt.wrapProfileState(flow: vm.state)
         _observer = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
     }
 

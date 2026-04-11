@@ -16,7 +16,7 @@ struct CommentSectionView: View {
             targetId: targetId
         )
         self.viewModel = vm
-        let wrapper = KoinHelperKt.wrapStateFlow(flow: vm.state) as! FlowWrapper<CommentSectionState>
+        let wrapper = KoinHelperKt.wrapCommentSectionState(flow: vm.state)
         _observer = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
     }
 

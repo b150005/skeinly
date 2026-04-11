@@ -23,9 +23,9 @@ struct ProjectDetailScreen: View {
         self._path = path
         let vm = ViewModelFactory.projectDetailViewModel(projectId: projectId)
         self.viewModel = vm
-        let stateWrapper = KoinHelperKt.wrapStateFlow(flow: vm.state) as! FlowWrapper<ProjectDetailState>
+        let stateWrapper = KoinHelperKt.wrapProjectDetailState(flow: vm.state)
         _stateObserver = StateObject(wrappedValue: ViewModelObserver(wrapper: stateWrapper))
-        let notesWrapper = KoinHelperKt.wrapStateFlow(flow: vm.progressNotes) as! FlowWrapper<NSArray>
+        let notesWrapper = KoinHelperKt.wrapProgressNotesState(flow: vm.progressNotes)
         _notesObserver = StateObject(wrappedValue: ViewModelObserver(wrapper: notesWrapper))
     }
 

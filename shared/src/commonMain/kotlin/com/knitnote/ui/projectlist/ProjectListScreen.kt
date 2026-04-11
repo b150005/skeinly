@@ -147,7 +147,9 @@ fun ProjectListScreen(
                         DeleteConfirmDialog(
                             itemName = projectName,
                             onConfirm = {
-                                viewModel.onEvent(ProjectListEvent.DeleteProject(projectToDelete!!))
+                                projectToDelete?.let { id ->
+                                    viewModel.onEvent(ProjectListEvent.DeleteProject(id))
+                                }
                                 projectToDelete = null
                             },
                             onDismiss = { projectToDelete = null },

@@ -8,7 +8,7 @@ struct ActivityFeedScreen: View {
     init() {
         let vm = ViewModelFactory.activityFeedViewModel()
         self.viewModel = vm
-        let wrapper = KoinHelperKt.wrapStateFlow(flow: vm.state) as! FlowWrapper<ActivityFeedState>
+        let wrapper = KoinHelperKt.wrapActivityFeedState(flow: vm.state)
         _observer = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
     }
 

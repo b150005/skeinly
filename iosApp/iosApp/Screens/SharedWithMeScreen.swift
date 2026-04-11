@@ -11,7 +11,7 @@ struct SharedWithMeScreen: View {
         self._path = path
         let vm = ViewModelFactory.sharedWithMeViewModel()
         self.viewModel = vm
-        let wrapper = KoinHelperKt.wrapStateFlow(flow: vm.state) as! FlowWrapper<SharedWithMeState>
+        let wrapper = KoinHelperKt.wrapSharedWithMeState(flow: vm.state)
         _observer = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
     }
 

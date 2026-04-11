@@ -15,7 +15,7 @@ struct SharedContentScreen: View {
         self._path = path
         let vm = ViewModelFactory.sharedContentViewModel(token: token, shareId: shareId)
         self.viewModel = vm
-        let wrapper = KoinHelperKt.wrapStateFlow(flow: vm.state) as! FlowWrapper<SharedContentState>
+        let wrapper = KoinHelperKt.wrapSharedContentState(flow: vm.state)
         _observer = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
     }
 
@@ -50,9 +50,8 @@ struct SharedContentScreen: View {
         }
         .task {
             // Observe forked project channel
-            let forkedFlow = KoinHelperKt.wrapEventFlow(flow: viewModel.forkedProjectId) as! EventFlowWrapper<NSString>
-            let closeable = forkedFlow.collect { projectIdNS in
-                let projectId = projectIdNS as String
+            let forkedFlow = KoinHelperKt.wrapForkedProjectIdFlow(flow: viewModel.forkedProjectId)
+            let closeable = forkedFlow.collect { projectId in
                 Task { @MainActor in
                     // Pop to root and navigate to the forked project
                     path = NavigationPath()
