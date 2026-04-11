@@ -24,7 +24,6 @@ import kotlin.time.Clock
 
 @OptIn(ExperimentalTestApi::class)
 class ProjectDetailScreenTest {
-
     @get:Rule
     val koinRule = KoinTestRule()
 
@@ -37,148 +36,157 @@ class ProjectDetailScreenTest {
     ): Project {
         val repo = get<ProjectRepository>(ProjectRepository::class.java) as FakeProjectRepository
         val now = Clock.System.now()
-        val project = Project(
-            id = id,
-            ownerId = LocalUser.ID,
-            patternId = LocalUser.DEFAULT_PATTERN_ID,
-            title = title,
-            status = status,
-            currentRow = currentRow,
-            totalRows = totalRows,
-            startedAt = now,
-            completedAt = null,
-            createdAt = now,
-            updatedAt = now,
-        )
+        val project =
+            Project(
+                id = id,
+                ownerId = LocalUser.ID,
+                patternId = LocalUser.DEFAULT_PATTERN_ID,
+                title = title,
+                status = status,
+                currentRow = currentRow,
+                totalRows = totalRows,
+                startedAt = now,
+                completedAt = null,
+                createdAt = now,
+                updatedAt = now,
+            )
         repo.addProject(project)
         return project
     }
 
     @Test
-    fun displaysProjectDetails() = runComposeUiTest {
-        seedProject(title = "Cable Knit", currentRow = 10, totalRows = 50)
+    fun displaysProjectDetails() =
+        runComposeUiTest {
+            seedProject(title = "Cable Knit", currentRow = 10, totalRows = 50)
 
-        setContent {
-            KnitNoteTheme {
-                ProjectDetailScreen(projectId = "p1", onBack = {})
+            setContent {
+                KnitNoteTheme {
+                    ProjectDetailScreen(projectId = "p1", onBack = {})
+                }
             }
-        }
 
-        waitForIdle()
-        onNodeWithText("Cable Knit").assertIsDisplayed()
-        onNodeWithTag("rowCounter").assertTextEquals("10")
-        onNodeWithText("of 50 rows").assertIsDisplayed()
-        onNodeWithText("In Progress").assertIsDisplayed()
-    }
+            waitForIdle()
+            onNodeWithText("Cable Knit").assertIsDisplayed()
+            onNodeWithTag("rowCounter").assertTextEquals("10")
+            onNodeWithText("of 50 rows").assertIsDisplayed()
+            onNodeWithText("In Progress").assertIsDisplayed()
+        }
 
     @Test
-    fun incrementRow_updatesCount() = runComposeUiTest {
-        seedProject(currentRow = 5, totalRows = 20)
+    fun incrementRow_updatesCount() =
+        runComposeUiTest {
+            seedProject(currentRow = 5, totalRows = 20)
 
-        setContent {
-            KnitNoteTheme {
-                ProjectDetailScreen(projectId = "p1", onBack = {})
+            setContent {
+                KnitNoteTheme {
+                    ProjectDetailScreen(projectId = "p1", onBack = {})
+                }
             }
+
+            waitForIdle()
+            onNodeWithTag("rowCounter").assertTextEquals("5")
+
+            onNodeWithText("+").performClick()
+            waitForIdle()
+
+            onNodeWithTag("rowCounter").assertTextEquals("6")
         }
-
-        waitForIdle()
-        onNodeWithTag("rowCounter").assertTextEquals("5")
-
-        onNodeWithText("+").performClick()
-        waitForIdle()
-
-        onNodeWithTag("rowCounter").assertTextEquals("6")
-    }
 
     @Test
-    fun decrementRow_updatesCount() = runComposeUiTest {
-        seedProject(currentRow = 5, totalRows = 20)
+    fun decrementRow_updatesCount() =
+        runComposeUiTest {
+            seedProject(currentRow = 5, totalRows = 20)
 
-        setContent {
-            KnitNoteTheme {
-                ProjectDetailScreen(projectId = "p1", onBack = {})
+            setContent {
+                KnitNoteTheme {
+                    ProjectDetailScreen(projectId = "p1", onBack = {})
+                }
             }
+
+            waitForIdle()
+            onNodeWithTag("rowCounter").assertTextEquals("5")
+
+            onNodeWithText("-").performClick()
+            waitForIdle()
+
+            onNodeWithTag("rowCounter").assertTextEquals("4")
         }
-
-        waitForIdle()
-        onNodeWithTag("rowCounter").assertTextEquals("5")
-
-        onNodeWithText("-").performClick()
-        waitForIdle()
-
-        onNodeWithTag("rowCounter").assertTextEquals("4")
-    }
 
     @Test
-    fun notStartedProject_showsMarkCompleteButton() = runComposeUiTest {
-        seedProject(status = ProjectStatus.NOT_STARTED, currentRow = 0, totalRows = null)
+    fun notStartedProject_showsMarkCompleteButton() =
+        runComposeUiTest {
+            seedProject(status = ProjectStatus.NOT_STARTED, currentRow = 0, totalRows = null)
 
-        setContent {
-            KnitNoteTheme {
-                ProjectDetailScreen(projectId = "p1", onBack = {})
+            setContent {
+                KnitNoteTheme {
+                    ProjectDetailScreen(projectId = "p1", onBack = {})
+                }
             }
-        }
 
-        waitForIdle()
-        onNodeWithText("Mark Complete").assertIsDisplayed()
-        onNodeWithText("Not Started").assertIsDisplayed()
-    }
+            waitForIdle()
+            onNodeWithText("Mark Complete").assertIsDisplayed()
+            onNodeWithText("Not Started").assertIsDisplayed()
+        }
 
     @Test
-    fun completedProject_showsReopenButton() = runComposeUiTest {
-        seedProject(status = ProjectStatus.COMPLETED, currentRow = 20, totalRows = 20)
+    fun completedProject_showsReopenButton() =
+        runComposeUiTest {
+            seedProject(status = ProjectStatus.COMPLETED, currentRow = 20, totalRows = 20)
 
-        setContent {
-            KnitNoteTheme {
-                ProjectDetailScreen(projectId = "p1", onBack = {})
+            setContent {
+                KnitNoteTheme {
+                    ProjectDetailScreen(projectId = "p1", onBack = {})
+                }
             }
-        }
 
-        waitForIdle()
-        onNodeWithText("Reopen").assertIsDisplayed()
-        onNodeWithText("Completed!").assertIsDisplayed()
-    }
+            waitForIdle()
+            onNodeWithText("Reopen").assertIsDisplayed()
+            onNodeWithText("Completed!").assertIsDisplayed()
+        }
 
     @Test
-    fun emptyNotes_showsNoNotesYet() = runComposeUiTest {
-        seedProject()
+    fun emptyNotes_showsNoNotesYet() =
+        runComposeUiTest {
+            seedProject()
 
-        setContent {
-            KnitNoteTheme {
-                ProjectDetailScreen(projectId = "p1", onBack = {})
+            setContent {
+                KnitNoteTheme {
+                    ProjectDetailScreen(projectId = "p1", onBack = {})
+                }
             }
-        }
 
-        waitForIdle()
-        onNodeWithText("Notes").assertIsDisplayed()
-        onNodeWithText("No notes yet").assertIsDisplayed()
-    }
+            waitForIdle()
+            onNodeWithText("Notes").assertIsDisplayed()
+            onNodeWithText("No notes yet").assertIsDisplayed()
+        }
 
     @Test
-    fun backButton_callsCallback() = runComposeUiTest {
-        seedProject()
+    fun backButton_callsCallback() =
+        runComposeUiTest {
+            seedProject()
 
-        var backCalled = false
-        setContent {
-            KnitNoteTheme {
-                ProjectDetailScreen(projectId = "p1", onBack = { backCalled = true })
+            var backCalled = false
+            setContent {
+                KnitNoteTheme {
+                    ProjectDetailScreen(projectId = "p1", onBack = { backCalled = true })
+                }
             }
-        }
 
-        waitForIdle()
-        onNodeWithContentDescription("Back").performClick()
-        assertTrue("Expected back callback to be called", backCalled)
-    }
+            waitForIdle()
+            onNodeWithContentDescription("Back").performClick()
+            assertTrue("Expected back callback to be called", backCalled)
+        }
 
     @Test
-    fun projectNotFound_showsErrorMessage() = runComposeUiTest {
-        setContent {
-            KnitNoteTheme {
-                ProjectDetailScreen(projectId = "nonexistent", onBack = {})
+    fun projectNotFound_showsErrorMessage() =
+        runComposeUiTest {
+            setContent {
+                KnitNoteTheme {
+                    ProjectDetailScreen(projectId = "nonexistent", onBack = {})
+                }
             }
-        }
 
-        waitForIdle()
-        onNodeWithText("Project not found").assertIsDisplayed()
-    }
+            waitForIdle()
+            onNodeWithText("Project not found").assertIsDisplayed()
+        }
 }

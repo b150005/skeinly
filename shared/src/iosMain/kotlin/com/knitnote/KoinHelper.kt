@@ -5,9 +5,6 @@ import com.knitnote.data.remote.isConfigured
 import com.knitnote.di.platformModule
 import com.knitnote.di.sharedModules
 import com.knitnote.domain.model.CommentTargetType
-import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.addressOf
-import kotlinx.cinterop.usePinned
 import com.knitnote.ui.activityfeed.ActivityFeedViewModel
 import com.knitnote.ui.auth.AuthViewModel
 import com.knitnote.ui.comments.CommentSectionViewModel
@@ -16,6 +13,9 @@ import com.knitnote.ui.projectdetail.ProjectDetailViewModel
 import com.knitnote.ui.projectlist.ProjectListViewModel
 import com.knitnote.ui.sharedcontent.SharedContentViewModel
 import com.knitnote.ui.sharedwithme.SharedWithMeViewModel
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.usePinned
 import org.koin.core.context.startKoin
 import org.koin.core.parameter.parametersOf
 import org.koin.mp.KoinPlatform

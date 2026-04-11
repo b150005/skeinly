@@ -10,11 +10,17 @@ class FakeAuthRepository : AuthRepository {
 
     override fun observeAuthState(): Flow<AuthState> = authState
 
-    override suspend fun signInWithEmail(email: String, password: String) {
+    override suspend fun signInWithEmail(
+        email: String,
+        password: String,
+    ) {
         authState.value = AuthState.Authenticated(userId = "test-user", email = email)
     }
 
-    override suspend fun signUpWithEmail(email: String, password: String) {
+    override suspend fun signUpWithEmail(
+        email: String,
+        password: String,
+    ) {
         authState.value = AuthState.Authenticated(userId = "test-user", email = email)
     }
 

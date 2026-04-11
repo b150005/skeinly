@@ -12,7 +12,6 @@ import androidx.navigation.compose.rememberNavController
 import com.knitnote.ui.navigation.KnitNoteNavHost
 
 class MainActivity : ComponentActivity() {
-
     private var deepLinkToken by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {

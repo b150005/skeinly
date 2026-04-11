@@ -239,14 +239,15 @@ class CommentSectionViewModelTest {
             val getComments = GetCommentsUseCase(commentRepo)
             val createComment = CreateCommentUseCase(commentRepo, authRepo)
             val deleteComment = DeleteCommentUseCase(commentRepo, authRepo)
-            val viewModel = CommentSectionViewModel(
-                targetType = CommentTargetType.PROJECT,
-                targetId = "not-a-uuid",
-                getComments = getComments,
-                createComment = createComment,
-                deleteCommentUseCase = deleteComment,
-                userRepository = userRepo,
-            )
+            val viewModel =
+                CommentSectionViewModel(
+                    targetType = CommentTargetType.PROJECT,
+                    targetId = "not-a-uuid",
+                    getComments = getComments,
+                    createComment = createComment,
+                    deleteCommentUseCase = deleteComment,
+                    userRepository = userRepo,
+                )
 
             viewModel.onEvent(CommentSectionEvent.PostComment("Hello"))
 

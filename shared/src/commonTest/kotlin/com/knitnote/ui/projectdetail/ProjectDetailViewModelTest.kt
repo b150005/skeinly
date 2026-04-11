@@ -651,20 +651,19 @@ class ProjectDetailViewModelTest {
             updateProject = UpdateProjectUseCase(projectRepository),
             completeProject = CompleteProjectUseCase(projectRepository),
             reopenProject = ReopenProjectUseCase(projectRepository),
-            shareProject = ShareProjectUseCase(
-                projectRepository = projectRepository,
-                patternRepository = patternRepository,
-                shareRepository = shareRepo,
-                authRepository = authRepository,
-            ),
+            shareProject =
+                ShareProjectUseCase(
+                    projectRepository = projectRepository,
+                    patternRepository = patternRepository,
+                    shareRepository = shareRepo,
+                    authRepository = authRepository,
+                ),
             uploadChartImage = UploadChartImageUseCase(patternRepository, null, authRepository),
             deleteChartImage = DeleteChartImageUseCase(patternRepository, null),
             remoteStorage = null,
         )
 
-    private fun createViewModelWithStorage(
-        storage: FakeRemoteStorageDataSource = FakeRemoteStorageDataSource(),
-    ): ProjectDetailViewModel =
+    private fun createViewModelWithStorage(storage: FakeRemoteStorageDataSource = FakeRemoteStorageDataSource()): ProjectDetailViewModel =
         ProjectDetailViewModel(
             projectId = "test-project",
             projectRepository = projectRepository,
@@ -677,12 +676,13 @@ class ProjectDetailViewModelTest {
             updateProject = UpdateProjectUseCase(projectRepository),
             completeProject = CompleteProjectUseCase(projectRepository),
             reopenProject = ReopenProjectUseCase(projectRepository),
-            shareProject = ShareProjectUseCase(
-                projectRepository = projectRepository,
-                patternRepository = patternRepository,
-                shareRepository = null,
-                authRepository = authRepository,
-            ),
+            shareProject =
+                ShareProjectUseCase(
+                    projectRepository = projectRepository,
+                    patternRepository = patternRepository,
+                    shareRepository = null,
+                    authRepository = authRepository,
+                ),
             uploadChartImage = UploadChartImageUseCase(patternRepository, storage, authRepository),
             deleteChartImage = DeleteChartImageUseCase(patternRepository, storage),
             remoteStorage = storage,

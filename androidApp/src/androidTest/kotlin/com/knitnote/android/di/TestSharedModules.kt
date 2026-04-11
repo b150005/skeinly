@@ -9,8 +9,8 @@ import com.knitnote.data.repository.OfflineUserRepository
 import com.knitnote.data.sync.SyncManagerOperations
 import com.knitnote.domain.repository.AuthRepository
 import com.knitnote.domain.repository.PatternRepository
-import com.knitnote.domain.repository.ProjectRepository
 import com.knitnote.domain.repository.ProgressRepository
+import com.knitnote.domain.repository.ProjectRepository
 import com.knitnote.domain.repository.UserRepository
 import com.knitnote.domain.usecase.AddProgressNoteUseCase
 import com.knitnote.domain.usecase.CompleteProjectUseCase
@@ -59,95 +59,107 @@ import org.koin.dsl.module
  * [com.knitnote.android.test.KoinTestRule] restarts Koin before each test,
  * ensuring fresh fakes per test.
  */
-val testRepositoryModule = module {
-    single<AuthRepository> { FakeAuthRepository() }
-    single<ProjectRepository> { FakeProjectRepository() }
-    single<ProgressRepository> { FakeProgressRepository() }
-    single<PatternRepository> { FakePatternRepository() }
+val testRepositoryModule =
+    module {
+        single<AuthRepository> { FakeAuthRepository() }
+        single<ProjectRepository> { FakeProjectRepository() }
+        single<ProgressRepository> { FakeProgressRepository() }
+        single<PatternRepository> { FakePatternRepository() }
 
-    // Remote-only repositories (Share, Comment, Activity) are intentionally
-    // NOT registered — UseCases use getOrNull() to handle their absence.
+        // Remote-only repositories (Share, Comment, Activity) are intentionally
+        // NOT registered — UseCases use getOrNull() to handle their absence.
 
-    // UserRepository — offline fallback
-    single<UserRepository> { OfflineUserRepository() }
+        // UserRepository — offline fallback
+        single<UserRepository> { OfflineUserRepository() }
 
-    // SyncManager — no-op
-    single<SyncManagerOperations> { FakeSyncManager() }
-}
-
-val testUseCaseModule = module {
-    factory { ObserveAuthStateUseCase(get<AuthRepository>()) }
-    factory { SignInUseCase(get<AuthRepository>()) }
-    factory { SignUpUseCase(get<AuthRepository>()) }
-    factory { SignOutUseCase(get(), getOrNull(), getOrNull(), getOrNull()) }
-    factory { GetProjectsUseCase(get<ProjectRepository>(), get<AuthRepository>()) }
-    factory { CreateProjectUseCase(get<ProjectRepository>(), get<AuthRepository>(), getOrNull()) }
-    factory { IncrementRowUseCase(get<ProjectRepository>()) }
-    factory { DecrementRowUseCase(get<ProjectRepository>()) }
-    factory { DeleteProjectUseCase(get<ProjectRepository>()) }
-    factory { AddProgressNoteUseCase(get<ProgressRepository>()) }
-    factory { GetProgressNotesUseCase(get<ProgressRepository>()) }
-    factory { DeleteProgressNoteUseCase(get<ProgressRepository>()) }
-    factory { UpdateProjectUseCase(get<ProjectRepository>()) }
-    factory { CompleteProjectUseCase(get<ProjectRepository>(), getOrNull()) }
-    factory { ReopenProjectUseCase(get<ProjectRepository>()) }
-    factory { GetCurrentUserUseCase(get<AuthRepository>(), get<UserRepository>()) }
-    factory { UpdateProfileUseCase(get<AuthRepository>(), get<UserRepository>()) }
-    factory { CreateActivityUseCase(getOrNull()) }
-    factory { GetActivitiesUseCase(getOrNull()) }
-    factory { GetCommentsUseCase(getOrNull()) }
-    factory { CreateCommentUseCase(getOrNull(), get<AuthRepository>(), getOrNull()) }
-    factory { DeleteCommentUseCase(getOrNull(), get<AuthRepository>()) }
-    factory { ShareProjectUseCase(get<ProjectRepository>(), get<PatternRepository>(), getOrNull(), get<AuthRepository>(), getOrNull()) }
-    factory { ResolveShareTokenUseCase(getOrNull(), get<PatternRepository>(), get<ProjectRepository>()) }
-    factory { GetReceivedSharesUseCase(getOrNull(), get<AuthRepository>()) }
-    factory { ForkSharedPatternUseCase(getOrNull(), get<PatternRepository>(), get<ProjectRepository>(), get<AuthRepository>(), getOrNull()) }
-    factory { UpdateShareStatusUseCase(getOrNull(), get<AuthRepository>()) }
-}
-
-val testViewModelModule = module {
-    viewModelOf(::AuthViewModel)
-    viewModelOf(::ProfileViewModel)
-    viewModel { ActivityFeedViewModel(get(), get(), get()) }
-    viewModelOf(::ProjectListViewModel)
-    viewModel { params ->
-        ProjectDetailViewModel(
-            projectId = params.get(),
-            projectRepository = get(),
-            incrementRow = get(),
-            decrementRow = get(),
-            addProgressNote = get(),
-            getProgressNotes = get(),
-            deleteProgressNote = get(),
-            updateProject = get(),
-            completeProject = get(),
-            reopenProject = get(),
-            shareProject = get(),
-        )
+        // SyncManager — no-op
+        single<SyncManagerOperations> { FakeSyncManager() }
     }
-    viewModel { SharedWithMeViewModel(get(), get(), get(), get()) }
-    viewModel { params ->
-        CommentSectionViewModel(
-            targetType = params.get(),
-            targetId = params.get(),
-            getComments = get(),
-            createComment = get(),
-            deleteCommentUseCase = get(),
-            userRepository = get(),
-        )
-    }
-    viewModel { params ->
-        SharedContentViewModel(
-            token = params.get<String?>(0),
-            shareId = params.get<String?>(1),
-            resolveShareToken = get(),
-            forkSharedPattern = get(),
-        )
-    }
-}
 
-val testSharedModules = listOf(
-    testRepositoryModule,
-    testUseCaseModule,
-    testViewModelModule,
-)
+val testUseCaseModule =
+    module {
+        factory { ObserveAuthStateUseCase(get<AuthRepository>()) }
+        factory { SignInUseCase(get<AuthRepository>()) }
+        factory { SignUpUseCase(get<AuthRepository>()) }
+        factory { SignOutUseCase(get(), getOrNull(), getOrNull(), getOrNull()) }
+        factory { GetProjectsUseCase(get<ProjectRepository>(), get<AuthRepository>()) }
+        factory { CreateProjectUseCase(get<ProjectRepository>(), get<AuthRepository>(), getOrNull()) }
+        factory { IncrementRowUseCase(get<ProjectRepository>()) }
+        factory { DecrementRowUseCase(get<ProjectRepository>()) }
+        factory { DeleteProjectUseCase(get<ProjectRepository>()) }
+        factory { AddProgressNoteUseCase(get<ProgressRepository>()) }
+        factory { GetProgressNotesUseCase(get<ProgressRepository>()) }
+        factory { DeleteProgressNoteUseCase(get<ProgressRepository>()) }
+        factory { UpdateProjectUseCase(get<ProjectRepository>()) }
+        factory { CompleteProjectUseCase(get<ProjectRepository>(), getOrNull()) }
+        factory { ReopenProjectUseCase(get<ProjectRepository>()) }
+        factory { GetCurrentUserUseCase(get<AuthRepository>(), get<UserRepository>()) }
+        factory { UpdateProfileUseCase(get<AuthRepository>(), get<UserRepository>()) }
+        factory { CreateActivityUseCase(getOrNull()) }
+        factory { GetActivitiesUseCase(getOrNull()) }
+        factory { GetCommentsUseCase(getOrNull()) }
+        factory { CreateCommentUseCase(getOrNull(), get<AuthRepository>(), getOrNull()) }
+        factory { DeleteCommentUseCase(getOrNull(), get<AuthRepository>()) }
+        factory { ShareProjectUseCase(get<ProjectRepository>(), get<PatternRepository>(), getOrNull(), get<AuthRepository>(), getOrNull()) }
+        factory { ResolveShareTokenUseCase(getOrNull(), get<PatternRepository>(), get<ProjectRepository>()) }
+        factory { GetReceivedSharesUseCase(getOrNull(), get<AuthRepository>()) }
+        factory {
+            ForkSharedPatternUseCase(
+                getOrNull(),
+                get<PatternRepository>(),
+                get<ProjectRepository>(),
+                get<AuthRepository>(),
+                getOrNull(),
+            )
+        }
+        factory { UpdateShareStatusUseCase(getOrNull(), get<AuthRepository>()) }
+    }
+
+val testViewModelModule =
+    module {
+        viewModelOf(::AuthViewModel)
+        viewModelOf(::ProfileViewModel)
+        viewModel { ActivityFeedViewModel(get(), get(), get()) }
+        viewModelOf(::ProjectListViewModel)
+        viewModel { params ->
+            ProjectDetailViewModel(
+                projectId = params.get(),
+                projectRepository = get(),
+                incrementRow = get(),
+                decrementRow = get(),
+                addProgressNote = get(),
+                getProgressNotes = get(),
+                deleteProgressNote = get(),
+                updateProject = get(),
+                completeProject = get(),
+                reopenProject = get(),
+                shareProject = get(),
+            )
+        }
+        viewModel { SharedWithMeViewModel(get(), get(), get(), get()) }
+        viewModel { params ->
+            CommentSectionViewModel(
+                targetType = params.get(),
+                targetId = params.get(),
+                getComments = get(),
+                createComment = get(),
+                deleteCommentUseCase = get(),
+                userRepository = get(),
+            )
+        }
+        viewModel { params ->
+            SharedContentViewModel(
+                token = params.get<String?>(0),
+                shareId = params.get<String?>(1),
+                resolveShareToken = get(),
+                forkSharedPattern = get(),
+            )
+        }
+    }
+
+val testSharedModules =
+    listOf(
+        testRepositoryModule,
+        testUseCaseModule,
+        testViewModelModule,
+    )

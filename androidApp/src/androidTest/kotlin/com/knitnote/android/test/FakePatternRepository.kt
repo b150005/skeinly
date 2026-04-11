@@ -10,17 +10,13 @@ import kotlinx.coroutines.flow.map
 class FakePatternRepository : PatternRepository {
     private val patterns = MutableStateFlow<List<Pattern>>(emptyList())
 
-    override suspend fun getById(id: String): Pattern? =
-        patterns.value.find { it.id == id }
+    override suspend fun getById(id: String): Pattern? = patterns.value.find { it.id == id }
 
-    override suspend fun getByOwnerId(ownerId: String): List<Pattern> =
-        patterns.value.filter { it.ownerId == ownerId }
+    override suspend fun getByOwnerId(ownerId: String): List<Pattern> = patterns.value.filter { it.ownerId == ownerId }
 
-    override suspend fun getByVisibility(visibility: Visibility): List<Pattern> =
-        patterns.value.filter { it.visibility == visibility }
+    override suspend fun getByVisibility(visibility: Visibility): List<Pattern> = patterns.value.filter { it.visibility == visibility }
 
-    override fun observeByOwnerId(ownerId: String): Flow<List<Pattern>> =
-        patterns.map { list -> list.filter { it.ownerId == ownerId } }
+    override fun observeByOwnerId(ownerId: String): Flow<List<Pattern>> = patterns.map { list -> list.filter { it.ownerId == ownerId } }
 
     override suspend fun create(pattern: Pattern): Pattern {
         patterns.value = patterns.value + pattern
