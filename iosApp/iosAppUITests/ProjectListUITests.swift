@@ -30,7 +30,7 @@ final class ProjectListUITests: XCTestCase {
         app.staticTexts["Cable Sweater"].tap()
 
         let incrementButton = app.buttons["incrementButton"]
-        _ = incrementButton.waitForExistence(timeout: 3)
+        XCTAssertTrue(incrementButton.waitForExistence(timeout: 3), "Increment button not found")
         let counter = app.staticTexts["rowCounter"]
 
         // Increment once and wait for UI update
@@ -40,8 +40,8 @@ final class ProjectListUITests: XCTestCase {
         waitForExpectations(timeout: 5)
 
         // Go back and verify list shows progress
-        app.navigationBars.buttons.firstMatch.tap()
-        _ = app.staticTexts["Cable Sweater"].waitForExistence(timeout: 5)
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.staticTexts["Cable Sweater"].waitForExistence(timeout: 5), "Cable Sweater not found in list")
         XCTAssertTrue(app.staticTexts["1 / 100 rows"].waitForExistence(timeout: 5))
     }
 
@@ -53,7 +53,7 @@ final class ProjectListUITests: XCTestCase {
 
     func testCreateSheet_cancelDismisses() {
         app.buttons["createProjectButton"].tap()
-        _ = app.textFields["Project Title"].waitForExistence(timeout: 3)
+        XCTAssertTrue(app.textFields["Project Title"].waitForExistence(timeout: 3), "Project Title field not found")
         app.buttons["Cancel"].tap()
         XCTAssertTrue(app.staticTexts["No Projects Yet"].waitForExistence(timeout: 3))
     }

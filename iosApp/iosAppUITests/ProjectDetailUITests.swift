@@ -10,7 +10,7 @@ final class ProjectDetailUITests: XCTestCase {
         app.launchClean()
         createProject(in: app, title: "Detail Test", totalRows: "50")
         app.staticTexts["Detail Test"].tap()
-        _ = app.staticTexts["rowCounter"].waitForExistence(timeout: 3)
+        XCTAssertTrue(app.staticTexts["rowCounter"].waitForExistence(timeout: 3), "Row counter not found")
     }
 
     func testDisplaysProjectDetails() {
@@ -38,8 +38,11 @@ final class ProjectDetailUITests: XCTestCase {
 
     func testMarkComplete_showsReopenButton() {
         let markComplete = app.buttons["Mark Complete"]
+        XCTAssertTrue(markComplete.waitForExistence(timeout: 3), "Mark Complete button not found")
         if !markComplete.isHittable {
             app.swipeUp()
+            XCTAssertTrue(markComplete.waitForExistence(timeout: 2), "Mark Complete button not visible after scroll")
+            XCTAssertTrue(markComplete.isHittable, "Mark Complete button exists but is not tappable after scroll")
         }
         markComplete.tap()
 

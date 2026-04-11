@@ -70,7 +70,12 @@ targets:
     platform: iOS
     sources:
       - path: iosAppTests
-      - path: iosApp/Core/DeepLinkValidator.swift
+      # Include Core utilities for unit tests. Files that import Shared framework
+      # must be excluded since iosAppTests does not link Shared.framework.
+      - path: iosApp/Core
+        excludes:
+          - "ViewModelObserver.swift"
+          - "ViewModelFactory.swift"
     settings:
       base:
         SWIFT_VERSION: "5.0"
