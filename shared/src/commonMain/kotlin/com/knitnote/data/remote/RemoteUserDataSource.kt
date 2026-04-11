@@ -14,7 +14,10 @@ class RemoteUserDataSource(
             filter { eq("id", id) }
         }.decodeSingleOrNull()
 
-    suspend fun searchByDisplayName(query: String, limit: Int = 10): List<User> =
+    suspend fun searchByDisplayName(
+        query: String,
+        limit: Int = 10,
+    ): List<User> =
         table.select {
             filter { ilike("display_name", "%$query%") }
             limit(limit.toLong())

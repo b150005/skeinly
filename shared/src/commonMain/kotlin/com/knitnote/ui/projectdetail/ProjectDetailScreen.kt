@@ -22,9 +22,9 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -33,15 +33,15 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -50,24 +50,26 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.flow.collect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.graphics.Color
 import com.knitnote.domain.model.CommentTargetType
 import com.knitnote.domain.model.Progress
 import com.knitnote.domain.model.ProjectStatus
 import com.knitnote.domain.repository.AuthRepository
+import com.knitnote.ui.chartviewer.ChartImageGrid
+import com.knitnote.ui.chartviewer.ChartImageViewer
 import com.knitnote.ui.comments.CommentSection
+import com.knitnote.ui.imagepicker.rememberImagePickerLauncher
 import com.knitnote.ui.util.formatShort
+import kotlinx.coroutines.flow.collect
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
-import org.koin.core.qualifier.named
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,6 +85,14 @@ fun ProjectDetailScreen(
     var showEditDialog by rememberSaveable { mutableStateOf(false) }
     var showUserPickerDialog by remember { mutableStateOf(false) }
     var noteToDelete by remember { mutableStateOf<String?>(null) }
+    var chartImageToDelete by remember { mutableStateOf<String?>(null) }
+
+    val imagePickerLauncher =
+        rememberImagePickerLauncher { result ->
+            if (result != null) {
+                viewModel.onEvent(ProjectDetailEvent.UploadChartImage(result.data, result.fileName))
+            }
+        }
 
     LaunchedEffect(state.error) {
         state.error?.let {
@@ -138,6 +148,23 @@ fun ProjectDetailScreen(
         viewModel.directShareSuccess.collect {
             snackbarHostState.showSnackbar("Shared successfully!")
         }
+    }
+
+    chartImageToDelete?.let { imagePath ->
+        AlertDialog(
+            onDismissRequest = { chartImageToDelete = null },
+            title = { Text("Remove Image") },
+            text = { Text("Are you sure you want to remove this chart image?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.onEvent(ProjectDetailEvent.DeleteChartImage(imagePath))
+                    chartImageToDelete = null
+                }) { Text("Remove") }
+            },
+            dismissButton = {
+                TextButton(onClick = { chartImageToDelete = null }) { Text("Cancel") }
+            },
+        )
     }
 
     noteToDelete?.let { progressId ->
@@ -210,16 +237,18 @@ fun ProjectDetailScreen(
                         // Counter section
                         item {
                             CounterSection(
-                                statusText = when (project.status) {
-                                    ProjectStatus.NOT_STARTED -> "Not Started"
-                                    ProjectStatus.IN_PROGRESS -> "In Progress"
-                                    ProjectStatus.COMPLETED -> "Completed!"
-                                },
-                                statusColor = when (project.status) {
-                                    ProjectStatus.COMPLETED -> MaterialTheme.colorScheme.tertiary
-                                    ProjectStatus.IN_PROGRESS -> MaterialTheme.colorScheme.primary
-                                    else -> MaterialTheme.colorScheme.outline
-                                },
+                                statusText =
+                                    when (project.status) {
+                                        ProjectStatus.NOT_STARTED -> "Not Started"
+                                        ProjectStatus.IN_PROGRESS -> "In Progress"
+                                        ProjectStatus.COMPLETED -> "Completed!"
+                                    },
+                                statusColor =
+                                    when (project.status) {
+                                        ProjectStatus.COMPLETED -> MaterialTheme.colorScheme.tertiary
+                                        ProjectStatus.IN_PROGRESS -> MaterialTheme.colorScheme.primary
+                                        else -> MaterialTheme.colorScheme.outline
+                                    },
                                 currentRow = project.currentRow,
                                 totalRows = project.totalRows,
                                 onIncrement = { viewModel.onEvent(ProjectDetailEvent.IncrementRow) },
@@ -236,14 +265,45 @@ fun ProjectDetailScreen(
                             )
                         }
 
+                        // Chart images section
+                        if (state.chartImageSignedUrls.isNotEmpty() || state.isUploadingImage) {
+                            item {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                ChartImageGrid(
+                                    signedUrls = state.chartImageSignedUrls,
+                                    storagePaths = state.chartImagePaths,
+                                    isUploading = state.isUploadingImage,
+                                    onImageClick = { index ->
+                                        viewModel.onEvent(ProjectDetailEvent.SelectChartImage(index))
+                                    },
+                                    onDeleteClick = { path -> chartImageToDelete = path },
+                                    onAddClick = { imagePickerLauncher.launch() },
+                                )
+                            }
+                        } else {
+                            // Show add button even when no images
+                            item {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                ChartImageGrid(
+                                    signedUrls = emptyList(),
+                                    storagePaths = emptyList(),
+                                    isUploading = state.isUploadingImage,
+                                    onImageClick = {},
+                                    onDeleteClick = {},
+                                    onAddClick = { imagePickerLauncher.launch() },
+                                )
+                            }
+                        }
+
                         // Notes header
                         item {
                             Spacer(modifier = Modifier.height(32.dp))
                             HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp))
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 24.dp, vertical = 12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
@@ -283,9 +343,10 @@ fun ProjectDetailScreen(
                         item {
                             Spacer(modifier = Modifier.height(16.dp))
                             val authRepository = koinInject<AuthRepository>()
-                            val currentUserId = remember(authRepository) {
-                                authRepository.getCurrentUserId()
-                            }
+                            val currentUserId =
+                                remember(authRepository) {
+                                    authRepository.getCurrentUserId()
+                                }
                             CommentSection(
                                 targetType = CommentTargetType.PROJECT,
                                 targetId = projectId,
@@ -299,6 +360,15 @@ fun ProjectDetailScreen(
                         }
                     }
                 }
+            }
+
+            // Full-screen chart image viewer overlay
+            val selectedIndex = state.selectedChartImageIndex
+            if (selectedIndex != null && selectedIndex in state.chartImageSignedUrls.indices) {
+                ChartImageViewer(
+                    imageUrl = state.chartImageSignedUrls[selectedIndex],
+                    onDismiss = { viewModel.onEvent(ProjectDetailEvent.CloseChartViewer) },
+                )
             }
         }
     }
@@ -314,9 +384,10 @@ private fun CounterSection(
     onDecrement: () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -351,9 +422,10 @@ private fun CounterSection(
                         0f
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(8.dp),
             )
         } else {
             Text(
@@ -401,23 +473,25 @@ private fun SwipeToDismissNoteItem(
     note: Progress,
     onDelete: () -> Unit,
 ) {
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart) {
-                onDelete()
-            }
-            false // Always return false — deletion is confirmed via dialog
-        },
-    )
+    val dismissState =
+        rememberSwipeToDismissBoxState(
+            confirmValueChange = { value ->
+                if (value == SwipeToDismissBoxValue.EndToStart) {
+                    onDelete()
+                }
+                false // Always return false — deletion is confirmed via dialog
+            },
+        )
 
     SwipeToDismissBox(
         state = dismissState,
         backgroundContent = {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.errorContainer)
-                    .padding(horizontal = 24.dp),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.errorContainer)
+                        .padding(horizontal = 24.dp),
                 contentAlignment = Alignment.CenterEnd,
             ) {
                 Icon(
@@ -454,9 +528,10 @@ private fun StatusToggleButton(
     onReopen: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.Center,
     ) {
         when (status) {

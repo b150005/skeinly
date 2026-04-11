@@ -1,5 +1,6 @@
 package com.knitnote.ui.sharedcontent
 
+import app.cash.turbine.test
 import com.knitnote.domain.model.AuthState
 import com.knitnote.domain.model.Difficulty
 import com.knitnote.domain.model.Pattern
@@ -15,14 +16,12 @@ import com.knitnote.domain.usecase.FakeProjectRepository
 import com.knitnote.domain.usecase.FakeShareRepository
 import com.knitnote.domain.usecase.ForkSharedPatternUseCase
 import com.knitnote.domain.usecase.ResolveShareTokenUseCase
-import app.cash.turbine.test
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlin.time.Instant
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -30,62 +29,65 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SharedContentViewModelTest {
-
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var shareRepo: FakeShareRepository
     private lateinit var patternRepo: FakePatternRepository
     private lateinit var projectRepo: FakeProjectRepository
     private lateinit var authRepo: FakeAuthRepository
 
-    private val testPattern = Pattern(
-        id = "pat-1",
-        ownerId = "sharer-id",
-        title = "Cable Knit Sweater",
-        description = "A cozy cable knit pattern",
-        difficulty = Difficulty.INTERMEDIATE,
-        gauge = "20 stitches / 4 inches",
-        yarnInfo = "DK weight wool",
-        needleSize = "4mm",
-        chartImageUrls = emptyList(),
-        visibility = Visibility.SHARED,
-        createdAt = Instant.fromEpochMilliseconds(1000),
-        updatedAt = Instant.fromEpochMilliseconds(2000),
-    )
+    private val testPattern =
+        Pattern(
+            id = "pat-1",
+            ownerId = "sharer-id",
+            title = "Cable Knit Sweater",
+            description = "A cozy cable knit pattern",
+            difficulty = Difficulty.INTERMEDIATE,
+            gauge = "20 stitches / 4 inches",
+            yarnInfo = "DK weight wool",
+            needleSize = "4mm",
+            chartImageUrls = emptyList(),
+            visibility = Visibility.SHARED,
+            createdAt = Instant.fromEpochMilliseconds(1000),
+            updatedAt = Instant.fromEpochMilliseconds(2000),
+        )
 
-    private val testProject = Project(
-        id = "proj-1",
-        ownerId = "sharer-id",
-        patternId = "pat-1",
-        title = "My Sweater",
-        status = ProjectStatus.IN_PROGRESS,
-        currentRow = 50,
-        totalRows = 200,
-        startedAt = null,
-        completedAt = null,
-        createdAt = Instant.fromEpochMilliseconds(1000),
-        updatedAt = Instant.fromEpochMilliseconds(2000),
-    )
+    private val testProject =
+        Project(
+            id = "proj-1",
+            ownerId = "sharer-id",
+            patternId = "pat-1",
+            title = "My Sweater",
+            status = ProjectStatus.IN_PROGRESS,
+            currentRow = 50,
+            totalRows = 200,
+            startedAt = null,
+            completedAt = null,
+            createdAt = Instant.fromEpochMilliseconds(1000),
+            updatedAt = Instant.fromEpochMilliseconds(2000),
+        )
 
-    private val forkableShare = Share(
-        id = "share-1",
-        patternId = "pat-1",
-        fromUserId = "sharer-id",
-        toUserId = "user-1",
-        permission = SharePermission.FORK,
-        status = ShareStatus.ACCEPTED,
-        shareToken = "valid-token",
-        sharedAt = Instant.fromEpochMilliseconds(1000),
-    )
+    private val forkableShare =
+        Share(
+            id = "share-1",
+            patternId = "pat-1",
+            fromUserId = "sharer-id",
+            toUserId = "user-1",
+            permission = SharePermission.FORK,
+            status = ShareStatus.ACCEPTED,
+            shareToken = "valid-token",
+            sharedAt = Instant.fromEpochMilliseconds(1000),
+        )
 
-    private val viewOnlyShare = forkableShare.copy(
-        id = "share-view",
-        permission = SharePermission.VIEW,
-        shareToken = "view-token",
-    )
+    private val viewOnlyShare =
+        forkableShare.copy(
+            id = "share-view",
+            permission = SharePermission.VIEW,
+            shareToken = "view-token",
+        )
 
     @BeforeTest
     fun setUp() {
@@ -117,103 +119,112 @@ class SharedContentViewModelTest {
     }
 
     @Test
-    fun `resolves token and shows pattern`() = runTest {
-        patternRepo.create(testPattern)
-        projectRepo.create(testProject)
-        shareRepo.addShare(forkableShare)
+    fun `resolves token and shows pattern`() =
+        runTest {
+            patternRepo.create(testPattern)
+            projectRepo.create(testProject)
+            shareRepo.addShare(forkableShare)
 
-        val viewModel = createViewModel(token = "valid-token")
-        val state = viewModel.state.value
+            val viewModel = createViewModel(token = "valid-token")
+            val state = viewModel.state.value
 
-        assertFalse(state.isLoading)
-        assertNotNull(state.pattern)
-        assertEquals("Cable Knit Sweater", state.pattern?.title)
-        assertEquals(1, state.projectCount)
-        assertNotNull(state.share)
-        assertEquals(SharePermission.FORK, state.share?.permission)
-    }
-
-    @Test
-    fun `shows error when token is invalid`() = runTest {
-        val viewModel = createViewModel(token = "invalid-token")
-        val state = viewModel.state.value
-
-        assertFalse(state.isLoading)
-        assertNull(state.pattern)
-        assertNotNull(state.error)
-    }
-
-    @Test
-    fun `fork triggers use case and emits project id`() = runTest {
-        patternRepo.create(testPattern)
-        projectRepo.create(testProject)
-        shareRepo.addShare(forkableShare)
-
-        val viewModel = createViewModel(token = "valid-token")
-
-        viewModel.forkedProjectId.test {
-            viewModel.onEvent(SharedContentEvent.Fork)
-            val forkedId = awaitItem()
-            assertNotNull(forkedId)
-            assertFalse(viewModel.state.value.isForkInProgress)
-            cancelAndIgnoreRemainingEvents()
+            assertFalse(state.isLoading)
+            assertNotNull(state.pattern)
+            assertEquals("Cable Knit Sweater", state.pattern?.title)
+            assertEquals(1, state.projectCount)
+            assertNotNull(state.share)
+            assertEquals(SharePermission.FORK, state.share?.permission)
         }
-    }
 
     @Test
-    fun `fork does nothing when share is view-only`() = runTest {
-        patternRepo.create(testPattern)
-        projectRepo.create(testProject)
-        shareRepo.addShare(viewOnlyShare)
+    fun `shows error when token is invalid`() =
+        runTest {
+            val viewModel = createViewModel(token = "invalid-token")
+            val state = viewModel.state.value
 
-        val viewModel = createViewModel(token = "view-token")
-
-        viewModel.onEvent(SharedContentEvent.Fork)
-        // No forkedProjectId should be emitted; verify state unchanged
-        assertFalse(viewModel.state.value.isForkInProgress)
-    }
+            assertFalse(state.isLoading)
+            assertNull(state.pattern)
+            assertNotNull(state.error)
+        }
 
     @Test
-    fun `clears error on ClearError event`() = runTest {
-        val viewModel = createViewModel(token = "invalid-token")
-        assertNotNull(viewModel.state.value.error)
+    fun `fork triggers use case and emits project id`() =
+        runTest {
+            patternRepo.create(testPattern)
+            projectRepo.create(testProject)
+            shareRepo.addShare(forkableShare)
 
-        viewModel.onEvent(SharedContentEvent.ClearError)
-        assertNull(viewModel.state.value.error)
-    }
+            val viewModel = createViewModel(token = "valid-token")
 
-    @Test
-    fun `resolves shareId for direct shares`() = runTest {
-        val directShare = forkableShare.copy(
-            id = "direct-share-1",
-            shareToken = null,
-        )
-        patternRepo.create(testPattern)
-        projectRepo.create(testProject)
-        shareRepo.addShare(directShare)
-
-        val viewModel = createViewModel(shareId = "direct-share-1")
-        val state = viewModel.state.value
-
-        assertFalse(state.isLoading)
-        assertNotNull(state.pattern)
-        assertEquals("Cable Knit Sweater", state.pattern?.title)
-        assertNotNull(state.share)
-        assertEquals("direct-share-1", state.share?.id)
-    }
+            viewModel.forkedProjectId.test {
+                viewModel.onEvent(SharedContentEvent.Fork)
+                val forkedId = awaitItem()
+                assertNotNull(forkedId)
+                assertFalse(viewModel.state.value.isForkInProgress)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
 
     @Test
-    fun `handles null share repository gracefully`() = runTest {
-        val resolveShareToken = ResolveShareTokenUseCase(null, patternRepo, projectRepo)
-        val forkSharedPattern = ForkSharedPatternUseCase(null, patternRepo, projectRepo, authRepo)
-        val viewModel = SharedContentViewModel(
-            token = "some-token",
-            resolveShareToken = resolveShareToken,
-            forkSharedPattern = forkSharedPattern,
-        )
+    fun `fork does nothing when share is view-only`() =
+        runTest {
+            patternRepo.create(testPattern)
+            projectRepo.create(testProject)
+            shareRepo.addShare(viewOnlyShare)
 
-        val state = viewModel.state.value
-        assertFalse(state.isLoading)
-        assertNotNull(state.error)
-    }
+            val viewModel = createViewModel(token = "view-token")
+
+            viewModel.onEvent(SharedContentEvent.Fork)
+            // No forkedProjectId should be emitted; verify state unchanged
+            assertFalse(viewModel.state.value.isForkInProgress)
+        }
+
+    @Test
+    fun `clears error on ClearError event`() =
+        runTest {
+            val viewModel = createViewModel(token = "invalid-token")
+            assertNotNull(viewModel.state.value.error)
+
+            viewModel.onEvent(SharedContentEvent.ClearError)
+            assertNull(viewModel.state.value.error)
+        }
+
+    @Test
+    fun `resolves shareId for direct shares`() =
+        runTest {
+            val directShare =
+                forkableShare.copy(
+                    id = "direct-share-1",
+                    shareToken = null,
+                )
+            patternRepo.create(testPattern)
+            projectRepo.create(testProject)
+            shareRepo.addShare(directShare)
+
+            val viewModel = createViewModel(shareId = "direct-share-1")
+            val state = viewModel.state.value
+
+            assertFalse(state.isLoading)
+            assertNotNull(state.pattern)
+            assertEquals("Cable Knit Sweater", state.pattern?.title)
+            assertNotNull(state.share)
+            assertEquals("direct-share-1", state.share?.id)
+        }
+
+    @Test
+    fun `handles null share repository gracefully`() =
+        runTest {
+            val resolveShareToken = ResolveShareTokenUseCase(null, patternRepo, projectRepo)
+            val forkSharedPattern = ForkSharedPatternUseCase(null, patternRepo, projectRepo, authRepo)
+            val viewModel =
+                SharedContentViewModel(
+                    token = "some-token",
+                    resolveShareToken = resolveShareToken,
+                    forkSharedPattern = forkSharedPattern,
+                )
+
+            val state = viewModel.state.value
+            assertFalse(state.isLoading)
+            assertNotNull(state.error)
+        }
 }

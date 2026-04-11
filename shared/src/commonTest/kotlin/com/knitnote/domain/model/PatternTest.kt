@@ -1,31 +1,31 @@
 package com.knitnote.domain.model
 
-import kotlin.time.Instant
 import com.knitnote.testJson
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.time.Instant
 
 class PatternTest {
-
     private val json = testJson
 
     private val now = Instant.parse("2026-01-15T10:30:00Z")
 
-    private fun fullPattern() = Pattern(
-        id = "pat-001",
-        ownerId = "user-001",
-        title = "Cable Knit Scarf",
-        description = "A warm scarf with cable pattern",
-        difficulty = Difficulty.INTERMEDIATE,
-        gauge = "20 stitches x 28 rows = 10cm",
-        yarnInfo = "Worsted weight, 200g",
-        needleSize = "5.0mm",
-        chartImageUrls = listOf("https://storage.example.com/chart1.png", "https://storage.example.com/chart2.png"),
-        visibility = Visibility.PUBLIC,
-        createdAt = now,
-        updatedAt = now,
-    )
+    private fun fullPattern() =
+        Pattern(
+            id = "pat-001",
+            ownerId = "user-001",
+            title = "Cable Knit Scarf",
+            description = "A warm scarf with cable pattern",
+            difficulty = Difficulty.INTERMEDIATE,
+            gauge = "20 stitches x 28 rows = 10cm",
+            yarnInfo = "Worsted weight, 200g",
+            needleSize = "5.0mm",
+            chartImageUrls = listOf("https://storage.example.com/chart1.png", "https://storage.example.com/chart2.png"),
+            visibility = Visibility.PUBLIC,
+            createdAt = now,
+            updatedAt = now,
+        )
 
     @Test
     fun `create pattern with all fields`() {
@@ -41,20 +41,21 @@ class PatternTest {
 
     @Test
     fun `create pattern with nullable fields as null`() {
-        val pattern = Pattern(
-            id = "pat-002",
-            ownerId = "user-001",
-            title = "Quick Hat",
-            description = null,
-            difficulty = null,
-            gauge = null,
-            yarnInfo = null,
-            needleSize = null,
-            chartImageUrls = emptyList(),
-            visibility = Visibility.PRIVATE,
-            createdAt = now,
-            updatedAt = now,
-        )
+        val pattern =
+            Pattern(
+                id = "pat-002",
+                ownerId = "user-001",
+                title = "Quick Hat",
+                description = null,
+                difficulty = null,
+                gauge = null,
+                yarnInfo = null,
+                needleSize = null,
+                chartImageUrls = emptyList(),
+                visibility = Visibility.PRIVATE,
+                createdAt = now,
+                updatedAt = now,
+            )
 
         assertNull(pattern.description)
         assertNull(pattern.difficulty)

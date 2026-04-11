@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.flowOf
 class GetActivitiesUseCase(
     private val activityRepository: ActivityRepository?,
 ) {
-
     fun observe(userId: String): Flow<List<Activity>> {
         if (activityRepository == null) return flowOf(emptyList())
         return activityRepository.observeByUserId(userId)

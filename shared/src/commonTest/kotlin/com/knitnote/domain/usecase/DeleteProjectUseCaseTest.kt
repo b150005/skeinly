@@ -11,7 +11,6 @@ import kotlin.test.assertNull
 import kotlin.time.Clock
 
 class DeleteProjectUseCaseTest {
-
     private lateinit var repository: FakeProjectRepository
     private lateinit var useCase: DeleteProjectUseCase
 
@@ -21,34 +20,37 @@ class DeleteProjectUseCaseTest {
         useCase = DeleteProjectUseCase(repository)
     }
 
-    private fun testProject(id: String = "p-1") = Project(
-        id = id,
-        ownerId = LocalUser.ID,
-        patternId = LocalUser.DEFAULT_PATTERN_ID,
-        title = "Test Scarf",
-        status = ProjectStatus.NOT_STARTED,
-        currentRow = 0,
-        totalRows = 100,
-        startedAt = null,
-        completedAt = null,
-        createdAt = Clock.System.now(),
-        updatedAt = Clock.System.now(),
-    )
+    private fun testProject(id: String = "p-1") =
+        Project(
+            id = id,
+            ownerId = LocalUser.ID,
+            patternId = LocalUser.DEFAULT_PATTERN_ID,
+            title = "Test Scarf",
+            status = ProjectStatus.NOT_STARTED,
+            currentRow = 0,
+            totalRows = 100,
+            startedAt = null,
+            completedAt = null,
+            createdAt = Clock.System.now(),
+            updatedAt = Clock.System.now(),
+        )
 
     @Test
-    fun `deletes existing project successfully`() = runTest {
-        repository.create(testProject())
+    fun `deletes existing project successfully`() =
+        runTest {
+            repository.create(testProject())
 
-        val result = assertIs<UseCaseResult.Success<Unit>>(useCase("p-1"))
-        assertNull(repository.getById("p-1"))
-    }
+            val result = assertIs<UseCaseResult.Success<Unit>>(useCase("p-1"))
+            assertNull(repository.getById("p-1"))
+        }
 
     @Test
-    fun `returns failure when repository throws`() = runTest {
-        repository.shouldThrowOnDelete = true
-        repository.create(testProject())
+    fun `returns failure when repository throws`() =
+        runTest {
+            repository.shouldThrowOnDelete = true
+            repository.create(testProject())
 
-        val result = assertIs<UseCaseResult.Failure>(useCase("p-1"))
-        assertIs<UseCaseError.Unknown>(result.error)
-    }
+            val result = assertIs<UseCaseResult.Failure>(useCase("p-1"))
+            assertIs<UseCaseError.Unknown>(result.error)
+        }
 }

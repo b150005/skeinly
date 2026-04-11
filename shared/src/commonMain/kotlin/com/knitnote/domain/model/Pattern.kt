@@ -1,21 +1,31 @@
 package com.knitnote.domain.model
 
-import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 @Serializable
 enum class Visibility {
-    @SerialName("private") PRIVATE,
-    @SerialName("shared") SHARED,
-    @SerialName("public") PUBLIC,
+    @SerialName("private")
+    PRIVATE,
+
+    @SerialName("shared")
+    SHARED,
+
+    @SerialName("public")
+    PUBLIC,
 }
 
 @Serializable
 enum class Difficulty {
-    @SerialName("beginner") BEGINNER,
-    @SerialName("intermediate") INTERMEDIATE,
-    @SerialName("advanced") ADVANCED,
+    @SerialName("beginner")
+    BEGINNER,
+
+    @SerialName("intermediate")
+    INTERMEDIATE,
+
+    @SerialName("advanced")
+    ADVANCED,
 }
 
 @Serializable

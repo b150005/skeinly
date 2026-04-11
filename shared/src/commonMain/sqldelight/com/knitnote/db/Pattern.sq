@@ -4,6 +4,7 @@ CREATE TABLE PatternEntity (
     title TEXT NOT NULL,
     description TEXT,
     difficulty TEXT,
+    chart_image_urls TEXT,
     visibility TEXT NOT NULL DEFAULT 'private',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
@@ -18,12 +19,12 @@ getByOwnerId:
 SELECT * FROM PatternEntity WHERE owner_id = ? ORDER BY created_at DESC;
 
 insert:
-INSERT INTO PatternEntity(id, owner_id, title, description, difficulty, visibility, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO PatternEntity(id, owner_id, title, description, difficulty, chart_image_urls, visibility, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 update:
 UPDATE PatternEntity
-SET title = ?, description = ?, difficulty = ?, visibility = ?, updated_at = ?
+SET title = ?, description = ?, difficulty = ?, chart_image_urls = ?, visibility = ?, updated_at = ?
 WHERE id = ?;
 
 observeById:

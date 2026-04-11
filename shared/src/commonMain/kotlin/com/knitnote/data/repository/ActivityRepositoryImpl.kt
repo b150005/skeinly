@@ -32,14 +32,12 @@ class ActivityRepositoryImpl(
     private val supabaseClient: SupabaseClient,
     private val scope: CoroutineScope,
 ) : ActivityRepository {
-
     private var activityChannel: RealtimeChannel? = null
     private var subscribedUserId: String? = null
     private val channelMutex = Mutex()
     private val _activities = MutableStateFlow<List<Activity>>(emptyList())
 
-    override suspend fun getByUserId(userId: String): List<Activity> =
-        remote.getByUserId(userId)
+    override suspend fun getByUserId(userId: String): List<Activity> = remote.getByUserId(userId)
 
     override fun observeByUserId(userId: String): Flow<List<Activity>> {
         launchRealtimeSubscription(userId)
@@ -48,15 +46,15 @@ class ActivityRepositoryImpl(
         }
     }
 
-    override suspend fun create(activity: Activity): Activity =
-        remote.insert(activity)
+    override suspend fun create(activity: Activity): Activity = remote.insert(activity)
 
     /**
      * Unsubscribe from the Realtime channel and clear cached state.
      */
-    override suspend fun closeChannel() = channelMutex.withLock {
-        closeChannelInternal()
-    }
+    override suspend fun closeChannel() =
+        channelMutex.withLock {
+            closeChannelInternal()
+        }
 
     private suspend fun closeChannelInternal() {
         activityChannel?.unsubscribe()
@@ -94,7 +92,10 @@ class ActivityRepositoryImpl(
         }
     }
 
-    private fun handleActivityAction(action: PostgresAction, userId: String) {
+    private fun handleActivityAction(
+        action: PostgresAction,
+        userId: String,
+    ) {
         when (action) {
             is PostgresAction.Insert -> {
                 val activity = action.decodeRecord<Activity>()
@@ -105,7 +106,8 @@ class ActivityRepositoryImpl(
             }
             is PostgresAction.Update,
             is PostgresAction.Delete,
-            is PostgresAction.Select -> { /* Activities are append-only */ }
+            is PostgresAction.Select,
+            -> { /* Activities are append-only */ }
         }
     }
 }

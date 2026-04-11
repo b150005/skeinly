@@ -22,7 +22,6 @@ class ResolveShareTokenUseCase(
     private val patternRepository: PatternRepository,
     private val projectRepository: ProjectRepository,
 ) {
-
     suspend operator fun invoke(
         token: String? = null,
         shareId: String? = null,
@@ -31,22 +30,24 @@ class ResolveShareTokenUseCase(
             return UseCaseResult.Failure(UseCaseError.Validation("Sharing requires cloud connectivity"))
         }
 
-        val share = when {
-            token != null && token.isNotBlank() -> {
-                shareRepository.getByToken(token)
-                    ?: return UseCaseResult.Failure(UseCaseError.NotFound("Share not found or expired"))
+        val share =
+            when {
+                token != null && token.isNotBlank() -> {
+                    shareRepository.getByToken(token)
+                        ?: return UseCaseResult.Failure(UseCaseError.NotFound("Share not found or expired"))
+                }
+                shareId != null && shareId.isNotBlank() -> {
+                    shareRepository.getById(shareId)
+                        ?: return UseCaseResult.Failure(UseCaseError.NotFound("Share not found"))
+                }
+                else -> {
+                    return UseCaseResult.Failure(UseCaseError.Validation("Either token or shareId must be provided"))
+                }
             }
-            shareId != null && shareId.isNotBlank() -> {
-                shareRepository.getById(shareId)
-                    ?: return UseCaseResult.Failure(UseCaseError.NotFound("Share not found"))
-            }
-            else -> {
-                return UseCaseResult.Failure(UseCaseError.Validation("Either token or shareId must be provided"))
-            }
-        }
 
-        val pattern = patternRepository.getById(share.patternId)
-            ?: return UseCaseResult.Failure(UseCaseError.NotFound("Shared pattern not found"))
+        val pattern =
+            patternRepository.getById(share.patternId)
+                ?: return UseCaseResult.Failure(UseCaseError.NotFound("Shared pattern not found"))
 
         val projects = projectRepository.getByPatternId(share.patternId)
 

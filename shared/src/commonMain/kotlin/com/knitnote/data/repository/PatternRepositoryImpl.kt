@@ -20,7 +20,6 @@ class PatternRepositoryImpl(
     private val syncManager: SyncManagerOperations,
     private val json: Json,
 ) : PatternRepository {
-
     override suspend fun getById(id: String): Pattern? {
         val localPattern = local.getById(id)
         if (localPattern != null || remote == null || !isOnline.value) return localPattern
@@ -47,8 +46,7 @@ class PatternRepositoryImpl(
     override suspend fun getByVisibility(visibility: Visibility): List<Pattern> =
         local.getByOwnerId("") // Placeholder: visibility-based query not needed for MVP
 
-    override fun observeByOwnerId(ownerId: String): Flow<List<Pattern>> =
-        local.observeByOwnerId(ownerId)
+    override fun observeByOwnerId(ownerId: String): Flow<List<Pattern>> = local.observeByOwnerId(ownerId)
 
     override suspend fun create(pattern: Pattern): Pattern {
         local.insert(pattern)

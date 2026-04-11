@@ -30,7 +30,9 @@ data class CommentSectionState(
 
 sealed interface CommentSectionEvent {
     data class PostComment(val body: String) : CommentSectionEvent
+
     data class DeleteComment(val commentId: String) : CommentSectionEvent
+
     data object ClearError : CommentSectionEvent
 }
 
@@ -42,7 +44,6 @@ class CommentSectionViewModel(
     private val deleteCommentUseCase: DeleteCommentUseCase,
     private val userRepository: UserRepository,
 ) : ViewModel() {
-
     private val _state = MutableStateFlow(CommentSectionState())
     val state: StateFlow<CommentSectionState> = _state.asStateFlow()
 
@@ -112,9 +113,10 @@ class CommentSectionViewModel(
         val newAuthorIds = comments.map { it.authorId }.distinct() - currentAuthors.keys
         if (newAuthorIds.isEmpty()) return
 
-        val resolved = newAuthorIds.mapNotNull { authorId ->
-            userRepository.getById(authorId)?.let { authorId to it }
-        }.toMap()
+        val resolved =
+            newAuthorIds.mapNotNull { authorId ->
+                userRepository.getById(authorId)?.let { authorId to it }
+            }.toMap()
 
         _state.update { it.copy(authors = currentAuthors + resolved) }
     }

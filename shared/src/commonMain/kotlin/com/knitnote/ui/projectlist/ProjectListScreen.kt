@@ -14,8 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
@@ -191,25 +191,27 @@ private fun SwipeToDismissProjectCard(
     onClick: () -> Unit,
     onDeleteRequest: () -> Unit,
 ) {
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart) {
-                onDeleteRequest()
-                false // Don't actually dismiss — wait for dialog confirmation
-            } else {
-                false
-            }
-        },
-    )
+    val dismissState =
+        rememberSwipeToDismissBoxState(
+            confirmValueChange = { value ->
+                if (value == SwipeToDismissBoxValue.EndToStart) {
+                    onDeleteRequest()
+                    false // Don't actually dismiss — wait for dialog confirmation
+                } else {
+                    false
+                }
+            },
+        )
 
     SwipeToDismissBox(
         state = dismissState,
         backgroundContent = {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.errorContainer)
-                    .padding(horizontal = 24.dp),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.errorContainer)
+                        .padding(horizontal = 24.dp),
                 contentAlignment = Alignment.CenterEnd,
             ) {
                 Icon(
@@ -231,9 +233,10 @@ private fun ProjectCard(
     onClick: () -> Unit,
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -252,11 +255,12 @@ private fun ProjectCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            val progressText = if (project.totalRows != null) {
-                "${project.currentRow} / ${project.totalRows} rows"
-            } else {
-                "${project.currentRow} rows"
-            }
+            val progressText =
+                if (project.totalRows != null) {
+                    "${project.currentRow} / ${project.totalRows} rows"
+                } else {
+                    "${project.currentRow} rows"
+                }
             Text(
                 text = progressText,
                 style = MaterialTheme.typography.bodyLarge,
@@ -298,11 +302,12 @@ private fun DeleteConfirmDialog(
 
 @Composable
 private fun StatusChip(status: ProjectStatus) {
-    val (text, color) = when (status) {
-        ProjectStatus.NOT_STARTED -> "Not Started" to MaterialTheme.colorScheme.outline
-        ProjectStatus.IN_PROGRESS -> "In Progress" to MaterialTheme.colorScheme.primary
-        ProjectStatus.COMPLETED -> "Completed" to MaterialTheme.colorScheme.tertiary
-    }
+    val (text, color) =
+        when (status) {
+            ProjectStatus.NOT_STARTED -> "Not Started" to MaterialTheme.colorScheme.outline
+            ProjectStatus.IN_PROGRESS -> "In Progress" to MaterialTheme.colorScheme.primary
+            ProjectStatus.COMPLETED -> "Completed" to MaterialTheme.colorScheme.tertiary
+        }
     Text(
         text = text,
         style = MaterialTheme.typography.labelSmall,

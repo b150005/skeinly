@@ -9,7 +9,9 @@ import com.knitnote.domain.model.Project
  */
 interface RemoteProjectSyncOperations {
     suspend fun insert(project: Project): Project
+
     suspend fun update(project: Project): Project
+
     suspend fun delete(id: String)
 }
 
@@ -18,6 +20,7 @@ interface RemoteProjectSyncOperations {
  */
 interface RemoteProgressSyncOperations {
     suspend fun insert(progress: Progress): Progress
+
     suspend fun delete(id: String)
 }
 
@@ -26,6 +29,8 @@ interface RemoteProgressSyncOperations {
  */
 interface RemotePatternSyncOperations {
     suspend fun insert(pattern: Pattern): Pattern
+
     suspend fun update(pattern: Pattern): Pattern
+
     suspend fun delete(id: String)
 }

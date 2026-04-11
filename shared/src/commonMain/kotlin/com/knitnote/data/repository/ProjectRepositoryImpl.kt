@@ -19,7 +19,6 @@ class ProjectRepositoryImpl(
     private val syncManager: SyncManagerOperations,
     private val json: Json,
 ) : ProjectRepository {
-
     override suspend fun getById(id: String): Project? {
         val localProject = local.getById(id)
         if (localProject != null || remote == null || !isOnline.value) return localProject
@@ -43,14 +42,11 @@ class ProjectRepositoryImpl(
         }
     }
 
-    override suspend fun getByPatternId(patternId: String): List<Project> =
-        local.getByPatternId(patternId)
+    override suspend fun getByPatternId(patternId: String): List<Project> = local.getByPatternId(patternId)
 
-    override fun observeById(id: String): Flow<Project?> =
-        local.observeById(id)
+    override fun observeById(id: String): Flow<Project?> = local.observeById(id)
 
-    override fun observeByOwnerId(ownerId: String): Flow<List<Project>> =
-        local.observeByOwnerId(ownerId)
+    override fun observeByOwnerId(ownerId: String): Flow<List<Project>> = local.observeByOwnerId(ownerId)
 
     override suspend fun create(project: Project): Project {
         local.insert(project)

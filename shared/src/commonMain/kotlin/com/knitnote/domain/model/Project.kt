@@ -1,14 +1,19 @@
 package com.knitnote.domain.model
 
-import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 @Serializable
 enum class ProjectStatus {
-    @SerialName("not_started") NOT_STARTED,
-    @SerialName("in_progress") IN_PROGRESS,
-    @SerialName("completed") COMPLETED,
+    @SerialName("not_started")
+    NOT_STARTED,
+
+    @SerialName("in_progress")
+    IN_PROGRESS,
+
+    @SerialName("completed")
+    COMPLETED,
 }
 
 @Serializable

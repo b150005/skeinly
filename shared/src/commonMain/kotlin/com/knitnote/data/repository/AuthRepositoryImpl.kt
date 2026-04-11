@@ -13,28 +13,33 @@ import kotlinx.coroutines.flow.map
 class AuthRepositoryImpl(
     private val supabaseClient: SupabaseClient?,
 ) : AuthRepository {
-
     override fun observeAuthState(): Flow<AuthState> {
         val client = supabaseClient ?: return flowOf(AuthState.Unauthenticated)
 
         return client.auth.sessionStatus.map { status ->
             when (status) {
-                is SessionStatus.Authenticated -> AuthState.Authenticated(
-                    userId = status.session.user?.id ?: "",
-                    email = status.session.user?.email,
-                )
+                is SessionStatus.Authenticated ->
+                    AuthState.Authenticated(
+                        userId = status.session.user?.id ?: "",
+                        email = status.session.user?.email,
+                    )
                 is SessionStatus.NotAuthenticated -> AuthState.Unauthenticated
                 is SessionStatus.Initializing -> AuthState.Loading
-                is SessionStatus.RefreshFailure -> AuthState.Error(
-                    status.cause.toString(),
-                )
+                is SessionStatus.RefreshFailure ->
+                    AuthState.Error(
+                        status.cause.toString(),
+                    )
             }
         }
     }
 
-    override suspend fun signInWithEmail(email: String, password: String) {
-        val client = supabaseClient
-            ?: throw IllegalStateException("Supabase is not configured")
+    override suspend fun signInWithEmail(
+        email: String,
+        password: String,
+    ) {
+        val client =
+            supabaseClient
+                ?: throw IllegalStateException("Supabase is not configured")
 
         client.auth.signInWith(Email) {
             this.email = email
@@ -42,9 +47,13 @@ class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun signUpWithEmail(email: String, password: String) {
-        val client = supabaseClient
-            ?: throw IllegalStateException("Supabase is not configured")
+    override suspend fun signUpWithEmail(
+        email: String,
+        password: String,
+    ) {
+        val client =
+            supabaseClient
+                ?: throw IllegalStateException("Supabase is not configured")
 
         client.auth.signUpWith(Email) {
             this.email = email

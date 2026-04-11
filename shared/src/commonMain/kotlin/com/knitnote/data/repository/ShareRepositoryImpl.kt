@@ -35,23 +35,18 @@ class ShareRepositoryImpl(
     private val supabaseClient: SupabaseClient,
     private val scope: CoroutineScope,
 ) : ShareRepository {
-
     private var shareChannel: RealtimeChannel? = null
     private var subscribedUserId: String? = null
     private val channelMutex = Mutex()
     private val _receivedShares = MutableStateFlow<List<Share>>(emptyList())
 
-    override suspend fun getById(id: String): Share? =
-        remote.getById(id)
+    override suspend fun getById(id: String): Share? = remote.getById(id)
 
-    override suspend fun getByPatternId(patternId: String): List<Share> =
-        remote.getByPatternId(patternId)
+    override suspend fun getByPatternId(patternId: String): List<Share> = remote.getByPatternId(patternId)
 
-    override suspend fun getByToken(token: String): Share? =
-        remote.getByToken(token)
+    override suspend fun getByToken(token: String): Share? = remote.getByToken(token)
 
-    override suspend fun getReceivedByUserId(userId: String): List<Share> =
-        remote.getReceivedByUserId(userId)
+    override suspend fun getReceivedByUserId(userId: String): List<Share> = remote.getReceivedByUserId(userId)
 
     override fun observeReceivedByUserId(userId: String): Flow<List<Share>> {
         launchRealtimeSubscription(userId)
@@ -60,24 +55,26 @@ class ShareRepositoryImpl(
         }
     }
 
-    override suspend fun create(share: Share): Share =
-        remote.insert(share)
+    override suspend fun create(share: Share): Share = remote.insert(share)
 
-    override suspend fun updateStatus(id: String, status: ShareStatus): Share {
+    override suspend fun updateStatus(
+        id: String,
+        status: ShareStatus,
+    ): Share {
         remote.updateStatus(id, status)
         return remote.getById(id) ?: error("Share not found after status update: $id")
     }
 
-    override suspend fun delete(id: String) =
-        remote.delete(id)
+    override suspend fun delete(id: String) = remote.delete(id)
 
     /**
      * Unsubscribe from the Realtime channel and clear cached state.
      * Call on user logout to prevent stale data for the next user.
      */
-    override suspend fun closeChannel() = channelMutex.withLock {
-        closeChannelInternal()
-    }
+    override suspend fun closeChannel() =
+        channelMutex.withLock {
+            closeChannelInternal()
+        }
 
     private suspend fun closeChannelInternal() {
         shareChannel?.unsubscribe()
@@ -117,7 +114,10 @@ class ShareRepositoryImpl(
         }
     }
 
-    private fun handleShareAction(action: PostgresAction, userId: String) {
+    private fun handleShareAction(
+        action: PostgresAction,
+        userId: String,
+    ) {
         when (action) {
             is PostgresAction.Insert -> {
                 val share = action.decodeRecord<Share>()
@@ -129,9 +129,10 @@ class ShareRepositoryImpl(
             is PostgresAction.Update -> {
                 val share = action.decodeRecord<Share>()
                 if (share.toUserId == userId) {
-                    _receivedShares.value = _receivedShares.value.map {
-                        if (it.id == share.id) share else it
-                    }
+                    _receivedShares.value =
+                        _receivedShares.value.map {
+                            if (it.id == share.id) share else it
+                        }
                 }
             }
             is PostgresAction.Delete -> {

@@ -9,8 +9,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.automirrored.filled.CallSplit
+import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Share
@@ -109,7 +109,10 @@ fun ActivityFeedScreen(
 }
 
 @Composable
-private fun ActivityListItem(activity: Activity, user: User?) {
+private fun ActivityListItem(
+    activity: Activity,
+    user: User?,
+) {
     val dateText = activity.createdAt.formatFull()
 
     val displayName = user?.displayName ?: "You"
@@ -140,10 +143,11 @@ private fun ActivityListItem(activity: Activity, user: User?) {
     )
 }
 
-private fun activityVerb(type: ActivityType): Pair<ImageVector, String> = when (type) {
-    ActivityType.STARTED -> Icons.Default.Add to "started a new project"
-    ActivityType.COMPLETED -> Icons.Default.Check to "completed a project"
-    ActivityType.SHARED -> Icons.Default.Share to "shared a pattern"
-    ActivityType.COMMENTED -> Icons.AutoMirrored.Filled.Comment to "commented on a project"
-    ActivityType.FORKED -> Icons.AutoMirrored.Filled.CallSplit to "forked a pattern"
-}
+private fun activityVerb(type: ActivityType): Pair<ImageVector, String> =
+    when (type) {
+        ActivityType.STARTED -> Icons.Default.Add to "started a new project"
+        ActivityType.COMPLETED -> Icons.Default.Check to "completed a project"
+        ActivityType.SHARED -> Icons.Default.Share to "shared a pattern"
+        ActivityType.COMMENTED -> Icons.AutoMirrored.Filled.Comment to "commented on a project"
+        ActivityType.FORKED -> Icons.AutoMirrored.Filled.CallSplit to "forked a pattern"
+    }

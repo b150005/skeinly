@@ -27,10 +27,15 @@ data class ProjectListState(
 
 sealed interface ProjectListEvent {
     data class CreateProject(val title: String, val totalRows: Int?) : ProjectListEvent
+
     data class DeleteProject(val id: String) : ProjectListEvent
+
     data object ShowCreateDialog : ProjectListEvent
+
     data object DismissCreateDialog : ProjectListEvent
+
     data object ClearError : ProjectListEvent
+
     data object SignOut : ProjectListEvent
 }
 
@@ -45,7 +50,6 @@ class ProjectListViewModel(
     private val deleteProject: DeleteProjectUseCase,
     private val signOut: SignOutUseCase,
 ) : ViewModel() {
-
     private val uiFlags = MutableStateFlow(UiFlags())
 
     val state: StateFlow<ProjectListState> =

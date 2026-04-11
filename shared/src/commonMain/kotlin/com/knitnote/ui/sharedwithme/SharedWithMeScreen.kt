@@ -126,11 +126,12 @@ private fun ShareListItem(
 ) {
     val dateText = share.sharedAt.formatFull()
 
-    val statusText = when (share.status) {
-        ShareStatus.PENDING -> " | Pending"
-        ShareStatus.ACCEPTED -> ""
-        ShareStatus.DECLINED -> " | Declined"
-    }
+    val statusText =
+        when (share.status) {
+            ShareStatus.PENDING -> " | Pending"
+            ShareStatus.ACCEPTED -> ""
+            ShareStatus.DECLINED -> " | Declined"
+        }
 
     val fromText = sharerName?.let { "From $it | " } ?: ""
 

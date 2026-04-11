@@ -27,8 +27,11 @@ data class SharedWithMeState(
 
 sealed interface SharedWithMeEvent {
     data object Load : SharedWithMeEvent
+
     data object ClearError : SharedWithMeEvent
+
     data class AcceptShare(val shareId: String) : SharedWithMeEvent
+
     data class DeclineShare(val shareId: String) : SharedWithMeEvent
 }
 
@@ -38,7 +41,6 @@ class SharedWithMeViewModel(
     private val updateShareStatus: UpdateShareStatusUseCase,
     private val userRepository: UserRepository,
 ) : ViewModel() {
-
     private val _state = MutableStateFlow(SharedWithMeState())
     val state: StateFlow<SharedWithMeState> = _state.asStateFlow()
 
@@ -84,14 +86,18 @@ class SharedWithMeViewModel(
         }
     }
 
-    private suspend fun handleStatusUpdate(shareId: String, status: ShareStatus) {
+    private suspend fun handleStatusUpdate(
+        shareId: String,
+        status: ShareStatus,
+    ) {
         when (val result = updateShareStatus(shareId, status)) {
             is UseCaseResult.Success -> {
                 _state.update { state ->
                     state.copy(
-                        shares = state.shares.map { share ->
-                            if (share.id == shareId) result.value else share
-                        },
+                        shares =
+                            state.shares.map { share ->
+                                if (share.id == shareId) result.value else share
+                            },
                     )
                 }
             }

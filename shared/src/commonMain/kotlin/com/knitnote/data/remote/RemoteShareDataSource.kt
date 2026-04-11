@@ -40,7 +40,10 @@ class RemoteShareDataSource(
             select()
         }.decodeSingle()
 
-    suspend fun updateStatus(id: String, status: ShareStatus) {
+    suspend fun updateStatus(
+        id: String,
+        status: ShareStatus,
+    ) {
         table.update({ set("status", status.name.lowercase()) }) {
             filter { eq("id", id) }
         }

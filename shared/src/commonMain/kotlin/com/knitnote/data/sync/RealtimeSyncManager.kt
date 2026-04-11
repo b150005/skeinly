@@ -33,7 +33,6 @@ class RealtimeSyncManager(
     private val authRepository: AuthRepository,
     private val scope: CoroutineScope,
 ) {
-
     private var projectChannel: RealtimeChannel? = null
     private var progressChannel: RealtimeChannel? = null
     private var patternChannel: RealtimeChannel? = null
@@ -42,16 +41,18 @@ class RealtimeSyncManager(
 
     fun start() {
         authObserverJob?.cancel()
-        authObserverJob = authRepository.observeAuthState()
-            .onEach { state ->
-                when (state) {
-                    is AuthState.Authenticated -> subscribe(state.userId)
-                    is AuthState.Unauthenticated,
-                    is AuthState.Error -> unsubscribe()
-                    is AuthState.Loading -> { /* wait */ }
+        authObserverJob =
+            authRepository.observeAuthState()
+                .onEach { state ->
+                    when (state) {
+                        is AuthState.Authenticated -> subscribe(state.userId)
+                        is AuthState.Unauthenticated,
+                        is AuthState.Error,
+                        -> unsubscribe()
+                        is AuthState.Loading -> { /* wait */ }
+                    }
                 }
-            }
-            .launchIn(scope)
+                .launchIn(scope)
     }
 
     suspend fun stop() {
@@ -60,16 +61,18 @@ class RealtimeSyncManager(
         unsubscribe()
     }
 
-    internal suspend fun subscribe(ownerId: String) = channelMutex.withLock {
-        unsubscribeInternal()
-        subscribeToProjects(ownerId)
-        subscribeToProgress(ownerId)
-        subscribeToPatterns(ownerId)
-    }
+    internal suspend fun subscribe(ownerId: String) =
+        channelMutex.withLock {
+            unsubscribeInternal()
+            subscribeToProjects(ownerId)
+            subscribeToProgress(ownerId)
+            subscribeToPatterns(ownerId)
+        }
 
-    internal suspend fun unsubscribe() = channelMutex.withLock {
-        unsubscribeInternal()
-    }
+    internal suspend fun unsubscribe() =
+        channelMutex.withLock {
+            unsubscribeInternal()
+        }
 
     private suspend fun unsubscribeInternal() {
         projectChannel?.unsubscribe()

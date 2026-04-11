@@ -13,12 +13,13 @@ import org.koin.dsl.onClose
 val applicationScopeQualifier = named("applicationScope")
 val ioDispatcherQualifier = named("ioDispatcher")
 
-val applicationScopeModule = module {
-    single(applicationScopeQualifier) {
-        CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    }.onClose { scope ->
-        scope?.cancel()
-    }
+val applicationScopeModule =
+    module {
+        single(applicationScopeQualifier) {
+            CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        }.onClose { scope ->
+            scope?.cancel()
+        }
 
-    single<CoroutineDispatcher>(ioDispatcherQualifier) { Dispatchers.IO }
-}
+        single<CoroutineDispatcher>(ioDispatcherQualifier) { Dispatchers.IO }
+    }

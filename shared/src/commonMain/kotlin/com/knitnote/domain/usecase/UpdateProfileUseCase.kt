@@ -11,16 +11,16 @@ class UpdateProfileUseCase(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
 ) {
-
     suspend operator fun invoke(
         displayName: String,
         bio: String?,
         avatarUrl: String?,
     ): UseCaseResult<User> {
-        val userId = authRepository.getCurrentUserId()
-            ?: return UseCaseResult.Failure(
-                UseCaseError.Validation("Must be signed in to update profile"),
-            )
+        val userId =
+            authRepository.getCurrentUserId()
+                ?: return UseCaseResult.Failure(
+                    UseCaseError.Validation("Must be signed in to update profile"),
+                )
 
         val trimmedName = displayName.trim()
         if (trimmedName.isEmpty()) {
@@ -41,16 +41,18 @@ class UpdateProfileUseCase(
             )
         }
 
-        val currentUser = userRepository.getById(userId)
-            ?: return UseCaseResult.Failure(
-                UseCaseError.NotFound("Profile not found"),
-            )
+        val currentUser =
+            userRepository.getById(userId)
+                ?: return UseCaseResult.Failure(
+                    UseCaseError.NotFound("Profile not found"),
+                )
 
-        val updatedUser = currentUser.copy(
-            displayName = trimmedName,
-            bio = trimmedBio,
-            avatarUrl = avatarUrl,
-        )
+        val updatedUser =
+            currentUser.copy(
+                displayName = trimmedName,
+                bio = trimmedBio,
+                avatarUrl = avatarUrl,
+            )
 
         val saved = userRepository.update(updatedUser)
         return UseCaseResult.Success(saved)

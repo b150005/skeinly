@@ -34,14 +34,12 @@ class CommentRepositoryImpl(
     private val supabaseClient: SupabaseClient,
     private val scope: CoroutineScope,
 ) : CommentRepository {
-
     private var commentChannel: RealtimeChannel? = null
     private var subscribedTargetKey: String? = null
     private val channelMutex = Mutex()
     private val _comments = MutableStateFlow<List<Comment>>(emptyList())
 
-    override suspend fun getById(id: String): Comment? =
-        remote.getById(id)
+    override suspend fun getById(id: String): Comment? = remote.getById(id)
 
     override suspend fun getByTarget(
         targetType: CommentTargetType,
@@ -58,18 +56,17 @@ class CommentRepositoryImpl(
         }
     }
 
-    override suspend fun create(comment: Comment): Comment =
-        remote.insert(comment)
+    override suspend fun create(comment: Comment): Comment = remote.insert(comment)
 
-    override suspend fun delete(id: String) =
-        remote.delete(id)
+    override suspend fun delete(id: String) = remote.delete(id)
 
     /**
      * Unsubscribe from the Realtime channel and clear cached state.
      */
-    override suspend fun closeChannel() = channelMutex.withLock {
-        closeChannelInternal()
-    }
+    override suspend fun closeChannel() =
+        channelMutex.withLock {
+            closeChannelInternal()
+        }
 
     private suspend fun closeChannelInternal() {
         commentChannel?.unsubscribe()

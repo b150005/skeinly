@@ -11,7 +11,6 @@ class SyncExecutor(
     private val remotePattern: RemotePatternSyncOperations?,
     private val json: Json,
 ) {
-
     /**
      * Execute a pending sync entry against the remote data source.
      * Returns true on success. Throws on remote failure (caller handles retry).

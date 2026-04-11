@@ -27,9 +27,13 @@ data class AuthUiState(
 
 sealed interface AuthEvent {
     data class UpdateEmail(val email: String) : AuthEvent
+
     data class UpdatePassword(val password: String) : AuthEvent
+
     data object ToggleMode : AuthEvent
+
     data object Submit : AuthEvent
+
     data object ClearError : AuthEvent
 }
 
@@ -46,7 +50,6 @@ class AuthViewModel(
     private val signIn: SignInUseCase,
     private val signUp: SignUpUseCase,
 ) : ViewModel() {
-
     private val form = MutableStateFlow(FormState())
 
     val state: StateFlow<AuthUiState> =
@@ -82,11 +85,12 @@ class AuthViewModel(
         viewModelScope.launch {
             form.update { it.copy(isSubmitting = true, error = null) }
 
-            val result = if (current.isSignUp) {
-                signUp(current.email, current.password)
-            } else {
-                signIn(current.email, current.password)
-            }
+            val result =
+                if (current.isSignUp) {
+                    signUp(current.email, current.password)
+                } else {
+                    signIn(current.email, current.password)
+                }
 
             when (result) {
                 is UseCaseResult.Success -> {

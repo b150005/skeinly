@@ -32,9 +32,7 @@ import androidx.compose.ui.unit.dp
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun LoginScreen(
-    viewModel: AuthViewModel = koinViewModel(),
-) {
+fun LoginScreen(viewModel: AuthViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -49,10 +47,11 @@ fun LoginScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 32.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 32.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -76,10 +75,11 @@ fun LoginScreen(
                 onValueChange = { viewModel.onEvent(AuthEvent.UpdateEmail(it)) },
                 label = { Text("Email") },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Email,
-                    imeAction = ImeAction.Next,
-                ),
+                keyboardOptions =
+                    KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Next,
+                    ),
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -91,10 +91,11 @@ fun LoginScreen(
                 label = { Text("Password") },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done,
-                ),
+                keyboardOptions =
+                    KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                    ),
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -121,8 +122,11 @@ fun LoginScreen(
                 onClick = { viewModel.onEvent(AuthEvent.ToggleMode) },
             ) {
                 Text(
-                    if (state.isSignUp) "Already have an account? Sign In"
-                    else "Don't have an account? Sign Up",
+                    if (state.isSignUp) {
+                        "Already have an account? Sign In"
+                    } else {
+                        "Don't have an account? Sign Up"
+                    },
                 )
             }
 

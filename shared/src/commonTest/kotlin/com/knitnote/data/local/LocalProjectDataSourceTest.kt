@@ -6,15 +6,14 @@ import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
-import kotlin.time.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.time.Instant
 
 class LocalProjectDataSourceTest {
-
     private lateinit var dataSource: LocalProjectDataSource
 
     @BeforeTest
@@ -44,63 +43,70 @@ class LocalProjectDataSourceTest {
     )
 
     @Test
-    fun `upsert inserts new project`() = runTest {
-        val project = testProject()
-        dataSource.upsert(project)
+    fun `upsert inserts new project`() =
+        runTest {
+            val project = testProject()
+            dataSource.upsert(project)
 
-        val result = dataSource.getById("p1")
-        assertNotNull(result)
-        assertEquals("Test Project", result.title)
-    }
-
-    @Test
-    fun `upsert replaces existing project`() = runTest {
-        val original = testProject()
-        dataSource.insert(original)
-
-        val updated = original.copy(
-            title = "Updated Title",
-            currentRow = 42,
-            status = ProjectStatus.IN_PROGRESS,
-        )
-        dataSource.upsert(updated)
-
-        val result = dataSource.getById("p1")
-        assertNotNull(result)
-        assertEquals("Updated Title", result.title)
-        assertEquals(42, result.currentRow)
-        assertEquals(ProjectStatus.IN_PROGRESS, result.status)
-    }
+            val result = dataSource.getById("p1")
+            assertNotNull(result)
+            assertEquals("Test Project", result.title)
+        }
 
     @Test
-    fun `upsertAll inserts multiple projects`() = runTest {
-        val projects = listOf(
-            testProject(id = "p1", title = "First"),
-            testProject(id = "p2", title = "Second"),
-        )
-        dataSource.upsertAll(projects)
+    fun `upsert replaces existing project`() =
+        runTest {
+            val original = testProject()
+            dataSource.insert(original)
 
-        assertEquals(2, dataSource.getByOwnerId("owner-1").size)
-    }
+            val updated =
+                original.copy(
+                    title = "Updated Title",
+                    currentRow = 42,
+                    status = ProjectStatus.IN_PROGRESS,
+                )
+            dataSource.upsert(updated)
 
-    @Test
-    fun `upsertAll replaces existing projects`() = runTest {
-        dataSource.insert(testProject(id = "p1", title = "Original"))
-
-        dataSource.upsertAll(
-            listOf(testProject(id = "p1", title = "Replaced")),
-        )
-
-        val result = dataSource.getById("p1")
-        assertNotNull(result)
-        assertEquals("Replaced", result.title)
-    }
+            val result = dataSource.getById("p1")
+            assertNotNull(result)
+            assertEquals("Updated Title", result.title)
+            assertEquals(42, result.currentRow)
+            assertEquals(ProjectStatus.IN_PROGRESS, result.status)
+        }
 
     @Test
-    fun `delete removes project`() = runTest {
-        dataSource.insert(testProject())
-        dataSource.delete("p1")
+    fun `upsertAll inserts multiple projects`() =
+        runTest {
+            val projects =
+                listOf(
+                    testProject(id = "p1", title = "First"),
+                    testProject(id = "p2", title = "Second"),
+                )
+            dataSource.upsertAll(projects)
 
-        assertNull(dataSource.getById("p1"))
-    }
+            assertEquals(2, dataSource.getByOwnerId("owner-1").size)
+        }
+
+    @Test
+    fun `upsertAll replaces existing projects`() =
+        runTest {
+            dataSource.insert(testProject(id = "p1", title = "Original"))
+
+            dataSource.upsertAll(
+                listOf(testProject(id = "p1", title = "Replaced")),
+            )
+
+            val result = dataSource.getById("p1")
+            assertNotNull(result)
+            assertEquals("Replaced", result.title)
+        }
+
+    @Test
+    fun `delete removes project`() =
+        runTest {
+            dataSource.insert(testProject())
+            dataSource.delete("p1")
+
+            assertNull(dataSource.getById("p1"))
+        }
 }

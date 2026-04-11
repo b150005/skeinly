@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.knitnote.domain.model.User
 import com.knitnote.domain.usecase.GetCurrentUserUseCase
 import com.knitnote.domain.usecase.UpdateProfileUseCase
-import com.knitnote.domain.usecase.UseCaseError
 import com.knitnote.domain.usecase.UseCaseResult
 import com.knitnote.domain.usecase.toMessage
 import kotlinx.coroutines.channels.Channel
@@ -29,11 +28,17 @@ data class ProfileState(
 
 sealed interface ProfileEvent {
     data object LoadProfile : ProfileEvent
+
     data object StartEditing : ProfileEvent
+
     data object CancelEditing : ProfileEvent
+
     data object SaveProfile : ProfileEvent
+
     data class UpdateDisplayName(val value: String) : ProfileEvent
+
     data class UpdateBio(val value: String) : ProfileEvent
+
     data object ClearError : ProfileEvent
 }
 
@@ -41,7 +46,6 @@ class ProfileViewModel(
     private val getCurrentUser: GetCurrentUserUseCase,
     private val updateProfile: UpdateProfileUseCase,
 ) : ViewModel() {
-
     private val _state = MutableStateFlow(ProfileState())
     val state: StateFlow<ProfileState> = _state.asStateFlow()
 
@@ -68,12 +72,14 @@ class ProfileViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
             when (val result = getCurrentUser()) {
-                is UseCaseResult.Success -> _state.update {
-                    it.copy(user = result.value, isLoading = false)
-                }
-                is UseCaseResult.Failure -> _state.update {
-                    it.copy(isLoading = false, error = result.error.toMessage())
-                }
+                is UseCaseResult.Success ->
+                    _state.update {
+                        it.copy(user = result.value, isLoading = false)
+                    }
+                is UseCaseResult.Failure ->
+                    _state.update {
+                        it.copy(isLoading = false, error = result.error.toMessage())
+                    }
             }
         }
     }
@@ -97,11 +103,14 @@ class ProfileViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isSaving = true) }
             val currentState = _state.value
-            when (val result = updateProfile(
-                displayName = currentState.editDisplayName,
-                bio = currentState.editBio.takeIf { it.isNotBlank() },
-                avatarUrl = currentState.user?.avatarUrl,
-            )) {
+            when (
+                val result =
+                    updateProfile(
+                        displayName = currentState.editDisplayName,
+                        bio = currentState.editBio.takeIf { it.isNotBlank() },
+                        avatarUrl = currentState.user?.avatarUrl,
+                    )
+            ) {
                 is UseCaseResult.Success -> {
                     _state.update {
                         it.copy(
@@ -112,9 +121,10 @@ class ProfileViewModel(
                     }
                     _saveSuccessChannel.send(Unit)
                 }
-                is UseCaseResult.Failure -> _state.update {
-                    it.copy(isSaving = false, error = result.error.toMessage())
-                }
+                is UseCaseResult.Failure ->
+                    _state.update {
+                        it.copy(isSaving = false, error = result.error.toMessage())
+                    }
             }
         }
     }

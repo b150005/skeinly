@@ -13,7 +13,6 @@ import kotlin.test.assertTrue
 import kotlin.time.Clock
 
 class GetProjectsUseCaseTest {
-
     private lateinit var projectRepo: FakeProjectRepository
     private lateinit var authRepo: FakeAuthRepository
     private lateinit var useCase: GetProjectsUseCase
@@ -25,7 +24,10 @@ class GetProjectsUseCaseTest {
         useCase = GetProjectsUseCase(projectRepo, authRepo)
     }
 
-    private fun testProject(id: String, ownerId: String = LocalUser.ID) = Project(
+    private fun testProject(
+        id: String,
+        ownerId: String = LocalUser.ID,
+    ) = Project(
         id = id,
         ownerId = ownerId,
         patternId = LocalUser.DEFAULT_PATTERN_ID,
@@ -40,37 +42,40 @@ class GetProjectsUseCaseTest {
     )
 
     @Test
-    fun `returns projects for local user when unauthenticated`() = runTest {
-        projectRepo.create(testProject("p-1"))
-        projectRepo.create(testProject("p-2"))
+    fun `returns projects for local user when unauthenticated`() =
+        runTest {
+            projectRepo.create(testProject("p-1"))
+            projectRepo.create(testProject("p-2"))
 
-        useCase().test {
-            val projects = awaitItem()
-            assertEquals(2, projects.size)
-            cancelAndIgnoreRemainingEvents()
+            useCase().test {
+                val projects = awaitItem()
+                assertEquals(2, projects.size)
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     @Test
-    fun `returns projects for authenticated user`() = runTest {
-        authRepo.setAuthState(AuthState.Authenticated("user-a", "a@test.com"))
-        projectRepo.create(testProject("p-1", ownerId = "user-a"))
-        projectRepo.create(testProject("p-2", ownerId = "other-user"))
+    fun `returns projects for authenticated user`() =
+        runTest {
+            authRepo.setAuthState(AuthState.Authenticated("user-a", "a@test.com"))
+            projectRepo.create(testProject("p-1", ownerId = "user-a"))
+            projectRepo.create(testProject("p-2", ownerId = "other-user"))
 
-        useCase().test {
-            val projects = awaitItem()
-            assertEquals(1, projects.size)
-            assertEquals("p-1", projects.first().id)
-            cancelAndIgnoreRemainingEvents()
+            useCase().test {
+                val projects = awaitItem()
+                assertEquals(1, projects.size)
+                assertEquals("p-1", projects.first().id)
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     @Test
-    fun `returns empty list when no projects`() = runTest {
-        useCase().test {
-            val projects = awaitItem()
-            assertTrue(projects.isEmpty())
-            cancelAndIgnoreRemainingEvents()
+    fun `returns empty list when no projects`() =
+        runTest {
+            useCase().test {
+                val projects = awaitItem()
+                assertTrue(projects.isEmpty())
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 }

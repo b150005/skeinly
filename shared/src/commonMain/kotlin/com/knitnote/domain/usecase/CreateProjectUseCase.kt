@@ -16,27 +16,30 @@ class CreateProjectUseCase(
     private val authRepository: AuthRepository,
     private val createActivity: CreateActivityUseCase? = null,
 ) {
-
     @OptIn(ExperimentalUuidApi::class)
-    suspend operator fun invoke(title: String, totalRows: Int?): UseCaseResult<Project> {
+    suspend operator fun invoke(
+        title: String,
+        totalRows: Int?,
+    ): UseCaseResult<Project> {
         if (title.isBlank()) {
             return UseCaseResult.Failure(UseCaseError.Validation("Title must not be blank"))
         }
         val now = Clock.System.now()
         val ownerId = authRepository.getCurrentUserId() ?: LocalUser.ID
-        val project = Project(
-            id = Uuid.random().toString(),
-            ownerId = ownerId,
-            patternId = LocalUser.DEFAULT_PATTERN_ID,
-            title = title,
-            status = ProjectStatus.NOT_STARTED,
-            currentRow = 0,
-            totalRows = totalRows,
-            startedAt = null,
-            completedAt = null,
-            createdAt = now,
-            updatedAt = now,
-        )
+        val project =
+            Project(
+                id = Uuid.random().toString(),
+                ownerId = ownerId,
+                patternId = LocalUser.DEFAULT_PATTERN_ID,
+                title = title,
+                status = ProjectStatus.NOT_STARTED,
+                currentRow = 0,
+                totalRows = totalRows,
+                startedAt = null,
+                completedAt = null,
+                createdAt = now,
+                updatedAt = now,
+            )
         val created = repository.create(project)
 
         if (ownerId != LocalUser.ID) {

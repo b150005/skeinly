@@ -4,7 +4,8 @@ import com.knitnote.data.remote.ConnectivityMonitor
 import com.knitnote.db.DriverFactory
 import org.koin.dsl.module
 
-val platformModule = module {
-    single { DriverFactory() }
-    single { ConnectivityMonitor() }
-}
+val platformModule =
+    module {
+        single { DriverFactory() }
+        single { ConnectivityMonitor() }
+    }

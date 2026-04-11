@@ -19,15 +19,11 @@ class ProgressRepositoryImpl(
     private val syncManager: SyncManagerOperations,
     private val json: Json,
 ) : ProgressRepository {
+    override suspend fun getById(id: String): Progress? = local.getById(id)
 
-    override suspend fun getById(id: String): Progress? =
-        local.getById(id)
+    override suspend fun getByProjectId(projectId: String): List<Progress> = local.getByProjectId(projectId)
 
-    override suspend fun getByProjectId(projectId: String): List<Progress> =
-        local.getByProjectId(projectId)
-
-    override fun observeByProjectId(projectId: String): Flow<List<Progress>> =
-        local.observeByProjectId(projectId)
+    override fun observeByProjectId(projectId: String): Flow<List<Progress>> = local.observeByProjectId(projectId)
 
     override suspend fun create(progress: Progress): Progress {
         local.insert(progress)
