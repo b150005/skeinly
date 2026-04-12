@@ -20,6 +20,7 @@ import com.knitnote.ui.auth.LoginScreen
 import com.knitnote.ui.profile.ProfileScreen
 import com.knitnote.ui.projectdetail.ProjectDetailScreen
 import com.knitnote.ui.projectlist.ProjectListScreen
+import com.knitnote.ui.settings.SettingsScreen
 import com.knitnote.ui.sharedcontent.SharedContentScreen
 import com.knitnote.ui.sharedwithme.SharedWithMeScreen
 import kotlinx.serialization.Serializable
@@ -44,6 +45,9 @@ data object ActivityFeed
 
 @Serializable
 data object Profile
+
+@Serializable
+data object Settings
 
 @Serializable
 data class SharedContent(
@@ -121,11 +125,24 @@ fun KnitNoteNavHost(
                 onProfileClick = {
                     navController.navigate(Profile)
                 },
+                onSettingsClick = {
+                    navController.navigate(Settings)
+                },
             )
         }
         composable<Profile> {
             ProfileScreen(
                 onBack = { navController.popBackStack() },
+            )
+        }
+        composable<Settings> {
+            SettingsScreen(
+                onBack = { navController.popBackStack() },
+                onAccountDeleted = {
+                    navController.navigate(Login) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
             )
         }
         composable<ActivityFeed> {

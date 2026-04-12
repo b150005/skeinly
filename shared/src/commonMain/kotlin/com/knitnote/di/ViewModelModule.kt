@@ -6,6 +6,7 @@ import com.knitnote.ui.comments.CommentSectionViewModel
 import com.knitnote.ui.profile.ProfileViewModel
 import com.knitnote.ui.projectdetail.ProjectDetailViewModel
 import com.knitnote.ui.projectlist.ProjectListViewModel
+import com.knitnote.ui.settings.SettingsViewModel
 import com.knitnote.ui.sharedcontent.SharedContentViewModel
 import com.knitnote.ui.sharedwithme.SharedWithMeViewModel
 import org.koin.core.module.dsl.viewModel
@@ -16,6 +17,7 @@ val viewModelModule =
     module {
         viewModelOf(::AuthViewModel)
         viewModelOf(::ProfileViewModel)
+        viewModelOf(::SettingsViewModel)
         viewModel { ActivityFeedViewModel(get(), get(), get()) }
         viewModelOf(::ProjectListViewModel)
         viewModel { params ->
