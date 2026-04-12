@@ -65,7 +65,5 @@ class AuthRepositoryImpl(
         supabaseClient?.auth?.signOut()
     }
 
-    override fun getCurrentUserId(): String? {
-        return supabaseClient?.auth?.currentUserOrNull()?.id
-    }
+    override fun getCurrentUserId(): String? = supabaseClient?.auth?.currentUserOrNull()?.id
 }

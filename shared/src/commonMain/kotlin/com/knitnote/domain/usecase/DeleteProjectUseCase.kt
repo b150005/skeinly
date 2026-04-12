@@ -3,7 +3,9 @@ package com.knitnote.domain.usecase
 import com.knitnote.domain.repository.ProjectRepository
 import kotlin.coroutines.cancellation.CancellationException
 
-class DeleteProjectUseCase(private val repository: ProjectRepository) {
+class DeleteProjectUseCase(
+    private val repository: ProjectRepository,
+) {
     suspend operator fun invoke(id: String): UseCaseResult<Unit> =
         try {
             repository.delete(id)

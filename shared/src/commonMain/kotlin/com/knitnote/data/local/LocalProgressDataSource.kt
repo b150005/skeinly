@@ -27,7 +27,8 @@ class LocalProgressDataSource(
         }
 
     fun observeByProjectId(projectId: String): Flow<List<Progress>> =
-        queries.getByProjectId(projectId)
+        queries
+            .getByProjectId(projectId)
             .asFlow()
             .mapToList(ioDispatcher)
             .map { list -> list.map { it.toDomain() } }

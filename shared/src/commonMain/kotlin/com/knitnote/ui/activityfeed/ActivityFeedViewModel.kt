@@ -53,19 +53,18 @@ class ActivityFeedViewModel(
             return
         }
 
-        getActivities.observe(userId)
+        getActivities
+            .observe(userId)
             .onEach { activities ->
                 _state.update {
                     it.copy(activities = activities, isLoading = false)
                 }
                 resolveUsers(activities)
-            }
-            .catch { e ->
+            }.catch { e ->
                 _state.update {
                     it.copy(isLoading = false, error = e.message ?: "Failed to load activities")
                 }
-            }
-            .launchIn(viewModelScope)
+            }.launchIn(viewModelScope)
     }
 
     private suspend fun resolveUsers(activities: List<Activity>) {

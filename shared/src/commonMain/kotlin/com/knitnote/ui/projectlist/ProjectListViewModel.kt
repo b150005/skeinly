@@ -26,9 +26,14 @@ data class ProjectListState(
 )
 
 sealed interface ProjectListEvent {
-    data class CreateProject(val title: String, val totalRows: Int?) : ProjectListEvent
+    data class CreateProject(
+        val title: String,
+        val totalRows: Int?,
+    ) : ProjectListEvent
 
-    data class DeleteProject(val id: String) : ProjectListEvent
+    data class DeleteProject(
+        val id: String,
+    ) : ProjectListEvent
 
     data object ShowCreateDialog : ProjectListEvent
 

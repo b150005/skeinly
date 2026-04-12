@@ -29,9 +29,13 @@ data class CommentSectionState(
 )
 
 sealed interface CommentSectionEvent {
-    data class PostComment(val body: String) : CommentSectionEvent
+    data class PostComment(
+        val body: String,
+    ) : CommentSectionEvent
 
-    data class DeleteComment(val commentId: String) : CommentSectionEvent
+    data class DeleteComment(
+        val commentId: String,
+    ) : CommentSectionEvent
 
     data object ClearError : CommentSectionEvent
 }
@@ -60,7 +64,8 @@ class CommentSectionViewModel(
     }
 
     private fun observeComments() {
-        getComments.observe(targetType, targetId)
+        getComments
+            .observe(targetType, targetId)
             .onEach { comments ->
                 resolveAuthors(comments)
                 _state.update {
@@ -69,16 +74,14 @@ class CommentSectionViewModel(
                         isLoading = false,
                     )
                 }
-            }
-            .catch { e ->
+            }.catch { e ->
                 _state.update {
                     it.copy(
                         isLoading = false,
                         error = e.message ?: "Failed to load comments",
                     )
                 }
-            }
-            .launchIn(viewModelScope)
+            }.launchIn(viewModelScope)
     }
 
     private fun postComment(body: String) {
@@ -114,9 +117,10 @@ class CommentSectionViewModel(
         if (newAuthorIds.isEmpty()) return
 
         val resolved =
-            newAuthorIds.mapNotNull { authorId ->
-                userRepository.getById(authorId)?.let { authorId to it }
-            }.toMap()
+            newAuthorIds
+                .mapNotNull { authorId ->
+                    userRepository.getById(authorId)?.let { authorId to it }
+                }.toMap()
 
         _state.update { it.copy(authors = currentAuthors + resolved) }
     }

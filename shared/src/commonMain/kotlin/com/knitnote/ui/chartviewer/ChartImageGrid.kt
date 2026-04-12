@@ -106,8 +106,7 @@ private fun ChartImageThumbnail(
                         .background(
                             MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
                             RoundedCornerShape(12.dp),
-                        )
-                        .padding(2.dp)
+                        ).padding(2.dp)
                         .size(16.dp),
             )
         }

@@ -10,7 +10,10 @@ import kotlin.time.Instant
  */
 fun Instant.formatShort(timeZone: TimeZone = TimeZone.currentSystemDefault()): String {
     val dt = toLocalDateTime(timeZone)
-    val month = dt.month.number.toString().padStart(2, '0')
+    val month =
+        dt.month.number
+            .toString()
+            .padStart(2, '0')
     val day = dt.day.toString().padStart(2, '0')
     val hour = dt.hour.toString().padStart(2, '0')
     val minute = dt.minute.toString().padStart(2, '0')
@@ -23,7 +26,10 @@ fun Instant.formatShort(timeZone: TimeZone = TimeZone.currentSystemDefault()): S
 fun Instant.formatFull(timeZone: TimeZone = TimeZone.currentSystemDefault()): String {
     val dt = toLocalDateTime(timeZone)
     val year = dt.year.toString().padStart(4, '0')
-    val month = dt.month.number.toString().padStart(2, '0')
+    val month =
+        dt.month.number
+            .toString()
+            .padStart(2, '0')
     val day = dt.day.toString().padStart(2, '0')
     val hour = dt.hour.toString().padStart(2, '0')
     val minute = dt.minute.toString().padStart(2, '0')

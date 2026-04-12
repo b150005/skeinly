@@ -25,26 +25,29 @@ class RemoteCommentDataSource(
     private val table get() = supabaseClient.postgrest["comments"]
 
     override suspend fun getById(id: String): Comment? =
-        table.select {
-            filter { eq("id", id) }
-        }.decodeSingleOrNull()
+        table
+            .select {
+                filter { eq("id", id) }
+            }.decodeSingleOrNull()
 
     override suspend fun getByTarget(
         targetType: CommentTargetType,
         targetId: String,
     ): List<Comment> =
-        table.select {
-            filter {
-                eq("target_type", targetType.name.lowercase())
-                eq("target_id", targetId)
-            }
-            order("created_at", io.github.jan.supabase.postgrest.query.Order.ASCENDING)
-        }.decodeList()
+        table
+            .select {
+                filter {
+                    eq("target_type", targetType.name.lowercase())
+                    eq("target_id", targetId)
+                }
+                order("created_at", io.github.jan.supabase.postgrest.query.Order.ASCENDING)
+            }.decodeList()
 
     override suspend fun insert(comment: Comment): Comment =
-        table.insert(comment) {
-            select()
-        }.decodeSingle()
+        table
+            .insert(comment) {
+                select()
+            }.decodeSingle()
 
     override suspend fun delete(id: String) {
         table.delete {

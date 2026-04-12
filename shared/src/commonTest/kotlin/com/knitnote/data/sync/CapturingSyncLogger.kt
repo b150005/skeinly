@@ -1,7 +1,11 @@
 package com.knitnote.data.sync
 
 class CapturingSyncLogger : SyncLogger {
-    data class LogEntry(val tag: String, val message: String, val throwable: Throwable?)
+    data class LogEntry(
+        val tag: String,
+        val message: String,
+        val throwable: Throwable?,
+    )
 
     val entries = mutableListOf<LogEntry>()
 

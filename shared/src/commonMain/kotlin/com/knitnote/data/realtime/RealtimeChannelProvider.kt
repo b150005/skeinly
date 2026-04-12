@@ -34,4 +34,7 @@ interface ChannelHandle {
  * Filter configuration for Realtime postgres change subscriptions.
  * Maps to `filter(column, FilterOperator.EQ, value)` in the Supabase SDK.
  */
-data class ChangeFilter(val column: String, val value: String)
+data class ChangeFilter(
+    val column: String,
+    val value: String,
+)

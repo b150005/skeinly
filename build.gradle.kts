@@ -17,8 +17,10 @@ subprojects {
     configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
         filter {
             exclude { element ->
-                element.file.path.contains("/build/")
+                val path = element.file.path
+                path.contains("/build/") || path.contains("${File.separator}build${File.separator}")
             }
+            exclude("**/build/**")
         }
     }
 }

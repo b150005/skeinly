@@ -64,8 +64,7 @@ fun ChartImageViewer(
                             )
                         scale = newScale
                     }
-                }
-                .pointerInput(Unit) {
+                }.pointerInput(Unit) {
                     detectTapGestures(
                         onDoubleTap = {
                             if (scale > 1f) {

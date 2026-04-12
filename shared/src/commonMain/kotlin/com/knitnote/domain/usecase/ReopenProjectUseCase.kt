@@ -5,7 +5,9 @@ import com.knitnote.domain.model.ProjectStatus
 import com.knitnote.domain.repository.ProjectRepository
 import kotlin.time.Clock
 
-class ReopenProjectUseCase(private val repository: ProjectRepository) {
+class ReopenProjectUseCase(
+    private val repository: ProjectRepository,
+) {
     suspend operator fun invoke(projectId: String): UseCaseResult<Project> {
         val project =
             repository.getById(projectId)

@@ -172,11 +172,18 @@ class SharedWithMeViewModelTest {
             shareRepo.addShare(makeShare("s-1", status = ShareStatus.PENDING))
 
             val viewModel = createViewModel()
-            assertEquals(ShareStatus.PENDING, viewModel.state.value.shares.first().status)
+            assertEquals(
+                ShareStatus.PENDING,
+                viewModel.state.value.shares
+                    .first()
+                    .status,
+            )
 
             viewModel.onEvent(SharedWithMeEvent.AcceptShare("s-1"))
 
-            val updatedShare = viewModel.state.value.shares.first()
+            val updatedShare =
+                viewModel.state.value.shares
+                    .first()
             assertEquals(ShareStatus.ACCEPTED, updatedShare.status)
         }
 
@@ -188,7 +195,9 @@ class SharedWithMeViewModelTest {
             val viewModel = createViewModel()
             viewModel.onEvent(SharedWithMeEvent.DeclineShare("s-1"))
 
-            val updatedShare = viewModel.state.value.shares.first()
+            val updatedShare =
+                viewModel.state.value.shares
+                    .first()
             assertEquals(ShareStatus.DECLINED, updatedShare.status)
         }
 

@@ -125,7 +125,8 @@ class SyncManager(
     ) {
         coalescingMutex.withLock {
             val existing =
-                pendingSyncDataSource.getByEntityId(entityId)
+                pendingSyncDataSource
+                    .getByEntityId(entityId)
                     .filter { it.entityType == entityType }
 
             if (existing.isEmpty()) {

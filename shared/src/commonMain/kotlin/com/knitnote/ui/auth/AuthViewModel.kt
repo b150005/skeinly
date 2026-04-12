@@ -26,9 +26,13 @@ data class AuthUiState(
 )
 
 sealed interface AuthEvent {
-    data class UpdateEmail(val email: String) : AuthEvent
+    data class UpdateEmail(
+        val email: String,
+    ) : AuthEvent
 
-    data class UpdatePassword(val password: String) : AuthEvent
+    data class UpdatePassword(
+        val password: String,
+    ) : AuthEvent
 
     data object ToggleMode : AuthEvent
 

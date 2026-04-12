@@ -32,7 +32,9 @@ data object Login
 data object ProjectList
 
 @Serializable
-data class ProjectDetail(val projectId: String)
+data class ProjectDetail(
+    val projectId: String,
+)
 
 @Serializable
 data object SharedWithMe
@@ -44,7 +46,10 @@ data object ActivityFeed
 data object Profile
 
 @Serializable
-data class SharedContent(val token: String? = null, val shareId: String? = null)
+data class SharedContent(
+    val token: String? = null,
+    val shareId: String? = null,
+)
 
 @Composable
 fun KnitNoteNavHost(

@@ -91,14 +91,15 @@ class CommentRepositoryImpl(
                 subscribedTargetKey = targetKey
 
                 // Set up the change flow before subscribing
-                handle.postgresChangeFlow(
-                    table = "comments",
-                    filter = ChangeFilter("target_id", targetId),
-                ).onEach { action ->
-                    handleCommentAction(action, targetType, targetId)
-                }.catch { e ->
-                    if (e is CancellationException) throw e
-                }.launchIn(scope)
+                handle
+                    .postgresChangeFlow(
+                        table = "comments",
+                        filter = ChangeFilter("target_id", targetId),
+                    ).onEach { action ->
+                        handleCommentAction(action, targetType, targetId)
+                    }.catch { e ->
+                        if (e is CancellationException) throw e
+                    }.launchIn(scope)
 
                 // Subscribe first, then seed — subscribe-then-fetch pattern
                 // prevents missed events between fetch and subscribe

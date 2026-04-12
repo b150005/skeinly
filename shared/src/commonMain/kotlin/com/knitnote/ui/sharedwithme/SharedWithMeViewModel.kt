@@ -30,9 +30,13 @@ sealed interface SharedWithMeEvent {
 
     data object ClearError : SharedWithMeEvent
 
-    data class AcceptShare(val shareId: String) : SharedWithMeEvent
+    data class AcceptShare(
+        val shareId: String,
+    ) : SharedWithMeEvent
 
-    data class DeclineShare(val shareId: String) : SharedWithMeEvent
+    data class DeclineShare(
+        val shareId: String,
+    ) : SharedWithMeEvent
 }
 
 class SharedWithMeViewModel(
@@ -109,11 +113,12 @@ class SharedWithMeViewModel(
 
     private suspend fun resolvePatternTitles(shares: List<Share>): Map<String, String> {
         val distinctIds = shares.map { it.patternId }.distinct()
-        return distinctIds.mapNotNull { patternId ->
-            patternRepository.getById(patternId)?.let { pattern ->
-                patternId to pattern.title
-            }
-        }.toMap()
+        return distinctIds
+            .mapNotNull { patternId ->
+                patternRepository.getById(patternId)?.let { pattern ->
+                    patternId to pattern.title
+                }
+            }.toMap()
     }
 
     private suspend fun resolveSharers(shares: List<Share>): Map<String, User> {

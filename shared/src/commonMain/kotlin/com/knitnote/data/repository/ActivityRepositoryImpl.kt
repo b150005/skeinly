@@ -74,14 +74,15 @@ class ActivityRepositoryImpl(
                 subscribedUserId = userId
 
                 // Set up change flow before subscribing
-                handle.postgresChangeFlow(
-                    table = "activities",
-                    filter = ChangeFilter("user_id", userId),
-                ).onEach { action ->
-                    handleActivityAction(action, userId)
-                }.catch { e ->
-                    if (e is CancellationException) throw e
-                }.launchIn(scope)
+                handle
+                    .postgresChangeFlow(
+                        table = "activities",
+                        filter = ChangeFilter("user_id", userId),
+                    ).onEach { action ->
+                        handleActivityAction(action, userId)
+                    }.catch { e ->
+                        if (e is CancellationException) throw e
+                    }.launchIn(scope)
 
                 // Subscribe first, then seed
                 handle.subscribe()

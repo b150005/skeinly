@@ -95,15 +95,16 @@ class ShareRepositoryImpl(
                 subscribedUserId = userId
 
                 // Set up the change flow before subscribing
-                handle.postgresChangeFlow(
-                    table = "shares",
-                    filter = ChangeFilter("to_user_id", userId),
-                ).onEach { action ->
-                    handleShareAction(action, userId)
-                }.catch { e ->
-                    if (e is CancellationException) throw e
-                    // Realtime error — flow terminates; will recover on next subscribe
-                }.launchIn(scope)
+                handle
+                    .postgresChangeFlow(
+                        table = "shares",
+                        filter = ChangeFilter("to_user_id", userId),
+                    ).onEach { action ->
+                        handleShareAction(action, userId)
+                    }.catch { e ->
+                        if (e is CancellationException) throw e
+                        // Realtime error — flow terminates; will recover on next subscribe
+                    }.launchIn(scope)
 
                 // Subscribe first, then seed — subscribe-then-fetch pattern
                 // prevents missed events between fetch and subscribe

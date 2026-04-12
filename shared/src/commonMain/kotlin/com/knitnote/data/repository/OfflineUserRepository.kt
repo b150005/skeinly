@@ -17,7 +17,5 @@ class OfflineUserRepository : UserRepository {
         limit: Int,
     ): List<User> = emptyList()
 
-    override suspend fun update(user: User): User {
-        throw UnsupportedOperationException("User profile update requires cloud connectivity")
-    }
+    override suspend fun update(user: User): User = throw UnsupportedOperationException("User profile update requires cloud connectivity")
 }

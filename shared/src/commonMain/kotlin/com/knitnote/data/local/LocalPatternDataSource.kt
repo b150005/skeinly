@@ -30,13 +30,15 @@ class LocalPatternDataSource(
         }
 
     fun observeById(id: String): Flow<Pattern?> =
-        queries.observeById(id)
+        queries
+            .observeById(id)
             .asFlow()
             .mapToOneOrNull(ioDispatcher)
             .map { it?.toDomain() }
 
     fun observeByOwnerId(ownerId: String): Flow<List<Pattern>> =
-        queries.getByOwnerId(ownerId)
+        queries
+            .getByOwnerId(ownerId)
             .asFlow()
             .mapToList(ioDispatcher)
             .map { list -> list.map { it.toDomain() } }

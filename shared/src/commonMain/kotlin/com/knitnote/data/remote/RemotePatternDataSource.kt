@@ -11,25 +11,29 @@ class RemotePatternDataSource(
     private val table get() = supabaseClient.postgrest["patterns"]
 
     suspend fun getByOwnerId(ownerId: String): List<Pattern> =
-        table.select {
-            filter { eq("owner_id", ownerId) }
-        }.decodeList()
+        table
+            .select {
+                filter { eq("owner_id", ownerId) }
+            }.decodeList()
 
     suspend fun getById(id: String): Pattern? =
-        table.select {
-            filter { eq("id", id) }
-        }.decodeSingleOrNull()
+        table
+            .select {
+                filter { eq("id", id) }
+            }.decodeSingleOrNull()
 
     override suspend fun upsert(pattern: Pattern): Pattern =
-        table.upsert(pattern) {
-            select()
-        }.decodeSingle()
+        table
+            .upsert(pattern) {
+                select()
+            }.decodeSingle()
 
     override suspend fun update(pattern: Pattern): Pattern =
-        table.update(pattern) {
-            select()
-            filter { eq("id", pattern.id) }
-        }.decodeSingle()
+        table
+            .update(pattern) {
+                select()
+                filter { eq("id", pattern.id) }
+            }.decodeSingle()
 
     override suspend fun delete(id: String) {
         table.delete {

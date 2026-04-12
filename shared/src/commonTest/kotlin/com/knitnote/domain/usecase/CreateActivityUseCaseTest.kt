@@ -90,9 +90,7 @@ class CreateActivityUseCaseTest {
 
                     override fun observeByUserId(userId: String): Flow<List<Activity>> = flowOf()
 
-                    override suspend fun create(activity: Activity): Activity {
-                        throw RuntimeException("Network failure")
-                    }
+                    override suspend fun create(activity: Activity): Activity = throw RuntimeException("Network failure")
                 }
             val useCase = CreateActivityUseCase(throwingRepo)
 

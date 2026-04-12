@@ -12,7 +12,9 @@ import kotlinx.coroutines.launch
  * Wraps a Kotlin [StateFlow] for consumption from Swift.
  * Swift calls [collect] to start observing, and [close] (via Closeable) to stop.
  */
-class FlowWrapper<T : Any>(private val flow: StateFlow<T>) {
+class FlowWrapper<T : Any>(
+    private val flow: StateFlow<T>,
+) {
     val currentValue: T get() = flow.value
 
     fun collect(onEach: (T) -> Unit): Closeable {
@@ -34,7 +36,9 @@ class FlowWrapper<T : Any>(private val flow: StateFlow<T>) {
  * Wraps a regular Kotlin [Flow] (non-state) for one-shot event channels.
  * Swift calls [collect] and receives each emission.
  */
-class EventFlowWrapper<T : Any>(private val flow: Flow<T>) {
+class EventFlowWrapper<T : Any>(
+    private val flow: Flow<T>,
+) {
     fun collect(onEach: (T) -> Unit): Closeable {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
         scope.launch {

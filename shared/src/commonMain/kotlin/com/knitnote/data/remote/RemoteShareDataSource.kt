@@ -31,29 +31,34 @@ class RemoteShareDataSource(
     private val table get() = supabaseClient.postgrest["shares"]
 
     override suspend fun getById(id: String): Share? =
-        table.select {
-            filter { eq("id", id) }
-        }.decodeSingleOrNull()
+        table
+            .select {
+                filter { eq("id", id) }
+            }.decodeSingleOrNull()
 
     override suspend fun getByPatternId(patternId: String): List<Share> =
-        table.select {
-            filter { eq("pattern_id", patternId) }
-        }.decodeList()
+        table
+            .select {
+                filter { eq("pattern_id", patternId) }
+            }.decodeList()
 
     override suspend fun getByToken(token: String): Share? =
-        table.select {
-            filter { eq("share_token", token) }
-        }.decodeSingleOrNull()
+        table
+            .select {
+                filter { eq("share_token", token) }
+            }.decodeSingleOrNull()
 
     override suspend fun getReceivedByUserId(userId: String): List<Share> =
-        table.select {
-            filter { eq("to_user_id", userId) }
-        }.decodeList()
+        table
+            .select {
+                filter { eq("to_user_id", userId) }
+            }.decodeList()
 
     override suspend fun insert(share: Share): Share =
-        table.insert(share) {
-            select()
-        }.decodeSingle()
+        table
+            .insert(share) {
+                select()
+            }.decodeSingle()
 
     override suspend fun updateStatus(
         id: String,

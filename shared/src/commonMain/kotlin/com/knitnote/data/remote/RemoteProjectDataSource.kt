@@ -11,25 +11,29 @@ class RemoteProjectDataSource(
     private val table get() = supabaseClient.postgrest["projects"]
 
     suspend fun getByOwnerId(ownerId: String): List<Project> =
-        table.select {
-            filter { eq("owner_id", ownerId) }
-        }.decodeList()
+        table
+            .select {
+                filter { eq("owner_id", ownerId) }
+            }.decodeList()
 
     suspend fun getById(id: String): Project? =
-        table.select {
-            filter { eq("id", id) }
-        }.decodeSingleOrNull()
+        table
+            .select {
+                filter { eq("id", id) }
+            }.decodeSingleOrNull()
 
     override suspend fun upsert(project: Project): Project =
-        table.upsert(project) {
-            select()
-        }.decodeSingle()
+        table
+            .upsert(project) {
+                select()
+            }.decodeSingle()
 
     override suspend fun update(project: Project): Project =
-        table.update(project) {
-            select()
-            filter { eq("id", project.id) }
-        }.decodeSingle()
+        table
+            .update(project) {
+                select()
+                filter { eq("id", project.id) }
+            }.decodeSingle()
 
     override suspend fun delete(id: String) {
         table.delete {

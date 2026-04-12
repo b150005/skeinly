@@ -1,6 +1,8 @@
 package com.knitnote.data.sync
 
-enum class SyncEntityType(val value: String) {
+enum class SyncEntityType(
+    val value: String,
+) {
     PROJECT("project"),
     PROGRESS("progress"),
     PATTERN("pattern"),
@@ -13,7 +15,9 @@ enum class SyncEntityType(val value: String) {
     }
 }
 
-enum class SyncOperation(val value: String) {
+enum class SyncOperation(
+    val value: String,
+) {
     INSERT("insert"),
     UPDATE("update"),
     DELETE("delete"),
@@ -26,7 +30,9 @@ enum class SyncOperation(val value: String) {
     }
 }
 
-enum class SyncStatus(val value: String) {
+enum class SyncStatus(
+    val value: String,
+) {
     PENDING("pending"),
     FAILED("failed"),
     ;

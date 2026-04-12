@@ -159,7 +159,9 @@ fun ProjectListScreen(
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+                        contentPadding =
+                            androidx.compose.foundation.layout
+                                .PaddingValues(16.dp),
                     ) {
                         items(state.projects, key = { it.id }) { project ->
                             SwipeToDismissProjectCard(

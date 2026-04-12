@@ -13,3 +13,5 @@ trim_trailing_whitespace = true
 ktlint_function_naming_ignore_when_annotated_with = Composable
 # Allow underscore-prefixed backing properties (_state, _uiState) — standard Kotlin convention
 ktlint_standard_property-naming = disabled
+# Allow underscore-prefixed backing property names — standard Kotlin convention for StateFlow backing
+ktlint_standard_backing-property-naming = disabled

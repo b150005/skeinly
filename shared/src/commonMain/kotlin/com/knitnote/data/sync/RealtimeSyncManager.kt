@@ -56,7 +56,8 @@ class RealtimeSyncManager(
     fun start() {
         authObserverJob?.cancel()
         authObserverJob =
-            authRepository.observeAuthState()
+            authRepository
+                .observeAuthState()
                 .onEach { state ->
                     when (state) {
                         is AuthState.Authenticated -> {
@@ -68,8 +69,7 @@ class RealtimeSyncManager(
                         -> unsubscribe()
                         is AuthState.Loading -> { /* wait */ }
                     }
-                }
-                .launchIn(scope)
+                }.launchIn(scope)
 
         connectivityJob?.cancel()
         connectivityJob =
@@ -81,8 +81,7 @@ class RealtimeSyncManager(
                             subscribe(ownerId)
                         }
                     }
-                }
-                ?.launchIn(scope)
+                }?.launchIn(scope)
     }
 
     suspend fun stop() {
@@ -159,16 +158,17 @@ class RealtimeSyncManager(
         val handle = channelProvider.createChannel("projects-$ownerId")
         projectChannel = handle
 
-        handle.postgresChangeFlow(
-            table = "projects",
-            filter = ChangeFilter("owner_id", ownerId),
-        ).onEach { action ->
-            handleProjectAction(action)
-        }.catch { e ->
-            if (e is CancellationException) throw e
-            logger.log(TAG, "Channel flow error on projects", e)
-            scheduleRetry(ownerId)
-        }.launchIn(scope)
+        handle
+            .postgresChangeFlow(
+                table = "projects",
+                filter = ChangeFilter("owner_id", ownerId),
+            ).onEach { action ->
+                handleProjectAction(action)
+            }.catch { e ->
+                if (e is CancellationException) throw e
+                logger.log(TAG, "Channel flow error on projects", e)
+                scheduleRetry(ownerId)
+            }.launchIn(scope)
 
         handle.subscribe()
     }
@@ -177,16 +177,17 @@ class RealtimeSyncManager(
         val handle = channelProvider.createChannel("progress-$ownerId")
         progressChannel = handle
 
-        handle.postgresChangeFlow(
-            table = "progress",
-            filter = ChangeFilter("owner_id", ownerId),
-        ).onEach { action ->
-            handleProgressAction(action)
-        }.catch { e ->
-            if (e is CancellationException) throw e
-            logger.log(TAG, "Channel flow error on progress", e)
-            scheduleRetry(ownerId)
-        }.launchIn(scope)
+        handle
+            .postgresChangeFlow(
+                table = "progress",
+                filter = ChangeFilter("owner_id", ownerId),
+            ).onEach { action ->
+                handleProgressAction(action)
+            }.catch { e ->
+                if (e is CancellationException) throw e
+                logger.log(TAG, "Channel flow error on progress", e)
+                scheduleRetry(ownerId)
+            }.launchIn(scope)
 
         handle.subscribe()
     }
@@ -195,16 +196,17 @@ class RealtimeSyncManager(
         val handle = channelProvider.createChannel("patterns-$ownerId")
         patternChannel = handle
 
-        handle.postgresChangeFlow(
-            table = "patterns",
-            filter = ChangeFilter("owner_id", ownerId),
-        ).onEach { action ->
-            handlePatternAction(action)
-        }.catch { e ->
-            if (e is CancellationException) throw e
-            logger.log(TAG, "Channel flow error on patterns", e)
-            scheduleRetry(ownerId)
-        }.launchIn(scope)
+        handle
+            .postgresChangeFlow(
+                table = "patterns",
+                filter = ChangeFilter("owner_id", ownerId),
+            ).onEach { action ->
+                handlePatternAction(action)
+            }.catch { e ->
+                if (e is CancellationException) throw e
+                logger.log(TAG, "Channel flow error on patterns", e)
+                scheduleRetry(ownerId)
+            }.launchIn(scope)
 
         handle.subscribe()
     }
@@ -270,9 +272,7 @@ class RealtimeSyncManager(
         }
     }
 
-    private suspend fun isKnownProject(projectId: String): Boolean {
-        return localProject.getById(projectId) != null
-    }
+    private suspend fun isKnownProject(projectId: String): Boolean = localProject.getById(projectId) != null
 
     companion object {
         private const val TAG = "RealtimeSyncManager"

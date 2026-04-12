@@ -54,11 +54,18 @@ sealed interface ProjectDetailEvent {
 
     data object ClearError : ProjectDetailEvent
 
-    data class AddNote(val note: String) : ProjectDetailEvent
+    data class AddNote(
+        val note: String,
+    ) : ProjectDetailEvent
 
-    data class DeleteNote(val progressId: String) : ProjectDetailEvent
+    data class DeleteNote(
+        val progressId: String,
+    ) : ProjectDetailEvent
 
-    data class EditProject(val title: String, val totalRows: Int?) : ProjectDetailEvent
+    data class EditProject(
+        val title: String,
+        val totalRows: Int?,
+    ) : ProjectDetailEvent
 
     data object CompleteProject : ProjectDetailEvent
 
@@ -73,11 +80,18 @@ sealed interface ProjectDetailEvent {
         val permission: SharePermission,
     ) : ProjectDetailEvent
 
-    class UploadChartImage(val data: ByteArray, val fileName: String) : ProjectDetailEvent
+    class UploadChartImage(
+        val data: ByteArray,
+        val fileName: String,
+    ) : ProjectDetailEvent
 
-    data class DeleteChartImage(val imagePath: String) : ProjectDetailEvent
+    data class DeleteChartImage(
+        val imagePath: String,
+    ) : ProjectDetailEvent
 
-    data class SelectChartImage(val index: Int) : ProjectDetailEvent
+    data class SelectChartImage(
+        val index: Int,
+    ) : ProjectDetailEvent
 
     data object CloseChartViewer : ProjectDetailEvent
 }
@@ -107,7 +121,8 @@ class ProjectDetailViewModel(
 
     val state: StateFlow<ProjectDetailState> =
         combine(
-            projectRepository.observeById(projectId)
+            projectRepository
+                .observeById(projectId)
                 .catch { e ->
                     _uiOverlay.update { it.copy(error = e.message ?: "Failed to load project") }
                     emit(null)
@@ -135,8 +150,7 @@ class ProjectDetailViewModel(
             .catch { e ->
                 _uiOverlay.update { it.copy(error = e.message ?: "Failed to load notes") }
                 emit(emptyList())
-            }
-            .stateIn(
+            }.stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = emptyList(),

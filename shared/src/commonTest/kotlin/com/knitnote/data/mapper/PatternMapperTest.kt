@@ -104,7 +104,9 @@ class PatternMapperTest {
         val original = listOf("path/1.jpg", "path/2.jpg", "path/3.jpg")
         val json = original.toChartImageUrlsDbString()
         // Parse back using the same JSON approach
-        val parsed = kotlinx.serialization.json.Json.decodeFromString<List<String>>(json!!)
+        val parsed =
+            kotlinx.serialization.json.Json
+                .decodeFromString<List<String>>(json!!)
         assertEquals(original, parsed)
     }
 
@@ -112,7 +114,9 @@ class PatternMapperTest {
     fun `chartImageUrls single item round-trips`() {
         val original = listOf("user-1/pattern-1/chart.jpg")
         val json = original.toChartImageUrlsDbString()
-        val parsed = kotlinx.serialization.json.Json.decodeFromString<List<String>>(json!!)
+        val parsed =
+            kotlinx.serialization.json.Json
+                .decodeFromString<List<String>>(json!!)
         assertEquals(original, parsed)
     }
 

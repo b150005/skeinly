@@ -35,9 +35,13 @@ sealed interface ProfileEvent {
 
     data object SaveProfile : ProfileEvent
 
-    data class UpdateDisplayName(val value: String) : ProfileEvent
+    data class UpdateDisplayName(
+        val value: String,
+    ) : ProfileEvent
 
-    data class UpdateBio(val value: String) : ProfileEvent
+    data class UpdateBio(
+        val value: String,
+    ) : ProfileEvent
 
     data object ClearError : ProfileEvent
 }

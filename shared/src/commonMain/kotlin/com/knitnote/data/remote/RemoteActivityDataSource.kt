@@ -23,14 +23,16 @@ class RemoteActivityDataSource(
         userId: String,
         limit: Int,
     ): List<Activity> =
-        table.select {
-            filter { eq("user_id", userId) }
-            order("created_at", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
-            limit(limit.toLong())
-        }.decodeList()
+        table
+            .select {
+                filter { eq("user_id", userId) }
+                order("created_at", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+                limit(limit.toLong())
+            }.decodeList()
 
     override suspend fun insert(activity: Activity): Activity =
-        table.insert(activity) {
-            select()
-        }.decodeSingle()
+        table
+            .insert(activity) {
+                select()
+            }.decodeSingle()
 }

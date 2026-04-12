@@ -13,7 +13,8 @@ class SignOutUseCaseTest {
     fun `sign out returns Success`() =
         runTest {
             fakeAuth.setAuthState(
-                com.knitnote.domain.model.AuthState.Authenticated("user-1", "a@b.com"),
+                com.knitnote.domain.model.AuthState
+                    .Authenticated("user-1", "a@b.com"),
             )
             val result = signOut()
             assertIs<UseCaseResult.Success<Unit>>(result)

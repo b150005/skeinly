@@ -26,11 +26,10 @@ import platform.darwin.dispatch_get_main_queue
 import platform.posix.memcpy
 
 @Composable
-actual fun rememberImagePickerLauncher(onResult: (ImagePickerResult?) -> Unit): ImagePickerLauncher {
-    return remember(onResult) {
+actual fun rememberImagePickerLauncher(onResult: (ImagePickerResult?) -> Unit): ImagePickerLauncher =
+    remember(onResult) {
         ImagePickerLauncher(onResult)
     }
-}
 
 actual class ImagePickerLauncher(
     private val onResult: (ImagePickerResult?) -> Unit,
@@ -58,7 +57,8 @@ actual class ImagePickerLauncher(
 
 private class PickerDelegate(
     private val onResult: (ImagePickerResult?) -> Unit,
-) : NSObject(), PHPickerViewControllerDelegateProtocol {
+) : NSObject(),
+    PHPickerViewControllerDelegateProtocol {
     override fun picker(
         picker: PHPickerViewController,
         didFinishPicking: List<*>,
