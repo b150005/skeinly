@@ -197,6 +197,7 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 - **Phase 13**: Realtime Testability — RealtimeChannelProvider/ChannelHandle/ChangeFilter abstraction, DataSourceOperations extraction, 34 new tests (462 shared total)
 - **Phase 14**: Offline-First Hardening — Progress owner_id denormalization + Realtime filter, idempotent upsert, SyncLogger, auto-reconnect with backoff/jitter/ConnectivityMonitor, security review fixes (469 shared tests)
 - **Phase 15**: Tech Debt Cleanup — RemoteSyncOperations insert→upsert rename, DefaultSyncLogger expect/actual (Android Log.d, iOS NSLog), Progress.ownerId fix with AuthRepository injection, SQLDelight default alignment (471 shared tests)
+- **Phase 15.5**: AGP 9.x KMP Plugin Migration — `com.android.library` → `com.android.kotlin.multiplatform.library`, BuildConfig → generated SupabaseCredentials, `androidUnitTest` → `androidHostTest`, dependency updates (ktlint 14.2.0, kotlinx-serialization 1.11.0, Coil 3.4.0, Kover 0.9.8) (471 shared tests)
 
 ### Planned
-- **Phase 16**: TBD — Agent team to determine next priority (candidates: E2E tests with Maestro, search/filter, macOS target, settings screen, UI improvements)
+- **Phase 16**: TBD — Agent team to determine next priority (candidates: E2E tests with Maestro, search/filter, macOS target, settings screen, UI improvements, androidApp builtInKotlin migration)

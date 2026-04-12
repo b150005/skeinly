@@ -1,8 +1,8 @@
 package com.knitnote.data.remote
 
-import com.knitnote.shared.BuildConfig
+import com.knitnote.config.SupabaseCredentials
 
 actual object SupabaseConfig {
-    actual val url: String = BuildConfig.SUPABASE_URL
-    actual val anonKey: String = BuildConfig.SUPABASE_ANON_KEY
+    actual val url: String = SupabaseCredentials.URL
+    actual val anonKey: String = SupabaseCredentials.ANON_KEY
 }
