@@ -11,7 +11,7 @@ final class ProfileUITests: XCTestCase {
     }
 
     func testDefaultState_displaysProfileScreen() {
-        app.buttons["moreMenu"].tap()
+        app.buttons["moreMenu"].tapToolbarButton()
         let profileButton = app.buttons["Profile"]
         XCTAssertTrue(profileButton.waitForExistence(timeout: 2), "Profile button not found")
         profileButton.tap()

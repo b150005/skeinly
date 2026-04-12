@@ -16,7 +16,7 @@ final class NavigationFlowUITests: XCTestCase {
     }
 
     func testNavigateToProfile_andBack() {
-        app.buttons["moreMenu"].tap()
+        app.buttons["moreMenu"].tapToolbarButton()
         let profileButton = app.buttons["Profile"]
         XCTAssertTrue(profileButton.waitForExistence(timeout: 2), "Profile button not found")
         profileButton.tap()
@@ -50,7 +50,7 @@ final class NavigationFlowUITests: XCTestCase {
     }
 
     func testNavigateToActivityFeed_andBack() {
-        app.buttons["moreMenu"].tap()
+        app.buttons["moreMenu"].tapToolbarButton()
         let activityButton = app.buttons["Activity"]
         XCTAssertTrue(activityButton.waitForExistence(timeout: 2), "Activity button not found")
         activityButton.tap()

@@ -8,6 +8,19 @@ extension XCUIApplication {
     }
 }
 
+extension XCUIElement {
+    /// Tap a navigation bar button that may fail `scrollToVisible`.
+    /// Falls back to coordinate-based tap when the AX scroll action fails.
+    func tapToolbarButton(timeout: TimeInterval = 5) {
+        XCTAssertTrue(waitForExistence(timeout: timeout), "Element '\(identifier)' not found")
+        if isHittable {
+            tap()
+        } else {
+            coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        }
+    }
+}
+
 /// Create a project through the UI. Assumes the app is on ProjectListScreen.
 /// Returns after the project appears in the list.
 func createProject(
