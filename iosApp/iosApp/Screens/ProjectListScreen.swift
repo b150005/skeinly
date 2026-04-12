@@ -225,7 +225,7 @@ private struct StatusFilterSection: View {
                         action: { onStatusFilterChange(statusFilter == .completed ? nil : .completed) }
                     )
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, DesignTokens.listRowPaddingV)
             }
         }
         .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
@@ -242,9 +242,9 @@ private struct StatusFilterChip: View {
             Text(title)
                 .font(.subheadline)
                 .fontWeight(isSelected ? .semibold : .regular)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 7)
-                .background(isSelected ? Color.accentColor.opacity(0.15) : Color(.systemGray6))
+                .padding(.horizontal, DesignTokens.chipPaddingH)
+                .padding(.vertical, DesignTokens.chipPaddingV)
+                .background(isSelected ? Color.accentColor.opacity(DesignTokens.highlightOpacity) : Color(.systemGray6))
                 .foregroundStyle(isSelected ? Color.accentColor : .primary)
                 .clipShape(Capsule())
         }
@@ -283,7 +283,7 @@ private struct ProjectRow: View {
                     .tint(progressTint)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, DesignTokens.listRowPaddingV)
     }
 
     private var progressTint: Color {
@@ -304,9 +304,9 @@ struct StatusBadge: View {
         Text(statusText)
             .font(.caption2)
             .fontWeight(.medium)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(statusColor.opacity(0.15))
+            .padding(.horizontal, DesignTokens.badgePaddingH)
+            .padding(.vertical, DesignTokens.badgePaddingV)
+            .background(statusColor.opacity(DesignTokens.highlightOpacity))
             .foregroundStyle(statusColor)
             .clipShape(Capsule())
     }

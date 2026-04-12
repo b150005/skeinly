@@ -10,7 +10,8 @@ import kotlin.test.assertTrue
 
 class DeleteAccountUseCaseTest {
     private val fakeAuth = FakeAuthRepository()
-    private val deleteAccount = DeleteAccountUseCase(fakeAuth, null, null, null)
+    private val closeChannels = CloseRealtimeChannelsUseCase(null, null, null)
+    private val deleteAccount = DeleteAccountUseCase(fakeAuth, closeChannels)
 
     @Test
     fun `delete account returns Success`() =
@@ -43,7 +44,11 @@ class DeleteAccountUseCaseTest {
             val share = FakeShareRepository()
             val comment = FakeCommentRepository()
             val activity = FakeActivityRepository()
-            val useCase = DeleteAccountUseCase(fakeAuth, share, comment, activity)
+            val useCase =
+                DeleteAccountUseCase(
+                    fakeAuth,
+                    CloseRealtimeChannelsUseCase(share, comment, activity),
+                )
 
             fakeAuth.setAuthState(AuthState.Authenticated("user-1", "a@b.com"))
             useCase()

@@ -1,0 +1,8 @@
+// Local Xcode build settings — copy to local.xcconfig and fill in your values.
+// This file is committed to version control as a template.
+// local.xcconfig is git-ignored and must NOT be committed.
+
+// Apple Developer Team ID (10-char alphanumeric)
+// Find via: security find-identity -v -p codesigning | grep "Developer"
+// Or Apple Developer portal > Membership > Team ID
+DEVELOPMENT_TEAM = YOUR_TEAM_ID_HERE

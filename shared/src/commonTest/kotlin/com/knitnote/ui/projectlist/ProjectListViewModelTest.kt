@@ -5,6 +5,7 @@ import com.knitnote.domain.model.AuthState
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
 import com.knitnote.domain.model.SortOrder
+import com.knitnote.domain.usecase.CloseRealtimeChannelsUseCase
 import com.knitnote.domain.usecase.CreateProjectUseCase
 import com.knitnote.domain.usecase.DeleteProjectUseCase
 import com.knitnote.domain.usecase.FakeAuthRepository
@@ -46,7 +47,7 @@ class ProjectListViewModelTest {
                 getProjects = GetProjectsUseCase(repository, fakeAuth),
                 createProject = CreateProjectUseCase(repository, fakeAuth),
                 deleteProject = DeleteProjectUseCase(repository),
-                signOut = SignOutUseCase(fakeAuth, null, null, null),
+                signOut = SignOutUseCase(fakeAuth, CloseRealtimeChannelsUseCase(null, null, null)),
             )
     }
 

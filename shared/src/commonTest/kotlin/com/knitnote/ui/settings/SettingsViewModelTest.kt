@@ -2,6 +2,7 @@ package com.knitnote.ui.settings
 
 import app.cash.turbine.test
 import com.knitnote.domain.model.AuthState
+import com.knitnote.domain.usecase.CloseRealtimeChannelsUseCase
 import com.knitnote.domain.usecase.DeleteAccountUseCase
 import com.knitnote.domain.usecase.FakeAuthRepository
 import com.knitnote.domain.usecase.ObserveAuthStateUseCase
@@ -39,8 +40,8 @@ class SettingsViewModelTest {
     private fun createViewModel(): SettingsViewModel =
         SettingsViewModel(
             observeAuthState = ObserveAuthStateUseCase(authRepo),
-            signOut = SignOutUseCase(authRepo, null, null, null),
-            deleteAccount = DeleteAccountUseCase(authRepo, null, null, null),
+            signOut = SignOutUseCase(authRepo, CloseRealtimeChannelsUseCase(null, null, null)),
+            deleteAccount = DeleteAccountUseCase(authRepo, CloseRealtimeChannelsUseCase(null, null, null)),
         )
 
     @Test
