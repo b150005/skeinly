@@ -201,5 +201,7 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 16**: Search/Filter + builtInKotlin — ViewModel-level search (title substring), status filter (All/Not Started/In Progress/Completed), sort (Recent/Alphabetical/Progress), Material 3 SearchBar + FilterChip (Android), SwiftUI .searchable + Picker (iOS), androidApp builtInKotlin migration (removed org.jetbrains.kotlin.android plugin, android.builtInKotlin=true) (491 shared tests)
 
+- **Phase 17**: Settings + App Store Readiness — Settings screen (account management, sign-out, delete account), delete_own_account PostgreSQL RPC (SECURITY DEFINER, ADR-005), PrivacyInfo.xcprivacy, adaptive icon scaffold (Android), AppIcon.appiconset scaffold (iOS), UILaunchScreen config (502 shared tests)
+
 ### Planned
-- **Phase 17**: TBD — Agent team to determine next priority (candidates: settings screen, UI polish, E2E tests with Maestro, macOS target)
+- **Phase 18**: TBD — Agent team to determine next priority (candidates: UI polish, E2E tests with Maestro, macOS target)
