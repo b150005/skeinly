@@ -1,29 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Placeholder foreground: simple yarn ball icon.
-     Replace with a proper vector asset designed for the app. -->
+<!-- Legacy vector fallback (unused — adaptive icon uses @mipmap/ic_launcher_foreground PNGs).
+     Kept as a minimal placeholder in case any layout references @drawable/ic_launcher_foreground. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Circle representing yarn ball -->
+    <!-- Yarn ball circle -->
     <path
         android:fillColor="#FFFFFF"
         android:pathData="M54,54m-24,0a24,24 0,1 1,48 0a24,24 0,1 1,-48 0" />
-    <!-- Strand lines across the yarn ball -->
+    <!-- Strand lines -->
     <path
-        android:strokeColor="#7B61FF"
-        android:strokeWidth="2"
-        android:pathData="M36,42 Q54,30 72,42"
+        android:strokeColor="#A894E4"
+        android:strokeWidth="2.5"
+        android:pathData="M33,40 Q54,30 75,40"
         android:fillColor="#00000000" />
     <path
-        android:strokeColor="#7B61FF"
+        android:strokeColor="#8A76CD"
         android:strokeWidth="2"
-        android:pathData="M36,54 Q54,42 72,54"
+        android:pathData="M33,48 Q54,38 75,48"
         android:fillColor="#00000000" />
     <path
-        android:strokeColor="#7B61FF"
+        android:strokeColor="#A894E4"
+        android:strokeWidth="2.5"
+        android:pathData="M33,56 Q54,46 75,56"
+        android:fillColor="#00000000" />
+    <path
+        android:strokeColor="#8A76CD"
         android:strokeWidth="2"
-        android:pathData="M36,66 Q54,54 72,66"
+        android:pathData="M33,64 Q54,54 75,64"
+        android:fillColor="#00000000" />
+    <path
+        android:strokeColor="#A894E4"
+        android:strokeWidth="2.5"
+        android:pathData="M33,72 Q54,62 75,72"
+        android:fillColor="#00000000" />
+    <!-- Diagonal strands -->
+    <path
+        android:strokeColor="#8A76CD"
+        android:strokeWidth="2"
+        android:pathData="M38,32 L70,76"
+        android:fillColor="#00000000" />
+    <path
+        android:strokeColor="#C6BCF2"
+        android:strokeWidth="1.5"
+        android:pathData="M70,32 L38,76"
+        android:fillColor="#00000000" />
+    <!-- Thread tail -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:pathData="M68,70 Q78,80 72,90 Q66,96 76,100"
         android:fillColor="#00000000" />
 </vector>
