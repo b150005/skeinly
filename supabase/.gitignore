@@ -1,8 +1,14 @@
 # Supabase
 .branches
 .temp
+.supabase/
 
-# dotenvx
-.env.keys
-.env.local
-.env.*.local
+# Environment files (dotenvx, local overrides, production credentials)
+.env
+.env.*
+
+# TLS certificates (local dev only, never commit)
+*.pem
+*.key
+*.p12
+*.pfx

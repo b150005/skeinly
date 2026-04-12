@@ -75,6 +75,7 @@ supabase/.temp
 
 # Environment
 .env
+.env.keys
 .env.local
 .env.*.local
 
