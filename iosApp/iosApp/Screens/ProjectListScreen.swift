@@ -135,7 +135,7 @@ struct ProjectListScreen: View {
     }
 
     @ViewBuilder
-    private func sortMenu(currentOrder: SortOrder) -> some View {
+    private func sortMenu(currentOrder: Shared.SortOrder) -> some View {
         Menu {
             Button {
                 viewModel.onEvent(event: ProjectListEventUpdateSortOrder(order: .recent))
