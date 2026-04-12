@@ -28,7 +28,8 @@ targets:
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         CADisableMinimumFrameDurationOnPhone: true
-        UILaunchScreen: {}
+        UILaunchScreen:
+          UIColorName: SystemBackground
         CFBundleURLTypes:
           - CFBundleURLName: "com.knitnote.share"
             CFBundleURLSchemes:

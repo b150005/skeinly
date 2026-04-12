@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder foreground: simple yarn ball icon.
+     Replace with a proper vector asset designed for the app. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Circle representing yarn ball -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,54m-24,0a24,24 0,1 1,48 0a24,24 0,1 1,-48 0" />
+    <!-- Strand lines across the yarn ball -->
+    <path
+        android:strokeColor="#7B61FF"
+        android:strokeWidth="2"
+        android:pathData="M36,42 Q54,30 72,42"
+        android:fillColor="#00000000" />
+    <path
+        android:strokeColor="#7B61FF"
+        android:strokeWidth="2"
+        android:pathData="M36,54 Q54,42 72,54"
+        android:fillColor="#00000000" />
+    <path
+        android:strokeColor="#7B61FF"
+        android:strokeWidth="2"
+        android:pathData="M36,66 Q54,54 72,66"
+        android:fillColor="#00000000" />
+</vector>
