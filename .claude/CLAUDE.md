@@ -207,9 +207,10 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 19a**: Supabase Production Deploy — All 8 migrations applied (001-007 schema + 008 Realtime publication fix), `supabase init` + `supabase link`, Email Auth verified, `delete_own_account` RPC (SECURITY DEFINER) confirmed, `chart-images` private Storage bucket + 5 RLS policies, 6-table Realtime publication (projects/progress/patterns/shares/comments/activities), 32-check verification script, config.toml committed (508 shared tests)
 
+- **Phase 19b**: App Icon Artwork — iOS 1024x1024 PNG, Android adaptive icon PNGs (all densities), Play Store 512x512, yarn ball motif with purple (#7B61FF) brand color (508 shared tests)
+
+- **Phase 19c**: CI Signing + TestFlight — iOS code signing pipeline in release.yml (temporary keychain, manual signing, ExportOptions.plist generation, xcodebuild archive/exportArchive, TestFlight upload via xcrun altool with App Store Connect API key), conditional execution (graceful degradation when secrets absent), version numbering (MARKETING_VERSION from tag, CURRENT_PROJECT_VERSION from run_number), IPA artifact on GitHub Release, ADR-006 (508 shared tests)
+
 ### Planned
-- **Phase 19**: Store Submission Pipeline (continued)
-  - **19b**: App Icon Artwork — 1024×1024 PNG for iOS, Android vector replacement, yarn ball/knitting motif brand identity
-  - **19c**: CI Signing + TestFlight — iOS code signing (certificates + provisioning profiles in GitHub Secrets), `xcodebuild archive`/`exportArchive`, TestFlight upload, Android keystore verification, ADR-006
 - **Phase 20**: E2E Tests with Maestro — Critical Android flows first, iOS flows follow, CI integration (main/tag only)
 - **Phase 21**: macOS Target — Post-launch, based on user demand
