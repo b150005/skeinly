@@ -6,6 +6,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class DeleteAccountUseCaseTest {
     private val fakeAuth = FakeAuthRepository()
@@ -34,5 +35,21 @@ class DeleteAccountUseCaseTest {
             fakeAuth.setAuthState(AuthState.Authenticated("user-1", "a@b.com"))
             deleteAccount()
             assertIs<AuthState.Unauthenticated>(fakeAuth.observeAuthState().first())
+        }
+
+    @Test
+    fun `delete account closes all realtime channels before deletion`() =
+        runTest {
+            val share = FakeShareRepository()
+            val comment = FakeCommentRepository()
+            val activity = FakeActivityRepository()
+            val useCase = DeleteAccountUseCase(fakeAuth, share, comment, activity)
+
+            fakeAuth.setAuthState(AuthState.Authenticated("user-1", "a@b.com"))
+            useCase()
+
+            assertTrue(share.closeChannelCalled)
+            assertTrue(comment.closeChannelCalled)
+            assertTrue(activity.closeChannelCalled)
         }
 }

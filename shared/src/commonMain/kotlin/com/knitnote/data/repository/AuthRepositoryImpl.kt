@@ -72,7 +72,12 @@ class AuthRepositoryImpl(
                 ?: throw IllegalStateException("Supabase is not configured")
 
         client.postgrest.rpc("delete_own_account")
-        client.auth.signOut()
+        // Best-effort local session cleanup — account is already deleted server-side
+        try {
+            client.auth.signOut()
+        } catch (_: Exception) {
+            // Ignore: the auth session will become invalid on next refresh anyway
+        }
     }
 
     override fun getCurrentUserId(): String? = supabaseClient?.auth?.currentUserOrNull()?.id

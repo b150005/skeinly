@@ -6,7 +6,6 @@ struct SettingsScreen: View {
     @StateObject private var observer: ViewModelObserver<SettingsState>
     @State private var showDeleteConfirmation = false
     @State private var showError = false
-    @Environment(\.dismiss) private var dismiss
 
     init() {
         let vm = ViewModelFactory.settingsViewModel()
@@ -47,16 +46,8 @@ struct SettingsScreen: View {
         } message: {
             Text(state.error ?? "")
         }
-        .task {
-            let eventFlow = KoinHelperKt.wrapSettingsAccountDeletedFlow(flow: viewModel.accountDeleted)
-            let closeable = eventFlow.collect { _ in
-                Task { @MainActor in
-                    dismiss()
-                }
-            }
-            // closeable is retained by the task lifecycle
-            _ = closeable
-        }
+        // Account deletion triggers signOut internally, which sets AuthState
+        // to Unauthenticated. AppRootView observes this and navigates to login.
     }
 
     // MARK: - Settings Content

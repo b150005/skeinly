@@ -8,6 +8,11 @@ import kotlinx.coroutines.flow.map
 
 class FakeActivityRepository : ActivityRepository {
     private val activities = MutableStateFlow<List<Activity>>(emptyList())
+    var closeChannelCalled = false
+
+    override suspend fun closeChannel() {
+        closeChannelCalled = true
+    }
 
     override suspend fun getByUserId(userId: String): List<Activity> = activities.value.filter { it.userId == userId }
 

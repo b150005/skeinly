@@ -9,6 +9,11 @@ import kotlinx.coroutines.flow.map
 
 class FakeCommentRepository : CommentRepository {
     private val comments = MutableStateFlow<List<Comment>>(emptyList())
+    var closeChannelCalled = false
+
+    override suspend fun closeChannel() {
+        closeChannelCalled = true
+    }
 
     override suspend fun getById(id: String): Comment? = comments.value.find { it.id == id }
 

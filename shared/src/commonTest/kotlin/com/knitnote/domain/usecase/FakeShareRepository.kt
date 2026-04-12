@@ -9,6 +9,11 @@ import kotlinx.coroutines.flow.map
 
 class FakeShareRepository : ShareRepository {
     private val shares = MutableStateFlow<List<Share>>(emptyList())
+    var closeChannelCalled = false
+
+    override suspend fun closeChannel() {
+        closeChannelCalled = true
+    }
 
     override suspend fun getById(id: String): Share? = shares.value.find { it.id == id }
 

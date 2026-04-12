@@ -85,7 +85,10 @@ class SettingsViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isDeletingAccount = true) }
             when (val result = deleteAccount()) {
-                is UseCaseResult.Success -> _accountDeletedChannel.send(Unit)
+                is UseCaseResult.Success -> {
+                    _state.update { it.copy(isDeletingAccount = false) }
+                    _accountDeletedChannel.send(Unit)
+                }
                 is UseCaseResult.Failure ->
                     _state.update {
                         it.copy(isDeletingAccount = false, error = result.error.toMessage())
