@@ -203,5 +203,7 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 17**: Settings + App Store Readiness — Settings screen (account management, sign-out, delete account), delete_own_account PostgreSQL RPC (SECURITY DEFINER, ADR-005), PrivacyInfo.xcprivacy, adaptive icon scaffold (Android), AppIcon.appiconset scaffold (iOS), UILaunchScreen config (502 shared tests)
 
+- **Phase 18**: Store Submission + UI Polish — CloseRealtimeChannelsUseCase extraction (SignOut/DeleteAccount duplication removal, partial-failure resilience), local.xcconfig for DEVELOPMENT_TEAM (git-ignored), iOS DesignTokens.swift (spacing/typography/opacity tokens), screen token adoption (ProjectList, ProjectDetail, Profile, SharedWithMe), Compose deprecated API investigation (rememberSwipeToDismissBoxState still experimental in CMP 1.10.3, no change needed) (508 shared tests)
+
 ### Planned
-- **Phase 18**: TBD — Agent team to determine next priority (candidates: UI polish, E2E tests with Maestro, macOS target)
+- **Phase 19**: TBD — Agent team to determine next priority (candidates: E2E tests with Maestro, macOS target, iOS app icon artwork, CI signing workflow)

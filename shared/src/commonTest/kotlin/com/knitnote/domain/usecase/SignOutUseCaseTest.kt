@@ -1,21 +1,21 @@
 package com.knitnote.domain.usecase
 
+import com.knitnote.domain.model.AuthState
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class SignOutUseCaseTest {
     private val fakeAuth = FakeAuthRepository()
-    private val signOut = SignOutUseCase(fakeAuth, null, null, null)
+    private val closeChannels = CloseRealtimeChannelsUseCase(null, null, null)
+    private val signOut = SignOutUseCase(fakeAuth, closeChannels)
 
     @Test
     fun `sign out returns Success`() =
         runTest {
-            fakeAuth.setAuthState(
-                com.knitnote.domain.model.AuthState
-                    .Authenticated("user-1", "a@b.com"),
-            )
+            fakeAuth.setAuthState(AuthState.Authenticated("user-1", "a@b.com"))
             val result = signOut()
             assertIs<UseCaseResult.Success<Unit>>(result)
             assertNull(fakeAuth.getCurrentUserId())
@@ -27,5 +27,25 @@ class SignOutUseCaseTest {
             fakeAuth.signOutError = RuntimeException("Network error")
             val result = signOut()
             assertIs<UseCaseResult.Failure>(result)
+        }
+
+    @Test
+    fun `sign out closes all realtime channels before signing out`() =
+        runTest {
+            val share = FakeShareRepository()
+            val comment = FakeCommentRepository()
+            val activity = FakeActivityRepository()
+            val useCase =
+                SignOutUseCase(
+                    fakeAuth,
+                    CloseRealtimeChannelsUseCase(share, comment, activity),
+                )
+
+            fakeAuth.setAuthState(AuthState.Authenticated("user-1", "a@b.com"))
+            useCase()
+
+            assertTrue(share.closeChannelCalled)
+            assertTrue(comment.closeChannelCalled)
+            assertTrue(activity.closeChannelCalled)
         }
 }

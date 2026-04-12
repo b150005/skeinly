@@ -6,6 +6,9 @@ options:
   xcodeVersion: "16.0"
   generateEmptyDirectories: true
 
+configFiles:
+  Debug: local.xcconfig
+  Release: local.xcconfig
 settings:
   base:
     DEVELOPMENT_TEAM: ""

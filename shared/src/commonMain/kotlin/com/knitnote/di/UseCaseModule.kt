@@ -1,6 +1,7 @@
 package com.knitnote.di
 
 import com.knitnote.domain.usecase.AddProgressNoteUseCase
+import com.knitnote.domain.usecase.CloseRealtimeChannelsUseCase
 import com.knitnote.domain.usecase.CompleteProjectUseCase
 import com.knitnote.domain.usecase.CreateActivityUseCase
 import com.knitnote.domain.usecase.CreateCommentUseCase
@@ -38,8 +39,9 @@ val useCaseModule =
         factory { ObserveAuthStateUseCase(get()) }
         factory { SignInUseCase(get()) }
         factory { SignUpUseCase(get()) }
-        factory { SignOutUseCase(get(), getOrNull(), getOrNull(), getOrNull()) }
-        factory { DeleteAccountUseCase(get(), getOrNull(), getOrNull(), getOrNull()) }
+        factory { CloseRealtimeChannelsUseCase(getOrNull(), getOrNull(), getOrNull()) }
+        factory { SignOutUseCase(get(), get()) }
+        factory { DeleteAccountUseCase(get(), get()) }
         factory { GetProjectsUseCase(get(), get()) }
         factory { CreateProjectUseCase(get(), get(), getOrNull()) }
         factory { IncrementRowUseCase(get()) }

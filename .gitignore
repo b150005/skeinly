@@ -48,6 +48,9 @@ iosApp/*.xcworkspace
 iosApp/DerivedData/
 iosApp/Pods/
 
+## Local build settings (contains DEVELOPMENT_TEAM, etc.)
+iosApp/local.xcconfig
+
 ## Xcode user data
 xcuserdata/
 *.xcuserstate

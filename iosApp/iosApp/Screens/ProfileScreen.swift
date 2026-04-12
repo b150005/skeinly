@@ -56,7 +56,7 @@ struct ProfileScreen: View {
             Spacer().frame(height: 20)
 
             Image(systemName: "person.circle.fill")
-                .font(.system(size: 80))
+                .font(.system(size: DesignTokens.avatarSizeLarge))
                 .foregroundStyle(.secondary)
 
             if let user = state.user {
@@ -89,7 +89,7 @@ struct ProfileScreen: View {
                 HStack {
                     Spacer()
                     Image(systemName: "person.circle.fill")
-                        .font(.system(size: 60))
+                        .font(.system(size: DesignTokens.avatarSizeSmall))
                         .foregroundStyle(.secondary)
                     Spacer()
                 }

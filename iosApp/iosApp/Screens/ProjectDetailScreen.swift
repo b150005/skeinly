@@ -182,7 +182,7 @@ struct ProjectDetailScreen: View {
             StatusBadge(status: project.status)
 
             Text("\(project.currentRow)")
-                .font(.system(size: 72, weight: .bold, design: .rounded))
+                .font(.system(size: DesignTokens.counterFontSize, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .accessibilityIdentifier("rowCounter")
 
@@ -203,7 +203,7 @@ struct ProjectDetailScreen: View {
                     viewModel.onEvent(event: ProjectDetailEventDecrementRow.shared)
                 } label: {
                     Image(systemName: "minus.circle.fill")
-                        .font(.system(size: 48))
+                        .font(.system(size: DesignTokens.decrementButtonSize))
                 }
                 .disabled(project.currentRow <= 0 || project.status == .completed)
                 .accessibilityIdentifier("decrementButton")
@@ -212,7 +212,7 @@ struct ProjectDetailScreen: View {
                     viewModel.onEvent(event: ProjectDetailEventIncrementRow.shared)
                 } label: {
                     Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 64))
+                        .font(.system(size: DesignTokens.incrementButtonSize))
                 }
                 .disabled(project.status == .completed)
                 .accessibilityIdentifier("incrementButton")

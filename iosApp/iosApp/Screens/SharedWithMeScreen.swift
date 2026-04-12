@@ -102,7 +102,7 @@ private struct ShareRow: View {
                 }
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, DesignTokens.listRowPaddingV)
     }
 
     private var formattedDate: String {
