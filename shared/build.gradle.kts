@@ -4,7 +4,7 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.kotlinSerialization)
-    alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.androidKmpLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.sqldelight)
@@ -20,10 +20,39 @@ val localProps =
         System.getenv("SUPABASE_ANON_KEY")?.let { props.setProperty("SUPABASE_ANON_KEY", it) }
     }
 
+val generateSupabaseConfig by tasks.registering {
+    val outputDir = layout.buildDirectory.dir("generated/supabaseConfig")
+    val url = localProps.getProperty("SUPABASE_URL", "")
+    val key = localProps.getProperty("SUPABASE_ANON_KEY", "")
+    outputs.dir(outputDir)
+    doLast {
+        val dir = outputDir.get().asFile.resolve("com/knitnote/config")
+        dir.mkdirs()
+        val escapedUrl = url.replace("\\", "\\\\").replace("\"", "\\\"").replace("$", "\\$")
+        val escapedKey = key.replace("\\", "\\\\").replace("\"", "\\\"").replace("$", "\\$")
+        dir.resolve("SupabaseCredentials.kt").writeText(
+            buildString {
+                appendLine("package com.knitnote.config")
+                appendLine()
+                appendLine("internal object SupabaseCredentials {")
+                appendLine("    const val URL: String = \"$escapedUrl\"")
+                appendLine("    const val ANON_KEY: String = \"$escapedKey\"")
+                appendLine("}")
+            },
+        )
+    }
+}
+
 kotlin {
     applyDefaultHierarchyTemplate()
 
-    androidTarget {
+    android {
+        namespace = "com.knitnote.shared"
+        compileSdk = 36
+        minSdk = 26
+
+        withHostTestBuilder {}.configure {}
+
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
@@ -74,12 +103,19 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.turbine)
         }
-        androidMain.dependencies {
-            implementation(libs.koin.android)
-            implementation(libs.sqldelight.android.driver)
-            implementation(libs.ktor.client.android)
+        androidMain {
+            kotlin.srcDir(
+                generateSupabaseConfig.flatMap {
+                    layout.buildDirectory.dir("generated/supabaseConfig")
+                },
+            )
+            dependencies {
+                implementation(libs.koin.android)
+                implementation(libs.sqldelight.android.driver)
+                implementation(libs.ktor.client.android)
+            }
         }
-        val androidUnitTest by getting {
+        getByName("androidHostTest") {
             dependencies {
                 implementation(libs.sqldelight.sqlite.driver)
             }
@@ -102,26 +138,6 @@ sqldelight {
     }
 }
 
-android {
-    namespace = "com.knitnote.shared"
-    compileSdk = 36
-
-    buildFeatures {
-        buildConfig = true
-    }
-
-    defaultConfig {
-        minSdk = 26
-        buildConfigField("String", "SUPABASE_URL", "\"${localProps.getProperty("SUPABASE_URL", "")}\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${localProps.getProperty("SUPABASE_ANON_KEY", "")}\"")
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-}
-
 kover {
     reports {
         filters {
@@ -131,7 +147,7 @@ kover {
                     "com.knitnote.db.*",
                     "com.knitnote.di.*",
                     "com.knitnote.ui.navigation.*",
-                    "*.BuildConfig",
+                    "com.knitnote.config.*",
                     // Remote data sources — thin Supabase SDK wrappers, untestable without MockEngine.
                     // Security validation (auth, input sanitization, size limits) is covered at the UseCase layer.
                     "com.knitnote.data.remote.Remote*DataSource",
