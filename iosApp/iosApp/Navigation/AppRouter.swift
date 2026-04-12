@@ -5,6 +5,7 @@ import Shared
 enum Route: Hashable {
     case projectDetail(projectId: String)
     case profile
+    case settings
     case activityFeed
     case sharedWithMe
     case sharedContent(token: String?, shareId: String?)
@@ -17,6 +18,8 @@ enum Route: Hashable {
             hasher.combine(id)
         case .profile:
             hasher.combine("profile")
+        case .settings:
+            hasher.combine("settings")
         case .activityFeed:
             hasher.combine("activityFeed")
         case .sharedWithMe:
@@ -87,6 +90,8 @@ struct AppRootView: View {
             ProjectDetailScreen(projectId: projectId, path: $path)
         case .profile:
             ProfileScreen()
+        case .settings:
+            SettingsScreen()
         case .activityFeed:
             ActivityFeedScreen()
         case .sharedWithMe:

@@ -20,6 +20,10 @@ enum ViewModelFactory {
         KoinHelperKt.getProfileViewModel()
     }
 
+    static func settingsViewModel() -> SettingsViewModel {
+        KoinHelperKt.getSettingsViewModel()
+    }
+
     static func activityFeedViewModel() -> ActivityFeedViewModel {
         KoinHelperKt.getActivityFeedViewModel()
     }
