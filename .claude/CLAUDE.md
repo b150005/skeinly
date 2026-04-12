@@ -199,5 +199,7 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 - **Phase 15**: Tech Debt Cleanup — RemoteSyncOperations insert→upsert rename, DefaultSyncLogger expect/actual (Android Log.d, iOS NSLog), Progress.ownerId fix with AuthRepository injection, SQLDelight default alignment (471 shared tests)
 - **Phase 15.5**: AGP 9.x KMP Plugin Migration — `com.android.library` → `com.android.kotlin.multiplatform.library`, BuildConfig → generated SupabaseCredentials, `androidUnitTest` → `androidHostTest`, dependency updates (ktlint 14.2.0, kotlinx-serialization 1.11.0, Coil 3.4.0, Kover 0.9.8) (471 shared tests)
 
+- **Phase 16**: Search/Filter + builtInKotlin — ViewModel-level search (title substring), status filter (All/Not Started/In Progress/Completed), sort (Recent/Alphabetical/Progress), Material 3 SearchBar + FilterChip (Android), SwiftUI .searchable + Picker (iOS), androidApp builtInKotlin migration (removed org.jetbrains.kotlin.android plugin, android.builtInKotlin=true) (491 shared tests)
+
 ### Planned
-- **Phase 16**: TBD — Agent team to determine next priority (candidates: E2E tests with Maestro, search/filter, macOS target, settings screen, UI improvements, androidApp builtInKotlin migration)
+- **Phase 17**: TBD — Agent team to determine next priority (candidates: settings screen, UI polish, E2E tests with Maestro, macOS target)
