@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
@@ -25,6 +24,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -71,6 +71,7 @@ fun ProjectListScreen(
     onSharedWithMeClick: () -> Unit = {},
     onActivityFeedClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
     viewModel: ProjectListViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -106,10 +107,10 @@ fun ProjectListScreen(
                             contentDescription = "Shared With Me",
                         )
                     }
-                    IconButton(onClick = { viewModel.onEvent(ProjectListEvent.SignOut) }) {
+                    IconButton(onClick = onSettingsClick) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ExitToApp,
-                            contentDescription = "Sign Out",
+                            Icons.Default.Settings,
+                            contentDescription = "Settings",
                         )
                     }
                 },
