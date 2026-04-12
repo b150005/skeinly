@@ -10,6 +10,7 @@ class FakeAuthRepository : AuthRepository {
     var signInError: Throwable? = null
     var signUpError: Throwable? = null
     var signOutError: Throwable? = null
+    var deleteAccountError: Throwable? = null
     private var currentUserId: String? = null
 
     override fun observeAuthState(): Flow<AuthState> = authStateFlow
@@ -34,6 +35,12 @@ class FakeAuthRepository : AuthRepository {
 
     override suspend fun signOut() {
         signOutError?.let { throw it }
+        currentUserId = null
+        authStateFlow.value = AuthState.Unauthenticated
+    }
+
+    override suspend fun deleteAccount() {
+        deleteAccountError?.let { throw it }
         currentUserId = null
         authStateFlow.value = AuthState.Unauthenticated
     }

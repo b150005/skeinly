@@ -18,5 +18,7 @@ interface AuthRepository {
 
     suspend fun signOut()
 
+    suspend fun deleteAccount()
+
     fun getCurrentUserId(): String?
 }
