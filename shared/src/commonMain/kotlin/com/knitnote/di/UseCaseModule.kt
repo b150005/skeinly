@@ -6,6 +6,7 @@ import com.knitnote.domain.usecase.CreateActivityUseCase
 import com.knitnote.domain.usecase.CreateCommentUseCase
 import com.knitnote.domain.usecase.CreateProjectUseCase
 import com.knitnote.domain.usecase.DecrementRowUseCase
+import com.knitnote.domain.usecase.DeleteAccountUseCase
 import com.knitnote.domain.usecase.DeleteChartImageUseCase
 import com.knitnote.domain.usecase.DeleteCommentUseCase
 import com.knitnote.domain.usecase.DeleteProgressNoteUseCase
@@ -38,6 +39,7 @@ val useCaseModule =
         factory { SignInUseCase(get()) }
         factory { SignUpUseCase(get()) }
         factory { SignOutUseCase(get(), getOrNull(), getOrNull(), getOrNull()) }
+        factory { DeleteAccountUseCase(get(), getOrNull(), getOrNull(), getOrNull()) }
         factory { GetProjectsUseCase(get(), get()) }
         factory { CreateProjectUseCase(get(), get(), getOrNull()) }
         factory { IncrementRowUseCase(get()) }
