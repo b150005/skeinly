@@ -130,6 +130,16 @@ kotlin {
     }
 }
 
+// Ensure the generated SupabaseCredentials source is available before any task that
+// consumes the androidMain source set. The flatMap-based srcDir wiring should carry
+// the task dependency, but the AGP 9.x KMP plugin does not propagate it to compile
+// or ktlint tasks on CI (Gradle 9.x implicit-dependency validation catches this).
+tasks.configureEach {
+    if (name.contains("AndroidMain", ignoreCase = true)) {
+        dependsOn(generateSupabaseConfig)
+    }
+}
+
 sqldelight {
     databases {
         create("KnitNoteDatabase") {
