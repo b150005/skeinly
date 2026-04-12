@@ -206,4 +206,9 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 - **Phase 18**: Store Submission + UI Polish — CloseRealtimeChannelsUseCase extraction (SignOut/DeleteAccount duplication removal, partial-failure resilience), local.xcconfig for DEVELOPMENT_TEAM (git-ignored), iOS DesignTokens.swift (spacing/typography/opacity tokens), screen token adoption (ProjectList, ProjectDetail, Profile, SharedWithMe), Compose deprecated API investigation (rememberSwipeToDismissBoxState still experimental in CMP 1.10.3, no change needed) (508 shared tests)
 
 ### Planned
-- **Phase 19**: TBD — Agent team to determine next priority (candidates: E2E tests with Maestro, macOS target, iOS app icon artwork, CI signing workflow)
+- **Phase 19**: Store Submission Pipeline
+  - **19a**: Supabase Production Deploy — Apply all 7 migrations, configure Auth providers (Email/Social), verify `delete_own_account` RPC, Storage buckets + RLS, E2E production validation
+  - **19b**: App Icon Artwork — 1024×1024 PNG for iOS, Android vector replacement, yarn ball/knitting motif brand identity
+  - **19c**: CI Signing + TestFlight — iOS code signing (certificates + provisioning profiles in GitHub Secrets), `xcodebuild archive`/`exportArchive`, TestFlight upload, Android keystore verification, ADR-006
+- **Phase 20**: E2E Tests with Maestro — Critical Android flows first, iOS flows follow, CI integration (main/tag only)
+- **Phase 21**: macOS Target — Post-launch, based on user demand
