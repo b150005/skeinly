@@ -102,6 +102,9 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      - name: Create local.xcconfig for CI
+        run: echo 'DEVELOPMENT_TEAM =' > iosApp/local.xcconfig
+
       - name: Generate Xcode project
         run: cd iosApp && xcodegen generate
 

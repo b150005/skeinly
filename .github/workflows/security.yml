@@ -49,6 +49,10 @@ jobs:
         if: matrix.language == 'swift'
         run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
 
+      - name: Create local.xcconfig for CI
+        if: matrix.language == 'swift'
+        run: echo 'DEVELOPMENT_TEAM =' > iosApp/local.xcconfig
+
       - name: Generate Xcode project
         if: matrix.language == 'swift'
         run: cd iosApp && xcodegen generate
