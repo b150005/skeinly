@@ -100,10 +100,8 @@ struct ProjectListScreen: View {
                         Label("Shared With Me", systemImage: "shared.with.you")
                     }
                     Divider()
-                    Button(role: .destructive) {
-                        viewModel.onEvent(event: ProjectListEventSignOut.shared)
-                    } label: {
-                        Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                    Button { path.append(Route.settings) } label: {
+                        Label("Settings", systemImage: "gearshape")
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")

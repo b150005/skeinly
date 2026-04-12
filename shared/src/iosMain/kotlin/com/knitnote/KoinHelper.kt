@@ -11,6 +11,7 @@ import com.knitnote.ui.comments.CommentSectionViewModel
 import com.knitnote.ui.profile.ProfileViewModel
 import com.knitnote.ui.projectdetail.ProjectDetailViewModel
 import com.knitnote.ui.projectlist.ProjectListViewModel
+import com.knitnote.ui.settings.SettingsViewModel
 import com.knitnote.ui.sharedcontent.SharedContentViewModel
 import com.knitnote.ui.sharedwithme.SharedWithMeViewModel
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -37,6 +38,8 @@ fun getProjectListViewModel(): ProjectListViewModel = KoinPlatform.getKoin().get
 fun getProjectDetailViewModel(projectId: String): ProjectDetailViewModel = KoinPlatform.getKoin().get { parametersOf(projectId) }
 
 fun getProfileViewModel(): ProfileViewModel = KoinPlatform.getKoin().get()
+
+fun getSettingsViewModel(): SettingsViewModel = KoinPlatform.getKoin().get()
 
 fun getActivityFeedViewModel(): ActivityFeedViewModel = KoinPlatform.getKoin().get()
 
@@ -69,6 +72,12 @@ fun wrapProjectDetailState(
 fun wrapProgressNotesState(
     flow: kotlinx.coroutines.flow.StateFlow<List<com.knitnote.domain.model.Progress>>,
 ): FlowWrapper<List<com.knitnote.domain.model.Progress>> = FlowWrapper(flow)
+
+fun wrapSettingsState(
+    flow: kotlinx.coroutines.flow.StateFlow<com.knitnote.ui.settings.SettingsState>,
+): FlowWrapper<com.knitnote.ui.settings.SettingsState> = FlowWrapper(flow)
+
+fun wrapSettingsAccountDeletedFlow(flow: kotlinx.coroutines.flow.Flow<kotlin.Unit>): EventFlowWrapper<kotlin.Unit> = EventFlowWrapper(flow)
 
 fun wrapProfileState(
     flow: kotlinx.coroutines.flow.StateFlow<com.knitnote.ui.profile.ProfileState>,
