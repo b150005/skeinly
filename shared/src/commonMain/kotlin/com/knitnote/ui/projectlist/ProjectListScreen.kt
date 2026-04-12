@@ -11,25 +11,34 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -52,6 +61,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
+import com.knitnote.domain.model.SortOrder
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -114,54 +124,101 @@ fun ProjectListScreen(
             }
         },
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+        ) {
+            SearchField(
+                query = state.searchQuery,
+                onQueryChange = { viewModel.onEvent(ProjectListEvent.UpdateSearchQuery(it)) },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+
+            FilterSortRow(
+                statusFilter = state.statusFilter,
+                sortOrder = state.sortOrder,
+                onStatusFilterChange = { viewModel.onEvent(ProjectListEvent.UpdateStatusFilter(it)) },
+                onSortOrderChange = { viewModel.onEvent(ProjectListEvent.UpdateSortOrder(it)) },
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val hasActiveFilter = state.searchQuery.isNotBlank() || state.statusFilter != null
+            var projectToDelete by rememberSaveable { mutableStateOf<String?>(null) }
+
+            if (projectToDelete != null) {
+                val projectName = state.projects.find { it.id == projectToDelete }?.title ?: ""
+                DeleteConfirmDialog(
+                    itemName = projectName,
+                    onConfirm = {
+                        projectToDelete?.let { id ->
+                            viewModel.onEvent(ProjectListEvent.DeleteProject(id))
+                        }
+                        projectToDelete = null
+                    },
+                    onDismiss = { projectToDelete = null },
+                )
+            }
+
             when {
                 state.isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center),
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                state.projects.isEmpty() && hasActiveFilter -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "No matching projects",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Try adjusting your search or filters",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
                 state.projects.isEmpty() -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally,
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Text(
-                            text = "No projects yet",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Tap + to create your first project",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "No projects yet",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Tap + to create your first project",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
                 else -> {
-                    var projectToDelete by rememberSaveable { mutableStateOf<String?>(null) }
-
-                    if (projectToDelete != null) {
-                        val projectName = state.projects.find { it.id == projectToDelete }?.title ?: ""
-                        DeleteConfirmDialog(
-                            itemName = projectName,
-                            onConfirm = {
-                                projectToDelete?.let { id ->
-                                    viewModel.onEvent(ProjectListEvent.DeleteProject(id))
-                                }
-                                projectToDelete = null
-                            },
-                            onDismiss = { projectToDelete = null },
-                        )
-                    }
-
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         contentPadding =
                             androidx.compose.foundation.layout
-                                .PaddingValues(16.dp),
+                                .PaddingValues(horizontal = 16.dp),
                     ) {
                         items(state.projects, key = { it.id }) { project ->
                             SwipeToDismissProjectCard(
@@ -182,6 +239,135 @@ fun ProjectListScreen(
                     viewModel.onEvent(ProjectListEvent.CreateProject(title, totalRows))
                 },
             )
+        }
+    }
+}
+
+@Composable
+private fun SearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = modifier.fillMaxWidth(),
+        placeholder = { Text("Search projects...") },
+        leadingIcon = {
+            Icon(Icons.Default.Search, contentDescription = null)
+        },
+        trailingIcon = {
+            if (query.isNotEmpty()) {
+                IconButton(onClick = { onQueryChange("") }) {
+                    Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                }
+            }
+        },
+        singleLine = true,
+    )
+}
+
+@Composable
+private fun FilterSortRow(
+    statusFilter: ProjectStatus?,
+    sortOrder: SortOrder,
+    onStatusFilterChange: (ProjectStatus?) -> Unit,
+    onSortOrderChange: (SortOrder) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        LazyRow(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            item {
+                FilterChip(
+                    selected = statusFilter == null,
+                    onClick = { onStatusFilterChange(null) },
+                    label = { Text("All") },
+                )
+            }
+            item {
+                FilterChip(
+                    selected = statusFilter == ProjectStatus.IN_PROGRESS,
+                    onClick = {
+                        onStatusFilterChange(
+                            if (statusFilter == ProjectStatus.IN_PROGRESS) null else ProjectStatus.IN_PROGRESS,
+                        )
+                    },
+                    label = { Text("In Progress") },
+                )
+            }
+            item {
+                FilterChip(
+                    selected = statusFilter == ProjectStatus.NOT_STARTED,
+                    onClick = {
+                        onStatusFilterChange(
+                            if (statusFilter == ProjectStatus.NOT_STARTED) null else ProjectStatus.NOT_STARTED,
+                        )
+                    },
+                    label = { Text("Not Started") },
+                )
+            }
+            item {
+                FilterChip(
+                    selected = statusFilter == ProjectStatus.COMPLETED,
+                    onClick = {
+                        onStatusFilterChange(
+                            if (statusFilter == ProjectStatus.COMPLETED) null else ProjectStatus.COMPLETED,
+                        )
+                    },
+                    label = { Text("Completed") },
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        SortDropdown(
+            sortOrder = sortOrder,
+            onSortOrderChange = onSortOrderChange,
+        )
+    }
+}
+
+@Composable
+private fun SortDropdown(
+    sortOrder: SortOrder,
+    onSortOrderChange: (SortOrder) -> Unit,
+) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+
+    Box {
+        FilterChip(
+            selected = sortOrder != SortOrder.RECENT,
+            onClick = { expanded = true },
+            label = { Text(sortOrder.chipLabel) },
+            trailingIcon = {
+                Icon(
+                    Icons.AutoMirrored.Filled.Sort,
+                    contentDescription = "Sort",
+                )
+            },
+        )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            SortOrder.entries.forEach { order ->
+                DropdownMenuItem(
+                    text = { Text(order.menuLabel) },
+                    onClick = {
+                        onSortOrderChange(order)
+                        expanded = false
+                    },
+                )
+            }
         }
     }
 }
@@ -316,3 +502,19 @@ private fun StatusChip(status: ProjectStatus) {
         color = color,
     )
 }
+
+private val SortOrder.chipLabel: String
+    get() =
+        when (this) {
+            SortOrder.RECENT -> "Recent"
+            SortOrder.ALPHABETICAL -> "A–Z"
+            SortOrder.PROGRESS -> "Progress"
+        }
+
+private val SortOrder.menuLabel: String
+    get() =
+        when (this) {
+            SortOrder.RECENT -> "Recent"
+            SortOrder.ALPHABETICAL -> "Alphabetical (A–Z)"
+            SortOrder.PROGRESS -> "Progress %"
+        }

@@ -11,6 +11,7 @@ struct ProjectListScreen: View {
     @State private var projectToDelete: Project?
     @State private var newTitle = ""
     @State private var newTotalRows = ""
+    @State private var searchText = ""
 
     init(path: Binding<NavigationPath>) {
         self._path = path
@@ -22,10 +23,17 @@ struct ProjectListScreen: View {
 
     var body: some View {
         let state = observer.state
+        let hasActiveFilter = !state.searchQuery.isEmpty || state.statusFilter != nil
 
         Group {
             if state.isLoading && state.projects.isEmpty {
                 ProgressView()
+            } else if state.projects.isEmpty && hasActiveFilter {
+                ContentUnavailableView(
+                    "No Matching Projects",
+                    systemImage: "magnifyingglass",
+                    description: Text("Try adjusting your search or filters.")
+                )
             } else if state.projects.isEmpty {
                 ContentUnavailableView(
                     "No Projects Yet",
@@ -34,6 +42,13 @@ struct ProjectListScreen: View {
                 )
             } else {
                 List {
+                    StatusFilterSection(
+                        statusFilter: state.statusFilter,
+                        onStatusFilterChange: { status in
+                            viewModel.onEvent(event: ProjectListEventUpdateStatusFilter(status: status))
+                        }
+                    )
+
                     ForEach(state.projects, id: \.id) { project in
                         ProjectRow(project: project)
                             .contentShape(Rectangle())
@@ -52,6 +67,13 @@ struct ProjectListScreen: View {
                 }
             }
         }
+        .searchable(text: $searchText, prompt: "Search projects...")
+        .onChange(of: searchText) { _, newValue in
+            viewModel.onEvent(event: ProjectListEventUpdateSearchQuery(query: newValue))
+        }
+        .onAppear {
+            searchText = observer.state.searchQuery
+        }
         .navigationTitle("Knit Note")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -64,6 +86,10 @@ struct ProjectListScreen: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
+                    sortMenu(currentOrder: state.sortOrder)
+
+                    Divider()
+
                     Button { path.append(Route.profile) } label: {
                         Label("Profile", systemImage: "person.circle")
                     }
@@ -108,6 +134,29 @@ struct ProjectListScreen: View {
         }
     }
 
+    @ViewBuilder
+    private func sortMenu(currentOrder: SortOrder) -> some View {
+        Menu {
+            Button {
+                viewModel.onEvent(event: ProjectListEventUpdateSortOrder(order: .recent))
+            } label: {
+                Label("Recent", systemImage: currentOrder == .recent ? "checkmark" : "")
+            }
+            Button {
+                viewModel.onEvent(event: ProjectListEventUpdateSortOrder(order: .alphabetical))
+            } label: {
+                Label("Alphabetical", systemImage: currentOrder == .alphabetical ? "checkmark" : "")
+            }
+            Button {
+                viewModel.onEvent(event: ProjectListEventUpdateSortOrder(order: .progress))
+            } label: {
+                Label("Progress", systemImage: currentOrder == .progress ? "checkmark" : "")
+            }
+        } label: {
+            Label("Sort by", systemImage: "arrow.up.arrow.down")
+        }
+    }
+
     private var createProjectSheet: some View {
         NavigationStack {
             Form {
@@ -144,6 +193,64 @@ struct ProjectListScreen: View {
     private func resetCreateForm() {
         newTitle = ""
         newTotalRows = ""
+    }
+}
+
+// MARK: - Status Filter Section
+
+private struct StatusFilterSection: View {
+    let statusFilter: ProjectStatus?
+    let onStatusFilterChange: (ProjectStatus?) -> Void
+
+    var body: some View {
+        Section {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    StatusFilterChip(
+                        title: "All",
+                        isSelected: statusFilter == nil,
+                        action: { onStatusFilterChange(nil) }
+                    )
+                    StatusFilterChip(
+                        title: "In Progress",
+                        isSelected: statusFilter == .inProgress,
+                        action: { onStatusFilterChange(statusFilter == .inProgress ? nil : .inProgress) }
+                    )
+                    StatusFilterChip(
+                        title: "Not Started",
+                        isSelected: statusFilter == .notStarted,
+                        action: { onStatusFilterChange(statusFilter == .notStarted ? nil : .notStarted) }
+                    )
+                    StatusFilterChip(
+                        title: "Completed",
+                        isSelected: statusFilter == .completed,
+                        action: { onStatusFilterChange(statusFilter == .completed ? nil : .completed) }
+                    )
+                }
+                .padding(.vertical, 4)
+            }
+        }
+        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+    }
+}
+
+private struct StatusFilterChip: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(isSelected ? .semibold : .regular)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .background(isSelected ? Color.accentColor.opacity(0.15) : Color(.systemGray6))
+                .foregroundStyle(isSelected ? Color.accentColor : .primary)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 }
 

@@ -3,6 +3,8 @@ package com.knitnote.ui.projectlist
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.knitnote.domain.model.Project
+import com.knitnote.domain.model.ProjectStatus
+import com.knitnote.domain.model.SortOrder
 import com.knitnote.domain.usecase.CreateProjectUseCase
 import com.knitnote.domain.usecase.DeleteProjectUseCase
 import com.knitnote.domain.usecase.GetProjectsUseCase
@@ -12,8 +14,9 @@ import com.knitnote.domain.usecase.toMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -23,6 +26,9 @@ data class ProjectListState(
     val isLoading: Boolean = true,
     val error: String? = null,
     val showCreateDialog: Boolean = false,
+    val searchQuery: String = "",
+    val statusFilter: ProjectStatus? = null,
+    val sortOrder: SortOrder = SortOrder.RECENT,
 )
 
 sealed interface ProjectListEvent {
@@ -42,11 +48,29 @@ sealed interface ProjectListEvent {
     data object ClearError : ProjectListEvent
 
     data object SignOut : ProjectListEvent
+
+    data class UpdateSearchQuery(
+        val query: String,
+    ) : ProjectListEvent
+
+    data class UpdateStatusFilter(
+        val status: ProjectStatus?,
+    ) : ProjectListEvent
+
+    data class UpdateSortOrder(
+        val order: SortOrder,
+    ) : ProjectListEvent
 }
 
 private data class UiFlags(
     val error: String? = null,
     val showCreateDialog: Boolean = false,
+)
+
+private data class FilterState(
+    val searchQuery: String = "",
+    val statusFilter: ProjectStatus? = null,
+    val sortOrder: SortOrder = SortOrder.RECENT,
 )
 
 class ProjectListViewModel(
@@ -56,20 +80,35 @@ class ProjectListViewModel(
     private val signOut: SignOutUseCase,
 ) : ViewModel() {
     private val uiFlags = MutableStateFlow(UiFlags())
+    private val filterState = MutableStateFlow(FilterState())
+    private val isLoading = MutableStateFlow(true)
+
+    private val projectsFlow =
+        getProjects()
+            .onStart { isLoading.value = true }
+            .onEach { isLoading.value = false }
 
     val state: StateFlow<ProjectListState> =
         combine(
-            getProjects().catch { e ->
-                uiFlags.update { it.copy(error = e.message) }
-                emit(emptyList())
-            },
+            projectsFlow,
             uiFlags,
-        ) { projects, flags ->
+            filterState,
+            isLoading,
+        ) { allProjects, flags, filters, loading ->
+            val filtered =
+                allProjects
+                    .filterBySearch(filters.searchQuery)
+                    .filterByStatus(filters.statusFilter)
+                    .sortedBy(filters.sortOrder)
+
             ProjectListState(
-                projects = projects,
-                isLoading = false,
+                projects = filtered,
+                isLoading = loading,
                 error = flags.error,
                 showCreateDialog = flags.showCreateDialog,
+                searchQuery = filters.searchQuery,
+                statusFilter = filters.statusFilter,
+                sortOrder = filters.sortOrder,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -120,6 +159,44 @@ class ProjectListViewModel(
                     }
                 }
             }
+            is ProjectListEvent.UpdateSearchQuery -> {
+                val capped = event.query.take(MAX_SEARCH_QUERY_LENGTH)
+                filterState.update { it.copy(searchQuery = capped) }
+            }
+            is ProjectListEvent.UpdateStatusFilter -> {
+                filterState.update { it.copy(statusFilter = event.status) }
+            }
+            is ProjectListEvent.UpdateSortOrder -> {
+                filterState.update { it.copy(sortOrder = event.order) }
+            }
         }
     }
 }
+
+private const val MAX_SEARCH_QUERY_LENGTH = 200
+
+private fun List<Project>.filterBySearch(query: String): List<Project> {
+    val trimmed = query.trim()
+    if (trimmed.isEmpty()) return this
+    return filter { it.title.contains(trimmed, ignoreCase = true) }
+}
+
+private fun List<Project>.filterByStatus(status: ProjectStatus?): List<Project> {
+    if (status == null) return this
+    return filter { it.status == status }
+}
+
+private fun List<Project>.sortedBy(order: SortOrder): List<Project> =
+    when (order) {
+        SortOrder.RECENT -> sortedByDescending { it.createdAt }
+        SortOrder.ALPHABETICAL -> sortedBy { it.title.lowercase() }
+        SortOrder.PROGRESS ->
+            sortedByDescending { project ->
+                val total = project.totalRows
+                if (total != null && total > 0) {
+                    project.currentRow.toFloat() / total.toFloat()
+                } else {
+                    -1f
+                }
+            }
+    }
