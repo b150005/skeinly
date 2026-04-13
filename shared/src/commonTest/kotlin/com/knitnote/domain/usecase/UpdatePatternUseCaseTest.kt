@@ -1,6 +1,5 @@
 package com.knitnote.domain.usecase
 
-import com.knitnote.domain.model.AuthState
 import com.knitnote.domain.model.Difficulty
 import com.knitnote.domain.model.Pattern
 import com.knitnote.domain.model.Visibility
@@ -9,7 +8,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
-import kotlin.test.assertNull
 import kotlin.time.Clock
 
 class UpdatePatternUseCaseTest {

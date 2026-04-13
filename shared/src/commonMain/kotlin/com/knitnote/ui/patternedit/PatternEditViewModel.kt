@@ -3,7 +3,6 @@ package com.knitnote.ui.patternedit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.knitnote.domain.model.Difficulty
-import com.knitnote.domain.model.Pattern
 import com.knitnote.domain.model.Visibility
 import com.knitnote.domain.repository.PatternRepository
 import com.knitnote.domain.usecase.CreatePatternUseCase
@@ -32,14 +31,36 @@ data class PatternEditState(
 )
 
 sealed interface PatternEditEvent {
-    data class UpdateTitle(val title: String) : PatternEditEvent
-    data class UpdateDescription(val description: String) : PatternEditEvent
-    data class UpdateDifficulty(val difficulty: Difficulty?) : PatternEditEvent
-    data class UpdateGauge(val gauge: String) : PatternEditEvent
-    data class UpdateYarnInfo(val yarnInfo: String) : PatternEditEvent
-    data class UpdateNeedleSize(val needleSize: String) : PatternEditEvent
-    data class UpdateVisibility(val visibility: Visibility) : PatternEditEvent
+    data class UpdateTitle(
+        val title: String,
+    ) : PatternEditEvent
+
+    data class UpdateDescription(
+        val description: String,
+    ) : PatternEditEvent
+
+    data class UpdateDifficulty(
+        val difficulty: Difficulty?,
+    ) : PatternEditEvent
+
+    data class UpdateGauge(
+        val gauge: String,
+    ) : PatternEditEvent
+
+    data class UpdateYarnInfo(
+        val yarnInfo: String,
+    ) : PatternEditEvent
+
+    data class UpdateNeedleSize(
+        val needleSize: String,
+    ) : PatternEditEvent
+
+    data class UpdateVisibility(
+        val visibility: Visibility,
+    ) : PatternEditEvent
+
     data object Save : PatternEditEvent
+
     data object ClearError : PatternEditEvent
 }
 

@@ -29,10 +29,22 @@ data class PatternLibraryState(
 )
 
 sealed interface PatternLibraryEvent {
-    data class UpdateSearchQuery(val query: String) : PatternLibraryEvent
-    data class UpdateDifficultyFilter(val difficulty: Difficulty?) : PatternLibraryEvent
-    data class UpdateSortOrder(val order: SortOrder) : PatternLibraryEvent
-    data class DeletePattern(val id: String) : PatternLibraryEvent
+    data class UpdateSearchQuery(
+        val query: String,
+    ) : PatternLibraryEvent
+
+    data class UpdateDifficultyFilter(
+        val difficulty: Difficulty?,
+    ) : PatternLibraryEvent
+
+    data class UpdateSortOrder(
+        val order: SortOrder,
+    ) : PatternLibraryEvent
+
+    data class DeletePattern(
+        val id: String,
+    ) : PatternLibraryEvent
+
     data object ClearError : PatternLibraryEvent
 }
 

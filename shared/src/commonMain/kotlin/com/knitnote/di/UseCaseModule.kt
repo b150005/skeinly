@@ -5,17 +5,20 @@ import com.knitnote.domain.usecase.CloseRealtimeChannelsUseCase
 import com.knitnote.domain.usecase.CompleteProjectUseCase
 import com.knitnote.domain.usecase.CreateActivityUseCase
 import com.knitnote.domain.usecase.CreateCommentUseCase
+import com.knitnote.domain.usecase.CreatePatternUseCase
 import com.knitnote.domain.usecase.CreateProjectUseCase
 import com.knitnote.domain.usecase.DecrementRowUseCase
 import com.knitnote.domain.usecase.DeleteAccountUseCase
 import com.knitnote.domain.usecase.DeleteChartImageUseCase
 import com.knitnote.domain.usecase.DeleteCommentUseCase
+import com.knitnote.domain.usecase.DeletePatternUseCase
 import com.knitnote.domain.usecase.DeleteProgressNoteUseCase
 import com.knitnote.domain.usecase.DeleteProjectUseCase
 import com.knitnote.domain.usecase.ForkSharedPatternUseCase
 import com.knitnote.domain.usecase.GetActivitiesUseCase
 import com.knitnote.domain.usecase.GetCommentsUseCase
 import com.knitnote.domain.usecase.GetCurrentUserUseCase
+import com.knitnote.domain.usecase.GetPatternsUseCase
 import com.knitnote.domain.usecase.GetProgressNotesUseCase
 import com.knitnote.domain.usecase.GetProjectByIdUseCase
 import com.knitnote.domain.usecase.GetProjectsUseCase
@@ -28,13 +31,10 @@ import com.knitnote.domain.usecase.ShareProjectUseCase
 import com.knitnote.domain.usecase.SignInUseCase
 import com.knitnote.domain.usecase.SignOutUseCase
 import com.knitnote.domain.usecase.SignUpUseCase
+import com.knitnote.domain.usecase.UpdatePatternUseCase
 import com.knitnote.domain.usecase.UpdateProfileUseCase
 import com.knitnote.domain.usecase.UpdateProjectUseCase
 import com.knitnote.domain.usecase.UpdateShareStatusUseCase
-import com.knitnote.domain.usecase.CreatePatternUseCase
-import com.knitnote.domain.usecase.DeletePatternUseCase
-import com.knitnote.domain.usecase.GetPatternsUseCase
-import com.knitnote.domain.usecase.UpdatePatternUseCase
 import com.knitnote.domain.usecase.UploadChartImageUseCase
 import org.koin.dsl.module
 
