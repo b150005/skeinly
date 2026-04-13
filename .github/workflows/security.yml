@@ -72,7 +72,7 @@ jobs:
           ./gradlew --no-daemon
           -Pkotlin.daemon.enabled=false
           -Dkotlin.compiler.execution.strategy=in-process
-          :shared:compileDebugKotlinAndroid
+          :shared:compileAndroidMain
           :androidApp:compileDebugKotlin
 
       - name: Resolve iOS Simulator destination
