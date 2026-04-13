@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
@@ -36,7 +37,7 @@ fun CreateProjectDialog(
                     onValueChange = { title = it },
                     label = { Text("Project Name") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag("projectNameInput"),
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
@@ -45,7 +46,7 @@ fun CreateProjectDialog(
                     label = { Text("Total Rows (optional)") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag("totalRowsInput"),
                 )
             }
         },
@@ -58,6 +59,7 @@ fun CreateProjectDialog(
                     }
                 },
                 enabled = title.isNotBlank(),
+                modifier = Modifier.testTag("createProjectButton"),
             ) {
                 Text("Create")
             }

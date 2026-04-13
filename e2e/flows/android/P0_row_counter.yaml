@@ -1,0 +1,58 @@
+appId: com.knitnote.android
+name: "P0 - Row Counter Increment/Decrement"
+tags:
+  - p0
+  - android
+---
+# Pre-condition: clean state
+- clearState: com.knitnote.android
+- launchApp:
+    appId: com.knitnote.android
+
+# Wait for list screen to be ready
+- assertVisible: "No projects yet"
+
+# Create a project first
+- tapOn:
+    id: "createProjectFab"
+- tapOn:
+    id: "projectNameInput"
+- inputText: "Counter Test"
+- tapOn:
+    id: "totalRowsInput"
+- inputText: "10"
+- tapOn:
+    id: "createProjectButton"
+
+# Wait for project to appear in list
+- assertVisible: "Counter Test"
+
+# Navigate to project detail
+- tapOn: "Counter Test"
+
+# Verify initial state
+- assertVisible:
+    id: "rowCounter"
+
+# Increment 3 times
+- tapOn:
+    id: "incrementButton"
+- tapOn:
+    id: "incrementButton"
+- tapOn:
+    id: "incrementButton"
+
+# Verify counter shows 3 (counter is a separate Text with testTag "rowCounter")
+- assertVisible: "3"
+- assertVisible: "of 10 rows"
+
+# Status changes to In Progress when currentRow > 0 and < totalRows (domain rule)
+- assertVisible: "In Progress"
+
+# Decrement once
+- tapOn:
+    id: "decrementButton"
+
+# Verify counter shows 2
+- assertVisible: "2"
+- assertVisible: "of 10 rows"
