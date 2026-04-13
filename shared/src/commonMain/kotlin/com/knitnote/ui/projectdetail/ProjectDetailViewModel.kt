@@ -133,6 +133,7 @@ class ProjectDetailViewModel(
     private val progressPhotoStorage: StorageOperations?,
 ) : ViewModel() {
     private val counterMutex = Mutex()
+    private var cachedPhotoPaths = emptyList<String>()
 
     private val _uiOverlay = MutableStateFlow(UiOverlay())
     private val _directShareSuccessChannel = Channel<Unit>(Channel.BUFFERED)
@@ -242,9 +243,15 @@ class ProjectDetailViewModel(
                     val notePhoto = progressNotes.value.find { it.id == event.progressId }?.photoUrl
                     when (val result = deleteProgressNote(event.progressId)) {
                         is UseCaseResult.Success -> {
-                            // Best-effort delete the photo from storage
+                            // Best-effort delete the photo from storage; log failures to trace orphan blobs
                             if (notePhoto != null) {
-                                deleteProgressPhoto(notePhoto)
+                                when (val photoResult = deleteProgressPhoto(notePhoto)) {
+                                    is UseCaseResult.Success -> { /* blob cleaned up */ }
+                                    is UseCaseResult.Failure -> {
+                                        val msg = photoResult.error.toMessage()
+                                        println("[ProjectDetailVM] Orphan blob: photo delete failed for note ${event.progressId}: $msg")
+                                    }
+                                }
                             }
                         }
                         is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
@@ -407,10 +414,14 @@ class ProjectDetailViewModel(
             progressNotes.collect { notes ->
                 val notesWithPhotos = notes.filter { it.photoUrl != null }
                 if (notesWithPhotos.isEmpty() || progressPhotoStorage == null) {
+                    cachedPhotoPaths = emptyList()
                     _uiOverlay.update { it.copy(photoSignedUrls = emptyMap()) }
                     return@collect
                 }
                 val paths = notesWithPhotos.mapNotNull { it.photoUrl }
+                // Skip re-fetching when photo paths haven't changed
+                if (paths == cachedPhotoPaths) return@collect
+                cachedPhotoPaths = paths
                 try {
                     val signedUrls = progressPhotoStorage.createSignedUrls(paths)
                     val urlMap = notesWithPhotos.zip(signedUrls).associate { (note, url) -> note.id to url }

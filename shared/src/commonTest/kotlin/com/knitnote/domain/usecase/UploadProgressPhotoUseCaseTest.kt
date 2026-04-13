@@ -13,7 +13,10 @@ class UploadProgressPhotoUseCaseTest {
     private lateinit var authRepository: FakeAuthRepository
     private lateinit var useCase: UploadProgressPhotoUseCase
 
-    private val validJpegData = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte()) + ByteArray(100)
+    private val validJpegData =
+        byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte()) +
+            ByteArray(100) +
+            byteArrayOf(0xFF.toByte(), 0xD9.toByte())
 
     @BeforeTest
     fun setUp() {

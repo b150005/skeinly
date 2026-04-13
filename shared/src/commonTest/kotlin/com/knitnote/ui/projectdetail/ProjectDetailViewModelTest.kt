@@ -706,6 +706,7 @@ class ProjectDetailViewModelTest {
             progressPhotoStorage = storage,
         )
 
-    /** Minimal valid JPEG header bytes for test data. */
-    private fun jpegHeader(): ByteArray = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte())
+    /** Minimal valid JPEG bytes with SOI and EOI markers for test data. */
+    private fun jpegHeader(): ByteArray =
+        byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte(), 0xFF.toByte(), 0xD9.toByte())
 }

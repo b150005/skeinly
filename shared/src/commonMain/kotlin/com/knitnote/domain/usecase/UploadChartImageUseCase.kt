@@ -67,17 +67,31 @@ class UploadChartImageUseCase(
 
         private val SAFE_FILENAME_REGEX = Regex("[^a-zA-Z0-9._-]")
         private val DOT_DOT_REGEX = Regex("\\.{2,}")
+        private val ALLOWED_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp")
 
-        fun sanitizeFileName(fileName: String): String =
-            fileName
-                .replace(SAFE_FILENAME_REGEX, "_")
-                .replace(DOT_DOT_REGEX, "_")
-                .trimStart('.')
+        fun sanitizeFileName(fileName: String): String {
+            val sanitized =
+                fileName
+                    .replace(SAFE_FILENAME_REGEX, "_")
+                    .replace(DOT_DOT_REGEX, "_")
+                    .trimStart('.')
+
+            // Normalize double extensions: strip to baseName + first allowed image extension
+            val parts = sanitized.split(".")
+            if (parts.size > 2) {
+                val baseName = parts.first()
+                val firstAllowed = parts.drop(1).firstOrNull { it.lowercase() in ALLOWED_EXTENSIONS }
+                return if (firstAllowed != null) "$baseName.$firstAllowed" else baseName
+            }
+            return sanitized
+        }
 
         fun isValidJpeg(data: ByteArray): Boolean =
-            data.size >= 3 &&
+            data.size >= 6 &&
                 data[0] == 0xFF.toByte() &&
                 data[1] == 0xD8.toByte() &&
-                data[2] == 0xFF.toByte()
+                data[2] == 0xFF.toByte() &&
+                data[data.size - 2] == 0xFF.toByte() &&
+                data[data.size - 1] == 0xD9.toByte()
     }
 }
