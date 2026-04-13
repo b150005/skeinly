@@ -9,6 +9,8 @@ enum Route: Hashable {
     case activityFeed
     case sharedWithMe
     case sharedContent(token: String?, shareId: String?)
+    case patternLibrary
+    case patternEdit(patternId: String?)
 
     // Hashable conformance for sharedContent with optionals
     func hash(into hasher: inout Hasher) {
@@ -28,6 +30,11 @@ enum Route: Hashable {
             hasher.combine("sharedContent")
             hasher.combine(token)
             hasher.combine(shareId)
+        case .patternLibrary:
+            hasher.combine("patternLibrary")
+        case .patternEdit(let patternId):
+            hasher.combine("patternEdit")
+            hasher.combine(patternId)
         }
     }
 }
@@ -98,6 +105,10 @@ struct AppRootView: View {
             SharedWithMeScreen(path: $path)
         case .sharedContent(let token, let shareId):
             SharedContentScreen(token: token, shareId: shareId, path: $path)
+        case .patternLibrary:
+            PatternLibraryScreen(path: $path)
+        case .patternEdit(let patternId):
+            PatternEditScreen(patternId: patternId, path: $path)
         }
     }
 

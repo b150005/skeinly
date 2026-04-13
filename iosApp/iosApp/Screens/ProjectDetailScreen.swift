@@ -115,6 +115,13 @@ struct ProjectDetailScreen: View {
                 counterSection(project)
             }
 
+            // Pattern info section
+            if let pattern = state.pattern {
+                Section("Pattern Info") {
+                    patternInfoSection(pattern)
+                }
+            }
+
             // Status action
             Section {
                 if project.status == .completed {
@@ -223,6 +230,31 @@ struct ProjectDetailScreen: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical)
+    }
+
+    // MARK: - Pattern Info Section
+
+    @ViewBuilder
+    private func patternInfoSection(_ pattern: Pattern) -> some View {
+        LabeledContent("Title", value: pattern.title)
+
+        if let difficulty = pattern.difficulty {
+            LabeledContent("Difficulty") {
+                DifficultyBadge(difficulty: difficulty)
+            }
+        }
+
+        if let gauge = pattern.gauge, !gauge.isEmpty {
+            LabeledContent("Gauge", value: gauge)
+        }
+
+        if let yarnInfo = pattern.yarnInfo, !yarnInfo.isEmpty {
+            LabeledContent("Yarn", value: yarnInfo)
+        }
+
+        if let needleSize = pattern.needleSize, !needleSize.isEmpty {
+            LabeledContent("Needle Size", value: needleSize)
+        }
     }
 
     // MARK: - Chart Images Section

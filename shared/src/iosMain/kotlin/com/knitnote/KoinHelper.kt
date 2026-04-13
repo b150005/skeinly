@@ -13,6 +13,8 @@ import com.knitnote.ui.projectdetail.ProjectDetailViewModel
 import com.knitnote.ui.projectlist.ProjectListViewModel
 import com.knitnote.ui.settings.SettingsViewModel
 import com.knitnote.ui.sharedcontent.SharedContentViewModel
+import com.knitnote.ui.patternedit.PatternEditViewModel
+import com.knitnote.ui.patternlibrary.PatternLibraryViewModel
 import com.knitnote.ui.sharedwithme.SharedWithMeViewModel
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
@@ -49,6 +51,11 @@ fun getCommentSectionViewModel(
     targetType: CommentTargetType,
     targetId: String,
 ): CommentSectionViewModel = KoinPlatform.getKoin().get { parametersOf(targetType, targetId) }
+
+fun getPatternLibraryViewModel(): PatternLibraryViewModel = KoinPlatform.getKoin().get()
+
+fun getPatternEditViewModel(patternId: String?): PatternEditViewModel =
+    KoinPlatform.getKoin().get { parametersOf(patternId) }
 
 fun getSharedContentViewModel(
     token: String?,
@@ -90,6 +97,14 @@ fun wrapActivityFeedState(
 fun wrapSharedWithMeState(
     flow: kotlinx.coroutines.flow.StateFlow<com.knitnote.ui.sharedwithme.SharedWithMeState>,
 ): FlowWrapper<com.knitnote.ui.sharedwithme.SharedWithMeState> = FlowWrapper(flow)
+
+fun wrapPatternLibraryState(
+    flow: kotlinx.coroutines.flow.StateFlow<com.knitnote.ui.patternlibrary.PatternLibraryState>,
+): FlowWrapper<com.knitnote.ui.patternlibrary.PatternLibraryState> = FlowWrapper(flow)
+
+fun wrapPatternEditState(
+    flow: kotlinx.coroutines.flow.StateFlow<com.knitnote.ui.patternedit.PatternEditState>,
+): FlowWrapper<com.knitnote.ui.patternedit.PatternEditState> = FlowWrapper(flow)
 
 fun wrapSharedContentState(
     flow: kotlinx.coroutines.flow.StateFlow<com.knitnote.ui.sharedcontent.SharedContentState>,

@@ -179,6 +179,9 @@ kover {
                     "com.knitnote.ui.projectlist.ProjectListScreenKt*",
                     "com.knitnote.ui.sharedcontent.SharedContentScreenKt*",
                     "com.knitnote.ui.sharedwithme.SharedWithMeScreenKt*",
+                    "com.knitnote.ui.patternlibrary.PatternLibraryScreenKt*",
+                    "com.knitnote.ui.patternedit.PatternEditScreenKt*",
+                    "com.knitnote.ui.settings.SettingsScreenKt*",
                 )
             }
         }

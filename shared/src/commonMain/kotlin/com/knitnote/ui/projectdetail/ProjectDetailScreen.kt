@@ -58,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.knitnote.domain.model.CommentTargetType
+import com.knitnote.domain.model.Pattern
 import com.knitnote.domain.model.Progress
 import com.knitnote.domain.model.ProjectStatus
 import com.knitnote.domain.repository.AuthRepository
@@ -263,6 +264,14 @@ fun ProjectDetailScreen(
                                 onComplete = { viewModel.onEvent(ProjectDetailEvent.CompleteProject) },
                                 onReopen = { viewModel.onEvent(ProjectDetailEvent.ReopenProject) },
                             )
+                        }
+
+                        // Pattern metadata section
+                        state.pattern?.let { pattern ->
+                            item {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                PatternInfoSection(pattern)
+                            }
                         }
 
                         // Chart images section
@@ -648,4 +657,45 @@ private fun EditProjectDialog(
             }
         },
     )
+}
+
+@Composable
+private fun PatternInfoSection(pattern: Pattern) {
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = "Pattern: ${pattern.title}",
+            style = MaterialTheme.typography.titleMedium,
+        )
+        pattern.difficulty?.let { difficulty ->
+            Text(
+                text = difficulty.name.lowercase().replaceFirstChar { it.uppercase() },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        pattern.gauge?.let { gauge ->
+            Text(
+                text = "Gauge: $gauge",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        pattern.yarnInfo?.let { yarnInfo ->
+            Text(
+                text = "Yarn: $yarnInfo",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        pattern.needleSize?.let { needleSize ->
+            Text(
+                text = "Needle: $needleSize",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }

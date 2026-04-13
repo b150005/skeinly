@@ -11,6 +11,8 @@ interface PatternRepository {
 
     suspend fun getByVisibility(visibility: Visibility): List<Pattern>
 
+    fun observeById(id: String): Flow<Pattern?>
+
     fun observeByOwnerId(ownerId: String): Flow<List<Pattern>>
 
     suspend fun create(pattern: Pattern): Pattern

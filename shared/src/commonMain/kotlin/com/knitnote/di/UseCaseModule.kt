@@ -31,6 +31,10 @@ import com.knitnote.domain.usecase.SignUpUseCase
 import com.knitnote.domain.usecase.UpdateProfileUseCase
 import com.knitnote.domain.usecase.UpdateProjectUseCase
 import com.knitnote.domain.usecase.UpdateShareStatusUseCase
+import com.knitnote.domain.usecase.CreatePatternUseCase
+import com.knitnote.domain.usecase.DeletePatternUseCase
+import com.knitnote.domain.usecase.GetPatternsUseCase
+import com.knitnote.domain.usecase.UpdatePatternUseCase
 import com.knitnote.domain.usecase.UploadChartImageUseCase
 import org.koin.dsl.module
 
@@ -54,6 +58,12 @@ val useCaseModule =
         factory { UpdateProjectUseCase(get()) }
         factory { CompleteProjectUseCase(get(), getOrNull()) }
         factory { ReopenProjectUseCase(get()) }
+
+        // Pattern use cases
+        factory { GetPatternsUseCase(get(), get()) }
+        factory { CreatePatternUseCase(get(), get(), getOrNull()) }
+        factory { UpdatePatternUseCase(get()) }
+        factory { DeletePatternUseCase(get()) }
 
         // Chart image use cases (RemoteStorageDataSource is nullable — only with Supabase)
         factory { UploadChartImageUseCase(get(), getOrNull(), get()) }

@@ -42,6 +42,14 @@ enum ViewModelFactory {
         )
     }
 
+    static func patternLibraryViewModel() -> PatternLibraryViewModel {
+        KoinHelperKt.getPatternLibraryViewModel()
+    }
+
+    static func patternEditViewModel(patternId: String?) -> PatternEditViewModel {
+        KoinHelperKt.getPatternEditViewModel(patternId: patternId)
+    }
+
     static func sharedContentViewModel(
         token: String?,
         shareId: String?
