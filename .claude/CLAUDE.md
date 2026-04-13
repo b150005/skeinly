@@ -110,9 +110,10 @@ Agents detect this project as **Kotlin Multiplatform** by finding:
 8. **Release**: The devops-engineer manages deployment and release
 9. **Commit, Push & CI Verification**: When the code review is APPROVED and all tests pass:
    - **Pre-commit CI check**: If any CI workflow file (`.github/workflows/`) was modified, reproduce its build/test commands locally before committing to catch task name mismatches, missing dependencies, or configuration errors early
+   - **Pre-commit CI warning check**: After pushing, review CI logs for warnings (not just failures). Warnings such as deprecated actions, missing configuration fields, or fallback behaviors indicate latent issues that should be fixed proactively
    - Commit using conventional commits format (feat, fix, refactor, docs, test, chore, perf, ci)
    - Push to `origin/main`
-   - Monitor CI results; if CI fails, diagnose and fix the issue within the same session
+   - Monitor CI results (both failures AND warnings); fix issues within the same session
    - These steps are performed autonomously — no user confirmation needed
 10. **Next Step Planning**: At each task boundary (phase completion, milestone), convene the agent team (architect, product-manager, implementer, etc.) to discuss and agree on the next priority. Output the result as Next Session Instructions for handoff.
 
