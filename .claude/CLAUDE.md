@@ -117,6 +117,10 @@ Agents detect this project as **Kotlin Multiplatform** by finding:
    - These steps are performed autonomously — no user confirmation needed
 10. **Next Step Planning**: At each task boundary (phase completion, milestone), convene the agent team (architect, product-manager, implementer, etc.) to discuss and agree on the next priority. Output the result as Next Session Instructions for handoff.
 
+## CI Known Limitations
+
+- **CodeQL java-kotlin**: CodeQL does not support Kotlin 2.3.20 yet (upstream limit). The `security.yml` job uses `continue-on-error: true` so it does not block CI. The overlay-base database warning (`build-mode is set to "manual" instead of "none"`) is benign — CodeQL falls back to full (non-incremental) analysis. Both issues resolve when CodeQL adds Kotlin 2.3.20 support.
+
 ## Testing Requirements
 
 - Minimum 80% test coverage for shared module

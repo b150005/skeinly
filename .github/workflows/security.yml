@@ -21,14 +21,15 @@ jobs:
         include:
           - language: java-kotlin
             runner: ubuntu-latest
-            # CodeQL does not yet support Kotlin 2.3.20 (upstream limit).
-            # Use build-mode: none to skip the Gradle build and analyse
-            # source code statically until CodeQL catches up.
-            build-mode: "none"
+            build-mode: manual
           - language: swift
             runner: macos-latest
             build-mode: manual
     runs-on: ${{ matrix.runner }}
+    # java-kotlin: CodeQL does not yet support Kotlin 2.3.20 (upstream limit).
+    # The build succeeds but the CodeQL extractor rejects the Kotlin version.
+    # The overlay-base database warning ("build-mode is set to manual instead
+    # of none") is benign — it falls back to full (non-incremental) analysis.
     continue-on-error: ${{ matrix.language == 'java-kotlin' }}
     steps:
       - name: Checkout
@@ -61,14 +62,25 @@ jobs:
         if: matrix.language == 'swift'
         run: cd iosApp && xcodegen generate
 
-      # --- CodeQL init ---
+      # --- CodeQL init (starts tracing for manual build-mode) ---
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
 
-      # --- Traced builds (only for manual build-mode) ---
+      # --- Traced builds ---
+      - name: Build (java-kotlin)
+        if: matrix.language == 'java-kotlin'
+        env:
+          GRADLE_OPTS: "-Xmx4g"
+        run: >-
+          ./gradlew --no-daemon
+          -Pkotlin.daemon.enabled=false
+          -Dkotlin.compiler.execution.strategy=in-process
+          :shared:compileAndroidMain
+          :androidApp:compileDebugKotlin
+
       - name: Resolve iOS Simulator destination
         if: matrix.language == 'swift'
         id: sim
