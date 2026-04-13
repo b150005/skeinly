@@ -16,12 +16,14 @@ import com.knitnote.domain.usecase.CompleteProjectUseCase
 import com.knitnote.domain.usecase.DecrementRowUseCase
 import com.knitnote.domain.usecase.DeleteChartImageUseCase
 import com.knitnote.domain.usecase.DeleteProgressNoteUseCase
+import com.knitnote.domain.usecase.DeleteProgressPhotoUseCase
 import com.knitnote.domain.usecase.GetProgressNotesUseCase
 import com.knitnote.domain.usecase.IncrementRowUseCase
 import com.knitnote.domain.usecase.ReopenProjectUseCase
 import com.knitnote.domain.usecase.ShareProjectUseCase
 import com.knitnote.domain.usecase.UpdateProjectUseCase
 import com.knitnote.domain.usecase.UploadChartImageUseCase
+import com.knitnote.domain.usecase.UploadProgressPhotoUseCase
 import com.knitnote.domain.usecase.UseCaseResult
 import com.knitnote.domain.usecase.toMessage
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -51,6 +53,8 @@ data class ProjectDetailState(
     val chartImageSignedUrls: List<String> = emptyList(),
     val isUploadingImage: Boolean = false,
     val selectedChartImageIndex: Int? = null,
+    val photoSignedUrls: Map<String, String> = emptyMap(),
+    val isUploadingPhoto: Boolean = false,
 )
 
 sealed interface ProjectDetailEvent {
@@ -86,6 +90,12 @@ sealed interface ProjectDetailEvent {
         val permission: SharePermission,
     ) : ProjectDetailEvent
 
+    class AddNoteWithPhoto(
+        val note: String,
+        val photoData: ByteArray?,
+        val photoFileName: String?,
+    ) : ProjectDetailEvent
+
     class UploadChartImage(
         val data: ByteArray,
         val fileName: String,
@@ -118,6 +128,9 @@ class ProjectDetailViewModel(
     private val uploadChartImage: UploadChartImageUseCase,
     private val deleteChartImage: DeleteChartImageUseCase,
     private val remoteStorage: StorageOperations?,
+    private val uploadProgressPhoto: UploadProgressPhotoUseCase,
+    private val deleteProgressPhoto: DeleteProgressPhotoUseCase,
+    private val progressPhotoStorage: StorageOperations?,
 ) : ViewModel() {
     private val counterMutex = Mutex()
 
@@ -159,6 +172,8 @@ class ProjectDetailViewModel(
                 chartImageSignedUrls = overlay.chartImageSignedUrls,
                 isUploadingImage = overlay.isUploadingImage,
                 selectedChartImageIndex = overlay.selectedChartImageIndex,
+                photoSignedUrls = overlay.photoSignedUrls,
+                isUploadingPhoto = overlay.isUploadingPhoto,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -179,6 +194,7 @@ class ProjectDetailViewModel(
 
     init {
         loadChartImages()
+        loadProgressPhotoUrls()
     }
 
     /** Show an error from an external component (e.g., CommentSection) via the shared snackbar. */
@@ -222,8 +238,15 @@ class ProjectDetailViewModel(
             }
             is ProjectDetailEvent.DeleteNote -> {
                 viewModelScope.launch {
+                    // Look up photoUrl before deletion for cleanup
+                    val notePhoto = progressNotes.value.find { it.id == event.progressId }?.photoUrl
                     when (val result = deleteProgressNote(event.progressId)) {
-                        is UseCaseResult.Success -> { /* notes update via Flow */ }
+                        is UseCaseResult.Success -> {
+                            // Best-effort delete the photo from storage
+                            if (notePhoto != null) {
+                                deleteProgressPhoto(notePhoto)
+                            }
+                        }
                         is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
                     }
                 }
@@ -278,6 +301,7 @@ class ProjectDetailViewModel(
                     }
                 }
             }
+            is ProjectDetailEvent.AddNoteWithPhoto -> handleAddNoteWithPhoto(event)
             is ProjectDetailEvent.UploadChartImage -> handleUploadChartImage(event)
             is ProjectDetailEvent.DeleteChartImage -> handleDeleteChartImage(event)
             is ProjectDetailEvent.SelectChartImage -> {
@@ -350,6 +374,54 @@ class ProjectDetailViewModel(
         }
     }
 
+    private fun handleAddNoteWithPhoto(event: ProjectDetailEvent.AddNoteWithPhoto) {
+        val currentRow = state.value.project?.currentRow ?: 0
+        viewModelScope.launch {
+            val photoData = event.photoData
+            val photoFileName = event.photoFileName
+            if (photoData != null && photoFileName != null) {
+                _uiOverlay.update { it.copy(isUploadingPhoto = true) }
+                when (val uploadResult = uploadProgressPhoto(projectId, photoData, photoFileName)) {
+                    is UseCaseResult.Success -> {
+                        _uiOverlay.update { it.copy(isUploadingPhoto = false) }
+                        when (val result = addProgressNote(projectId, currentRow, event.note, uploadResult.value)) {
+                            is UseCaseResult.Success -> { /* notes update via Flow */ }
+                            is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
+                        }
+                    }
+                    is UseCaseResult.Failure -> {
+                        _uiOverlay.update { it.copy(isUploadingPhoto = false, error = uploadResult.error.toMessage()) }
+                    }
+                }
+            } else {
+                when (val result = addProgressNote(projectId, currentRow, event.note)) {
+                    is UseCaseResult.Success -> { /* notes update via Flow */ }
+                    is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
+                }
+            }
+        }
+    }
+
+    private fun loadProgressPhotoUrls() {
+        viewModelScope.launch {
+            progressNotes.collect { notes ->
+                val notesWithPhotos = notes.filter { it.photoUrl != null }
+                if (notesWithPhotos.isEmpty() || progressPhotoStorage == null) {
+                    _uiOverlay.update { it.copy(photoSignedUrls = emptyMap()) }
+                    return@collect
+                }
+                val paths = notesWithPhotos.mapNotNull { it.photoUrl }
+                try {
+                    val signedUrls = progressPhotoStorage.createSignedUrls(paths)
+                    val urlMap = notesWithPhotos.zip(signedUrls).associate { (note, url) -> note.id to url }
+                    _uiOverlay.update { it.copy(photoSignedUrls = urlMap) }
+                } catch (_: Exception) {
+                    _uiOverlay.update { it.copy(error = "Failed to load progress photos") }
+                }
+            }
+        }
+    }
+
     private suspend fun resolveSignedUrls(paths: List<String>): List<String> {
         val storage = remoteStorage ?: return emptyList()
         return try {
@@ -368,4 +440,6 @@ private data class UiOverlay(
     val chartImageSignedUrls: List<String> = emptyList(),
     val isUploadingImage: Boolean = false,
     val selectedChartImageIndex: Int? = null,
+    val photoSignedUrls: Map<String, String> = emptyMap(),
+    val isUploadingPhoto: Boolean = false,
 )

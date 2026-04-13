@@ -159,7 +159,10 @@ struct ProjectDetailScreen: View {
                         .font(.subheadline)
                 } else {
                     ForEach(notes, id: \.id) { note in
-                        NoteRow(note: note)
+                        NoteRow(
+                            note: note,
+                            photoSignedUrl: stateObserver.state.photoSignedUrls[note.id] as? String
+                        )
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
                                     noteToDelete = note
@@ -368,11 +371,44 @@ struct ProjectDetailScreen: View {
 
     // MARK: - Add Note Sheet
 
+    @State private var notePhotoItem: PhotosPickerItem?
+    @State private var notePhotoData: Data?
+
     private var addNoteSheet: some View {
         NavigationStack {
             Form {
                 TextField("Note", text: $newNote, axis: .vertical)
                     .lineLimit(3...6)
+
+                Section {
+                    if let photoData = notePhotoData, let uiImage = UIImage(data: photoData) {
+                        HStack {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 60, height: 60)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                            Text("Photo attached")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            Spacer()
+
+                            Button(role: .destructive) {
+                                notePhotoItem = nil
+                                notePhotoData = nil
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    } else {
+                        PhotosPicker(selection: $notePhotoItem, matching: .images) {
+                            Label("Add Photo", systemImage: "photo.on.rectangle.angled")
+                        }
+                    }
+                }
             }
             .navigationTitle("Add Note")
             .navigationBarTitleDisplayMode(.inline)
@@ -380,16 +416,40 @@ struct ProjectDetailScreen: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
                         newNote = ""
+                        notePhotoItem = nil
+                        notePhotoData = nil
                         showAddNoteSheet = false
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Add") {
-                        viewModel.onEvent(event: ProjectDetailEventAddNote(note: newNote))
+                        if let photoData = notePhotoData {
+                            let compressed = compressImageToJpeg(data: photoData, maxSize: 2 * 1024 * 1024)
+                            let kotlinData = dataToKotlinByteArray(compressed)
+                            let fileName = "progress_\(Int(Date().timeIntervalSince1970)).jpg"
+                            viewModel.onEvent(
+                                event: ProjectDetailEventAddNoteWithPhoto(
+                                    note: newNote,
+                                    photoData: kotlinData,
+                                    photoFileName: fileName
+                                )
+                            )
+                        } else {
+                            viewModel.onEvent(event: ProjectDetailEventAddNote(note: newNote))
+                        }
                         newNote = ""
+                        notePhotoItem = nil
+                        notePhotoData = nil
                         showAddNoteSheet = false
                     }
                     .disabled(newNote.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+            .onChange(of: notePhotoItem) { _, newItem in
+                Task {
+                    if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                        notePhotoData = data
+                    }
                 }
             }
         }
@@ -420,14 +480,42 @@ private func dataToKotlinByteArray(_ data: Data) -> KotlinByteArray {
 
 private struct NoteRow: View {
     let note: Shared.Progress
+    var photoSignedUrl: String? = nil
+    @State private var showPhotoViewer = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(note.note)
-                .font(.body)
-            Text("Row \(note.rowNumber) \u{2022} \(formattedDate)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(note.note)
+                    .font(.body)
+                Text("Row \(note.rowNumber) \u{2022} \(formattedDate)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            if let urlString = photoSignedUrl, let url = URL(string: urlString) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    case .failure:
+                        Image(systemName: "photo")
+                            .foregroundStyle(.secondary)
+                    default:
+                        ProgressView()
+                    }
+                }
+                .frame(width: 48, height: 48)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .onTapGesture { showPhotoViewer = true }
+                .fullScreenCover(isPresented: $showPhotoViewer) {
+                    ChartImageViewer(imageUrl: urlString, onDismiss: { showPhotoViewer = false })
+                }
+            }
         }
     }
 

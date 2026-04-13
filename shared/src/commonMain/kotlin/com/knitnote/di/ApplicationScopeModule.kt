@@ -12,6 +12,8 @@ import org.koin.dsl.onClose
 
 val applicationScopeQualifier = named("applicationScope")
 val ioDispatcherQualifier = named("ioDispatcher")
+val chartImagesStorageQualifier = named("chartImagesStorage")
+val progressPhotosStorageQualifier = named("progressPhotosStorage")
 
 val applicationScopeModule =
     module {

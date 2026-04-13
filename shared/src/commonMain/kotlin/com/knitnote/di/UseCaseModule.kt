@@ -13,6 +13,7 @@ import com.knitnote.domain.usecase.DeleteChartImageUseCase
 import com.knitnote.domain.usecase.DeleteCommentUseCase
 import com.knitnote.domain.usecase.DeletePatternUseCase
 import com.knitnote.domain.usecase.DeleteProgressNoteUseCase
+import com.knitnote.domain.usecase.DeleteProgressPhotoUseCase
 import com.knitnote.domain.usecase.DeleteProjectUseCase
 import com.knitnote.domain.usecase.ForkSharedPatternUseCase
 import com.knitnote.domain.usecase.GetActivitiesUseCase
@@ -36,6 +37,7 @@ import com.knitnote.domain.usecase.UpdateProfileUseCase
 import com.knitnote.domain.usecase.UpdateProjectUseCase
 import com.knitnote.domain.usecase.UpdateShareStatusUseCase
 import com.knitnote.domain.usecase.UploadChartImageUseCase
+import com.knitnote.domain.usecase.UploadProgressPhotoUseCase
 import org.koin.dsl.module
 
 val useCaseModule =
@@ -66,8 +68,12 @@ val useCaseModule =
         factory { DeletePatternUseCase(get()) }
 
         // Chart image use cases (RemoteStorageDataSource is nullable — only with Supabase)
-        factory { UploadChartImageUseCase(get(), getOrNull(), get()) }
-        factory { DeleteChartImageUseCase(get(), getOrNull()) }
+        factory { UploadChartImageUseCase(get(), getOrNull(chartImagesStorageQualifier), get()) }
+        factory { DeleteChartImageUseCase(get(), getOrNull(chartImagesStorageQualifier)) }
+
+        // Progress photo use cases
+        factory { UploadProgressPhotoUseCase(getOrNull(progressPhotosStorageQualifier), get()) }
+        factory { DeleteProgressPhotoUseCase(getOrNull(progressPhotosStorageQualifier), get()) }
 
         // Profile use cases (UserRepository with offline fallback)
         factory { GetCurrentUserUseCase(get(), get()) }

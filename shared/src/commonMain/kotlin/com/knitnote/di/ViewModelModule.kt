@@ -47,7 +47,10 @@ val viewModelModule =
                 shareProject = get(),
                 uploadChartImage = get(),
                 deleteChartImage = get(),
-                remoteStorage = getOrNull(),
+                remoteStorage = getOrNull(chartImagesStorageQualifier),
+                uploadProgressPhoto = get(),
+                deleteProgressPhoto = get(),
+                progressPhotoStorage = getOrNull(progressPhotosStorageQualifier),
             )
         }
         viewModel { SharedWithMeViewModel(get(), get(), get(), get()) }

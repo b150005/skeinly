@@ -37,10 +37,14 @@ struct PatternEditScreen: View {
                 .disabled(state.title.trimmingCharacters(in: .whitespaces).isEmpty || state.isSaving)
             }
         }
-        .onChange(of: state.isSaved) { _, saved in
-            if saved {
-                path.removeLast()
+        .task {
+            let saveFlow = KoinHelperKt.wrapPatternEditSaveSuccess(flow: viewModel.saveSuccess)
+            let closeable = saveFlow.collect { _ in
+                Task { @MainActor in
+                    path.removeLast()
+                }
             }
+            _ = closeable
         }
         .onChange(of: state.error) { _, newError in
             showError = newError != nil

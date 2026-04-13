@@ -19,8 +19,9 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 import kotlin.time.Clock
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -64,7 +65,6 @@ class PatternEditViewModelTest {
             viewModel.onEvent(PatternEditEvent.Save)
             advanceUntilIdle()
 
-            assertTrue(viewModel.state.value.isSaved)
             val patterns = patternRepository.getByOwnerId("local-user")
             assertEquals(1, patterns.size)
             assertEquals("New Scarf", patterns[0].title)
@@ -79,7 +79,7 @@ class PatternEditViewModelTest {
             viewModel.onEvent(PatternEditEvent.Save)
             advanceUntilIdle()
 
-            assertEquals(false, viewModel.state.value.isSaved)
+            assertNotNull(viewModel.state.value.error)
             assertEquals("Title must not be blank", viewModel.state.value.error)
         }
 
@@ -145,24 +145,20 @@ class PatternEditViewModelTest {
             viewModel.onEvent(PatternEditEvent.Save)
             advanceUntilIdle()
 
-            assertTrue(viewModel.state.value.isSaved)
             val updated = patternRepository.getById("p1")
             assertEquals("New Title", updated?.title)
         }
 
     @Test
-    fun `isSaved becomes true after successful save`() =
+    fun `saveSuccess emits after successful save`() =
         runTest {
             val viewModel = createViewModel(patternId = null)
 
-            viewModel.state.test {
-                awaitItem() // initial
+            viewModel.saveSuccess.test {
                 viewModel.onEvent(PatternEditEvent.UpdateTitle("Test"))
-                awaitItem() // title updated
                 viewModel.onEvent(PatternEditEvent.Save)
-                awaitItem() // isSaving=true
-                val saved = awaitItem() // isSaved=true
-                assertTrue(saved.isSaved)
+                awaitItem() // Unit emitted on success
+                assertFalse(viewModel.state.value.isSaving)
             }
         }
 }

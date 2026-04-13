@@ -68,7 +68,7 @@ class AddProgressNoteUseCaseTest {
         }
 
     @Test
-    fun `sets photoUrl to null`() =
+    fun `sets photoUrl to null by default`() =
         runTest {
             val result =
                 assertIs<UseCaseResult.Success<Progress>>(
@@ -76,6 +76,22 @@ class AddProgressNoteUseCaseTest {
                 )
 
             assertEquals(null, result.value.photoUrl)
+        }
+
+    @Test
+    fun `sets photoUrl when provided`() =
+        runTest {
+            val result =
+                assertIs<UseCaseResult.Success<Progress>>(
+                    useCase(
+                        projectId = "proj-1",
+                        rowNumber = 1,
+                        note = "With photo",
+                        photoUrl = "user-1/proj-1/photo.jpg",
+                    ),
+                )
+
+            assertEquals("user-1/proj-1/photo.jpg", result.value.photoUrl)
         }
 
     @Test

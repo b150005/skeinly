@@ -20,6 +20,9 @@ enum class ActivityType {
 
     @SerialName("started")
     STARTED,
+
+    @SerialName("created")
+    CREATED,
 }
 
 @Serializable

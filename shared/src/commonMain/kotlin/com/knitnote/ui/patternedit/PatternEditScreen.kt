@@ -50,10 +50,8 @@ fun PatternEditScreen(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(state.isSaved) {
-        if (state.isSaved) {
-            onSaved()
-        }
+    LaunchedEffect(Unit) {
+        viewModel.saveSuccess.collect { onSaved() }
     }
 
     LaunchedEffect(state.error) {

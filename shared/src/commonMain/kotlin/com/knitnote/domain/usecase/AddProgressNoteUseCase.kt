@@ -17,6 +17,7 @@ class AddProgressNoteUseCase(
         projectId: String,
         rowNumber: Int,
         note: String,
+        photoUrl: String? = null,
     ): UseCaseResult<Progress> {
         if (note.isBlank()) {
             return UseCaseResult.Failure(UseCaseError.Validation("Note must not be blank"))
@@ -27,7 +28,7 @@ class AddProgressNoteUseCase(
                 id = Uuid.random().toString(),
                 projectId = projectId,
                 rowNumber = rowNumber,
-                photoUrl = null,
+                photoUrl = photoUrl,
                 note = note,
                 createdAt = Clock.System.now(),
                 ownerId = ownerId,

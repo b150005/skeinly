@@ -61,7 +61,12 @@ val repositoryModule =
             single { RemoteUserDataSource(get<SupabaseClient>()) }
             single<CommentDataSourceOperations> { RemoteCommentDataSource(get<SupabaseClient>()) }
             single<ActivityDataSourceOperations> { RemoteActivityDataSource(get<SupabaseClient>()) }
-            single<StorageOperations> { RemoteStorageDataSource(get<SupabaseClient>()) }
+            single<StorageOperations>(chartImagesStorageQualifier) {
+                RemoteStorageDataSource(get<SupabaseClient>(), "chart-images")
+            }
+            single<StorageOperations>(progressPhotosStorageQualifier) {
+                RemoteStorageDataSource(get<SupabaseClient>(), "progress-photos")
+            }
             single<RealtimeChannelProvider> { SupabaseRealtimeChannelProvider(get<SupabaseClient>()) }
 
             // Comment — remote-only with Realtime

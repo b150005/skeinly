@@ -71,6 +71,7 @@ private struct ActivityRow: View {
         case .shared: return "square.and.arrow.up"
         case .commented: return "text.bubble"
         case .forked: return "arrow.triangle.branch"
+        case .created: return "plus.circle.fill"
         default: return "circle"
         }
     }
@@ -82,6 +83,7 @@ private struct ActivityRow: View {
         case .shared: return .orange
         case .commented: return .purple
         case .forked: return .teal
+        case .created: return .indigo
         default: return .secondary
         }
     }
@@ -93,6 +95,7 @@ private struct ActivityRow: View {
         case .shared: return "shared a pattern"
         case .commented: return "commented on a project"
         case .forked: return "forked a pattern"
+        case .created: return "created a new pattern"
         default: return "performed an action"
         }
     }

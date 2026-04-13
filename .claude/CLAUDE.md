@@ -235,5 +235,7 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 22**: Pattern Management — Full CRUD for Pattern entity with gauge/yarnInfo/needleSize metadata, Supabase migration 009, PatternLibrary screen (search/filter/sort), PatternEdit screen (7-field form), CreateProject pattern linking, ProjectDetail pattern info section, iOS SwiftUI mirrors, 4 new UseCases + 2 ViewModels, 33 new tests (541 shared tests)
 
+- **Phase 22.1 + 23**: Tech Debt Cleanup + Progress Photos — PatternEditViewModel isSaved→Channel one-shot event, ActivityType.CREATED enum + CreatePatternUseCase fix, iOS PatternLibraryScreen searchText sync, RemoteStorageDataSource bucket parameterization (chart-images + progress-photos), Supabase migration 010 (progress-photos bucket + RLS + CREATED activity type), UploadProgressPhotoUseCase/DeleteProgressPhotoUseCase, AddProgressNoteUseCase photoUrl support, ProjectDetailViewModel photo upload/display/delete integration, Android AddNoteDialog photo picker + NoteItem thumbnail + ChartImageViewer reuse, iOS addNoteSheet PhotosPicker + NoteRow thumbnail + ChartImageViewer fullScreenCover, 12 new tests (553 shared tests)
+
 ### Planned
 - **Phase 21**: macOS Target — Post-launch, based on user demand

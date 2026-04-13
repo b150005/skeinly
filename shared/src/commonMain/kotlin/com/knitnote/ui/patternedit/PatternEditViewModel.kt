@@ -9,9 +9,12 @@ import com.knitnote.domain.usecase.CreatePatternUseCase
 import com.knitnote.domain.usecase.UpdatePatternUseCase
 import com.knitnote.domain.usecase.UseCaseResult
 import com.knitnote.domain.usecase.toMessage
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -27,7 +30,6 @@ data class PatternEditState(
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
     val error: String? = null,
-    val isSaved: Boolean = false,
 )
 
 sealed interface PatternEditEvent {
@@ -72,6 +74,9 @@ class PatternEditViewModel(
 ) : ViewModel() {
     private val _state = MutableStateFlow(PatternEditState(patternId = patternId))
     val state: StateFlow<PatternEditState> = _state.asStateFlow()
+
+    private val _saveSuccessChannel = Channel<Unit>(Channel.BUFFERED)
+    val saveSuccess: Flow<Unit> = _saveSuccessChannel.receiveAsFlow()
 
     init {
         if (patternId != null) {
@@ -148,7 +153,8 @@ class PatternEditViewModel(
 
             when (result) {
                 is UseCaseResult.Success -> {
-                    _state.update { it.copy(isSaving = false, isSaved = true) }
+                    _state.update { it.copy(isSaving = false) }
+                    _saveSuccessChannel.send(Unit)
                 }
                 is UseCaseResult.Failure -> {
                     _state.update { it.copy(isSaving = false, error = result.error.toMessage()) }

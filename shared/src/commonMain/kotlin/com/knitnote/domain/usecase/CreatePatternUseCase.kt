@@ -52,7 +52,7 @@ class CreatePatternUseCase(
         if (ownerId != LocalUser.ID) {
             createActivity?.invoke(
                 userId = ownerId,
-                type = ActivityType.STARTED,
+                type = ActivityType.CREATED,
                 targetType = ActivityTargetType.PATTERN,
                 targetId = created.id,
             )

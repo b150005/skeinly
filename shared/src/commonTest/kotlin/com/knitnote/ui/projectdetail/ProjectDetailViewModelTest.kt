@@ -14,6 +14,7 @@ import com.knitnote.domain.usecase.CompleteProjectUseCase
 import com.knitnote.domain.usecase.DecrementRowUseCase
 import com.knitnote.domain.usecase.DeleteChartImageUseCase
 import com.knitnote.domain.usecase.DeleteProgressNoteUseCase
+import com.knitnote.domain.usecase.DeleteProgressPhotoUseCase
 import com.knitnote.domain.usecase.FakeAuthRepository
 import com.knitnote.domain.usecase.FakePatternRepository
 import com.knitnote.domain.usecase.FakeProgressRepository
@@ -25,6 +26,7 @@ import com.knitnote.domain.usecase.ReopenProjectUseCase
 import com.knitnote.domain.usecase.ShareProjectUseCase
 import com.knitnote.domain.usecase.UpdateProjectUseCase
 import com.knitnote.domain.usecase.UploadChartImageUseCase
+import com.knitnote.domain.usecase.UploadProgressPhotoUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -100,6 +102,9 @@ class ProjectDetailViewModelTest {
             uploadChartImage = UploadChartImageUseCase(patternRepository, null, authRepository),
             deleteChartImage = DeleteChartImageUseCase(patternRepository, null),
             remoteStorage = null,
+            uploadProgressPhoto = UploadProgressPhotoUseCase(null, authRepository),
+            deleteProgressPhoto = DeleteProgressPhotoUseCase(null, authRepository),
+            progressPhotoStorage = null,
         )
 
     @Test
@@ -668,6 +673,9 @@ class ProjectDetailViewModelTest {
             uploadChartImage = UploadChartImageUseCase(patternRepository, null, authRepository),
             deleteChartImage = DeleteChartImageUseCase(patternRepository, null),
             remoteStorage = null,
+            uploadProgressPhoto = UploadProgressPhotoUseCase(null, authRepository),
+            deleteProgressPhoto = DeleteProgressPhotoUseCase(null, authRepository),
+            progressPhotoStorage = null,
         )
 
     private fun createViewModelWithStorage(storage: FakeRemoteStorageDataSource = FakeRemoteStorageDataSource()): ProjectDetailViewModel =
@@ -693,6 +701,9 @@ class ProjectDetailViewModelTest {
             uploadChartImage = UploadChartImageUseCase(patternRepository, storage, authRepository),
             deleteChartImage = DeleteChartImageUseCase(patternRepository, storage),
             remoteStorage = storage,
+            uploadProgressPhoto = UploadProgressPhotoUseCase(storage, authRepository),
+            deleteProgressPhoto = DeleteProgressPhotoUseCase(storage, authRepository),
+            progressPhotoStorage = storage,
         )
 
     /** Minimal valid JPEG header bytes for test data. */

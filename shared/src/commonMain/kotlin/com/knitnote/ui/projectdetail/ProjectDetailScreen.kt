@@ -1,6 +1,7 @@
 package com.knitnote.ui.projectdetail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,10 +14,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
@@ -52,11 +56,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import com.knitnote.domain.model.CommentTargetType
 import com.knitnote.domain.model.Pattern
 import com.knitnote.domain.model.Progress
@@ -65,6 +72,7 @@ import com.knitnote.domain.repository.AuthRepository
 import com.knitnote.ui.chartviewer.ChartImageGrid
 import com.knitnote.ui.chartviewer.ChartImageViewer
 import com.knitnote.ui.comments.CommentSection
+import com.knitnote.ui.imagepicker.ImagePickerResult
 import com.knitnote.ui.imagepicker.rememberImagePickerLauncher
 import com.knitnote.ui.util.formatShort
 import kotlinx.coroutines.flow.collect
@@ -87,6 +95,7 @@ fun ProjectDetailScreen(
     var showUserPickerDialog by remember { mutableStateOf(false) }
     var noteToDelete by remember { mutableStateOf<String?>(null) }
     var chartImageToDelete by remember { mutableStateOf<String?>(null) }
+    var progressPhotoViewerUrl by remember { mutableStateOf<String?>(null) }
 
     val imagePickerLauncher =
         rememberImagePickerLauncher { result ->
@@ -120,10 +129,17 @@ fun ProjectDetailScreen(
     if (showAddNoteDialog) {
         AddNoteDialog(
             onDismiss = { showAddNoteDialog = false },
-            onConfirm = { note ->
-                viewModel.onEvent(ProjectDetailEvent.AddNote(note))
+            onConfirm = { note, photoData, photoFileName ->
+                viewModel.onEvent(
+                    ProjectDetailEvent.AddNoteWithPhoto(
+                        note = note,
+                        photoData = photoData,
+                        photoFileName = photoFileName,
+                    ),
+                )
                 showAddNoteDialog = false
             },
+            isUploading = state.isUploadingPhoto,
         )
     }
 
@@ -344,6 +360,8 @@ fun ProjectDetailScreen(
                                 SwipeToDismissNoteItem(
                                     note = note,
                                     onDelete = { noteToDelete = note.id },
+                                    photoSignedUrl = state.photoSignedUrls[note.id],
+                                    onPhotoClick = { url -> progressPhotoViewerUrl = url },
                                 )
                             }
                         }
@@ -377,6 +395,14 @@ fun ProjectDetailScreen(
                 ChartImageViewer(
                     imageUrl = state.chartImageSignedUrls[selectedIndex],
                     onDismiss = { viewModel.onEvent(ProjectDetailEvent.CloseChartViewer) },
+                )
+            }
+
+            // Full-screen progress photo viewer overlay
+            progressPhotoViewerUrl?.let { url ->
+                ChartImageViewer(
+                    imageUrl = url,
+                    onDismiss = { progressPhotoViewerUrl = null },
                 )
             }
         }
@@ -481,6 +507,8 @@ private fun CounterSection(
 private fun SwipeToDismissNoteItem(
     note: Progress,
     onDelete: () -> Unit,
+    photoSignedUrl: String? = null,
+    onPhotoClick: ((String) -> Unit)? = null,
 ) {
     val dismissState =
         rememberSwipeToDismissBoxState(
@@ -512,12 +540,20 @@ private fun SwipeToDismissNoteItem(
         },
         enableDismissFromStartToEnd = false,
     ) {
-        NoteItem(note = note)
+        NoteItem(
+            note = note,
+            photoSignedUrl = photoSignedUrl,
+            onPhotoClick = onPhotoClick,
+        )
     }
 }
 
 @Composable
-private fun NoteItem(note: Progress) {
+private fun NoteItem(
+    note: Progress,
+    photoSignedUrl: String? = null,
+    onPhotoClick: ((String) -> Unit)? = null,
+) {
     val timestamp = remember(note.createdAt) { note.createdAt.formatShort() }
 
     ListItem(
@@ -527,6 +563,23 @@ private fun NoteItem(note: Progress) {
         supportingContent = {
             Text(text = "Row ${note.rowNumber} - $timestamp")
         },
+        trailingContent =
+            if (photoSignedUrl != null) {
+                {
+                    AsyncImage(
+                        model = photoSignedUrl,
+                        contentDescription = "Progress photo",
+                        modifier =
+                            Modifier
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onPhotoClick?.invoke(photoSignedUrl) },
+                        contentScale = ContentScale.Crop,
+                    )
+                }
+            } else {
+                null
+            },
     )
 }
 
@@ -573,34 +626,103 @@ private fun StatusToggleButton(
 @Composable
 private fun AddNoteDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit,
+    onConfirm: (note: String, photoData: ByteArray?, photoFileName: String?) -> Unit,
+    isUploading: Boolean = false,
 ) {
     var noteText by rememberSaveable { mutableStateOf("") }
+    var selectedPhoto by remember { mutableStateOf<ImagePickerResult?>(null) }
+    val imagePickerLauncher =
+        rememberImagePickerLauncher { result ->
+            selectedPhoto = result
+        }
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isUploading) onDismiss() },
         title = { Text("Add Note") },
         text = {
-            OutlinedTextField(
-                value = noteText,
-                onValueChange = { noteText = it },
-                label = { Text("Note") },
-                placeholder = { Text("e.g., Decreased stitch, changed color...") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = false,
-                maxLines = 3,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = noteText,
+                    onValueChange = { noteText = it },
+                    label = { Text("Note") },
+                    placeholder = { Text("e.g., Decreased stitch, changed color...") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = false,
+                    maxLines = 3,
+                )
+
+                if (selectedPhoto != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Text(
+                            text = "Photo attached",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        IconButton(
+                            onClick = { selectedPhoto = null },
+                            modifier = Modifier.size(24.dp),
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Remove photo",
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    }
+                } else {
+                    TextButton(
+                        onClick = { imagePickerLauncher.launch() },
+                        modifier = Modifier.testTag("addPhotoButton"),
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(modifier = Modifier.size(4.dp))
+                        Text("Add Photo")
+                    }
+                }
+
+                if (isUploading) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                        Text(
+                            text = "Uploading photo...",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(noteText.trim()) },
-                enabled = noteText.isNotBlank(),
+                onClick = {
+                    onConfirm(noteText.trim(), selectedPhoto?.data, selectedPhoto?.fileName)
+                },
+                enabled = noteText.isNotBlank() && !isUploading,
             ) {
                 Text("Add")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !isUploading,
+            ) {
                 Text("Cancel")
             }
         },

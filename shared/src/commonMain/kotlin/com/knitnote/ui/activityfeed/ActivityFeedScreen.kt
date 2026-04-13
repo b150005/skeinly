@@ -150,4 +150,5 @@ private fun activityVerb(type: ActivityType): Pair<ImageVector, String> =
         ActivityType.SHARED -> Icons.Default.Share to "shared a pattern"
         ActivityType.COMMENTED -> Icons.AutoMirrored.Filled.Comment to "commented on a project"
         ActivityType.FORKED -> Icons.AutoMirrored.Filled.CallSplit to "forked a pattern"
+        ActivityType.CREATED -> Icons.Default.Add to "created a new pattern"
     }

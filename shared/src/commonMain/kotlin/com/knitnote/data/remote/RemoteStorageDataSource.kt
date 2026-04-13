@@ -8,8 +8,9 @@ import kotlin.time.Duration
 
 class RemoteStorageDataSource(
     private val supabaseClient: SupabaseClient,
+    private val bucketName: String,
 ) : StorageOperations {
-    private val bucket get() = supabaseClient.storage["chart-images"]
+    private val bucket get() = supabaseClient.storage[bucketName]
 
     override suspend fun upload(
         userId: String,

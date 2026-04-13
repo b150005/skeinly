@@ -71,6 +71,11 @@ struct PatternLibraryScreen: View {
         .onAppear {
             searchText = observer.state.searchQuery
         }
+        .onChange(of: observer.state.searchQuery) { _, newQuery in
+            if searchText != newQuery {
+                searchText = newQuery
+            }
+        }
         .navigationTitle("Pattern Library")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {

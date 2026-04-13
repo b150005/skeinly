@@ -105,6 +105,8 @@ fun wrapPatternEditState(
     flow: kotlinx.coroutines.flow.StateFlow<com.knitnote.ui.patternedit.PatternEditState>,
 ): FlowWrapper<com.knitnote.ui.patternedit.PatternEditState> = FlowWrapper(flow)
 
+fun wrapPatternEditSaveSuccess(flow: kotlinx.coroutines.flow.Flow<kotlin.Unit>): EventFlowWrapper<kotlin.Unit> = EventFlowWrapper(flow)
+
 fun wrapSharedContentState(
     flow: kotlinx.coroutines.flow.StateFlow<com.knitnote.ui.sharedcontent.SharedContentState>,
 ): FlowWrapper<com.knitnote.ui.sharedcontent.SharedContentState> = FlowWrapper(flow)
