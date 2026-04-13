@@ -21,7 +21,7 @@ val viewModelModule =
         viewModelOf(::ProfileViewModel)
         viewModelOf(::SettingsViewModel)
         viewModel { ActivityFeedViewModel(get(), get(), get()) }
-        viewModel { ProjectListViewModel(get(), get(), get(), get(), get()) }
+        viewModelOf(::ProjectListViewModel)
         viewModelOf(::PatternLibraryViewModel)
         viewModel { params ->
             PatternEditViewModel(

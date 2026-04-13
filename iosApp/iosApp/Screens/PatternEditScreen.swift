@@ -172,7 +172,7 @@ private enum VisibilityOption: CaseIterable {
         }
     }
 
-    func toVisibility() -> Visibility {
+    func toVisibility() -> Shared.Visibility {
         switch self {
         case .privateVisibility: return .private_
         case .sharedVisibility: return .shared
@@ -180,7 +180,7 @@ private enum VisibilityOption: CaseIterable {
         }
     }
 
-    static func from(_ visibility: Visibility) -> VisibilityOption {
+    static func from(_ visibility: Shared.Visibility) -> VisibilityOption {
         switch visibility {
         case .private_: return .privateVisibility
         case .shared: return .sharedVisibility
