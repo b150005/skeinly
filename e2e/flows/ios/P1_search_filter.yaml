@@ -1,0 +1,56 @@
+appId: com.knitnote.ios
+name: "P1 - Search & Filter Projects"
+tags:
+  - p1
+  - ios
+  - skip-ios26
+---
+# Pre-condition: clean state
+- clearState: com.knitnote.ios
+- launchApp:
+    appId: com.knitnote.ios
+
+# Create two projects
+- tapOn:
+    id: "createProjectButton"
+- tapOn: "Project Title"
+- inputText: "Wool Scarf"
+- tapOn: "Total Rows (optional)"
+- inputText: "10"
+- tapOn: "Create"
+- assertVisible: "Wool Scarf"
+
+- tapOn:
+    id: "createProjectButton"
+- tapOn: "Project Title"
+- inputText: "Cotton Hat"
+- tapOn: "Create"
+- assertVisible: "Cotton Hat"
+
+# Start working on the first project so it becomes "In Progress"
+- tapOn: "Wool Scarf"
+- tapOn: "Increment row"
+# Go back (iOS back button shows previous screen title)
+- tapOn: "Knit Note"
+
+# Both projects should be visible
+- assertVisible: "Wool Scarf"
+- assertVisible: "Cotton Hat"
+
+# --- Filter chips ---
+# NOTE: This flow is tagged skip-ios26 and excluded from run-ios.sh.
+# Maestro 2.4.0 + iOS 26 has two issues:
+#   1. .searchable text bindings are not synced by inputText
+#   2. Button taps inside List sections silently fail after the first tap
+# Both search and filter chip functionality are covered by iOS XCTest
+# instrumentation tests. Re-enable this flow when Maestro ships iOS 26 support.
+
+# Guard: verify increment actually registered before testing filters.
+# If the Maestro tap bug caused the increment to silently fail, the project
+# will still show "Not Started" and the filter assertions would be meaningless.
+- assertVisible: "In Progress"
+
+# Filter: In Progress — only Wool Scarf (1/10 rows) should remain
+- tapOn: "In Progress"
+- assertVisible: "Wool Scarf"
+- assertNotVisible: "Cotton Hat"

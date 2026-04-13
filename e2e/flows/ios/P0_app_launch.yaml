@@ -1,0 +1,23 @@
+appId: com.knitnote.ios
+name: "P0 - App Launch & Project List"
+tags:
+  - p0
+  - ios
+---
+# Pre-condition: clear app state for test isolation
+- clearState: com.knitnote.ios
+
+# Launch the app (local-only mode — no Supabase, starts at ProjectList)
+- launchApp:
+    appId: com.knitnote.ios
+
+# Verify the navigation title is visible
+- assertVisible: "Knit Note"
+
+# Verify empty state messaging (iOS ContentUnavailableView)
+- assertVisible: "No Projects Yet"
+- assertVisible: "Tap + to create your first knitting project."
+
+# Verify the create button is visible
+- assertVisible:
+    id: "createProjectButton"

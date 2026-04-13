@@ -1,0 +1,38 @@
+appId: com.knitnote.ios
+name: "P0 - Create Project"
+tags:
+  - p0
+  - ios
+---
+# Pre-condition: clean state
+- clearState: com.knitnote.ios
+- launchApp:
+    appId: com.knitnote.ios
+
+# Wait for the empty state
+- assertVisible: "No Projects Yet"
+
+# Tap the create button to open create sheet
+- tapOn:
+    id: "createProjectButton"
+
+# Verify the sheet opens
+- assertVisible: "New Project"
+
+# Enter project name (iOS uses a Form sheet with TextField placeholders)
+- tapOn: "Project Title"
+- inputText: "My Test Scarf"
+
+# Enter total rows
+- tapOn: "Total Rows (optional)"
+- inputText: "100"
+
+# Tap Create
+- tapOn: "Create"
+
+# Verify the project appears in the list
+- assertVisible: "My Test Scarf"
+- assertVisible: "Not Started"
+
+# Verify empty state is gone
+- assertNotVisible: "No Projects Yet"

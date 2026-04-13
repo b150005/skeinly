@@ -1,0 +1,53 @@
+appId: com.knitnote.ios
+name: "P2 - Screen Navigation"
+tags:
+  - p2
+  - ios
+---
+# Pre-condition: clean state
+- clearState: com.knitnote.ios
+- launchApp:
+    appId: com.knitnote.ios
+
+# Verify we start on the project list
+- assertVisible: "Knit Note"
+
+# --- Navigate to Profile ---
+# iOS: Profile is inside a Menu dropdown — open menu first
+- tapOn:
+    id: "moreMenu"
+- tapOn: "Profile"
+- assertVisible: "Profile"
+
+# Go back to project list (iOS back button shows previous screen title)
+- tapOn: "Knit Note"
+- assertVisible: "Knit Note"
+
+# --- Navigate to Settings ---
+- tapOn:
+    id: "moreMenu"
+- tapOn: "Settings"
+- assertVisible: "Settings"
+
+# Go back to project list
+- tapOn: "Knit Note"
+- assertVisible: "Knit Note"
+
+# --- Navigate to Project Detail and back ---
+# Create a project first
+- tapOn:
+    id: "createProjectButton"
+- tapOn: "Project Title"
+- inputText: "Nav Test"
+- tapOn: "Create"
+- assertVisible: "Nav Test"
+
+# Go to detail
+- tapOn: "Nav Test"
+- assertVisible:
+    id: "rowCounter"
+
+# Go back
+- tapOn: "Knit Note"
+- assertVisible: "Knit Note"
+- assertVisible: "Nav Test"
