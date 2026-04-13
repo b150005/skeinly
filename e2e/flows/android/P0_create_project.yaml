@@ -19,19 +19,17 @@ tags:
 # Verify the dialog opens
 - assertVisible: "New Project"
 
-# Enter project name
-- tapOn:
-    id: "projectNameInput"
+# Enter project name (tap label text — dialog renders in a separate window
+# so testTag-based ids are not accessible via testTagsAsResourceId)
+- tapOn: "Project Name"
 - inputText: "My Test Scarf"
 
 # Enter total rows
-- tapOn:
-    id: "totalRowsInput"
+- tapOn: "Total Rows (optional)"
 - inputText: "100"
 
 # Tap Create
-- tapOn:
-    id: "createProjectButton"
+- tapOn: "Create"
 
 # Verify the project appears in the list
 - assertVisible: "My Test Scarf"

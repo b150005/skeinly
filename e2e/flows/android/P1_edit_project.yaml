@@ -1,0 +1,61 @@
+appId: com.knitnote.android
+name: "P1 - Edit Project Title & Total Rows"
+tags:
+  - p1
+  - android
+---
+# Pre-condition: clean state
+- clearState: com.knitnote.android
+- launchApp:
+    appId: com.knitnote.android
+
+# Create a project to edit
+- assertVisible: "No projects yet"
+- tapOn:
+    id: "createProjectFab"
+- tapOn: "Project Name"
+- inputText: "OldName"
+- tapOn: "Total Rows (optional)"
+- inputText: "50"
+- tapOn: "Create"
+
+# Navigate to project detail
+- assertVisible: "OldName"
+- tapOn: "OldName"
+
+# Verify detail screen loaded (testTag-backed sync point)
+- assertVisible:
+    id: "rowCounter"
+
+# Tap the edit button (matches contentDescription)
+- tapOn:
+    text: "Edit project"
+
+# Verify the edit dialog opens
+- assertVisible: "Edit Project"
+
+# Clear and update the title (dialog renders in a separate window,
+# so testTag-based ids are not accessible — use text selectors instead;
+# `below: "Edit Project"` scopes to the dialog field, not the top bar title)
+- tapOn:
+    text: "OldName"
+    below: "Edit Project"
+- eraseText: 100
+- inputText: "Updated Scarf"
+
+# Clear and update total rows (use label text, not value, for stability)
+- tapOn: "Total Rows (optional)"
+- eraseText: 100
+- inputText: "120"
+
+# Save changes
+- tapOn: "Save"
+
+# Verify updated title is displayed on the detail screen
+- assertVisible: "Updated Scarf"
+- assertVisible: "of 120 rows"
+
+# Go back and verify the list reflects the change
+- tapOn:
+    text: "Back"
+- assertVisible: "Updated Scarf"

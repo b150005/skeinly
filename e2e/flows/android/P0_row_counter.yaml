@@ -12,17 +12,15 @@ tags:
 # Wait for list screen to be ready
 - assertVisible: "No projects yet"
 
-# Create a project first
+# Create a project first (dialog renders in a separate window,
+# so testTag-based ids are not accessible — use text selectors instead)
 - tapOn:
     id: "createProjectFab"
-- tapOn:
-    id: "projectNameInput"
+- tapOn: "Project Name"
 - inputText: "Counter Test"
-- tapOn:
-    id: "totalRowsInput"
+- tapOn: "Total Rows (optional)"
 - inputText: "10"
-- tapOn:
-    id: "createProjectButton"
+- tapOn: "Create"
 
 # Wait for project to appear in list
 - assertVisible: "Counter Test"

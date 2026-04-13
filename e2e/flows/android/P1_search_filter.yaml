@@ -1,0 +1,67 @@
+appId: com.knitnote.android
+name: "P1 - Search & Filter Projects"
+tags:
+  - p1
+  - android
+---
+# Pre-condition: clean state
+- clearState: com.knitnote.android
+- launchApp:
+    appId: com.knitnote.android
+
+# Create two projects
+- tapOn:
+    id: "createProjectFab"
+- tapOn: "Project Name"
+- inputText: "Wool Scarf"
+- tapOn: "Total Rows (optional)"
+- inputText: "10"
+- tapOn: "Create"
+- assertVisible: "Wool Scarf"
+
+- tapOn:
+    id: "createProjectFab"
+- tapOn: "Project Name"
+- inputText: "Cotton Hat"
+- tapOn: "Create"
+- assertVisible: "Cotton Hat"
+
+# Start working on the first project so it becomes "In Progress"
+- tapOn: "Wool Scarf"
+- tapOn:
+    id: "incrementButton"
+- tapOn:
+    text: "Back"
+
+# Both projects should be visible
+- assertVisible: "Wool Scarf"
+- assertVisible: "Cotton Hat"
+
+# --- Search ---
+- tapOn: "Search projects..."
+- inputText: "Wool"
+
+# Only matching project should be visible
+- assertVisible: "Wool Scarf"
+- assertNotVisible: "Cotton Hat"
+
+# Clear search via the clear button (matches contentDescription)
+- tapOn:
+    text: "Clear search"
+- assertVisible: "Wool Scarf"
+- assertVisible: "Cotton Hat"
+
+# --- Filter: In Progress ---
+- tapOn: "In Progress"
+- assertVisible: "Wool Scarf"
+- assertNotVisible: "Cotton Hat"
+
+# --- Filter: Not Started ---
+- tapOn: "Not Started"
+- assertNotVisible: "Wool Scarf"
+- assertVisible: "Cotton Hat"
+
+# --- Filter: All ---
+- tapOn: "All"
+- assertVisible: "Wool Scarf"
+- assertVisible: "Cotton Hat"
