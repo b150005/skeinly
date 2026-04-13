@@ -17,6 +17,8 @@ import com.knitnote.domain.model.AuthState
 import com.knitnote.ui.activityfeed.ActivityFeedScreen
 import com.knitnote.ui.auth.AuthViewModel
 import com.knitnote.ui.auth.LoginScreen
+import com.knitnote.ui.patternedit.PatternEditScreen
+import com.knitnote.ui.patternlibrary.PatternLibraryScreen
 import com.knitnote.ui.profile.ProfileScreen
 import com.knitnote.ui.projectdetail.ProjectDetailScreen
 import com.knitnote.ui.projectlist.ProjectListScreen
@@ -48,6 +50,14 @@ data object Profile
 
 @Serializable
 data object Settings
+
+@Serializable
+data object PatternLibrary
+
+@Serializable
+data class PatternEdit(
+    val patternId: String? = null,
+)
 
 @Serializable
 data class SharedContent(
@@ -116,6 +126,9 @@ fun KnitNoteNavHost(
                 onProjectClick = { projectId ->
                     navController.navigate(ProjectDetail(projectId = projectId))
                 },
+                onPatternLibraryClick = {
+                    navController.navigate(PatternLibrary)
+                },
                 onSharedWithMeClick = {
                     navController.navigate(SharedWithMe)
                 },
@@ -128,6 +141,25 @@ fun KnitNoteNavHost(
                 onSettingsClick = {
                     navController.navigate(Settings)
                 },
+            )
+        }
+        composable<PatternLibrary> {
+            PatternLibraryScreen(
+                onPatternClick = { patternId ->
+                    navController.navigate(PatternEdit(patternId = patternId))
+                },
+                onCreatePattern = {
+                    navController.navigate(PatternEdit())
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<PatternEdit> { backStackEntry ->
+            val route = backStackEntry.toRoute<PatternEdit>()
+            PatternEditScreen(
+                patternId = route.patternId,
+                onSaved = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
             )
         }
         composable<Profile> {

@@ -16,6 +16,8 @@ class FakePatternRepository : PatternRepository {
 
     override suspend fun getByVisibility(visibility: Visibility): List<Pattern> = patterns.value.filter { it.visibility == visibility }
 
+    override fun observeById(id: String): Flow<Pattern?> = patterns.map { list -> list.find { it.id == id } }
+
     override fun observeByOwnerId(ownerId: String): Flow<List<Pattern>> = patterns.map { list -> list.filter { it.ownerId == ownerId } }
 
     override suspend fun create(pattern: Pattern): Pattern {

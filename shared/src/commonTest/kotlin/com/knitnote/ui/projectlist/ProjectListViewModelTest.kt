@@ -10,6 +10,8 @@ import com.knitnote.domain.usecase.CreateProjectUseCase
 import com.knitnote.domain.usecase.DeleteProjectUseCase
 import com.knitnote.domain.usecase.FakeAuthRepository
 import com.knitnote.domain.usecase.FakeProjectRepository
+import com.knitnote.domain.usecase.FakePatternRepository
+import com.knitnote.domain.usecase.GetPatternsUseCase
 import com.knitnote.domain.usecase.GetProjectsUseCase
 import com.knitnote.domain.usecase.SignOutUseCase
 import kotlinx.coroutines.Dispatchers
@@ -45,6 +47,7 @@ class ProjectListViewModelTest {
         viewModel =
             ProjectListViewModel(
                 getProjects = GetProjectsUseCase(repository, fakeAuth),
+                getPatterns = GetPatternsUseCase(FakePatternRepository(), fakeAuth),
                 createProject = CreateProjectUseCase(repository, fakeAuth),
                 deleteProject = DeleteProjectUseCase(repository),
                 signOut = SignOutUseCase(fakeAuth, CloseRealtimeChannelsUseCase(null, null, null)),

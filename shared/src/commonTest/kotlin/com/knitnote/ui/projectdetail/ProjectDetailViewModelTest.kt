@@ -432,11 +432,18 @@ class ProjectDetailViewModelTest {
             viewModel.state.test {
                 awaitItem()
                 viewModel.onEvent(ProjectDetailEvent.ShareProject)
-                val withLink = awaitItem()
+                var withLink = awaitItem()
+                // Skip intermediate emissions from pattern flow
+                while (withLink.shareLink == null) {
+                    withLink = awaitItem()
+                }
                 assertNotNull(withLink.shareLink)
 
                 viewModel.onEvent(ProjectDetailEvent.DismissShareDialog)
-                val dismissed = awaitItem()
+                var dismissed = awaitItem()
+                while (dismissed.shareLink != null) {
+                    dismissed = awaitItem()
+                }
                 assertNull(dismissed.shareLink)
                 cancelAndIgnoreRemainingEvents()
             }

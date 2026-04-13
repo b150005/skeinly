@@ -11,6 +11,7 @@ struct ProjectListScreen: View {
     @State private var projectToDelete: Project?
     @State private var newTitle = ""
     @State private var newTotalRows = ""
+    @State private var selectedPatternId: String?
     @State private var searchText = ""
 
     init(path: Binding<NavigationPath>) {
@@ -90,6 +91,9 @@ struct ProjectListScreen: View {
 
                     Divider()
 
+                    Button { path.append(Route.patternLibrary) } label: {
+                        Label("Pattern Library", systemImage: "heart.text.square")
+                    }
                     Button { path.append(Route.profile) } label: {
                         Label("Profile", systemImage: "person.circle")
                     }
@@ -161,6 +165,15 @@ struct ProjectListScreen: View {
                 TextField("Project Title", text: $newTitle)
                 TextField("Total Rows (optional)", text: $newTotalRows)
                     .keyboardType(.numberPad)
+
+                if !observer.state.patternsForCreate.isEmpty {
+                    Picker("Pattern", selection: $selectedPatternId) {
+                        Text("None").tag(nil as String?)
+                        ForEach(observer.state.patternsForCreate, id: \.id) { pattern in
+                            Text(pattern.title).tag(pattern.id as String?)
+                        }
+                    }
+                }
             }
             .navigationTitle("New Project")
             .navigationBarTitleDisplayMode(.inline)
@@ -176,7 +189,8 @@ struct ProjectListScreen: View {
                         let totalRows = Int32(newTotalRows).map { KotlinInt(value: $0) }
                         viewModel.onEvent(event: ProjectListEventCreateProject(
                             title: newTitle,
-                            totalRows: totalRows
+                            totalRows: totalRows,
+                            patternId: selectedPatternId
                         ))
                         resetCreateForm()
                         showCreateSheet = false
@@ -191,6 +205,7 @@ struct ProjectListScreen: View {
     private func resetCreateForm() {
         newTitle = ""
         newTotalRows = ""
+        selectedPatternId = nil
     }
 }
 

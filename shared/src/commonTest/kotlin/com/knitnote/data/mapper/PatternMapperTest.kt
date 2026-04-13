@@ -16,12 +16,18 @@ class PatternMapperTest {
         difficulty: String? = "beginner",
         chartImageUrls: String? = null,
         visibility: String = "private",
+        gauge: String? = null,
+        yarnInfo: String? = null,
+        needleSize: String? = null,
     ) = PatternEntity(
         id = "pat1",
         owner_id = "owner1",
         title = "Test Pattern",
         description = "A test",
         difficulty = difficulty,
+        gauge = gauge,
+        yarn_info = yarnInfo,
+        needle_size = needleSize,
         chart_image_urls = chartImageUrls,
         visibility = visibility,
         created_at = now,
@@ -84,6 +90,22 @@ class PatternMapperTest {
         assertEquals(Visibility.PRIVATE, entity(visibility = "private").toDomain().visibility)
         assertEquals(Visibility.SHARED, entity(visibility = "shared").toDomain().visibility)
         assertEquals(Visibility.PUBLIC, entity(visibility = "public").toDomain().visibility)
+    }
+
+    @Test
+    fun `toDomain maps gauge yarn_info needle_size`() {
+        val pattern = entity(gauge = "20 sts", yarnInfo = "Worsted", needleSize = "US 7").toDomain()
+        assertEquals("20 sts", pattern.gauge)
+        assertEquals("Worsted", pattern.yarnInfo)
+        assertEquals("US 7", pattern.needleSize)
+    }
+
+    @Test
+    fun `toDomain maps null metadata to null`() {
+        val pattern = entity().toDomain()
+        assertNull(pattern.gauge)
+        assertNull(pattern.yarnInfo)
+        assertNull(pattern.needleSize)
     }
 
     @Test

@@ -46,6 +46,8 @@ class PatternRepositoryImpl(
     override suspend fun getByVisibility(visibility: Visibility): List<Pattern> =
         local.getByOwnerId("") // Placeholder: visibility-based query not needed for MVP
 
+    override fun observeById(id: String): Flow<Pattern?> = local.observeById(id)
+
     override fun observeByOwnerId(ownerId: String): Flow<List<Pattern>> = local.observeByOwnerId(ownerId)
 
     override suspend fun create(pattern: Pattern): Pattern {

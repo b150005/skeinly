@@ -2,6 +2,8 @@ package com.knitnote.ui.projectdetail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.knitnote.domain.LocalUser
+import com.knitnote.domain.model.Pattern
 import com.knitnote.domain.model.Progress
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ShareLink
@@ -29,15 +31,19 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 data class ProjectDetailState(
     val project: Project? = null,
+    val pattern: Pattern? = null,
     val isLoading: Boolean = true,
     val error: String? = null,
     val shareLink: ShareLink? = null,
@@ -119,18 +125,33 @@ class ProjectDetailViewModel(
     private val _directShareSuccessChannel = Channel<Unit>(Channel.BUFFERED)
     val directShareSuccess: Flow<Unit> = _directShareSuccessChannel.receiveAsFlow()
 
+    private val projectFlow =
+        projectRepository
+            .observeById(projectId)
+            .catch { e ->
+                _uiOverlay.update { it.copy(error = e.message ?: "Failed to load project") }
+                emit(null)
+            }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val patternFlow =
+        projectFlow.flatMapLatest { project ->
+            if (project != null && project.patternId != LocalUser.DEFAULT_PATTERN_ID) {
+                patternRepository.observeById(project.patternId)
+            } else {
+                flowOf(null)
+            }
+        }
+
     val state: StateFlow<ProjectDetailState> =
         combine(
-            projectRepository
-                .observeById(projectId)
-                .catch { e ->
-                    _uiOverlay.update { it.copy(error = e.message ?: "Failed to load project") }
-                    emit(null)
-                },
+            projectFlow,
+            patternFlow,
             _uiOverlay,
-        ) { project, overlay ->
+        ) { project, pattern, overlay ->
             ProjectDetailState(
                 project = project,
+                pattern = pattern,
                 isLoading = false,
                 error = overlay.error,
                 shareLink = overlay.shareLink,

@@ -1,4 +1,4 @@
-package com.knitnote.ui.projectlist
+package com.knitnote.ui.patternlibrary
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,16 +16,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,7 +33,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -60,22 +55,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.knitnote.domain.model.Project
-import com.knitnote.domain.model.ProjectStatus
+import com.knitnote.domain.model.Difficulty
+import com.knitnote.domain.model.Pattern
 import com.knitnote.domain.model.SortOrder
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProjectListScreen(
-    onProjectClick: (String) -> Unit,
-    onPatternLibraryClick: () -> Unit = {},
-    onSharedWithMeClick: () -> Unit = {},
-    onActivityFeedClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {},
-    onSettingsClick: () -> Unit = {},
-    viewModel: ProjectListViewModel = koinViewModel(),
+fun PatternLibraryScreen(
+    onPatternClick: (patternId: String) -> Unit,
+    onCreatePattern: () -> Unit,
+    onBack: () -> Unit,
+    viewModel: PatternLibraryViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -83,43 +76,19 @@ fun ProjectListScreen(
     LaunchedEffect(state.error) {
         state.error?.let {
             snackbarHostState.showSnackbar(it)
-            viewModel.onEvent(ProjectListEvent.ClearError)
+            viewModel.onEvent(PatternLibraryEvent.ClearError)
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Knit Note") },
-                actions = {
-                    IconButton(onClick = onPatternLibraryClick) {
+                title = { Text("Pattern Library") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
                         Icon(
-                            Icons.Default.Favorite,
-                            contentDescription = "Pattern Library",
-                        )
-                    }
-                    IconButton(onClick = onProfileClick) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = "Profile",
-                        )
-                    }
-                    IconButton(onClick = onActivityFeedClick) {
-                        Icon(
-                            Icons.Default.Notifications,
-                            contentDescription = "Activity Feed",
-                        )
-                    }
-                    IconButton(onClick = onSharedWithMeClick) {
-                        Icon(
-                            Icons.Default.People,
-                            contentDescription = "Shared With Me",
-                        )
-                    }
-                    IconButton(onClick = onSettingsClick) {
-                        Icon(
-                            Icons.Default.Settings,
-                            contentDescription = "Settings",
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
                         )
                     }
                 },
@@ -128,10 +97,10 @@ fun ProjectListScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { viewModel.onEvent(ProjectListEvent.ShowCreateDialog) },
-                modifier = Modifier.testTag("createProjectFab"),
+                onClick = onCreatePattern,
+                modifier = Modifier.testTag("createPatternFab"),
             ) {
-                Icon(Icons.Default.Add, contentDescription = "New Project")
+                Icon(Icons.Default.Add, contentDescription = "New Pattern")
             }
         },
     ) { padding ->
@@ -143,34 +112,40 @@ fun ProjectListScreen(
         ) {
             SearchField(
                 query = state.searchQuery,
-                onQueryChange = { viewModel.onEvent(ProjectListEvent.UpdateSearchQuery(it)) },
+                onQueryChange = { viewModel.onEvent(PatternLibraryEvent.UpdateSearchQuery(it)) },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
 
             FilterSortRow(
-                statusFilter = state.statusFilter,
+                difficultyFilter = state.difficultyFilter,
                 sortOrder = state.sortOrder,
-                onStatusFilterChange = { viewModel.onEvent(ProjectListEvent.UpdateStatusFilter(it)) },
-                onSortOrderChange = { viewModel.onEvent(ProjectListEvent.UpdateSortOrder(it)) },
+                onDifficultyFilterChange = {
+                    viewModel.onEvent(PatternLibraryEvent.UpdateDifficultyFilter(it))
+                },
+                onSortOrderChange = {
+                    viewModel.onEvent(PatternLibraryEvent.UpdateSortOrder(it))
+                },
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            val hasActiveFilter = state.searchQuery.isNotBlank() || state.statusFilter != null
-            var projectToDelete by rememberSaveable { mutableStateOf<String?>(null) }
+            val hasActiveFilter =
+                state.searchQuery.isNotBlank() || state.difficultyFilter != null
+            var patternToDelete by rememberSaveable { mutableStateOf<String?>(null) }
 
-            if (projectToDelete != null) {
-                val projectName = state.projects.find { it.id == projectToDelete }?.title ?: ""
+            if (patternToDelete != null) {
+                val patternName =
+                    state.patterns.find { it.id == patternToDelete }?.title ?: ""
                 DeleteConfirmDialog(
-                    itemName = projectName,
+                    itemName = patternName,
                     onConfirm = {
-                        projectToDelete?.let { id ->
-                            viewModel.onEvent(ProjectListEvent.DeleteProject(id))
+                        patternToDelete?.let { id ->
+                            viewModel.onEvent(PatternLibraryEvent.DeletePattern(id))
                         }
-                        projectToDelete = null
+                        patternToDelete = null
                     },
-                    onDismiss = { projectToDelete = null },
+                    onDismiss = { patternToDelete = null },
                 )
             }
 
@@ -183,14 +158,14 @@ fun ProjectListScreen(
                         CircularProgressIndicator()
                     }
                 }
-                state.projects.isEmpty() && hasActiveFilter -> {
+                state.patterns.isEmpty() && hasActiveFilter -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = "No matching projects",
+                                text = "No matching patterns",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -203,20 +178,20 @@ fun ProjectListScreen(
                         }
                     }
                 }
-                state.projects.isEmpty() -> {
+                state.patterns.isEmpty() -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = "No projects yet",
+                                text = "No patterns yet",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Tap + to create your first project",
+                                text = "Tap + to create your first pattern",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -231,26 +206,16 @@ fun ProjectListScreen(
                             androidx.compose.foundation.layout
                                 .PaddingValues(horizontal = 16.dp),
                     ) {
-                        items(state.projects, key = { it.id }) { project ->
-                            SwipeToDismissProjectCard(
-                                project = project,
-                                onClick = { onProjectClick(project.id) },
-                                onDeleteRequest = { projectToDelete = project.id },
+                        items(state.patterns, key = { it.id }) { pattern ->
+                            SwipeToDismissPatternCard(
+                                pattern = pattern,
+                                onClick = { onPatternClick(pattern.id) },
+                                onDeleteRequest = { patternToDelete = pattern.id },
                             )
                         }
                     }
                 }
             }
-        }
-
-        if (state.showCreateDialog) {
-            CreateProjectDialog(
-                onDismiss = { viewModel.onEvent(ProjectListEvent.DismissCreateDialog) },
-                onCreate = { title, totalRows, patternId ->
-                    viewModel.onEvent(ProjectListEvent.CreateProject(title, totalRows, patternId))
-                },
-                patterns = state.patternsForCreate,
-            )
         }
     }
 }
@@ -265,7 +230,7 @@ private fun SearchField(
         value = query,
         onValueChange = onQueryChange,
         modifier = modifier.fillMaxWidth(),
-        placeholder = { Text("Search projects...") },
+        placeholder = { Text("Search patterns...") },
         leadingIcon = {
             Icon(Icons.Default.Search, contentDescription = null)
         },
@@ -282,9 +247,9 @@ private fun SearchField(
 
 @Composable
 private fun FilterSortRow(
-    statusFilter: ProjectStatus?,
+    difficultyFilter: Difficulty?,
     sortOrder: SortOrder,
-    onStatusFilterChange: (ProjectStatus?) -> Unit,
+    onDifficultyFilterChange: (Difficulty?) -> Unit,
     onSortOrderChange: (SortOrder) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -298,42 +263,46 @@ private fun FilterSortRow(
         ) {
             item {
                 FilterChip(
-                    selected = statusFilter == null,
-                    onClick = { onStatusFilterChange(null) },
+                    selected = difficultyFilter == null,
+                    onClick = { onDifficultyFilterChange(null) },
                     label = { Text("All") },
                 )
             }
             item {
                 FilterChip(
-                    selected = statusFilter == ProjectStatus.IN_PROGRESS,
+                    selected = difficultyFilter == Difficulty.BEGINNER,
                     onClick = {
-                        onStatusFilterChange(
-                            if (statusFilter == ProjectStatus.IN_PROGRESS) null else ProjectStatus.IN_PROGRESS,
+                        onDifficultyFilterChange(
+                            if (difficultyFilter == Difficulty.BEGINNER) null else Difficulty.BEGINNER,
                         )
                     },
-                    label = { Text("In Progress") },
+                    label = { Text("Beginner") },
                 )
             }
             item {
                 FilterChip(
-                    selected = statusFilter == ProjectStatus.NOT_STARTED,
+                    selected = difficultyFilter == Difficulty.INTERMEDIATE,
                     onClick = {
-                        onStatusFilterChange(
-                            if (statusFilter == ProjectStatus.NOT_STARTED) null else ProjectStatus.NOT_STARTED,
+                        onDifficultyFilterChange(
+                            if (difficultyFilter == Difficulty.INTERMEDIATE) {
+                                null
+                            } else {
+                                Difficulty.INTERMEDIATE
+                            },
                         )
                     },
-                    label = { Text("Not Started") },
+                    label = { Text("Intermediate") },
                 )
             }
             item {
                 FilterChip(
-                    selected = statusFilter == ProjectStatus.COMPLETED,
+                    selected = difficultyFilter == Difficulty.ADVANCED,
                     onClick = {
-                        onStatusFilterChange(
-                            if (statusFilter == ProjectStatus.COMPLETED) null else ProjectStatus.COMPLETED,
+                        onDifficultyFilterChange(
+                            if (difficultyFilter == Difficulty.ADVANCED) null else Difficulty.ADVANCED,
                         )
                     },
-                    label = { Text("Completed") },
+                    label = { Text("Advanced") },
                 )
             }
         }
@@ -358,7 +327,7 @@ private fun SortDropdown(
         FilterChip(
             selected = sortOrder != SortOrder.RECENT,
             onClick = { expanded = true },
-            label = { Text(sortOrder.chipLabel) },
+            label = { Text(sortOrder.patternChipLabel) },
             trailingIcon = {
                 Icon(
                     Icons.AutoMirrored.Filled.Sort,
@@ -371,11 +340,11 @@ private fun SortDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false },
         ) {
-            SortOrder.entries.forEach { order ->
+            PatternSortOption.entries.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(order.menuLabel) },
+                    text = { Text(option.menuLabel) },
                     onClick = {
-                        onSortOrderChange(order)
+                        onSortOrderChange(option.order)
                         expanded = false
                     },
                 )
@@ -386,8 +355,8 @@ private fun SortDropdown(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SwipeToDismissProjectCard(
-    project: Project,
+private fun SwipeToDismissPatternCard(
+    pattern: Pattern,
     onClick: () -> Unit,
     onDeleteRequest: () -> Unit,
 ) {
@@ -423,13 +392,13 @@ private fun SwipeToDismissProjectCard(
         },
         enableDismissFromStartToEnd = false,
     ) {
-        ProjectCard(project = project, onClick = onClick)
+        PatternCard(pattern = pattern, onClick = onClick)
     }
 }
 
 @Composable
-private fun ProjectCard(
-    project: Project,
+private fun PatternCard(
+    pattern: Pattern,
     onClick: () -> Unit,
 ) {
     Card(
@@ -446,35 +415,54 @@ private fun ProjectCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = project.title,
+                    text = pattern.title,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
                 )
-                StatusChip(project.status)
+                if (pattern.difficulty != null) {
+                    DifficultyBadge(pattern.difficulty)
+                }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            val progressText =
-                if (project.totalRows != null) {
-                    "${project.currentRow} / ${project.totalRows} rows"
-                } else {
-                    "${project.currentRow} rows"
-                }
-            Text(
-                text = progressText,
-                style = MaterialTheme.typography.bodyLarge,
-            )
-
-            if (project.totalRows != null && project.totalRows > 0) {
+            if (!pattern.description.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
-                LinearProgressIndicator(
-                    progress = { project.currentRow.toFloat() / project.totalRows.toFloat() },
-                    modifier = Modifier.fillMaxWidth(),
+                Text(
+                    text = pattern.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            val details = buildPatternDetails(pattern)
+            if (details.isNotBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = details,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
     }
+}
+
+@Composable
+private fun DifficultyBadge(difficulty: Difficulty) {
+    val (text, color) =
+        when (difficulty) {
+            Difficulty.BEGINNER -> "Beginner" to MaterialTheme.colorScheme.tertiary
+            Difficulty.INTERMEDIATE -> "Intermediate" to MaterialTheme.colorScheme.primary
+            Difficulty.ADVANCED -> "Advanced" to MaterialTheme.colorScheme.error
+        }
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
+        color = color,
+    )
 }
 
 @Composable
@@ -485,7 +473,7 @@ private fun DeleteConfirmDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete Project") },
+        title = { Text("Delete Pattern?") },
         text = { Text("Are you sure you want to delete \"$itemName\"? This cannot be undone.") },
         confirmButton = {
             TextButton(onClick = onConfirm) {
@@ -500,33 +488,25 @@ private fun DeleteConfirmDialog(
     )
 }
 
-@Composable
-private fun StatusChip(status: ProjectStatus) {
-    val (text, color) =
-        when (status) {
-            ProjectStatus.NOT_STARTED -> "Not Started" to MaterialTheme.colorScheme.outline
-            ProjectStatus.IN_PROGRESS -> "In Progress" to MaterialTheme.colorScheme.primary
-            ProjectStatus.COMPLETED -> "Completed" to MaterialTheme.colorScheme.tertiary
+private fun buildPatternDetails(pattern: Pattern): String =
+    listOfNotNull(
+        pattern.gauge?.let { "Gauge: $it" },
+        pattern.yarnInfo?.let { "Yarn: $it" },
+        pattern.needleSize?.let { "Needle: $it" },
+    ).joinToString(" \u2022 ")
+
+private val SortOrder.patternChipLabel: String
+    get() =
+        when (this) {
+            SortOrder.RECENT -> "Recent"
+            SortOrder.ALPHABETICAL -> "A\u2013Z"
+            SortOrder.PROGRESS -> "Recent" // Not applicable for patterns
         }
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelSmall,
-        color = color,
-    )
+
+private enum class PatternSortOption(
+    val order: SortOrder,
+    val menuLabel: String,
+) {
+    RECENT(SortOrder.RECENT, "Recent"),
+    ALPHABETICAL(SortOrder.ALPHABETICAL, "Alphabetical (A\u2013Z)"),
 }
-
-private val SortOrder.chipLabel: String
-    get() =
-        when (this) {
-            SortOrder.RECENT -> "Recent"
-            SortOrder.ALPHABETICAL -> "A–Z"
-            SortOrder.PROGRESS -> "Progress"
-        }
-
-private val SortOrder.menuLabel: String
-    get() =
-        when (this) {
-            SortOrder.RECENT -> "Recent"
-            SortOrder.ALPHABETICAL -> "Alphabetical (A–Z)"
-            SortOrder.PROGRESS -> "Progress %"
-        }

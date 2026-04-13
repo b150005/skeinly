@@ -2,11 +2,13 @@ package com.knitnote.ui.projectlist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.knitnote.domain.model.Pattern
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
 import com.knitnote.domain.model.SortOrder
 import com.knitnote.domain.usecase.CreateProjectUseCase
 import com.knitnote.domain.usecase.DeleteProjectUseCase
+import com.knitnote.domain.usecase.GetPatternsUseCase
 import com.knitnote.domain.usecase.GetProjectsUseCase
 import com.knitnote.domain.usecase.SignOutUseCase
 import com.knitnote.domain.usecase.UseCaseResult
@@ -23,6 +25,7 @@ import kotlinx.coroutines.launch
 
 data class ProjectListState(
     val projects: List<Project> = emptyList(),
+    val patternsForCreate: List<Pattern> = emptyList(),
     val isLoading: Boolean = true,
     val error: String? = null,
     val showCreateDialog: Boolean = false,
@@ -35,6 +38,7 @@ sealed interface ProjectListEvent {
     data class CreateProject(
         val title: String,
         val totalRows: Int?,
+        val patternId: String? = null,
     ) : ProjectListEvent
 
     data class DeleteProject(
@@ -75,6 +79,7 @@ private data class FilterState(
 
 class ProjectListViewModel(
     private val getProjects: GetProjectsUseCase,
+    private val getPatterns: GetPatternsUseCase,
     private val createProject: CreateProjectUseCase,
     private val deleteProject: DeleteProjectUseCase,
     private val signOut: SignOutUseCase,
@@ -88,13 +93,16 @@ class ProjectListViewModel(
             .onStart { isLoading.value = true }
             .onEach { isLoading.value = false }
 
+    private val patternsFlow = getPatterns()
+
     val state: StateFlow<ProjectListState> =
         combine(
             projectsFlow,
+            patternsFlow,
             uiFlags,
             filterState,
             isLoading,
-        ) { allProjects, flags, filters, loading ->
+        ) { allProjects, allPatterns, flags, filters, loading ->
             val filtered =
                 allProjects
                     .filterBySearch(filters.searchQuery)
@@ -103,6 +111,7 @@ class ProjectListViewModel(
 
             ProjectListState(
                 projects = filtered,
+                patternsForCreate = allPatterns,
                 isLoading = loading,
                 error = flags.error,
                 showCreateDialog = flags.showCreateDialog,
@@ -120,7 +129,7 @@ class ProjectListViewModel(
         when (event) {
             is ProjectListEvent.CreateProject -> {
                 viewModelScope.launch {
-                    when (val result = createProject(event.title, event.totalRows)) {
+                    when (val result = createProject(event.title, event.totalRows, event.patternId)) {
                         is UseCaseResult.Success -> {
                             uiFlags.update { it.copy(showCreateDialog = false) }
                         }

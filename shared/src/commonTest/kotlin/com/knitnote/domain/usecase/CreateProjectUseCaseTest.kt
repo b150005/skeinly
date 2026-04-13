@@ -86,4 +86,26 @@ class CreateProjectUseCaseTest {
             assertIs<UseCaseResult.Failure>(result)
             assertIs<UseCaseError.Validation>(result.error)
         }
+
+    @Test
+    fun `creates project with explicit patternId`() =
+        runTest {
+            val result =
+                assertIs<UseCaseResult.Success<Project>>(
+                    useCase(title = "Linked Project", totalRows = 100, patternId = "pattern-123"),
+                )
+
+            assertEquals("pattern-123", result.value.patternId)
+        }
+
+    @Test
+    fun `creates project with null patternId uses default`() =
+        runTest {
+            val result =
+                assertIs<UseCaseResult.Success<Project>>(
+                    useCase(title = "Unlinked Project", totalRows = 50, patternId = null),
+                )
+
+            assertEquals(LocalUser.DEFAULT_PATTERN_ID, result.value.patternId)
+        }
 }
