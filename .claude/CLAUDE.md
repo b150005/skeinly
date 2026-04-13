@@ -231,6 +231,7 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 20c**: Maestro iOS Flows — 6 iOS Maestro flows mirroring Android (P0×3 + P1×2 + P2×1), 5/6 passing (P1_search_filter skipped due to Maestro + iOS 26 bug), `accessibilityLabel` on increment/decrement/edit buttons, `run-ios.sh` script (xcodebuild + simctl + Maestro), Maestro SwiftUI List Button tap bug documented and worked around (508 shared tests, 6+6 E2E flows)
 
+- **Phase 20d**: E2E CI Integration — Separate `e2e.yml` workflow (main push + v* tags), Android E2E via `reactivecircus/android-emulator-runner` (API 34, KVM, Maestro), iOS E2E via `macos-latest` (simulator boot, xcpretty, Maestro with `--exclude-tags skip-ios26`), failure screenshots as artifacts (508 shared tests, 6+6 E2E flows)
+
 ### Planned
-- **Phase 20d**: E2E CI Integration — Separate `e2e.yml` workflow, `main` push + `v*` tags only
 - **Phase 21**: macOS Target — Post-launch, based on user demand

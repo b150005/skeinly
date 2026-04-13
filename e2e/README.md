@@ -166,6 +166,32 @@ Both platforms run in **local-only mode** (no Supabase credentials) so no networ
 - **`.searchable` text binding**: Maestro's `inputText` types text into the iOS search bar but does not update the SwiftUI `@State` binding, so `.searchable` filtering does not activate.
 - **Menu timing**: iOS Menu popover animation may require a brief wait before tapping items. Maestro's default retry handles this in most cases.
 
-## Future Phases
+## CI Integration
 
-- **Phase 20d**: CI integration (`e2e.yml` workflow, `main` push + tags only)
+E2E tests run automatically via the `e2e.yml` GitHub Actions workflow on:
+- Push to `main`
+- Push of `v*` tags
+
+### Android CI
+
+The Android job uses `reactivecircus/android-emulator-runner` to spin up an API 34 x86_64 emulator with KVM acceleration. The APK is built in local-only mode (no Supabase) and installed on the emulator before Maestro runs all flows.
+
+### iOS CI
+
+The iOS job runs on `macos-latest`, builds the app for the simulator, boots an available iPhone simulator, installs the app, and runs Maestro flows with `--exclude-tags skip-ios26`.
+
+### Artifacts
+
+On failure, Maestro screenshots are uploaded as GitHub Actions artifacts (`maestro-android-screenshots` / `maestro-ios-screenshots`) with 7-day retention.
+
+### Running locally
+
+Use the local scripts for development:
+
+```bash
+# Android (requires running emulator)
+./e2e/run-android.sh
+
+# iOS (requires booted simulator)
+./e2e/run-ios.sh
+```
