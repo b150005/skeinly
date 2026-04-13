@@ -93,16 +93,21 @@ class ProjectListViewModel(
             .onStart { isLoading.value = true }
             .onEach { isLoading.value = false }
 
-    private val patternsFlow = getPatterns()
+    private val _patterns = MutableStateFlow<List<Pattern>>(emptyList())
+
+    init {
+        viewModelScope.launch {
+            getPatterns().collect { _patterns.value = it }
+        }
+    }
 
     val state: StateFlow<ProjectListState> =
         combine(
             projectsFlow,
-            patternsFlow,
             uiFlags,
             filterState,
             isLoading,
-        ) { allProjects, allPatterns, flags, filters, loading ->
+        ) { allProjects, flags, filters, loading ->
             val filtered =
                 allProjects
                     .filterBySearch(filters.searchQuery)
@@ -111,7 +116,7 @@ class ProjectListViewModel(
 
             ProjectListState(
                 projects = filtered,
-                patternsForCreate = allPatterns,
+                patternsForCreate = _patterns.value,
                 isLoading = loading,
                 error = flags.error,
                 showCreateDialog = flags.showCreateDialog,
