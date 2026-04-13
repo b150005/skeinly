@@ -108,7 +108,11 @@ Agents detect this project as **Kotlin Multiplatform** by finding:
    - Only then proceed to commit
 7. **Documentation**: The technical-writer updates docs and changelog
 8. **Release**: The devops-engineer manages deployment and release
-9. **Commit**: Conventional commits format (feat, fix, refactor, docs, test, chore, perf, ci)
+9. **Commit, Push & CI Verification**: When the code review is APPROVED and all tests pass:
+   - Commit using conventional commits format (feat, fix, refactor, docs, test, chore, perf, ci)
+   - Push to `origin/main`
+   - Monitor CI results; if CI fails, diagnose and fix the issue within the same session
+   - These steps are performed autonomously — no user confirmation needed
 10. **Next Step Planning**: At each task boundary (phase completion, milestone), convene the agent team (architect, product-manager, implementer, etc.) to discuss and agree on the next priority. Output the result as Next Session Instructions for handoff.
 
 ## Testing Requirements
