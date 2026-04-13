@@ -233,5 +233,7 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 20d**: E2E CI Integration — Separate `e2e.yml` workflow (main push + v* tags), Android E2E via `reactivecircus/android-emulator-runner` (API 34, KVM, Maestro), iOS E2E via `macos-latest` (simulator boot, xcpretty, Maestro with `--exclude-tags skip-ios26`), failure screenshots as artifacts (508 shared tests, 6+6 E2E flows)
 
+- **Phase 22**: Pattern Management — Full CRUD for Pattern entity with gauge/yarnInfo/needleSize metadata, Supabase migration 009, PatternLibrary screen (search/filter/sort), PatternEdit screen (7-field form), CreateProject pattern linking, ProjectDetail pattern info section, iOS SwiftUI mirrors, 4 new UseCases + 2 ViewModels, 33 new tests (541 shared tests)
+
 ### Planned
 - **Phase 21**: macOS Target — Post-launch, based on user demand
