@@ -443,7 +443,7 @@ private fun CounterSection(
         ) {
             FilledTonalButton(
                 onClick = onDecrement,
-                modifier = Modifier.size(72.dp),
+                modifier = Modifier.size(72.dp).testTag("decrementButton"),
                 enabled = currentRow > 0,
             ) {
                 Text(
@@ -455,7 +455,7 @@ private fun CounterSection(
 
             FilledTonalButton(
                 onClick = onIncrement,
-                modifier = Modifier.size(96.dp),
+                modifier = Modifier.size(96.dp).testTag("incrementButton"),
             ) {
                 Text(
                     text = "+",

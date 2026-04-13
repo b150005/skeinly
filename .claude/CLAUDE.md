@@ -127,6 +127,7 @@ Agents detect this project as **Kotlin Multiplatform** by finding:
 | Shared (commonTest) | kotlin.test |
 | Android | JUnit 5, Compose UI Testing, Turbine (Flow testing) |
 | iOS | XCTest, Swift Testing |
+| E2E | Maestro (YAML flows, `e2e/` directory) |
 
 ## Code Quality Standards
 
@@ -211,6 +212,10 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 19c**: CI Signing + TestFlight — iOS code signing pipeline in release.yml (temporary keychain, manual signing, ExportOptions.plist generation, xcodebuild archive/exportArchive, TestFlight upload via xcrun altool with App Store Connect API key), conditional execution (graceful degradation when secrets absent), version numbering (MARKETING_VERSION from tag, CURRENT_PROJECT_VERSION from run_number), IPA artifact on GitHub Release, ADR-006 (508 shared tests)
 
+- **Phase 20a**: Maestro E2E Setup + P0 Android Flows — `e2e/` directory, 3 P0 Maestro flows (app launch, create project, row counter), testTag additions to Compose UI (incrementButton, decrementButton, createProjectFab, projectNameInput, totalRowsInput, createProjectButton), local run script, clearState-based test isolation (508 shared tests)
+
 ### Planned
-- **Phase 20**: E2E Tests with Maestro — Critical Android flows first, iOS flows follow, CI integration (main/tag only)
+- **Phase 20b**: Maestro P1+P2 Android Flows — Edit project, delete project, search/filter, screen navigation
+- **Phase 20c**: Maestro iOS Flows — Mirror Android flows on iOS simulator
+- **Phase 20d**: E2E CI Integration — Separate `e2e.yml` workflow, `main` push + `v*` tags only
 - **Phase 21**: macOS Target — Post-launch, based on user demand

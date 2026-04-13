@@ -1,0 +1,41 @@
+appId: com.knitnote.android
+name: "P0 - Create Project"
+tags:
+  - p0
+  - android
+---
+# Pre-condition: clean state
+- clearState: com.knitnote.android
+- launchApp:
+    appId: com.knitnote.android
+
+# Wait for the empty state
+- assertVisible: "No projects yet"
+
+# Tap the FAB to open create dialog
+- tapOn:
+    id: "createProjectFab"
+
+# Verify the dialog opens
+- assertVisible: "New Project"
+
+# Enter project name
+- tapOn:
+    id: "projectNameInput"
+- inputText: "My Test Scarf"
+
+# Enter total rows
+- tapOn:
+    id: "totalRowsInput"
+- inputText: "100"
+
+# Tap Create
+- tapOn:
+    id: "createProjectButton"
+
+# Verify the project appears in the list
+- assertVisible: "My Test Scarf"
+- assertVisible: "Not Started"
+
+# Verify empty state is gone
+- assertNotVisible: "No projects yet"

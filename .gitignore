@@ -84,6 +84,11 @@ coverage/
 *.exec
 *.ec
 
+# Maestro E2E
+.maestro/
+e2e/.maestro/tests/
+e2e/screenshots/
+
 # Misc
 *.log
 *.tmp

@@ -58,6 +58,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
@@ -120,6 +121,7 @@ fun ProjectListScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { viewModel.onEvent(ProjectListEvent.ShowCreateDialog) },
+                modifier = Modifier.testTag("createProjectFab"),
             ) {
                 Icon(Icons.Default.Add, contentDescription = "New Project")
             }

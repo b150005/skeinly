@@ -1,0 +1,23 @@
+appId: com.knitnote.android
+name: "P0 - App Launch & Project List"
+tags:
+  - p0
+  - android
+---
+# Pre-condition: clear app state for test isolation
+- clearState: com.knitnote.android
+
+# Launch the app (local-only mode — no Supabase, starts at ProjectList)
+- launchApp:
+    appId: com.knitnote.android
+
+# Verify the app bar title is visible
+- assertVisible: "Knit Note"
+
+# Verify empty state messaging
+- assertVisible: "No projects yet"
+- assertVisible: "Tap + to create your first project"
+
+# Verify the FAB is visible
+- assertVisible:
+    id: "createProjectFab"
