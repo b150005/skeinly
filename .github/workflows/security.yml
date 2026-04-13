@@ -21,10 +21,14 @@ jobs:
         include:
           - language: java-kotlin
             runner: ubuntu-latest
+            # CodeQL does not yet support Kotlin 2.3.20 (upstream limit).
+            # Use build-mode: none to skip the Gradle build and analyse
+            # source code statically until CodeQL catches up.
+            build-mode: "none"
           - language: swift
             runner: macos-latest
+            build-mode: manual
     runs-on: ${{ matrix.runner }}
-    # java-kotlin: CodeQL does not yet support Kotlin 2.3.20 (upstream limit)
     continue-on-error: ${{ matrix.language == 'java-kotlin' }}
     steps:
       - name: Checkout
@@ -57,25 +61,14 @@ jobs:
         if: matrix.language == 'swift'
         run: cd iosApp && xcodegen generate
 
-      # --- CodeQL init (starts tracing) ---
+      # --- CodeQL init ---
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
-          build-mode: manual
+          build-mode: ${{ matrix.build-mode }}
 
-      # --- Traced builds (after init) ---
-      - name: Build (java-kotlin)
-        if: matrix.language == 'java-kotlin'
-        env:
-          GRADLE_OPTS: "-Xmx4g"
-        run: >-
-          ./gradlew --no-daemon
-          -Pkotlin.daemon.enabled=false
-          -Dkotlin.compiler.execution.strategy=in-process
-          :shared:compileAndroidMain
-          :androidApp:compileDebugKotlin
-
+      # --- Traced builds (only for manual build-mode) ---
       - name: Resolve iOS Simulator destination
         if: matrix.language == 'swift'
         id: sim
