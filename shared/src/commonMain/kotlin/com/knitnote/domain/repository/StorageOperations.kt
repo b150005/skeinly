@@ -6,7 +6,7 @@ import kotlin.time.Duration.Companion.hours
 interface StorageOperations {
     suspend fun upload(
         userId: String,
-        patternId: String,
+        subFolder: String,
         fileName: String,
         data: ByteArray,
     ): String

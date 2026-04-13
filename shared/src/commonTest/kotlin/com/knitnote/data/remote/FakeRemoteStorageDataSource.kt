@@ -10,12 +10,12 @@ class FakeRemoteStorageDataSource : StorageOperations {
 
     override suspend fun upload(
         userId: String,
-        patternId: String,
+        subFolder: String,
         fileName: String,
         data: ByteArray,
     ): String {
         uploadError?.let { throw it }
-        val path = "$userId/$patternId/$fileName"
+        val path = "$userId/$subFolder/$fileName"
         uploadedFiles[path] = data
         return path
     }

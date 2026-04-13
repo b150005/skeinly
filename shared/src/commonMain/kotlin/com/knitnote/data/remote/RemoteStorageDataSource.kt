@@ -14,11 +14,11 @@ class RemoteStorageDataSource(
 
     override suspend fun upload(
         userId: String,
-        patternId: String,
+        subFolder: String,
         fileName: String,
         data: ByteArray,
     ): String {
-        val path = "$userId/$patternId/$fileName"
+        val path = "$userId/$subFolder/$fileName"
         bucket.upload(path, data) {
             upsert = false
             contentType = ContentType.Image.JPEG

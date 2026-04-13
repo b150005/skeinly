@@ -21,10 +21,13 @@ class UploadChartImageUseCaseTest {
 
     private fun validJpegBytes(size: Int = 1024): ByteArray {
         val bytes = ByteArray(size)
-        // JPEG magic bytes: FF D8 FF
+        // JPEG SOI: FF D8 FF
         bytes[0] = 0xFF.toByte()
         bytes[1] = 0xD8.toByte()
         bytes[2] = 0xFF.toByte()
+        // JPEG EOI: FF D9
+        bytes[size - 2] = 0xFF.toByte()
+        bytes[size - 1] = 0xD9.toByte()
         return bytes
     }
 
@@ -157,14 +160,30 @@ class UploadChartImageUseCaseTest {
     }
 
     @Test
-    fun `isValidJpeg checks magic bytes`() {
-        val validJpeg = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0x00)
-        val invalidData = byteArrayOf(0x89.toByte(), 0x50, 0x4E) // PNG magic
-        val tooShort = byteArrayOf(0xFF.toByte(), 0xD8.toByte())
+    fun `sanitizeFileName normalizes double extensions`() {
+        assertEquals("photo.jpg", UploadChartImageUseCase.sanitizeFileName("photo.jpg.html"))
+        assertEquals("image.jpeg", UploadChartImageUseCase.sanitizeFileName("image.jpeg.exe"))
+        assertEquals("chart.png", UploadChartImageUseCase.sanitizeFileName("chart.png.php"))
+        // Single extension left intact
+        assertEquals("normal.jpg", UploadChartImageUseCase.sanitizeFileName("normal.jpg"))
+        // No recognized image extension strips to base name
+        assertEquals("readme", UploadChartImageUseCase.sanitizeFileName("readme.txt.bak"))
+    }
+
+    @Test
+    fun `isValidJpeg checks SOI and EOI markers`() {
+        val validJpeg = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0x00, 0xFF.toByte(), 0xD9.toByte())
+        val noEoi = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0x00)
+        val invalidData = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47) // PNG magic
+        val tooShort = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte())
+        // 4-byte degenerate case: SOI+EOI with no payload — rejected (size < 6)
+        val degenerateFourBytes = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xD9.toByte())
 
         assertEquals(true, UploadChartImageUseCase.isValidJpeg(validJpeg))
+        assertEquals(false, UploadChartImageUseCase.isValidJpeg(noEoi))
         assertEquals(false, UploadChartImageUseCase.isValidJpeg(invalidData))
         assertEquals(false, UploadChartImageUseCase.isValidJpeg(tooShort))
+        assertEquals(false, UploadChartImageUseCase.isValidJpeg(degenerateFourBytes))
     }
 
     @Test
