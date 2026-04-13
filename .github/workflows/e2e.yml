@@ -7,7 +7,11 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Allow branch pushes to cancel each other, but never cancel tag-triggered runs
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
+permissions:
+  contents: read
 
 jobs:
   android-e2e:
@@ -30,8 +34,11 @@ jobs:
         run: SUPABASE_URL="" SUPABASE_ANON_KEY="" ./gradlew :androidApp:assembleDebug
 
       - name: Install Maestro CLI
+        env:
+          MAESTRO_VERSION: "2.4.0"
+          MAESTRO_CLI_NO_ANALYTICS: "1"
         run: |
-          curl -Ls "https://get.maestro.mobile.dev" | bash
+          curl -fLs "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
 
       - name: Enable KVM for hardware acceleration
@@ -55,7 +62,7 @@ jobs:
             maestro test e2e/flows/android/
 
       - name: Upload Maestro screenshots
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: maestro-android-screenshots
@@ -126,27 +133,34 @@ jobs:
           echo "Booted simulator: $UDID"
 
       - name: Install app on simulator
+        env:
+          SIM_UDID: ${{ steps.sim.outputs.udid }}
         run: |
           APP_PATH=$(find build/ios-e2e -name "iosApp.app" -path "*/Debug-iphonesimulator/*" -type d | head -1)
           if [ -z "$APP_PATH" ]; then
             echo "::error::Built app not found under build/ios-e2e"
             exit 1
           fi
-          xcrun simctl install "${{ steps.sim.outputs.udid }}" "$APP_PATH"
+          xcrun simctl install "$SIM_UDID" "$APP_PATH"
 
       - name: Install Maestro CLI
+        env:
+          MAESTRO_VERSION: "2.4.0"
+          MAESTRO_CLI_NO_ANALYTICS: "1"
         run: |
-          curl -Ls "https://get.maestro.mobile.dev" | bash
+          curl -fLs "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
 
       - name: Run iOS E2E tests
+        env:
+          SIM_UDID: ${{ steps.sim.outputs.udid }}
         run: |
-          maestro --device "${{ steps.sim.outputs.udid }}" test \
+          maestro --device "$SIM_UDID" test \
             --exclude-tags skip-ios26 \
             e2e/flows/ios/
 
       - name: Upload Maestro screenshots
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: maestro-ios-screenshots
