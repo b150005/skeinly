@@ -1,0 +1,53 @@
+appId: com.knitnote.android
+name: "P2 - Screen Navigation"
+tags:
+  - p2
+  - android
+---
+# Pre-condition: clean state
+- clearState: com.knitnote.android
+- launchApp:
+    appId: com.knitnote.android
+
+# Verify we start on the project list
+- assertVisible: "Knit Note"
+
+# --- Navigate to Profile ---
+- tapOn:
+    text: "Profile"
+- assertVisible: "Profile"
+
+# Go back to project list
+- tapOn:
+    text: "Back"
+- assertVisible: "Knit Note"
+
+# --- Navigate to Settings ---
+- tapOn:
+    text: "Settings"
+- assertVisible: "Settings"
+
+# Go back to project list
+- tapOn:
+    text: "Back"
+- assertVisible: "Knit Note"
+
+# --- Navigate to Project Detail and back ---
+# Create a project first
+- tapOn:
+    id: "createProjectFab"
+- tapOn: "Project Name"
+- inputText: "Nav Test"
+- tapOn: "Create"
+- assertVisible: "Nav Test"
+
+# Go to detail
+- tapOn: "Nav Test"
+- assertVisible:
+    id: "rowCounter"
+
+# Go back
+- tapOn:
+    text: "Back"
+- assertVisible: "Knit Note"
+- assertVisible: "Nav Test"

@@ -163,6 +163,8 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 **IMPORTANT**: Next Session Instructions MUST be output at the very end of the conversation — never in the middle. Outputting it mid-session risks stale information since subsequent tasks may change state (commits, test counts, known issues). Always wait until the session's final response to emit the handoff block.
 
+**CRITICAL**: Do NOT output Next Session Instructions while there are still pending execution decisions (e.g., "push?", "commit?"). If a task produces an action that requires user confirmation, wait for the user's decision, execute it, and only then — when there are truly no more tasks to perform in the session — output the handoff block. A session is not complete until all execution decisions are resolved.
+
 ## Development Roadmap
 
 ### Completed
@@ -214,8 +216,9 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 20a**: Maestro E2E Setup + P0 Android Flows — `e2e/` directory, 3 P0 Maestro flows (app launch, create project, row counter), testTag additions to Compose UI (incrementButton, decrementButton, createProjectFab, projectNameInput, totalRowsInput, createProjectButton), local run script, clearState-based test isolation (508 shared tests)
 
+- **Phase 20b**: Maestro P1+P2 Android Flows — `testTagsAsResourceId = true` on root Box (MainActivity), local-only build via empty SUPABASE env vars, text-based dialog selectors (CMP AlertDialog window isolation workaround), 3 new flows (edit project, search/filter, navigation), run-android.sh updated for full suite, SwipeToDismissBox Maestro incompatibility documented (508 shared tests, 6 E2E flows)
+
 ### Planned
-- **Phase 20b**: Maestro P1+P2 Android Flows — Edit project, delete project, search/filter, screen navigation
 - **Phase 20c**: Maestro iOS Flows — Mirror Android flows on iOS simulator
 - **Phase 20d**: E2E CI Integration — Separate `e2e.yml` workflow, `main` push + `v*` tags only
 - **Phase 21**: macOS Target — Post-launch, based on user demand
