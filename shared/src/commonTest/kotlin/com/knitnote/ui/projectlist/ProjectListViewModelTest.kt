@@ -9,8 +9,8 @@ import com.knitnote.domain.usecase.CloseRealtimeChannelsUseCase
 import com.knitnote.domain.usecase.CreateProjectUseCase
 import com.knitnote.domain.usecase.DeleteProjectUseCase
 import com.knitnote.domain.usecase.FakeAuthRepository
-import com.knitnote.domain.usecase.FakeProjectRepository
 import com.knitnote.domain.usecase.FakePatternRepository
+import com.knitnote.domain.usecase.FakeProjectRepository
 import com.knitnote.domain.usecase.GetPatternsUseCase
 import com.knitnote.domain.usecase.GetProjectsUseCase
 import com.knitnote.domain.usecase.SignOutUseCase

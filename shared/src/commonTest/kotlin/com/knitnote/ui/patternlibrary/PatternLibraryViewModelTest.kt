@@ -3,7 +3,6 @@ package com.knitnote.ui.patternlibrary
 import app.cash.turbine.test
 import com.knitnote.domain.model.Difficulty
 import com.knitnote.domain.model.Pattern
-import com.knitnote.domain.model.SortOrder
 import com.knitnote.domain.model.Visibility
 import com.knitnote.domain.usecase.DeletePatternUseCase
 import com.knitnote.domain.usecase.FakeAuthRepository

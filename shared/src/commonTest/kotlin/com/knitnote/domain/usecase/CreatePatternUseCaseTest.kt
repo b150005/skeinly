@@ -3,6 +3,7 @@ package com.knitnote.domain.usecase
 import com.knitnote.domain.LocalUser
 import com.knitnote.domain.model.AuthState
 import com.knitnote.domain.model.Difficulty
+import com.knitnote.domain.model.Pattern
 import com.knitnote.domain.model.Visibility
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -11,7 +12,6 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import com.knitnote.domain.model.Pattern
 
 class CreatePatternUseCaseTest {
     private val patternRepository = FakePatternRepository()
