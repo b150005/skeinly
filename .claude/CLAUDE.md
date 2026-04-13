@@ -120,6 +120,7 @@ Agents detect this project as **Kotlin Multiplatform** by finding:
 ## CI Known Limitations
 
 - **CodeQL java-kotlin**: CodeQL does not support Kotlin 2.3.20 yet (upstream limit). The `security.yml` job uses `continue-on-error: true` so it does not block CI. The overlay-base database warning (`build-mode is set to "manual" instead of "none"`) is benign — CodeQL falls back to full (non-incremental) analysis. Both issues resolve when CodeQL adds Kotlin 2.3.20 support.
+- **Maestro + iOS 26**: Maestro 2.4.0 cannot reliably tap SwiftUI `Button` elements inside `List` sections on iOS 26 — the first tap works but subsequent taps are silently dropped. Also, `inputText` into `.searchable` does not update the SwiftUI `@State` binding. Affected iOS E2E flows are tagged `skip-ios26` and excluded from `run-ios.sh`. Both issues are upstream Maestro/XCTest compatibility bugs that resolve when Maestro ships iOS 26 support.
 
 ## Testing Requirements
 
@@ -228,7 +229,8 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 20b**: Maestro P1+P2 Android Flows — `testTagsAsResourceId = true` on root Box (MainActivity), local-only build via empty SUPABASE env vars, text-based dialog selectors (CMP AlertDialog window isolation workaround), 3 new flows (edit project, search/filter, navigation), run-android.sh updated for full suite, SwipeToDismissBox Maestro incompatibility documented (508 shared tests, 6 E2E flows)
 
+- **Phase 20c**: Maestro iOS Flows — 6 iOS Maestro flows mirroring Android (P0×3 + P1×2 + P2×1), 5/6 passing (P1_search_filter skipped due to Maestro + iOS 26 bug), `accessibilityLabel` on increment/decrement/edit buttons, `run-ios.sh` script (xcodebuild + simctl + Maestro), Maestro SwiftUI List Button tap bug documented and worked around (508 shared tests, 6+6 E2E flows)
+
 ### Planned
-- **Phase 20c**: Maestro iOS Flows — Mirror Android flows on iOS simulator
 - **Phase 20d**: E2E CI Integration — Separate `e2e.yml` workflow, `main` push + `v*` tags only
 - **Phase 21**: macOS Target — Post-launch, based on user demand

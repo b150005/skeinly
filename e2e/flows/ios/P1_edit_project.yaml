@@ -1,0 +1,59 @@
+appId: com.knitnote.ios
+name: "P1 - Edit Project Title & Total Rows"
+tags:
+  - p1
+  - ios
+---
+# Pre-condition: clean state
+- clearState: com.knitnote.ios
+- launchApp:
+    appId: com.knitnote.ios
+
+# Create a project to edit
+- assertVisible: "No Projects Yet"
+- tapOn:
+    id: "createProjectButton"
+- tapOn: "Project Title"
+- inputText: "OldName"
+- tapOn: "Total Rows (optional)"
+- inputText: "50"
+- tapOn: "Create"
+
+# Navigate to project detail
+- assertVisible: "OldName"
+- tapOn: "OldName"
+
+# Verify detail screen loaded (accessibilityIdentifier-backed sync point)
+- assertVisible:
+    id: "rowCounter"
+
+# Tap the edit button (matches accessibilityLabel)
+- tapOn: "Edit project"
+
+# Verify the edit sheet opens
+- assertVisible: "Edit Project"
+
+# Clear and update the title (the TextField shows "OldName" as its current value;
+# on iOS Form the field label may float above, so target the value text)
+- tapOn:
+    text: "OldName"
+    below: "Edit Project"
+- eraseText: 100  # large enough to clear any field content
+- inputText: "Updated Scarf"
+
+# Clear and update total rows
+- tapOn: "Total Rows (optional)"
+- eraseText: 100  # large enough to clear any field content
+- inputText: "120"
+
+# Save changes
+- tapOn: "Save"
+
+# Verify updated title is displayed on the detail screen
+- assertVisible: "Updated Scarf"
+- assertVisible: "of 120 rows"
+
+# Go back and verify the list reflects the change
+# (iOS back button shows previous screen's navigationTitle)
+- tapOn: "Knit Note"
+- assertVisible: "Updated Scarf"

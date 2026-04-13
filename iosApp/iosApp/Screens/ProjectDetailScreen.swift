@@ -85,6 +85,7 @@ struct ProjectDetailScreen: View {
             Button { prepareEdit(state.project) } label: {
                 Image(systemName: "pencil")
             }
+            .accessibilityLabel("Edit project")
         }
     }
 
@@ -207,6 +208,7 @@ struct ProjectDetailScreen: View {
                 }
                 .disabled(project.currentRow <= 0 || project.status == .completed)
                 .accessibilityIdentifier("decrementButton")
+                .accessibilityLabel("Decrement row")
 
                 Button {
                     viewModel.onEvent(event: ProjectDetailEventIncrementRow.shared)
@@ -216,6 +218,7 @@ struct ProjectDetailScreen: View {
                 }
                 .disabled(project.status == .completed)
                 .accessibilityIdentifier("incrementButton")
+                .accessibilityLabel("Increment row")
             }
         }
         .frame(maxWidth: .infinity)

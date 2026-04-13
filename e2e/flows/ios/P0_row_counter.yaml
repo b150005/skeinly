@@ -1,0 +1,51 @@
+appId: com.knitnote.ios
+name: "P0 - Row Counter Increment/Decrement"
+tags:
+  - p0
+  - ios
+---
+# Pre-condition: clean state
+- clearState: com.knitnote.ios
+- launchApp:
+    appId: com.knitnote.ios
+
+# Wait for list screen to be ready
+- assertVisible: "No Projects Yet"
+
+# Create a project first (iOS uses a Form sheet)
+- tapOn:
+    id: "createProjectButton"
+- tapOn: "Project Title"
+- inputText: "Counter Test"
+- tapOn: "Total Rows (optional)"
+- inputText: "10"
+- tapOn: "Create"
+
+# Wait for project to appear in list
+- assertVisible: "Counter Test"
+
+# Navigate to project detail
+- tapOn: "Counter Test"
+
+# Verify initial state
+- assertVisible:
+    id: "rowCounter"
+
+# Increment once and verify.
+# NOTE: Maestro 2.4.0 + iOS 26 has a known bug where taps on SwiftUI
+# Buttons inside List sections silently fail after the first successful
+# tap in that screen. Multi-tap and decrement testing is covered by
+# iOS XCTest instrumentation tests (ProjectDetailUITests).
+#
+# Selector strategy: icon-only buttons use accessibilityLabel text matching
+# (e.g. "Increment row") rather than accessibilityIdentifier (id:) because
+# the label-based tap is more reliable for the first interaction.
+- tapOn: "Increment row"
+
+# Verify counter shows 1 (text "1" matches the counter display;
+# no other single-digit "1" appears on this screen at this point)
+- assertVisible: "1"
+- assertVisible: "of 10 rows"
+
+# Status changes to In Progress when currentRow > 0 (domain rule)
+- assertVisible: "In Progress"
