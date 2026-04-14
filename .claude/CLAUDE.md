@@ -239,5 +239,7 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 23.1**: Review Item Fixes — StorageOperations.upload `patternId`→`subFolder` generic rename, sanitizeFileName double-extension normalization (`.jpg.html`→`.jpg`), isValidJpeg EOI marker (0xFF 0xD9) validation + min size 6, DeleteNote orphan blob logging (PII-safe), loadProgressPhotoUrls signed URL path-change caching (556 shared tests)
 
+- **Phase 25**: Onboarding — First-run onboarding carousel (3 pages: Track Projects, Count Stitches, Pattern Library), `multiplatform-settings` for `hasSeenOnboarding` persistence (SharedPreferences/NSUserDefaults), reusable `EmptyStateView` composable with icon + CTA button, Compose `HorizontalPager` (Android) + SwiftUI `TabView` (iOS), navigation integration (onboarding before auth, local-only compatible), iOS `ContentUnavailableView` with actions closure, `PreferencesModule` Koin DI, 2 new + 10 updated Maestro E2E flows with shared helper, code review APPROVED (572 shared tests)
+
 ### Planned
 - **Phase 21**: macOS Target — Post-launch, based on user demand
