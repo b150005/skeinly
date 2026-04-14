@@ -12,7 +12,7 @@ tags:
     appId: com.knitnote.android
 
 # Complete onboarding on fresh install
-- runFlow: ../../helpers/complete_onboarding.yaml
+- runFlow: ../../helpers/complete_onboarding_android.yaml
 
 # Verify the app bar title is visible
 - assertVisible: "Knit Note"

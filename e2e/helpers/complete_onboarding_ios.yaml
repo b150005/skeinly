@@ -1,0 +1,13 @@
+appId: com.knitnote.ios
+name: "Helper - Complete Onboarding"
+---
+# Complete onboarding carousel after clearState
+- assertVisible: "Track Your Knitting Projects"
+- swipe:
+    direction: LEFT
+    duration: 400
+- swipe:
+    direction: LEFT
+    duration: 400
+- tapOn:
+    id: "getStartedButton"

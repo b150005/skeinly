@@ -1,5 +1,7 @@
-# Helper: Complete onboarding carousel after clearState
-# Include this in any flow that starts with clearState
+appId: com.knitnote.android
+name: "Helper - Complete Onboarding"
+---
+# Complete onboarding carousel after clearState
 - assertVisible: "Track Your Knitting Projects"
 - swipe:
     direction: LEFT

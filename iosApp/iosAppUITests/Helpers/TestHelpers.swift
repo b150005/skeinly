@@ -9,20 +9,12 @@ extension XCUIApplication {
         completeOnboardingIfPresent()
     }
 
-    /// Swipe through onboarding and tap "Get Started" if the onboarding screen is visible.
+    /// Skip onboarding if it appears on first launch.
+    /// Uses the "Skip" button for reliability on CI (swipe gestures on TabView are flaky).
     func completeOnboardingIfPresent() {
-        let onboardingTitle = staticTexts["Track Your Knitting Projects"]
-        guard onboardingTitle.waitForExistence(timeout: 3) else { return }
-
-        // Swipe through all pages
-        swipeLeft()
-        swipeLeft()
-
-        // Tap "Get Started" on the last page
-        let getStarted = buttons["getStartedButton"]
-        if getStarted.waitForExistence(timeout: 3) {
-            getStarted.tap()
-        }
+        let skipButton = buttons["skipButton"]
+        guard skipButton.waitForExistence(timeout: 3) else { return }
+        skipButton.tap()
 
         // Wait for onboarding to dismiss and ProjectList to appear
         let navTitle = navigationBars["Knit Note"]
