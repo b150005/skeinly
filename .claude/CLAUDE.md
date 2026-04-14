@@ -237,5 +237,7 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 22.1 + 23**: Tech Debt Cleanup + Progress Photos — PatternEditViewModel isSaved→Channel one-shot event, ActivityType.CREATED enum + CreatePatternUseCase fix, iOS PatternLibraryScreen searchText sync, RemoteStorageDataSource bucket parameterization (chart-images + progress-photos), Supabase migration 010 (progress-photos bucket + RLS + CREATED activity type), UploadProgressPhotoUseCase/DeleteProgressPhotoUseCase, AddProgressNoteUseCase photoUrl support, ProjectDetailViewModel photo upload/display/delete integration, Android AddNoteDialog photo picker + NoteItem thumbnail + ChartImageViewer reuse, iOS addNoteSheet PhotosPicker + NoteRow thumbnail + ChartImageViewer fullScreenCover, 12 new tests (553 shared tests)
 
+- **Phase 23.1**: Review Item Fixes — StorageOperations.upload `patternId`→`subFolder` generic rename, sanitizeFileName double-extension normalization (`.jpg.html`→`.jpg`), isValidJpeg EOI marker (0xFF 0xD9) validation + min size 6, DeleteNote orphan blob logging (PII-safe), loadProgressPhotoUrls signed URL path-change caching (556 shared tests)
+
 ### Planned
 - **Phase 21**: macOS Target — Post-launch, based on user demand
