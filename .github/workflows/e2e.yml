@@ -38,8 +38,11 @@ jobs:
           MAESTRO_VERSION: "2.4.0"
           MAESTRO_CLI_NO_ANALYTICS: "1"
         run: |
-          curl -fLs "https://get.maestro.mobile.dev" | bash
+          set -o pipefail
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.maestro/bin:$PATH"
+          maestro --version
 
       - name: Enable KVM for hardware acceleration
         run: |
@@ -58,6 +61,9 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: true
           script: |
+            # Dismiss any ANR/crash system dialogs (e.g. "Pixel Launcher isn't responding")
+            adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS
+            sleep 3
             adb install -r androidApp/build/outputs/apk/debug/androidApp-debug.apk
             maestro test e2e/flows/android/
 
@@ -148,8 +154,11 @@ jobs:
           MAESTRO_VERSION: "2.4.0"
           MAESTRO_CLI_NO_ANALYTICS: "1"
         run: |
-          curl -fLs "https://get.maestro.mobile.dev" | bash
+          set -o pipefail
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.maestro/bin:$PATH"
+          maestro --version
 
       - name: Run iOS E2E tests
         env:
