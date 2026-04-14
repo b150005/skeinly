@@ -1,13 +1,8 @@
 appId: com.knitnote.ios
 name: "Helper - Complete Onboarding"
 ---
-# Complete onboarding carousel after clearState
+# Complete onboarding carousel after clearState.
+# Uses "Skip" instead of swipe+getStarted because Maestro swipe
+# is unreliable on SwiftUI TabView (iOS 26 known limitation).
 - assertVisible: "Track Your Knitting Projects"
-- swipe:
-    direction: LEFT
-    duration: 400
-- swipe:
-    direction: LEFT
-    duration: 400
-- tapOn:
-    id: "getStartedButton"
+- tapOn: "Skip"

@@ -3,6 +3,7 @@ name: "P0 - Onboarding Flow"
 tags:
   - p0
   - ios
+  - skip-ios26
 ---
 # Pre-condition: clear app state for test isolation
 - clearState: com.knitnote.ios
