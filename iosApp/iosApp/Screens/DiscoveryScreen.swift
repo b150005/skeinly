@@ -17,111 +17,115 @@ struct DiscoveryScreen: View {
     }
 
     var body: some View {
+        contentView
+            .searchable(text: $searchText, prompt: "Search public patterns...")
+            .onChange(of: searchText) { _, newValue in
+                viewModel.onEvent(event: DiscoveryEventUpdateSearchQuery(query: newValue))
+            }
+            .onAppear { searchText = observer.state.searchQuery }
+            .onChange(of: observer.state.searchQuery) { _, newQuery in
+                if searchText != newQuery { searchText = newQuery }
+            }
+            .onChange(of: observer.state.error) { _, newError in
+                showError = newError != nil
+            }
+            .alert("Error", isPresented: $showError) {
+                Button("OK") { viewModel.onEvent(event: DiscoveryEventClearError.shared) }
+            } message: {
+                Text(observer.state.error ?? "")
+            }
+            .navigationTitle("Discover Patterns")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { sortToolbarItem }
+            .overlay { forkingOverlay }
+            .task { observeForkedProjectId() }
+    }
+
+    @ViewBuilder
+    private var contentView: some View {
         let state = observer.state
         let hasActiveFilter = !state.searchQuery.isEmpty || state.difficultyFilter != nil
 
-        Group {
-            if state.isLoading && state.patterns.isEmpty {
-                ProgressView()
-            } else if state.patterns.isEmpty && hasActiveFilter {
-                ContentUnavailableView(
-                    "No Matching Patterns",
-                    systemImage: "magnifyingglass",
-                    description: Text("Try adjusting your search or filters.")
-                )
-            } else if state.patterns.isEmpty {
-                ContentUnavailableView(
-                    "No Public Patterns Yet",
-                    systemImage: "globe",
-                    description: Text("Public patterns from other knitters will appear here.")
-                )
-            } else {
-                List {
-                    DiscoveryFilterSection(
-                        difficultyFilter: state.difficultyFilter,
-                        onDifficultyFilterChange: { difficulty in
-                            viewModel.onEvent(event: DiscoveryEventUpdateDifficultyFilter(difficulty: difficulty))
-                        }
-                    )
+        if state.isLoading && state.patterns.isEmpty {
+            ProgressView()
+        } else if state.patterns.isEmpty && hasActiveFilter {
+            ContentUnavailableView(
+                "No Matching Patterns",
+                systemImage: "magnifyingglass",
+                description: Text("Try adjusting your search or filters.")
+            )
+        } else if state.patterns.isEmpty {
+            ContentUnavailableView(
+                "No Public Patterns Yet",
+                systemImage: "globe",
+                description: Text("Public patterns from other knitters will appear here.")
+            )
+        } else {
+            patternList(state: state)
+        }
+    }
 
-                    ForEach(state.patterns, id: \.id) { pattern in
-                        DiscoveryPatternRow(pattern: pattern)
-                            .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                                Button {
-                                    viewModel.onEvent(event: DiscoveryEventForkPattern(patternId: pattern.id))
-                                } label: {
-                                    Label("Fork", systemImage: "doc.on.doc")
-                                }
-                                .tint(.blue)
-                            }
+    @ViewBuilder
+    private func patternList(state: DiscoveryState) -> some View {
+        List {
+            DiscoveryFilterSection(
+                difficultyFilter: state.difficultyFilter,
+                onDifficultyFilterChange: { difficulty in
+                    viewModel.onEvent(event: DiscoveryEventUpdateDifficultyFilter(difficulty: difficulty))
+                }
+            )
+
+            ForEach(state.patterns, id: \.id) { pattern in
+                DiscoveryPatternRow(pattern: pattern)
+                    .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                        Button {
+                            viewModel.onEvent(event: DiscoveryEventForkPattern(patternId: pattern.id))
+                        } label: {
+                            Label("Fork", systemImage: "doc.on.doc")
+                        }
+                        .tint(.blue)
                     }
-                }
-                .refreshable {
-                    viewModel.onEvent(event: DiscoveryEventRefresh.shared)
-                }
             }
         }
-        .searchable(text: $searchText, prompt: "Search public patterns...")
-        .onChange(of: searchText) { _, newValue in
-            viewModel.onEvent(event: DiscoveryEventUpdateSearchQuery(query: newValue))
+        .refreshable {
+            viewModel.onEvent(event: DiscoveryEventRefresh.shared)
         }
-        .onAppear {
-            searchText = observer.state.searchQuery
-        }
-        .onChange(of: observer.state.searchQuery) { _, newQuery in
-            if searchText != newQuery {
-                searchText = newQuery
-            }
-        }
-        .onChange(of: observer.state.error) { _, newError in
-            showError = newError != nil
-        }
-        .alert("Error", isPresented: $showError) {
-            Button("OK") {
-                viewModel.onEvent(event: DiscoveryEventClearError.shared)
-            }
-        } message: {
-            Text(observer.state.error ?? "")
-        }
-        .navigationTitle("Discover Patterns")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Menu {
-                    discoverySortMenu(currentOrder: state.sortOrder)
+    }
+
+    private var sortToolbarItem: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Menu {
+                Button {
+                    viewModel.onEvent(event: DiscoveryEventUpdateSortOrder(order: .recent))
                 } label: {
-                    Image(systemName: "arrow.up.arrow.down")
+                    Label("Recent", systemImage: observer.state.sortOrder == .recent ? "checkmark" : "")
                 }
-            }
-        }
-        .overlay {
-            if state.forkingPatternId != nil {
-                ProgressView("Forking pattern...")
-                    .padding()
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-            }
-        }
-        .task {
-            let wrapper = KoinHelperKt.wrapDiscoveryForkedProjectIdFlow(flow: viewModel.forkedProjectId)
-            for await projectId in wrapper {
-                guard let id = projectId as? String else { continue }
-                path = NavigationPath()
-                path.append(Route.projectDetail(projectId: id))
+                Button {
+                    viewModel.onEvent(event: DiscoveryEventUpdateSortOrder(order: .alphabetical))
+                } label: {
+                    Label("Alphabetical", systemImage: observer.state.sortOrder == .alphabetical ? "checkmark" : "")
+                }
+            } label: {
+                Image(systemName: "arrow.up.arrow.down")
             }
         }
     }
 
     @ViewBuilder
-    private func discoverySortMenu(currentOrder: Shared.SortOrder) -> some View {
-        Button {
-            viewModel.onEvent(event: DiscoveryEventUpdateSortOrder(order: .recent))
-        } label: {
-            Label("Recent", systemImage: currentOrder == .recent ? "checkmark" : "")
+    private var forkingOverlay: some View {
+        if observer.state.forkingPatternId != nil {
+            ProgressView("Forking pattern...")
+                .padding()
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         }
-        Button {
-            viewModel.onEvent(event: DiscoveryEventUpdateSortOrder(order: .alphabetical))
-        } label: {
-            Label("Alphabetical", systemImage: currentOrder == .alphabetical ? "checkmark" : "")
+    }
+
+    private func observeForkedProjectId() async {
+        let wrapper = KoinHelperKt.wrapDiscoveryForkedProjectIdFlow(flow: viewModel.forkedProjectId)
+        for await projectId in wrapper {
+            guard let id = projectId as? String else { continue }
+            path = NavigationPath()
+            path.append(Route.projectDetail(projectId: id))
         }
     }
 }
