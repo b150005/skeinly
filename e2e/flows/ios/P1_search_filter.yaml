@@ -11,7 +11,7 @@ tags:
     appId: com.knitnote.ios
 
 # Complete onboarding on fresh install
-- runFlow: helpers/complete_onboarding.yaml
+- runFlow: ../../helpers/complete_onboarding.yaml
 
 # Create two projects
 - tapOn:

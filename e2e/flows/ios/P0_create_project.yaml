@@ -10,7 +10,7 @@ tags:
     appId: com.knitnote.ios
 
 # Complete onboarding on fresh install
-- runFlow: helpers/complete_onboarding.yaml
+- runFlow: ../../helpers/complete_onboarding.yaml
 
 # Wait for the empty state
 - assertVisible: "No Projects Yet"

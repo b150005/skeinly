@@ -2,9 +2,31 @@ import XCTest
 
 extension XCUIApplication {
     /// Launch the app with a clean database for test isolation.
+    /// Automatically completes onboarding if it appears on first launch.
     func launchClean() {
         launchArguments = ["--reset-database"]
         launch()
+        completeOnboardingIfPresent()
+    }
+
+    /// Swipe through onboarding and tap "Get Started" if the onboarding screen is visible.
+    func completeOnboardingIfPresent() {
+        let onboardingTitle = staticTexts["Track Your Knitting Projects"]
+        guard onboardingTitle.waitForExistence(timeout: 3) else { return }
+
+        // Swipe through all pages
+        swipeLeft()
+        swipeLeft()
+
+        // Tap "Get Started" on the last page
+        let getStarted = buttons["getStartedButton"]
+        if getStarted.waitForExistence(timeout: 3) {
+            getStarted.tap()
+        }
+
+        // Wait for onboarding to dismiss and ProjectList to appear
+        let navTitle = navigationBars["Knit Note"]
+        _ = navTitle.waitForExistence(timeout: 5)
     }
 }
 
