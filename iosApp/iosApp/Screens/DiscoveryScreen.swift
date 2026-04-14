@@ -112,7 +112,7 @@ struct DiscoveryScreen: View {
     }
 
     @ViewBuilder
-    private func discoverySortMenu(currentOrder: SortOrder) -> some View {
+    private func discoverySortMenu(currentOrder: Shared.SortOrder) -> some View {
         Button {
             viewModel.onEvent(event: DiscoveryEventUpdateSortOrder(order: .recent))
         } label: {
