@@ -23,7 +23,7 @@ struct OnboardingScreen: View {
             HStack {
                 Spacer()
                 Button("Skip") {
-                    viewModel.onEvent(event: OnboardingEvent.Skip())
+                    viewModel.onEvent(event: OnboardingEventSkip.shared)
                 }
                 .foregroundStyle(.secondary)
                 .padding(.trailing, 24)
@@ -51,9 +51,9 @@ struct OnboardingScreen: View {
 
             Button {
                 if isLastPage {
-                    viewModel.onEvent(event: OnboardingEvent.Complete())
+                    viewModel.onEvent(event: OnboardingEventComplete.shared)
                 } else {
-                    viewModel.onEvent(event: OnboardingEvent.NextPage())
+                    viewModel.onEvent(event: OnboardingEventNextPage.shared)
                 }
             } label: {
                 Text(isLastPage ? "Get Started" : "Next")
