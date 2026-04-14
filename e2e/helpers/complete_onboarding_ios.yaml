@@ -1,13 +1,14 @@
 appId: com.knitnote.ios
 name: "Helper - Complete Onboarding"
 ---
-# Complete onboarding carousel after clearState.
-# Uses accessibilityIdentifier for reliable tap targeting on CI simulators.
-# Text-based tapOn ("Skip") was unreliable on headless CI — the SwiftUI
-# button did not register the touch, leaving the app stuck on onboarding.
-- assertVisible: "Track Your Knitting Projects"
-- tapOn:
-    id: "skipButton"
-    retryTapIfNoChange: true
-# Verify onboarding was dismissed before returning to the calling flow
-- assertNotVisible: "Track Your Knitting Projects"
+# Bypass onboarding by relaunching with NSUserDefaults launch argument.
+# Direct SwiftUI button tapping (text-based and id-based) is unreliable
+# on headless CI simulators — Maestro finds the element but the tap
+# does not register in SwiftUI. This approach sets the preference via
+# iOS launch argument domain, which NSUserDefaults picks up with
+# higher precedence than the (cleared) persistent store.
+- stopApp: com.knitnote.ios
+- launchApp:
+    appId: com.knitnote.ios
+    arguments:
+      has_seen_onboarding: "true"
