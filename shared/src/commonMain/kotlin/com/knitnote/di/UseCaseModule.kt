@@ -16,6 +16,7 @@ import com.knitnote.domain.usecase.DeletePatternUseCase
 import com.knitnote.domain.usecase.DeleteProgressNoteUseCase
 import com.knitnote.domain.usecase.DeleteProgressPhotoUseCase
 import com.knitnote.domain.usecase.DeleteProjectUseCase
+import com.knitnote.domain.usecase.ForkPublicPatternUseCase
 import com.knitnote.domain.usecase.ForkSharedPatternUseCase
 import com.knitnote.domain.usecase.GetActivitiesUseCase
 import com.knitnote.domain.usecase.GetCommentsUseCase
@@ -25,6 +26,7 @@ import com.knitnote.domain.usecase.GetPatternsUseCase
 import com.knitnote.domain.usecase.GetProgressNotesUseCase
 import com.knitnote.domain.usecase.GetProjectByIdUseCase
 import com.knitnote.domain.usecase.GetProjectsUseCase
+import com.knitnote.domain.usecase.GetPublicPatternsUseCase
 import com.knitnote.domain.usecase.GetReceivedSharesUseCase
 import com.knitnote.domain.usecase.IncrementRowUseCase
 import com.knitnote.domain.usecase.ObserveAuthStateUseCase
@@ -100,4 +102,8 @@ val useCaseModule =
         factory { GetReceivedSharesUseCase(getOrNull(), get()) }
         factory { ForkSharedPatternUseCase(getOrNull(), get(), get(), get(), getOrNull()) }
         factory { UpdateShareStatusUseCase(getOrNull(), get()) }
+
+        // Discovery use cases (PublicPatternDataSource is nullable — only with Supabase)
+        factory { GetPublicPatternsUseCase(getOrNull()) }
+        factory { ForkPublicPatternUseCase(get(), get(), get(), getOrNull()) }
     }

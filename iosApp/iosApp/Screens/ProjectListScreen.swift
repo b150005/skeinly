@@ -96,6 +96,9 @@ struct ProjectListScreen: View {
 
                     Divider()
 
+                    Button { path.append(Route.discovery) } label: {
+                        Label("Discover Patterns", systemImage: "globe")
+                    }
                     Button { path.append(Route.patternLibrary) } label: {
                         Label("Pattern Library", systemImage: "heart.text.square")
                     }

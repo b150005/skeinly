@@ -18,6 +18,7 @@ import com.knitnote.domain.usecase.GetOnboardingCompletedUseCase
 import com.knitnote.ui.activityfeed.ActivityFeedScreen
 import com.knitnote.ui.auth.AuthViewModel
 import com.knitnote.ui.auth.LoginScreen
+import com.knitnote.ui.discovery.DiscoveryScreen
 import com.knitnote.ui.onboarding.OnboardingScreen
 import com.knitnote.ui.patternedit.PatternEditScreen
 import com.knitnote.ui.patternlibrary.PatternLibraryScreen
@@ -64,6 +65,9 @@ data object PatternLibrary
 data class PatternEdit(
     val patternId: String? = null,
 )
+
+@Serializable
+data object Discovery
 
 @Serializable
 data class SharedContent(
@@ -169,6 +173,19 @@ fun KnitNoteNavHost(
                 },
                 onSettingsClick = {
                     navController.navigate(Settings)
+                },
+                onDiscoverClick = {
+                    navController.navigate(Discovery)
+                },
+            )
+        }
+        composable<Discovery> {
+            DiscoveryScreen(
+                onBack = { navController.popBackStack() },
+                onForked = { projectId ->
+                    navController.navigate(ProjectDetail(projectId = projectId)) {
+                        popUpTo(ProjectList)
+                    }
                 },
             )
         }

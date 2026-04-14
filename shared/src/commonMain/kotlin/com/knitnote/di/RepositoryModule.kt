@@ -8,6 +8,7 @@ import com.knitnote.data.realtime.SupabaseRealtimeChannelProvider
 import com.knitnote.data.remote.ActivityDataSourceOperations
 import com.knitnote.data.remote.CommentDataSourceOperations
 import com.knitnote.data.remote.ConnectivityMonitor
+import com.knitnote.data.remote.PublicPatternDataSource
 import com.knitnote.data.remote.RemoteActivityDataSource
 import com.knitnote.data.remote.RemoteCommentDataSource
 import com.knitnote.data.remote.RemotePatternDataSource
@@ -57,6 +58,7 @@ val repositoryModule =
             single { RemoteProjectDataSource(get<SupabaseClient>()) }
             single { RemoteProgressDataSource(get<SupabaseClient>()) }
             single { RemotePatternDataSource(get<SupabaseClient>()) }
+            single<PublicPatternDataSource> { get<RemotePatternDataSource>() }
             single<ShareDataSourceOperations> { RemoteShareDataSource(get<SupabaseClient>()) }
             single { RemoteUserDataSource(get<SupabaseClient>()) }
             single<CommentDataSourceOperations> { RemoteCommentDataSource(get<SupabaseClient>()) }

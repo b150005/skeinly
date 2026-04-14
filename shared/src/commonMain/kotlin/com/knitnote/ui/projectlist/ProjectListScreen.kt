@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Notifications
@@ -77,6 +78,7 @@ fun ProjectListScreen(
     onActivityFeedClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
+    onDiscoverClick: () -> Unit = {},
     viewModel: ProjectListViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -94,6 +96,12 @@ fun ProjectListScreen(
             TopAppBar(
                 title = { Text("Knit Note") },
                 actions = {
+                    IconButton(onClick = onDiscoverClick) {
+                        Icon(
+                            Icons.Default.Explore,
+                            contentDescription = "Discover Patterns",
+                        )
+                    }
                     IconButton(onClick = onPatternLibraryClick) {
                         Icon(
                             Icons.Default.Favorite,

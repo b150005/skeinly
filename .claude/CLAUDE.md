@@ -242,5 +242,7 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 25**: Onboarding — First-run onboarding carousel (3 pages: Track Projects, Count Stitches, Pattern Library), `multiplatform-settings` for `hasSeenOnboarding` persistence (SharedPreferences/NSUserDefaults), reusable `EmptyStateView` composable with icon + CTA button, Compose `HorizontalPager` (Android) + SwiftUI `TabView` (iOS), navigation integration (onboarding before auth, local-only compatible), iOS `ContentUnavailableView` with actions closure, `PreferencesModule` Koin DI, 2 new + 10 updated Maestro E2E flows with shared helper, code review APPROVED (572 shared tests)
 
+- **Phase 26**: Public Pattern Discovery — Browse/search/fork public patterns, PublicPatternDataSource interface, GetPublicPatternsUseCase (server-side ilike search), ForkPublicPatternUseCase (deep-copy without Share record), DiscoveryViewModel (debounced search, client-side filter/sort, fork with Channel navigation), DiscoveryScreen (Compose PullToRefreshBox + SwiftUI .refreshable), Supabase migration 011 (visibility index), ProjectList Discover button (both platforms), 2 Maestro E2E flows, 19 new tests (591 shared tests)
+
 ### Planned
 - **Phase 21**: macOS Target — Post-launch, based on user demand

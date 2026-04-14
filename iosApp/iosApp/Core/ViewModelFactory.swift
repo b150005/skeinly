@@ -46,6 +46,10 @@ enum ViewModelFactory {
         )
     }
 
+    static func discoveryViewModel() -> DiscoveryViewModel {
+        KoinHelperKt.getDiscoveryViewModel()
+    }
+
     static func patternLibraryViewModel() -> PatternLibraryViewModel {
         KoinHelperKt.getPatternLibraryViewModel()
     }

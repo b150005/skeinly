@@ -9,6 +9,7 @@ enum Route: Hashable {
     case activityFeed
     case sharedWithMe
     case sharedContent(token: String?, shareId: String?)
+    case discovery
     case patternLibrary
     case patternEdit(patternId: String?)
 
@@ -30,6 +31,8 @@ enum Route: Hashable {
             hasher.combine("sharedContent")
             hasher.combine(token)
             hasher.combine(shareId)
+        case .discovery:
+            hasher.combine("discovery")
         case .patternLibrary:
             hasher.combine("patternLibrary")
         case .patternEdit(let patternId):
@@ -113,6 +116,8 @@ struct AppRootView: View {
             SharedWithMeScreen(path: $path)
         case .sharedContent(let token, let shareId):
             SharedContentScreen(token: token, shareId: shareId, path: $path)
+        case .discovery:
+            DiscoveryScreen(path: $path)
         case .patternLibrary:
             PatternLibraryScreen(path: $path)
         case .patternEdit(let patternId):

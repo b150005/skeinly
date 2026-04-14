@@ -7,7 +7,8 @@ import io.github.jan.supabase.postgrest.postgrest
 
 class RemotePatternDataSource(
     private val supabaseClient: SupabaseClient,
-) : RemotePatternSyncOperations {
+) : RemotePatternSyncOperations,
+    PublicPatternDataSource {
     private val table get() = supabaseClient.postgrest["patterns"]
 
     suspend fun getByOwnerId(ownerId: String): List<Pattern> =
@@ -21,6 +22,22 @@ class RemotePatternDataSource(
             .select {
                 filter { eq("id", id) }
             }.decodeSingleOrNull()
+
+    override suspend fun getPublic(
+        searchQuery: String,
+        limit: Int,
+    ): List<Pattern> =
+        table
+            .select {
+                filter {
+                    eq("visibility", "public")
+                    if (searchQuery.isNotBlank()) {
+                        ilike("title", "%$searchQuery%")
+                    }
+                }
+                order("created_at", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+                limit(limit.toLong())
+            }.decodeList()
 
     override suspend fun upsert(pattern: Pattern): Pattern =
         table

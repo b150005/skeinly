@@ -1,0 +1,32 @@
+appId: com.knitnote.ios
+name: "P1 - Discovery Browse"
+tags:
+  - p1
+  - ios
+---
+# Pre-condition: clean state
+- clearState: com.knitnote.ios
+- launchApp:
+    appId: com.knitnote.ios
+
+# Complete onboarding on fresh install
+- runFlow: ../../helpers/complete_onboarding_ios.yaml
+
+# Verify we start on the project list
+- assertVisible: "Knit Note"
+
+# Navigate to Discovery screen via menu
+- tapOn:
+    id: "moreMenu"
+- tapOn: "Discover Patterns"
+- assertVisible: "Discover Patterns"
+
+# Interact with difficulty filter
+- tapOn: "Beginner"
+
+# Reset filter to All
+- tapOn: "All"
+
+# Back navigation
+- tapOn: "Knit Note"
+- assertVisible: "Knit Note"

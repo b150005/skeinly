@@ -3,6 +3,7 @@ package com.knitnote.di
 import com.knitnote.ui.activityfeed.ActivityFeedViewModel
 import com.knitnote.ui.auth.AuthViewModel
 import com.knitnote.ui.comments.CommentSectionViewModel
+import com.knitnote.ui.discovery.DiscoveryViewModel
 import com.knitnote.ui.onboarding.OnboardingViewModel
 import com.knitnote.ui.patternedit.PatternEditViewModel
 import com.knitnote.ui.patternlibrary.PatternLibraryViewModel
@@ -25,6 +26,7 @@ val viewModelModule =
         viewModel { ActivityFeedViewModel(get(), get(), get()) }
         viewModelOf(::ProjectListViewModel)
         viewModelOf(::PatternLibraryViewModel)
+        viewModelOf(::DiscoveryViewModel)
         viewModel { params ->
             PatternEditViewModel(
                 patternId = params.getOrNull(),

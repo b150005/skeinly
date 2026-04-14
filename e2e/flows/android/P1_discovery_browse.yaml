@@ -1,0 +1,45 @@
+appId: com.knitnote.android
+name: "P1 - Discovery Browse"
+tags:
+  - p1
+  - android
+---
+# Pre-condition: clean state
+- clearState: com.knitnote.android
+- launchApp:
+    appId: com.knitnote.android
+
+# Complete onboarding on fresh install
+- runFlow: ../../helpers/complete_onboarding_android.yaml
+
+# Verify we start on the project list
+- assertVisible: "Knit Note"
+
+# Navigate to Discovery screen
+- tapOn:
+    text: "Discover Patterns"
+- assertVisible: "Discover Patterns"
+
+# Verify search field is present
+- assertVisible:
+    id: "discoverySearchField"
+
+# Interact with search
+- tapOn:
+    id: "discoverySearchField"
+- inputText: "test"
+
+# Clear search
+- tapOn:
+    text: "Clear search"
+
+# Interact with difficulty filter
+- tapOn: "Beginner"
+
+# Reset filter to All
+- tapOn: "All"
+
+# Back navigation
+- tapOn:
+    text: "Back"
+- assertVisible: "Knit Note"

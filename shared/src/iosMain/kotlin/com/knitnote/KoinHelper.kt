@@ -61,6 +61,8 @@ fun getCommentSectionViewModel(
     targetId: String,
 ): CommentSectionViewModel = KoinPlatform.getKoin().get { parametersOf(targetType, targetId) }
 
+fun getDiscoveryViewModel(): com.knitnote.ui.discovery.DiscoveryViewModel = KoinPlatform.getKoin().get()
+
 fun getPatternLibraryViewModel(): PatternLibraryViewModel = KoinPlatform.getKoin().get()
 
 fun getPatternEditViewModel(patternId: String?): PatternEditViewModel = KoinPlatform.getKoin().get { parametersOf(patternId) }
@@ -109,6 +111,12 @@ fun wrapActivityFeedState(
 fun wrapSharedWithMeState(
     flow: kotlinx.coroutines.flow.StateFlow<com.knitnote.ui.sharedwithme.SharedWithMeState>,
 ): FlowWrapper<com.knitnote.ui.sharedwithme.SharedWithMeState> = FlowWrapper(flow)
+
+fun wrapDiscoveryState(
+    flow: kotlinx.coroutines.flow.StateFlow<com.knitnote.ui.discovery.DiscoveryState>,
+): FlowWrapper<com.knitnote.ui.discovery.DiscoveryState> = FlowWrapper(flow)
+
+fun wrapDiscoveryForkedProjectIdFlow(flow: kotlinx.coroutines.flow.Flow<String>): EventFlowWrapper<String> = EventFlowWrapper(flow)
 
 fun wrapPatternLibraryState(
     flow: kotlinx.coroutines.flow.StateFlow<com.knitnote.ui.patternlibrary.PatternLibraryState>,
