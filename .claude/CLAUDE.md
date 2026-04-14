@@ -122,6 +122,7 @@ Agents detect this project as **Kotlin Multiplatform** by finding:
 - **CodeQL java-kotlin**: CodeQL does not support Kotlin 2.3.20 yet (upstream limit). The `security.yml` job uses `continue-on-error: true` so it does not block CI. The overlay-base database warning (`build-mode is set to "manual" instead of "none"`) is benign — CodeQL falls back to full (non-incremental) analysis. Both issues resolve when CodeQL adds Kotlin 2.3.20 support.
 - **Maestro + iOS 26**: Maestro 2.4.0 cannot reliably tap SwiftUI `Button` elements inside `List` sections on iOS 26 — the first tap works but subsequent taps are silently dropped. Also, `inputText` into `.searchable` does not update the SwiftUI `@State` binding. Affected iOS E2E flows are tagged `skip-ios26` and excluded from `run-ios.sh`. Both issues are upstream Maestro/XCTest compatibility bugs that resolve when Maestro ships iOS 26 support.
 - **Maestro + SwiftUI Button on headless CI**: Maestro `tapOn` (both text and accessibility ID) does not reliably register SwiftUI `Button` taps on headless CI simulators (macOS GitHub Actions runner). The iOS onboarding helper bypasses this by relaunching the app with `-has_seen_onboarding true` launch argument, which NSUserDefaults picks up from the argument domain.
+- **E2E local-only mode**: CI builds use empty Supabase credentials (local-only mode). Flows that require a live Supabase backend (e.g., Discovery browse) are tagged `requires-supabase` and excluded from CI. Run these flows locally against a Supabase-connected build.
 
 ## Testing Requirements
 

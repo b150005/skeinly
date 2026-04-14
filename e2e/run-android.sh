@@ -33,7 +33,9 @@ echo "[4/5] Installing APK..."
 adb install -r "$APK_PATH"
 
 # Step 5: Run Maestro flows
+# Note: --exclude-tags requires-supabase skips flows that need a live backend.
+# Remove the flag when running against a Supabase-connected build.
 echo "[5/5] Running Maestro flows (P0 + P1 + P2)..."
-maestro test "$SCRIPT_DIR/flows/android/"
+maestro test --exclude-tags requires-supabase "$SCRIPT_DIR/flows/android/"
 
 echo "All flows passed!"

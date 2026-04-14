@@ -3,6 +3,7 @@ name: "P1 - Discovery Browse"
 tags:
   - p1
   - ios
+  - requires-supabase
 ---
 # Pre-condition: clean state
 - clearState: com.knitnote.ios

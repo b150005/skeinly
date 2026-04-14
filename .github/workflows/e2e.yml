@@ -65,7 +65,7 @@ jobs:
             adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS
             sleep 3
             adb install -r androidApp/build/outputs/apk/debug/androidApp-debug.apk
-            maestro test e2e/flows/android/
+            maestro test --exclude-tags requires-supabase e2e/flows/android/
 
       - name: Upload Maestro screenshots
         if: always()
@@ -165,7 +165,7 @@ jobs:
           SIM_UDID: ${{ steps.sim.outputs.udid }}
         run: |
           maestro --device "$SIM_UDID" test \
-            --exclude-tags skip-ios26 \
+            --exclude-tags skip-ios26,requires-supabase \
             e2e/flows/ios/
 
       - name: Upload Maestro screenshots

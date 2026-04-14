@@ -68,7 +68,8 @@ xcrun simctl install "$BOOTED_UDID" "$APP_PATH"
 # Step 5: Run Maestro flows
 # --exclude-tags skip-ios26: Skip flows affected by Maestro 2.x + iOS 26
 # SwiftUI Button tap bug (search/filter). Re-enable when Maestro ships a fix.
-echo "[5/5] Running Maestro flows (P0 + P1 + P2, excluding skip-ios26)..."
-maestro --device "$BOOTED_UDID" test --exclude-tags skip-ios26 "$SCRIPT_DIR/flows/ios/"
+# --exclude-tags requires-supabase: Skip flows that need a live backend.
+echo "[5/5] Running Maestro flows (P0 + P1 + P2, excluding skip-ios26 + requires-supabase)..."
+maestro --device "$BOOTED_UDID" test --exclude-tags skip-ios26,requires-supabase "$SCRIPT_DIR/flows/ios/"
 
 echo "All flows passed!"
