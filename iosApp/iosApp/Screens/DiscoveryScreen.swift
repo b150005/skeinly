@@ -120,12 +120,14 @@ struct DiscoveryScreen: View {
         }
     }
 
-    private func observeForkedProjectId() async {
+    private func observeForkedProjectId() {
         let wrapper = KoinHelperKt.wrapDiscoveryForkedProjectIdFlow(flow: viewModel.forkedProjectId)
-        for await projectId in wrapper {
-            guard let id = projectId as? String else { continue }
-            path = NavigationPath()
-            path.append(Route.projectDetail(projectId: id))
+        let _ = wrapper.collect { projectId in
+            Task { @MainActor in
+                guard let id = projectId as? String else { return }
+                path = NavigationPath()
+                path.append(Route.projectDetail(projectId: id))
+            }
         }
     }
 }
