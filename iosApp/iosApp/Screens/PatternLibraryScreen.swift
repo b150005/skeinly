@@ -32,11 +32,16 @@ struct PatternLibraryScreen: View {
                     description: Text("Try adjusting your search or filters.")
                 )
             } else if state.patterns.isEmpty {
-                ContentUnavailableView(
-                    "No Patterns Yet",
-                    systemImage: "heart.text.square",
-                    description: Text("Tap + to create your first pattern.")
-                )
+                ContentUnavailableView {
+                    Label("No Patterns Yet", systemImage: "heart.text.square")
+                } description: {
+                    Text("Build your pattern library with gauge, yarn, and needle info.")
+                } actions: {
+                    Button("Create Pattern") {
+                        path.append(Route.patternEdit(patternId: nil))
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
             } else {
                 List {
                     DifficultyFilterSection(

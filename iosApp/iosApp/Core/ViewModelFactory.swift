@@ -4,6 +4,10 @@ import Shared
 /// Each function maps to a corresponding `getXxxViewModel()` in KoinHelper.kt.
 enum ViewModelFactory {
 
+    static func onboardingViewModel() -> OnboardingViewModel {
+        KoinHelperKt.getOnboardingViewModel()
+    }
+
     static func authViewModel() -> AuthViewModel {
         KoinHelperKt.getAuthViewModel()
     }

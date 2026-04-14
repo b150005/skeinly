@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
@@ -64,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import com.knitnote.domain.model.Project
 import com.knitnote.domain.model.ProjectStatus
 import com.knitnote.domain.model.SortOrder
+import com.knitnote.ui.components.EmptyStateView
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -204,24 +206,13 @@ fun ProjectListScreen(
                     }
                 }
                 state.projects.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "No projects yet",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Tap + to create your first project",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
+                    EmptyStateView(
+                        icon = Icons.Default.FolderOpen,
+                        title = "No projects yet",
+                        body = "Start tracking your first knitting project",
+                        actionLabel = "Create Project",
+                        onAction = { viewModel.onEvent(ProjectListEvent.ShowCreateDialog) },
+                    )
                 }
                 else -> {
                     LazyColumn(

@@ -9,6 +9,9 @@ tags:
 - launchApp:
     appId: com.knitnote.ios
 
+# Complete onboarding on fresh install
+- runFlow: helpers/complete_onboarding.yaml
+
 # Verify we start on the project list
 - assertVisible: "Knit Note"
 

@@ -7,16 +7,19 @@ tags:
 # Pre-condition: clear app state for test isolation
 - clearState: com.knitnote.ios
 
-# Launch the app (local-only mode — no Supabase, starts at ProjectList)
+# Launch the app (local-only mode — first run shows onboarding)
 - launchApp:
     appId: com.knitnote.ios
+
+# Complete onboarding on fresh install
+- runFlow: helpers/complete_onboarding.yaml
 
 # Verify the navigation title is visible
 - assertVisible: "Knit Note"
 
 # Verify empty state messaging (iOS ContentUnavailableView)
 - assertVisible: "No Projects Yet"
-- assertVisible: "Tap + to create your first knitting project."
+- assertVisible: "Create Project"
 
 # Verify the create button is visible
 - assertVisible:

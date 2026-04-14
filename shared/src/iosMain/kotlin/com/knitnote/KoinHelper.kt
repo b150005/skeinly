@@ -5,9 +5,11 @@ import com.knitnote.data.remote.isConfigured
 import com.knitnote.di.platformModule
 import com.knitnote.di.sharedModules
 import com.knitnote.domain.model.CommentTargetType
+import com.knitnote.domain.usecase.GetOnboardingCompletedUseCase
 import com.knitnote.ui.activityfeed.ActivityFeedViewModel
 import com.knitnote.ui.auth.AuthViewModel
 import com.knitnote.ui.comments.CommentSectionViewModel
+import com.knitnote.ui.onboarding.OnboardingViewModel
 import com.knitnote.ui.patternedit.PatternEditViewModel
 import com.knitnote.ui.patternlibrary.PatternLibraryViewModel
 import com.knitnote.ui.profile.ProfileViewModel
@@ -32,6 +34,13 @@ fun initKoin() {
 }
 
 // ViewModel accessors for Swift interop
+
+fun getOnboardingViewModel(): OnboardingViewModel = KoinPlatform.getKoin().get()
+
+fun isOnboardingCompleted(): Boolean {
+    val useCase: GetOnboardingCompletedUseCase = KoinPlatform.getKoin().get()
+    return useCase()
+}
 
 fun getAuthViewModel(): AuthViewModel = KoinPlatform.getKoin().get()
 
@@ -62,6 +71,10 @@ fun getSharedContentViewModel(
 ): SharedContentViewModel = KoinPlatform.getKoin().get { parametersOf(token, shareId) }
 
 // Type-safe FlowWrapper factories for Swift (eliminates as! force-casts)
+
+fun wrapOnboardingState(
+    flow: kotlinx.coroutines.flow.StateFlow<com.knitnote.ui.onboarding.OnboardingState>,
+): FlowWrapper<com.knitnote.ui.onboarding.OnboardingState> = FlowWrapper(flow)
 
 fun wrapAuthState(
     flow: kotlinx.coroutines.flow.StateFlow<com.knitnote.ui.auth.AuthUiState>,

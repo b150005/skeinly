@@ -36,11 +36,16 @@ struct ProjectListScreen: View {
                     description: Text("Try adjusting your search or filters.")
                 )
             } else if state.projects.isEmpty {
-                ContentUnavailableView(
-                    "No Projects Yet",
-                    systemImage: "square.stack.3d.up.slash",
-                    description: Text("Tap + to create your first knitting project.")
-                )
+                ContentUnavailableView {
+                    Label("No Projects Yet", systemImage: "folder")
+                } description: {
+                    Text("Start tracking your first knitting project.")
+                } actions: {
+                    Button("Create Project") {
+                        showCreateSheet = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
             } else {
                 List {
                     StatusFilterSection(

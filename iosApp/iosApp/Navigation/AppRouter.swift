@@ -39,26 +39,34 @@ enum Route: Hashable {
     }
 }
 
-/// Root view that handles auth-gated navigation.
+/// Root view that handles onboarding and auth-gated navigation.
 struct AppRootView: View {
     let authViewModel: AuthViewModel
     @StateObject private var authObserver: ViewModelObserver<AuthUiState>
     @State private var path = NavigationPath()
     @State private var pendingDeepLinkToken: String?
+    @State private var hasSeenOnboarding: Bool
 
     init() {
         let vm = ViewModelFactory.authViewModel()
         self.authViewModel = vm
         let wrapper = KoinHelperKt.wrapAuthState(flow: vm.state)
         _authObserver = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
+        _hasSeenOnboarding = State(initialValue: KoinHelperKt.isOnboardingCompleted())
     }
 
     var body: some View {
         let authState = authObserver.state.authState
         let isConfigured = SupabaseConfig.shared.isConfigured
 
+        // Onboarding is a UX gate only. Auth enforcement via authState cannot be bypassed
+        // by clearing the onboarding preference.
         Group {
-            if !isConfigured {
+            if !hasSeenOnboarding {
+                OnboardingScreen {
+                    hasSeenOnboarding = true
+                }
+            } else if !isConfigured {
                 // Local-only mode: skip auth
                 NavigationStack(path: $path) {
                     ProjectListScreen(path: $path)

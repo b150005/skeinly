@@ -97,6 +97,8 @@ kotlin {
             // Image loading
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor)
+            // Preferences
+            implementation(libs.multiplatform.settings)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -113,6 +115,7 @@ kotlin {
                 implementation(libs.koin.android)
                 implementation(libs.sqldelight.android.driver)
                 implementation(libs.ktor.client.android)
+                implementation(libs.multiplatform.settings.no.arg)
             }
         }
         getByName("androidHostTest") {
@@ -123,6 +126,7 @@ kotlin {
         iosMain.dependencies {
             implementation(libs.sqldelight.native.driver)
             implementation(libs.ktor.client.darwin)
+            implementation(libs.multiplatform.settings.no.arg)
         }
         iosTest.dependencies {
             implementation(libs.sqldelight.native.driver)
@@ -182,6 +186,8 @@ kover {
                     "com.knitnote.ui.patternlibrary.PatternLibraryScreenKt*",
                     "com.knitnote.ui.patternedit.PatternEditScreenKt*",
                     "com.knitnote.ui.settings.SettingsScreenKt*",
+                    "com.knitnote.ui.onboarding.OnboardingScreenKt*",
+                    "com.knitnote.ui.components.EmptyStateViewKt*",
                 )
             }
         }

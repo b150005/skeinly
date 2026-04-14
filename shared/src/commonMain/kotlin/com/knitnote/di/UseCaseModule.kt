@@ -2,6 +2,7 @@ package com.knitnote.di
 
 import com.knitnote.domain.usecase.AddProgressNoteUseCase
 import com.knitnote.domain.usecase.CloseRealtimeChannelsUseCase
+import com.knitnote.domain.usecase.CompleteOnboardingUseCase
 import com.knitnote.domain.usecase.CompleteProjectUseCase
 import com.knitnote.domain.usecase.CreateActivityUseCase
 import com.knitnote.domain.usecase.CreateCommentUseCase
@@ -19,6 +20,7 @@ import com.knitnote.domain.usecase.ForkSharedPatternUseCase
 import com.knitnote.domain.usecase.GetActivitiesUseCase
 import com.knitnote.domain.usecase.GetCommentsUseCase
 import com.knitnote.domain.usecase.GetCurrentUserUseCase
+import com.knitnote.domain.usecase.GetOnboardingCompletedUseCase
 import com.knitnote.domain.usecase.GetPatternsUseCase
 import com.knitnote.domain.usecase.GetProgressNotesUseCase
 import com.knitnote.domain.usecase.GetProjectByIdUseCase
@@ -42,6 +44,10 @@ import org.koin.dsl.module
 
 val useCaseModule =
     module {
+        // Onboarding
+        factory { GetOnboardingCompletedUseCase(get()) }
+        factory { CompleteOnboardingUseCase(get()) }
+
         factory { ObserveAuthStateUseCase(get()) }
         factory { SignInUseCase(get()) }
         factory { SignUpUseCase(get()) }

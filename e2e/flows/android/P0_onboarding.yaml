@@ -1,0 +1,54 @@
+appId: com.knitnote.android
+name: "P0 - Onboarding Flow"
+tags:
+  - p0
+  - android
+---
+# Pre-condition: clear app state for test isolation
+- clearState: com.knitnote.android
+
+# Launch the app — first run shows onboarding
+- launchApp:
+    appId: com.knitnote.android
+
+# Verify page 1 content
+- assertVisible: "Track Your Knitting Projects"
+
+# Verify Skip button is present
+- assertVisible:
+    id: "skipButton"
+
+# Swipe to page 2
+- swipe:
+    direction: LEFT
+    duration: 400
+
+- assertVisible: "Count Every Stitch"
+
+# Swipe to page 3 (last page)
+- swipe:
+    direction: LEFT
+    duration: 400
+
+- assertVisible: "Build Your Pattern Library"
+
+# Verify "Get Started" button appears on last page
+- assertVisible:
+    id: "getStartedButton"
+
+# Tap "Get Started" to complete onboarding
+- tapOn:
+    id: "getStartedButton"
+
+# Verify we landed on ProjectList
+- assertVisible: "Knit Note"
+- assertVisible: "No projects yet"
+
+# Relaunch the app — onboarding should NOT appear again
+- stopApp: com.knitnote.android
+- launchApp:
+    appId: com.knitnote.android
+
+# Should go directly to ProjectList
+- assertVisible: "Knit Note"
+- assertNotVisible: "Track Your Knitting Projects"

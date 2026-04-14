@@ -9,6 +9,9 @@ tags:
 - launchApp:
     appId: com.knitnote.android
 
+# Complete onboarding on fresh install
+- runFlow: helpers/complete_onboarding.yaml
+
 # Create two projects
 - tapOn:
     id: "createProjectFab"

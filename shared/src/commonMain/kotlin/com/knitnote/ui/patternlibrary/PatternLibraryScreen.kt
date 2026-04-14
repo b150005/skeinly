@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -60,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import com.knitnote.domain.model.Difficulty
 import com.knitnote.domain.model.Pattern
 import com.knitnote.domain.model.SortOrder
+import com.knitnote.ui.components.EmptyStateView
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -179,24 +181,13 @@ fun PatternLibraryScreen(
                     }
                 }
                 state.patterns.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "No patterns yet",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Tap + to create your first pattern",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
+                    EmptyStateView(
+                        icon = Icons.Default.Favorite,
+                        title = "No patterns yet",
+                        body = "Build your pattern library with gauge, yarn, and needle info",
+                        actionLabel = "Create Pattern",
+                        onAction = onCreatePattern,
+                    )
                 }
                 else -> {
                     LazyColumn(

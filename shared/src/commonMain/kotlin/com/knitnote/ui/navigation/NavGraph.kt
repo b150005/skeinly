@@ -14,9 +14,11 @@ import androidx.navigation.toRoute
 import com.knitnote.data.remote.SupabaseConfig
 import com.knitnote.data.remote.isConfigured
 import com.knitnote.domain.model.AuthState
+import com.knitnote.domain.usecase.GetOnboardingCompletedUseCase
 import com.knitnote.ui.activityfeed.ActivityFeedScreen
 import com.knitnote.ui.auth.AuthViewModel
 import com.knitnote.ui.auth.LoginScreen
+import com.knitnote.ui.onboarding.OnboardingScreen
 import com.knitnote.ui.patternedit.PatternEditScreen
 import com.knitnote.ui.patternlibrary.PatternLibraryScreen
 import com.knitnote.ui.profile.ProfileScreen
@@ -26,7 +28,11 @@ import com.knitnote.ui.settings.SettingsScreen
 import com.knitnote.ui.sharedcontent.SharedContentScreen
 import com.knitnote.ui.sharedwithme.SharedWithMeScreen
 import kotlinx.serialization.Serializable
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+
+@Serializable
+data object Onboarding
 
 @Serializable
 data object Login
@@ -70,6 +76,10 @@ fun KnitNoteNavHost(
     navController: NavHostController,
     deepLinkToken: String? = null,
 ) {
+    // Check onboarding state
+    val getOnboardingCompleted: GetOnboardingCompletedUseCase = koinInject()
+    val hasSeenOnboarding = remember { getOnboardingCompleted() }
+
     // If Supabase is not configured, skip auth entirely (local-only mode)
     val requiresAuth = SupabaseConfig.isConfigured
     var pendingDeepLinkToken by remember { mutableStateOf(deepLinkToken) }
@@ -115,9 +125,28 @@ fun KnitNoteNavHost(
         }
     }
 
-    val startDestination: Any = if (requiresAuth) Login else ProjectList
+    // Onboarding is a UX gate only. Auth enforcement is handled by LaunchedEffect(authUiState.authState)
+    // above and cannot be bypassed by clearing the onboarding preference.
+    val startDestination: Any =
+        if (!hasSeenOnboarding) {
+            Onboarding
+        } else if (requiresAuth) {
+            Login
+        } else {
+            ProjectList
+        }
 
     NavHost(navController = navController, startDestination = startDestination) {
+        composable<Onboarding> {
+            OnboardingScreen(
+                onComplete = {
+                    val next: Any = if (requiresAuth) Login else ProjectList
+                    navController.navigate(next) {
+                        popUpTo(Onboarding) { inclusive = true }
+                    }
+                },
+            )
+        }
         composable<Login> {
             LoginScreen()
         }

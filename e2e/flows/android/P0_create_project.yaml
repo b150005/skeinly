@@ -9,6 +9,9 @@ tags:
 - launchApp:
     appId: com.knitnote.android
 
+# Complete onboarding on fresh install
+- runFlow: helpers/complete_onboarding.yaml
+
 # Wait for the empty state
 - assertVisible: "No projects yet"
 
