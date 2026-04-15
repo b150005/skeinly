@@ -24,12 +24,17 @@
 -keep class com.knitnote.domain.model.** { *; }
 
 # ---- Navigation route classes (@Serializable) ----
+-keep class com.knitnote.ui.navigation.Onboarding { *; }
 -keep class com.knitnote.ui.navigation.Login { *; }
 -keep class com.knitnote.ui.navigation.ProjectList { *; }
 -keep class com.knitnote.ui.navigation.ProjectDetail { *; }
 -keep class com.knitnote.ui.navigation.SharedWithMe { *; }
 -keep class com.knitnote.ui.navigation.ActivityFeed { *; }
 -keep class com.knitnote.ui.navigation.Profile { *; }
+-keep class com.knitnote.ui.navigation.Settings { *; }
+-keep class com.knitnote.ui.navigation.PatternLibrary { *; }
+-keep class com.knitnote.ui.navigation.PatternEdit { *; }
+-keep class com.knitnote.ui.navigation.Discovery { *; }
 -keep class com.knitnote.ui.navigation.SharedContent { *; }
 
 # ---- Koin DI ----
