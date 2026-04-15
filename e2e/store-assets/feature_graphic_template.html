@@ -37,19 +37,16 @@
     text-align: center;
     color: white;
   }
-  /* Yarn ball icon placeholder */
   .icon {
     width: 120px;
     height: 120px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.15);
     margin: 0 auto 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 60px;
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(255,255,255,0.2);
+  }
+  .icon img {
+    width: 100%;
+    height: 100%;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
   }
   .app-name {
     font-size: 56px;
@@ -77,11 +74,11 @@
        await page.setViewportSize({ width: 1024, height: 500 });
        await page.screenshot({ path: 'feature_graphic.png' });
 
-    Replace the emoji icon placeholder with the actual app icon.
+    App icon is loaded from app_icon_512.png in the same directory.
   -->
   <div class="feature-graphic">
     <div class="content">
-      <div class="icon">🧶</div>
+      <div class="icon"><img src="app_icon_512.png" alt="Knit Note"></div>
       <div class="app-name">Knit Note</div>
       <div class="tagline">Your Knitting Companion</div>
     </div>
