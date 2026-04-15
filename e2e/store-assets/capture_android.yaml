@@ -1,0 +1,120 @@
+appId: com.knitnote.android
+name: "Store Screenshots - Android"
+tags:
+  - screenshots
+  - android
+---
+# ============================================================
+# Store Screenshot Capture Flow — Android
+# Run: maestro test e2e/screenshots/capture_android.yaml
+# Output: ~/.maestro/screenshots/ (default) or use --output
+# ============================================================
+
+# --- Setup: Clean state ---
+- clearState: com.knitnote.android
+- launchApp:
+    appId: com.knitnote.android
+
+# ============================================================
+# Screenshot 1: Onboarding
+# ============================================================
+- assertVisible: "Track Your Knitting Projects"
+- takeScreenshot: screenshot_01_onboarding
+
+# Complete onboarding
+- runFlow: ../helpers/complete_onboarding_android.yaml
+
+# ============================================================
+# Screenshot 2: Empty State (Project List)
+# ============================================================
+- assertVisible: "No projects yet"
+- takeScreenshot: screenshot_02_empty_state
+
+# ============================================================
+# Create sample projects for remaining screenshots
+# ============================================================
+
+# Project 1: In Progress
+- tapOn:
+    id: "createProjectFab"
+- tapOn: "Project Name"
+- inputText: "Autumn Cardigan"
+- tapOn: "Total Rows (optional)"
+- inputText: "240"
+- tapOn: "Create"
+- assertVisible: "Autumn Cardigan"
+
+# Tap into project to increment rows
+- tapOn: "Autumn Cardigan"
+- assertVisible: "Row"
+- repeat:
+    times: 47
+    commands:
+      - tapOn:
+          id: "incrementButton"
+
+# Go back to project list
+- pressKey: back
+
+# Project 2: Not Started
+- tapOn:
+    id: "createProjectFab"
+- tapOn: "Project Name"
+- inputText: "Winter Socks"
+- tapOn: "Total Rows (optional)"
+- inputText: "80"
+- tapOn: "Create"
+
+# Project 3: Not Started
+- tapOn:
+    id: "createProjectFab"
+- tapOn: "Project Name"
+- inputText: "Baby Blanket"
+- tapOn: "Total Rows (optional)"
+- inputText: "200"
+- tapOn: "Create"
+
+# ============================================================
+# Screenshot 3: Project List (with data)
+# ============================================================
+- assertVisible: "Autumn Cardigan"
+- assertVisible: "Winter Socks"
+- assertVisible: "Baby Blanket"
+- takeScreenshot: screenshot_03_project_list
+
+# ============================================================
+# Screenshot 4: Row Counter
+# ============================================================
+- tapOn: "Autumn Cardigan"
+- assertVisible: "Row"
+- takeScreenshot: screenshot_04_row_counter
+
+# Go back
+- pressKey: back
+
+# ============================================================
+# Screenshot 5: Search & Filter
+# ============================================================
+- tapOn: "Search projects..."
+- takeScreenshot: screenshot_05_search_filter
+
+# Close search
+- pressKey: back
+
+# ============================================================
+# Screenshot 6: Pattern Library (navigate via bottom nav)
+# ============================================================
+- tapOn: "Patterns"
+- assertVisible: "Pattern Library"
+- takeScreenshot: screenshot_06_pattern_library
+
+# ============================================================
+# Screenshot 7: Profile
+# ============================================================
+- tapOn: "Profile"
+- takeScreenshot: screenshot_07_profile
+
+# ============================================================
+# Done
+# ============================================================
+- pressKey: home

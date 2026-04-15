@@ -245,5 +245,9 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 26**: Public Pattern Discovery — Browse/search/fork public patterns, PublicPatternDataSource interface, GetPublicPatternsUseCase (server-side ilike search), ForkPublicPatternUseCase (deep-copy without Share record), DiscoveryViewModel (debounced search, client-side filter/sort, fork with Channel navigation), DiscoveryScreen (Compose PullToRefreshBox + SwiftUI .refreshable), Supabase migration 011 (visibility index), ProjectList Discover button (both platforms), 2 Maestro E2E flows, 19 new tests (591 shared tests)
 
+- **Phase 27a**: v1 Store Submission Prep (Session 1) — Version bump to 1.0.0 (version.properties + project.yml), privacy policy (EN/JA, GDPR section, no-tracking disclosure), store listing metadata (descriptions, keywords, screenshot strategy, feature graphic spec), Maestro screenshot capture flows (Android 7-screen + iOS 6-screen), feature graphic HTML template (591 shared tests)
+
 ### Planned
+- **Phase 27b**: v1 Store Submission (Session 2) — Release build smoke test, GitHub Actions secrets verification, IARC content rating, Apple reviewer demo account, privacy policy deployment, `v1.0.0` tag + store submission
+- **Phase 24**: Push Notifications — FCM/APNs, Supabase Edge Functions (v1.1)
 - **Phase 21**: macOS Target — Post-launch, based on user demand

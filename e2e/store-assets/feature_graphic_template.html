@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Knit Note — Feature Graphic</title>
+<style>
+  /* Google Play Feature Graphic: 1024 x 500 px */
+  body { margin: 0; padding: 0; }
+  .feature-graphic {
+    width: 1024px;
+    height: 500px;
+    background: linear-gradient(135deg, #7B61FF 0%, #5B3FDF 50%, #3D1FBF 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  /* Subtle knitting texture overlay */
+  .feature-graphic::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(255,255,255,0.03) 10px,
+        rgba(255,255,255,0.03) 20px
+      );
+  }
+  .content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    color: white;
+  }
+  /* Yarn ball icon placeholder */
+  .icon {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    margin: 0 auto 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60px;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255,255,255,0.2);
+  }
+  .app-name {
+    font-size: 56px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    margin-bottom: 12px;
+  }
+  .tagline {
+    font-size: 22px;
+    font-weight: 400;
+    opacity: 0.85;
+    letter-spacing: 0.5px;
+  }
+</style>
+</head>
+<body>
+  <!--
+    Google Play Feature Graphic Template
+    Size: 1024 x 500 px
+
+    Instructions:
+    1. Open this file in a browser
+    2. Take a screenshot at exactly 1024x500
+    3. Or use a tool like Puppeteer/Playwright to capture:
+       await page.setViewportSize({ width: 1024, height: 500 });
+       await page.screenshot({ path: 'feature_graphic.png' });
+
+    Replace the emoji icon placeholder with the actual app icon.
+  -->
+  <div class="feature-graphic">
+    <div class="content">
+      <div class="icon">🧶</div>
+      <div class="app-name">Knit Note</div>
+      <div class="tagline">Your Knitting Companion</div>
+    </div>
+  </div>
+</body>
+</html>

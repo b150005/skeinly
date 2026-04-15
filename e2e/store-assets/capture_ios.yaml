@@ -1,0 +1,112 @@
+appId: com.knitnote.ios
+name: "Store Screenshots - iOS"
+tags:
+  - screenshots
+  - ios
+---
+# ============================================================
+# Store Screenshot Capture Flow — iOS
+# Run: maestro test e2e/screenshots/capture_ios.yaml
+# Output: ~/.maestro/screenshots/ (default) or use --output
+# ============================================================
+
+# --- Setup: Clean state ---
+- clearState: com.knitnote.ios
+- launchApp:
+    appId: com.knitnote.ios
+
+# ============================================================
+# Screenshot 1: Onboarding
+# ============================================================
+- assertVisible: "Track Your Knitting Projects"
+- takeScreenshot: screenshot_01_onboarding
+
+# Complete onboarding
+- runFlow: ../helpers/complete_onboarding_ios.yaml
+
+# ============================================================
+# Screenshot 2: Empty State (Project List)
+# ============================================================
+- assertVisible: "No Projects Yet"
+- takeScreenshot: screenshot_02_empty_state
+
+# ============================================================
+# Create sample projects (mirror P0_create_project.yaml selectors)
+# ============================================================
+
+# Project 1: Autumn Cardigan
+- tapOn:
+    id: "createProjectButton"
+- assertVisible: "New Project"
+- tapOn: "Project Title"
+- inputText: "Autumn Cardigan"
+- tapOn: "Total Rows (optional)"
+- inputText: "240"
+- tapOn: "Create"
+- assertVisible: "Autumn Cardigan"
+
+# Tap into project to increment rows
+# NOTE: Maestro + iOS 26 has a known bug where taps silently fail after the
+# first tap on SwiftUI Buttons inside List sections. We use a single increment
+# here just to change the status to In Progress for a more interesting screenshot.
+- tapOn: "Autumn Cardigan"
+- assertVisible:
+    id: "rowCounter"
+- tapOn: "Increment row"
+
+# Go back to project list
+- tapOn: "Projects"
+
+# Project 2: Winter Socks
+- tapOn:
+    id: "createProjectButton"
+- tapOn: "Project Title"
+- inputText: "Winter Socks"
+- tapOn: "Total Rows (optional)"
+- inputText: "80"
+- tapOn: "Create"
+
+# Project 3: Baby Blanket
+- tapOn:
+    id: "createProjectButton"
+- tapOn: "Project Title"
+- inputText: "Baby Blanket"
+- tapOn: "Total Rows (optional)"
+- inputText: "200"
+- tapOn: "Create"
+
+# ============================================================
+# Screenshot 3: Project List (with data)
+# ============================================================
+- assertVisible: "Autumn Cardigan"
+- assertVisible: "Winter Socks"
+- assertVisible: "Baby Blanket"
+- takeScreenshot: screenshot_03_project_list
+
+# ============================================================
+# Screenshot 4: Row Counter
+# ============================================================
+- tapOn: "Autumn Cardigan"
+- assertVisible:
+    id: "rowCounter"
+- takeScreenshot: screenshot_04_row_counter
+
+# Go back
+- tapOn: "Projects"
+
+# ============================================================
+# Screenshot 5: Pattern Library
+# ============================================================
+- tapOn: "Patterns"
+- takeScreenshot: screenshot_05_pattern_library
+
+# ============================================================
+# Screenshot 6: Profile
+# ============================================================
+- tapOn: "Profile"
+- takeScreenshot: screenshot_06_profile
+
+# ============================================================
+# Done
+# ============================================================
+- pressKey: home
