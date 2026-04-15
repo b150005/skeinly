@@ -247,7 +247,9 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 27a**: v1 Store Submission Prep (Session 1) — Version bump to 1.0.0 (version.properties + project.yml), privacy policy (EN/JA, GDPR section, no-tracking disclosure), store listing metadata (descriptions, keywords, screenshot strategy, feature graphic spec), Maestro screenshot capture flows (Android 7-screen + iOS 6-screen), feature graphic HTML template (591 shared tests)
 
+- **Phase 27b**: v1 Store Submission Prep (Session 2) — 5 missing ProGuard navigation routes (Onboarding, Settings, PatternLibrary, PatternEdit, Discovery), GitHub Pages privacy policy deployment (EN/JA static HTML, pages.yml workflow), feature graphic real app icon (emoji→512px PNG), GitHub Pages enabled via API (591 shared tests)
+
 ### Planned
-- **Phase 27b**: v1 Store Submission (Session 2) — Release build smoke test, GitHub Actions secrets verification, IARC content rating, Apple reviewer demo account, privacy policy deployment, `v1.0.0` tag + store submission
+- **Phase 27c**: v1 Store Submission (Final) — GitHub Actions signing secrets setup, IARC content rating, Apple reviewer demo account, Maestro screenshot capture + framing, feature graphic PNG capture, `v1.0.0` tag + release, Play Console + App Store Connect submission
 - **Phase 24**: Push Notifications — FCM/APNs, Supabase Edge Functions (v1.1)
 - **Phase 21**: macOS Target — Post-launch, based on user demand
