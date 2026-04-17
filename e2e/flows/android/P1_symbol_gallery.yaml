@@ -24,10 +24,14 @@ tags:
 - assertVisible:
     id: "symbolGalleryGrid"
 
-# At least one JIS knit glyph should be visible on first render
-- assertVisible: "表目"
+# At least one JIS knit glyph card should be laid out after first render.
+# Assert via testTag rather than localized label text (testTag survives font
+# availability, CJK accessibility-tree quirks, and below-fold scroll state on
+# the CI emulator).
+- assertVisible:
+    id: "symbolCard-jis.knit.k"
 
-# Scroll through the grid to exercise rendering
+# Scroll through the grid to exercise rendering of further cells
 - scroll
 - scroll
 

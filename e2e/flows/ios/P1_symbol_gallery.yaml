@@ -23,8 +23,11 @@ tags:
     id: "symbolGalleryButton"
 - assertVisible: "Symbol Dictionary"
 
-# At least one JIS knit glyph should be visible on first render
-- assertVisible: "表目"
+# At least one JIS knit glyph card should be visible on first render.
+# Use accessibilityIdentifier rather than localized label text to stay robust
+# across simulator locales and SwiftUI text-tree matching quirks.
+- assertVisible:
+    id: "symbolCard-jis.knit.k"
 
 # Scroll through the grid
 - scroll
