@@ -56,6 +56,13 @@ data class ChartCell(
     val height: Int = 1,
     val rotation: Int = 0,
     @SerialName("color_id") val colorId: String? = null,
+    /**
+     * Caller-supplied values for parametric symbols (e.g. "cast-on n stitches").
+     * Keys must match [io.github.b150005.knitnote.domain.symbol.ParameterSlot.key] of the
+     * resolved [io.github.b150005.knitnote.domain.symbol.SymbolDefinition]; unknown keys
+     * are ignored by renderers.
+     */
+    @SerialName("symbol_parameters") val symbolParameters: Map<String, String> = emptyMap(),
 )
 
 @Serializable
@@ -86,8 +93,12 @@ data class StructuredChart(
     companion object {
         const val CURRENT_SCHEMA_VERSION: Int = 1
 
-        /** Regex for valid symbol IDs. See ADR-008 §6. */
-        private val SYMBOL_ID_REGEX = Regex("^[a-z]+(\\.[a-z0-9_]+)+$")
+        /**
+         * Regex for valid symbol IDs. See ADR-008 §6.
+         * Phase 30 extends the segment alphabet to accept hyphens so kebab-case
+         * ids such as `jis.knit.k2tog-r` are valid alongside the underscore form.
+         */
+        private val SYMBOL_ID_REGEX = Regex("^[a-z]+(\\.[a-z0-9][a-z0-9_-]*)+$")
 
         fun isValidSymbolId(symbolId: String): Boolean = SYMBOL_ID_REGEX.matches(symbolId)
 

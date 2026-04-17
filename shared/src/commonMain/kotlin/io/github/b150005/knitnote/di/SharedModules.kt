@@ -7,6 +7,7 @@ val sharedModules =
         supabaseModule,
         databaseModule,
         syncModule,
+        symbolModule,
         repositoryModule,
         useCaseModule,
         viewModelModule,

@@ -264,6 +264,66 @@ Phase 29 does NOT deliver:
 | Put structured chart into `patterns.chart_data jsonb` instead of a new table | Violates single-responsibility: patterns already carry unrelated metadata; also RLS semantics for public fork diverge |
 | Start with enum `SymbolId` and migrate to string in Phase 35 | Forces JSON-boundary re-serialization across pre-release → closed beta — exactly the migration cost ADR-007 §5 warns against |
 
+## Phase 30 addendum — Symbol catalog and parametric cells
+
+Added on completion of Phase 30 to record decisions that were forward-looking
+in the original ADR but have now been ratified in code.
+
+### Symbol ID casing
+
+- Multi-word segments use **kebab-case** (hyphens). Example:
+  `jis.knit.k2tog-r`, `jis.knit.cable-2x2-l`.
+- The JIS standard number is **not** embedded in the id. It lives in
+  `SymbolDefinition.jisReference` so the id stays stable across JIS
+  renumberings.
+- `SYMBOL_ID_REGEX` widened from `^[a-z]+(\.[a-z0-9_]+)+$` to
+  `^[a-z]+(\.[a-z0-9][a-z0-9_-]*)+$` to accept hyphens. Every reject case
+  from the Phase 29 validator test still rejects.
+
+### Parametric symbols
+
+Some stitches carry a caller-supplied numeric label (cast-on n stitches,
+bind-off n stitches, w&t row tag). Two additions:
+
+- `SymbolDefinition.parameterSlots: List<ParameterSlot>` — slot key,
+  unit-square anchor position, bilingual label, optional default.
+- `ChartCell.symbolParameters: Map<String, String>` (JSON key
+  `symbol_parameters`) — per-cell values. Default is an empty map so legacy
+  cells decode unchanged.
+
+Schema version stays at `1`. The new cell field is additive and
+default-empty, so round-tripping through `chart_documents.document` jsonb
+needs no migration and no `schema_version` bump. A future parameter-slot
+*semantic* change (type system, validation, etc.) would justify bumping
+to `2`.
+
+### SVG path parser subset
+
+The bundled commonMain parser supports
+`M m L l H h V v C c S s Q q T t Z z`. Elliptical arcs (`A a`) are
+deliberately excluded — no JIS L 0201 stitch needs one, and circles are
+approximated with four cubic Béziers (already the de-facto vector-editor
+export). Unsupported letters throw with an actionable message; commands
+appearing without operands throw instead of silently dropping (guards
+against truncated exports losing user strokes).
+
+### Unit-square coordinate convention for symbols
+
+All symbol paths are drawn in `viewBox 0 0 1 1` with **y-down** (matching
+SVG). Renderers map the unit square onto the per-cell rect at draw time.
+This is independent of `docs/en/chart-coordinates.md`'s y-up chart
+coordinates: the chart layout is y-up (knitter convention), the symbol
+interior is y-down (SVG convention). The boundary is the renderer
+transform.
+
+### Platform rendering plan
+
+`PathCommand` is a sealed-interface IR in commonMain. Android will render
+it with Compose `Path.moveTo / lineTo / cubicTo / quadTo / close`; iOS
+SwiftUI does the same via SwiftUI `Path` APIs. No `expect/actual` is used
+for the parser — parsing is pure logic. `expect/actual` remains reserved
+for the Canvas drawing entry point, which lands in Phase 31.
+
 ## References
 
 - ADR-001: Supabase as backend

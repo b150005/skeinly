@@ -201,6 +201,61 @@ Phase 29 で実装**しない**:
 | `patterns.chart_data jsonb` に同居 | 単一責任違反。パターンは無関係メタデータも持つ。public fork の RLS セマンティクスもズレる |
 | `SymbolId` を enum で始めて Phase 35 で文字列化 | プレリリース→クローズドベータ間で JSON 境界の再シリアライズが発生、ADR-007 §5 が警告する migration コスト |
 
+## Phase 30 追補 — シンボルカタログとパラメトリックセル
+
+Phase 30 完了時に、ADR 本文で forward-looking に記述していた設計決定を
+実装確定版として追記する。
+
+### シンボル ID の命名規則
+
+- 複数単語セグメントは **kebab-case** (ハイフン)。例:
+  `jis.knit.k2tog-r`、`jis.knit.cable-2x2-l`
+- JIS 標準番号は ID に **埋め込まない**。`SymbolDefinition.jisReference`
+  に保持することで、JIS 改訂で番号がシフトしても ID は安定
+- `SYMBOL_ID_REGEX` を `^[a-z]+(\.[a-z0-9_]+)+$` から
+  `^[a-z]+(\.[a-z0-9][a-z0-9_-]*)+$` に拡張してハイフンを許容。Phase 29
+  のバリデータテストで reject されていた全ケースは引き続き reject
+
+### パラメトリック記号
+
+編出し増目・伏せ目 n 目・引き返し編み段ラベルなど、数値パラメータを
+記号内に描画するケースに対応。
+
+- `SymbolDefinition.parameterSlots: List<ParameterSlot>` — slot key、
+  unit-square 内のアンカー座標、バイリンガル label、optional default
+- `ChartCell.symbolParameters: Map<String, String>` (JSON key は
+  `symbol_parameters`) — セルごとの値。default は空 Map。既存セルは
+  そのままデコードできる
+
+schema_version は **1 のまま据え置き**。新フィールドは追加 + default 空で
+後方互換。`chart_documents.document` jsonb の round-trip はマイグレーション
+も `schema_version` bump も不要。将来パラメータスロットの **意味論** を
+変える (型システム、バリデーション等) 場合に `2` へ上げる。
+
+### SVG path parser サブセット
+
+commonMain に同梱する parser は
+`M m L l H h V v C c S s Q q T t Z z` をサポート。楕円弧 (`A a`) は
+意図的に除外 — JIS L 0201 記号で必要なものはなく、円はベジェ 4 本で
+近似 (ベクタエディタの export もそうなっている)。未対応文字は文字を
+名指しして throw。オペランドのない命令は silent drop ではなく throw
+(truncated export で stroke が失われる事故を防ぐ)。
+
+### シンボル内部の単位正方形座標
+
+シンボル path は `viewBox 0 0 1 1`、**y-down** (SVG 準拠) で描画。
+Renderer が draw 時にセル矩形へ affine transform する。これは
+`docs/ja/chart-coordinates.md` の y-up 編み図座標とは独立 —
+編み図レイアウトは y-up (編み手視点)、シンボル内部は y-down
+(SVG 互換)。境界は renderer の transform が吸収する。
+
+### プラットフォームレンダリング方針
+
+`PathCommand` は commonMain の sealed interface IR。Android は Compose
+`Path.moveTo / lineTo / cubicTo / quadTo / close` で描画、iOS は SwiftUI
+`Path` API で同等実装。parser は純ロジックなので `expect/actual` 不使用。
+`expect/actual` は Phase 31 で Canvas 描画エントリポイントにだけ使う予定。
+
 ## 参考
 
 - ADR-001: Supabase をバックエンドに採用
