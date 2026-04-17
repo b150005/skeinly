@@ -110,7 +110,7 @@ struct ProjectDetailScreen: View {
             // Pattern info section
             if let pattern = state.pattern {
                 Section("Pattern Info") {
-                    patternInfoSection(pattern)
+                    patternInfoSection(pattern, hasStructuredChart: state.hasStructuredChart)
                 }
             }
 
@@ -230,8 +230,14 @@ struct ProjectDetailScreen: View {
     // MARK: - Pattern Info Section
 
     @ViewBuilder
-    private func patternInfoSection(_ pattern: Pattern) -> some View {
+    private func patternInfoSection(_ pattern: Pattern, hasStructuredChart: Bool) -> some View {
         LabeledContent("Title", value: pattern.title)
+
+        if hasStructuredChart {
+            Label("Structured chart available", systemImage: "square.grid.3x3")
+                .font(.caption)
+                .foregroundStyle(.tint)
+        }
 
         if let difficulty = pattern.difficulty {
             LabeledContent("Difficulty") {

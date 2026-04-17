@@ -55,6 +55,7 @@ val viewModelModule =
                 uploadProgressPhoto = get(),
                 deleteProgressPhoto = get(),
                 progressPhotoStorage = getOrNull(progressPhotosStorageQualifier),
+                observeStructuredChart = get(),
             )
         }
         viewModel { SharedWithMeViewModel(get(), get(), get(), get()) }

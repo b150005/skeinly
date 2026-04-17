@@ -3,12 +3,14 @@ package io.github.b150005.knitnote.data.sync
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.Progress
 import io.github.b150005.knitnote.domain.model.Project
+import io.github.b150005.knitnote.domain.model.StructuredChart
 import kotlinx.serialization.json.Json
 
 class SyncExecutor(
     private val remoteProject: RemoteProjectSyncOperations?,
     private val remoteProgress: RemoteProgressSyncOperations?,
     private val remotePattern: RemotePatternSyncOperations?,
+    private val remoteStructuredChart: RemoteStructuredChartSyncOperations?,
     private val json: Json,
 ) {
     /**
@@ -21,6 +23,7 @@ class SyncExecutor(
             SyncEntityType.PROJECT -> executeProject(entry)
             SyncEntityType.PROGRESS -> executeProgress(entry)
             SyncEntityType.PATTERN -> executePattern(entry)
+            SyncEntityType.STRUCTURED_CHART -> executeStructuredChart(entry)
         }
 
     private suspend fun executeProject(entry: PendingSyncEntry): Boolean {
@@ -48,6 +51,16 @@ class SyncExecutor(
         when (entry.operation) {
             SyncOperation.INSERT -> remote.upsert(json.decodeFromString<Pattern>(entry.payload)) // idempotent create: safe to retry
             SyncOperation.UPDATE -> remote.update(json.decodeFromString<Pattern>(entry.payload))
+            SyncOperation.DELETE -> remote.delete(entry.entityId)
+        }
+        return true
+    }
+
+    private suspend fun executeStructuredChart(entry: PendingSyncEntry): Boolean {
+        val remote = remoteStructuredChart ?: return true
+        when (entry.operation) {
+            SyncOperation.INSERT -> remote.upsert(json.decodeFromString<StructuredChart>(entry.payload)) // idempotent create
+            SyncOperation.UPDATE -> remote.update(json.decodeFromString<StructuredChart>(entry.payload))
             SyncOperation.DELETE -> remote.delete(entry.entityId)
         }
         return true

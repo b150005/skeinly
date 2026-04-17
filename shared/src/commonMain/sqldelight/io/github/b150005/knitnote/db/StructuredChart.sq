@@ -1,0 +1,63 @@
+CREATE TABLE StructuredChartEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    pattern_id TEXT NOT NULL UNIQUE,
+    owner_id TEXT NOT NULL,
+    schema_version INTEGER NOT NULL DEFAULT 1,
+    storage_variant TEXT NOT NULL DEFAULT 'inline',
+    coordinate_system TEXT NOT NULL,
+    document TEXT NOT NULL,
+    revision_id TEXT NOT NULL,
+    parent_revision_id TEXT,
+    content_hash TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_structured_chart_pattern_id ON StructuredChartEntity(pattern_id);
+CREATE INDEX IF NOT EXISTS idx_structured_chart_owner_id ON StructuredChartEntity(owner_id);
+
+getById:
+SELECT * FROM StructuredChartEntity WHERE id = ?;
+
+getByPatternId:
+SELECT * FROM StructuredChartEntity WHERE pattern_id = ?;
+
+observeByPatternId:
+SELECT * FROM StructuredChartEntity WHERE pattern_id = ?;
+
+existsByPatternId:
+SELECT COUNT(*) > 0 FROM StructuredChartEntity WHERE pattern_id = ?;
+
+insert:
+INSERT INTO StructuredChartEntity(
+    id,
+    pattern_id,
+    owner_id,
+    schema_version,
+    storage_variant,
+    coordinate_system,
+    document,
+    revision_id,
+    parent_revision_id,
+    content_hash,
+    created_at,
+    updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE StructuredChartEntity
+SET schema_version = ?,
+    storage_variant = ?,
+    coordinate_system = ?,
+    document = ?,
+    revision_id = ?,
+    parent_revision_id = ?,
+    content_hash = ?,
+    updated_at = ?
+WHERE id = ?;
+
+deleteById:
+DELETE FROM StructuredChartEntity WHERE id = ?;
+
+deleteByPatternId:
+DELETE FROM StructuredChartEntity WHERE pattern_id = ?;
