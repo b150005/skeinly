@@ -286,7 +286,7 @@ fun ProjectDetailScreen(
                         state.pattern?.let { pattern ->
                             item {
                                 Spacer(modifier = Modifier.height(16.dp))
-                                PatternInfoSection(pattern)
+                                PatternInfoSection(pattern, hasStructuredChart = state.hasStructuredChart)
                             }
                         }
 
@@ -782,7 +782,10 @@ private fun EditProjectDialog(
 }
 
 @Composable
-private fun PatternInfoSection(pattern: Pattern) {
+private fun PatternInfoSection(
+    pattern: Pattern,
+    hasStructuredChart: Boolean,
+) {
     Column(
         modifier = Modifier.padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -791,6 +794,13 @@ private fun PatternInfoSection(pattern: Pattern) {
             text = "Pattern: ${pattern.title}",
             style = MaterialTheme.typography.titleMedium,
         )
+        if (hasStructuredChart) {
+            Text(
+                text = "Structured chart available",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
         pattern.difficulty?.let { difficulty ->
             Text(
                 text = difficulty.name.lowercase().replaceFirstChar { it.uppercase() },

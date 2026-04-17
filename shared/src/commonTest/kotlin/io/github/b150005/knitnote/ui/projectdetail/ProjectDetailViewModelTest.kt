@@ -20,8 +20,10 @@ import io.github.b150005.knitnote.domain.usecase.FakePatternRepository
 import io.github.b150005.knitnote.domain.usecase.FakeProgressRepository
 import io.github.b150005.knitnote.domain.usecase.FakeProjectRepository
 import io.github.b150005.knitnote.domain.usecase.FakeShareRepository
+import io.github.b150005.knitnote.domain.usecase.FakeStructuredChartRepository
 import io.github.b150005.knitnote.domain.usecase.GetProgressNotesUseCase
 import io.github.b150005.knitnote.domain.usecase.IncrementRowUseCase
+import io.github.b150005.knitnote.domain.usecase.ObserveStructuredChartUseCase
 import io.github.b150005.knitnote.domain.usecase.ReopenProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.ShareProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateProjectUseCase
@@ -105,6 +107,7 @@ class ProjectDetailViewModelTest {
             uploadProgressPhoto = UploadProgressPhotoUseCase(null, authRepository),
             deleteProgressPhoto = DeleteProgressPhotoUseCase(null, authRepository),
             progressPhotoStorage = null,
+            observeStructuredChart = ObserveStructuredChartUseCase(FakeStructuredChartRepository()),
         )
 
     @Test
@@ -676,6 +679,7 @@ class ProjectDetailViewModelTest {
             uploadProgressPhoto = UploadProgressPhotoUseCase(null, authRepository),
             deleteProgressPhoto = DeleteProgressPhotoUseCase(null, authRepository),
             progressPhotoStorage = null,
+            observeStructuredChart = ObserveStructuredChartUseCase(FakeStructuredChartRepository()),
         )
 
     private fun createViewModelWithStorage(storage: FakeRemoteStorageDataSource = FakeRemoteStorageDataSource()): ProjectDetailViewModel =
@@ -704,6 +708,7 @@ class ProjectDetailViewModelTest {
             uploadProgressPhoto = UploadProgressPhotoUseCase(storage, authRepository),
             deleteProgressPhoto = DeleteProgressPhotoUseCase(storage, authRepository),
             progressPhotoStorage = storage,
+            observeStructuredChart = ObserveStructuredChartUseCase(FakeStructuredChartRepository()),
         )
 
     /** Minimal valid JPEG bytes with SOI and EOI markers for test data. */

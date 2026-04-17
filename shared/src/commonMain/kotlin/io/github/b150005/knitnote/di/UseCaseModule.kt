@@ -8,6 +8,7 @@ import io.github.b150005.knitnote.domain.usecase.CreateActivityUseCase
 import io.github.b150005.knitnote.domain.usecase.CreateCommentUseCase
 import io.github.b150005.knitnote.domain.usecase.CreatePatternUseCase
 import io.github.b150005.knitnote.domain.usecase.CreateProjectUseCase
+import io.github.b150005.knitnote.domain.usecase.CreateStructuredChartUseCase
 import io.github.b150005.knitnote.domain.usecase.DecrementRowUseCase
 import io.github.b150005.knitnote.domain.usecase.DeleteAccountUseCase
 import io.github.b150005.knitnote.domain.usecase.DeleteChartImageUseCase
@@ -16,6 +17,7 @@ import io.github.b150005.knitnote.domain.usecase.DeletePatternUseCase
 import io.github.b150005.knitnote.domain.usecase.DeleteProgressNoteUseCase
 import io.github.b150005.knitnote.domain.usecase.DeleteProgressPhotoUseCase
 import io.github.b150005.knitnote.domain.usecase.DeleteProjectUseCase
+import io.github.b150005.knitnote.domain.usecase.DeleteStructuredChartUseCase
 import io.github.b150005.knitnote.domain.usecase.ForkPublicPatternUseCase
 import io.github.b150005.knitnote.domain.usecase.ForkSharedPatternUseCase
 import io.github.b150005.knitnote.domain.usecase.GetActivitiesUseCase
@@ -28,8 +30,10 @@ import io.github.b150005.knitnote.domain.usecase.GetProjectByIdUseCase
 import io.github.b150005.knitnote.domain.usecase.GetProjectsUseCase
 import io.github.b150005.knitnote.domain.usecase.GetPublicPatternsUseCase
 import io.github.b150005.knitnote.domain.usecase.GetReceivedSharesUseCase
+import io.github.b150005.knitnote.domain.usecase.GetStructuredChartByPatternIdUseCase
 import io.github.b150005.knitnote.domain.usecase.IncrementRowUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveAuthStateUseCase
+import io.github.b150005.knitnote.domain.usecase.ObserveStructuredChartUseCase
 import io.github.b150005.knitnote.domain.usecase.ReopenProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.ResolveShareTokenUseCase
 import io.github.b150005.knitnote.domain.usecase.ShareProjectUseCase
@@ -40,6 +44,7 @@ import io.github.b150005.knitnote.domain.usecase.UpdatePatternUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateProfileUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateShareStatusUseCase
+import io.github.b150005.knitnote.domain.usecase.UpdateStructuredChartUseCase
 import io.github.b150005.knitnote.domain.usecase.UploadChartImageUseCase
 import io.github.b150005.knitnote.domain.usecase.UploadProgressPhotoUseCase
 import org.koin.dsl.module
@@ -106,4 +111,11 @@ val useCaseModule =
         // Discovery use cases (PublicPatternDataSource is nullable — only with Supabase)
         factory { GetPublicPatternsUseCase(getOrNull()) }
         factory { ForkPublicPatternUseCase(get(), get(), get(), getOrNull()) }
+
+        // Structured chart use cases (Phase 29)
+        factory { GetStructuredChartByPatternIdUseCase(get()) }
+        factory { ObserveStructuredChartUseCase(get()) }
+        factory { CreateStructuredChartUseCase(get(), get(), get()) }
+        factory { UpdateStructuredChartUseCase(get(), get()) }
+        factory { DeleteStructuredChartUseCase(get()) }
     }

@@ -19,6 +19,7 @@ import io.github.b150005.knitnote.domain.usecase.DeleteProgressNoteUseCase
 import io.github.b150005.knitnote.domain.usecase.DeleteProgressPhotoUseCase
 import io.github.b150005.knitnote.domain.usecase.GetProgressNotesUseCase
 import io.github.b150005.knitnote.domain.usecase.IncrementRowUseCase
+import io.github.b150005.knitnote.domain.usecase.ObserveStructuredChartUseCase
 import io.github.b150005.knitnote.domain.usecase.ReopenProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.ShareProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateProjectUseCase
@@ -55,6 +56,7 @@ data class ProjectDetailState(
     val selectedChartImageIndex: Int? = null,
     val photoSignedUrls: Map<String, String> = emptyMap(),
     val isUploadingPhoto: Boolean = false,
+    val hasStructuredChart: Boolean = false,
 )
 
 sealed interface ProjectDetailEvent {
@@ -131,6 +133,7 @@ class ProjectDetailViewModel(
     private val uploadProgressPhoto: UploadProgressPhotoUseCase,
     private val deleteProgressPhoto: DeleteProgressPhotoUseCase,
     private val progressPhotoStorage: StorageOperations?,
+    private val observeStructuredChart: ObserveStructuredChartUseCase,
 ) : ViewModel() {
     private val counterMutex = Mutex()
     private var cachedPhotoPaths = emptyList<String>()
@@ -157,12 +160,23 @@ class ProjectDetailViewModel(
             }
         }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val structuredChartFlow =
+        projectFlow.flatMapLatest { project ->
+            if (project != null && project.patternId != LocalUser.DEFAULT_PATTERN_ID) {
+                observeStructuredChart(project.patternId)
+            } else {
+                flowOf(null)
+            }
+        }
+
     val state: StateFlow<ProjectDetailState> =
         combine(
             projectFlow,
             patternFlow,
+            structuredChartFlow,
             _uiOverlay,
-        ) { project, pattern, overlay ->
+        ) { project, pattern, structuredChart, overlay ->
             ProjectDetailState(
                 project = project,
                 pattern = pattern,
@@ -175,6 +189,7 @@ class ProjectDetailViewModel(
                 selectedChartImageIndex = overlay.selectedChartImageIndex,
                 photoSignedUrls = overlay.photoSignedUrls,
                 isUploadingPhoto = overlay.isUploadingPhoto,
+                hasStructuredChart = structuredChart != null,
             )
         }.stateIn(
             scope = viewModelScope,
