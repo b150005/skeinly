@@ -324,6 +324,70 @@ SwiftUI does the same via SwiftUI `Path` APIs. No `expect/actual` is used
 for the parser — parsing is pure logic. `expect/actual` remains reserved
 for the Canvas drawing entry point, which lands in Phase 31.
 
+## Phase 30.5 addendum — Symbol sources policy
+
+Added after user feedback that in practice knitters do **not** treat JIS
+L 0201 as a prescriptive standard. JIS is one of several reference
+corpora, not the product's canonical authority.
+
+### Sources recognised by the product
+
+Ranked from "we ship it" to "user brings it":
+
+1. **JIS L 0201:1995** — baseline reference for the default
+   catalog. Ships under `jis.*` IDs. Rendering matches the JIS glyphs
+   as published, not the myriad publisher variants.
+2. **Major Japanese publisher houses** — 日本ヴォーグ社 and 文化出版局
+   define de-facto variants that diverge from JIS (stroke weight,
+   cross-over orientation, auxiliary ticks). These are *not* shipped
+   under `jis.*`. When the default catalog ships an alternate glyph
+   for the same stitch, the ID will be `std.<house>.<stitch>` (for
+   example `std.vogue.k2tog-r`). None are in the Phase 30 default
+   catalog.
+3. **Craft Yarn Council** — reserved under `std.cyc.*`. Not shipped
+   in Phase 30; adding CYC equivalents is a Phase 30.x task.
+4. **User-defined symbols** — live under `user.<uuid>.*`. Authoring
+   UI arrives in a later phase; the ID namespace and
+   `CompositeSymbolCatalog` extension point are designed in now.
+5. **Composite / derived symbols** — built from primitive strokes
+   (vertical = knit, horizontal = purl, diagonal decrease direction,
+   etc.). The Phase 30 catalog does **not** attempt to enumerate every
+   composite; catalog completeness is explicitly a non-goal. Users
+   will compose or import the long tail.
+
+### Policy consequences
+
+- **`jis.*` IDs stay stable** even when a major publisher's glyph
+  differs, so a JA pattern that cites JIS keeps working. A publisher
+  variant ships under a different ID, preserving round-trip fidelity
+  with the source material.
+- **Default catalog is not exhaustive** and never claims to be. The
+  Phase 30 棒針 set ships the JIS-defined stitches; crochet / afghan /
+  machine sets follow a similar scope. Stitches outside any recognised
+  standard are out of scope for the default ship.
+- **Conflicts defer to the user.** The `knitter` agent surfaces
+  disagreement between sources; `product-manager` decides whether a
+  variant earns a catalog slot; disputed symbols that neither party
+  can resolve fall to the human user.
+- **Catalog extension is non-breaking.** `SymbolCatalog` is an
+  interface. A future `CompositeSymbolCatalog(default, user,
+  imported)` can fan-in multiple catalogs without touching
+  `DefaultSymbolCatalog` or the `jis.*` IDs.
+- **Phase 30 visual verification is deferred to Phase 31.** Shipping
+  more symbol sets before the viewer exists would compound any design
+  bug across categories. The order is: Viewer → knitter review of the
+  Phase 30 JIS set → decide which category (crochet / afghan / machine)
+  expands next.
+
+### Bilingual label handling
+
+Every catalog entry carries JA and EN labels. When sources disagree on
+the EN name (e.g., "k2tog" vs. "SSK" vs. "K2tog tbl" for mirror-image
+decreases), the EN label records the CYC-preferred term and the
+`aliases` field holds community variants. JA labels follow the JIS
+canonical name unless a Nihon Vogue / Bunka convention is clearly
+dominant in contemporary Japanese patterns.
+
 ## References
 
 - ADR-001: Supabase as backend
@@ -331,5 +395,6 @@ for the Canvas drawing entry point, which lands in Phase 31.
 - ADR-004: Supabase schema v1
 - ADR-007: Pivot to chart authoring
 - `docs/en/chart-coordinates.md` (Phase 29)
-- JIS L 0201:1995 編目記号
-- Craft Yarn Council chart symbol reference
+- JIS L 0201:1995 編目記号 (reference corpus, not prescriptive)
+- Craft Yarn Council chart symbol reference (reserved under `std.cyc.*`)
+- 日本ヴォーグ社 / 文化出版局 house conventions (reserved under `std.<house>.*`)

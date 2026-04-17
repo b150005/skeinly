@@ -81,6 +81,7 @@ This project uses an agent team for structured development. The **orchestrator**
 | performance-engineer | Profiling, bottleneck identification, optimization |
 | devops-engineer | CI/CD, deployment strategy, release management |
 | technical-writer | Documentation, changelog, bilingual docs |
+| knitter | Domain advisor on knitting symbols, bilingual labels, and craft conventions (first-pass reviewer; escalates conflicts to user) |
 
 ### Ecosystem Detection
 
@@ -259,7 +260,8 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 ### Planned — Structured Chart Authoring (per ADR-007)
 - **Phase 29**: Structured Chart Data Model — `StructuredChart` schema (layers, cells, symbol ids, coordinates), SQLDelight migration, Supabase `chart_documents` jsonb table, basic CRUD; `Pattern.chartImageUrl` retained for legacy photo charts
 - **Phase 30**: Symbol Library — JIS-standard knitting symbols rendered in shared SVG path definitions, platform-native Canvas drawing (Compose + SwiftUI), bilingual symbol dictionary UI with JA/EN descriptions
-- **Phase 31**: Chart Viewer — zoom/pan, layer toggle, progress overlay (todo/wip/done colouring), portrait + landscape layouts
+- **Phase 30.5**: Knitter agent + symbol sources policy — `.claude/agents/knitter.md` first-pass domain reviewer; ADR-008 "Symbol sources policy" addendum codifies JIS-as-reference, `std.<house>.*` / `std.cyc.*` / `user.*` namespaces, catalog non-exhaustiveness
+- **Phase 31**: Chart Viewer — zoom/pan, layer toggle, progress overlay (todo/wip/done colouring), portrait + landscape layouts; first visual verification of the Phase 30 JIS symbol set
 - **Phase 32**: Chart Editor (MVP) — symbol palette, tap-to-place, undo/redo, save; minimal layouts (grid + single round)
 - **Phase 33**: i18n JA/EN — Compose `stringResource` catalogue, SwiftUI `Localizable.xcstrings`, docs/README translations audit, date-format locale awareness
 - **Phase 34**: Per-Segment Progress — stitch/section granularity for todo/wip/done, progress visualization overlays on the chart viewer
