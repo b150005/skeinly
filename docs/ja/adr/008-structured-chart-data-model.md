@@ -312,6 +312,36 @@ Renderer が draw 時にセル矩形へ affine transform する。これは
 を既定とし、現行日本語パターンでヴォーグ社 / 文化出版局表記が
 明確に優勢なケースに限って上書きする。
 
+## Addendum — Phase 30.1 レビュー結果 (2026-04-18)
+
+本 ADR が予約した Knitter 主導の視覚レビューは Phase 30.1 で実施した。
+全所見は [`docs/ja/symbol-review/phase-30.1.md`](../symbol-review/phase-30.1.md)。
+ここで記録する決定事項:
+
+- **次 catalog category = `jis.crochet.*`（Phase 30.2）**。4 要因
+  （商用頻度 / JIS + CYC ギャップ / ユーザセグメント解放 / 実装コスト）
+  採点で crochet 18、afghan 8、machine 11。JIS L 0201 Table 2 が
+  既にかぎ針記号を規定しており、JP 商用パターン volume は一度に解放
+  できる最大のオーディエンス。
+- **Geometry 修正 = Phase 30.1-fix（geometry-only PR）**。35 glyph 中
+  ~16 に craft-correctness 懸念あり。影響の大きい 4 点:
+  (a) 裏目バー幅が広すぎ（0.1→0.9 ではなく中央短線 ~0.3→0.7）、
+  (b) 交差記号で over / under 描き分け不足（両対角線 unbroken のため
+  右上 / 左上が視覚的に同一）、
+  (c) SSK / k2tog / p2tog / k3tog 方向性 glyph が対称逆 V（JIS の
+  「縦棒 + 斜線 1 本」ではない）、
+  (d) `jis.knit.kfb` の JA ラベル `ねじり増し目` が実際には
+  twisted-M1 を指しており kfb と不一致。
+  これらはレビュードキュメント §5 へのユーザ回答後に focused な
+  `KnitSymbols.kt` PR として出す。
+- **`DefaultSymbolCatalog` は意図的に非網羅**。Phase 30 カタログは
+  first pass。出版社固有の variants（Vogue JP / 文化 / CYC 限定 glyph）
+  は `std.<house>.*` / `std.cyc.*` / `user.*` 名前空間ポリシーに従って
+  JIS コアの上にオーバーレイとして入る。`jis.knit.*` の既存エントリは
+  編集しない。
+
+本 addendum は本 ADR 本文のデータモデル / 記号 ID 方式を変更しない。
+
 ## 参考
 
 - ADR-001: Supabase をバックエンドに採用
@@ -319,6 +349,7 @@ Renderer が draw 時にセル矩形へ affine transform する。これは
 - ADR-004: Supabase スキーマ v1
 - ADR-007: 編み図オーサリングへの方針転換
 - `docs/ja/chart-coordinates.md` (Phase 29)
+- `docs/ja/symbol-review/phase-30.1.md` (Phase 30.1)
 - JIS L 0201:1995 編目記号 (参照コーパス、規範ではない)
 - Craft Yarn Council chart symbol reference (`std.cyc.*` に予約)
 - 日本ヴォーグ社 / 文化出版局の慣習 (`std.<house>.*` に予約)

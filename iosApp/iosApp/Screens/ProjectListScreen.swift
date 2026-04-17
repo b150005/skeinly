@@ -102,6 +102,10 @@ struct ProjectListScreen: View {
                     Button { path.append(Route.patternLibrary) } label: {
                         Label("Pattern Library", systemImage: "heart.text.square")
                     }
+                    Button { path.append(Route.symbolGallery) } label: {
+                        Label("Symbol Dictionary", systemImage: "square.grid.3x3")
+                    }
+                    .accessibilityIdentifier("symbolGalleryButton")
                     Button { path.append(Route.profile) } label: {
                         Label("Profile", systemImage: "person.circle")
                     }

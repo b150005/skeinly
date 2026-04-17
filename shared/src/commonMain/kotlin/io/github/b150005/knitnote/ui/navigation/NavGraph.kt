@@ -29,6 +29,7 @@ import io.github.b150005.knitnote.ui.projectlist.ProjectListScreen
 import io.github.b150005.knitnote.ui.settings.SettingsScreen
 import io.github.b150005.knitnote.ui.sharedcontent.SharedContentScreen
 import io.github.b150005.knitnote.ui.sharedwithme.SharedWithMeScreen
+import io.github.b150005.knitnote.ui.symbol.SymbolGalleryScreen
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -74,6 +75,9 @@ data object Discovery
 data class ChartViewer(
     val patternId: String,
 )
+
+@Serializable
+data object SymbolGallery
 
 @Serializable
 data class SharedContent(
@@ -183,6 +187,14 @@ fun KnitNoteNavHost(
                 onDiscoverClick = {
                     navController.navigate(Discovery)
                 },
+                onSymbolGalleryClick = {
+                    navController.navigate(SymbolGallery)
+                },
+            )
+        }
+        composable<SymbolGallery> {
+            SymbolGalleryScreen(
+                onBack = { navController.popBackStack() },
             )
         }
         composable<Discovery> {

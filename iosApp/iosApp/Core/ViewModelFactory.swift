@@ -75,4 +75,8 @@ enum ViewModelFactory {
     static func symbolCatalog() -> SymbolCatalog {
         KoinHelperKt.getSymbolCatalog()
     }
+
+    static func symbolGalleryViewModel() -> SymbolGalleryViewModel {
+        KoinHelperKt.getSymbolGalleryViewModel()
+    }
 }

@@ -388,6 +388,39 @@ decreases), the EN label records the CYC-preferred term and the
 canonical name unless a Nihon Vogue / Bunka convention is clearly
 dominant in contemporary Japanese patterns.
 
+## Addendum — Phase 30.1 review outcome (2026-04-18)
+
+The Knitter-led visual review scheduled by this ADR ran in Phase 30.1.
+Full findings are in [`docs/en/symbol-review/phase-30.1.md`](../symbol-review/phase-30.1.md).
+Decisions codified here:
+
+- **Next catalog category = `jis.crochet.*` (Phase 30.2).** Crochet
+  scored 18/20 vs. afghan 8 and machine 11 on a four-factor rubric
+  (commercial frequency, JIS/CYC coverage gap, user-segment unlock,
+  implementation cost). JIS L 0201 Table 2 already specifies crochet
+  symbols and the JP commercial pattern volume is the single largest
+  audience segment the app can unlock in one step.
+- **Geometry follow-up = Phase 30.1-fix (geometry-only PR).** ~16 of
+  the 35 `jis.knit.*` glyphs carry at least one craft-correctness
+  concern. The four most impactful are: (a) purl bar too wide
+  (0.1→0.9; should be ~0.3→0.7 centered), (b) cable `over`/`under`
+  not expressed (both diagonals are unbroken strokes, so right-over
+  and left-over are visually identical), (c) SSK/k2tog/p2tog/k3tog
+  direction glyphs drawn as symmetric inverted-V instead of JIS
+  `stem + single slash`, and (d) `jis.knit.kfb` has a JA label
+  (`ねじり増し目`) that actually names twisted-M1, not k-front-and-back.
+  These are scheduled as a focused `KnitSymbols.kt` PR after the user
+  answers the open questions in §5 of the review doc.
+- **`DefaultSymbolCatalog` is intentionally non-exhaustive.** The
+  Phase 30 catalog is a first pass; known publisher-specific variants
+  (Vogue JP / Bunka / CYC-only glyphs) remain reserved under
+  `std.<house>.*` / `std.cyc.*` / `user.*` per the original namespace
+  policy and will land as overlays on top of the JIS core, not as
+  edits to `jis.knit.*` entries.
+
+This addendum does not change the data model or the symbol-id scheme
+established in the body of this ADR.
+
 ## References
 
 - ADR-001: Supabase as backend
@@ -395,6 +428,7 @@ dominant in contemporary Japanese patterns.
 - ADR-004: Supabase schema v1
 - ADR-007: Pivot to chart authoring
 - `docs/en/chart-coordinates.md` (Phase 29)
+- `docs/en/symbol-review/phase-30.1.md` (Phase 30.1)
 - JIS L 0201:1995 編目記号 (reference corpus, not prescriptive)
 - Craft Yarn Council chart symbol reference (reserved under `std.cyc.*`)
 - 日本ヴォーグ社 / 文化出版局 house conventions (reserved under `std.<house>.*`)

@@ -188,6 +188,9 @@ kover {
                     "io.github.b150005.knitnote.ui.settings.SettingsScreenKt*",
                     "io.github.b150005.knitnote.ui.onboarding.OnboardingScreenKt*",
                     "io.github.b150005.knitnote.ui.components.EmptyStateViewKt*",
+                    "io.github.b150005.knitnote.ui.symbol.SymbolGalleryScreenKt*",
+                    "io.github.b150005.knitnote.ui.chart.ChartViewerScreenKt*",
+                    "io.github.b150005.knitnote.ui.chart.SymbolDrawingKt*",
                 )
             }
         }

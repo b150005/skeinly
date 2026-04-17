@@ -14,6 +14,7 @@ import io.github.b150005.knitnote.ui.projectlist.ProjectListViewModel
 import io.github.b150005.knitnote.ui.settings.SettingsViewModel
 import io.github.b150005.knitnote.ui.sharedcontent.SharedContentViewModel
 import io.github.b150005.knitnote.ui.sharedwithme.SharedWithMeViewModel
+import io.github.b150005.knitnote.ui.symbol.SymbolGalleryViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
@@ -76,6 +77,7 @@ val viewModelModule =
                 observeStructuredChart = get(),
             )
         }
+        viewModelOf(::SymbolGalleryViewModel)
         viewModel { params ->
             SharedContentViewModel(
                 token = params.get<String?>(0),

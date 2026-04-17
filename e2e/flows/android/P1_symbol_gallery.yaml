@@ -1,0 +1,37 @@
+appId: io.github.b150005.knitnote.android
+name: "P1 - Symbol Gallery (Phase 30.1)"
+tags:
+  - p1
+  - android
+---
+# Pre-condition: clean state
+- clearState: io.github.b150005.knitnote.android
+- launchApp:
+    appId: io.github.b150005.knitnote.android
+
+# Complete onboarding on fresh install
+- runFlow: ../../helpers/complete_onboarding_android.yaml
+
+# Verify we start on the project list
+- assertVisible: "Knit Note"
+
+# Open the Symbol Dictionary from the top bar
+- tapOn:
+    id: "symbolGalleryButton"
+- assertVisible: "Symbol Dictionary"
+
+# Grid should be present
+- assertVisible:
+    id: "symbolGalleryGrid"
+
+# At least one JIS knit glyph should be visible on first render
+- assertVisible: "表目"
+
+# Scroll through the grid to exercise rendering
+- scroll
+- scroll
+
+# Back navigation
+- tapOn:
+    text: "Back"
+- assertVisible: "Knit Note"

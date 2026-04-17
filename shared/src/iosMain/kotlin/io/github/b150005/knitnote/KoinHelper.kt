@@ -20,6 +20,7 @@ import io.github.b150005.knitnote.ui.projectlist.ProjectListViewModel
 import io.github.b150005.knitnote.ui.settings.SettingsViewModel
 import io.github.b150005.knitnote.ui.sharedcontent.SharedContentViewModel
 import io.github.b150005.knitnote.ui.sharedwithme.SharedWithMeViewModel
+import io.github.b150005.knitnote.ui.symbol.SymbolGalleryViewModel
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
@@ -147,6 +148,12 @@ fun wrapForkedProjectIdFlow(flow: kotlinx.coroutines.flow.Flow<String>): EventFl
 fun wrapChartViewerState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.knitnote.ui.chart.ChartViewerState>,
 ): FlowWrapper<io.github.b150005.knitnote.ui.chart.ChartViewerState> = FlowWrapper(flow)
+
+fun getSymbolGalleryViewModel(): SymbolGalleryViewModel = KoinPlatform.getKoin().get()
+
+fun wrapSymbolGalleryState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.knitnote.ui.symbol.SymbolGalleryState>,
+): FlowWrapper<io.github.b150005.knitnote.ui.symbol.SymbolGalleryState> = FlowWrapper(flow)
 
 @OptIn(ExperimentalForeignApi::class)
 fun nsDataToByteArray(data: platform.Foundation.NSData): ByteArray {

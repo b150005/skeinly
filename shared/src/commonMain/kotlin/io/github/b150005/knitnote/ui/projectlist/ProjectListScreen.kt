@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
@@ -79,6 +80,7 @@ fun ProjectListScreen(
     onProfileClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onDiscoverClick: () -> Unit = {},
+    onSymbolGalleryClick: () -> Unit = {},
     viewModel: ProjectListViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -106,6 +108,15 @@ fun ProjectListScreen(
                         Icon(
                             Icons.Default.Favorite,
                             contentDescription = "Pattern Library",
+                        )
+                    }
+                    IconButton(
+                        onClick = onSymbolGalleryClick,
+                        modifier = Modifier.testTag("symbolGalleryButton"),
+                    ) {
+                        Icon(
+                            Icons.Default.GridView,
+                            contentDescription = "Symbol Dictionary",
                         )
                     }
                     IconButton(onClick = onProfileClick) {
