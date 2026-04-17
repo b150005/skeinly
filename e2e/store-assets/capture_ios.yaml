@@ -1,4 +1,4 @@
-appId: com.knitnote.ios
+appId: io.github.b150005.knitnote.ios
 name: "Store Screenshots - iOS"
 tags:
   - screenshots
@@ -11,9 +11,9 @@ tags:
 # ============================================================
 
 # --- Setup: Clean state ---
-- clearState: com.knitnote.ios
+- clearState: io.github.b150005.knitnote.ios
 - launchApp:
-    appId: com.knitnote.ios
+    appId: io.github.b150005.knitnote.ios
 
 # ============================================================
 # Screenshot 1: Onboarding

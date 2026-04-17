@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <baseline version="1.0">
-    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/com/knitnote/db/KnitNoteDatabase.kt">
+    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/io/github/b150005/knitnote/db/KnitNoteDatabase.kt">
         <error line="12" column="1" source="standard:indent" />
         <error line="14" column="1" source="standard:indent" />
         <error line="16" column="1" source="standard:indent" />
@@ -11,7 +11,7 @@
         <error line="24" column="1" source="standard:indent" />
         <error line="25" column="1" source="standard:indent" />
     </file>
-    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/com/knitnote/db/PatternEntity.kt">
+    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/io/github/b150005/knitnote/db/PatternEntity.kt">
         <error line="6" column="1" source="standard:indent" />
         <error line="7" column="1" source="standard:indent" />
         <error line="8" column="1" source="standard:indent" />
@@ -22,7 +22,7 @@
         <error line="13" column="1" source="standard:indent" />
         <error line="14" column="1" source="standard:indent" />
     </file>
-    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/com/knitnote/db/PatternQueries.kt">
+    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/io/github/b150005/knitnote/db/PatternQueries.kt">
         <error line="13" column="1" source="standard:indent" />
         <error line="15" column="1" source="standard:indent" />
         <error line="15" column="32" source="standard:parameter-list-wrapping" />
@@ -305,7 +305,7 @@
         <error line="231" column="1" source="standard:indent" />
         <error line="232" column="1" source="standard:indent" />
     </file>
-    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/com/knitnote/db/PendingSyncEntity.kt">
+    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/io/github/b150005/knitnote/db/PendingSyncEntity.kt">
         <error line="7" column="1" source="standard:indent" />
         <error line="8" column="1" source="standard:indent" />
         <error line="9" column="1" source="standard:indent" />
@@ -315,7 +315,7 @@
         <error line="13" column="1" source="standard:indent" />
         <error line="14" column="1" source="standard:indent" />
     </file>
-    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/com/knitnote/db/PendingSyncQueries.kt">
+    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/io/github/b150005/knitnote/db/PendingSyncQueries.kt">
         <error line="13" column="1" source="standard:indent" />
         <error line="15" column="1" source="standard:indent" />
         <error line="15" column="38" source="standard:parameter-list-wrapping" />
@@ -582,7 +582,7 @@
         <error line="212" column="1" source="standard:indent" />
         <error line="213" column="1" source="standard:indent" />
     </file>
-    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/com/knitnote/db/ProgressEntity.kt">
+    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/io/github/b150005/knitnote/db/ProgressEntity.kt">
         <error line="7" column="1" source="standard:indent" />
         <error line="8" column="1" source="standard:indent" />
         <error line="9" column="1" source="standard:indent" />
@@ -590,7 +590,7 @@
         <error line="11" column="1" source="standard:indent" />
         <error line="12" column="1" source="standard:indent" />
     </file>
-    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/com/knitnote/db/ProgressQueries.kt">
+    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/io/github/b150005/knitnote/db/ProgressQueries.kt">
         <error line="13" column="1" source="standard:indent" />
         <error line="15" column="1" source="standard:indent" />
         <error line="15" column="32" source="standard:parameter-list-wrapping" />
@@ -752,7 +752,7 @@
         <error line="135" column="1" source="standard:indent" />
         <error line="136" column="1" source="standard:indent" />
     </file>
-    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/com/knitnote/db/ProjectEntity.kt">
+    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/io/github/b150005/knitnote/db/ProjectEntity.kt">
         <error line="7" column="1" source="standard:indent" />
         <error line="8" column="1" source="standard:indent" />
         <error line="9" column="1" source="standard:indent" />
@@ -765,7 +765,7 @@
         <error line="16" column="1" source="standard:indent" />
         <error line="17" column="1" source="standard:indent" />
     </file>
-    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/com/knitnote/db/ProjectQueries.kt">
+    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/io/github/b150005/knitnote/db/ProjectQueries.kt">
         <error line="13" column="1" source="standard:indent" />
         <error line="15" column="1" source="standard:indent" />
         <error line="15" column="32" source="standard:parameter-list-wrapping" />
@@ -1135,7 +1135,7 @@
         <error line="300" column="1" source="standard:indent" />
         <error line="301" column="1" source="standard:indent" />
     </file>
-    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/com/knitnote/db/shared/KnitNoteDatabaseImpl.kt">
+    <file name="build/generated/sqldelight/code/KnitNoteDatabase/commonMain/io/github/b150005/knitnote/db/shared/KnitNoteDatabaseImpl.kt">
         <error line="18" column="1" source="standard:indent" />
         <error line="23" column="1" source="standard:indent" />
         <error line="26" column="1" source="standard:indent" />

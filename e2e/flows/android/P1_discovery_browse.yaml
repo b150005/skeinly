@@ -1,4 +1,4 @@
-appId: com.knitnote.android
+appId: io.github.b150005.knitnote.android
 name: "P1 - Discovery Browse"
 tags:
   - p1
@@ -6,9 +6,9 @@ tags:
   - requires-supabase
 ---
 # Pre-condition: clean state
-- clearState: com.knitnote.android
+- clearState: io.github.b150005.knitnote.android
 - launchApp:
-    appId: com.knitnote.android
+    appId: io.github.b150005.knitnote.android
 
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_android.yaml

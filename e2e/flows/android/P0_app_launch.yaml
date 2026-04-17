@@ -1,15 +1,15 @@
-appId: com.knitnote.android
+appId: io.github.b150005.knitnote.android
 name: "P0 - App Launch & Project List"
 tags:
   - p0
   - android
 ---
 # Pre-condition: clear app state for test isolation
-- clearState: com.knitnote.android
+- clearState: io.github.b150005.knitnote.android
 
 # Launch the app (local-only mode — first run shows onboarding)
 - launchApp:
-    appId: com.knitnote.android
+    appId: io.github.b150005.knitnote.android
 
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_android.yaml

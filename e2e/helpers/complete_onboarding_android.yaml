@@ -1,4 +1,4 @@
-appId: com.knitnote.android
+appId: io.github.b150005.knitnote.android
 name: "Helper - Complete Onboarding"
 ---
 # Complete onboarding carousel after clearState

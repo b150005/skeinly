@@ -121,7 +121,7 @@ Both platforms run in **local-only mode** (no Supabase credentials) so no networ
 
 | Aspect | Android | iOS |
 |--------|---------|-----|
-| App ID | `com.knitnote.android` | `com.knitnote.ios` |
+| App ID | `io.github.b150005.knitnote.android` | `io.github.b150005.knitnote.ios` |
 | Empty state title | "No projects yet" | "No Projects Yet" |
 | Create form field | "Project Name" | "Project Title" |
 | Back button | `contentDescription: "Back"` | Previous screen's `navigationTitle` (e.g., "Knit Note") |

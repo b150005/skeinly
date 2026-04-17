@@ -1,13 +1,13 @@
-appId: com.knitnote.ios
+appId: io.github.b150005.knitnote.ios
 name: "P0 - Row Counter Increment/Decrement"
 tags:
   - p0
   - ios
 ---
 # Pre-condition: clean state
-- clearState: com.knitnote.ios
+- clearState: io.github.b150005.knitnote.ios
 - launchApp:
-    appId: com.knitnote.ios
+    appId: io.github.b150005.knitnote.ios
 
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_ios.yaml

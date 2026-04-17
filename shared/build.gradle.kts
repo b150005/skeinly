@@ -26,13 +26,13 @@ val generateSupabaseConfig by tasks.registering {
     val key = localProps.getProperty("SUPABASE_ANON_KEY", "")
     outputs.dir(outputDir)
     doLast {
-        val dir = outputDir.get().asFile.resolve("com/knitnote/config")
+        val dir = outputDir.get().asFile.resolve("io/github/b150005/knitnote/config")
         dir.mkdirs()
         val escapedUrl = url.replace("\\", "\\\\").replace("\"", "\\\"").replace("$", "\\$")
         val escapedKey = key.replace("\\", "\\\\").replace("\"", "\\\"").replace("$", "\\$")
         dir.resolve("SupabaseCredentials.kt").writeText(
             buildString {
-                appendLine("package com.knitnote.config")
+                appendLine("package io.github.b150005.knitnote.config")
                 appendLine()
                 appendLine("internal object SupabaseCredentials {")
                 appendLine("    const val URL: String = \"$escapedUrl\"")
@@ -47,7 +47,7 @@ kotlin {
     applyDefaultHierarchyTemplate()
 
     android {
-        namespace = "com.knitnote.shared"
+        namespace = "io.github.b150005.knitnote.shared"
         compileSdk = 36
         minSdk = 26
 
@@ -147,7 +147,7 @@ tasks.configureEach {
 sqldelight {
     databases {
         create("KnitNoteDatabase") {
-            packageName.set("com.knitnote.db")
+            packageName.set("io.github.b150005.knitnote.db")
         }
     }
 }
@@ -158,36 +158,36 @@ kover {
             excludes {
                 classes(
                     // Generated / infra
-                    "com.knitnote.db.*",
-                    "com.knitnote.di.*",
-                    "com.knitnote.ui.navigation.*",
-                    "com.knitnote.config.*",
+                    "io.github.b150005.knitnote.db.*",
+                    "io.github.b150005.knitnote.di.*",
+                    "io.github.b150005.knitnote.ui.navigation.*",
+                    "io.github.b150005.knitnote.config.*",
                     // Remote data sources — thin Supabase SDK wrappers, untestable without MockEngine.
                     // Security validation (auth, input sanitization, size limits) is covered at the UseCase layer.
-                    "com.knitnote.data.remote.Remote*DataSource",
-                    "com.knitnote.data.remote.SupabaseConfig",
-                    "com.knitnote.data.remote.SupabaseConfigKt",
-                    "com.knitnote.data.remote.ConnectivityMonitor",
+                    "io.github.b150005.knitnote.data.remote.Remote*DataSource",
+                    "io.github.b150005.knitnote.data.remote.SupabaseConfig",
+                    "io.github.b150005.knitnote.data.remote.SupabaseConfigKt",
+                    "io.github.b150005.knitnote.data.remote.ConnectivityMonitor",
                     // Compose UI — untestable on JVM (covered by Android instrumented tests)
                     "*.ComposableSingletons\$*",
-                    "com.knitnote.ui.chartviewer.*",
-                    "com.knitnote.ui.imagepicker.*",
-                    "com.knitnote.ui.activityfeed.ActivityFeedScreenKt*",
-                    "com.knitnote.ui.auth.LoginScreenKt*",
-                    "com.knitnote.ui.comments.CommentSectionKt*",
-                    "com.knitnote.ui.profile.ProfileScreenKt*",
-                    "com.knitnote.ui.projectdetail.ProjectDetailScreenKt*",
-                    "com.knitnote.ui.projectdetail.ShareLinkDialogKt*",
-                    "com.knitnote.ui.projectdetail.UserPickerDialogKt*",
-                    "com.knitnote.ui.projectlist.CreateProjectDialogKt*",
-                    "com.knitnote.ui.projectlist.ProjectListScreenKt*",
-                    "com.knitnote.ui.sharedcontent.SharedContentScreenKt*",
-                    "com.knitnote.ui.sharedwithme.SharedWithMeScreenKt*",
-                    "com.knitnote.ui.patternlibrary.PatternLibraryScreenKt*",
-                    "com.knitnote.ui.patternedit.PatternEditScreenKt*",
-                    "com.knitnote.ui.settings.SettingsScreenKt*",
-                    "com.knitnote.ui.onboarding.OnboardingScreenKt*",
-                    "com.knitnote.ui.components.EmptyStateViewKt*",
+                    "io.github.b150005.knitnote.ui.chartviewer.*",
+                    "io.github.b150005.knitnote.ui.imagepicker.*",
+                    "io.github.b150005.knitnote.ui.activityfeed.ActivityFeedScreenKt*",
+                    "io.github.b150005.knitnote.ui.auth.LoginScreenKt*",
+                    "io.github.b150005.knitnote.ui.comments.CommentSectionKt*",
+                    "io.github.b150005.knitnote.ui.profile.ProfileScreenKt*",
+                    "io.github.b150005.knitnote.ui.projectdetail.ProjectDetailScreenKt*",
+                    "io.github.b150005.knitnote.ui.projectdetail.ShareLinkDialogKt*",
+                    "io.github.b150005.knitnote.ui.projectdetail.UserPickerDialogKt*",
+                    "io.github.b150005.knitnote.ui.projectlist.CreateProjectDialogKt*",
+                    "io.github.b150005.knitnote.ui.projectlist.ProjectListScreenKt*",
+                    "io.github.b150005.knitnote.ui.sharedcontent.SharedContentScreenKt*",
+                    "io.github.b150005.knitnote.ui.sharedwithme.SharedWithMeScreenKt*",
+                    "io.github.b150005.knitnote.ui.patternlibrary.PatternLibraryScreenKt*",
+                    "io.github.b150005.knitnote.ui.patternedit.PatternEditScreenKt*",
+                    "io.github.b150005.knitnote.ui.settings.SettingsScreenKt*",
+                    "io.github.b150005.knitnote.ui.onboarding.OnboardingScreenKt*",
+                    "io.github.b150005.knitnote.ui.components.EmptyStateViewKt*",
                 )
             }
         }

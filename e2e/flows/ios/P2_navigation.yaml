@@ -1,13 +1,13 @@
-appId: com.knitnote.ios
+appId: io.github.b150005.knitnote.ios
 name: "P2 - Screen Navigation"
 tags:
   - p2
   - ios
 ---
 # Pre-condition: clean state
-- clearState: com.knitnote.ios
+- clearState: io.github.b150005.knitnote.ios
 - launchApp:
-    appId: com.knitnote.ios
+    appId: io.github.b150005.knitnote.ios
 
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_ios.yaml

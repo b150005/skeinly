@@ -6,8 +6,8 @@
 |-------|-------|
 | App Name | Knit Note |
 | Developer Name | Knit Note Team |
-| Bundle ID (iOS) | com.knitnote.ios |
-| Package Name (Android) | com.knitnote.android |
+| Bundle ID (iOS) | io.github.b150005.knitnote.ios |
+| Package Name (Android) | io.github.b150005.knitnote.android |
 | Category (Primary) | Lifestyle |
 | Category (Secondary) | Productivity |
 | Content Rating | Everyone / 4+ |

@@ -1,0 +1,155 @@
+package io.github.b150005.knitnote.data.local
+
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
+import app.cash.sqldelight.coroutines.mapToOneOrNull
+import io.github.b150005.knitnote.data.mapper.toDbString
+import io.github.b150005.knitnote.data.mapper.toDomain
+import io.github.b150005.knitnote.db.KnitNoteDatabase
+import io.github.b150005.knitnote.domain.model.Project
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
+
+class LocalProjectDataSource(
+    private val db: KnitNoteDatabase,
+    private val ioDispatcher: CoroutineDispatcher,
+) {
+    private val queries get() = db.projectQueries
+
+    suspend fun getById(id: String): Project? =
+        withContext(ioDispatcher) {
+            queries.getById(id).executeAsOneOrNull()?.toDomain()
+        }
+
+    suspend fun getByOwnerId(ownerId: String): List<Project> =
+        withContext(ioDispatcher) {
+            queries.getByOwnerId(ownerId).executeAsList().map { it.toDomain() }
+        }
+
+    suspend fun getByPatternId(patternId: String): List<Project> =
+        withContext(ioDispatcher) {
+            queries.getByPatternId(patternId).executeAsList().map { it.toDomain() }
+        }
+
+    fun observeById(id: String): Flow<Project?> =
+        queries
+            .observeById(id)
+            .asFlow()
+            .mapToOneOrNull(ioDispatcher)
+            .map { it?.toDomain() }
+
+    fun observeByOwnerId(ownerId: String): Flow<List<Project>> =
+        queries
+            .getByOwnerId(ownerId)
+            .asFlow()
+            .mapToList(ioDispatcher)
+            .map { list -> list.map { it.toDomain() } }
+
+    suspend fun insert(project: Project): Project =
+        withContext(ioDispatcher) {
+            queries.insert(
+                id = project.id,
+                owner_id = project.ownerId,
+                pattern_id = project.patternId,
+                title = project.title,
+                status = project.status.toDbString(),
+                current_row = project.currentRow.toLong(),
+                total_rows = project.totalRows?.toLong(),
+                started_at = project.startedAt?.toString(),
+                completed_at = project.completedAt?.toString(),
+                created_at = project.createdAt.toString(),
+                updated_at = project.updatedAt.toString(),
+            )
+            project
+        }
+
+    suspend fun update(project: Project): Project =
+        withContext(ioDispatcher) {
+            queries.update(
+                title = project.title,
+                status = project.status.toDbString(),
+                current_row = project.currentRow.toLong(),
+                total_rows = project.totalRows?.toLong(),
+                started_at = project.startedAt?.toString(),
+                completed_at = project.completedAt?.toString(),
+                updated_at = project.updatedAt.toString(),
+                id = project.id,
+            )
+            project
+        }
+
+    suspend fun delete(id: String): Unit =
+        withContext(ioDispatcher) {
+            queries.deleteById(id)
+        }
+
+    suspend fun upsert(project: Project): Unit =
+        withContext(ioDispatcher) {
+            db.transaction {
+                val exists = queries.getById(project.id).executeAsOneOrNull() != null
+                if (exists) {
+                    queries.update(
+                        title = project.title,
+                        status = project.status.toDbString(),
+                        current_row = project.currentRow.toLong(),
+                        total_rows = project.totalRows?.toLong(),
+                        started_at = project.startedAt?.toString(),
+                        completed_at = project.completedAt?.toString(),
+                        updated_at = project.updatedAt.toString(),
+                        id = project.id,
+                    )
+                } else {
+                    queries.insert(
+                        id = project.id,
+                        owner_id = project.ownerId,
+                        pattern_id = project.patternId,
+                        title = project.title,
+                        status = project.status.toDbString(),
+                        current_row = project.currentRow.toLong(),
+                        total_rows = project.totalRows?.toLong(),
+                        started_at = project.startedAt?.toString(),
+                        completed_at = project.completedAt?.toString(),
+                        created_at = project.createdAt.toString(),
+                        updated_at = project.updatedAt.toString(),
+                    )
+                }
+            }
+        }
+
+    suspend fun upsertAll(projects: List<Project>) =
+        withContext(ioDispatcher) {
+            db.transaction {
+                projects.forEach { project ->
+                    val exists = queries.getById(project.id).executeAsOneOrNull() != null
+                    if (exists) {
+                        queries.update(
+                            title = project.title,
+                            status = project.status.toDbString(),
+                            current_row = project.currentRow.toLong(),
+                            total_rows = project.totalRows?.toLong(),
+                            started_at = project.startedAt?.toString(),
+                            completed_at = project.completedAt?.toString(),
+                            updated_at = project.updatedAt.toString(),
+                            id = project.id,
+                        )
+                    } else {
+                        queries.insert(
+                            id = project.id,
+                            owner_id = project.ownerId,
+                            pattern_id = project.patternId,
+                            title = project.title,
+                            status = project.status.toDbString(),
+                            current_row = project.currentRow.toLong(),
+                            total_rows = project.totalRows?.toLong(),
+                            started_at = project.startedAt?.toString(),
+                            completed_at = project.completedAt?.toString(),
+                            created_at = project.createdAt.toString(),
+                            updated_at = project.updatedAt.toString(),
+                        )
+                    }
+                }
+            }
+        }
+}

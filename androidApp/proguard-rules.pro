@@ -12,30 +12,30 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 
--keep,includedescriptorclasses class com.knitnote.**$$serializer { *; }
--keepclassmembers class com.knitnote.** {
+-keep,includedescriptorclasses class io.github.b150005.knitnote.**$$serializer { *; }
+-keepclassmembers class io.github.b150005.knitnote.** {
     *** Companion;
 }
--keepclasseswithmembers class com.knitnote.** {
+-keepclasseswithmembers class io.github.b150005.knitnote.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 
 # ---- Domain models (all @Serializable) ----
--keep class com.knitnote.domain.model.** { *; }
+-keep class io.github.b150005.knitnote.domain.model.** { *; }
 
 # ---- Navigation route classes (@Serializable) ----
--keep class com.knitnote.ui.navigation.Onboarding { *; }
--keep class com.knitnote.ui.navigation.Login { *; }
--keep class com.knitnote.ui.navigation.ProjectList { *; }
--keep class com.knitnote.ui.navigation.ProjectDetail { *; }
--keep class com.knitnote.ui.navigation.SharedWithMe { *; }
--keep class com.knitnote.ui.navigation.ActivityFeed { *; }
--keep class com.knitnote.ui.navigation.Profile { *; }
--keep class com.knitnote.ui.navigation.Settings { *; }
--keep class com.knitnote.ui.navigation.PatternLibrary { *; }
--keep class com.knitnote.ui.navigation.PatternEdit { *; }
--keep class com.knitnote.ui.navigation.Discovery { *; }
--keep class com.knitnote.ui.navigation.SharedContent { *; }
+-keep class io.github.b150005.knitnote.ui.navigation.Onboarding { *; }
+-keep class io.github.b150005.knitnote.ui.navigation.Login { *; }
+-keep class io.github.b150005.knitnote.ui.navigation.ProjectList { *; }
+-keep class io.github.b150005.knitnote.ui.navigation.ProjectDetail { *; }
+-keep class io.github.b150005.knitnote.ui.navigation.SharedWithMe { *; }
+-keep class io.github.b150005.knitnote.ui.navigation.ActivityFeed { *; }
+-keep class io.github.b150005.knitnote.ui.navigation.Profile { *; }
+-keep class io.github.b150005.knitnote.ui.navigation.Settings { *; }
+-keep class io.github.b150005.knitnote.ui.navigation.PatternLibrary { *; }
+-keep class io.github.b150005.knitnote.ui.navigation.PatternEdit { *; }
+-keep class io.github.b150005.knitnote.ui.navigation.Discovery { *; }
+-keep class io.github.b150005.knitnote.ui.navigation.SharedContent { *; }
 
 # ---- Koin DI ----
 -keep class org.koin.core.** { *; }

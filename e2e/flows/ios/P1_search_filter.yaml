@@ -1,4 +1,4 @@
-appId: com.knitnote.ios
+appId: io.github.b150005.knitnote.ios
 name: "P1 - Search & Filter Projects"
 tags:
   - p1
@@ -6,9 +6,9 @@ tags:
   - skip-ios26
 ---
 # Pre-condition: clean state
-- clearState: com.knitnote.ios
+- clearState: io.github.b150005.knitnote.ios
 - launchApp:
-    appId: com.knitnote.ios
+    appId: io.github.b150005.knitnote.ios
 
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_ios.yaml

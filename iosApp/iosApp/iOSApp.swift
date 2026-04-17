@@ -26,7 +26,7 @@ struct iOSApp: App {
             searchDirs.append(docURL)
         }
 
-        let logger = Logger(subsystem: "com.knitnote", category: "database")
+        let logger = Logger(subsystem: "io.github.b150005.knitnote", category: "database")
         for dir in searchDirs {
             for name in dbNames {
                 let url = dir.appendingPathComponent(name)

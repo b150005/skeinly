@@ -251,11 +251,12 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 27.1**: iOS ViewModel Lifecycle Fix — ScopedViewModel/ProjectDetailHolder holders pin Koin-resolved ViewModels across SwiftUI View re-inits, fixing a real-device onboarding bug where Next/Skip button taps dispatched events to orphan ViewModels while observers stayed bound to the original state flow. Migrated all 12 iOS screens + AppRootView to the holder pattern; added 2 XCTest regression cases and a Maestro `nextButton` flow. Android E2E stabilized against Pixel Launcher ANR via emulator RAM bump (4096 MB), VM heap (1024 MB), CPU pinning, cold-boot settle and dialog-dismiss loops. ADR-007 records the pivot away from v1.0 store submission. (591 shared + 21 iOS UI tests)
 
+- **Phase 28**: Bundle ID Rename — `com.knitnote.*` → `io.github.b150005.knitnote` across Kotlin packages (322 files, 9 source-root directories moved), SQLDelight package, iOS bundle ID + bundleIdPrefix + CFBundleURLName, Android applicationId + namespace, ProGuard rules, Kover exclusions, generated SupabaseCredentials package, Maestro E2E flow appIds (Android + iOS), store-listing + e2e docs. `knitnote://` URL scheme, `knitnote.db` filename, "Knit Note" display name, and `KnitNote*` class names preserved. (591 shared tests × 2 platforms + 19 iOS UI tests)
+
 ### Deferred (superseded by ADR-007)
-- **Phase 27c**: v1 Store Submission (Final) — staged but not executed. Will re-open only after the structured chart vision (Phase 28–38) reaches beta readiness.
+- **Phase 27c**: v1 Store Submission (Final) — staged but not executed. Will re-open only after the structured chart vision (Phase 29–40) reaches beta readiness.
 
 ### Planned — Structured Chart Authoring (per ADR-007)
-- **Phase 28**: Bundle ID Rename — `com.knitnote.*` → `io.github.b150005.knitnote` across iOS bundle ID, URL scheme, Android applicationId, Kotlin package, Supabase config, privacy policy URLs, docs, Maestro flows, CI
 - **Phase 29**: Structured Chart Data Model — `StructuredChart` schema (layers, cells, symbol ids, coordinates), SQLDelight migration, Supabase `chart_documents` jsonb table, basic CRUD; `Pattern.chartImageUrl` retained for legacy photo charts
 - **Phase 30**: Symbol Library — JIS-standard knitting symbols rendered in shared SVG path definitions, platform-native Canvas drawing (Compose + SwiftUI), bilingual symbol dictionary UI with JA/EN descriptions
 - **Phase 31**: Chart Viewer — zoom/pan, layer toggle, progress overlay (todo/wip/done colouring), portrait + landscape layouts

@@ -1,4 +1,4 @@
-appId: com.knitnote.ios
+appId: io.github.b150005.knitnote.ios
 name: "P0 - Onboarding Flow"
 tags:
   - p0
@@ -6,11 +6,11 @@ tags:
   - skip-ios26
 ---
 # Pre-condition: clear app state for test isolation
-- clearState: com.knitnote.ios
+- clearState: io.github.b150005.knitnote.ios
 
 # Launch the app — first run shows onboarding
 - launchApp:
-    appId: com.knitnote.ios
+    appId: io.github.b150005.knitnote.ios
 
 # Verify page 1 content
 - assertVisible: "Track Your Knitting Projects"
@@ -46,9 +46,9 @@ tags:
 - assertVisible: "No Projects Yet"
 
 # Relaunch the app — onboarding should NOT appear again
-- stopApp: com.knitnote.ios
+- stopApp: io.github.b150005.knitnote.ios
 - launchApp:
-    appId: com.knitnote.ios
+    appId: io.github.b150005.knitnote.ios
 
 # Should go directly to ProjectList
 - assertVisible: "Knit Note"

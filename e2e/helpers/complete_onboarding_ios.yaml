@@ -1,4 +1,4 @@
-appId: com.knitnote.ios
+appId: io.github.b150005.knitnote.ios
 name: "Helper - Complete Onboarding"
 ---
 # Bypass onboarding by relaunching with NSUserDefaults launch argument.
@@ -7,8 +7,8 @@ name: "Helper - Complete Onboarding"
 # does not register in SwiftUI. This approach sets the preference via
 # iOS launch argument domain, which NSUserDefaults picks up with
 # higher precedence than the (cleared) persistent store.
-- stopApp: com.knitnote.ios
+- stopApp: io.github.b150005.knitnote.ios
 - launchApp:
-    appId: com.knitnote.ios
+    appId: io.github.b150005.knitnote.ios
     arguments:
       has_seen_onboarding: "true"
