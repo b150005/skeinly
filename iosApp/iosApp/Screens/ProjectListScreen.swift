@@ -3,8 +3,7 @@ import Shared
 
 struct ProjectListScreen: View {
     @Binding var path: NavigationPath
-    private let viewModel: ProjectListViewModel
-    @StateObject private var observer: ViewModelObserver<ProjectListState>
+    @StateObject private var holder: ScopedViewModel<ProjectListViewModel, ProjectListState>
     @State private var showCreateSheet = false
     @State private var showError = false
     @State private var showDeleteConfirmation = false
@@ -14,16 +13,17 @@ struct ProjectListScreen: View {
     @State private var selectedPatternId: String?
     @State private var searchText = ""
 
+    private var viewModel: ProjectListViewModel { holder.viewModel }
+
     init(path: Binding<NavigationPath>) {
         self._path = path
         let vm = ViewModelFactory.projectListViewModel()
-        self.viewModel = vm
         let wrapper = KoinHelperKt.wrapProjectListState(flow: vm.state)
-        _observer = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
+        _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
     }
 
     var body: some View {
-        let state = observer.state
+        let state = holder.state
         let hasActiveFilter = !state.searchQuery.isEmpty || state.statusFilter != nil
 
         Group {
@@ -78,7 +78,7 @@ struct ProjectListScreen: View {
             viewModel.onEvent(event: ProjectListEventUpdateSearchQuery(query: newValue))
         }
         .onAppear {
-            searchText = observer.state.searchQuery
+            searchText = holder.state.searchQuery
         }
         .navigationTitle("Knit Note")
         .toolbar {
@@ -174,10 +174,10 @@ struct ProjectListScreen: View {
                 TextField("Total Rows (optional)", text: $newTotalRows)
                     .keyboardType(.numberPad)
 
-                if !observer.state.patternsForCreate.isEmpty {
+                if !holder.state.patternsForCreate.isEmpty {
                     Picker("Pattern", selection: $selectedPatternId) {
                         Text("None").tag(nil as String?)
-                        ForEach(observer.state.patternsForCreate, id: \.id) { pattern in
+                        ForEach(holder.state.patternsForCreate, id: \.id) { pattern in
                             Text(pattern.title).tag(pattern.id as String?)
                         }
                     }

@@ -3,23 +3,23 @@ import Shared
 
 struct PatternLibraryScreen: View {
     @Binding var path: NavigationPath
-    private let viewModel: PatternLibraryViewModel
-    @StateObject private var observer: ViewModelObserver<PatternLibraryState>
+    @StateObject private var holder: ScopedViewModel<PatternLibraryViewModel, PatternLibraryState>
     @State private var showDeleteConfirmation = false
     @State private var patternToDelete: String?
     @State private var showError = false
     @State private var searchText = ""
 
+    private var viewModel: PatternLibraryViewModel { holder.viewModel }
+
     init(path: Binding<NavigationPath>) {
         self._path = path
         let vm = ViewModelFactory.patternLibraryViewModel()
-        self.viewModel = vm
         let wrapper = KoinHelperKt.wrapPatternLibraryState(flow: vm.state)
-        _observer = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
+        _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
     }
 
     var body: some View {
-        let state = observer.state
+        let state = holder.state
         let hasActiveFilter = !state.searchQuery.isEmpty || state.difficultyFilter != nil
 
         Group {
@@ -74,9 +74,9 @@ struct PatternLibraryScreen: View {
             viewModel.onEvent(event: PatternLibraryEventUpdateSearchQuery(query: newValue))
         }
         .onAppear {
-            searchText = observer.state.searchQuery
+            searchText = holder.state.searchQuery
         }
-        .onChange(of: observer.state.searchQuery) { _, newQuery in
+        .onChange(of: holder.state.searchQuery) { _, newQuery in
             if searchText != newQuery {
                 searchText = newQuery
             }

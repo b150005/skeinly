@@ -44,22 +44,20 @@ enum Route: Hashable {
 
 /// Root view that handles onboarding and auth-gated navigation.
 struct AppRootView: View {
-    let authViewModel: AuthViewModel
-    @StateObject private var authObserver: ViewModelObserver<AuthUiState>
+    @StateObject private var authHolder: ScopedViewModel<AuthViewModel, AuthUiState>
     @State private var path = NavigationPath()
     @State private var pendingDeepLinkToken: String?
     @State private var hasSeenOnboarding: Bool
 
     init() {
         let vm = ViewModelFactory.authViewModel()
-        self.authViewModel = vm
         let wrapper = KoinHelperKt.wrapAuthState(flow: vm.state)
-        _authObserver = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
+        _authHolder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
         _hasSeenOnboarding = State(initialValue: KoinHelperKt.isOnboardingCompleted())
     }
 
     var body: some View {
-        let authState = authObserver.state.authState
+        let authState = authHolder.state.authState
         let isConfigured = SupabaseConfig.shared.isConfigured
 
         // Onboarding is a UX gate only. Auth enforcement via authState cannot be bypassed
@@ -93,7 +91,7 @@ struct AppRootView: View {
             } else if authState is AuthStateLoading {
                 ProgressView("Loading...")
             } else {
-                LoginScreen(viewModel: authViewModel)
+                LoginScreen(viewModel: authHolder.viewModel)
             }
         }
         .onOpenURL { url in
@@ -133,7 +131,7 @@ struct AppRootView: View {
             return
         }
 
-        let authState = authObserver.state.authState
+        let authState = authHolder.state.authState
         if authState is AuthStateAuthenticated {
             path.append(Route.sharedContent(token: token, shareId: nil))
         } else {

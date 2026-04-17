@@ -2,20 +2,20 @@ import SwiftUI
 import Shared
 
 struct SettingsScreen: View {
-    private let viewModel: SettingsViewModel
-    @StateObject private var observer: ViewModelObserver<SettingsState>
+    @StateObject private var holder: ScopedViewModel<SettingsViewModel, SettingsState>
     @State private var showDeleteConfirmation = false
     @State private var showError = false
 
+    private var viewModel: SettingsViewModel { holder.viewModel }
+
     init() {
         let vm = ViewModelFactory.settingsViewModel()
-        self.viewModel = vm
         let wrapper = KoinHelperKt.wrapSettingsState(flow: vm.state)
-        _observer = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
+        _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
     }
 
     var body: some View {
-        let state = observer.state
+        let state = holder.state
 
         Group {
             if state.isLoading {

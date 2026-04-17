@@ -5,9 +5,7 @@ import Shared
 struct ProjectDetailScreen: View {
     let projectId: String
     @Binding var path: NavigationPath
-    private let viewModel: ProjectDetailViewModel
-    @StateObject private var stateObserver: ViewModelObserver<ProjectDetailState>
-    @StateObject private var notesObserver: ViewModelObserver<NSArray>
+    @StateObject private var holder: ProjectDetailHolder
     @State private var showError = false
     @State private var showEditSheet = false
     @State private var showAddNoteSheet = false
@@ -27,20 +25,14 @@ struct ProjectDetailScreen: View {
     init(projectId: String, path: Binding<NavigationPath>) {
         self.projectId = projectId
         self._path = path
-        let vm = ViewModelFactory.projectDetailViewModel(projectId: projectId)
-        self.viewModel = vm
-        let stateWrapper = KoinHelperKt.wrapProjectDetailState(flow: vm.state)
-        _stateObserver = StateObject(wrappedValue: ViewModelObserver(wrapper: stateWrapper))
-        let notesWrapper = KoinHelperKt.wrapProgressNotesState(flow: vm.progressNotes)
-        _notesObserver = StateObject(wrappedValue: ViewModelObserver(wrapper: notesWrapper))
+        _holder = StateObject(wrappedValue: ProjectDetailHolder(projectId: projectId))
     }
 
-    private var notes: [Shared.Progress] {
-        notesObserver.state as? [Shared.Progress] ?? []
-    }
+    private var viewModel: ProjectDetailViewModel { holder.viewModel }
+    private var notes: [Shared.Progress] { holder.notes }
 
     var body: some View {
-        let state = stateObserver.state
+        let state = holder.state
 
         Group {
             if state.isLoading {
@@ -161,7 +153,7 @@ struct ProjectDetailScreen: View {
                     ForEach(notes, id: \.id) { note in
                         NoteRow(
                             note: note,
-                            photoSignedUrl: stateObserver.state.photoSignedUrls[note.id] as? String
+                            photoSignedUrl: holder.state.photoSignedUrls[note.id] as? String
                         )
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {

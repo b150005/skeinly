@@ -82,6 +82,7 @@ targets:
         excludes:
           - "ViewModelObserver.swift"
           - "ViewModelFactory.swift"
+          - "ScopedViewModel.swift"
     settings:
       base:
         SWIFT_VERSION: "5.0"

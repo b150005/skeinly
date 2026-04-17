@@ -1,0 +1,42 @@
+appId: com.knitnote.ios
+name: "P1 - Onboarding Button Navigation"
+tags:
+  - p1
+  - ios
+  - skip-ios26
+---
+# Regression guard for the SwiftUI struct re-init bug where a factory-resolved
+# Koin ViewModel was re-created on every View init, leaving button taps
+# dispatched to an orphan ViewModel while the observer watched the original
+# state flow. Verifies Next advances pages and Get Started completes.
+#
+# skip-ios26 because Maestro 2.4.0 cannot reliably tap SwiftUI Buttons on iOS 26;
+# the XCTest suite covers this path deterministically on local runs.
+
+- clearState: com.knitnote.ios
+
+- launchApp:
+    appId: com.knitnote.ios
+
+- assertVisible: "Track Your Knitting Projects"
+- assertVisible:
+    id: "nextButton"
+
+# Page 1 -> Page 2 via Next
+- tapOn:
+    id: "nextButton"
+- assertVisible: "Count Every Stitch"
+
+# Page 2 -> Page 3 via Next
+- tapOn:
+    id: "nextButton"
+- assertVisible: "Build Your Pattern Library"
+
+# Last page shows Get Started, not Next
+- assertVisible:
+    id: "getStartedButton"
+- tapOn:
+    id: "getStartedButton"
+
+- assertVisible: "Knit Note"
+- assertVisible: "No Projects Yet"

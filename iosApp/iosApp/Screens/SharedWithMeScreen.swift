@@ -3,20 +3,19 @@ import Shared
 
 struct SharedWithMeScreen: View {
     @Binding var path: NavigationPath
-    private let viewModel: SharedWithMeViewModel
-    @StateObject private var observer: ViewModelObserver<SharedWithMeState>
+    @StateObject private var holder: ScopedViewModel<SharedWithMeViewModel, SharedWithMeState>
     @State private var showError = false
 
     init(path: Binding<NavigationPath>) {
         self._path = path
         let vm = ViewModelFactory.sharedWithMeViewModel()
-        self.viewModel = vm
         let wrapper = KoinHelperKt.wrapSharedWithMeState(flow: vm.state)
-        _observer = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
+        _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
     }
 
     var body: some View {
-        let state = observer.state
+        let state = holder.state
+        let viewModel = holder.viewModel
 
         Group {
             if state.isLoading && state.shares.isEmpty {

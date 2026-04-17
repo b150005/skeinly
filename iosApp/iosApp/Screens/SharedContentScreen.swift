@@ -5,22 +5,22 @@ struct SharedContentScreen: View {
     let token: String?
     let shareId: String?
     @Binding var path: NavigationPath
-    private let viewModel: SharedContentViewModel
-    @StateObject private var observer: ViewModelObserver<SharedContentState>
+    @StateObject private var holder: ScopedViewModel<SharedContentViewModel, SharedContentState>
     @State private var showError = false
+
+    private var viewModel: SharedContentViewModel { holder.viewModel }
 
     init(token: String?, shareId: String?, path: Binding<NavigationPath>) {
         self.token = token
         self.shareId = shareId
         self._path = path
         let vm = ViewModelFactory.sharedContentViewModel(token: token, shareId: shareId)
-        self.viewModel = vm
         let wrapper = KoinHelperKt.wrapSharedContentState(flow: vm.state)
-        _observer = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
+        _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
     }
 
     var body: some View {
-        let state = observer.state
+        let state = holder.state
 
         Group {
             if state.isLoading {

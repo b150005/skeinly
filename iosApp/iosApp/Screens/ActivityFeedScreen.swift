@@ -2,18 +2,17 @@ import SwiftUI
 import Shared
 
 struct ActivityFeedScreen: View {
-    private let viewModel: ActivityFeedViewModel
-    @StateObject private var observer: ViewModelObserver<ActivityFeedState>
+    @StateObject private var holder: ScopedViewModel<ActivityFeedViewModel, ActivityFeedState>
 
     init() {
         let vm = ViewModelFactory.activityFeedViewModel()
-        self.viewModel = vm
         let wrapper = KoinHelperKt.wrapActivityFeedState(flow: vm.state)
-        _observer = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
+        _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
     }
 
     var body: some View {
-        let state = observer.state
+        let state = holder.state
+        let viewModel = holder.viewModel
 
         Group {
             if state.isLoading && state.activities.isEmpty {

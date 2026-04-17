@@ -4,21 +4,21 @@ import Shared
 struct PatternEditScreen: View {
     let patternId: String?
     @Binding var path: NavigationPath
-    private let viewModel: PatternEditViewModel
-    @StateObject private var observer: ViewModelObserver<PatternEditState>
+    @StateObject private var holder: ScopedViewModel<PatternEditViewModel, PatternEditState>
     @State private var showError = false
+
+    private var viewModel: PatternEditViewModel { holder.viewModel }
 
     init(patternId: String?, path: Binding<NavigationPath>) {
         self.patternId = patternId
         self._path = path
         let vm = ViewModelFactory.patternEditViewModel(patternId: patternId)
-        self.viewModel = vm
         let wrapper = KoinHelperKt.wrapPatternEditState(flow: vm.state)
-        _observer = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
+        _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
     }
 
     var body: some View {
-        let state = observer.state
+        let state = holder.state
 
         Group {
             if state.isLoading {

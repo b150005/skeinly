@@ -2,18 +2,17 @@ import SwiftUI
 import Shared
 
 struct LoginScreen: View {
-    let viewModel: AuthViewModel
-    @StateObject private var observer: ViewModelObserver<AuthUiState>
+    @StateObject private var holder: ScopedViewModel<AuthViewModel, AuthUiState>
     @State private var showError = false
 
     init(viewModel: AuthViewModel) {
-        self.viewModel = viewModel
         let wrapper = KoinHelperKt.wrapAuthState(flow: viewModel.state)
-        _observer = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
+        _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: viewModel, wrapper: wrapper))
     }
 
     var body: some View {
-        let state = observer.state
+        let state = holder.state
+        let viewModel = holder.viewModel
 
         VStack(spacing: 24) {
             Spacer()

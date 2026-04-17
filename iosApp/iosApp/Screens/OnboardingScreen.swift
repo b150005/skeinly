@@ -4,19 +4,18 @@ import Shared
 struct OnboardingScreen: View {
     let onComplete: () -> Void
 
-    private let viewModel: OnboardingViewModel
-    @StateObject private var observer: ViewModelObserver<OnboardingState>
+    @StateObject private var holder: ScopedViewModel<OnboardingViewModel, OnboardingState>
 
     init(onComplete: @escaping () -> Void) {
         self.onComplete = onComplete
         let vm = ViewModelFactory.onboardingViewModel()
-        self.viewModel = vm
         let wrapper = KoinHelperKt.wrapOnboardingState(flow: vm.state)
-        _observer = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
+        _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
     }
 
     var body: some View {
-        let state = observer.state
+        let state = holder.state
+        let viewModel = holder.viewModel
 
         VStack(spacing: 0) {
             // Skip button

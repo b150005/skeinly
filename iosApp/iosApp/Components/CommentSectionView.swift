@@ -4,9 +4,10 @@ import Shared
 struct CommentSectionView: View {
     let targetType: CommentTargetType
     let targetId: String
-    private let viewModel: CommentSectionViewModel
-    @StateObject private var observer: ViewModelObserver<CommentSectionState>
+    @StateObject private var holder: ScopedViewModel<CommentSectionViewModel, CommentSectionState>
     @State private var commentText = ""
+
+    private var viewModel: CommentSectionViewModel { holder.viewModel }
 
     init(targetType: CommentTargetType, targetId: String) {
         self.targetType = targetType
@@ -15,13 +16,12 @@ struct CommentSectionView: View {
             targetType: targetType,
             targetId: targetId
         )
-        self.viewModel = vm
         let wrapper = KoinHelperKt.wrapCommentSectionState(flow: vm.state)
-        _observer = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
+        _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
     }
 
     var body: some View {
-        let state = observer.state
+        let state = holder.state
 
         VStack(alignment: .leading, spacing: 12) {
             HStack {

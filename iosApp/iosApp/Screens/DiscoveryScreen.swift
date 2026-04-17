@@ -3,17 +3,17 @@ import Shared
 
 struct DiscoveryScreen: View {
     @Binding var path: NavigationPath
-    private let viewModel: DiscoveryViewModel
-    @StateObject private var observer: ViewModelObserver<DiscoveryState>
+    @StateObject private var holder: ScopedViewModel<DiscoveryViewModel, DiscoveryState>
     @State private var showError = false
     @State private var searchText = ""
+
+    private var viewModel: DiscoveryViewModel { holder.viewModel }
 
     init(path: Binding<NavigationPath>) {
         self._path = path
         let vm = ViewModelFactory.discoveryViewModel()
-        self.viewModel = vm
         let wrapper = KoinHelperKt.wrapDiscoveryState(flow: vm.state)
-        _observer = StateObject(wrappedValue: ViewModelObserver(wrapper: wrapper))
+        _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
     }
 
     var body: some View {
@@ -22,17 +22,17 @@ struct DiscoveryScreen: View {
             .onChange(of: searchText) { _, newValue in
                 viewModel.onEvent(event: DiscoveryEventUpdateSearchQuery(query: newValue))
             }
-            .onAppear { searchText = observer.state.searchQuery }
-            .onChange(of: observer.state.searchQuery) { _, newQuery in
+            .onAppear { searchText = holder.state.searchQuery }
+            .onChange(of: holder.state.searchQuery) { _, newQuery in
                 if searchText != newQuery { searchText = newQuery }
             }
-            .onChange(of: observer.state.error) { _, newError in
+            .onChange(of: holder.state.error) { _, newError in
                 showError = newError != nil
             }
             .alert("Error", isPresented: $showError) {
                 Button("OK") { viewModel.onEvent(event: DiscoveryEventClearError.shared) }
             } message: {
-                Text(observer.state.error ?? "")
+                Text(holder.state.error ?? "")
             }
             .navigationTitle("Discover Patterns")
             .navigationBarTitleDisplayMode(.inline)
@@ -43,7 +43,7 @@ struct DiscoveryScreen: View {
 
     @ViewBuilder
     private var contentView: some View {
-        let state = observer.state
+        let state = holder.state
         let hasActiveFilter = !state.searchQuery.isEmpty || state.difficultyFilter != nil
 
         if state.isLoading && state.patterns.isEmpty {
@@ -98,12 +98,12 @@ struct DiscoveryScreen: View {
                 Button {
                     viewModel.onEvent(event: DiscoveryEventUpdateSortOrder(order: .recent))
                 } label: {
-                    Label("Recent", systemImage: observer.state.sortOrder == .recent ? "checkmark" : "")
+                    Label("Recent", systemImage: holder.state.sortOrder == .recent ? "checkmark" : "")
                 }
                 Button {
                     viewModel.onEvent(event: DiscoveryEventUpdateSortOrder(order: .alphabetical))
                 } label: {
-                    Label("Alphabetical", systemImage: observer.state.sortOrder == .alphabetical ? "checkmark" : "")
+                    Label("Alphabetical", systemImage: holder.state.sortOrder == .alphabetical ? "checkmark" : "")
                 }
             } label: {
                 Image(systemName: "arrow.up.arrow.down")
@@ -113,7 +113,7 @@ struct DiscoveryScreen: View {
 
     @ViewBuilder
     private var forkingOverlay: some View {
-        if observer.state.forkingPatternId != nil {
+        if holder.state.forkingPatternId != nil {
             ProgressView("Forking pattern...")
                 .padding()
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
