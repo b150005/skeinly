@@ -18,6 +18,7 @@ import io.github.b150005.knitnote.domain.usecase.GetOnboardingCompletedUseCase
 import io.github.b150005.knitnote.ui.activityfeed.ActivityFeedScreen
 import io.github.b150005.knitnote.ui.auth.AuthViewModel
 import io.github.b150005.knitnote.ui.auth.LoginScreen
+import io.github.b150005.knitnote.ui.chart.ChartViewerScreen
 import io.github.b150005.knitnote.ui.discovery.DiscoveryScreen
 import io.github.b150005.knitnote.ui.onboarding.OnboardingScreen
 import io.github.b150005.knitnote.ui.patternedit.PatternEditScreen
@@ -68,6 +69,11 @@ data class PatternEdit(
 
 @Serializable
 data object Discovery
+
+@Serializable
+data class ChartViewer(
+    val patternId: String,
+)
 
 @Serializable
 data class SharedContent(
@@ -240,6 +246,16 @@ fun KnitNoteNavHost(
             val route = backStackEntry.toRoute<ProjectDetail>()
             ProjectDetailScreen(
                 projectId = route.projectId,
+                onBack = { navController.popBackStack() },
+                onChartViewerClick = { patternId ->
+                    navController.navigate(ChartViewer(patternId = patternId))
+                },
+            )
+        }
+        composable<ChartViewer> { backStackEntry ->
+            val route = backStackEntry.toRoute<ChartViewer>()
+            ChartViewerScreen(
+                patternId = route.patternId,
                 onBack = { navController.popBackStack() },
             )
         }

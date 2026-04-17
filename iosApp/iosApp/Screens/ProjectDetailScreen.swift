@@ -110,7 +110,13 @@ struct ProjectDetailScreen: View {
             // Pattern info section
             if let pattern = state.pattern {
                 Section("Pattern Info") {
-                    patternInfoSection(pattern, hasStructuredChart: state.hasStructuredChart)
+                    patternInfoSection(
+                        pattern,
+                        hasStructuredChart: state.hasStructuredChart,
+                        onChartViewerTap: {
+                            path.append(Route.chartViewer(patternId: pattern.id))
+                        }
+                    )
                 }
             }
 
@@ -230,13 +236,19 @@ struct ProjectDetailScreen: View {
     // MARK: - Pattern Info Section
 
     @ViewBuilder
-    private func patternInfoSection(_ pattern: Pattern, hasStructuredChart: Bool) -> some View {
+    private func patternInfoSection(
+        _ pattern: Pattern,
+        hasStructuredChart: Bool,
+        onChartViewerTap: @escaping () -> Void
+    ) -> some View {
         LabeledContent("Title", value: pattern.title)
 
         if hasStructuredChart {
-            Label("Structured chart available", systemImage: "square.grid.3x3")
-                .font(.caption)
-                .foregroundStyle(.tint)
+            Button(action: onChartViewerTap) {
+                Label("View structured chart", systemImage: "square.grid.3x3")
+                    .font(.caption)
+            }
+            .accessibilityIdentifier("openChartViewerLink")
         }
 
         if let difficulty = pattern.difficulty {

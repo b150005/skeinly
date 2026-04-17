@@ -12,6 +12,7 @@ enum Route: Hashable {
     case discovery
     case patternLibrary
     case patternEdit(patternId: String?)
+    case chartViewer(patternId: String)
 
     // Hashable conformance for sharedContent with optionals
     func hash(into hasher: inout Hasher) {
@@ -37,6 +38,9 @@ enum Route: Hashable {
             hasher.combine("patternLibrary")
         case .patternEdit(let patternId):
             hasher.combine("patternEdit")
+            hasher.combine(patternId)
+        case .chartViewer(let patternId):
+            hasher.combine("chartViewer")
             hasher.combine(patternId)
         }
     }
@@ -120,6 +124,8 @@ struct AppRootView: View {
             PatternLibraryScreen(path: $path)
         case .patternEdit(let patternId):
             PatternEditScreen(patternId: patternId, path: $path)
+        case .chartViewer(let patternId):
+            StructuredChartViewerScreen(patternId: patternId)
         }
     }
 

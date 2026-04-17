@@ -42,6 +42,8 @@ import io.github.b150005.knitnote.domain.repository.ShareRepository
 import io.github.b150005.knitnote.domain.repository.StorageOperations
 import io.github.b150005.knitnote.domain.repository.StructuredChartRepository
 import io.github.b150005.knitnote.domain.repository.UserRepository
+import io.github.b150005.knitnote.domain.symbol.SymbolCatalog
+import io.github.b150005.knitnote.domain.symbol.catalog.DefaultSymbolCatalog
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.CoroutineScope
 import org.koin.dsl.module
@@ -145,4 +147,6 @@ val repositoryModule =
             getOrNull<RemoteUserDataSource>()?.let { UserRepositoryImpl(it) }
                 ?: OfflineUserRepository()
         }
+        // Bundled knitting symbol catalog (Phase 30 + 31).
+        single<SymbolCatalog> { DefaultSymbolCatalog.INSTANCE }
     }

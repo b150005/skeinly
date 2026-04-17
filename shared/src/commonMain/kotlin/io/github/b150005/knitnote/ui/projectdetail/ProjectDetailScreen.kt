@@ -85,6 +85,7 @@ import org.koin.core.parameter.parametersOf
 fun ProjectDetailScreen(
     projectId: String,
     onBack: () -> Unit,
+    onChartViewerClick: (String) -> Unit = {},
     viewModel: ProjectDetailViewModel = koinViewModel { parametersOf(projectId) },
 ) {
     val state by viewModel.state.collectAsState()
@@ -286,7 +287,15 @@ fun ProjectDetailScreen(
                         state.pattern?.let { pattern ->
                             item {
                                 Spacer(modifier = Modifier.height(16.dp))
-                                PatternInfoSection(pattern, hasStructuredChart = state.hasStructuredChart)
+                                PatternInfoSection(
+                                    pattern = pattern,
+                                    hasStructuredChart = state.hasStructuredChart,
+                                    onChartViewerClick = {
+                                        if (state.hasStructuredChart) {
+                                            onChartViewerClick(pattern.id)
+                                        }
+                                    },
+                                )
                             }
                         }
 
@@ -785,6 +794,7 @@ private fun EditProjectDialog(
 private fun PatternInfoSection(
     pattern: Pattern,
     hasStructuredChart: Boolean,
+    onChartViewerClick: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 16.dp),
@@ -796,9 +806,13 @@ private fun PatternInfoSection(
         )
         if (hasStructuredChart) {
             Text(
-                text = "Structured chart available",
+                text = "View structured chart",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
+                modifier =
+                    Modifier
+                        .clickable(onClick = onChartViewerClick)
+                        .testTag("openChartViewerLink"),
             )
         }
         pattern.difficulty?.let { difficulty ->

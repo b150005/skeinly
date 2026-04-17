@@ -5,9 +5,11 @@ import io.github.b150005.knitnote.data.remote.isConfigured
 import io.github.b150005.knitnote.di.platformModule
 import io.github.b150005.knitnote.di.sharedModules
 import io.github.b150005.knitnote.domain.model.CommentTargetType
+import io.github.b150005.knitnote.domain.symbol.SymbolCatalog
 import io.github.b150005.knitnote.domain.usecase.GetOnboardingCompletedUseCase
 import io.github.b150005.knitnote.ui.activityfeed.ActivityFeedViewModel
 import io.github.b150005.knitnote.ui.auth.AuthViewModel
+import io.github.b150005.knitnote.ui.chart.ChartViewerViewModel
 import io.github.b150005.knitnote.ui.comments.CommentSectionViewModel
 import io.github.b150005.knitnote.ui.onboarding.OnboardingViewModel
 import io.github.b150005.knitnote.ui.patternedit.PatternEditViewModel
@@ -71,6 +73,10 @@ fun getSharedContentViewModel(
     token: String?,
     shareId: String?,
 ): SharedContentViewModel = KoinPlatform.getKoin().get { parametersOf(token, shareId) }
+
+fun getChartViewerViewModel(patternId: String): ChartViewerViewModel = KoinPlatform.getKoin().get { parametersOf(patternId) }
+
+fun getSymbolCatalog(): SymbolCatalog = KoinPlatform.getKoin().get()
 
 // Type-safe FlowWrapper factories for Swift (eliminates as! force-casts)
 
@@ -137,6 +143,10 @@ fun wrapCommentSectionState(
 ): FlowWrapper<io.github.b150005.knitnote.ui.comments.CommentSectionState> = FlowWrapper(flow)
 
 fun wrapForkedProjectIdFlow(flow: kotlinx.coroutines.flow.Flow<String>): EventFlowWrapper<String> = EventFlowWrapper(flow)
+
+fun wrapChartViewerState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.knitnote.ui.chart.ChartViewerState>,
+): FlowWrapper<io.github.b150005.knitnote.ui.chart.ChartViewerState> = FlowWrapper(flow)
 
 @OptIn(ExperimentalForeignApi::class)
 fun nsDataToByteArray(data: platform.Foundation.NSData): ByteArray {
