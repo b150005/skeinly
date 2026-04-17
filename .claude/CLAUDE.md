@@ -249,7 +249,26 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 27b**: v1 Store Submission Prep (Session 2) — 5 missing ProGuard navigation routes (Onboarding, Settings, PatternLibrary, PatternEdit, Discovery), GitHub Pages privacy policy deployment (EN/JA static HTML, pages.yml workflow), feature graphic real app icon (emoji→512px PNG), GitHub Pages enabled via API (591 shared tests)
 
-### Planned
-- **Phase 27c**: v1 Store Submission (Final) — GitHub Actions signing secrets setup, IARC content rating, Apple reviewer demo account, Maestro screenshot capture + framing, feature graphic PNG capture, `v1.0.0` tag + release, Play Console + App Store Connect submission
-- **Phase 24**: Push Notifications — FCM/APNs, Supabase Edge Functions (v1.1)
-- **Phase 21**: macOS Target — Post-launch, based on user demand
+- **Phase 27.1**: iOS ViewModel Lifecycle Fix — ScopedViewModel/ProjectDetailHolder holders pin Koin-resolved ViewModels across SwiftUI View re-inits, fixing a real-device onboarding bug where Next/Skip button taps dispatched events to orphan ViewModels while observers stayed bound to the original state flow. Migrated all 12 iOS screens + AppRootView to the holder pattern; added 2 XCTest regression cases and a Maestro `nextButton` flow. Android E2E stabilized against Pixel Launcher ANR via emulator RAM bump (4096 MB), VM heap (1024 MB), CPU pinning, cold-boot settle and dialog-dismiss loops. ADR-007 records the pivot away from v1.0 store submission. (591 shared + 21 iOS UI tests)
+
+### Deferred (superseded by ADR-007)
+- **Phase 27c**: v1 Store Submission (Final) — staged but not executed. Will re-open only after the structured chart vision (Phase 28–38) reaches beta readiness.
+
+### Planned — Structured Chart Authoring (per ADR-007)
+- **Phase 28**: Bundle ID Rename — `com.knitnote.*` → `io.github.b150005.knitnote` across iOS bundle ID, URL scheme, Android applicationId, Kotlin package, Supabase config, privacy policy URLs, docs, Maestro flows, CI
+- **Phase 29**: Structured Chart Data Model — `StructuredChart` schema (layers, cells, symbol ids, coordinates), SQLDelight migration, Supabase `chart_documents` jsonb table, basic CRUD; `Pattern.chartImageUrl` retained for legacy photo charts
+- **Phase 30**: Symbol Library — JIS-standard knitting symbols rendered in shared SVG path definitions, platform-native Canvas drawing (Compose + SwiftUI), bilingual symbol dictionary UI with JA/EN descriptions
+- **Phase 31**: Chart Viewer — zoom/pan, layer toggle, progress overlay (todo/wip/done colouring), portrait + landscape layouts
+- **Phase 32**: Chart Editor (MVP) — symbol palette, tap-to-place, undo/redo, save; minimal layouts (grid + single round)
+- **Phase 33**: i18n JA/EN — Compose `stringResource` catalogue, SwiftUI `Localizable.xcstrings`, docs/README translations audit, date-format locale awareness
+- **Phase 34**: Per-Segment Progress — stitch/section granularity for todo/wip/done, progress visualization overlays on the chart viewer
+- **Phase 35**: Chart Editor (Advanced) — symmetry copy, layer ops, snap grid, polar-coordinate (round) mode
+- **Phase 36**: Chart Discovery + Fork — extend Discovery to structured charts, upgrade fork to a commit-rooted copy with author attribution
+- **Phase 37**: Collaboration Core — commit history, branch, diff view (MVP). Minimal Git semantics; no CRDT in v1
+- **Phase 38**: Pull Request — comment + approval workflow, merge strategies, conflict visualization
+- **Phase 39**: Closed Beta — TestFlight internal + Play Internal Testing distribution to invited users; data migration compat freezes here
+- **Phase 40**: v1.0 Public Release — re-open the Phase 27c submission work with the finalized product name and bundle ID
+
+### Post-v1.0
+- **Phase 24**: Push Notifications — FCM/APNs, Supabase Edge Functions
+- **Phase 21**: macOS Target — based on user demand after v1.0
