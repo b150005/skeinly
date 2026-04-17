@@ -65,30 +65,19 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: true
           script: |
-            # Let the emulator settle after boot so Pixel Launcher can finish starting
-            # before we install and launch our app. ANR dialogs from the launcher
-            # overlap the app UI and cause Maestro `assertVisible` to fail with the
-            # onboarding text hidden behind the dialog.
             sleep 30
-
-            # Loop dismissing system dialogs until none reappear (ANR dialog can
-            # resurface within a second of being dismissed while the emulator is
-            # still thrashing).
-            for i in 1 2 3 4 5; do
-              adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null || true
-              sleep 2
-            done
-
+            adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
+            sleep 2
+            adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
+            sleep 2
+            adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
+            sleep 2
+            adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
+            sleep 2
             adb install -r androidApp/build/outputs/apk/debug/androidApp-debug.apk
-
-            # One more settle + dismiss pass after install; the install itself can
-            # pressure the system and trigger a fresh ANR.
             sleep 5
-            adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null || true
-
-            maestro test \
-              --exclude-tags requires-supabase \
-              e2e/flows/android/
+            adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
+            maestro test --exclude-tags requires-supabase e2e/flows/android/
 
       - name: Upload Maestro screenshots
         if: always()
