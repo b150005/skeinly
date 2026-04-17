@@ -254,6 +254,8 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 28**: Bundle ID Rename — `com.knitnote.*` → `io.github.b150005.knitnote` across Kotlin packages (322 files, 9 source-root directories moved), SQLDelight package, iOS bundle ID + bundleIdPrefix + CFBundleURLName, Android applicationId + namespace, ProGuard rules, Kover exclusions, generated SupabaseCredentials package, Maestro E2E flow appIds (Android + iOS), store-listing + e2e docs. `knitnote://` URL scheme, `knitnote.db` filename, "Knit Note" display name, and `KnitNote*` class names preserved. (591 shared tests × 2 platforms + 19 iOS UI tests)
 
+- **Phase 31**: Structured Chart Viewer — `SymbolRenderTransform` pure helper (commonMain) maps unit-square (y-down, 0..1) symbol coordinates to a screen-space cell rect with axis-aligned rotation around the cell center (consumed by both renderers). Compose `ChartViewerScreen` (Scaffold + Canvas + grid background + FilterChip layer toggles + `Modifier.transformable` pan/zoom + parsed-path memoization + parameter-slot text + `?` placeholder for unknown symbol ids). SwiftUI `StructuredChartViewerScreen` mirror via shared bridge (`ScopedViewModel` pattern, magnification + drag gestures, `PathCommandCache` `ObservableObject`). `ChartViewerViewModel` observes by patternId with error surfacing. Wired through Koin (`SymbolCatalog` single, ViewModel factory), NavGraph (`ChartViewer(patternId)`), and ProjectDetail "View structured chart" entry on both platforms. +15 commonTest (SymbolRenderTransform 12 + ChartViewerViewModel 3 then later 4 with error path).
+
 ### Deferred (superseded by ADR-007)
 - **Phase 27c**: v1 Store Submission (Final) — staged but not executed. Will re-open only after the structured chart vision (Phase 29–40) reaches beta readiness.
 
@@ -261,7 +263,7 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 - **Phase 29**: Structured Chart Data Model — `StructuredChart` schema (layers, cells, symbol ids, coordinates), SQLDelight migration, Supabase `chart_documents` jsonb table, basic CRUD; `Pattern.chartImageUrl` retained for legacy photo charts
 - **Phase 30**: Symbol Library — JIS-standard knitting symbols rendered in shared SVG path definitions, platform-native Canvas drawing (Compose + SwiftUI), bilingual symbol dictionary UI with JA/EN descriptions
 - **Phase 30.5**: Knitter agent + symbol sources policy — `.claude/agents/knitter.md` first-pass domain reviewer; ADR-008 "Symbol sources policy" addendum codifies JIS-as-reference, `std.<house>.*` / `std.cyc.*` / `user.*` namespaces, catalog non-exhaustiveness
-- **Phase 31**: Chart Viewer — zoom/pan, layer toggle, progress overlay (todo/wip/done colouring), portrait + landscape layouts; first visual verification of the Phase 30 JIS symbol set
+- **Phase 30.1**: Knitter + user review meeting after Phase 31 visual check — score the 35 jis.knit.* glyphs as rendered, decide priority for next catalog category (crochet / afghan / machine), and flag any geometry bugs to fix back in `KnitSymbols.kt`
 - **Phase 32**: Chart Editor (MVP) — symbol palette, tap-to-place, undo/redo, save; minimal layouts (grid + single round)
 - **Phase 33**: i18n JA/EN — Compose `stringResource` catalogue, SwiftUI `Localizable.xcstrings`, docs/README translations audit, date-format locale awareness
 - **Phase 34**: Per-Segment Progress — stitch/section granularity for todo/wip/done, progress visualization overlays on the chart viewer
