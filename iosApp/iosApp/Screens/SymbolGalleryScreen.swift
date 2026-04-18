@@ -182,11 +182,17 @@ private struct SymbolCardView: View {
                 break
             }
         }
-        context.stroke(
-            path,
-            with: .color(.primary),
-            style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round)
-        )
+        // Honour SymbolDefinition.fill so filled glyphs (e.g. sl-st) read as
+        // solid in the gallery as well as the chart viewer. Phase 30.2-fix.
+        if definition.fill {
+            context.fill(path, with: .color(.primary))
+        } else {
+            context.stroke(
+                path,
+                with: .color(.primary),
+                style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round)
+            )
+        }
     }
 }
 

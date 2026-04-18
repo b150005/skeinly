@@ -58,36 +58,40 @@ internal object CrochetSymbols {
         SymbolDefinition(
             id = id("sl-st"),
             category = SymbolCategory.CROCHET,
-            // Small closed disc — stroked as a tight outlined ellipse. JIS L 0201
-            // Table 2 specifies a filled dot/triangle; stroked rendering is a
-            // first-pass approximation and is called out in the Phase 30.2 review.
+            // Small filled disc — JIS L 0201 Table 2 + CYC + every JP publisher
+            // (Vogue / Bunka / Ondori) render sl-st as a solid filled dot. Phase
+            // 30.2-fix flipped this from a stroked outline to a filled glyph by
+            // setting `fill = true`; the path itself is the same closed ellipse.
             pathData =
                 "M 0.4 0.5 " +
                     "C 0.4 0.42 0.45 0.35 0.5 0.35 " +
                     "C 0.55 0.35 0.6 0.42 0.6 0.5 " +
                     "C 0.6 0.58 0.55 0.65 0.5 0.65 " +
                     "C 0.45 0.65 0.4 0.58 0.4 0.5 Z",
+            fill = true,
             jaLabel = "引き抜き編み",
             enLabel = "Slip stitch (sl st)",
             jisReference = JIS_REF,
             cycName = "sl st",
             jaDescription = "最小の高さで糸を引き抜く。記号は小さな黒丸。",
-            enDescription = "Shortest crochet stitch; rendered as a small dot.",
+            enDescription = "Shortest crochet stitch; rendered as a small filled dot.",
         )
 
     private val sc =
         SymbolDefinition(
             id = id("sc"),
             category = SymbolCategory.CROCHET,
-            // Short plus sign — vertical + horizontal of equal half-height, kept
-            // inside the cell so sc / hdc / dc visually scale with stitch height.
-            pathData = "M 0.5 0.25 L 0.5 0.75 M 0.3 0.5 L 0.7 0.5",
+            // Short inclined cross (×) — JIS L 0201 Table 2 form; most JP
+            // publishers (Vogue / Bunka) use the same. Phase 30.2-fix switched
+            // from the CYC `+` to JIS `×` to align with the `jis.*` namespace
+            // authority chosen in ADR-008.
+            pathData = "M 0.3 0.3 L 0.7 0.7 M 0.7 0.3 L 0.3 0.7",
             jaLabel = "細編み",
             enLabel = "Single crochet (sc)",
             jisReference = JIS_REF,
             cycName = "sc",
-            jaDescription = "引き抜き編みの次に低い編み目。記号は短い十字。",
-            enDescription = "Shortest standing crochet stitch; rendered as a short plus.",
+            jaDescription = "引き抜き編みの次に低い編み目。記号は短い斜め十字（×）。",
+            enDescription = "Shortest standing crochet stitch; rendered as a short inclined cross.",
         )
 
     private val hdc =
@@ -192,12 +196,14 @@ internal object CrochetSymbols {
         SymbolDefinition(
             id = id("sc2tog"),
             category = SymbolCategory.CROCHET,
-            // Two sc strokes angled inward and meeting at a shared top apex, with
-            // a single crossbar spanning both arms (the sc "+" signature).
+            // Two sc strokes angled inward and meeting at a shared top apex,
+            // with a short crossbar spanning the arms close to the apex (the
+            // JIS sc-cross signature near y≈0.30). Phase 30.2-fix moved the bar
+            // up from y=0.55 → y=0.30 to match JIS authority for the namespace.
             pathData =
                 "M 0.25 0.9 L 0.5 0.25 " +
                     "M 0.75 0.9 L 0.5 0.25 " +
-                    "M 0.3 0.55 L 0.7 0.55",
+                    "M 0.38 0.32 L 0.62 0.32",
             jaLabel = "細編み2目一度",
             enLabel = "Single crochet 2 together (sc2tog)",
             jisReference = JIS_REF,
@@ -209,12 +215,13 @@ internal object CrochetSymbols {
             id = id("sc3tog"),
             category = SymbolCategory.CROCHET,
             // Three sc strokes (left / centre / right) converging at the apex
-            // with a single crossbar spanning the group.
+            // with a short crossbar spanning the converging arms close to the
+            // apex (JIS form). Phase 30.2-fix moved the bar from y=0.55 → y=0.28.
             pathData =
                 "M 0.2 0.9 L 0.5 0.2 " +
                     "M 0.5 0.9 L 0.5 0.2 " +
                     "M 0.8 0.9 L 0.5 0.2 " +
-                    "M 0.25 0.55 L 0.75 0.55",
+                    "M 0.35 0.28 L 0.65 0.28",
             jaLabel = "細編み3目一度",
             enLabel = "Single crochet 3 together (sc3tog)",
             jisReference = JIS_REF,
@@ -225,12 +232,19 @@ internal object CrochetSymbols {
         SymbolDefinition(
             id = id("dc2tog"),
             category = SymbolCategory.CROCHET,
-            // Two dc strokes angled inward, joined by a short horizontal at the
-            // apex (their shared top bar), with one slash per stroke.
+            // Two dc strokes angled inward joined by a long horizontal top-bar
+            // that visibly extends past the outermost stroke endpoints. Phase
+            // 30.2-fix widened the top-bar from `0.4→0.6` to `0.15→0.85` so the
+            // open horizontal line is clearly distinguishable from the closed
+            // oval used by `dc-cluster-3`/`-5` at 24dp. The two slashes mirror
+            // each other around the vertical centreline (JIS dec convention,
+            // distinct from the uniform-direction slashes used on the cluster
+            // glyphs); each one crosses its arm near (0.31, 0.54) on the left
+            // and (0.70, 0.54) on the right.
             pathData =
                 "M 0.2 0.9 L 0.4 0.18 " +
                     "M 0.8 0.9 L 0.6 0.18 " +
-                    "M 0.4 0.18 L 0.6 0.18 " +
+                    "M 0.15 0.18 L 0.85 0.18 " +
                     "M 0.15 0.5 L 0.35 0.55 " +
                     "M 0.65 0.55 L 0.85 0.5",
             jaLabel = "長編み2目一度",
@@ -243,13 +257,15 @@ internal object CrochetSymbols {
         SymbolDefinition(
             id = id("dc3tog"),
             category = SymbolCategory.CROCHET,
-            // Three dc strokes (outer pair angled, centre vertical) sharing a top
-            // bar, each carrying a slash.
+            // Three dc strokes (outer pair angled, centre vertical) sharing a
+            // long horizontal top-bar that extends past the outermost stroke
+            // endpoints. Phase 30.2-fix widened the top-bar from `0.4→0.6` to
+            // `0.10→0.90` to disambiguate from the cluster oval at 24dp.
             pathData =
                 "M 0.15 0.9 L 0.4 0.18 " +
                     "M 0.5 0.9 L 0.5 0.18 " +
                     "M 0.85 0.9 L 0.6 0.18 " +
-                    "M 0.4 0.18 L 0.6 0.18 " +
+                    "M 0.1 0.18 L 0.9 0.18 " +
                     "M 0.1 0.5 L 0.3 0.55 " +
                     "M 0.4 0.55 L 0.6 0.55 " +
                     "M 0.7 0.55 L 0.9 0.5",
@@ -368,14 +384,16 @@ internal object CrochetSymbols {
             category = SymbolCategory.CROCHET,
             // Large open circle with an internal cross marking the ring centre —
             // visually distinct from `jis.knit.yo` which is smaller and unmarked.
+            // Phase 30.2-fix widened the centre cross from `0.45–0.55` to
+            // `0.40–0.60` so the cross is still legible at the 24dp gallery size.
             pathData =
                 "M 0.5 0.1 " +
                     "C 0.72 0.1 0.9 0.28 0.9 0.5 " +
                     "C 0.9 0.72 0.72 0.9 0.5 0.9 " +
                     "C 0.28 0.9 0.1 0.72 0.1 0.5 " +
                     "C 0.1 0.28 0.28 0.1 0.5 0.1 Z " +
-                    "M 0.45 0.5 L 0.55 0.5 " +
-                    "M 0.5 0.45 L 0.5 0.55",
+                    "M 0.4 0.5 L 0.6 0.5 " +
+                    "M 0.5 0.4 L 0.5 0.6",
             jaLabel = "輪の作り目",
             enLabel = "Magic ring",
             jisReference = JIS_REF,
@@ -392,40 +410,42 @@ internal object CrochetSymbols {
         SymbolDefinition(
             id = id("fpdc"),
             category = SymbolCategory.CROCHET,
-            // dc base shortened, plus a right-pointing hook at the base indicating
-            // the hook reaches around the front of the post.
+            // dc base shortened, plus a quadratic-curve C-wrap at the base
+            // sweeping right and down to evoke the hook wrapping around the
+            // front of the previous-row post. Phase 30.2-fix replaced the prior
+            // L-shape (which read as an arrow rather than a wrap) with a single
+            // quadratic curve per Knitter advisory §3.3 + §6 follow-up.
             pathData =
                 "M 0.5 0.1 L 0.5 0.8 " +
                     "M 0.3 0.1 L 0.7 0.1 " +
                     "M 0.3 0.3 L 0.7 0.4 " +
-                    "M 0.5 0.8 L 0.75 0.8 " +
-                    "M 0.75 0.8 L 0.75 0.95",
+                    "M 0.5 0.8 Q 0.85 0.8 0.85 0.95",
             jaLabel = "表引き上げ長編み",
             enLabel = "Front-post dc (fpdc)",
             jisReference = JIS_REF,
             cycName = "fpdc",
-            jaDescription = "前段の目の柱を手前側から拾って編む。記号は長編み＋右向きの鉤。",
-            enDescription = "dc worked around the front of a post; rendered as dc with a right hook.",
+            jaDescription = "前段の目の柱を手前側から拾って編む。記号は長編み＋右向きに巻く鉤。",
+            enDescription = "dc worked around the front of a post; rendered as dc with a right C-wrap.",
         )
 
     private val bpdc =
         SymbolDefinition(
             id = id("bpdc"),
             category = SymbolCategory.CROCHET,
-            // Mirror of fpdc — the hook points left, indicating the back of the
-            // post.
+            // Mirror of fpdc — the C-wrap sweeps left and down for the back of
+            // the post. Phase 30.2-fix replaced the prior L-shape with a
+            // quadratic curve.
             pathData =
                 "M 0.5 0.1 L 0.5 0.8 " +
                     "M 0.3 0.1 L 0.7 0.1 " +
                     "M 0.3 0.3 L 0.7 0.4 " +
-                    "M 0.5 0.8 L 0.25 0.8 " +
-                    "M 0.25 0.8 L 0.25 0.95",
+                    "M 0.5 0.8 Q 0.15 0.8 0.15 0.95",
             jaLabel = "裏引き上げ長編み",
             enLabel = "Back-post dc (bpdc)",
             jisReference = JIS_REF,
             cycName = "bpdc",
-            jaDescription = "前段の目の柱を奥側から拾って編む。記号は長編み＋左向きの鉤。",
-            enDescription = "dc worked around the back of a post; rendered as dc with a left hook.",
+            jaDescription = "前段の目の柱を奥側から拾って編む。記号は長編み＋左向きに巻く鉤。",
+            enDescription = "dc worked around the back of a post; rendered as dc with a left C-wrap.",
         )
 
     // endregion
@@ -436,11 +456,13 @@ internal object CrochetSymbols {
         SymbolDefinition(
             id = id("sc-fl"),
             category = SymbolCategory.CROCHET,
-            // sc glyph with a downward semicircle below indicating "work into the
-            // front loop only". The arc opens downward.
+            // sc inclined cross compressed into the upper portion of the cell
+            // so the front-loop arc has clearance below. Phase 30.2-fix kept
+            // these in sync with the JIS `×` form chosen for `sc`; mismatched
+            // bases (sc=× vs sc-fl=+) would read as different stitches.
             pathData =
-                "M 0.5 0.2 L 0.5 0.7 " +
-                    "M 0.3 0.45 L 0.7 0.45 " +
+                "M 0.3 0.2 L 0.7 0.7 " +
+                    "M 0.7 0.2 L 0.3 0.7 " +
                     "M 0.3 0.78 Q 0.5 0.95 0.7 0.78",
             jaLabel = "細編み（すじ編み 手前側）",
             enLabel = "sc in front loop only (FLO)",
@@ -452,11 +474,11 @@ internal object CrochetSymbols {
         SymbolDefinition(
             id = id("sc-bl"),
             category = SymbolCategory.CROCHET,
-            // sc glyph with an upward (inverted) semicircle below indicating
-            // "back loop only". The arc opens upward.
+            // Mirror of sc-fl with an upward-opening arc indicating BLO. Phase
+            // 30.2-fix synchronised the cross with the JIS `×` form on `sc`.
             pathData =
-                "M 0.5 0.2 L 0.5 0.7 " +
-                    "M 0.3 0.45 L 0.7 0.45 " +
+                "M 0.3 0.2 L 0.7 0.7 " +
+                    "M 0.7 0.2 L 0.3 0.7 " +
                     "M 0.3 0.92 Q 0.5 0.75 0.7 0.92",
             jaLabel = "細編み（すじ編み 向こう側）",
             enLabel = "sc in back loop only (BLO)",
@@ -472,24 +494,23 @@ internal object CrochetSymbols {
         SymbolDefinition(
             id = id("popcorn"),
             category = SymbolCategory.CROCHET,
-            // Closed circle with four short radial bursts — distinguishes popcorn
-            // from plain yo (a simple open circle) at a glance.
+            // Closed pentagon (point up) — JIS L 0201 Table 2 form for パプコーン
+            // 編み. Phase 30.2-fix replaced the prior CYC radial-ray circle with
+            // the JIS pentagon to align with the `jis.*` namespace authority
+            // chosen in ADR-008. Vertices computed with the apex at (0.5, 0.15)
+            // and the remaining four points spaced 72° around the centre.
             pathData =
-                "M 0.5 0.25 " +
-                    "C 0.64 0.25 0.75 0.36 0.75 0.5 " +
-                    "C 0.75 0.64 0.64 0.75 0.5 0.75 " +
-                    "C 0.36 0.75 0.25 0.64 0.25 0.5 " +
-                    "C 0.25 0.36 0.36 0.25 0.5 0.25 Z " +
-                    "M 0.5 0.1 L 0.5 0.2 " +
-                    "M 0.5 0.8 L 0.5 0.9 " +
-                    "M 0.1 0.5 L 0.2 0.5 " +
-                    "M 0.8 0.5 L 0.9 0.5",
+                "M 0.5 0.15 " +
+                    "L 0.79 0.36 " +
+                    "L 0.68 0.7 " +
+                    "L 0.32 0.7 " +
+                    "L 0.21 0.36 Z",
             jaLabel = "パプコーン編み",
             enLabel = "Popcorn",
             jisReference = JIS_REF,
             cycName = "pc",
-            jaDescription = "複数目を立ち上がりから1目に引き抜いて膨らませる。記号は放射状の円。",
-            enDescription = "Multiple stitches pulled together; drawn as a circle with rays.",
+            jaDescription = "複数目を立ち上がりから1目に引き抜いて膨らませる。記号は閉じた五角形。",
+            enDescription = "Multiple stitches pulled together; drawn as a closed pentagon (JIS form).",
         )
 
     private val picot3 =

@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import io.github.b150005.knitnote.domain.chart.CellBounds
 import io.github.b150005.knitnote.domain.chart.SymbolRenderTransform
@@ -60,10 +61,13 @@ fun DrawScope.drawSymbolPath(
             PathCommand.ClosePath -> path.close()
         }
     }
+    // Fill-vs-stroke is a per-symbol choice expressed by SymbolDefinition.fill.
+    // JIS / publisher conventions use solid fills for glyphs like sl-st (filled
+    // dot) and bobble variants; the rest stroke their outline. Phase 30.2-fix.
     drawPath(
         path = path,
         color = color,
-        style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round),
+        style = if (def.fill) Fill else Stroke(width = strokeWidthPx, cap = StrokeCap.Round),
     )
 }
 

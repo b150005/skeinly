@@ -107,4 +107,33 @@ class CrochetSymbolsTest {
             "Phase 30.2 target is 25-35 glyphs; first pass minimum 20. Got ${CrochetSymbols.all.size}",
         )
     }
+
+    @Test
+    fun `sl-st is rendered with fill per JIS publisher convention`() {
+        // Phase 30.2-fix: JIS L 0201 Table 2 + every JP publisher render
+        // 引き抜き編み as a solid filled dot. Stroke-rendering reads as a donut
+        // and JP knitters won't recognise it. fill must stay true on this glyph.
+        val slSt =
+            assertNotNull(
+                CrochetSymbols.all.find { it.id == "jis.crochet.sl-st" },
+                "sl-st must be present in the crochet catalog",
+            )
+        assertTrue(slSt.fill, "jis.crochet.sl-st must set fill = true")
+    }
+
+    @Test
+    fun `non-fill crochet glyphs default to stroked rendering`() {
+        // Regression guard: Phase 30.2-fix introduced fill as an opt-in field.
+        // Every glyph other than sl-st (and any future filled variants) must
+        // remain stroked — flipping a glyph to fill silently would change the
+        // rendered chart geometry across both platforms.
+        val filledIds = setOf("jis.crochet.sl-st")
+        for (def in CrochetSymbols.all) {
+            if (def.id in filledIds) continue
+            assertTrue(
+                !def.fill,
+                "${def.id} unexpectedly has fill = true; update the test allowlist if intentional",
+            )
+        }
+    }
 }

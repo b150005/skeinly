@@ -289,11 +289,17 @@ private struct ChartCanvasView: View {
                 break
             }
         }
-        context.stroke(
-            path,
-            with: color,
-            style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round)
-        )
+        // Honour SymbolDefinition.fill so glyphs whose JIS / publisher convention
+        // is a solid fill (e.g. `jis.crochet.sl-st`) read correctly. Phase 30.2-fix.
+        if def.fill {
+            context.fill(path, with: color)
+        } else {
+            context.stroke(
+                path,
+                with: color,
+                style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round)
+            )
+        }
     }
 
     private func drawParameterSlots(

@@ -40,6 +40,14 @@ data class SymbolDefinition(
      * `jis.knit.twist-r`. Not shown as the primary label in the gallery.
      */
     val aliases: List<String> = emptyList(),
+    /**
+     * If true, the renderer paints the path with a solid fill instead of
+     * stroking its outline. Used by glyphs whose JIS / publisher convention is
+     * a filled dot or polygon (e.g. `jis.crochet.sl-st` = filled dot). Default
+     * `false` so the vast majority of stroked glyphs are unaffected. See
+     * ADR-008 for the catalog-wide policy on fill vs. stroke.
+     */
+    val fill: Boolean = false,
 ) {
     init {
         require(widthUnits > 0) { "widthUnits must be positive; got $widthUnits for $id" }

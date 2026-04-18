@@ -478,6 +478,53 @@ next-category recommendation.
 This addendum does not change the symbol-id regex, the coordinate
 convention, or the catalog interface.
 
+## Addendum — Phase 30.2-fix: Knitter advisory follow-up (2026-04-18)
+
+Phase 30.2-fix resolves the two majors and the load-bearing minors flagged
+by the Phase 30.2 knitter advisory. The team consensus on each open question
+is recorded in `docs/en/symbol-review/phase-30.2.md` §5 with `**Team:**`
+markers; the change shape consequences for ADR-008 are summarised here.
+
+- **`SymbolDefinition.fill: Boolean = false` field added.** First non-label
+  field added since Phase 29. Honoured by both renderers
+  (`SymbolDrawing.drawSymbolPath` for Compose, `drawSymbolPath` /
+  `drawSymbol` in the SwiftUI `StructuredChartViewerScreen` and
+  `SymbolGalleryScreen`). The default keeps every existing glyph stroked;
+  Phase 30.2-fix flips only `jis.crochet.sl-st` to `fill = true`. The field
+  is intentionally additive — older serialized symbol metadata (none yet
+  exists; catalog is in-process) remains forward-compatible.
+- **`jis.*` namespace = JIS authority** is reaffirmed by the resolved
+  questions: where JIS and CYC disagree on geometry inside the `jis.*`
+  namespace, the team adopts the JIS form. Concretely this means
+  `jis.crochet.sc` switches from CYC `+` to JIS `×`, `sc2tog` / `sc3tog`
+  crossbars move from mid-cell (`y≈0.55`) up near the apex (`y≈0.30`),
+  and `popcorn` switches from a CYC radial-ray circle to a JIS pentagon.
+  This is consistent with the policy already documented in the Phase 30.5
+  addendum and the ADR-008 §6 symbol-id naming convention.
+- **`dc2tog` / `dc3tog` top-bars widened** so the open horizontal line
+  visibly extends past the outermost stroke endpoints, fully resolving the
+  cluster-vs-decrease disambiguation flagged as the dominant 24dp
+  legibility bug.
+- **`fpdc` / `bpdc` redrawn as quadratic-curve C-wraps** (replacing the
+  prior right-angle L-shape). Direction stays CYC (front = right, back =
+  left); JIS is silent on direction.
+- **Q8 `turning-ch` parameterisation deferred to Phase 30.3.** Per-stitch
+  variants (`turning-ch-2 … turning-ch-6`) match the existing
+  `dc-cluster-3 / -5` per-count convention and need no renderer work, so
+  they ship with the Phase 30.3 catalog adds rather than as a `count`-slot
+  parameter on the existing glyph. No model change is needed today.
+- **Q9 `inc-sc` / `inc-dc` V-spread retained.** JIS is silent on the
+  composite glyph; the V-spread is unambiguously legible as an increase
+  and matches the most common Western chart rendering.
+- **Phase 30.3 scope confirmed.** Reverse-sc, puff stitch, and hdc-cluster
+  are the top-3 adds, queued behind Phase 32 editor MVP unless prioritised
+  earlier.
+
+This addendum does not change the symbol-id regex, the coordinate
+convention, or the JSON schema. The new `fill` field is internal to the
+catalog and is not serialised into chart documents (cells reference symbols
+by `id`, not by definition).
+
 ## References
 
 - ADR-001: Supabase as backend

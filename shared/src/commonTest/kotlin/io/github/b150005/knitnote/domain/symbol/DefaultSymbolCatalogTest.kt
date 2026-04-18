@@ -177,6 +177,20 @@ class DefaultSymbolCatalogTest {
     }
 
     @Test
+    fun `only allowlisted ids across the bundled catalog set fill = true`() {
+        // Phase 30.2-fix introduced fill as an opt-in field. A future glyph
+        // accidentally flipping fill to true (in any of knit / cyc / crochet
+        // catalogs) would silently change rendering — guard the entire bundled
+        // set, not just the per-catalog tests.
+        val allowlist = setOf("jis.crochet.sl-st")
+        val unexpected = catalog.all().filter { it.fill && it.id !in allowlist }
+        assertTrue(
+            unexpected.isEmpty(),
+            "Unexpected fill = true on: ${unexpected.map { it.id }}; update allowlist if intentional",
+        )
+    }
+
+    @Test
     fun `create rejects malformed path data`() {
         val def =
             SymbolDefinition(
