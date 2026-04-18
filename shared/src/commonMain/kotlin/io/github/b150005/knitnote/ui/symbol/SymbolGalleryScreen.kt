@@ -155,16 +155,11 @@ private fun SymbolCard(
     parsedPathCache: MutableMap<String, List<PathCommand>>,
 ) {
     val symbolColor = MaterialTheme.colorScheme.onSurface
-    // Sanitize the testTag so `testTagsAsResourceId = true` (MainActivity root)
-    // produces a valid Android resource id. Dots and dashes are rejected by
-    // Android resource-id parsers; symbol ids like `jis.knit.k` would otherwise
-    // flatten to nothing usable for Maestro `assertVisible: id:`.
-    val testTag = "symbolCard_" + definition.id.replace('.', '_').replace('-', '_')
     Card(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .testTag(testTag),
+                .testTag("symbolCard-${definition.id}"),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         colors = CardDefaults.cardColors(),
     ) {
