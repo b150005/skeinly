@@ -40,14 +40,17 @@ internal object KnitSymbols {
         SymbolDefinition(
             id = id("p"),
             category = SymbolCategory.KNIT,
-            // Horizontal bar.
-            pathData = "M 0.1 0.5 L 0.9 0.5",
+            // Short horizontal bar anchored near the base of the cell — the user-
+            // reviewed convention in Phase 30.1-fix. Narrower than the cell so that
+            // multiple purl-derived glyphs (twisted purl, purl below, etc.) share a
+            // consistent visual signature without reaching the edges.
+            pathData = "M 0.35 0.75 L 0.65 0.75",
             jaLabel = "裏目",
             enLabel = "Purl",
             jisReference = "JIS L 0201-1995 棒針編目",
             cycName = "purl",
-            jaDescription = "表側から見て裏編み。記号は横線。",
-            enDescription = "Purl stitch as seen from the right side.",
+            jaDescription = "表側から見て裏編み。記号は下部の短い横線。",
+            enDescription = "Purl stitch; drawn as a short bar near the cell base.",
         )
 
     private val yo =
@@ -118,6 +121,10 @@ internal object KnitSymbols {
             enLabel = "Right twisted knit (k-tbl)",
             jisReference = "JIS L 0201-1995 棒針編目",
             cycName = "k1-tbl",
+            // `ねじり増し目` is a common JA term for a right-twisted knit used as
+            // an increase; the old `jis.knit.kfb` entry mislabelled that concept,
+            // so the alias makes it searchable from the correct glyph.
+            aliases = listOf("ねじり増し目"),
         )
 
     private val ktblLeft =
@@ -134,8 +141,8 @@ internal object KnitSymbols {
         SymbolDefinition(
             id = id("twist-p-r"),
             category = SymbolCategory.KNIT,
-            // Horizontal bar with right-leaning diagonal above.
-            pathData = "M 0.1 0.5 L 0.9 0.5 M 0.3 0.35 L 0.7 0.2",
+            // Purl short bar at cell base plus right-leaning twist diagonal above.
+            pathData = "M 0.35 0.75 L 0.65 0.75 M 0.3 0.35 L 0.7 0.2",
             jaLabel = "裏ねじり目（右）",
             enLabel = "Right twisted purl (p-tbl)",
             jisReference = "JIS L 0201-1995 棒針編目",
@@ -149,14 +156,16 @@ internal object KnitSymbols {
         SymbolDefinition(
             id = id("k2tog-r"),
             category = SymbolCategory.KNIT,
-            // Two stitches merging: right-leaning diagonal on top of a stem.
-            pathData = "M 0.5 0.55 L 0.5 0.9 M 0.2 0.55 L 0.5 0.2 M 0.5 0.2 L 0.8 0.55",
+            // Full-height stem plus one right-leaning slash; the stem tail remains
+            // visible below the crossing so the glyph is visually distinct from the
+            // M1 increase family (which uses a stem + foot).
+            pathData = "M 0.5 0.05 L 0.5 0.95 M 0.85 0.25 L 0.15 0.65",
             jaLabel = "右上2目一度",
             enLabel = "Right-leaning k2tog (SSK)",
             widthUnits = 1,
             jisReference = "JIS L 0201-1995 棒針編目",
             cycName = "ssk",
-            jaDescription = "左針の目を右針へ移してから表編みで一緒に編む。記号は右上がり。",
+            jaDescription = "左針の目を右針へ移してから表編みで一緒に編む。記号は右上がりの射線。",
             enDescription = "Slip-slip-knit decrease; resulting stitch leans to the right.",
         )
 
@@ -164,7 +173,8 @@ internal object KnitSymbols {
         SymbolDefinition(
             id = id("k2tog-l"),
             category = SymbolCategory.KNIT,
-            pathData = "M 0.5 0.55 L 0.5 0.9 M 0.2 0.2 L 0.5 0.55 M 0.5 0.55 L 0.8 0.2",
+            // Mirror of k2tog-r — left-leaning slash crossing the stem.
+            pathData = "M 0.5 0.05 L 0.5 0.95 M 0.15 0.25 L 0.85 0.65",
             jaLabel = "左上2目一度",
             enLabel = "Left-leaning k2tog",
             widthUnits = 1,
@@ -176,7 +186,12 @@ internal object KnitSymbols {
         SymbolDefinition(
             id = id("p2tog-r"),
             category = SymbolCategory.KNIT,
-            pathData = "M 0.1 0.5 L 0.9 0.5 M 0.2 0.35 L 0.5 0.7 M 0.5 0.7 L 0.8 0.35",
+            // k2tog glyph with a short purl bar added at the top indicating the
+            // purl character of the decrease.
+            pathData =
+                "M 0.35 0.1 L 0.65 0.1 " +
+                    "M 0.5 0.15 L 0.5 0.95 " +
+                    "M 0.85 0.3 L 0.15 0.65",
             jaLabel = "右上2目一度（裏）",
             enLabel = "Right-leaning p2tog",
             jisReference = "JIS L 0201-1995 棒針編目",
@@ -186,7 +201,10 @@ internal object KnitSymbols {
         SymbolDefinition(
             id = id("p2tog-l"),
             category = SymbolCategory.KNIT,
-            pathData = "M 0.1 0.5 L 0.9 0.5 M 0.2 0.7 L 0.5 0.35 M 0.5 0.35 L 0.8 0.7",
+            pathData =
+                "M 0.35 0.1 L 0.65 0.1 " +
+                    "M 0.5 0.15 L 0.5 0.95 " +
+                    "M 0.15 0.3 L 0.85 0.65",
             jaLabel = "左上2目一度（裏）",
             enLabel = "Left-leaning p2tog",
             jisReference = "JIS L 0201-1995 棒針編目",
@@ -213,11 +231,12 @@ internal object KnitSymbols {
         SymbolDefinition(
             id = id("k3tog-r"),
             category = SymbolCategory.KNIT,
+            // Full-height stem with two parallel right-leaning slashes; extends the
+            // k2tog-r convention (one slash per decreased stitch above 1).
             pathData =
-                "M 0.5 0.55 L 0.5 0.9 " +
-                    "M 0.1 0.55 L 0.5 0.15 " +
-                    "M 0.5 0.15 L 0.9 0.55 " +
-                    "M 0.2 0.7 L 0.5 0.35",
+                "M 0.5 0.05 L 0.5 0.95 " +
+                    "M 0.85 0.2 L 0.15 0.55 " +
+                    "M 0.85 0.4 L 0.15 0.75",
             jaLabel = "右上3目一度",
             enLabel = "Right-leaning k3tog (sssk)",
             widthUnits = 1,
@@ -230,10 +249,9 @@ internal object KnitSymbols {
             id = id("k3tog-l"),
             category = SymbolCategory.KNIT,
             pathData =
-                "M 0.5 0.55 L 0.5 0.9 " +
-                    "M 0.1 0.55 L 0.5 0.15 " +
-                    "M 0.5 0.15 L 0.9 0.55 " +
-                    "M 0.8 0.7 L 0.5 0.35",
+                "M 0.5 0.05 L 0.5 0.95 " +
+                    "M 0.15 0.2 L 0.85 0.55 " +
+                    "M 0.15 0.4 L 0.85 0.75",
             jaLabel = "左上3目一度",
             enLabel = "Left-leaning k3tog",
             widthUnits = 1,
@@ -268,17 +286,10 @@ internal object KnitSymbols {
             cycName = "m1l",
         )
 
-    private val kfb =
-        SymbolDefinition(
-            id = id("kfb"),
-            category = SymbolCategory.KNIT,
-            // Two vertical bars meeting at the base — knit front and back.
-            pathData = "M 0.35 0.1 L 0.5 0.9 M 0.65 0.1 L 0.5 0.9",
-            jaLabel = "ねじり増し目",
-            enLabel = "Knit front and back (kfb)",
-            jisReference = "JIS L 0201-1995 棒針編目",
-            cycName = "kfb",
-        )
+    // kfb moved to the `std.cyc.*` namespace — see [CycSymbols.kfb]. JIS L 0201
+    // does not standardise a kfb glyph, and the previous JA label (`ねじり増し目`)
+    // was a mis-label of twisted-knit (`jis.knit.twist-r`), which now carries
+    // that term as an alias.
 
     private val castOn =
         SymbolDefinition(
@@ -334,12 +345,20 @@ internal object KnitSymbols {
 
     // region — cables --------------------------------------------------------
 
+    // Cable convention (Phase 30.1-fix): the over-stroke is drawn unbroken; the
+    // under-stroke is broken with a ~20% gap centred on the intersection so that
+    // right-over and left-over glyphs are visually distinguishable (JIS house
+    // style, also used by most JP publishers).
+
     private val cable1Over1Right =
         SymbolDefinition(
             id = id("cable-1x1-r"),
             category = SymbolCategory.KNIT,
-            // Two diagonals crossing; right-over symbol drawn as the top stroke.
-            pathData = "M 0.1 0.9 L 0.9 0.1 M 0.1 0.1 L 0.9 0.9",
+            // Over: BL→TR unbroken. Under: TL→BR, broken at cell centre.
+            pathData =
+                "M 0.1 0.9 L 0.9 0.1 " +
+                    "M 0.1 0.1 L 0.4 0.4 " +
+                    "M 0.6 0.6 L 0.9 0.9",
             widthUnits = 2,
             jaLabel = "1目交差 右上",
             enLabel = "1/1 right cross",
@@ -351,7 +370,11 @@ internal object KnitSymbols {
         SymbolDefinition(
             id = id("cable-1x1-l"),
             category = SymbolCategory.KNIT,
-            pathData = "M 0.1 0.1 L 0.9 0.9 M 0.1 0.9 L 0.9 0.1",
+            // Over: TL→BR unbroken. Under: BL→TR, broken at cell centre.
+            pathData =
+                "M 0.1 0.1 L 0.9 0.9 " +
+                    "M 0.1 0.9 L 0.4 0.6 " +
+                    "M 0.6 0.4 L 0.9 0.1",
             widthUnits = 2,
             jaLabel = "1目交差 左上",
             enLabel = "1/1 left cross",
@@ -363,8 +386,10 @@ internal object KnitSymbols {
         SymbolDefinition(
             id = id("cable-2x2-r"),
             category = SymbolCategory.KNIT,
-            // Wider crossing for 2-over-2.
-            pathData = "M 0.05 0.9 L 0.95 0.1 M 0.05 0.1 L 0.95 0.9",
+            pathData =
+                "M 0.05 0.9 L 0.95 0.1 " +
+                    "M 0.05 0.1 L 0.4 0.4 " +
+                    "M 0.6 0.6 L 0.95 0.9",
             widthUnits = 2,
             jaLabel = "2目交差 右上",
             enLabel = "2/2 right cross",
@@ -376,7 +401,10 @@ internal object KnitSymbols {
         SymbolDefinition(
             id = id("cable-2x2-l"),
             category = SymbolCategory.KNIT,
-            pathData = "M 0.05 0.1 L 0.95 0.9 M 0.05 0.9 L 0.95 0.1",
+            pathData =
+                "M 0.05 0.1 L 0.95 0.9 " +
+                    "M 0.05 0.9 L 0.4 0.6 " +
+                    "M 0.6 0.4 L 0.95 0.1",
             widthUnits = 2,
             jaLabel = "2目交差 左上",
             enLabel = "2/2 left cross",
@@ -388,7 +416,10 @@ internal object KnitSymbols {
         SymbolDefinition(
             id = id("cable-3x3-r"),
             category = SymbolCategory.KNIT,
-            pathData = "M 0.02 0.9 L 0.98 0.1 M 0.02 0.1 L 0.98 0.9",
+            pathData =
+                "M 0.02 0.9 L 0.98 0.1 " +
+                    "M 0.02 0.1 L 0.4 0.4 " +
+                    "M 0.6 0.6 L 0.98 0.9",
             widthUnits = 3,
             jaLabel = "3目交差 右上",
             enLabel = "3/3 right cross",
@@ -400,7 +431,10 @@ internal object KnitSymbols {
         SymbolDefinition(
             id = id("cable-3x3-l"),
             category = SymbolCategory.KNIT,
-            pathData = "M 0.02 0.1 L 0.98 0.9 M 0.02 0.9 L 0.98 0.1",
+            pathData =
+                "M 0.02 0.1 L 0.98 0.9 " +
+                    "M 0.02 0.9 L 0.4 0.6 " +
+                    "M 0.6 0.4 L 0.98 0.1",
             widthUnits = 3,
             jaLabel = "3目交差 左上",
             enLabel = "3/3 left cross",
@@ -412,9 +446,13 @@ internal object KnitSymbols {
         SymbolDefinition(
             id = id("cable-1x1-r-p"),
             category = SymbolCategory.KNIT,
-            // Same base crossing as cable-1x1-r, plus a small horizontal tick on the
-            // lower-right cell indicating that the back stitch is purled.
-            pathData = "M 0.1 0.9 L 0.9 0.1 M 0.1 0.1 L 0.9 0.9 M 0.7 0.5 L 0.9 0.5",
+            // Same broken-under convention as cable-1x1-r plus a short purl tick
+            // on the lower-right cell indicating the back stitch is purled.
+            pathData =
+                "M 0.1 0.9 L 0.9 0.1 " +
+                    "M 0.1 0.1 L 0.4 0.4 " +
+                    "M 0.6 0.6 L 0.9 0.9 " +
+                    "M 0.7 0.5 L 0.9 0.5",
             widthUnits = 2,
             jaLabel = "1目交差 右上（下が裏）",
             enLabel = "1/1 right cross with purl",
@@ -426,7 +464,11 @@ internal object KnitSymbols {
         SymbolDefinition(
             id = id("cable-1x1-l-p"),
             category = SymbolCategory.KNIT,
-            pathData = "M 0.1 0.1 L 0.9 0.9 M 0.1 0.9 L 0.9 0.1 M 0.1 0.5 L 0.3 0.5",
+            pathData =
+                "M 0.1 0.1 L 0.9 0.9 " +
+                    "M 0.1 0.9 L 0.4 0.6 " +
+                    "M 0.6 0.4 L 0.9 0.1 " +
+                    "M 0.1 0.5 L 0.3 0.5",
             widthUnits = 2,
             jaLabel = "1目交差 左上（下が裏）",
             enLabel = "1/1 left cross with purl",
@@ -494,7 +536,11 @@ internal object KnitSymbols {
         SymbolDefinition(
             id = id("p-below"),
             category = SymbolCategory.KNIT,
-            pathData = "M 0.1 0.5 L 0.9 0.5 M 0.35 0.95 L 0.65 0.95",
+            // Purl bar at y=0.65 plus a "below" tick at y=0.95. The purl bar sits
+            // slightly higher than the plain-purl convention (y=0.75) to preserve
+            // ~0.3-unit clearance from the bottom tick so both strokes stay
+            // distinguishable at small cell sizes (≥~7px separation at 24dp).
+            pathData = "M 0.35 0.65 L 0.65 0.65 M 0.35 0.95 L 0.65 0.95",
             jaLabel = "引き上げ編み（裏）",
             enLabel = "Purl 1 below",
             jisReference = "JIS L 0201-1995 棒針編目",
@@ -560,7 +606,6 @@ internal object KnitSymbols {
             // increases
             m1Right,
             m1Left,
-            kfb,
             castOn,
             // bind-off
             bindOff,

@@ -16,4 +16,8 @@ interface SymbolCatalog {
 
     /** True when [id] resolves to a known symbol (convenience over `get(id) != null`). */
     fun contains(id: String): Boolean = get(id) != null
+
+    // Phase 30.2+: add `findByAlias(alias: String): SymbolDefinition?` (or a broader
+    // `search(query)`) so the aliases populated on [SymbolDefinition.aliases] become
+    // reachable from the dictionary UI. Current Phase 30.1-fix only populates data.
 }

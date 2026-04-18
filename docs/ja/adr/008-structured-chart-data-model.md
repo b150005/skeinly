@@ -342,6 +342,32 @@ Renderer が draw 時にセル矩形へ affine transform する。これは
 
 本 addendum は本 ADR 本文のデータモデル / 記号 ID 方式を変更しない。
 
+## Addendum — Phase 30.1-fix: `std.cyc.kfb` と geometry 修正 (2026-04-18)
+
+Phase 30.1 レビューで予告した geometry-only 追随が Phase 30.1-fix に
+入った。名前空間ポリシーの実運用を示す 2 点を記録しておく:
+
+- **初の `std.cyc.*` エントリが着地**。`CycSymbols.kt` が
+  `KnitSymbols.kt` と並んで配置され、`DefaultSymbolCatalog` では
+  `KnitSymbols.all + CycSymbols.all` の結合で供給する。現時点の唯一の
+  エントリは `std.cyc.kfb`。JIS L 0201-1995 は `kfb` 記号を標準化して
+  おらず、従来の `jis.knit.kfb` エントリは出典を誤って申告していた
+  ため、正しい名前空間に移した。以降も CYC 限定・出版社固有の glyph は
+  `jis.*` を編集せずここへ追加する（Phase 30.5 シンボル出典ポリシー
+  準拠）。
+- **`SymbolDefinition` に検索用 alias**。`SymbolDefinition` に
+  `aliases: List<String>` を追加した。Phase 30.1-fix で投入した値は
+  1 件だけで、`jis.knit.twist-r` に `ねじり増し目` を alias として
+  登録した。これにより Phase 30.2 以降の dictionary 検索 UI で JA の
+  慣用語「ねじり増し目」から正しい JIS glyph（右ねじり目 = twisted-M1）
+  を引けるようになる。カタログ ID 方式と主ラベルの扱いは変わらない。
+
+Geometry 修正（裏目バーを短く・セル下部に；交差記号の下線を
+セル中央で break；減目 glyph を `縦棒 + 射線` に描き直し、交差点下の
+縦棒 tail を残す）は Phase 30.1 レビュードキュメント §5 への回答に
+従って `KnitSymbols.kt` の path data 編集に留めており、データモデル
+には影響しない。
+
 ## 参考
 
 - ADR-001: Supabase をバックエンドに採用

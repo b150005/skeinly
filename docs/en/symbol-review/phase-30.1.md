@@ -95,16 +95,26 @@ Codified into the roadmap as **Phase 30.2**.
 
 ## 5. Open questions for the human user
 
-These require a user call — Knitter flags but does not resolve:
+These require a user call — Knitter flags but does not resolve. User answers
+were captured in the Phase 30.1-fix handoff and are inlined below as
+**User:** lines.
 
 1. **Purl bar width** — narrow to centered dash (Knitter recommends) vs keep edge-to-edge?
+   - **User:** Narrow to a short bar, and anchor it near the **base of the cell**, not centred. Applied in Phase 30.1-fix to `p`, `twist-p-r`, `p-below` (primary purl-carrying glyphs). `sl-p` intentionally untouched since it wasn't in the call-out scope and can be revisited later.
 2. **Cable over/under** — adopt JIS-style broken under-stroke (Knitter recommends) or simpler tinted-fill approach for v1?
+   - **User:** Under-stroke broken. Applied in Phase 30.1-fix to all 8 cable glyphs (`cable-1x1-r/l`, `cable-2x2-r/l`, `cable-3x3-r/l`, `cable-1x1-r/l-p`) with a ~20% gap centred on the intersection.
 3. **Decrease directional glyph** — switch all right/left-leaning decreases to JIS stem + single slash (Knitter recommends)?
+   - **User:** Yes — stem full-height, slash crossing around 60–70% height, **stem tail preserved below the crossing** to keep the decrease family visually distinct from the `m1-r/l` increase family (which uses stem + foot, no tail past the foot). `k3tog-r/l` carries two parallel slashes. `p2tog-r/l` adds a short purl bar at the top. Applied in Phase 30.1-fix.
 4. **`kfb` vs `ねじり増し目`** — which is the label error: the ID (`kfb`) or the JA label (`ねじり増し目`)? Two possible fixes, need user call.
+   - **User:** Both are partially wrong. (a) Move `kfb` out of `jis.knit.*` to `std.cyc.kfb` since JIS doesn't standardise a `kfb` glyph — Phase 30.1-fix creates `CycSymbols.kt` and lands the first `std.cyc.*` entry. (b) Register `ねじり増し目` as a searchable **alias** of `jis.knit.twist-r` (right-twisted knit, which is the glyph JA knitters call `ねじり増し目` when used as an increase). `SymbolDefinition` gains an `aliases: List<String>` field in Phase 30.1-fix.
 5. **CYC English aliases** — keep descriptive `Right-leaning k2tog (SSK)` or abbreviate to `SSK`?
+   - **Open.** Not in Phase 30.1-fix scope. Deferred to Phase 30.2 or later — current descriptive labels stand.
 6. **Slip-stitch convention** — keep current composable approximation or switch to JIS / Vogue / CYC `V`?
+   - **Open.** Not in Phase 30.1-fix scope. Revisit in Phase 30.2 alongside the crochet catalog or a later `jis.knit.*` geometry pass.
 7. **psso rendering** — keep dotted bar or adopt Vogue overhead arc?
+   - **Open.** Not in Phase 30.1-fix scope. Same deferral as (6).
 8. **Next category confirmation** — proceed with CROCHET as Phase 30.2? (Pre-approved in this session.)
+   - **User:** Confirmed. Phase 30.2 = `jis.crochet.*` catalog; recorded in ADR-008 Phase 30.1 addendum.
 
 ## 6. Follow-up work
 

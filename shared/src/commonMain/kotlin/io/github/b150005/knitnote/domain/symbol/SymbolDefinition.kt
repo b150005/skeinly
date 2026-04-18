@@ -34,6 +34,12 @@ data class SymbolDefinition(
     /** Optional long-form description shown in Phase 31 dictionary UI. */
     val jaDescription: String? = null,
     val enDescription: String? = null,
+    /**
+     * Searchable alternate labels (JA or EN) that should resolve to this symbol.
+     * Used by Phase 30.2+ dictionary search so that e.g. `ねじり増し目` finds
+     * `jis.knit.twist-r`. Not shown as the primary label in the gallery.
+     */
+    val aliases: List<String> = emptyList(),
 ) {
     init {
         require(widthUnits > 0) { "widthUnits must be positive; got $widthUnits for $id" }

@@ -80,6 +80,25 @@ class DefaultSymbolCatalogTest {
     }
 
     @Test
+    fun `catalog bundles the std cyc kfb overlay`() {
+        val kfb = assertNotNull(catalog.get("std.cyc.kfb"))
+        assertEquals(SymbolCategory.KNIT, kfb.category)
+        assertEquals("kfb", kfb.cycName)
+        assertNull(kfb.jisReference, "std.cyc.* entries must not claim a JIS reference")
+    }
+
+    @Test
+    fun `legacy jis knit kfb id is no longer present`() {
+        assertNull(catalog.get("jis.knit.kfb"))
+    }
+
+    @Test
+    fun `twist-r exposes the nejiri-mashime alias`() {
+        val twist = assertNotNull(catalog.get("jis.knit.twist-r"))
+        assertTrue("ねじり増し目" in twist.aliases)
+    }
+
+    @Test
     fun `create rejects duplicate ids`() {
         val def =
             SymbolDefinition(

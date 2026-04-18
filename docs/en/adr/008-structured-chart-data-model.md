@@ -421,6 +421,34 @@ Decisions codified here:
 This addendum does not change the data model or the symbol-id scheme
 established in the body of this ADR.
 
+## Addendum — Phase 30.1-fix: `std.cyc.kfb` and geometry corrections (2026-04-18)
+
+The geometry-only follow-up promised by the Phase 30.1 review landed in
+Phase 30.1-fix. Two things changed and are worth recording here because
+they illustrate the namespace policy in practice:
+
+- **First `std.cyc.*` entry shipped.** `CycSymbols.kt` now sits next to
+  `KnitSymbols.kt` and is merged into `DefaultSymbolCatalog` by
+  `KnitSymbols.all + CycSymbols.all`. The only entry today is
+  `std.cyc.kfb`, added because JIS L 0201-1995 does not standardise a
+  `kfb` glyph and the previous `jis.knit.kfb` entry therefore mis-
+  advertised its provenance. CYC-only or publisher-specific glyphs will
+  continue to land here rather than edit `jis.*` entries, per the
+  Phase 30.5 symbol-sources policy.
+- **Searchable aliases on `SymbolDefinition`.** `SymbolDefinition` gained
+  an `aliases: List<String>` field. The Phase 30.1-fix PR populates
+  exactly one entry: `jis.knit.twist-r` now carries `ねじり増し目` as an
+  alias. This lets the dictionary search UI (Phase 30.2+) resolve the
+  common JA term for a twisted-M1 increase to the correct JIS glyph
+  without duplicating catalog entries. Aliases are not part of the
+  rendered label pair and do not alter the symbol-id scheme.
+
+Geometry changes (purl bar narrowing and base-anchoring; cable under-
+stroke broken at the cell centre; decrease glyphs redrawn as
+`stem + slash(es)` with the stem tail preserved below the crossing) are
+described fully in the Phase 30.1 review doc §5 responses and remain
+path-data edits inside `KnitSymbols.kt` — no data-model impact.
+
 ## References
 
 - ADR-001: Supabase as backend
