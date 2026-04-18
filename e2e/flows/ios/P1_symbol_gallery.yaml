@@ -24,10 +24,12 @@ tags:
 - assertVisible: "Symbol Dictionary"
 
 # At least one JIS knit glyph card should be visible on first render.
-# Use accessibilityIdentifier rather than localized label text to stay robust
-# across simulator locales and SwiftUI text-tree matching quirks.
-- assertVisible:
-    id: "symbolCard-jis.knit.k"
+# accessibilityIdentifier is sanitized (dots/dashes → underscores) to match
+# the Android testTag convention (see SymbolGalleryScreen.swift).
+- extendedWaitUntil:
+    visible:
+      id: "symbolCard_jis_knit_k"
+    timeout: 10000
 
 # Scroll through the grid
 - scroll
