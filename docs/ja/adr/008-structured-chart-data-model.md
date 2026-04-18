@@ -442,6 +442,66 @@ load-bearing な minor を解決する。各 open question に対する team con
 シリアライズされない（cell は symbol を `id` で参照し、definition では
 ない）。
 
+## Addendum — Phase 30.3: クロシェ top-3 網羅追加 (2026-04-18)
+
+Phase 30.3 は Phase 30.2 Knitter advisory
+（`docs/ja/symbol-review/phase-30.2.md §4`）で指摘された `jis.crochet.*`
+網羅ギャップを埋める。グリフを 25 → 28 に増やし、国内商業クロシェ
+パターンの約 90% をカバー — これは Phase 32 editor MVP が日本語ユーザに
+対して違和感なく出荷できるための最低ライン。
+
+- **`jis.crochet.reverse-sc`**（逆細編み / crab stitch）— sc `×` を
+  `y∈[0.15, 0.6]` に圧縮、`y∈[0.77, 0.97]` に左向き対称 V を置いて
+  L→R 作業方向を示す。JIS は専用グリフを規定せず、シェブロン形は日本
+  ヴォーグ／文化出版局の規約に従う。エイリアス: `crab stitch`、`rsc`。
+- **`jis.crochet.puff`**（パフ編み）— 3 本の収束ステムが `y=0.20` で
+  `x∈[0.25, 0.75]` の開いた上端バーに到達。JIS L 0201 表 2 準拠
+  （「一つの高さに引き揃える」）。既存カタログでは代替不能
+  （`dc-cluster-3` と `popcorn` と明確に区別）— これが Knitter が 32
+  より前に 30.3 を出荷すべきとした根拠。
+- **`jis.crochet.hdc-cluster-3`**（中長編み 3 目の玉編み）— `dc-cluster-3`
+  と同じ幾何をベースに、hdc は高さ斜線を持たないという JIS シグナル
+  に従い 3 本の斜線を省略。
+
+データモデル変更なし、レンダラ変更なし、記号 ID 正規表現／座標規約
+更新なし。3 エントリは既存 `SymbolDefinition` スキーマを再利用、新規
+`CrochetSymbolsTest` 3 ケース（`phase 30_3 top-3 glyphs are present`、
+`reverse-sc exposes crab stitch alias for cross-convention lookup`、
+`hdc-cluster-3 declares no parameter slots and single-cell width`）で
+カバー。
+
+**PR 内で反映した幾何の微修正**（実装後 Knitter advisory
+`docs/ja/symbol-review/phase-30.3.md §5` 準拠）:
+
+- `reverse-sc` シェブロンを `M 0.35 0.75 L 0.15 0.88 L 0.35 0.88`
+  （チェックマークに見えた非対称 V）から `M 0.35 0.77 L 0.18 0.87
+  L 0.35 0.97`（`y=0.87` 中心の対称 V、矢印頭ポインタ、セル端から
+  3% マージンで stroke cap clip を回避）へ移動。
+- `puff` 上部バーを `0.28→0.72` から `0.25→0.75` へ拡幅し、3 本の
+  ステム先端を `y=0.20` に持ち上げてバーに接続。JIS「一つの高さに
+  引き揃える」記述に整合。
+- `hdc-cluster-3` エイリアス `hdc3tog-puff` を削除。`puff` 単語検索で
+  `jis.crochet.puff` ではなく本グリフに偽陽性ヒットするのを防ぐため。
+  `bob-hdc` は継続。
+
+**Phase 30.4 へ繰り延べ**（`hdc-cluster-5` と同時に反映）:
+`hdc-cluster-3` のステム間隔（外側ステムを `0.25 / 0.75` から
+`0.22 / 0.78` へ）。純粋に審美的、hdc-cluster-5 の幾何と合わせて
+再評価。
+
+**Phase 30.4 シード**（Knitter 優先度順）: `hdc-cluster-5`
+(widthUnits=2)、Solomon's knot / ラブノット、交差長編み (crossed dc)、
+ブリオンステッチ、`picot-N` パラメトリック長ピコット。いずれも Phase 32
+の障害ではない。
+
+**30.3 先行 vs. 32 直行の Team 合意**. Architect と PM エージェントは
+当初、カタログ欠落は `?` プレースホルダ扱い（viewer は既に未知 ID を
+`?` で描画）で Phase 32 直行を主張。Knitter エージェントは `puff` が
+代替不能、`reverse-sc` が初日から目につくと指摘。Synthesis: 30.3 を
+先行する 3–5h コストの方が editor 着手遅延より安いと判断。
+CLAUDE.md step 10 に準拠して記録、完全な理由は
+`docs/ja/symbol-review/phase-30.3.md §7` を参照。
+
 ## 参考
 
 - ADR-001: Supabase をバックエンドに採用
@@ -451,6 +511,7 @@ load-bearing な minor を解決する。各 open question に対する team con
 - `docs/ja/chart-coordinates.md` (Phase 29)
 - `docs/ja/symbol-review/phase-30.1.md` (Phase 30.1)
 - `docs/ja/symbol-review/phase-30.2.md` (Phase 30.2)
+- `docs/ja/symbol-review/phase-30.3.md` (Phase 30.3)
 - JIS L 0201:1995 編目記号 (参照コーパス、規範ではない)
 - Craft Yarn Council chart symbol reference (`std.cyc.*` に予約)
 - 日本ヴォーグ社 / 文化出版局の慣習 (`std.<house>.*` に予約)
