@@ -28,7 +28,7 @@ class DefaultSymbolCatalog private constructor(
         /** Singleton bundled catalog. */
         val INSTANCE: DefaultSymbolCatalog by lazy { create(bundledDefinitions()) }
 
-        private fun bundledDefinitions(): List<SymbolDefinition> = KnitSymbols.all + CycSymbols.all
+        private fun bundledDefinitions(): List<SymbolDefinition> = KnitSymbols.all + CycSymbols.all + CrochetSymbols.all
 
         /**
          * Builds and validates a catalog from [defs]. Visible for tests that want

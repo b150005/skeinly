@@ -449,6 +449,35 @@ stroke broken at the cell centre; decrease glyphs redrawn as
 described fully in the Phase 30.1 review doc §5 responses and remain
 path-data edits inside `KnitSymbols.kt` — no data-model impact.
 
+## Addendum — Phase 30.2: `jis.crochet.*` catalog first pass (2026-04-18)
+
+Phase 30.2 lands the crochet symbol catalog promised by the Phase 30.1
+next-category recommendation.
+
+- **New namespace in use.** `CrochetSymbols.kt` joins `KnitSymbols.kt` and
+  `CycSymbols.kt` under the `jis.crochet.*` namespace. `DefaultSymbolCatalog`
+  now bundles `KnitSymbols.all + CycSymbols.all + CrochetSymbols.all`.
+- **25 glyphs in the first pass.** Coverage targets the JIS L 0201 Table 2
+  core plus the most frequent CYC/JP-publisher composite glyphs: ch / sl-st /
+  sc / hdc / dc / tr / dtr / qtr, sc2tog / sc3tog / dc2tog / dc3tog,
+  dc-cluster-3 / dc-cluster-5 (widthUnits=2), inc-sc / inc-dc, magic-ring,
+  fpdc / bpdc, sc-fl / sc-bl, popcorn, picot-3, turning-ch, ch-space.
+- **No data-model or renderer changes.** All entries reuse the existing
+  `SymbolDefinition` schema, unit-square path-data convention, and
+  `SymbolCategory.CROCHET` enum value. The ordering invariant (UI filters
+  iterate `SymbolCategory.entries`) is covered by a new catalog test.
+- **Knitter follow-up deferred to Phase 30.2-fix.** The knitter advisory
+  (`docs/en/symbol-review/phase-30.2.md`) flagged 2 major + 13 minor
+  findings. The two majors — `sl-st` renders as outlined rather than filled
+  (renderer-side; wants a `fill: Boolean` field on `SymbolDefinition`) and
+  `dc2tog/dc3tog` top-bars are visually ambiguous vs. the cluster oval at
+  24dp — plus 10 open questions for the human user are scheduled into
+  Phase 30.2-fix. Phase 30.3 seeds are also captured: reverse-sc, puff,
+  hdc-cluster are the recommended next adds.
+
+This addendum does not change the symbol-id regex, the coordinate
+convention, or the catalog interface.
+
 ## References
 
 - ADR-001: Supabase as backend
@@ -457,6 +486,7 @@ path-data edits inside `KnitSymbols.kt` — no data-model impact.
 - ADR-007: Pivot to chart authoring
 - `docs/en/chart-coordinates.md` (Phase 29)
 - `docs/en/symbol-review/phase-30.1.md` (Phase 30.1)
+- `docs/en/symbol-review/phase-30.2.md` (Phase 30.2)
 - JIS L 0201:1995 編目記号 (reference corpus, not prescriptive)
 - Craft Yarn Council chart symbol reference (reserved under `std.cyc.*`)
 - 日本ヴォーグ社 / 文化出版局 house conventions (reserved under `std.<house>.*`)

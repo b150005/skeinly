@@ -99,6 +99,54 @@ class DefaultSymbolCatalogTest {
     }
 
     @Test
+    fun `crochet category contains the basic stitches`() {
+        val ids = catalog.listByCategory(SymbolCategory.CROCHET).map { it.id }
+
+        assertTrue("jis.crochet.ch" in ids)
+        assertTrue("jis.crochet.sl-st" in ids)
+        assertTrue("jis.crochet.sc" in ids)
+        assertTrue("jis.crochet.hdc" in ids)
+        assertTrue("jis.crochet.dc" in ids)
+        assertTrue("jis.crochet.tr" in ids)
+    }
+
+    @Test
+    fun `crochet entries appear after all knit entries in catalog order`() {
+        val knitCount = catalog.listByCategory(SymbolCategory.KNIT).size
+        val crochetCount = catalog.listByCategory(SymbolCategory.CROCHET).size
+
+        assertTrue(knitCount > 0, "knit category must be populated")
+        assertTrue(crochetCount > 0, "crochet category must be populated")
+
+        // SymbolCategory enum order is KNIT → CROCHET → AFGHAN → MACHINE; catalog
+        // ordering must respect enum order so UI filters show them in that order.
+        val all = catalog.all().map { it.category }
+        val lastKnit = all.indexOfLast { it == SymbolCategory.KNIT }
+        val firstCrochet = all.indexOfFirst { it == SymbolCategory.CROCHET }
+        assertTrue(
+            lastKnit < firstCrochet,
+            "all crochet entries must appear after all knit entries",
+        )
+    }
+
+    @Test
+    fun `ch-space exposes a single count parameter slot with valid coordinates`() {
+        val chSpace = assertNotNull(catalog.get("jis.crochet.ch-space"))
+        val slot = assertNotNull(chSpace.parameterSlots.singleOrNull())
+
+        assertEquals("count", slot.key)
+        assertTrue(slot.x in 0.0..1.0)
+        assertTrue(slot.y in 0.0..1.0)
+    }
+
+    @Test
+    fun `qtr exposes UK alias trtr for cross-convention lookup`() {
+        val qtr = assertNotNull(catalog.get("jis.crochet.qtr"))
+        assertEquals("qtr", qtr.cycName)
+        assertTrue("trtr" in qtr.aliases, "UK 'trtr' should alias to the US 'qtr' glyph")
+    }
+
+    @Test
     fun `create rejects duplicate ids`() {
         val def =
             SymbolDefinition(
