@@ -134,7 +134,13 @@ private struct SymbolCardView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 8))
-        .accessibilityIdentifier("symbolCard-\(definition.id)")
+        // Sanitize dots/dashes to match the Android testTag convention so both
+        // platforms can share Maestro selectors.
+        .accessibilityIdentifier(
+            "symbolCard_" + definition.id
+                .replacingOccurrences(of: ".", with: "_")
+                .replacingOccurrences(of: "-", with: "_")
+        )
     }
 
     private func drawSymbol(
