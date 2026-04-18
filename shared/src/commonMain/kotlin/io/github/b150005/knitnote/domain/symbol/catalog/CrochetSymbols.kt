@@ -190,7 +190,35 @@ internal object CrochetSymbols {
 
     // endregion
 
-    // region — decreases -----------------------------------------------------
+    // region — decreases & edge stitches ------------------------------------
+
+    private val reverseSc =
+        SymbolDefinition(
+            id = id("reverse-sc"),
+            category = SymbolCategory.CROCHET,
+            // JIS is silent on a dedicated reverse-sc glyph; JP publishers
+            // (Vogue / Bunka) and CYC overlay the sc `×` with a small
+            // directional marker. The sc cross is compressed to y∈[0.15, 0.6]
+            // (clear of the base chevron) and a symmetric left-pointing V at
+            // y∈[0.77, 0.97] centred around y=0.87 signals the L→R working
+            // direction (arrow-head style rather than a checkmark). The
+            // chevron form (rather than a filled arrow-head, which our
+            // stroke-only renderer cannot draw cheaply) stays legible at 24dp
+            // and does not collide with `sc-fl`/`sc-bl` which use arcs. Tips
+            // held back to y=0.77/0.97 to keep a 3% margin from the cell
+            // edge so stroke caps do not clip at any renderer.
+            pathData =
+                "M 0.3 0.15 L 0.7 0.6 " +
+                    "M 0.7 0.15 L 0.3 0.6 " +
+                    "M 0.35 0.77 L 0.18 0.87 L 0.35 0.97",
+            jaLabel = "逆細編み",
+            enLabel = "Reverse single crochet (reverse sc)",
+            jisReference = JIS_REF,
+            cycName = "reverse sc",
+            aliases = listOf("crab stitch", "rsc"),
+            jaDescription = "細編みを左から右へ編む（逆方向）。記号は×＋左向きの矢印。",
+            enDescription = "sc worked left-to-right; rendered as sc cross with a leftward chevron.",
+        )
 
     private val sc2tog =
         SymbolDefinition(
@@ -302,6 +330,37 @@ internal object CrochetSymbols {
             cycName = "cl3",
             jaDescription = "3目の長編みを頂点でまとめて1目にする玉編み。",
             enDescription = "Three dc strokes bundled into a single stitch at the top.",
+        )
+
+    private val hdcCluster3 =
+        SymbolDefinition(
+            id = id("hdc-cluster-3"),
+            category = SymbolCategory.CROCHET,
+            // Mirrors `dcCluster3` geometry (three vertical stems + a closed
+            // oval cap forming the 玉 bundle) but omits the three slashes —
+            // hdc carries no slash, so the cluster signature is the bundle
+            // under an oval without height markers. Phase 30.3 addition
+            // closing the coverage gap flagged in the Phase 30.2 Knitter
+            // advisory §4.
+            pathData =
+                "M 0.25 0.9 L 0.25 0.3 " +
+                    "M 0.5 0.9 L 0.5 0.3 " +
+                    "M 0.75 0.9 L 0.75 0.3 " +
+                    "M 0.15 0.2 C 0.15 0.08 0.35 0.03 0.5 0.03 " +
+                    "C 0.65 0.03 0.85 0.08 0.85 0.2 " +
+                    "C 0.85 0.32 0.65 0.32 0.5 0.32 " +
+                    "C 0.35 0.32 0.15 0.32 0.15 0.2 Z",
+            jaLabel = "3目の中長編み玉編み",
+            enLabel = "3-hdc cluster",
+            jisReference = JIS_REF,
+            cycName = "hdc-cl3",
+            // `bob-hdc` is the common EN informal name for the hdc-bobble
+            // cluster. `hdc3tog-puff` was considered but dropped: the
+            // "-puff" suffix would produce false-positive dictionary hits
+            // for searchers looking for `jis.crochet.puff`.
+            aliases = listOf("bob-hdc"),
+            jaDescription = "3目の中長編みを頂点でまとめて1目にする玉編み。",
+            enDescription = "Three hdc strokes bundled into one stitch; no slashes (hdc has no slash).",
         )
 
     private val dcCluster5 =
@@ -513,6 +572,33 @@ internal object CrochetSymbols {
             enDescription = "Multiple stitches pulled together; drawn as a closed pentagon (JIS form).",
         )
 
+    private val puff =
+        SymbolDefinition(
+            id = id("puff"),
+            category = SymbolCategory.CROCHET,
+            // Tight bundle of three thin loops converging at a shared base
+            // (0.5, 0.85) and capped by a short open horizontal top-bar at
+            // y=0.20 that the three stem tips meet (loops "pulled to one
+            // height" per JIS L 0201 Table 2). JP publishers (Vogue / Bunka
+            // / Ondori) all follow suit. The converging base differentiates
+            // this from `dc-cluster-3` (parallel stems), and the open top-bar
+            // (no oval) differentiates it from clusters and popcorn. No
+            // slashes = not a tall-stitch bundle. Added in Phase 30.3 per
+            // Knitter §4 gap — no existing glyph combination can honestly
+            // substitute for パフ編み.
+            pathData =
+                "M 0.5 0.85 L 0.35 0.2 " +
+                    "M 0.5 0.85 L 0.5 0.2 " +
+                    "M 0.5 0.85 L 0.65 0.2 " +
+                    "M 0.25 0.2 L 0.75 0.2",
+            jaLabel = "パフ編み",
+            enLabel = "Puff stitch",
+            jisReference = JIS_REF,
+            cycName = "puff",
+            jaDescription = "未完成の中長編み等を複数引き揃えた膨らみ。記号は縦線の束＋上部の横線。",
+            enDescription = "Unfinished loops pulled together into a puff; vertical bundle with a single top bar.",
+        )
+
     private val picot3 =
         SymbolDefinition(
             id = id("picot-3"),
@@ -590,13 +676,15 @@ internal object CrochetSymbols {
             tr,
             dtr,
             qtr,
-            // decreases
+            // decreases & edge
+            reverseSc,
             sc2tog,
             sc3tog,
             dc2tog,
             dc3tog,
             // clusters
             dcCluster3,
+            hdcCluster3,
             dcCluster5,
             // increases
             incSc,
@@ -611,6 +699,7 @@ internal object CrochetSymbols {
             scBl,
             // decorative & special
             popcorn,
+            puff,
             picot3,
             turningCh,
             chSpace,

@@ -525,6 +525,65 @@ convention, or the JSON schema. The new `fill` field is internal to the
 catalog and is not serialised into chart documents (cells reference symbols
 by `id`, not by definition).
 
+## Addendum — Phase 30.3: top-3 crochet coverage (2026-04-18)
+
+Phase 30.3 closes the `jis.crochet.*` coverage gap the Phase 30.2 knitter
+advisory flagged (`docs/en/symbol-review/phase-30.2.md §4`). Three glyphs
+are added, bringing the catalog from 25 to 28 and hitting the ~90%
+commercial-JP pattern coverage target the knitter set for the Phase 32
+editor MVP to feel credible to Japanese users.
+
+- **`jis.crochet.reverse-sc`** (逆細編み / crab stitch) — sc `×`
+  compressed to `y∈[0.15, 0.6]` plus a symmetric left-pointing V at
+  `y∈[0.77, 0.97]` signalling the L→R working direction. JIS is silent on
+  a dedicated glyph; the chevron form follows Nihon Vogue / 文化出版局
+  convention. Aliases: `crab stitch`, `rsc`.
+- **`jis.crochet.puff`** (パフ編み) — three converging stems meeting an
+  open top-bar at `y=0.20`, `x∈[0.25, 0.75]`. JIS L 0201 Table 2 form
+  ("loops pulled to one height"). No honest substitute exists in the
+  existing catalog (distinct from `dc-cluster-3` and `popcorn`), which
+  was the knitter's blocking argument for shipping 30.3 before 32.
+- **`jis.crochet.hdc-cluster-3`** (中長編み 3 目の玉編み) — mirrors
+  `dc-cluster-3` geometry with the three slashes omitted per the JIS
+  signal that hdc carries no height slash.
+
+No data-model changes. No renderer changes. No regex / coordinate-convention
+updates. The three entries reuse the existing `SymbolDefinition` schema and
+are covered by three new `CrochetSymbolsTest` cases (`phase 30_3 top-3 glyphs
+are present`, `reverse-sc exposes crab stitch alias for cross-convention
+lookup`, `hdc-cluster-3 declares no parameter slots and single-cell width`).
+
+**In-PR geometry nits applied** per the post-implementation knitter advisory
+(`docs/en/symbol-review/phase-30.3.md §5`):
+
+- `reverse-sc` chevron moved from `M 0.35 0.75 L 0.15 0.88 L 0.35 0.88`
+  (asymmetric V that read as a checkmark) to `M 0.35 0.77 L 0.18 0.87 L
+  0.35 0.97` (symmetric V around `y=0.87`, arrow-head pointer, with a
+  3% margin from the cell edge so stroke caps do not clip).
+- `puff` top-bar widened from `0.28→0.72` to `0.25→0.75`, and the three
+  stem tips lifted to `y=0.20` so they land on the bar rather than
+  floating below it. Matches the JIS "pulled to one height" description.
+- `hdc-cluster-3` alias `hdc3tog-puff` dropped to avoid producing
+  false-positive dictionary hits on the word "puff" when users search
+  for `jis.crochet.puff`; `bob-hdc` retained.
+
+**Deferred to Phase 30.4** (to be bundled with `hdc-cluster-5`):
+`hdc-cluster-3` stem spacing (outer stems at `0.25 / 0.75` vs.
+`0.22 / 0.78`). Purely cosmetic; re-evaluated together with the
+hdc-cluster-5 geometry.
+
+**Phase 30.4 seeds** (knitter's prioritised list): `hdc-cluster-5`
+(widthUnits=2), Solomon's knot / ラブノット, crossed dc (交差長編み),
+bullion stitch, `picot-N` parametric longer picots. None block Phase 32.
+
+**Team consensus on 30.3-first vs. 32-first**. Architect and PM agents
+initially argued for jumping to Phase 32 directly, treating catalog gaps
+as `?` placeholders (the viewer already renders unknown ids as `?`). The
+knitter agent identified `puff` as zero-substitute and `reverse-sc` as
+day-one-visible. Synthesis: 3–5h cost to ship 30.3 first outweighed the
+editor-delay concern. Recorded per CLAUDE.md step 10; see
+`docs/en/symbol-review/phase-30.3.md §7` for the full reasoning.
+
 ## References
 
 - ADR-001: Supabase as backend
@@ -534,6 +593,7 @@ by `id`, not by definition).
 - `docs/en/chart-coordinates.md` (Phase 29)
 - `docs/en/symbol-review/phase-30.1.md` (Phase 30.1)
 - `docs/en/symbol-review/phase-30.2.md` (Phase 30.2)
+- `docs/en/symbol-review/phase-30.3.md` (Phase 30.3)
 - JIS L 0201:1995 編目記号 (reference corpus, not prescriptive)
 - Craft Yarn Council chart symbol reference (reserved under `std.cyc.*`)
 - 日本ヴォーグ社 / 文化出版局 house conventions (reserved under `std.<house>.*`)

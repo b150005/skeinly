@@ -109,6 +109,55 @@ class CrochetSymbolsTest {
     }
 
     @Test
+    fun `phase 30_3 top-3 glyphs are present`() {
+        // Phase 30.3 — close the commercial-JP crochet coverage gap flagged by
+        // the Knitter agent in phase-30.2.md §4. Adding reverse-sc (crab
+        // stitch, ubiquitous amigurumi edging), puff (パフ編み, no honest
+        // substitute via existing glyphs), and hdc-cluster-3 (中長編み3目の
+        // 玉編み) brings the catalog to ~90% coverage of commonly-seen JP
+        // crochet patterns.
+        val ids = CrochetSymbols.all.map { it.id }.toSet()
+        val required =
+            listOf(
+                "jis.crochet.reverse-sc",
+                "jis.crochet.puff",
+                "jis.crochet.hdc-cluster-3",
+            )
+        for (req in required) {
+            assertTrue(req in ids, "Phase 30.3 must include: $req")
+        }
+    }
+
+    @Test
+    fun `reverse-sc exposes crab stitch alias for cross-convention lookup`() {
+        // EN pattern books use "crab stitch" as the common name. A dictionary
+        // search for "crab stitch" must still resolve to jis.crochet.reverse-sc.
+        val reverseSc =
+            assertNotNull(
+                CrochetSymbols.all.find { it.id == "jis.crochet.reverse-sc" },
+                "reverse-sc must be present in the crochet catalog",
+            )
+        assertTrue(
+            "crab stitch" in reverseSc.aliases,
+            "reverse-sc aliases must include 'crab stitch' for EN lookup",
+        )
+    }
+
+    @Test
+    fun `hdc-cluster-3 declares no parameter slots and single-cell width`() {
+        // Mirrors dc-cluster-3's geometry contract: 1×1 cell, no parametric
+        // inputs. Accidentally marking it multi-cell would silently break the
+        // editor palette layout.
+        val hdcCluster =
+            assertNotNull(
+                CrochetSymbols.all.find { it.id == "jis.crochet.hdc-cluster-3" },
+                "hdc-cluster-3 must be present in the crochet catalog",
+            )
+        assertTrue(hdcCluster.widthUnits == 1, "hdc-cluster-3 should be single-cell")
+        assertTrue(hdcCluster.parameterSlots.isEmpty(), "hdc-cluster-3 takes no parameters")
+    }
+
+    @Test
     fun `sl-st is rendered with fill per JIS publisher convention`() {
         // Phase 30.2-fix: JIS L 0201 Table 2 + every JP publisher render
         // 引き抜き編み as a solid filled dot. Stroke-rendering reads as a donut
