@@ -1,0 +1,101 @@
+# i18n 運用規約 (Phase 33)
+
+> 英語原典: [docs/en/i18n-convention.md](../en/i18n-convention.md)
+
+最終更新: 2026-04-19.
+
+## 目的
+
+1. Android / iOS の user-visible 文字列は必ず localization resource
+   経由で解決する（hardcoded literal は禁止）。
+2. 両プラットフォームの **鍵セットは一致**。CI check でズレたら build
+   失敗。
+3. 日英の両方を launch 時点で first-class に扱う。追加 locale は value
+   の翻訳のみで足り、鍵は変わらない。
+
+## 正本
+
+| Locale | Android | iOS |
+|---|---|---|
+| 英語 (default / development region) | `androidApp/src/main/res/values/strings.xml` | `iosApp/iosApp/Resources/Localizable.xcstrings` (`"en"` localization) |
+| 日本語 | `androidApp/src/main/res/values-ja/strings.xml` | `iosApp/iosApp/Resources/Localizable.xcstrings` (`"ja"` localization) |
+
+iOS 側は Xcode 15+ の **String Catalog** (`.xcstrings`, JSON) を使用。
+両 locale を 1 ファイルに保持。`project.yml` で
+`CFBundleDevelopmentRegion: en` と `CFBundleLocalizations: [en, ja]` を
+宣言。
+
+## 鍵命名
+
+- `snake_case`。
+- 画面名ではなく **役割** で prefix:
+  - `action_*` — ボタン / メニュー / a11y ラベル等の動作名
+    (`action_save`, `action_undo`)
+  - `state_*` — load / empty / idle 状態ラベル (`state_loading`)
+  - `error_*` — error メッセージ (`error_load`, `error_save`)
+  - `dialog_*_title` / `dialog_*_body` — 確認ダイアログ
+- 同じ単語が別画面で異なる意味になる場合のみ画面 prefix を許容（稀）。
+  原則は再利用可能な role-prefixed 鍵。
+
+## 参照方法
+
+**Android (Jetpack Compose)**:
+
+```kotlin
+import androidx.compose.ui.res.stringResource
+import io.github.b150005.knitnote.android.R
+
+Text(text = stringResource(R.string.action_save))
+```
+
+**iOS (SwiftUI)**:
+
+```swift
+Text("action_save")   // Text(_:tableName:) が自動 localize
+Button("action_save") { ... }
+```
+
+`Text` ではなく `String` が必要な場合は `String(localized:)`:
+
+```swift
+let label = String(localized: "action_save")
+```
+
+SwiftUI は literal が key と一致すれば自動的に `Localizable.xcstrings`
+から解決する。`NSLocalizedString` でラップしないこと。
+
+## 鍵の追加手順
+
+1. **3 ファイルすべて** に entry を追加:
+   - `androidApp/src/main/res/values/strings.xml`
+   - `androidApp/src/main/res/values-ja/strings.xml`
+   - `iosApp/iosApp/Resources/Localizable.xcstrings`
+2. ローカルで確認:
+   ```
+   ./scripts/verify-i18n-keys.sh
+   ```
+3. CI で鍵 sync を強制 — platform のどれかに無ければ build fail。
+
+## 鍵の削除
+
+同一 commit で 3 ファイルすべてから削除する。部分削除は verifier が
+検出する。
+
+## Phase 33 の非目的
+
+- 既存画面の migration。既存 hardcoded 文字列は、専用の i18n sweep
+  phase まで hardcoded のまま。新規 UI (Phase 32 editor 以降) は最初
+  から localized。
+- Symbol Catalog の bilingual label。`SymbolCatalog` は現状すべての
+  glyph に JA + EN の両ラベルを持つ (Phase 30.1 gallery 設計)。後続
+  phase で `Locale.current` による locale-appropriate label 選択に
+  移行予定。当面は両方を表示。
+- 複数形対応。最初の複数形鍵が出現した時点で `@plural` /
+  `stringsdict` を追加する。
+
+## 関連
+
+- Script: [`scripts/verify-i18n-keys.sh`](../../scripts/verify-i18n-keys.sh)
+- CI step: `.github/workflows/ci.yml` → `Verify i18n key sync`
+- ADR-008 (symbol catalog) は、symbol label の locale 切替についてこの
+  規約を参照する。

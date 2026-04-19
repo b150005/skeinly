@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Japanese string resources.
+  Mirror any additions in:
+    - androidApp/src/main/res/values/strings.xml
+    - iosApp/iosApp/Resources/Localizable.xcstrings
+  Run scripts/verify-i18n-keys.sh to detect drift.
+-->
+<resources>
+    <string name="app_name">Knit Note</string>
+
+    <!-- Action primitives (buttons, menu items, a11y labels) -->
+    <string name="action_save">保存</string>
+    <string name="action_cancel">キャンセル</string>
+    <string name="action_delete">削除</string>
+    <string name="action_edit">編集</string>
+    <string name="action_ok">OK</string>
+    <string name="action_back">戻る</string>
+    <string name="action_retry">再試行</string>
+    <string name="action_close">閉じる</string>
+    <string name="action_discard">破棄</string>
+    <string name="action_keep_editing">編集を続ける</string>
+    <string name="action_undo">元に戻す</string>
+    <string name="action_redo">やり直す</string>
+
+    <!-- Load / empty states -->
+    <string name="state_loading">読み込み中\u2026</string>
+    <string name="state_empty">まだ何もありません</string>
+
+    <!-- Error messages -->
+    <string name="error_generic">エラーが発生しました</string>
+    <string name="error_load">読み込みに失敗しました</string>
+    <string name="error_save">保存に失敗しました</string>
+    <string name="error_network">ネットワークに接続できません</string>
+
+    <!-- Unsaved-changes confirmation dialog (used by editor flows) -->
+    <string name="dialog_unsaved_changes_title">未保存の変更があります</string>
+    <string name="dialog_unsaved_changes_body">未保存の変更があります。破棄しますか？</string>
+</resources>

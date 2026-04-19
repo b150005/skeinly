@@ -27,6 +27,10 @@ targets:
         CFBundleDisplayName: "Knit Note"
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleDevelopmentRegion: "en"
+        CFBundleLocalizations:
+          - en
+          - ja
         LSRequiresIPhoneOS: true
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false

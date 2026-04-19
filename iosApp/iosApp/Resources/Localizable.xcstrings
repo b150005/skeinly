@@ -1,0 +1,153 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "action_back" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Back" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "戻る" } }
+      }
+    },
+    "action_cancel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "キャンセル" } }
+      }
+    },
+    "action_close" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Close" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "閉じる" } }
+      }
+    },
+    "action_delete" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "削除" } }
+      }
+    },
+    "action_discard" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Discard" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "破棄" } }
+      }
+    },
+    "action_edit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "編集" } }
+      }
+    },
+    "action_keep_editing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep editing" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "編集を続ける" } }
+      }
+    },
+    "action_ok" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OK" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "OK" } }
+      }
+    },
+    "action_redo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Redo" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "やり直す" } }
+      }
+    },
+    "action_retry" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Retry" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "再試行" } }
+      }
+    },
+    "action_save" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "保存" } }
+      }
+    },
+    "action_undo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Undo" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "元に戻す" } }
+      }
+    },
+    "app_name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Knit Note" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Knit Note" } }
+      }
+    },
+    "dialog_unsaved_changes_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "You have unsaved changes. Discard them?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "未保存の変更があります。破棄しますか？" } }
+      }
+    },
+    "dialog_unsaved_changes_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unsaved changes" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "未保存の変更があります" } }
+      }
+    },
+    "error_generic" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Something went wrong" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "エラーが発生しました" } }
+      }
+    },
+    "error_load" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Couldn’t load" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み込みに失敗しました" } }
+      }
+    },
+    "error_network" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Network unavailable" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ネットワークに接続できません" } }
+      }
+    },
+    "error_save" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Couldn’t save" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "保存に失敗しました" } }
+      }
+    },
+    "state_empty" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Nothing here yet" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "まだ何もありません" } }
+      }
+    },
+    "state_loading" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Loading…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み込み中…" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}
