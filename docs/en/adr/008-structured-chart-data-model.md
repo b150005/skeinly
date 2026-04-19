@@ -584,6 +584,102 @@ day-one-visible. Synthesis: 3–5h cost to ship 30.3 first outweighed the
 editor-delay concern. Recorded per CLAUDE.md step 10; see
 `docs/en/symbol-review/phase-30.3.md §7` for the full reasoning.
 
+## Phase 32.1: document envelope schema v2 — craft + reading metadata
+
+Phase 32 (Chart Editor MVP) planning raised two questions the renderer
+cannot answer from cells alone:
+
+1. **Which craft is this chart?** Matters for palette defaults, Phase 36
+   discovery filtering, and Phase 37 fork attribution.
+2. **How is the chart read?** Standard knit charts alternate direction
+   per row (RS right→left, WS left→right). Crochet flat charts read
+   left→right every row. Round charts read center-outward. Bound to
+   reading, not geometry — two charts with identical cells can read
+   differently.
+
+### Decision
+
+Store both as metadata inside the document envelope, not as top-level
+columns. Bump the envelope `schema_version` from `1` to `2`.
+
+```kotlin
+enum class CraftType { KNIT, CROCHET }            // @SerialName "knit", "crochet"
+enum class ReadingConvention {
+    KNIT_FLAT,     // RS right→left, WS left→right (standard knit)
+    CROCHET_FLAT,  // every row left→right (common crochet chart)
+    ROUND,         // center-outward / radial
+}
+```
+
+Both fields land on `StructuredChart` with defaults `KNIT` /
+`KNIT_FLAT`. Writes include them in the jsonb envelope under
+`craft_type` and `reading_convention`; reads accept missing keys and
+fall back to defaults, so any Phase 29 (v1) row deserializes without
+change and is promoted to v2 on the next save.
+
+### Why inside the envelope, not as top-level columns
+
+- Phase 32 editor does not filter or index on these values — the Phase 31
+  viewer reads them but the MVP editor does not yet expose a picker.
+- Phase 36 (public chart discovery, filter-by-craft) is when an index
+  becomes valuable. That phase can denormalize the two fields onto
+  `chart_documents` columns — cheap DDL, no envelope schema change.
+- Keeping the wire format self-describing (the envelope carries its own
+  semantics) is more portable if charts are ever exported for sharing or
+  cross-backend migration.
+
+### Content hash is unchanged
+
+`StructuredChart.computeContentHash(extents, layers, json)` deliberately
+does **not** include craft / reading. Two charts with identical drawing
+but different read direction share a content hash — the hash protects
+drawing identity, not reading semantics. A metadata-only change is a
+full save (no short-circuit) by explicit `UpdateStructuredChartUseCase`
+logic (see `metadataUnchanged` guard). This preserves the correctness of
+Phase 29's hash-based idempotent sync while still allowing metadata-only
+edits to round-trip.
+
+### Legacy schema promotion
+
+`UpdateStructuredChartUseCase` unconditionally writes
+`schemaVersion = CURRENT_SCHEMA_VERSION` on save. A v1 row loaded and
+touched becomes a v2 row on next save even when the drawing content did
+not change. This keeps the stored `schema_version` column in lockstep
+with the envelope format actually written.
+
+### Editor (Phase 32 MVP) exposes neither picker
+
+By agreement, Phase 32 does not surface a craft / reading picker. New
+charts authored in the MVP use the `KNIT` / `KNIT_FLAT` defaults. Phase
+32.2 (or Phase 35 advanced editor) adds the picker. A crochet user
+authoring in the MVP therefore gets metadata wrong by default — tracked
+under "editor UX debt" pending the picker. Acceptable because Phase 31
+viewer does not render-branch on these fields yet.
+
+### Files changed
+
+- `shared/.../domain/model/StructuredChart.kt` — add enums + fields,
+  bump `CURRENT_SCHEMA_VERSION` to 2.
+- `shared/.../data/mapper/StructuredChartMapper.kt` — extend envelope
+  read/write with fallback-to-default parsing.
+- `shared/.../data/remote/RemoteStructuredChartDataSource.kt` —
+  `ChartDocumentPayload` carries new fields as nullable collapsing to
+  defaults on read.
+- `shared/.../domain/usecase/UpdateStructuredChartUseCase.kt` — accept
+  optional `craftType` / `readingConvention` params, promote
+  `schemaVersion` on save, expand noop-shortcut guard.
+
+### Tests added (+12, 706 → 718)
+
+- `StructuredChartTest`: `CURRENT_SCHEMA_VERSION == 2`, default values,
+  non-default round-trip, enum serialization tokens, v1 JSON decodes
+  with defaults, content hash invariant under metadata changes.
+- `StructuredChartMapperTest` (new): v1 envelope decodes to defaults,
+  v2 envelope preserves non-defaults, encoded envelope carries
+  `craft_type` / `reading_convention` keys, full envelope round-trip.
+- `StructuredChartUseCasesTest`: legacy v1 promoted to v2 on save,
+  craft-only change bypasses noop shortcut.
+
 ## References
 
 - ADR-001: Supabase as backend

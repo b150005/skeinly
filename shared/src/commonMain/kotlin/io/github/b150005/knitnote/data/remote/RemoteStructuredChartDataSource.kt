@@ -4,6 +4,8 @@ import io.github.b150005.knitnote.data.sync.RemoteStructuredChartSyncOperations
 import io.github.b150005.knitnote.domain.model.ChartExtents
 import io.github.b150005.knitnote.domain.model.ChartLayer
 import io.github.b150005.knitnote.domain.model.CoordinateSystem
+import io.github.b150005.knitnote.domain.model.CraftType
+import io.github.b150005.knitnote.domain.model.ReadingConvention
 import io.github.b150005.knitnote.domain.model.StorageVariant
 import io.github.b150005.knitnote.domain.model.StructuredChart
 import io.github.jan.supabase.SupabaseClient
@@ -22,6 +24,15 @@ import kotlin.time.Instant
 private data class ChartDocumentPayload(
     val extents: ChartExtents,
     val layers: List<ChartLayer>,
+    // Schema v2 (Phase 32.1). Non-nullable with enum defaults so that:
+    //  - legacy v1 rows missing the key deserialize to the default (backward compat)
+    //  - writes with the default enum value may be omitted by `encodeDefaults = false`
+    //    kotlinx-serialization config, and the absence round-trips back to the
+    //    same default — symmetric and safe.
+    //  - non-default values (CROCHET, ROUND) are always emitted regardless of
+    //    the `encodeDefaults` setting.
+    @SerialName("craft_type") val craftType: CraftType = CraftType.KNIT,
+    @SerialName("reading_convention") val readingConvention: ReadingConvention = ReadingConvention.KNIT_FLAT,
 )
 
 @Serializable
@@ -54,6 +65,8 @@ private data class ChartDocumentRecord(
             contentHash = contentHash,
             createdAt = createdAt,
             updatedAt = updatedAt,
+            craftType = document.craftType,
+            readingConvention = document.readingConvention,
         )
 }
 
@@ -65,7 +78,13 @@ private fun StructuredChart.toRecord(): ChartDocumentRecord =
         schemaVersion = schemaVersion,
         storageVariant = storageVariant,
         coordinateSystem = coordinateSystem,
-        document = ChartDocumentPayload(extents = extents, layers = layers),
+        document =
+            ChartDocumentPayload(
+                extents = extents,
+                layers = layers,
+                craftType = craftType,
+                readingConvention = readingConvention,
+            ),
         revisionId = revisionId,
         parentRevisionId = parentRevisionId,
         contentHash = contentHash,

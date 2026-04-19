@@ -502,6 +502,97 @@ Phase 30.3 は Phase 30.2 Knitter advisory
 CLAUDE.md step 10 に準拠して記録、完全な理由は
 `docs/ja/symbol-review/phase-30.3.md §7` を参照。
 
+## Phase 32.1: document envelope schema v2 — craft + reading metadata
+
+Phase 32 (Chart Editor MVP) 計画中、cells だけでは答えられない 2 問
+が浮上:
+
+1. **このチャートはどの craft か?** — palette デフォルト、Phase 36
+   discovery filter、Phase 37 fork attribution の起点
+2. **このチャートをどう読むか?** — 編み charts は行ごとに方向が交互
+   (RS 右→左、WS 左→右)、かぎ針 flat は毎行左→右、round は中心から
+   外へ。**読み**は **幾何**から独立 — 同じ cells でも読み方は異なり得る
+
+### 決定
+
+両者を document envelope 内部に metadata として格納。top-level カラム
+にはしない。envelope の `schema_version` を `1` → `2` にバンプ。
+
+```kotlin
+enum class CraftType { KNIT, CROCHET }            // @SerialName "knit", "crochet"
+enum class ReadingConvention {
+    KNIT_FLAT,     // RS 右→左、WS 左→右 (標準の編み chart)
+    CROCHET_FLAT,  // 毎行左→右 (かぎ針 flat の慣習)
+    ROUND,         // 中心外向き / 放射
+}
+```
+
+両フィールドを `StructuredChart` に追加、default は `KNIT` /
+`KNIT_FLAT`。書き込み時は envelope に `craft_type` / `reading_convention`
+キーを含め、読み込み時は欠損キーを default で補完する。よって Phase 29
+(v1) 行はそのまま deserialize でき、次回 save で v2 に昇格する。
+
+### なぜ envelope 内部に置き、top-level カラムにしないか
+
+- Phase 32 editor は filter / index しない — Phase 31 viewer は読む
+  が MVP editor は picker を UI に出さない
+- Phase 36 (公開 chart discovery、craft フィルタ) で初めて index が
+  有用になる。その phase で `chart_documents` カラムに denormalize
+  すればよい — 軽量 DDL、envelope schema 変更不要
+- wire format を self-describing に保つと、export / 他 backend 移行
+  時に portable
+
+### content hash は変更しない
+
+`StructuredChart.computeContentHash(extents, layers, json)` は craft /
+reading を **意図的に含めない**。同じ drawing で読み方が違う 2 chart
+は同一 content hash を持つ — hash は drawing identity を守るもので、
+reading semantics ではない。metadata のみの変更は noop short-circuit
+をバイパスして full save する (`UpdateStructuredChartUseCase` の
+`metadataUnchanged` guard 参照)。Phase 29 の hash ベース idempotent
+sync の正しさを保ちつつ、metadata-only 編集を round-trip 可能にする。
+
+### legacy schema promotion
+
+`UpdateStructuredChartUseCase` は save 時に無条件で
+`schemaVersion = CURRENT_SCHEMA_VERSION` を書き込む。v1 行を読み込んで
+touch すれば、drawing 不変でも次回 save で v2 行になる。stored
+`schema_version` カラムと実際に書かれた envelope format を lockstep
+に保つ。
+
+### editor (Phase 32 MVP) は picker を出さない
+
+合意済: Phase 32 は craft / reading picker を UI に出さない。MVP で
+authoring した新規 chart は `KNIT` / `KNIT_FLAT` default を持つ。
+picker は Phase 32.2 (または Phase 35 advanced editor) で追加。
+かぎ針ユーザが MVP で authoring すると metadata が default 間違い
+になる — "editor UX debt" として picker 実装まで記録。Phase 31 viewer
+は現状これらのフィールドで render 分岐していないため許容。
+
+### 変更ファイル
+
+- `shared/.../domain/model/StructuredChart.kt` — enums + フィールド
+  追加、`CURRENT_SCHEMA_VERSION` を 2 に
+- `shared/.../data/mapper/StructuredChartMapper.kt` — envelope の
+  read/write を拡張、欠損キー default フォールバック
+- `shared/.../data/remote/RemoteStructuredChartDataSource.kt` —
+  `ChartDocumentPayload` に nullable 両フィールドを追加、read 時に
+  default に縮約
+- `shared/.../domain/usecase/UpdateStructuredChartUseCase.kt` —
+  optional `craftType` / `readingConvention` param 受け取り、save 時
+  `schemaVersion` 昇格、noop-shortcut guard 拡張
+
+### 追加 test (+12、706 → 718)
+
+- `StructuredChartTest`: `CURRENT_SCHEMA_VERSION == 2`、default 値、
+  非 default の round-trip、enum 直列化トークン、v1 JSON が default
+  で decode、content hash が metadata 変更で不変であること
+- `StructuredChartMapperTest` (新規): v1 envelope が default で
+  decode、v2 envelope が非 default を保持、encode 後に `craft_type`
+  / `reading_convention` キーを含む、envelope full round-trip
+- `StructuredChartUseCasesTest`: legacy v1 が save で v2 に昇格、
+  craft のみの変更が noop shortcut を bypass
+
 ## 参考
 
 - ADR-001: Supabase をバックエンドに採用

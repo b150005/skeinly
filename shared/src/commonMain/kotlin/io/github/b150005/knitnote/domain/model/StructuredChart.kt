@@ -24,6 +24,51 @@ enum class StorageVariant {
     CHUNKED,
 }
 
+/**
+ * Craft a chart describes. Distinct from rendering — drives which symbol
+ * palette categories are surfaced by default and, together with
+ * [ReadingConvention], disambiguates row-numbering direction conventions
+ * when a chart is opened standalone (discovery, fork, collaboration).
+ *
+ * Phase 32.1 introduces this as schema v2 metadata inside the document
+ * envelope; the editor UI does not expose a picker yet — it always uses
+ * [CraftType.KNIT] as the default for newly-authored charts.
+ */
+@Serializable
+enum class CraftType {
+    @SerialName("knit")
+    KNIT,
+
+    @SerialName("crochet")
+    CROCHET,
+}
+
+/**
+ * How a reader is expected to traverse the chart. Independent from
+ * [CoordinateSystem] (which is purely geometric) — two charts with the
+ * same geometry can be read in different directions.
+ *
+ * Values:
+ * - [KNIT_FLAT]: RS rows right→left, WS rows left→right (standard knit chart convention).
+ * - [CROCHET_FLAT]: every row left→right (common crochet chart convention).
+ * - [ROUND]: center-outward (or bottom-up spiral) — used for amigurumi, doilies, crochet rounds.
+ *
+ * Phase 32.1 stores this but the renderer does not yet act on it. Phase 34
+ * per-segment progress and Phase 35 advanced editor will consume it for
+ * row-number display and symmetry ops.
+ */
+@Serializable
+enum class ReadingConvention {
+    @SerialName("knit_flat")
+    KNIT_FLAT,
+
+    @SerialName("crochet_flat")
+    CROCHET_FLAT,
+
+    @SerialName("round")
+    ROUND,
+}
+
 @Serializable
 sealed interface ChartExtents {
     @Serializable
@@ -89,9 +134,21 @@ data class StructuredChart(
     @SerialName("content_hash") val contentHash: String,
     @SerialName("created_at") val createdAt: Instant,
     @SerialName("updated_at") val updatedAt: Instant,
+    // Phase 32.1 (schema v2): craft + reading metadata. Persisted inside the
+    // document envelope. Defaults preserve behavior for any schema v1 row on
+    // first read — the value is promoted to v2 on the next save.
+    @SerialName("craft_type") val craftType: CraftType = CraftType.KNIT,
+    @SerialName("reading_convention") val readingConvention: ReadingConvention = ReadingConvention.KNIT_FLAT,
 ) {
     companion object {
-        const val CURRENT_SCHEMA_VERSION: Int = 1
+        /**
+         * Document-envelope schema version.
+         * - v1 (Phase 29): `extents` + `layers` only.
+         * - v2 (Phase 32.1): adds `craft_type` + `reading_convention`. Backward
+         *   compatible — v1 rows deserialize with defaults and are promoted to
+         *   v2 on the next save.
+         */
+        const val CURRENT_SCHEMA_VERSION: Int = 2
 
         /**
          * Regex for valid symbol IDs. See ADR-008 §6.

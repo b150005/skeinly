@@ -142,6 +142,56 @@ class StructuredChartUseCasesTest {
         }
 
     @Test
+    fun `update promotes legacy schemaVersion 1 to CURRENT on any save`() =
+        runTest {
+            val legacy =
+                seededChart().copy(
+                    schemaVersion = 1,
+                    contentHash =
+                        StructuredChart.computeContentHash(
+                            seededChart().extents,
+                            seededChart().layers,
+                            testJson,
+                        ),
+                )
+            repo.seed(legacy)
+            val useCase = UpdateStructuredChartUseCase(repo, testJson)
+
+            val result = useCase(current = legacy)
+
+            assertTrue(result is UseCaseResult.Success)
+            assertEquals(StructuredChart.CURRENT_SCHEMA_VERSION, result.value.schemaVersion)
+            assertNotEquals(
+                legacy.revisionId,
+                result.value.revisionId,
+                "legacy schema promotion must produce a new revision",
+            )
+        }
+
+    @Test
+    fun `update with craft change bypasses noop shortcut`() =
+        runTest {
+            val seeded = seededChart()
+            val matchingHash = StructuredChart.computeContentHash(seeded.extents, seeded.layers, testJson)
+            val current = seeded.copy(contentHash = matchingHash)
+            repo.seed(current)
+            val useCase = UpdateStructuredChartUseCase(repo, testJson)
+
+            val result =
+                useCase(
+                    current = current,
+                    craftType = io.github.b150005.knitnote.domain.model.CraftType.CROCHET,
+                )
+
+            assertTrue(result is UseCaseResult.Success)
+            assertEquals(
+                io.github.b150005.knitnote.domain.model.CraftType.CROCHET,
+                result.value.craftType,
+            )
+            assertNotEquals(current.revisionId, result.value.revisionId)
+        }
+
+    @Test
     fun `delete chart succeeds and removes from repository`() =
         runTest {
             val seeded = seededChart()

@@ -173,4 +173,101 @@ class StructuredChartTest {
         assertTrue(encoded.contains("\"revision_id\""))
         assertTrue(encoded.contains("\"content_hash\""))
     }
+
+    // ── Phase 32.1: schema v2 — craft_type + reading_convention ────────────
+
+    @Test
+    fun `current schema version is 2`() {
+        assertEquals(2, StructuredChart.CURRENT_SCHEMA_VERSION)
+    }
+
+    @Test
+    fun `new chart defaults to knit craft and knit_flat reading`() {
+        val chart = sampleChart()
+
+        assertEquals(CraftType.KNIT, chart.craftType)
+        assertEquals(ReadingConvention.KNIT_FLAT, chart.readingConvention)
+    }
+
+    @Test
+    fun `chart round-trips non-default craft and reading values`() {
+        val chart =
+            sampleChart().copy(
+                craftType = CraftType.CROCHET,
+                readingConvention = ReadingConvention.ROUND,
+            )
+        val encoded = json.encodeToString(StructuredChart.serializer(), chart)
+        val decoded = json.decodeFromString(StructuredChart.serializer(), encoded)
+
+        assertEquals(chart, decoded)
+        assertEquals(CraftType.CROCHET, decoded.craftType)
+        assertEquals(ReadingConvention.ROUND, decoded.readingConvention)
+    }
+
+    @Test
+    fun `craft and reading enums serialize to expected tokens`() {
+        assertEquals(
+            "knit",
+            json.encodeToString(CraftType.serializer(), CraftType.KNIT).trim('"'),
+        )
+        assertEquals(
+            "crochet",
+            json.encodeToString(CraftType.serializer(), CraftType.CROCHET).trim('"'),
+        )
+        assertEquals(
+            "knit_flat",
+            json.encodeToString(ReadingConvention.serializer(), ReadingConvention.KNIT_FLAT).trim('"'),
+        )
+        assertEquals(
+            "crochet_flat",
+            json.encodeToString(ReadingConvention.serializer(), ReadingConvention.CROCHET_FLAT).trim('"'),
+        )
+        assertEquals(
+            "round",
+            json.encodeToString(ReadingConvention.serializer(), ReadingConvention.ROUND).trim('"'),
+        )
+    }
+
+    @Test
+    fun `schema v1 JSON without craft or reading keys decodes with defaults`() {
+        // Simulates a row written by Phase 29 code (schema_version = 1, no craft_type key).
+        val v1Json =
+            """
+            {
+              "id": "chart-legacy",
+              "pattern_id": "pat-legacy",
+              "owner_id": "user-1",
+              "schema_version": 1,
+              "storage_variant": "inline",
+              "coordinate_system": "rect_grid",
+              "extents": { "type": "rect", "min_x": 0, "max_x": 1, "min_y": 0, "max_y": 0 },
+              "layers": [],
+              "revision_id": "rev-legacy",
+              "parent_revision_id": null,
+              "content_hash": "h1-00000000",
+              "created_at": "2026-04-17T10:00:00Z",
+              "updated_at": "2026-04-17T10:00:00Z"
+            }
+            """.trimIndent()
+        val decoded = json.decodeFromString(StructuredChart.serializer(), v1Json)
+
+        assertEquals(1, decoded.schemaVersion)
+        assertEquals(CraftType.KNIT, decoded.craftType)
+        assertEquals(ReadingConvention.KNIT_FLAT, decoded.readingConvention)
+    }
+
+    @Test
+    fun `content hash is unchanged by craft or reading metadata`() {
+        val extents = ChartExtents.Rect(0, 1, 0, 0)
+        val layers = listOf(sampleLayer())
+
+        val hashKnit = StructuredChart.computeContentHash(extents, layers, json)
+        val hashCrochet = StructuredChart.computeContentHash(extents, layers, json)
+
+        assertEquals(
+            hashKnit,
+            hashCrochet,
+            "metadata-only values must not alter the drawing content hash",
+        )
+    }
 }
