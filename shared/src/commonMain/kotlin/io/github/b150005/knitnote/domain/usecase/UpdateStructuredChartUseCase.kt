@@ -2,6 +2,8 @@ package io.github.b150005.knitnote.domain.usecase
 
 import io.github.b150005.knitnote.domain.model.ChartExtents
 import io.github.b150005.knitnote.domain.model.ChartLayer
+import io.github.b150005.knitnote.domain.model.CraftType
+import io.github.b150005.knitnote.domain.model.ReadingConvention
 import io.github.b150005.knitnote.domain.model.StructuredChart
 import io.github.b150005.knitnote.domain.repository.StructuredChartRepository
 import kotlinx.serialization.json.Json
@@ -25,23 +27,36 @@ class UpdateStructuredChartUseCase(
         current: StructuredChart,
         extents: ChartExtents = current.extents,
         layers: List<ChartLayer> = current.layers,
+        craftType: CraftType = current.craftType,
+        readingConvention: ReadingConvention = current.readingConvention,
     ): UseCaseResult<StructuredChart> =
         try {
             val newHash = StructuredChart.computeContentHash(extents, layers, json)
+            // Short-circuit only when every persisted field matches. Metadata-only
+            // changes (craft/reading) do not alter the content hash but still need
+            // to round-trip to storage and bump the schema version to v2.
+            val metadataUnchanged =
+                craftType == current.craftType &&
+                    readingConvention == current.readingConvention &&
+                    current.schemaVersion == StructuredChart.CURRENT_SCHEMA_VERSION
             if (newHash == current.contentHash &&
                 extents == current.extents &&
-                layers == current.layers
+                layers == current.layers &&
+                metadataUnchanged
             ) {
                 UseCaseResult.Success(current)
             } else {
                 val updated =
                     current.copy(
+                        schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
                         extents = extents,
                         layers = layers,
                         revisionId = Uuid.random().toString(),
                         parentRevisionId = current.revisionId,
                         contentHash = newHash,
                         updatedAt = Clock.System.now(),
+                        craftType = craftType,
+                        readingConvention = readingConvention,
                     )
                 UseCaseResult.Success(repository.update(updated))
             }
