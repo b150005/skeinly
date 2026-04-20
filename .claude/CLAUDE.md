@@ -164,20 +164,24 @@ Agents detect this project as **Kotlin Multiplatform** by finding:
 
 ## Session Handoff Protocol
 
-Each session MUST output a **Next Session Instructions** block **as conversation output** (NOT written to CLAUDE.md or any file) at the end of every task boundary (phase completion, significant milestone, or session end). This ensures continuity across sessions.
+Each session MUST end with a **Next Session Instructions** block output as a fenced code block in the conversation (never written to any file). The handoff is a short tactical prompt for resuming work — NOT a comprehensive status dump. Persistent facts live in this CLAUDE.md; the handoff only carries what the next session needs to act immediately.
 
-The instructions should include:
-1. **Current state**: Branch, latest commit hash, test count, build status
-2. **What was completed**: Summary of the phase/task just finished
-3. **Next task**: Exact phase/task to execute next, with file-level detail
-4. **Known issues**: Any blockers, technical debt, or deferred items
-5. **Architecture context**: Relevant ADRs, design decisions, or constraints
+### What goes in the handoff — keep terse (target ≤40 lines)
+1. **Current state**: branch + latest commit hash + test count + CI status (one line each)
+2. **Next task**: one-line statement of the phase / option to execute
+3. **First actions on resume**: 3–5 concrete commands or edits the next session runs immediately (e.g. `gh run list ...` sanity check, path to the first file to open, the test to write first)
+4. **Any pending execution decision blocking completion** (merge conflict, flaky test awaiting investigation, etc.)
 
-Format: A fenced code block titled `## Next Session Instructions` that can be copy-pasted directly as the next session's prompt. This block is output in the chat reply only — CLAUDE.md should only be updated with roadmap status changes (moving phases from Planned to Completed), not with session-specific handoff instructions.
+### What does NOT go in the handoff — put in CLAUDE.md instead
+- **Roadmap progress** → `## Development Roadmap > Completed`. Move each finished phase here in the same commit that ships it. Include test delta, key design points, scope cuts.
+- **Scope decisions for the completed phase** → keep in the phase's Completed bullet (what was cut, why, when to revisit).
+- **Tech debt and follow-ups** → `## Tech Debt Backlog`. One line per item, grouped by theme.
+- **Architecture invariants, ADR references** → `## Architecture Principles` or the relevant ADR under `docs/en/adr/`.
+- **Gotchas / local-CI divergence** → `## CI Known Limitations`.
 
-**IMPORTANT**: Next Session Instructions MUST be output at the very end of the conversation — never in the middle. Outputting it mid-session risks stale information since subsequent tasks may change state (commits, test counts, known issues). Always wait until the session's final response to emit the handoff block.
+If the handoff is growing past ~40 lines it means you are duplicating CLAUDE.md — move the content there and link to it by phase name only.
 
-**CRITICAL**: Do NOT output Next Session Instructions while there are still pending execution decisions (e.g., "push?", "commit?"). If a task produces an action that requires user confirmation, wait for the user's decision, execute it, and only then — when there are truly no more tasks to perform in the session — output the handoff block. A session is not complete until all execution decisions are resolved.
+**Ordering**: emit the handoff as the very last message of the session, after every execution decision (push, CI verify, etc.) is resolved. Never emit it mid-session — state can change afterwards and the handoff goes stale.
 
 ## Development Roadmap
 
@@ -258,25 +262,57 @@ Format: A fenced code block titled `## Next Session Instructions` that can be co
 
 - **Phase 30.1**: Knitter review + Symbol Dictionary — `SymbolGalleryScreen` on both platforms (Compose `LazyVerticalGrid` / SwiftUI `LazyVGrid` over `SymbolCatalog.all()`, each card shows the rendered glyph plus JA + EN labels and id always visible per design direction until Phase 33 i18n). `SymbolGalleryViewModel` (category filter-ready, search-ready state shape). ProjectList entry point added (Android top-bar `GridView` IconButton, iOS overflow menu entry). Knitter written review committed to `docs/en/symbol-review/phase-30.1.md` (+ `docs/ja/`); ADR-008 addendum records next-category decision (`jis.crochet.*`) and geometry follow-up plan. +4 commonTest.
 
+- **Phase 30.1-fix**: `KnitSymbols.kt` geometry corrections per knitter advisory — purl bar narrowed, cable under-strokes broken, SSK/k2tog/p2tog/k3tog redrawn as stem+slash, `std.cyc.kfb` namespace addition.
+
+- **Phase 30.2 (+ fix)**: `jis.crochet.*` catalog first pass — ~25 glyphs (ch / sc / hdc / dc / tr / sl-st / cluster variants) per JIS L 0201 Table 2 + CYC. Follow-up fix added `SymbolDefinition.fill` field for glyphs that JIS / publisher convention draws filled (sl-st, bobble); stroke-vs-fill is now per-symbol.
+
+- **Phase 30.3**: crochet catalog extension — `jis.crochet.{reverse-sc, puff, hdc-cluster-3}`.
+
+- **Phase 33**: i18n skeleton — 21 seed keys synced across `values/strings.xml` + `values-ja/strings.xml` + `iosApp/.../Localizable.xcstrings`. `iosApp/project.yml` CFBundleDevelopmentRegion + CFBundleLocalizations. `scripts/verify-i18n-keys.sh` drift-check wired into CI `shared-checks`. `docs/{en,ja}/i18n-convention.md` documents role-prefixed key naming. Consumer wiring from shared Compose screens is a follow-up (see Tech Debt Backlog).
+
+- **Phase 32.1**: StructuredChart schema v2 — `CraftType { KNIT, CROCHET }` + `ReadingConvention { KNIT_FLAT, CROCHET_FLAT, ROUND }` enums added to the document envelope. Schema bump 1→2 is backward compatible (v1 rows read with defaults, promoted to v2 on next save). `computeContentHash` unchanged (metadata lives outside drawing identity). `UpdateStructuredChartUseCase` has a `metadataUnchanged` guard + auto-promote. No DDL change. ADR-008 Phase 32.1 addendum. +15 commonTest (720 total).
+
+- **Phase 32**: Chart Editor MVP — tap-to-place authoring with undo/redo and save. Shared: `ChartEditorViewModel` (one-shot load via `GetStructuredChartByPatternId` — intentionally not observing so external Realtime does not stomp mid-edit; conflict resolution is Phase 37 scope), `EditHistory` (50-entry `ArrayDeque` snapshot ring buffer with overflow eviction + redo-clear on record), `GridHitTest` (screen→grid with y-flip), `ChartEditorScreen` (Scaffold + Canvas + palette), `SymbolPaletteStrip` (category chips + eraser + symbol cells), `cellScreenRect` extracted from viewer to shared `SymbolDrawing.kt`. iOS: `StructuredChartEditorScreen.swift` via `ScopedViewModel`, `PalettePathCache` ObservableObject, Closeable cancelled in `onDisappear`. Koin + NavGraph + ProjectDetail entries on both platforms. **Scope cuts (MVP)**: `CraftType.KNIT` / `ReadingConvention.KNIT_FLAT` hardcoded (picker = Phase 32.2), 8×8 default grid (picker = Phase 35), flat rect only (polar = Phase 35), Maestro E2E deferred (requires linked-pattern prerequisite — see Tech Debt Backlog), i18n hardcoded English. **Known gotcha that burnt CI**: Kotlin/Native rejects backticked test-fun names containing `(`, `)`, `,` — JVM tolerates. 3 tests renamed in fix commit (6b65df4). +30 commonTest (750 total). Code review: 2 HIGH + 4 MEDIUM + 3 LOW fixes landed before merge (iOS Closeable leak, `save()` stale snapshot, `!!` on errorMessage, vacuous test assertion, eraser icon semantics, pointerInput over-keying, iOS palette SVG parse cache, `availableCategories` memoization).
+
 ### Deferred (superseded by ADR-007)
 - **Phase 27c**: v1 Store Submission (Final) — staged but not executed. Will re-open only after the structured chart vision (Phase 29–40) reaches beta readiness.
 
 ### Planned — Structured Chart Authoring (per ADR-007)
-- **Phase 29**: Structured Chart Data Model — `StructuredChart` schema (layers, cells, symbol ids, coordinates), SQLDelight migration, Supabase `chart_documents` jsonb table, basic CRUD; `Pattern.chartImageUrl` retained for legacy photo charts
-- **Phase 30**: Symbol Library — JIS-standard knitting symbols rendered in shared SVG path definitions, platform-native Canvas drawing (Compose + SwiftUI), bilingual symbol dictionary UI with JA/EN descriptions
-- **Phase 30.5**: Knitter agent + symbol sources policy — `.claude/agents/knitter.md` first-pass domain reviewer; ADR-008 "Symbol sources policy" addendum codifies JIS-as-reference, `std.<house>.*` / `std.cyc.*` / `user.*` namespaces, catalog non-exhaustiveness
-- **Phase 30.1-fix**: `KnitSymbols.kt` geometry-only PR resolving the review findings pending user answers to open questions in `docs/en/symbol-review/phase-30.1.md` §5 — narrow purl bar to ~0.3→0.7, break under-stroke on all 8 cable glyphs, redraw SSK/k2tog/p2tog/k3tog as `stem + single slash`, resolve `kfb` vs `ねじり増し目` label/shape mismatch
-- **Phase 30.2**: Crochet symbol catalog — `jis.crochet.*` namespace, ~25–35 glyphs covering ch / sc / hdc / dc / tr / sl-st / cluster variants (JIS L 0201 Table 2 + CYC crochet set)
-- **Phase 32**: Chart Editor (MVP) — symbol palette, tap-to-place, undo/redo, save; minimal layouts (grid + single round)
-- **Phase 33**: i18n JA/EN — Compose `stringResource` catalogue, SwiftUI `Localizable.xcstrings`, docs/README translations audit, date-format locale awareness
-- **Phase 34**: Per-Segment Progress — stitch/section granularity for todo/wip/done, progress visualization overlays on the chart viewer
-- **Phase 35**: Chart Editor (Advanced) — symmetry copy, layer ops, snap grid, polar-coordinate (round) mode
-- **Phase 36**: Chart Discovery + Fork — extend Discovery to structured charts, upgrade fork to a commit-rooted copy with author attribution
-- **Phase 37**: Collaboration Core — commit history, branch, diff view (MVP). Minimal Git semantics; no CRDT in v1
-- **Phase 38**: Pull Request — comment + approval workflow, merge strategies, conflict visualization
-- **Phase 39**: Closed Beta — TestFlight internal + Play Internal Testing distribution to invited users; data migration compat freezes here
-- **Phase 40**: v1.0 Public Release — re-open the Phase 27c submission work with the finalized product name and bundle ID
+- **Phase 32.2**: Chart Editor craft/reading picker — surface `CraftType` + `ReadingConvention` in the editor UI so CROCHET authoring writes correct metadata. Picker in TopBar overflow (Compose `DropdownMenu`, SwiftUI `Picker`). `ChartEditorState` gains two user-settable fields; `UpdateStructuredChartUseCase` already accepts them. Add 2–3 ViewModel tests.
+- **Phase 30.4**: Knitter-priority glyph bundle (opportunistic) — `hdc-cluster-5` (widthUnits=2), Solomon's knot / ラブノット, crossed dc, Bullion, `picot-N` parametric. Re-prioritize after editor telemetry.
+- **Phase 34**: Per-Segment Progress — stitch/section granularity for todo/wip/done, progress visualization overlays on the chart viewer. Needs an ADR (segment table vs. layer extension).
+- **Phase 35**: Chart Editor (Advanced) — symmetry copy, layer ops, snap grid, polar-coordinate (round) mode, grid size picker.
+- **Phase 36**: Chart Discovery + Fork — extend Discovery to structured charts, upgrade fork to a commit-rooted copy with author attribution.
+- **Phase 37**: Collaboration Core — commit history, branch, diff view (MVP). Minimal Git semantics; no CRDT in v1.
+- **Phase 38**: Pull Request — comment + approval workflow, merge strategies, conflict visualization.
+- **Phase 39**: Closed Beta — TestFlight internal + Play Internal Testing distribution to invited users; data migration compat freezes here.
+- **Phase 40**: v1.0 Public Release — re-open the Phase 27c submission work with the finalized product name and bundle ID.
 
 ### Post-v1.0
 - **Phase 24**: Push Notifications — FCM/APNs, Supabase Edge Functions
 - **Phase 21**: macOS Target — based on user demand after v1.0
+
+## Tech Debt Backlog
+
+Items deferred across phases. When reopening one, cut a dedicated PR — do not bundle into unrelated feature work unless the commit message calls it out explicitly.
+
+### Chart Editor (Phase 32 follow-ups)
+- **i18n consumer wiring**: Phase 33 seeded keys (`action_undo`, `action_save`, `dialog_unsaved_changes_*`, etc.) exist in `values/strings.xml` + `Localizable.xcstrings` but shared Compose screens still hardcode English. Need `Res.string` plumbing via compose-multiplatform-resources plugin, or a const-sync script. Same gap applies to other shared screens, not just the editor.
+- **System-back discard dialog**: `androidx.activity.compose.BackHandler` is Android-only, so the Phase 32 editor only intercepts back via the top-bar button. `.interactiveDismissDisabled` on iOS blocks swipe but not the nav back-button tap. Needs an `expect/actual` back-intercept helper in commonMain, or reconsider scope.
+- **Maestro E2E for chart editor**: deferred because the "Edit structured chart" entry is gated on `state.pattern != null` (Project → Pattern linkage). Flow needs a pattern-create pre-step (~60 LOC). Reopening depends on E2E value vs. the 17-case ViewModel test coverage.
+
+### iOS SwiftUI lifecycle
+- **`PatternEditScreen.swift` Closeable leak**: stores the `saveSuccess` collector as `_ = closeable`, same pattern fixed in `StructuredChartEditorScreen` during Phase 32 review. One-line fix: store in `@State` + `close()` in `onDisappear`. Audit other screens for the same anti-pattern.
+
+### KMP / Compose recurring gotchas
+- **Kotlin/Native test-name restriction**: backticked function names containing `(`, `)`, `,` fail `:shared:compileTestKotlinIosSimulatorArm64` / `IosX64` but pass `:shared:testAndroidHostTest` (JVM). Hit Phase 32 CI once (commit 6b65df4 is the fix). Pre-push verification should include the iOS simulator compile target; consider adding to `docs/en/` or a pre-push hook.
+- **`BackHandler` not in commonMain**: `androidx.activity.compose.BackHandler` cannot be used from shared Compose screens. Either wrap with `expect/actual` or route back-intercept through the host Activity / UIViewController.
+
+### Deprecated-API cleanup (low priority)
+- `rememberSwipeToDismissBoxState` — 3 screens (PatternLibrary, ProjectDetail, ProjectList). No non-experimental CMP 1.10.3 replacement yet.
+- `MenuAnchorType` typealias in CreateProjectDialog — rename to `ExposedDropdownMenuAnchorType`.
+- `AuthRepositoryImpl.RefreshFailureCause` — migrate to `AuthEvent.RefreshFailure(cause)` per supabase-kt API change.
+
+### Structured chart cosmetic polish
+- `jis.crochet.hdc-cluster-3` stem spacing — outer stems `0.25/0.75` → `0.22/0.78` (Phase 30.4 bundle).
+- `jis.crochet.reverse-sc` chevron form — awaiting real-user feedback before changing.
