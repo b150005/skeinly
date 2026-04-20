@@ -2,6 +2,7 @@ package io.github.b150005.knitnote.di
 
 import io.github.b150005.knitnote.ui.activityfeed.ActivityFeedViewModel
 import io.github.b150005.knitnote.ui.auth.AuthViewModel
+import io.github.b150005.knitnote.ui.chart.ChartEditorViewModel
 import io.github.b150005.knitnote.ui.chart.ChartViewerViewModel
 import io.github.b150005.knitnote.ui.comments.CommentSectionViewModel
 import io.github.b150005.knitnote.ui.discovery.DiscoveryViewModel
@@ -75,6 +76,15 @@ val viewModelModule =
             ChartViewerViewModel(
                 patternId = params.get(),
                 observeStructuredChart = get(),
+            )
+        }
+        viewModel { params ->
+            ChartEditorViewModel(
+                patternId = params.get(),
+                getStructuredChart = get(),
+                createStructuredChart = get(),
+                updateStructuredChart = get(),
+                symbolCatalog = get(),
             )
         }
         viewModelOf(::SymbolGalleryViewModel)

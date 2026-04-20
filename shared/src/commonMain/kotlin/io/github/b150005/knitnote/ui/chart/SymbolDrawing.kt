@@ -9,6 +9,8 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import io.github.b150005.knitnote.domain.chart.CellBounds
 import io.github.b150005.knitnote.domain.chart.SymbolRenderTransform
+import io.github.b150005.knitnote.domain.model.ChartCell
+import io.github.b150005.knitnote.domain.model.ChartExtents
 import io.github.b150005.knitnote.domain.symbol.PathCommand
 import io.github.b150005.knitnote.domain.symbol.SvgPathParser
 import io.github.b150005.knitnote.domain.symbol.SymbolDefinition
@@ -81,4 +83,26 @@ fun DrawScope.drawCellBackground(
         topLeft = bounds.topLeft,
         size = bounds.size,
     )
+}
+
+/**
+ * Screen-space rect for a [ChartCell] placed inside [rect], given the laid-out
+ * cell size and origin. Chart coordinates have y-up; the returned [Rect] is in
+ * the viewer/editor's y-down screen space after the flip.
+ */
+fun cellScreenRect(
+    cell: ChartCell,
+    rect: ChartExtents.Rect,
+    gridHeight: Int,
+    cellSize: Float,
+    originX: Float,
+    originY: Float,
+): Rect {
+    val gx = cell.x - rect.minX
+    val gy = cell.y - rect.minY
+    val left = originX + gx * cellSize
+    val bottom = originY + (gridHeight - gy) * cellSize
+    val top = bottom - cell.height * cellSize
+    val right = left + cell.width * cellSize
+    return Rect(left = left, top = top, right = right, bottom = bottom)
 }

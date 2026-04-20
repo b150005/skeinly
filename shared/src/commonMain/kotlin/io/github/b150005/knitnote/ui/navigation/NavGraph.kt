@@ -18,6 +18,7 @@ import io.github.b150005.knitnote.domain.usecase.GetOnboardingCompletedUseCase
 import io.github.b150005.knitnote.ui.activityfeed.ActivityFeedScreen
 import io.github.b150005.knitnote.ui.auth.AuthViewModel
 import io.github.b150005.knitnote.ui.auth.LoginScreen
+import io.github.b150005.knitnote.ui.chart.ChartEditorScreen
 import io.github.b150005.knitnote.ui.chart.ChartViewerScreen
 import io.github.b150005.knitnote.ui.discovery.DiscoveryScreen
 import io.github.b150005.knitnote.ui.onboarding.OnboardingScreen
@@ -73,6 +74,11 @@ data object Discovery
 
 @Serializable
 data class ChartViewer(
+    val patternId: String,
+)
+
+@Serializable
+data class ChartEditor(
     val patternId: String,
 )
 
@@ -262,11 +268,21 @@ fun KnitNoteNavHost(
                 onChartViewerClick = { patternId ->
                     navController.navigate(ChartViewer(patternId = patternId))
                 },
+                onChartEditorClick = { patternId ->
+                    navController.navigate(ChartEditor(patternId = patternId))
+                },
             )
         }
         composable<ChartViewer> { backStackEntry ->
             val route = backStackEntry.toRoute<ChartViewer>()
             ChartViewerScreen(
+                patternId = route.patternId,
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<ChartEditor> { backStackEntry ->
+            val route = backStackEntry.toRoute<ChartEditor>()
+            ChartEditorScreen(
                 patternId = route.patternId,
                 onBack = { navController.popBackStack() },
             )

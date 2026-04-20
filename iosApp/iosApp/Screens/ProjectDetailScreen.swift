@@ -115,6 +115,9 @@ struct ProjectDetailScreen: View {
                         hasStructuredChart: state.hasStructuredChart,
                         onChartViewerTap: {
                             path.append(Route.chartViewer(patternId: pattern.id))
+                        },
+                        onChartEditorTap: {
+                            path.append(Route.chartEditor(patternId: pattern.id))
                         }
                     )
                 }
@@ -239,7 +242,8 @@ struct ProjectDetailScreen: View {
     private func patternInfoSection(
         _ pattern: Pattern,
         hasStructuredChart: Bool,
-        onChartViewerTap: @escaping () -> Void
+        onChartViewerTap: @escaping () -> Void,
+        onChartEditorTap: @escaping () -> Void
     ) -> some View {
         LabeledContent("Title", value: pattern.title)
 
@@ -250,6 +254,15 @@ struct ProjectDetailScreen: View {
             }
             .accessibilityIdentifier("openChartViewerLink")
         }
+
+        Button(action: onChartEditorTap) {
+            Label(
+                hasStructuredChart ? "Edit structured chart" : "Create structured chart",
+                systemImage: "square.and.pencil"
+            )
+            .font(.caption)
+        }
+        .accessibilityIdentifier("openChartEditorLink")
 
         if let difficulty = pattern.difficulty {
             LabeledContent("Difficulty") {

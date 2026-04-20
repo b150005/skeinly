@@ -9,6 +9,7 @@ import io.github.b150005.knitnote.domain.symbol.SymbolCatalog
 import io.github.b150005.knitnote.domain.usecase.GetOnboardingCompletedUseCase
 import io.github.b150005.knitnote.ui.activityfeed.ActivityFeedViewModel
 import io.github.b150005.knitnote.ui.auth.AuthViewModel
+import io.github.b150005.knitnote.ui.chart.ChartEditorViewModel
 import io.github.b150005.knitnote.ui.chart.ChartViewerViewModel
 import io.github.b150005.knitnote.ui.comments.CommentSectionViewModel
 import io.github.b150005.knitnote.ui.onboarding.OnboardingViewModel
@@ -76,6 +77,8 @@ fun getSharedContentViewModel(
 ): SharedContentViewModel = KoinPlatform.getKoin().get { parametersOf(token, shareId) }
 
 fun getChartViewerViewModel(patternId: String): ChartViewerViewModel = KoinPlatform.getKoin().get { parametersOf(patternId) }
+
+fun getChartEditorViewModel(patternId: String): ChartEditorViewModel = KoinPlatform.getKoin().get { parametersOf(patternId) }
 
 fun getSymbolCatalog(): SymbolCatalog = KoinPlatform.getKoin().get()
 
@@ -148,6 +151,12 @@ fun wrapForkedProjectIdFlow(flow: kotlinx.coroutines.flow.Flow<String>): EventFl
 fun wrapChartViewerState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.knitnote.ui.chart.ChartViewerState>,
 ): FlowWrapper<io.github.b150005.knitnote.ui.chart.ChartViewerState> = FlowWrapper(flow)
+
+fun wrapChartEditorState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.knitnote.ui.chart.ChartEditorState>,
+): FlowWrapper<io.github.b150005.knitnote.ui.chart.ChartEditorState> = FlowWrapper(flow)
+
+fun wrapChartEditorSavedFlow(flow: kotlinx.coroutines.flow.Flow<Unit>): EventFlowWrapper<Unit> = EventFlowWrapper(flow)
 
 fun getSymbolGalleryViewModel(): SymbolGalleryViewModel = KoinPlatform.getKoin().get()
 

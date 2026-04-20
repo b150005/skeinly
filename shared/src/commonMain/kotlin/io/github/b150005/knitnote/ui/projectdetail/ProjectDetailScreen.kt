@@ -86,6 +86,7 @@ fun ProjectDetailScreen(
     projectId: String,
     onBack: () -> Unit,
     onChartViewerClick: (String) -> Unit = {},
+    onChartEditorClick: (String) -> Unit = {},
     viewModel: ProjectDetailViewModel = koinViewModel { parametersOf(projectId) },
 ) {
     val state by viewModel.state.collectAsState()
@@ -295,6 +296,7 @@ fun ProjectDetailScreen(
                                             onChartViewerClick(pattern.id)
                                         }
                                     },
+                                    onChartEditorClick = { onChartEditorClick(pattern.id) },
                                 )
                             }
                         }
@@ -795,6 +797,7 @@ private fun PatternInfoSection(
     pattern: Pattern,
     hasStructuredChart: Boolean,
     onChartViewerClick: () -> Unit = {},
+    onChartEditorClick: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 16.dp),
@@ -815,6 +818,15 @@ private fun PatternInfoSection(
                         .testTag("openChartViewerLink"),
             )
         }
+        Text(
+            text = if (hasStructuredChart) "Edit structured chart" else "Create structured chart",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier =
+                Modifier
+                    .clickable(onClick = onChartEditorClick)
+                    .testTag("openChartEditorLink"),
+        )
         pattern.difficulty?.let { difficulty ->
             Text(
                 text = difficulty.name.lowercase().replaceFirstChar { it.uppercase() },

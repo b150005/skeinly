@@ -245,7 +245,7 @@ private fun ChartCanvas(
             if (!layer.visible || layer.id in hiddenLayerIds) return@forEach
             layer.cells.forEach { cell ->
                 val bounds =
-                    cellRect(
+                    cellScreenRect(
                         cell = cell,
                         rect = rect,
                         gridHeight = gridHeight,
@@ -294,26 +294,6 @@ private fun ChartCanvas(
             }
         }
     }
-}
-
-private fun cellRect(
-    cell: ChartCell,
-    rect: ChartExtents.Rect,
-    gridHeight: Int,
-    cellSize: Float,
-    originX: Float,
-    originY: Float,
-): Rect {
-    // Chart coordinates: y increases upward, origin at bottom-left.
-    // Screen: y increases downward. Flip happens here so the rest of the renderer
-    // works in y-down space.
-    val gx = cell.x - rect.minX
-    val gy = cell.y - rect.minY
-    val left = originX + gx * cellSize
-    val bottom = originY + (gridHeight - gy) * cellSize
-    val top = bottom - cell.height * cellSize
-    val right = left + cell.width * cellSize
-    return Rect(left = left, top = top, right = right, bottom = bottom)
 }
 
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawParameterSlots(
