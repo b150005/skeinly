@@ -14,10 +14,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,6 +45,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import io.github.b150005.knitnote.domain.chart.GridHitTest
 import io.github.b150005.knitnote.domain.model.ChartExtents
+import io.github.b150005.knitnote.domain.model.CraftType
+import io.github.b150005.knitnote.domain.model.ReadingConvention
 import io.github.b150005.knitnote.domain.symbol.SymbolCatalog
 import io.github.b150005.knitnote.domain.symbol.SymbolCategory
 import org.koin.compose.koinInject
@@ -59,6 +65,7 @@ fun ChartEditorScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var showDiscardDialog by remember { mutableStateOf(false) }
+    var showOverflowMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel) {
         viewModel.saved.collect { onBack() }
@@ -98,6 +105,26 @@ fun ChartEditorScreen(
                         modifier = Modifier.testTag("editorSaveButton"),
                     ) {
                         Icon(Icons.Filled.Save, contentDescription = "Save")
+                    }
+                    Box {
+                        IconButton(
+                            onClick = { showOverflowMenu = true },
+                            modifier = Modifier.testTag("editorOverflowButton"),
+                        ) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = "More options")
+                        }
+                        ChartMetadataMenu(
+                            expanded = showOverflowMenu,
+                            craftType = state.draftCraftType,
+                            readingConvention = state.draftReadingConvention,
+                            onDismiss = { showOverflowMenu = false },
+                            onCraftSelected = {
+                                viewModel.onEvent(ChartEditorEvent.SelectCraft(it))
+                            },
+                            onReadingSelected = {
+                                viewModel.onEvent(ChartEditorEvent.SelectReading(it))
+                            },
+                        )
                     }
                 },
             )
@@ -293,3 +320,70 @@ private fun computeLayout(
     val originY = (heightPx - drawH) / 2f
     return CanvasLayout(cellSize, originX, originY)
 }
+
+@Composable
+private fun ChartMetadataMenu(
+    expanded: Boolean,
+    craftType: CraftType,
+    readingConvention: ReadingConvention,
+    onDismiss: () -> Unit,
+    onCraftSelected: (CraftType) -> Unit,
+    onReadingSelected: (ReadingConvention) -> Unit,
+) {
+    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+        MetadataMenuHeader("Craft")
+        CraftType.entries.forEach { craft ->
+            DropdownMenuItem(
+                text = {
+                    val prefix = if (craft == craftType) "\u2713 " else "  "
+                    Text("$prefix${craftLabel(craft)}")
+                },
+                onClick = {
+                    onCraftSelected(craft)
+                    onDismiss()
+                },
+                modifier = Modifier.testTag("craftOption_${craft.name}"),
+            )
+        }
+        HorizontalDivider()
+        MetadataMenuHeader("Reading")
+        ReadingConvention.entries.forEach { reading ->
+            DropdownMenuItem(
+                text = {
+                    val prefix = if (reading == readingConvention) "\u2713 " else "  "
+                    Text("$prefix${readingLabel(reading)}")
+                },
+                onClick = {
+                    onReadingSelected(reading)
+                    onDismiss()
+                },
+                modifier = Modifier.testTag("readingOption_${reading.name}"),
+            )
+        }
+    }
+}
+
+@Composable
+private fun MetadataMenuHeader(label: String) {
+    // Non-interactive section header — avoids the "disabled button" semantics
+    // that screen readers announce for `DropdownMenuItem(enabled = false)`.
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+    )
+}
+
+private fun craftLabel(craft: CraftType): String =
+    when (craft) {
+        CraftType.KNIT -> "Knit"
+        CraftType.CROCHET -> "Crochet"
+    }
+
+private fun readingLabel(reading: ReadingConvention): String =
+    when (reading) {
+        ReadingConvention.KNIT_FLAT -> "Knit flat (RS \u2192, WS \u2190)"
+        ReadingConvention.CROCHET_FLAT -> "Crochet flat (L\u2192R)"
+        ReadingConvention.ROUND -> "Round (center out)"
+    }

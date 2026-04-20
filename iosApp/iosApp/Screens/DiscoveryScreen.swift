@@ -6,6 +6,7 @@ struct DiscoveryScreen: View {
     @StateObject private var holder: ScopedViewModel<DiscoveryViewModel, DiscoveryState>
     @State private var showError = false
     @State private var searchText = ""
+    @State private var forkedCloseable: Closeable?
 
     private var viewModel: DiscoveryViewModel { holder.viewModel }
 
@@ -39,6 +40,10 @@ struct DiscoveryScreen: View {
             .toolbar { sortToolbarItem }
             .overlay { forkingOverlay }
             .task { observeForkedProjectId() }
+            .onDisappear {
+                forkedCloseable?.close()
+                forkedCloseable = nil
+            }
     }
 
     @ViewBuilder
@@ -121,8 +126,13 @@ struct DiscoveryScreen: View {
     }
 
     private func observeForkedProjectId() {
+        // `.task { }` re-fires on every view re-appearance. Close any prior
+        // subscription before replacing it so we do not leak one Closeable per
+        // background/foreground cycle.
+        forkedCloseable?.close()
+        forkedCloseable = nil
         let wrapper = KoinHelperKt.wrapDiscoveryForkedProjectIdFlow(flow: viewModel.forkedProjectId)
-        let _ = wrapper.collect { projectId in
+        forkedCloseable = wrapper.collect { projectId in
             Task { @MainActor in
                 guard let id = projectId as? String else { return }
                 path = NavigationPath()

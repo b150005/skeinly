@@ -87,6 +87,31 @@ struct StructuredChartEditorScreen: View {
                 }
                 .accessibilityIdentifier("editorSaveButton")
                 .disabled(!state.hasUnsavedChanges || state.isSaving)
+
+                Menu {
+                    Section("Craft") {
+                        Picker("Craft", selection: Binding(
+                            get: { state.draftCraftType },
+                            set: { viewModel.onEvent(event: ChartEditorEventSelectCraft(craftType: $0)) }
+                        )) {
+                            Text("Knit").tag(CraftType.knit)
+                            Text("Crochet").tag(CraftType.crochet)
+                        }
+                    }
+                    Section("Reading") {
+                        Picker("Reading", selection: Binding(
+                            get: { state.draftReadingConvention },
+                            set: { viewModel.onEvent(event: ChartEditorEventSelectReading(readingConvention: $0)) }
+                        )) {
+                            Text("Knit flat (RS →, WS ←)").tag(ReadingConvention.knitFlat)
+                            Text("Crochet flat (L→R)").tag(ReadingConvention.crochetFlat)
+                            Text("Round (center out)").tag(ReadingConvention.round)
+                        }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .accessibilityIdentifier("editorOverflowButton")
             }
         }
         .task {

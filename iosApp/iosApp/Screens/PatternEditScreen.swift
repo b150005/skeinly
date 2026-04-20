@@ -6,6 +6,7 @@ struct PatternEditScreen: View {
     @Binding var path: NavigationPath
     @StateObject private var holder: ScopedViewModel<PatternEditViewModel, PatternEditState>
     @State private var showError = false
+    @State private var saveCloseable: Closeable?
 
     private var viewModel: PatternEditViewModel { holder.viewModel }
 
@@ -39,12 +40,15 @@ struct PatternEditScreen: View {
         }
         .task {
             let saveFlow = KoinHelperKt.wrapPatternEditSaveSuccess(flow: viewModel.saveSuccess)
-            let closeable = saveFlow.collect { _ in
+            saveCloseable = saveFlow.collect { _ in
                 Task { @MainActor in
                     path.removeLast()
                 }
             }
-            _ = closeable
+        }
+        .onDisappear {
+            saveCloseable?.close()
+            saveCloseable = nil
         }
         .onChange(of: state.error) { _, newError in
             showError = newError != nil

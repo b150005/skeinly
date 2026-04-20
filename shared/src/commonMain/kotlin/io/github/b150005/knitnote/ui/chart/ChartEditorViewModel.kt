@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import io.github.b150005.knitnote.domain.model.ChartCell
 import io.github.b150005.knitnote.domain.model.ChartExtents
 import io.github.b150005.knitnote.domain.model.ChartLayer
+import io.github.b150005.knitnote.domain.model.CraftType
+import io.github.b150005.knitnote.domain.model.ReadingConvention
 import io.github.b150005.knitnote.domain.model.StructuredChart
 import io.github.b150005.knitnote.domain.symbol.SymbolCatalog
 import io.github.b150005.knitnote.domain.symbol.SymbolCategory
@@ -38,6 +40,8 @@ data class ChartEditorState(
     val draftExtents: ChartExtents =
         ChartExtents.Rect(minX = 0, maxX = DEFAULT_GRID_SIZE - 1, minY = 0, maxY = DEFAULT_GRID_SIZE - 1),
     val draftLayers: List<ChartLayer> = listOf(ChartLayer(id = DEFAULT_LAYER_ID, name = DEFAULT_LAYER_NAME)),
+    val draftCraftType: CraftType = CraftType.KNIT,
+    val draftReadingConvention: ReadingConvention = ReadingConvention.KNIT_FLAT,
     val selectedSymbolId: String? = null,
     val selectedCategory: SymbolCategory = SymbolCategory.KNIT,
     val paletteSymbols: List<SymbolDefinition> = emptyList(),
@@ -55,6 +59,14 @@ sealed interface ChartEditorEvent {
 
     data class SelectCategory(
         val category: SymbolCategory,
+    ) : ChartEditorEvent
+
+    data class SelectCraft(
+        val craftType: CraftType,
+    ) : ChartEditorEvent
+
+    data class SelectReading(
+        val readingConvention: ReadingConvention,
     ) : ChartEditorEvent
 
     data class PlaceCell(
@@ -106,11 +118,48 @@ class ChartEditorViewModel(
                         paletteSymbols = symbolCatalog.listByCategory(event.category),
                     )
                 }
+            is ChartEditorEvent.SelectCraft -> selectCraft(event.craftType)
+            is ChartEditorEvent.SelectReading -> selectReading(event.readingConvention)
             is ChartEditorEvent.PlaceCell -> placeCell(event.x, event.y)
             ChartEditorEvent.Undo -> undo()
             ChartEditorEvent.Redo -> redo()
             ChartEditorEvent.Save -> save()
             ChartEditorEvent.ClearError -> _state.update { it.copy(errorMessage = null) }
+        }
+    }
+
+    // Metadata (craft + reading) changes intentionally do NOT touch EditHistory —
+    // the snapshot ring buffer captures drawing payload only (extents + layers).
+    // Metadata is round-tripped through StructuredChart at save time.
+    private fun selectCraft(craft: CraftType) {
+        _state.update {
+            if (it.draftCraftType == craft) return@update it
+            it.copy(
+                draftCraftType = craft,
+                hasUnsavedChanges = computeUnsavedChanges(
+                    original = it.original,
+                    draftExtents = it.draftExtents,
+                    draftLayers = it.draftLayers,
+                    draftCraftType = craft,
+                    draftReadingConvention = it.draftReadingConvention,
+                ),
+            )
+        }
+    }
+
+    private fun selectReading(reading: ReadingConvention) {
+        _state.update {
+            if (it.draftReadingConvention == reading) return@update it
+            it.copy(
+                draftReadingConvention = reading,
+                hasUnsavedChanges = computeUnsavedChanges(
+                    original = it.original,
+                    draftExtents = it.draftExtents,
+                    draftLayers = it.draftLayers,
+                    draftCraftType = it.draftCraftType,
+                    draftReadingConvention = reading,
+                ),
+            )
         }
     }
 
@@ -127,6 +176,8 @@ class ChartEditorViewModel(
                             original = chart,
                             draftExtents = chart.extents,
                             draftLayers = chart.layers,
+                            draftCraftType = chart.craftType,
+                            draftReadingConvention = chart.readingConvention,
                             hasUnsavedChanges = false,
                         )
                     }
@@ -171,7 +222,13 @@ class ChartEditorViewModel(
                 draftLayers = updatedLayers,
                 canUndo = history.canUndo,
                 canRedo = history.canRedo,
-                hasUnsavedChanges = computeUnsavedChanges(it.original, it.draftExtents, updatedLayers),
+                hasUnsavedChanges = computeUnsavedChanges(
+                    original = it.original,
+                    draftExtents = it.draftExtents,
+                    draftLayers = updatedLayers,
+                    draftCraftType = it.draftCraftType,
+                    draftReadingConvention = it.draftReadingConvention,
+                ),
             )
         }
     }
@@ -190,7 +247,13 @@ class ChartEditorViewModel(
                 draftLayers = previous.layers,
                 canUndo = history.canUndo,
                 canRedo = history.canRedo,
-                hasUnsavedChanges = computeUnsavedChanges(it.original, previous.extents, previous.layers),
+                hasUnsavedChanges = computeUnsavedChanges(
+                    original = it.original,
+                    draftExtents = previous.extents,
+                    draftLayers = previous.layers,
+                    draftCraftType = it.draftCraftType,
+                    draftReadingConvention = it.draftReadingConvention,
+                ),
             )
         }
     }
@@ -205,7 +268,13 @@ class ChartEditorViewModel(
                 draftLayers = next.layers,
                 canUndo = history.canUndo,
                 canRedo = history.canRedo,
-                hasUnsavedChanges = computeUnsavedChanges(it.original, next.extents, next.layers),
+                hasUnsavedChanges = computeUnsavedChanges(
+                    original = it.original,
+                    draftExtents = next.extents,
+                    draftLayers = next.layers,
+                    draftCraftType = it.draftCraftType,
+                    draftReadingConvention = it.draftReadingConvention,
+                ),
             )
         }
     }
@@ -229,12 +298,16 @@ class ChartEditorViewModel(
                         patternId = patternId,
                         extents = snapshot.draftExtents,
                         layers = snapshot.draftLayers,
+                        craftType = snapshot.draftCraftType,
+                        readingConvention = snapshot.draftReadingConvention,
                     )
                 } else {
                     updateStructuredChart(
                         current = original,
                         extents = snapshot.draftExtents,
                         layers = snapshot.draftLayers,
+                        craftType = snapshot.draftCraftType,
+                        readingConvention = snapshot.draftReadingConvention,
                     )
                 }
 
@@ -246,6 +319,8 @@ class ChartEditorViewModel(
                             original = result.value,
                             draftExtents = result.value.extents,
                             draftLayers = result.value.layers,
+                            draftCraftType = result.value.craftType,
+                            draftReadingConvention = result.value.readingConvention,
                             hasUnsavedChanges = false,
                         )
                     }
@@ -264,11 +339,18 @@ class ChartEditorViewModel(
         original: StructuredChart?,
         draftExtents: ChartExtents,
         draftLayers: List<ChartLayer>,
+        draftCraftType: CraftType,
+        draftReadingConvention: ReadingConvention,
     ): Boolean {
         if (original == null) {
             // New chart — treat as dirty only when there is at least one cell somewhere.
+            // Metadata changes alone on a never-saved chart don't count as dirty because
+            // Create requires at least one cell-bearing layer to be meaningful.
             return draftLayers.any { it.cells.isNotEmpty() }
         }
-        return original.extents != draftExtents || original.layers != draftLayers
+        return original.extents != draftExtents ||
+            original.layers != draftLayers ||
+            original.craftType != draftCraftType ||
+            original.readingConvention != draftReadingConvention
     }
 }

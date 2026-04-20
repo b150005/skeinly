@@ -7,6 +7,7 @@ struct SharedContentScreen: View {
     @Binding var path: NavigationPath
     @StateObject private var holder: ScopedViewModel<SharedContentViewModel, SharedContentState>
     @State private var showError = false
+    @State private var forkedCloseable: Closeable?
 
     private var viewModel: SharedContentViewModel { holder.viewModel }
 
@@ -49,17 +50,22 @@ struct SharedContentScreen: View {
             // Handled via observer below
         }
         .task {
-            // Observe forked project channel
+            // `.task { }` re-fires on every view re-appearance. Close any prior
+            // subscription before replacing to avoid leaking one Closeable per
+            // background/foreground cycle.
+            forkedCloseable?.close()
+            forkedCloseable = nil
             let forkedFlow = KoinHelperKt.wrapForkedProjectIdFlow(flow: viewModel.forkedProjectId)
-            let closeable = forkedFlow.collect { projectId in
+            forkedCloseable = forkedFlow.collect { projectId in
                 Task { @MainActor in
-                    // Pop to root and navigate to the forked project
                     path = NavigationPath()
                     path.append(Route.projectDetail(projectId: projectId as String))
                 }
             }
-            // Keep closeable alive for the task duration — will be cancelled on view disappear
-            _ = closeable
+        }
+        .onDisappear {
+            forkedCloseable?.close()
+            forkedCloseable = nil
         }
     }
 
