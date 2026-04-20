@@ -136,13 +136,14 @@ class ChartEditorViewModel(
             if (it.draftCraftType == craft) return@update it
             it.copy(
                 draftCraftType = craft,
-                hasUnsavedChanges = computeUnsavedChanges(
-                    original = it.original,
-                    draftExtents = it.draftExtents,
-                    draftLayers = it.draftLayers,
-                    draftCraftType = craft,
-                    draftReadingConvention = it.draftReadingConvention,
-                ),
+                hasUnsavedChanges =
+                    computeUnsavedChanges(
+                        original = it.original,
+                        draftExtents = it.draftExtents,
+                        draftLayers = it.draftLayers,
+                        draftCraftType = craft,
+                        draftReadingConvention = it.draftReadingConvention,
+                    ),
             )
         }
     }
@@ -152,13 +153,14 @@ class ChartEditorViewModel(
             if (it.draftReadingConvention == reading) return@update it
             it.copy(
                 draftReadingConvention = reading,
-                hasUnsavedChanges = computeUnsavedChanges(
-                    original = it.original,
-                    draftExtents = it.draftExtents,
-                    draftLayers = it.draftLayers,
-                    draftCraftType = it.draftCraftType,
-                    draftReadingConvention = reading,
-                ),
+                hasUnsavedChanges =
+                    computeUnsavedChanges(
+                        original = it.original,
+                        draftExtents = it.draftExtents,
+                        draftLayers = it.draftLayers,
+                        draftCraftType = it.draftCraftType,
+                        draftReadingConvention = reading,
+                    ),
             )
         }
     }
@@ -222,13 +224,14 @@ class ChartEditorViewModel(
                 draftLayers = updatedLayers,
                 canUndo = history.canUndo,
                 canRedo = history.canRedo,
-                hasUnsavedChanges = computeUnsavedChanges(
-                    original = it.original,
-                    draftExtents = it.draftExtents,
-                    draftLayers = updatedLayers,
-                    draftCraftType = it.draftCraftType,
-                    draftReadingConvention = it.draftReadingConvention,
-                ),
+                hasUnsavedChanges =
+                    computeUnsavedChanges(
+                        original = it.original,
+                        draftExtents = it.draftExtents,
+                        draftLayers = updatedLayers,
+                        draftCraftType = it.draftCraftType,
+                        draftReadingConvention = it.draftReadingConvention,
+                    ),
             )
         }
     }
@@ -247,13 +250,14 @@ class ChartEditorViewModel(
                 draftLayers = previous.layers,
                 canUndo = history.canUndo,
                 canRedo = history.canRedo,
-                hasUnsavedChanges = computeUnsavedChanges(
-                    original = it.original,
-                    draftExtents = previous.extents,
-                    draftLayers = previous.layers,
-                    draftCraftType = it.draftCraftType,
-                    draftReadingConvention = it.draftReadingConvention,
-                ),
+                hasUnsavedChanges =
+                    computeUnsavedChanges(
+                        original = it.original,
+                        draftExtents = previous.extents,
+                        draftLayers = previous.layers,
+                        draftCraftType = it.draftCraftType,
+                        draftReadingConvention = it.draftReadingConvention,
+                    ),
             )
         }
     }
@@ -268,13 +272,14 @@ class ChartEditorViewModel(
                 draftLayers = next.layers,
                 canUndo = history.canUndo,
                 canRedo = history.canRedo,
-                hasUnsavedChanges = computeUnsavedChanges(
-                    original = it.original,
-                    draftExtents = next.extents,
-                    draftLayers = next.layers,
-                    draftCraftType = it.draftCraftType,
-                    draftReadingConvention = it.draftReadingConvention,
-                ),
+                hasUnsavedChanges =
+                    computeUnsavedChanges(
+                        original = it.original,
+                        draftExtents = next.extents,
+                        draftLayers = next.layers,
+                        draftCraftType = it.draftCraftType,
+                        draftReadingConvention = it.draftReadingConvention,
+                    ),
             )
         }
     }
