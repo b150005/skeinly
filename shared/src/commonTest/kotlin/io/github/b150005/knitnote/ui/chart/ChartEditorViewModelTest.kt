@@ -131,7 +131,7 @@ class ChartEditorViewModelTest {
 
     // 3.
     @Test
-    fun `selectSymbol updates selectedSymbolId only, does not touch history`() =
+    fun `selectSymbol updates selectedSymbolId only without touching history`() =
         runTest {
             val viewModel = newViewModel(patternId = "pat-missing")
             awaitReady(viewModel)

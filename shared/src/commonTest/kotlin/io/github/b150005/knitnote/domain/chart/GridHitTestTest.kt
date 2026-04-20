@@ -30,7 +30,7 @@ class GridHitTestTest {
     }
 
     @Test
-    fun `tap at top-left of grid returns minX maxY (y flipped)`() {
+    fun `tap at top-left of grid returns minX maxY with y flipped`() {
         val cell =
             GridHitTest.hitTest(
                 screenX = 1.0,

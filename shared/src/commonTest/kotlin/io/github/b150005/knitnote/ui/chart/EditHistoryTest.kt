@@ -31,7 +31,7 @@ class EditHistoryTest {
     }
 
     @Test
-    fun `record pushes snapshot and enables undo, clears redo`() {
+    fun `record pushes snapshot enables undo and clears redo`() {
         val history = EditHistory()
         history.record(snapshot(1))
         assertTrue(history.canUndo)
