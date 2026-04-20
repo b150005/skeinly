@@ -4,6 +4,8 @@ import io.github.b150005.knitnote.domain.LocalUser
 import io.github.b150005.knitnote.domain.model.ChartExtents
 import io.github.b150005.knitnote.domain.model.ChartLayer
 import io.github.b150005.knitnote.domain.model.CoordinateSystem
+import io.github.b150005.knitnote.domain.model.CraftType
+import io.github.b150005.knitnote.domain.model.ReadingConvention
 import io.github.b150005.knitnote.domain.model.StorageVariant
 import io.github.b150005.knitnote.domain.model.StructuredChart
 import io.github.b150005.knitnote.domain.repository.AuthRepository
@@ -30,6 +32,8 @@ class CreateStructuredChartUseCase(
                 ChartExtents.Polar(rings = 0, stitchesPerRing = emptyList())
             },
         layers: List<ChartLayer> = emptyList(),
+        craftType: CraftType = CraftType.KNIT,
+        readingConvention: ReadingConvention = ReadingConvention.KNIT_FLAT,
     ): UseCaseResult<StructuredChart> {
         if (patternId.isBlank()) {
             return UseCaseResult.Failure(UseCaseError.Validation("patternId must not be blank"))
@@ -65,6 +69,8 @@ class CreateStructuredChartUseCase(
                     contentHash = StructuredChart.computeContentHash(extents, layers, json),
                     createdAt = now,
                     updatedAt = now,
+                    craftType = craftType,
+                    readingConvention = readingConvention,
                 )
             UseCaseResult.Success(repository.create(chart))
         } catch (e: CancellationException) {

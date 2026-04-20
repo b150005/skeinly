@@ -6,6 +6,8 @@ import io.github.b150005.knitnote.domain.model.ChartCell
 import io.github.b150005.knitnote.domain.model.ChartExtents
 import io.github.b150005.knitnote.domain.model.ChartLayer
 import io.github.b150005.knitnote.domain.model.CoordinateSystem
+import io.github.b150005.knitnote.domain.model.CraftType
+import io.github.b150005.knitnote.domain.model.ReadingConvention
 import io.github.b150005.knitnote.domain.model.StorageVariant
 import io.github.b150005.knitnote.domain.model.StructuredChart
 import io.github.b150005.knitnote.domain.symbol.SymbolCategory
@@ -56,6 +58,8 @@ class ChartEditorViewModelTest {
     private fun seededChart(
         patternId: String = "pat-1",
         layers: List<ChartLayer> = listOf(ChartLayer(id = "L1", name = "Main")),
+        craftType: CraftType = CraftType.KNIT,
+        readingConvention: ReadingConvention = ReadingConvention.KNIT_FLAT,
     ): StructuredChart =
         StructuredChart(
             id = "chart-seed",
@@ -76,6 +80,8 @@ class ChartEditorViewModelTest {
                 ),
             createdAt = now,
             updatedAt = now,
+            craftType = craftType,
+            readingConvention = readingConvention,
         )
 
     private fun newViewModel(patternId: String = "pat-1"): ChartEditorViewModel =
@@ -445,5 +451,183 @@ class ChartEditorViewModelTest {
             // palette symbols should reflect the new category
             assertTrue(state.paletteSymbols.isNotEmpty())
             assertTrue(state.paletteSymbols.all { it.category == SymbolCategory.CROCHET })
+        }
+
+    // --- Phase 32.2: craft / reading metadata picker ---
+
+    // 18.
+    @Test
+    fun `load with existing chart seeds draft craft and reading from original`() =
+        runTest {
+            val seeded =
+                seededChart(
+                    craftType = CraftType.CROCHET,
+                    readingConvention = ReadingConvention.ROUND,
+                )
+            repo.seed(seeded)
+
+            val viewModel = newViewModel()
+            val ready = awaitReady(viewModel)
+
+            assertEquals(CraftType.CROCHET, ready.draftCraftType)
+            assertEquals(ReadingConvention.ROUND, ready.draftReadingConvention)
+            assertFalse(ready.hasUnsavedChanges)
+        }
+
+    // 19.
+    @Test
+    fun `load with no existing chart defaults craft to KNIT and reading to KNIT_FLAT`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            val ready = awaitReady(viewModel)
+
+            assertEquals(CraftType.KNIT, ready.draftCraftType)
+            assertEquals(ReadingConvention.KNIT_FLAT, ready.draftReadingConvention)
+        }
+
+    // 20.
+    @Test
+    fun `SelectCraft on existing chart updates draftCraftType and marks unsaved`() =
+        runTest {
+            val seeded = seededChart()
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+
+            viewModel.onEvent(ChartEditorEvent.SelectCraft(CraftType.CROCHET))
+
+            val state = viewModel.state.value
+            assertEquals(CraftType.CROCHET, state.draftCraftType)
+            assertTrue(state.hasUnsavedChanges)
+        }
+
+    // 21.
+    @Test
+    fun `SelectReading on existing chart updates draftReadingConvention and marks unsaved`() =
+        runTest {
+            val seeded = seededChart()
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+
+            viewModel.onEvent(ChartEditorEvent.SelectReading(ReadingConvention.CROCHET_FLAT))
+
+            val state = viewModel.state.value
+            assertEquals(ReadingConvention.CROCHET_FLAT, state.draftReadingConvention)
+            assertTrue(state.hasUnsavedChanges)
+        }
+
+    // 21b.
+    @Test
+    fun `SelectCraft alone on new chart does not mark dirty until a cell is placed`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+
+            viewModel.onEvent(ChartEditorEvent.SelectCraft(CraftType.CROCHET))
+
+            val state = viewModel.state.value
+            assertEquals(CraftType.CROCHET, state.draftCraftType)
+            // An empty new chart is not saveable — metadata alone does not make it dirty.
+            assertFalse(state.hasUnsavedChanges)
+        }
+
+    // 21c.
+    @Test
+    fun `SelectReading alone on new chart does not mark dirty until a cell is placed`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+
+            viewModel.onEvent(ChartEditorEvent.SelectReading(ReadingConvention.ROUND))
+
+            val state = viewModel.state.value
+            assertEquals(ReadingConvention.ROUND, state.draftReadingConvention)
+            assertFalse(state.hasUnsavedChanges)
+        }
+
+    // 22.
+    @Test
+    fun `SelectCraft with same value is a no-op`() =
+        runTest {
+            val seeded = seededChart(craftType = CraftType.CROCHET)
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+
+            viewModel.onEvent(ChartEditorEvent.SelectCraft(CraftType.CROCHET))
+
+            val state = viewModel.state.value
+            assertEquals(CraftType.CROCHET, state.draftCraftType)
+            assertFalse(state.hasUnsavedChanges)
+        }
+
+    // 23.
+    @Test
+    fun `save with changed craft persists new craft on existing chart`() =
+        runTest {
+            val seeded = seededChart(craftType = CraftType.KNIT, readingConvention = ReadingConvention.KNIT_FLAT)
+            repo.seed(seeded)
+
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectCraft(CraftType.CROCHET))
+            viewModel.onEvent(ChartEditorEvent.SelectReading(ReadingConvention.ROUND))
+
+            viewModel.saved.test {
+                viewModel.onEvent(ChartEditorEvent.Save)
+                awaitItem()
+                cancelAndConsumeRemainingEvents()
+            }
+
+            val state = viewModel.state.value
+            val original = state.original
+            assertNotNull(original)
+            assertEquals(CraftType.CROCHET, original.craftType)
+            assertEquals(ReadingConvention.ROUND, original.readingConvention)
+            assertFalse(state.hasUnsavedChanges)
+        }
+
+    // 24.
+    @Test
+    fun `save with new chart creates with selected craft and reading`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-new")
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectCraft(CraftType.CROCHET))
+            viewModel.onEvent(ChartEditorEvent.SelectReading(ReadingConvention.CROCHET_FLAT))
+            // a new chart requires at least one cell to be considered dirty
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.crochet.sc"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+
+            viewModel.saved.test {
+                viewModel.onEvent(ChartEditorEvent.Save)
+                awaitItem()
+                cancelAndConsumeRemainingEvents()
+            }
+
+            val state = viewModel.state.value
+            val original = state.original
+            assertNotNull(original)
+            assertEquals(CraftType.CROCHET, original.craftType)
+            assertEquals(ReadingConvention.CROCHET_FLAT, original.readingConvention)
+        }
+
+    // 25.
+    @Test
+    fun `metadata-only change still marks unsaved on existing chart`() =
+        runTest {
+            val seeded = seededChart()
+            repo.seed(seeded)
+
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectCraft(CraftType.CROCHET))
+
+            val state = viewModel.state.value
+            assertTrue(state.hasUnsavedChanges)
+            // Drawing payload unchanged
+            assertEquals(seeded.extents, state.draftExtents)
+            assertEquals(seeded.layers, state.draftLayers)
         }
 }
