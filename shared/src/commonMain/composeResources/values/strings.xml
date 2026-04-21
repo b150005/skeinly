@@ -33,6 +33,7 @@
     <string name="state_loading">Loading\u2026</string>
     <string name="state_empty">Nothing here yet</string>
     <string name="state_empty_chart">Empty chart</string>
+    <string name="state_no_structured_chart">No structured chart available</string>
 
     <!-- Error messages -->
     <string name="error_generic">Something went wrong</string>
@@ -43,6 +44,9 @@
     <!-- Unsaved-changes confirmation dialog (used by editor flows) -->
     <string name="dialog_unsaved_changes_title">Unsaved changes</string>
     <string name="dialog_unsaved_changes_body">You have unsaved changes. Discard them?</string>
+
+    <!-- Chart viewer screen -->
+    <string name="title_chart_viewer">Chart</string>
 
     <!-- Chart editor screen -->
     <string name="title_edit_chart">Edit chart</string>
