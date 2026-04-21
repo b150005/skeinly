@@ -15,10 +15,13 @@ tags:
 # Verify we start on the project list
 - assertVisible: "Knit Note"
 
-# Open the Symbol Dictionary from the top bar
+# Open the Symbol Dictionary from the top bar.
+# Post Phase 33.1 i18n migration the top-bar title is now a CMP StringResource,
+# so do not assert on the literal English text — use the grid container testTag
+# which is locale-independent. It is the stable landmark that proves navigation
+# reached this screen.
 - tapOn:
     id: "symbolGalleryButton"
-- assertVisible: "Symbol Dictionary"
 
 # Grid container should be present. Per-card testTags on LazyVerticalGrid
 # children are not reliably exposed through the Compose accessibility tree

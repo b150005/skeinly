@@ -16,17 +16,22 @@ tags:
 # Verify we start on the project list
 - assertVisible: "Knit Note"
 
-# Open the overflow menu and tap Symbol Dictionary
+# Open the overflow menu and tap Symbol Dictionary.
+# Post Phase 33.1 i18n migration the top-bar title is now a CMP StringResource,
+# so do not assert on the literal English text — the grid container testTag
+# below is locale-independent and is the stable landmark that proves navigation
+# reached this screen.
 - tapOn:
     id: "moreMenu"
 - tapOn:
     id: "symbolGalleryButton"
-- assertVisible: "Symbol Dictionary"
 
-# Parallel to the Android flow: assert the grid container (Symbol Dictionary
-# title already asserted above) and exercise scrolling without relying on
-# per-card accessibility identifiers, which are not reliably exposed through
-# the LazyVGrid accessibility tree across platforms.
+# Parallel to the Android flow: assert the grid container and exercise
+# scrolling without relying on per-card accessibility identifiers, which are
+# not reliably exposed through the LazyVGrid accessibility tree across
+# platforms.
+- assertVisible:
+    id: "symbolGalleryGrid"
 
 # Scroll through the grid
 - scroll
