@@ -225,6 +225,20 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み込み中…" } }
       }
     },
+    "state_no_structured_chart" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No structured chart available" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "構造化チャートがありません" } }
+      }
+    },
+    "title_chart_viewer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Chart" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "チャート" } }
+      }
+    },
     "title_edit_chart" : {
       "extractionState" : "manual",
       "localizations" : {

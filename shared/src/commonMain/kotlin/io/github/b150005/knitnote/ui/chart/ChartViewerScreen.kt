@@ -50,6 +50,12 @@ import io.github.b150005.knitnote.domain.model.ChartExtents
 import io.github.b150005.knitnote.domain.model.ChartLayer
 import io.github.b150005.knitnote.domain.model.StructuredChart
 import io.github.b150005.knitnote.domain.symbol.SymbolCatalog
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_back
+import io.github.b150005.knitnote.generated.resources.state_empty_chart
+import io.github.b150005.knitnote.generated.resources.state_no_structured_chart
+import io.github.b150005.knitnote.generated.resources.title_chart_viewer
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -72,10 +78,13 @@ fun ChartViewerScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Chart") },
+                title = { Text(stringResource(Res.string.title_chart_viewer)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(Res.string.action_back),
+                        )
                     }
                 },
             )
@@ -104,7 +113,7 @@ fun ChartViewerScreen(
 
                 chart == null ->
                     Text(
-                        text = "No structured chart available",
+                        text = stringResource(Res.string.state_no_structured_chart),
                         modifier = Modifier.align(Alignment.Center),
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -193,7 +202,10 @@ private fun ChartCanvas(
     val rect = (chart.extents as? ChartExtents.Rect) ?: return
     if (rect.maxX < rect.minX || rect.maxY < rect.minY) {
         Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Empty chart", style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = stringResource(Res.string.state_empty_chart),
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
         return
     }
