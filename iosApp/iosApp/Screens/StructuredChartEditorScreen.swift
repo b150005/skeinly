@@ -73,7 +73,23 @@ struct StructuredChartEditorScreen: View {
         .navigationTitle("Edit chart")
         .navigationBarTitleDisplayMode(.inline)
         .interactiveDismissDisabled(state.hasUnsavedChanges)
+        // Hide the system-generated back button so NavigationStack cannot pop
+        // without routing through attemptBack() (which raises the discard
+        // dialog on unsaved edits). Edge-swipe back is a known limitation
+        // (see CLAUDE.md > CI Known Limitations).
+        .navigationBarBackButtonHidden(true)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    attemptBack(state: state)
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                        Text("Back")
+                    }
+                }
+                .accessibilityIdentifier("editorBackButton")
+            }
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button {
                     viewModel.onEvent(event: ChartEditorEventUndo.shared)
@@ -190,6 +206,14 @@ struct StructuredChartEditorScreen: View {
                 .id("\(pending.symbolId)@\(pending.x),\(pending.y)")
                 .presentationDetents([.medium])
             }
+        }
+    }
+
+    private func attemptBack(state: ChartEditorState) {
+        if state.hasUnsavedChanges {
+            showDiscardConfirm = true
+        } else if !path.isEmpty {
+            path.removeLast()
         }
     }
 

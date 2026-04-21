@@ -51,6 +51,7 @@ import io.github.b150005.knitnote.domain.model.CraftType
 import io.github.b150005.knitnote.domain.model.ReadingConvention
 import io.github.b150005.knitnote.domain.symbol.SymbolCatalog
 import io.github.b150005.knitnote.domain.symbol.SymbolCategory
+import io.github.b150005.knitnote.ui.platform.SystemBackHandler
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -75,6 +76,12 @@ fun ChartEditorScreen(
 
     val attemptBack: () -> Unit = {
         if (state.hasUnsavedChanges) showDiscardDialog = true else onBack()
+    }
+
+    // Intercept system-back (hardware / predictive-back gesture) only while
+    // there are unsaved edits; otherwise let the navigator pop normally.
+    SystemBackHandler(enabled = state.hasUnsavedChanges) {
+        showDiscardDialog = true
     }
 
     Scaffold(
