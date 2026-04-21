@@ -12,8 +12,9 @@ tags:
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_android.yaml
 
-# Create a project to edit
-- assertVisible: "No projects yet"
+# Create a project to edit (FAB testTag is locale-independent)
+- assertVisible:
+    id: "createProjectFab"
 - tapOn:
     id: "createProjectFab"
 - tapOn: "Project Name"

@@ -14,13 +14,11 @@ tags:
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_android.yaml
 
-# Verify the app bar title is visible
+# Verify the app bar title is visible (app_name is "Knit Note" in all locales)
 - assertVisible: "Knit Note"
 
-# Verify empty state messaging
-- assertVisible: "No projects yet"
-- assertVisible: "Create Project"
-
-# Verify the FAB is visible
+# Verify project-list landmark (empty-state text and CTA label are now
+# i18n-resolved via CMP resources, so use the stable FAB testTag instead —
+# the FAB is always visible on ProjectList regardless of empty/non-empty)
 - assertVisible:
     id: "createProjectFab"

@@ -50,6 +50,10 @@ script runs in CI and blocks on drift.
   - `state_*` for load / empty / idle state labels (`state_loading`).
   - `error_*` for error-message text (`error_load`, `error_save`).
   - `dialog_*_title` / `dialog_*_body` for confirmation dialogs.
+  - `title_*` for screen titles that do not double as actions.
+  - `label_*` for non-action labels (form field labels, status chips,
+    dropdown option labels).
+  - `hint_*` for placeholder/hint text in input fields (`hint_search_projects`).
 - Only add a screen prefix when the same word legitimately means two
   different things in two places (rare). Prefer role-prefixed reusable
   keys.

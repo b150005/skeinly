@@ -12,8 +12,9 @@ tags:
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_android.yaml
 
-# Wait for list screen to be ready
-- assertVisible: "No projects yet"
+# Wait for list screen to be ready (FAB testTag is locale-independent)
+- assertVisible:
+    id: "createProjectFab"
 
 # Create a project first (dialog renders in a separate window,
 # so testTag-based ids are not accessible — use text selectors instead)

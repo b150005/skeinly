@@ -57,4 +57,35 @@
     <string name="label_reading_knit_flat">往復編み (表段 \u2192, 裏段 \u2190)</string>
     <string name="label_reading_crochet_flat">平編み (左\u2192右)</string>
     <string name="label_reading_round">輪編み (中心から)</string>
+
+    <!-- Project list screen -->
+    <string name="action_discover_patterns">パターンを探す</string>
+    <string name="action_pattern_library">パターンライブラリ</string>
+    <string name="action_symbol_dictionary">記号辞典</string>
+    <string name="action_profile">プロフィール</string>
+    <string name="action_activity_feed">アクティビティ</string>
+    <string name="action_shared_with_me">共有された項目</string>
+    <string name="action_settings">設定</string>
+    <string name="action_new_project">新規プロジェクト</string>
+    <string name="action_create_project">プロジェクトを作成</string>
+    <string name="action_clear_search">検索をクリア</string>
+    <string name="action_sort">並べ替え</string>
+    <string name="label_status_all">すべて</string>
+    <string name="label_status_not_started">未着手</string>
+    <string name="label_status_in_progress">進行中</string>
+    <string name="label_status_completed">完了</string>
+    <string name="label_sort_recent">最近</string>
+    <string name="label_sort_alphabetical">A\u2013Z</string>
+    <string name="label_sort_alphabetical_detail">アルファベット順 (A\u2013Z)</string>
+    <string name="label_sort_progress">進捗</string>
+    <string name="label_sort_progress_detail">進捗率</string>
+    <string name="state_no_projects">プロジェクトがまだありません</string>
+    <string name="state_no_projects_body">最初の編み物プロジェクトを記録してみましょう</string>
+    <string name="state_no_matching_projects">一致するプロジェクトがありません</string>
+    <string name="state_no_matching_projects_body">検索条件やフィルターを調整してみてください</string>
+    <string name="dialog_delete_project_title">プロジェクトを削除</string>
+    <string name="dialog_delete_project_body">「%1$s」を削除してもよろしいですか？この操作は取り消せません。</string>
+    <string name="hint_search_projects">プロジェクトを検索\u2026</string>
+    <string name="label_rows_of_total">%1$d / %2$d 行</string>
+    <string name="label_rows_current">%1$d 行</string>
 </resources>

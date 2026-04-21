@@ -40,9 +40,11 @@ tags:
 - tapOn:
     id: "getStartedButton"
 
-# Verify we landed on ProjectList
+# Verify we landed on ProjectList (app_name identical across locales;
+# FAB testTag is a locale-independent landmark now that empty-state text is i18n'd)
 - assertVisible: "Knit Note"
-- assertVisible: "No projects yet"
+- assertVisible:
+    id: "createProjectFab"
 
 # Relaunch the app — onboarding should NOT appear again
 - stopApp: io.github.b150005.knitnote.android

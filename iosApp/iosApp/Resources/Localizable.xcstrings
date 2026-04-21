@@ -252,6 +252,209 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Symbol Dictionary" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "記号辞典" } }
       }
+    },
+    "action_activity_feed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Activity Feed" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アクティビティ" } }
+      }
+    },
+    "action_clear_search" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Clear search" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "検索をクリア" } }
+      }
+    },
+    "action_create_project" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Create Project" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロジェクトを作成" } }
+      }
+    },
+    "action_discover_patterns" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Discover Patterns" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターンを探す" } }
+      }
+    },
+    "action_new_project" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "New Project" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "新規プロジェクト" } }
+      }
+    },
+    "action_pattern_library" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pattern Library" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターンライブラリ" } }
+      }
+    },
+    "action_profile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Profile" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロフィール" } }
+      }
+    },
+    "action_settings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "設定" } }
+      }
+    },
+    "action_shared_with_me" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shared With Me" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有された項目" } }
+      }
+    },
+    "action_symbol_dictionary" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Symbol Dictionary" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "記号辞典" } }
+      }
+    },
+    "action_sort" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sort" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "並べ替え" } }
+      }
+    },
+    "dialog_delete_project_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Are you sure you want to delete \"%1$@\"? This cannot be undone." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "「%1$@」を削除してもよろしいですか？この操作は取り消せません。" } }
+      }
+    },
+    "dialog_delete_project_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete Project" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロジェクトを削除" } }
+      }
+    },
+    "hint_search_projects" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Search projects…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロジェクトを検索…" } }
+      }
+    },
+    "label_rows_current" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$d rows" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$d 行" } }
+      }
+    },
+    "label_rows_of_total" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$d / %2$d rows" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$d / %2$d 行" } }
+      }
+    },
+    "label_sort_alphabetical" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "A–Z" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "A–Z" } }
+      }
+    },
+    "label_sort_alphabetical_detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Alphabetical (A–Z)" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アルファベット順 (A–Z)" } }
+      }
+    },
+    "label_sort_progress" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Progress" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "進捗" } }
+      }
+    },
+    "label_sort_progress_detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Progress %" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "進捗率" } }
+      }
+    },
+    "label_sort_recent" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Recent" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最近" } }
+      }
+    },
+    "label_status_all" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "All" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "すべて" } }
+      }
+    },
+    "label_status_completed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Completed" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "完了" } }
+      }
+    },
+    "label_status_in_progress" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "In Progress" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "進行中" } }
+      }
+    },
+    "label_status_not_started" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Not Started" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "未着手" } }
+      }
+    },
+    "state_no_matching_projects" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No matching projects" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "一致するプロジェクトがありません" } }
+      }
+    },
+    "state_no_matching_projects_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Try adjusting your search or filters" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "検索条件やフィルターを調整してみてください" } }
+      }
+    },
+    "state_no_projects" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No projects yet" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロジェクトがまだありません" } }
+      }
+    },
+    "state_no_projects_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start tracking your first knitting project" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最初の編み物プロジェクトを記録してみましょう" } }
+      }
     }
   },
   "version" : "1.0"

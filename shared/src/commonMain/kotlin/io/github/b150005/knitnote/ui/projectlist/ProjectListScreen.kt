@@ -67,7 +67,42 @@ import androidx.compose.ui.unit.dp
 import io.github.b150005.knitnote.domain.model.Project
 import io.github.b150005.knitnote.domain.model.ProjectStatus
 import io.github.b150005.knitnote.domain.model.SortOrder
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_activity_feed
+import io.github.b150005.knitnote.generated.resources.action_cancel
+import io.github.b150005.knitnote.generated.resources.action_clear_search
+import io.github.b150005.knitnote.generated.resources.action_create_project
+import io.github.b150005.knitnote.generated.resources.action_delete
+import io.github.b150005.knitnote.generated.resources.action_discover_patterns
+import io.github.b150005.knitnote.generated.resources.action_new_project
+import io.github.b150005.knitnote.generated.resources.action_pattern_library
+import io.github.b150005.knitnote.generated.resources.action_profile
+import io.github.b150005.knitnote.generated.resources.action_settings
+import io.github.b150005.knitnote.generated.resources.action_shared_with_me
+import io.github.b150005.knitnote.generated.resources.action_sort
+import io.github.b150005.knitnote.generated.resources.action_symbol_dictionary
+import io.github.b150005.knitnote.generated.resources.app_name
+import io.github.b150005.knitnote.generated.resources.dialog_delete_project_body
+import io.github.b150005.knitnote.generated.resources.dialog_delete_project_title
+import io.github.b150005.knitnote.generated.resources.hint_search_projects
+import io.github.b150005.knitnote.generated.resources.label_rows_current
+import io.github.b150005.knitnote.generated.resources.label_rows_of_total
+import io.github.b150005.knitnote.generated.resources.label_sort_alphabetical
+import io.github.b150005.knitnote.generated.resources.label_sort_alphabetical_detail
+import io.github.b150005.knitnote.generated.resources.label_sort_progress
+import io.github.b150005.knitnote.generated.resources.label_sort_progress_detail
+import io.github.b150005.knitnote.generated.resources.label_sort_recent
+import io.github.b150005.knitnote.generated.resources.label_status_all
+import io.github.b150005.knitnote.generated.resources.label_status_completed
+import io.github.b150005.knitnote.generated.resources.label_status_in_progress
+import io.github.b150005.knitnote.generated.resources.label_status_not_started
+import io.github.b150005.knitnote.generated.resources.state_no_matching_projects
+import io.github.b150005.knitnote.generated.resources.state_no_matching_projects_body
+import io.github.b150005.knitnote.generated.resources.state_no_projects
+import io.github.b150005.knitnote.generated.resources.state_no_projects_body
 import io.github.b150005.knitnote.ui.components.EmptyStateView
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,18 +131,18 @@ fun ProjectListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Knit Note") },
+                title = { Text(stringResource(Res.string.app_name)) },
                 actions = {
                     IconButton(onClick = onDiscoverClick) {
                         Icon(
                             Icons.Default.Explore,
-                            contentDescription = "Discover Patterns",
+                            contentDescription = stringResource(Res.string.action_discover_patterns),
                         )
                     }
                     IconButton(onClick = onPatternLibraryClick) {
                         Icon(
                             Icons.Default.Favorite,
-                            contentDescription = "Pattern Library",
+                            contentDescription = stringResource(Res.string.action_pattern_library),
                         )
                     }
                     IconButton(
@@ -116,31 +151,31 @@ fun ProjectListScreen(
                     ) {
                         Icon(
                             Icons.Default.GridView,
-                            contentDescription = "Symbol Dictionary",
+                            contentDescription = stringResource(Res.string.action_symbol_dictionary),
                         )
                     }
                     IconButton(onClick = onProfileClick) {
                         Icon(
                             Icons.Default.Person,
-                            contentDescription = "Profile",
+                            contentDescription = stringResource(Res.string.action_profile),
                         )
                     }
                     IconButton(onClick = onActivityFeedClick) {
                         Icon(
                             Icons.Default.Notifications,
-                            contentDescription = "Activity Feed",
+                            contentDescription = stringResource(Res.string.action_activity_feed),
                         )
                     }
                     IconButton(onClick = onSharedWithMeClick) {
                         Icon(
                             Icons.Default.People,
-                            contentDescription = "Shared With Me",
+                            contentDescription = stringResource(Res.string.action_shared_with_me),
                         )
                     }
                     IconButton(onClick = onSettingsClick) {
                         Icon(
                             Icons.Default.Settings,
-                            contentDescription = "Settings",
+                            contentDescription = stringResource(Res.string.action_settings),
                         )
                     }
                 },
@@ -152,7 +187,10 @@ fun ProjectListScreen(
                 onClick = { viewModel.onEvent(ProjectListEvent.ShowCreateDialog) },
                 modifier = Modifier.testTag("createProjectFab"),
             ) {
-                Icon(Icons.Default.Add, contentDescription = "New Project")
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = stringResource(Res.string.action_new_project),
+                )
             }
         },
     ) { padding ->
@@ -211,13 +249,13 @@ fun ProjectListScreen(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = "No matching projects",
+                                text = stringResource(Res.string.state_no_matching_projects),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Try adjusting your search or filters",
+                                text = stringResource(Res.string.state_no_matching_projects_body),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -227,9 +265,9 @@ fun ProjectListScreen(
                 state.projects.isEmpty() -> {
                     EmptyStateView(
                         icon = Icons.Default.FolderOpen,
-                        title = "No projects yet",
-                        body = "Start tracking your first knitting project",
-                        actionLabel = "Create Project",
+                        title = stringResource(Res.string.state_no_projects),
+                        body = stringResource(Res.string.state_no_projects_body),
+                        actionLabel = stringResource(Res.string.action_create_project),
                         onAction = { viewModel.onEvent(ProjectListEvent.ShowCreateDialog) },
                     )
                 }
@@ -275,14 +313,17 @@ private fun SearchField(
         value = query,
         onValueChange = onQueryChange,
         modifier = modifier.fillMaxWidth(),
-        placeholder = { Text("Search projects...") },
+        placeholder = { Text(stringResource(Res.string.hint_search_projects)) },
         leadingIcon = {
             Icon(Icons.Default.Search, contentDescription = null)
         },
         trailingIcon = {
             if (query.isNotEmpty()) {
                 IconButton(onClick = { onQueryChange("") }) {
-                    Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                    Icon(
+                        Icons.Default.Clear,
+                        contentDescription = stringResource(Res.string.action_clear_search),
+                    )
                 }
             }
         },
@@ -310,7 +351,7 @@ private fun FilterSortRow(
                 FilterChip(
                     selected = statusFilter == null,
                     onClick = { onStatusFilterChange(null) },
-                    label = { Text("All") },
+                    label = { Text(stringResource(Res.string.label_status_all)) },
                 )
             }
             item {
@@ -321,7 +362,7 @@ private fun FilterSortRow(
                             if (statusFilter == ProjectStatus.IN_PROGRESS) null else ProjectStatus.IN_PROGRESS,
                         )
                     },
-                    label = { Text("In Progress") },
+                    label = { Text(stringResource(Res.string.label_status_in_progress)) },
                 )
             }
             item {
@@ -332,7 +373,7 @@ private fun FilterSortRow(
                             if (statusFilter == ProjectStatus.NOT_STARTED) null else ProjectStatus.NOT_STARTED,
                         )
                     },
-                    label = { Text("Not Started") },
+                    label = { Text(stringResource(Res.string.label_status_not_started)) },
                 )
             }
             item {
@@ -343,7 +384,7 @@ private fun FilterSortRow(
                             if (statusFilter == ProjectStatus.COMPLETED) null else ProjectStatus.COMPLETED,
                         )
                     },
-                    label = { Text("Completed") },
+                    label = { Text(stringResource(Res.string.label_status_completed)) },
                 )
             }
         }
@@ -368,11 +409,11 @@ private fun SortDropdown(
         FilterChip(
             selected = sortOrder != SortOrder.RECENT,
             onClick = { expanded = true },
-            label = { Text(sortOrder.chipLabel) },
+            label = { Text(stringResource(sortOrder.chipLabelKey)) },
             trailingIcon = {
                 Icon(
                     Icons.AutoMirrored.Filled.Sort,
-                    contentDescription = "Sort",
+                    contentDescription = stringResource(Res.string.action_sort),
                 )
             },
         )
@@ -383,7 +424,7 @@ private fun SortDropdown(
         ) {
             SortOrder.entries.forEach { order ->
                 DropdownMenuItem(
-                    text = { Text(order.menuLabel) },
+                    text = { Text(stringResource(order.menuLabelKey)) },
                     onClick = {
                         onSortOrderChange(order)
                         expanded = false
@@ -426,7 +467,7 @@ private fun SwipeToDismissProjectCard(
             ) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = "Delete",
+                    contentDescription = stringResource(Res.string.action_delete),
                     tint = MaterialTheme.colorScheme.onErrorContainer,
                 )
             }
@@ -467,9 +508,9 @@ private fun ProjectCard(
 
             val progressText =
                 if (project.totalRows != null) {
-                    "${project.currentRow} / ${project.totalRows} rows"
+                    stringResource(Res.string.label_rows_of_total, project.currentRow, project.totalRows)
                 } else {
-                    "${project.currentRow} rows"
+                    stringResource(Res.string.label_rows_current, project.currentRow)
                 }
             Text(
                 text = progressText,
@@ -495,16 +536,19 @@ private fun DeleteConfirmDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete Project") },
-        text = { Text("Are you sure you want to delete \"$itemName\"? This cannot be undone.") },
+        title = { Text(stringResource(Res.string.dialog_delete_project_title)) },
+        text = { Text(stringResource(Res.string.dialog_delete_project_body, itemName)) },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("Delete", color = MaterialTheme.colorScheme.error)
+                Text(
+                    stringResource(Res.string.action_delete),
+                    color = MaterialTheme.colorScheme.error,
+                )
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(Res.string.action_cancel))
             }
         },
     )
@@ -512,31 +556,34 @@ private fun DeleteConfirmDialog(
 
 @Composable
 private fun StatusChip(status: ProjectStatus) {
-    val (text, color) =
+    val (textKey, color) =
         when (status) {
-            ProjectStatus.NOT_STARTED -> "Not Started" to MaterialTheme.colorScheme.outline
-            ProjectStatus.IN_PROGRESS -> "In Progress" to MaterialTheme.colorScheme.primary
-            ProjectStatus.COMPLETED -> "Completed" to MaterialTheme.colorScheme.tertiary
+            ProjectStatus.NOT_STARTED -> Res.string.label_status_not_started to MaterialTheme.colorScheme.outline
+            ProjectStatus.IN_PROGRESS -> Res.string.label_status_in_progress to MaterialTheme.colorScheme.primary
+            ProjectStatus.COMPLETED -> Res.string.label_status_completed to MaterialTheme.colorScheme.tertiary
         }
     Text(
-        text = text,
+        text = stringResource(textKey),
         style = MaterialTheme.typography.labelSmall,
         color = color,
     )
 }
 
-private val SortOrder.chipLabel: String
+private val SortOrder.chipLabelKey: StringResource
     get() =
         when (this) {
-            SortOrder.RECENT -> "Recent"
-            SortOrder.ALPHABETICAL -> "A–Z"
-            SortOrder.PROGRESS -> "Progress"
+            SortOrder.RECENT -> Res.string.label_sort_recent
+            SortOrder.ALPHABETICAL -> Res.string.label_sort_alphabetical
+            SortOrder.PROGRESS -> Res.string.label_sort_progress
         }
 
-private val SortOrder.menuLabel: String
+// RECENT reuses `label_sort_recent` in both chip and menu forms by design —
+// the short form reads naturally as a full menu label. If a detail variant is
+// ever needed (e.g. "Most Recent"), add `label_sort_recent_detail`.
+private val SortOrder.menuLabelKey: StringResource
     get() =
         when (this) {
-            SortOrder.RECENT -> "Recent"
-            SortOrder.ALPHABETICAL -> "Alphabetical (A–Z)"
-            SortOrder.PROGRESS -> "Progress %"
+            SortOrder.RECENT -> Res.string.label_sort_recent
+            SortOrder.ALPHABETICAL -> Res.string.label_sort_alphabetical_detail
+            SortOrder.PROGRESS -> Res.string.label_sort_progress_detail
         }

@@ -12,8 +12,9 @@ tags:
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_android.yaml
 
-# Wait for the empty state
-- assertVisible: "No projects yet"
+# Wait for the list screen (FAB testTag is locale-independent)
+- assertVisible:
+    id: "createProjectFab"
 
 # Tap the FAB to open create dialog
 - tapOn:
@@ -34,9 +35,5 @@ tags:
 # Tap Create
 - tapOn: "Create"
 
-# Verify the project appears in the list
+# Verify the project appears in the list (user-entered title is locale-independent)
 - assertVisible: "My Test Scarf"
-- assertVisible: "Not Started"
-
-# Verify empty state is gone
-- assertNotVisible: "No projects yet"
