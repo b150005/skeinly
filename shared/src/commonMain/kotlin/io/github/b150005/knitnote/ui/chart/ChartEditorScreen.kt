@@ -25,6 +25,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -203,6 +205,71 @@ fun ChartEditorScreen(
             },
         )
     }
+
+    state.pendingParameterInput?.let { pending ->
+        ParameterInputDialog(
+            pending = pending,
+            onConfirm = { values ->
+                viewModel.onEvent(ChartEditorEvent.ConfirmParameterInput(values))
+            },
+            onCancel = { viewModel.onEvent(ChartEditorEvent.CancelParameterInput) },
+        )
+    }
+}
+
+@Composable
+private fun ParameterInputDialog(
+    pending: PendingParameterInput,
+    onConfirm: (Map<String, String>) -> Unit,
+    onCancel: () -> Unit,
+) {
+    // Local draft — keyed by (x, y, symbolId) so re-opening the dialog for a
+    // different cell starts fresh instead of inheriting the previous draft.
+    val drafts =
+        remember(pending.x, pending.y, pending.symbolId) {
+            val initial = mutableMapOf<String, String>()
+            pending.slots.forEach { slot ->
+                initial[slot.key] =
+                    pending.currentValues[slot.key] ?: slot.defaultValue ?: ""
+            }
+            mutableStateMapOf<String, String>().apply { putAll(initial) }
+        }
+
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = {
+            Text(if (pending.isEditingExisting) "Edit parameter" else "Enter parameter")
+        },
+        text = {
+            Column {
+                pending.slots.forEach { slot ->
+                    OutlinedTextField(
+                        value = drafts[slot.key].orEmpty(),
+                        onValueChange = { drafts[slot.key] = it },
+                        label = { Text(slot.enLabel) },
+                        singleLine = true,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .testTag("parameterInput_${slot.key}"),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(drafts.toMap()) },
+                modifier = Modifier.testTag("parameterConfirmButton"),
+            ) { Text("OK") }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onCancel,
+                modifier = Modifier.testTag("parameterCancelButton"),
+            ) { Text("Cancel") }
+        },
+    )
 }
 
 @Composable
