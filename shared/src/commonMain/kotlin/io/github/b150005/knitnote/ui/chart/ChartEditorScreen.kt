@@ -51,7 +51,32 @@ import io.github.b150005.knitnote.domain.model.CraftType
 import io.github.b150005.knitnote.domain.model.ReadingConvention
 import io.github.b150005.knitnote.domain.symbol.SymbolCatalog
 import io.github.b150005.knitnote.domain.symbol.SymbolCategory
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_back
+import io.github.b150005.knitnote.generated.resources.action_cancel
+import io.github.b150005.knitnote.generated.resources.action_discard
+import io.github.b150005.knitnote.generated.resources.action_keep_editing
+import io.github.b150005.knitnote.generated.resources.action_more_options
+import io.github.b150005.knitnote.generated.resources.action_ok
+import io.github.b150005.knitnote.generated.resources.action_redo
+import io.github.b150005.knitnote.generated.resources.action_save
+import io.github.b150005.knitnote.generated.resources.action_undo
+import io.github.b150005.knitnote.generated.resources.dialog_parameter_edit_title
+import io.github.b150005.knitnote.generated.resources.dialog_parameter_enter_title
+import io.github.b150005.knitnote.generated.resources.dialog_unsaved_changes_body
+import io.github.b150005.knitnote.generated.resources.dialog_unsaved_changes_title
+import io.github.b150005.knitnote.generated.resources.label_craft
+import io.github.b150005.knitnote.generated.resources.label_craft_crochet
+import io.github.b150005.knitnote.generated.resources.label_craft_knit
+import io.github.b150005.knitnote.generated.resources.label_reading
+import io.github.b150005.knitnote.generated.resources.label_reading_crochet_flat
+import io.github.b150005.knitnote.generated.resources.label_reading_knit_flat
+import io.github.b150005.knitnote.generated.resources.label_reading_round
+import io.github.b150005.knitnote.generated.resources.state_empty_chart
+import io.github.b150005.knitnote.generated.resources.title_edit_chart
 import io.github.b150005.knitnote.ui.platform.SystemBackHandler
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -87,10 +112,13 @@ fun ChartEditorScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Edit chart") },
+                title = { Text(stringResource(Res.string.title_edit_chart)) },
                 navigationIcon = {
                     IconButton(onClick = attemptBack, modifier = Modifier.testTag("editorBackButton")) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(Res.string.action_back),
+                        )
                     }
                 },
                 actions = {
@@ -99,28 +127,40 @@ fun ChartEditorScreen(
                         enabled = state.canUndo,
                         modifier = Modifier.testTag("editorUndoButton"),
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Undo")
+                        Icon(
+                            Icons.AutoMirrored.Filled.Undo,
+                            contentDescription = stringResource(Res.string.action_undo),
+                        )
                     }
                     IconButton(
                         onClick = { viewModel.onEvent(ChartEditorEvent.Redo) },
                         enabled = state.canRedo,
                         modifier = Modifier.testTag("editorRedoButton"),
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.Redo, contentDescription = "Redo")
+                        Icon(
+                            Icons.AutoMirrored.Filled.Redo,
+                            contentDescription = stringResource(Res.string.action_redo),
+                        )
                     }
                     IconButton(
                         onClick = { viewModel.onEvent(ChartEditorEvent.Save) },
                         enabled = state.hasUnsavedChanges && !state.isSaving,
                         modifier = Modifier.testTag("editorSaveButton"),
                     ) {
-                        Icon(Icons.Filled.Save, contentDescription = "Save")
+                        Icon(
+                            Icons.Filled.Save,
+                            contentDescription = stringResource(Res.string.action_save),
+                        )
                     }
                     Box {
                         IconButton(
                             onClick = { showOverflowMenu = true },
                             modifier = Modifier.testTag("editorOverflowButton"),
                         ) {
-                            Icon(Icons.Filled.MoreVert, contentDescription = "More options")
+                            Icon(
+                                Icons.Filled.MoreVert,
+                                contentDescription = stringResource(Res.string.action_more_options),
+                            )
                         }
                         ChartMetadataMenu(
                             expanded = showOverflowMenu,
@@ -194,8 +234,8 @@ fun ChartEditorScreen(
     if (showDiscardDialog) {
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
-            title = { Text("Unsaved changes") },
-            text = { Text("You have unsaved changes. Discard them?") },
+            title = { Text(stringResource(Res.string.dialog_unsaved_changes_title)) },
+            text = { Text(stringResource(Res.string.dialog_unsaved_changes_body)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -203,11 +243,11 @@ fun ChartEditorScreen(
                         onBack()
                     },
                     modifier = Modifier.testTag("discardChangesButton"),
-                ) { Text("Discard") }
+                ) { Text(stringResource(Res.string.action_discard)) }
             },
             dismissButton = {
                 TextButton(onClick = { showDiscardDialog = false }) {
-                    Text("Keep editing")
+                    Text(stringResource(Res.string.action_keep_editing))
                 }
             },
         )
@@ -242,11 +282,16 @@ private fun ParameterInputDialog(
             mutableStateMapOf<String, String>().apply { putAll(initial) }
         }
 
+    val titleKey: StringResource =
+        if (pending.isEditingExisting) {
+            Res.string.dialog_parameter_edit_title
+        } else {
+            Res.string.dialog_parameter_enter_title
+        }
+
     AlertDialog(
         onDismissRequest = onCancel,
-        title = {
-            Text(if (pending.isEditingExisting) "Edit parameter" else "Enter parameter")
-        },
+        title = { Text(stringResource(titleKey)) },
         text = {
             Column {
                 pending.slots.forEach { slot ->
@@ -268,13 +313,13 @@ private fun ParameterInputDialog(
             TextButton(
                 onClick = { onConfirm(drafts.toMap()) },
                 modifier = Modifier.testTag("parameterConfirmButton"),
-            ) { Text("OK") }
+            ) { Text(stringResource(Res.string.action_ok)) }
         },
         dismissButton = {
             TextButton(
                 onClick = onCancel,
                 modifier = Modifier.testTag("parameterCancelButton"),
-            ) { Text("Cancel") }
+            ) { Text(stringResource(Res.string.action_cancel)) }
         },
     )
 }
@@ -289,7 +334,10 @@ private fun EditorCanvas(
 ) {
     if (extents == null || extents.maxX < extents.minX || extents.maxY < extents.minY) {
         Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Empty chart", style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = stringResource(Res.string.state_empty_chart),
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
         return
     }
@@ -405,12 +453,13 @@ private fun ChartMetadataMenu(
     onReadingSelected: (ReadingConvention) -> Unit,
 ) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
-        MetadataMenuHeader("Craft")
+        MetadataMenuHeader(stringResource(Res.string.label_craft))
         CraftType.entries.forEach { craft ->
+            val label = stringResource(craftLabelKey(craft))
             DropdownMenuItem(
                 text = {
                     val prefix = if (craft == craftType) "\u2713 " else "  "
-                    Text("$prefix${craftLabel(craft)}")
+                    Text("$prefix$label")
                 },
                 onClick = {
                     onCraftSelected(craft)
@@ -420,12 +469,13 @@ private fun ChartMetadataMenu(
             )
         }
         HorizontalDivider()
-        MetadataMenuHeader("Reading")
+        MetadataMenuHeader(stringResource(Res.string.label_reading))
         ReadingConvention.entries.forEach { reading ->
+            val label = stringResource(readingLabelKey(reading))
             DropdownMenuItem(
                 text = {
                     val prefix = if (reading == readingConvention) "\u2713 " else "  "
-                    Text("$prefix${readingLabel(reading)}")
+                    Text("$prefix$label")
                 },
                 onClick = {
                     onReadingSelected(reading)
@@ -449,15 +499,15 @@ private fun MetadataMenuHeader(label: String) {
     )
 }
 
-private fun craftLabel(craft: CraftType): String =
+private fun craftLabelKey(craft: CraftType): StringResource =
     when (craft) {
-        CraftType.KNIT -> "Knit"
-        CraftType.CROCHET -> "Crochet"
+        CraftType.KNIT -> Res.string.label_craft_knit
+        CraftType.CROCHET -> Res.string.label_craft_crochet
     }
 
-private fun readingLabel(reading: ReadingConvention): String =
+private fun readingLabelKey(reading: ReadingConvention): StringResource =
     when (reading) {
-        ReadingConvention.KNIT_FLAT -> "Knit flat (RS \u2192, WS \u2190)"
-        ReadingConvention.CROCHET_FLAT -> "Crochet flat (L\u2192R)"
-        ReadingConvention.ROUND -> "Round (center out)"
+        ReadingConvention.KNIT_FLAT -> Res.string.label_reading_knit_flat
+        ReadingConvention.CROCHET_FLAT -> Res.string.label_reading_crochet_flat
+        ReadingConvention.ROUND -> Res.string.label_reading_round
     }

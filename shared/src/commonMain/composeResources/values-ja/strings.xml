@@ -1,15 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Japanese string resources.
-  Mirror any additions in:
-    - androidApp/src/main/res/values/strings.xml
-    - iosApp/iosApp/Resources/Localizable.xcstrings
-  Run scripts/verify-i18n-keys.sh to detect drift.
+  Japanese string resources for shared Compose Multiplatform UI.
+  See values/strings.xml for the canonical comment block.
 -->
 <resources>
     <string name="app_name">Knit Note</string>
 
-    <!-- Action primitives (buttons, menu items, a11y labels) -->
+    <!-- Action primitives -->
     <string name="action_save">保存</string>
     <string name="action_cancel">キャンセル</string>
     <string name="action_delete">削除</string>
@@ -35,7 +32,7 @@
     <string name="error_save">保存に失敗しました</string>
     <string name="error_network">ネットワークに接続できません</string>
 
-    <!-- Unsaved-changes confirmation dialog (used by editor flows) -->
+    <!-- Unsaved-changes confirmation dialog -->
     <string name="dialog_unsaved_changes_title">未保存の変更があります</string>
     <string name="dialog_unsaved_changes_body">未保存の変更があります。破棄しますか？</string>
 

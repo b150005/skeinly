@@ -15,15 +15,30 @@
 
 ## 正本
 
-| Locale | Android | iOS |
-|---|---|---|
-| 英語 (default / development region) | `androidApp/src/main/res/values/strings.xml` | `iosApp/iosApp/Resources/Localizable.xcstrings` (`"en"` localization) |
-| 日本語 | `androidApp/src/main/res/values-ja/strings.xml` | `iosApp/iosApp/Resources/Localizable.xcstrings` (`"ja"` localization) |
+| Locale | Android native (`R.string.*`) | 共有 Compose (`Res.string.*`) | iOS SwiftUI |
+|---|---|---|---|
+| 英語 | `androidApp/src/main/res/values/strings.xml` | `shared/src/commonMain/composeResources/values/strings.xml` | `iosApp/iosApp/Resources/Localizable.xcstrings` (`"en"`) |
+| 日本語 | `androidApp/src/main/res/values-ja/strings.xml` | `shared/src/commonMain/composeResources/values-ja/strings.xml` | `iosApp/iosApp/Resources/Localizable.xcstrings` (`"ja"`) |
 
-iOS 側は Xcode 15+ の **String Catalog** (`.xcstrings`, JSON) を使用。
-両 locale を 1 ファイルに保持。`project.yml` で
-`CFBundleDevelopmentRegion: en` と `CFBundleLocalizations: [en, ja]` を
-宣言。
+計 5 ファイル。consumer の種類ごとに解決経路を分けている:
+
+- **`androidApp/.../strings.xml`** — `R.string.*` を直接参照する
+  Android-native コード (Activity タイトル / manifest / network-security
+  descriptor / `androidApp/` 配下のみで定義される画面) 用。
+- **`shared/.../composeResources/values/`** — 共有 Compose
+  Multiplatform 画面が `import io.github.b150005.knitnote.generated.resources.Res`
+  + `stringResource(Res.string.<key>)` で参照。shared commonMain は
+  Android の `R` を参照できないため、Compose resources plugin 経由で
+  解決する。
+- **`iosApp/.../Localizable.xcstrings`** — `iosApp/` の SwiftUI 画面
+  用。iOS は Phase 6 以降フル native SwiftUI で、共有 Compose 画面を
+  render しないため独立管理。`project.yml` で
+  `CFBundleDevelopmentRegion: en` と `CFBundleLocalizations: [en, ja]`
+  を宣言。
+
+i18n verifier (`scripts/verify-i18n-keys.sh`) が **5 ファイルすべて同一
+鍵セット** であることを強制する。追加時は 5 ファイルすべてに mirror、
+削除時も同様。CI で drift を block。
 
 ## 鍵命名
 
@@ -39,13 +54,30 @@ iOS 側は Xcode 15+ の **String Catalog** (`.xcstrings`, JSON) を使用。
 
 ## 参照方法
 
-**Android (Jetpack Compose)**:
+**共有 Compose Multiplatform (`commonMain`)** — `shared/src/commonMain/.../ui/`
+配下の画面はこの経路を最優先:
+
+```kotlin
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_save
+import org.jetbrains.compose.resources.stringResource
+
+Text(stringResource(Res.string.action_save))
+```
+
+`Res` は `compose.components.resources` plugin が生成する
+(設定は `shared/build.gradle.kts` の `compose.resources { }` block)。
+実体は `shared/src/commonMain/composeResources/values{,-ja}/strings.xml`
+を読む。
+
+**Android native (`androidApp/`)** — shared module の `Res` を参照でき
+ない Android platform コードではこちら:
 
 ```kotlin
 import androidx.compose.ui.res.stringResource
 import io.github.b150005.knitnote.android.R
 
-Text(text = stringResource(R.string.action_save))
+Text(stringResource(R.string.action_save))
 ```
 
 **iOS (SwiftUI)**:
@@ -66,9 +98,11 @@ SwiftUI は literal が key と一致すれば自動的に `Localizable.xcstring
 
 ## 鍵の追加手順
 
-1. **3 ファイルすべて** に entry を追加:
+1. **5 ファイルすべて** に entry を追加:
    - `androidApp/src/main/res/values/strings.xml`
    - `androidApp/src/main/res/values-ja/strings.xml`
+   - `shared/src/commonMain/composeResources/values/strings.xml`
+   - `shared/src/commonMain/composeResources/values-ja/strings.xml`
    - `iosApp/iosApp/Resources/Localizable.xcstrings`
 2. ローカルで確認:
    ```
@@ -78,7 +112,7 @@ SwiftUI は literal が key と一致すれば自動的に `Localizable.xcstring
 
 ## 鍵の削除
 
-同一 commit で 3 ファイルすべてから削除する。部分削除は verifier が
+同一 commit で 5 ファイルすべてから削除する。部分削除は verifier が
 検出する。
 
 ## Phase 33 の非目的

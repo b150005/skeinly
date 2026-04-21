@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Default (English) string resources.
-  Mirror any additions in:
+  Default (English) string resources for shared Compose Multiplatform UI.
+  Consumed via `import io.github.b150005.knitnote.generated.resources.Res`
+  and `stringResource(Res.string.<key>)` from commonMain.
+
+  Keys MUST stay in sync with:
+    - androidApp/src/main/res/values/strings.xml
     - androidApp/src/main/res/values-ja/strings.xml
+    - shared/src/commonMain/composeResources/values-ja/strings.xml
     - iosApp/iosApp/Resources/Localizable.xcstrings
   Run scripts/verify-i18n-keys.sh to detect drift.
 -->
