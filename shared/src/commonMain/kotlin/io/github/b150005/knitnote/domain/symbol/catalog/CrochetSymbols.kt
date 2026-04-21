@@ -341,11 +341,15 @@ internal object CrochetSymbols {
             // hdc carries no slash, so the cluster signature is the bundle
             // under an oval without height markers. Phase 30.3 addition
             // closing the coverage gap flagged in the Phase 30.2 Knitter
-            // advisory §4.
+            // advisory §4. Phase 30.4 widened outer stem spacing from
+            // 0.25/0.75 → 0.22/0.78: without slashes the three parallel stems
+            // can read as one thick line on low-DPI Android at 24dp; the
+            // extra 6% inter-stem gap disambiguates without breaking the cap
+            // enclosure (oval spans 0.15→0.85 untouched).
             pathData =
-                "M 0.25 0.9 L 0.25 0.3 " +
+                "M 0.22 0.9 L 0.22 0.3 " +
                     "M 0.5 0.9 L 0.5 0.3 " +
-                    "M 0.75 0.9 L 0.75 0.3 " +
+                    "M 0.78 0.9 L 0.78 0.3 " +
                     "M 0.15 0.2 C 0.15 0.08 0.35 0.03 0.5 0.03 " +
                     "C 0.65 0.03 0.85 0.08 0.85 0.2 " +
                     "C 0.85 0.32 0.65 0.32 0.5 0.32 " +
@@ -391,6 +395,128 @@ internal object CrochetSymbols {
             cycName = "cl5",
             jaDescription = "5目の長編みをまとめて1目にする玉編み。2目分の幅を占める。",
             enDescription = "Five dc strokes bundled into one stitch; spans two columns.",
+        )
+
+    private val hdcCluster5 =
+        SymbolDefinition(
+            id = id("hdc-cluster-5"),
+            category = SymbolCategory.CROCHET,
+            // Phase 30.4 addition — mirrors `dcCluster5` geometry (five
+            // vertical stems + wide closed oval cap, widthUnits=2) with all
+            // five slashes stripped per the hdc signal (slash absence = hdc
+            // height, same convention as `hdcCluster3` vs `dcCluster3`).
+            // Closes the Phase 30.3 §4 gap for commercial-JP doily / lace
+            // patterns that pair 5-stitch hdc bundles with `dc-cluster-5`.
+            pathData =
+                "M 0.1 0.9 L 0.1 0.3 " +
+                    "M 0.3 0.9 L 0.3 0.3 " +
+                    "M 0.5 0.9 L 0.5 0.3 " +
+                    "M 0.7 0.9 L 0.7 0.3 " +
+                    "M 0.9 0.9 L 0.9 0.3 " +
+                    "M 0.05 0.2 C 0.05 0.08 0.25 0.03 0.5 0.03 " +
+                    "C 0.75 0.03 0.95 0.08 0.95 0.2 " +
+                    "C 0.95 0.32 0.75 0.32 0.5 0.32 " +
+                    "C 0.25 0.32 0.05 0.32 0.05 0.2 Z",
+            widthUnits = 2,
+            jaLabel = "5目の中長編み玉編み",
+            enLabel = "5-hdc cluster",
+            jisReference = JIS_REF,
+            cycName = "hdc-cl5",
+            aliases = listOf("bob-hdc-5"),
+            jaDescription = "5目の中長編みを頂点でまとめて1目にする玉編み。2目分の幅を占める。",
+            enDescription = "Five hdc strokes bundled into one stitch; spans two columns.",
+        )
+
+    // endregion
+
+    // region — crossed / decorative stitches (Phase 30.4) -------------------
+
+    private val dcCrossed2 =
+        SymbolDefinition(
+            id = id("dc-crossed-2"),
+            category = SymbolCategory.CROCHET,
+            // Phase 30.4 addition — two dc stems crossing mid-cell to form
+            // an X, each retaining its own top-bar + slash (dc=1 slash). JIS
+            // L 0201 Table 2 shows the crossed family; Vogue / Bunka aran-
+            // style crochet patterns render it this way.
+            //
+            // Coordinate guide (critical — per knitter advisory m2, do NOT
+            // "correct" the top-bar x-ranges back to the pre-cross column):
+            //   left  stem: (0.1, 0.9) → (0.7, 0.1)  [origin bottom-left,
+            //                                         terminates top-right]
+            //   right stem: (0.9, 0.9) → (0.3, 0.1)  [origin bottom-right,
+            //                                         terminates top-left]
+            // Stems cross at (0.5, 0.5). Each top-bar caps its stem's
+            // *crossed* endpoint, not its origin column — left-stem bar at
+            // x∈[0.6, 0.8], right-stem bar at x∈[0.2, 0.4], both at y=0.1.
+            // Slashes mirror around x=0.5 at mid-stem (y≈0.5) per JIS dc
+            // convention.
+            pathData =
+                "M 0.1 0.9 L 0.7 0.1 " +
+                    "M 0.9 0.9 L 0.3 0.1 " +
+                    "M 0.6 0.1 L 0.8 0.1 " +
+                    "M 0.2 0.1 L 0.4 0.1 " +
+                    "M 0.25 0.45 L 0.45 0.55 " +
+                    "M 0.55 0.45 L 0.75 0.55",
+            widthUnits = 2,
+            jaLabel = "2目交差の長編み",
+            enLabel = "Crossed 2-dc",
+            jisReference = JIS_REF,
+            cycName = "cross-dc",
+            aliases = listOf("dc cross", "cross dc"),
+            jaDescription = "2目の長編みを交差させる。記号は2本の長編みが中央でX字に交差。",
+            enDescription = "Two dc stitches crossing mid-cell; each stem keeps its top-bar and slash.",
+        )
+
+    private val bullion =
+        SymbolDefinition(
+            id = id("bullion"),
+            category = SymbolCategory.CROCHET,
+            // Phase 30.4 addition — vertical stem with two alternating half-
+            // loops, evoking the spring-coil silhouette of a bullion (wrapped)
+            // stitch. JIS is silent on this glyph; JP publishers (毛糸だま
+            // doily issues, Bunka lace books) draw a coil overlay. Two coils
+            // beat three at 24dp legibility per knitter advisory m1 (three
+            // coils would fall below the Phase 30.2 §3.5 density threshold).
+            // Distinct from `tr` (T + 2 horizontal slashes) and `qtr` (T + 4
+            // slashes) — the alternating-side half-loops read as a coil, not
+            // as parallel slashes.
+            pathData =
+                "M 0.5 0.1 L 0.5 0.9 " +
+                    "M 0.5 0.2 C 0.75 0.28 0.75 0.48 0.5 0.5 " +
+                    "M 0.5 0.5 C 0.25 0.52 0.25 0.72 0.5 0.8",
+            jaLabel = "バリオン編み",
+            enLabel = "Bullion stitch",
+            // JIS L 0201 Table 2 is silent on bullion; leave jisReference null
+            // so it does not misrepresent authority.
+            cycName = "bullion",
+            aliases = listOf("bullion", "roll stitch"),
+            jaDescription = "糸を何度も巻きつけて引き抜く背の高い編み目。記号は縦線＋交互の半円コイル。",
+            enDescription = "Yarn wrapped multiple times before pulling through; rendered as stem with alternating coils.",
+        )
+
+    private val solomonKnot =
+        SymbolDefinition(
+            id = id("solomon-knot"),
+            category = SymbolCategory.CROCHET,
+            // Phase 30.4 addition — tall narrow open loop signaling an
+            // elongated chain-knot (ラブノット). JIS is silent. Vogue 毛糸だま
+            // shawl / stole issues and Bunka render as two vertical arc
+            // curves (not a closed pill — that reads as a rotated `ch` at
+            // 24dp per knitter advisory M1) joined by short horizontal cap
+            // lines top and bottom.
+            pathData =
+                "M 0.45 0.08 C 0.35 0.3 0.35 0.7 0.45 0.92 " +
+                    "M 0.55 0.08 C 0.65 0.3 0.65 0.7 0.55 0.92 " +
+                    "M 0.4 0.08 L 0.6 0.08 " +
+                    "M 0.4 0.92 L 0.6 0.92",
+            jaLabel = "ラブノット",
+            enLabel = "Solomon's knot",
+            // JIS is silent on solomon-knot; leave jisReference null.
+            cycName = "Solomon's knot",
+            aliases = listOf("love knot", "true lover's knot"),
+            jaDescription = "長い鎖の結び目。記号は縦に細長い開いたループ。",
+            enDescription = "Elongated chain-knot stitch; rendered as a tall narrow open loop.",
         )
 
     // endregion
@@ -612,8 +738,70 @@ internal object CrochetSymbols {
             enLabel = "Picot (3-ch)",
             jisReference = JIS_REF,
             cycName = "picot",
+            // `picot` alias on the shortest family member per ADR-009 §4 so
+            // dictionary search on the bare term still resolves.
+            aliases = listOf("picot", "picot3", "3-ch picot"),
             jaDescription = "3目の鎖を輪にしたピコット。装飾に用いる。",
             enDescription = "Decorative 3-chain loop; rendered as a small loop over a stem.",
+        )
+
+    // Phase 30.4 — picot-N discrete family per ADR-009 §8 (geometry-varying,
+    // unlabeled → discrete family, not parametric). Each member is a full
+    // first-class catalog entry with its own pathData tuned for the loop
+    // size. `picot-3` stays stable. `picot-6` goes widthUnits=2 per ADR-009
+    // §8 clause (loop naturally overflows single cell).
+    private val picot4 =
+        SymbolDefinition(
+            id = id("picot-4"),
+            category = SymbolCategory.CROCHET,
+            pathData =
+                "M 0.5 0.6 L 0.5 0.9 " +
+                    "M 0.25 0.6 C 0.25 0.2 0.75 0.2 0.75 0.6 Z",
+            jaLabel = "4目のピコット",
+            enLabel = "Picot (4-ch)",
+            jisReference = JIS_REF,
+            cycName = "picot-4",
+            aliases = listOf("picot4", "4-ch picot"),
+            jaDescription = "4目の鎖を輪にしたピコット。3目より一回り大きな装飾ループ。",
+            enDescription = "Decorative 4-chain loop; one size larger than picot-3.",
+        )
+
+    private val picot5 =
+        SymbolDefinition(
+            id = id("picot-5"),
+            category = SymbolCategory.CROCHET,
+            pathData =
+                "M 0.5 0.65 L 0.5 0.9 " +
+                    "M 0.2 0.65 C 0.2 0.1 0.8 0.1 0.8 0.65 Z",
+            jaLabel = "5目のピコット",
+            enLabel = "Picot (5-ch)",
+            jisReference = JIS_REF,
+            cycName = "picot-5",
+            aliases = listOf("picot5", "5-ch picot"),
+            jaDescription = "5目の鎖を輪にしたピコット。ほぼセル全体を占めるループ。",
+            enDescription = "Decorative 5-chain loop; near-full-cell loop.",
+        )
+
+    private val picot6 =
+        SymbolDefinition(
+            id = id("picot-6"),
+            category = SymbolCategory.CROCHET,
+            // widthUnits=2 per ADR-009 §8 — a 6-chain picot naturally reads
+            // as an arch spanning two stitch columns on commercial edging
+            // charts. Loop widened to x∈[0.05, 0.95] (near-full unit-square)
+            // per knitter advisory m3 so the widthUnits=2 stretch renders a
+            // true ~2-cell loop, visually distinct from picot-5 at 1 cell.
+            pathData =
+                "M 0.5 0.75 L 0.5 0.95 " +
+                    "M 0.05 0.75 C 0.05 0.05 0.95 0.05 0.95 0.75 Z",
+            widthUnits = 2,
+            jaLabel = "6目のピコット",
+            enLabel = "Picot (6-ch)",
+            jisReference = JIS_REF,
+            cycName = "picot-6",
+            aliases = listOf("picot6", "6-ch picot"),
+            jaDescription = "6目の鎖を輪にしたピコット。2目分の幅を占めるアーチ状ループ。",
+            enDescription = "Decorative 6-chain loop; arch spanning two columns.",
         )
 
     private val turningCh =
@@ -686,6 +874,11 @@ internal object CrochetSymbols {
             dcCluster3,
             hdcCluster3,
             dcCluster5,
+            hdcCluster5,
+            // crossed / decorative (Phase 30.4)
+            dcCrossed2,
+            bullion,
+            solomonKnot,
             // increases
             incSc,
             incDc,
@@ -701,6 +894,9 @@ internal object CrochetSymbols {
             popcorn,
             puff,
             picot3,
+            picot4,
+            picot5,
+            picot6,
             turningCh,
             chSpace,
         )

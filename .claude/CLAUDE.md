@@ -274,6 +274,8 @@ If the handoff is growing past ~40 lines it means you are duplicating CLAUDE.md 
 
 - **Phase 30.3**: crochet catalog extension — `jis.crochet.{reverse-sc, puff, hdc-cluster-3}`.
 
+- **Phase 30.4**: Knitter-priority glyph bundle — 7 new `jis.crochet.*` glyphs (`hdc-cluster-5` widthUnits=2 mirror of `dc-cluster-5`; `dc-crossed-2` widthUnits=2 aran-style X with per-stem top-bar+slash; `bullion` two-coil spring silhouette, JIS-silent; `solomon-knot` two-arc open loop, JIS-silent; `picot-4`/`picot-5` w=1 with progressive loop size; `picot-6` w=2 arch per ADR-009 §8 clause). `picot-3` gains bare `"picot"` alias per ADR-009 §4 (shortest family member carries the stem). `hdc-cluster-3` outer stems widened 0.25/0.75 → 0.22/0.78 per Phase 30.3 deferred polish (no-slash hdc-cluster stems read as one thick line on 24dp low-DPI Android without the gap). Existing `all entries declare a JIS reference to Table 2` test amended to exempt `solomon-knot` + `bullion` (intentionally null `jisReference`; JIS L 0201 Table 2 does not enumerate either). Knitter advisory caught and fixed pre-impl: M1 (solomon-knot closed-pill → open-loop form), m1 (bullion 3 coils → 2 to clear Phase 30.2 §3.5 density threshold at 24dp), m2 (dc-crossed-2 stem-endpoint comment so future readers don't "correct" top-bars back to pre-cross column positions), m3 (picot-6 loop x∈[0.1, 0.9] → x∈[0.05, 0.95] so widthUnits=2 stretch truly spans ~2 cells). Catalog total 35 crochet glyphs (~95% JP commercial coverage). Code review: APPROVED after 1 LOW fix (bullion `"bullion"` alias added for cross-convention lookup symmetry with `reverse-sc`'s `"rsc"` alias). +8 commonTest (776 total).
+
 - **Phase 33**: i18n skeleton — 21 seed keys synced across `values/strings.xml` + `values-ja/strings.xml` + `iosApp/.../Localizable.xcstrings`. `iosApp/project.yml` CFBundleDevelopmentRegion + CFBundleLocalizations. `scripts/verify-i18n-keys.sh` drift-check wired into CI `shared-checks`. `docs/{en,ja}/i18n-convention.md` documents role-prefixed key naming. Consumer wiring from shared Compose screens is a follow-up (see Tech Debt Backlog).
 
 - **Phase 32.1**: StructuredChart schema v2 — `CraftType { KNIT, CROCHET }` + `ReadingConvention { KNIT_FLAT, CROCHET_FLAT, ROUND }` enums added to the document envelope. Schema bump 1→2 is backward compatible (v1 rows read with defaults, promoted to v2 on next save). `computeContentHash` unchanged (metadata lives outside drawing identity). `UpdateStructuredChartUseCase` has a `metadataUnchanged` guard + auto-promote. No DDL change. ADR-008 Phase 32.1 addendum. +15 commonTest (720 total).
@@ -290,7 +292,6 @@ If the handoff is growing past ~40 lines it means you are duplicating CLAUDE.md 
 - **Phase 27c**: v1 Store Submission (Final) — staged but not executed. Will re-open only after the structured chart vision (Phase 29–40) reaches beta readiness.
 
 ### Planned — Structured Chart Authoring (per ADR-007)
-- **Phase 30.4**: Knitter-priority glyph bundle (opportunistic) — `hdc-cluster-5` (widthUnits=2), Solomon's knot / ラブノット, crossed dc, Bullion, `picot-{4,5,6}` as a discrete family (not parametric — per ADR-009 §8). Re-prioritize after editor telemetry.
 - **Phase 34**: Per-Segment Progress — stitch/section granularity for todo/wip/done, progress visualization overlays on the chart viewer. Needs an ADR (segment table vs. layer extension).
 - **Phase 35**: Chart Editor (Advanced) — symmetry copy, layer ops, snap grid, polar-coordinate (round) mode, grid size picker.
 - **Phase 36**: Chart Discovery + Fork — extend Discovery to structured charts, upgrade fork to a commit-rooted copy with author attribution.
@@ -322,5 +323,10 @@ Items deferred across phases. When reopening one, cut a dedicated PR — do not 
 - `AuthRepositoryImpl.RefreshFailureCause` — migrate to `AuthEvent.RefreshFailure(cause)` per supabase-kt API change.
 
 ### Structured chart cosmetic polish
-- `jis.crochet.hdc-cluster-3` stem spacing — outer stems `0.25/0.75` → `0.22/0.78` (Phase 30.4 bundle).
 - `jis.crochet.reverse-sc` chevron form — awaiting real-user feedback before changing.
+
+### Future opportunistic crochet catalog additions (post-30.4)
+- Foundation stitches (`fsc`, `fdc`) — US-dominant convention; defer until a JP-pattern user reports needing them.
+- Extended sc (`exsc`) — CYC-standard, JIS silent.
+- Spike stitches (long-loop variants) — colorwork crochet.
+- `turning-ch-N` family — ADR-009 §9 open question (parametric vs. discrete family); reopens when a concrete non-dc-height turning chain shows up in a user pattern.
