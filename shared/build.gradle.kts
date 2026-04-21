@@ -116,6 +116,9 @@ kotlin {
                 implementation(libs.sqldelight.android.driver)
                 implementation(libs.ktor.client.android)
                 implementation(libs.multiplatform.settings.no.arg)
+                // Required for androidx.activity.compose.BackHandler used by
+                // ui/platform/SystemBackHandler.android.kt
+                implementation(libs.androidx.activity.compose)
             }
         }
         getByName("androidHostTest") {
@@ -191,6 +194,7 @@ kover {
                     "io.github.b150005.knitnote.ui.symbol.SymbolGalleryScreenKt*",
                     "io.github.b150005.knitnote.ui.chart.ChartViewerScreenKt*",
                     "io.github.b150005.knitnote.ui.chart.SymbolDrawingKt*",
+                    "io.github.b150005.knitnote.ui.platform.*",
                 )
             }
         }
