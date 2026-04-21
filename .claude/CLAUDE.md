@@ -280,7 +280,7 @@ If the handoff is growing past ~40 lines it means you are duplicating CLAUDE.md 
 - **Phase 27c**: v1 Store Submission (Final) — staged but not executed. Will re-open only after the structured chart vision (Phase 29–40) reaches beta readiness.
 
 ### Planned — Structured Chart Authoring (per ADR-007)
-- **Phase 30.4**: Knitter-priority glyph bundle (opportunistic) — `hdc-cluster-5` (widthUnits=2), Solomon's knot / ラブノット, crossed dc, Bullion, `picot-N` parametric (architect: split parametric symbols into a separate mini-ADR — ship non-parametric 4 first). Re-prioritize after editor telemetry.
+- **Phase 30.4**: Knitter-priority glyph bundle (opportunistic) — `hdc-cluster-5` (widthUnits=2), Solomon's knot / ラブノット, crossed dc, Bullion, `picot-{4,5,6}` as a discrete family (not parametric — per ADR-009 §8). Re-prioritize after editor telemetry.
 - **Phase 34**: Per-Segment Progress — stitch/section granularity for todo/wip/done, progress visualization overlays on the chart viewer. Needs an ADR (segment table vs. layer extension).
 - **Phase 35**: Chart Editor (Advanced) — symmetry copy, layer ops, snap grid, polar-coordinate (round) mode, grid size picker.
 - **Phase 36**: Chart Discovery + Fork — extend Discovery to structured charts, upgrade fork to a commit-rooted copy with author attribution.
