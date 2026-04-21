@@ -38,6 +38,9 @@
 
     <!-- Chart editor screen -->
     <string name="title_edit_chart">チャートを編集</string>
+
+    <!-- Symbol gallery screen -->
+    <string name="title_symbol_dictionary">記号辞典</string>
     <string name="dialog_parameter_edit_title">パラメータを編集</string>
     <string name="dialog_parameter_enter_title">パラメータを入力</string>
     <string name="label_craft">種類</string>

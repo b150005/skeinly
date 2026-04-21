@@ -41,6 +41,9 @@
 
     <!-- Chart editor screen -->
     <string name="title_edit_chart">Edit chart</string>
+
+    <!-- Symbol gallery screen -->
+    <string name="title_symbol_dictionary">Symbol Dictionary</string>
     <string name="dialog_parameter_edit_title">Edit parameter</string>
     <string name="dialog_parameter_enter_title">Enter parameter</string>
     <string name="label_craft">Craft</string>

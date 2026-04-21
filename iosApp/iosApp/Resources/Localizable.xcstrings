@@ -231,6 +231,13 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit chart" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "チャートを編集" } }
       }
+    },
+    "title_symbol_dictionary" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Symbol Dictionary" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "記号辞典" } }
+      }
     }
   },
   "version" : "1.0"

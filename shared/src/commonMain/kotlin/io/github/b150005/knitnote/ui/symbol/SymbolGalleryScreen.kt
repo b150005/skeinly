@@ -41,7 +41,11 @@ import androidx.compose.ui.unit.sp
 import io.github.b150005.knitnote.domain.symbol.PathCommand
 import io.github.b150005.knitnote.domain.symbol.SymbolCategory
 import io.github.b150005.knitnote.domain.symbol.SymbolDefinition
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_back
+import io.github.b150005.knitnote.generated.resources.title_symbol_dictionary
 import io.github.b150005.knitnote.ui.chart.drawSymbolPath
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.max
 import kotlin.math.min
@@ -66,7 +70,7 @@ fun SymbolGalleryScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Symbol Dictionary")
+                        Text(stringResource(Res.string.title_symbol_dictionary))
                         Text(
                             text = "${state.symbols.size} / ${state.totalCount}",
                             style = MaterialTheme.typography.labelSmall,
@@ -78,7 +82,7 @@ fun SymbolGalleryScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(Res.string.action_back),
                         )
                     }
                 },
