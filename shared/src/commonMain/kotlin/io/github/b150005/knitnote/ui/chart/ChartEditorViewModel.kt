@@ -8,6 +8,7 @@ import io.github.b150005.knitnote.domain.model.ChartLayer
 import io.github.b150005.knitnote.domain.model.CraftType
 import io.github.b150005.knitnote.domain.model.ReadingConvention
 import io.github.b150005.knitnote.domain.model.StructuredChart
+import io.github.b150005.knitnote.domain.symbol.ParameterSlot
 import io.github.b150005.knitnote.domain.symbol.SymbolCatalog
 import io.github.b150005.knitnote.domain.symbol.SymbolCategory
 import io.github.b150005.knitnote.domain.symbol.SymbolDefinition
@@ -50,6 +51,20 @@ data class ChartEditorState(
     val isSaving: Boolean = false,
     val errorMessage: String? = null,
     val hasUnsavedChanges: Boolean = false,
+    val pendingParameterInput: PendingParameterInput? = null,
+)
+
+/**
+ * Deferred placement or re-edit of a parametric cell — cell is not committed until the
+ * user fills the inline input and confirms. See ADR-009 §7.
+ */
+data class PendingParameterInput(
+    val symbolId: String,
+    val x: Int,
+    val y: Int,
+    val slots: List<ParameterSlot>,
+    val currentValues: Map<String, String>,
+    val isEditingExisting: Boolean,
 )
 
 sealed interface ChartEditorEvent {
@@ -73,6 +88,12 @@ sealed interface ChartEditorEvent {
         val x: Int,
         val y: Int,
     ) : ChartEditorEvent
+
+    data class ConfirmParameterInput(
+        val values: Map<String, String>,
+    ) : ChartEditorEvent
+
+    data object CancelParameterInput : ChartEditorEvent
 
     data object Undo : ChartEditorEvent
 
@@ -121,6 +142,8 @@ class ChartEditorViewModel(
             is ChartEditorEvent.SelectCraft -> selectCraft(event.craftType)
             is ChartEditorEvent.SelectReading -> selectReading(event.readingConvention)
             is ChartEditorEvent.PlaceCell -> placeCell(event.x, event.y)
+            is ChartEditorEvent.ConfirmParameterInput -> confirmParameterInput(event.values)
+            ChartEditorEvent.CancelParameterInput -> cancelParameterInput()
             ChartEditorEvent.Undo -> undo()
             ChartEditorEvent.Redo -> redo()
             ChartEditorEvent.Save -> save()
@@ -197,33 +220,128 @@ class ChartEditorViewModel(
         y: Int,
     ) {
         val current = _state.value
+        // Defensive: ignore placement while a parameter dialog is open — the UI is modal,
+        // but suppressing here keeps the ViewModel consistent even without UI cooperation.
+        if (current.pendingParameterInput != null) return
         val layers = current.draftLayers
         if (layers.isEmpty()) return
         val targetLayer = layers[0]
         val existing = targetLayer.cells.firstOrNull { it.x == x && it.y == y }
         val selectedId = current.selectedSymbolId
 
-        val newCells: List<ChartCell> =
-            when {
-                selectedId == null -> {
-                    // Eraser: no-op if no existing cell.
-                    if (existing == null) return
-                    targetLayer.cells.filterNot { it === existing }
-                }
-                existing == null -> targetLayer.cells + ChartCell(symbolId = selectedId, x = x, y = y)
-                else ->
-                    targetLayer.cells.map { cell ->
-                        if (cell === existing) cell.copy(symbolId = selectedId) else cell
-                    }
-            }
+        // Eraser mode is orthogonal to parametric-ness — always erase immediately.
+        if (selectedId == null) {
+            if (existing == null) return
+            commitCells(current, targetLayer.cells.filterNot { it === existing })
+            return
+        }
 
-        recordHistory(current)
+        // Parametric fork (ADR-009 §7): if the selected symbol declares parameterSlots,
+        // defer the write and open the inline input dialog. Cells are only committed on
+        // ConfirmParameterInput.
+        val selectedDef = symbolCatalog.get(selectedId)
+        if (selectedDef != null && selectedDef.parameterSlots.isNotEmpty()) {
+            val reEditCell = existing?.takeIf { it.symbolId == selectedId }
+            _state.update {
+                it.copy(
+                    pendingParameterInput =
+                        PendingParameterInput(
+                            symbolId = selectedId,
+                            x = x,
+                            y = y,
+                            slots = selectedDef.parameterSlots,
+                            currentValues = reEditCell?.symbolParameters ?: emptyMap(),
+                            isEditingExisting = reEditCell != null,
+                        ),
+                )
+            }
+            return
+        }
+
+        // Non-parametric: immediate place or overwrite (existing MVP behavior).
+        // Overwrite intentionally wipes `symbolParameters` — ADR-009 §5 guarantees
+        // round-trip preservation of unknown keys in storage, not across editor mutations.
+        // Replacing a parametric cell with a non-parametric one means the previous values
+        // no longer correspond to any declared slot, so dropping them prevents stale data
+        // from lingering in the document.
+        val newCells: List<ChartCell> =
+            if (existing == null) {
+                targetLayer.cells + ChartCell(symbolId = selectedId, x = x, y = y)
+            } else {
+                targetLayer.cells.map { cell ->
+                    if (cell === existing) {
+                        cell.copy(symbolId = selectedId, symbolParameters = emptyMap())
+                    } else {
+                        cell
+                    }
+                }
+            }
+        commitCells(current, newCells)
+    }
+
+    // Concurrency invariants for confirm / cancel / commitCells:
+    //   - onEvent is dispatched on a single coroutine (Main) — no interleaved mutation.
+    //   - placeCell / undo / redo all early-return when pendingParameterInput is set, so
+    //     nothing can rewrite draftLayers between placeCell opening the dialog and
+    //     confirmParameterInput committing.
+    //   - save() is the only async path; it does not touch pendingParameterInput and
+    //     short-circuits when !hasUnsavedChanges, so it cannot interleave with an
+    //     in-flight dialog either.
+    // This keeps the read-derive-write pattern below race-free without needing to move
+    // the derivation inside _state.update (which would make recordHistory non-idempotent).
+
+    private fun confirmParameterInput(values: Map<String, String>) {
+        val current = _state.value
+        val pending = current.pendingParameterInput ?: return
+        val layers = current.draftLayers
+        if (layers.isEmpty()) {
+            _state.update { it.copy(pendingParameterInput = null) }
+            return
+        }
+        val targetLayer = layers[0]
+        val existing = targetLayer.cells.firstOrNull { it.x == pending.x && it.y == pending.y }
+
+        val newCells: List<ChartCell> =
+            if (existing == null) {
+                targetLayer.cells +
+                    ChartCell(
+                        symbolId = pending.symbolId,
+                        x = pending.x,
+                        y = pending.y,
+                        symbolParameters = values,
+                    )
+            } else {
+                targetLayer.cells.map { cell ->
+                    if (cell === existing) {
+                        cell.copy(symbolId = pending.symbolId, symbolParameters = values)
+                    } else {
+                        cell
+                    }
+                }
+            }
+        commitCells(current, newCells, clearPending = true)
+    }
+
+    private fun cancelParameterInput() {
+        _state.update { it.copy(pendingParameterInput = null) }
+    }
+
+    private fun commitCells(
+        snapshotBefore: ChartEditorState,
+        newCells: List<ChartCell>,
+        clearPending: Boolean = false,
+    ) {
+        val layers = snapshotBefore.draftLayers
+        if (layers.isEmpty()) return
+        val targetLayer = layers[0]
+        recordHistory(snapshotBefore)
         val updatedLayers = layers.toMutableList().apply { this[0] = targetLayer.copy(cells = newCells) }
         _state.update {
             it.copy(
                 draftLayers = updatedLayers,
                 canUndo = history.canUndo,
                 canRedo = history.canRedo,
+                pendingParameterInput = if (clearPending) null else it.pendingParameterInput,
                 hasUnsavedChanges =
                     computeUnsavedChanges(
                         original = it.original,
@@ -242,6 +360,10 @@ class ChartEditorViewModel(
 
     private fun undo() {
         val current = _state.value
+        // Block undo while a parametric dialog is open — an undo between placeCell opening
+        // the dialog and confirmParameterInput committing would leave the pending input
+        // pointing at a cell whose context has been rewritten.
+        if (current.pendingParameterInput != null) return
         val snapshot = EditHistory.Snapshot(extents = current.draftExtents, layers = current.draftLayers)
         val previous = history.undo(snapshot) ?: return
         _state.update {
@@ -264,6 +386,7 @@ class ChartEditorViewModel(
 
     private fun redo() {
         val current = _state.value
+        if (current.pendingParameterInput != null) return
         val snapshot = EditHistory.Snapshot(extents = current.draftExtents, layers = current.draftLayers)
         val next = history.redo(snapshot) ?: return
         _state.update {

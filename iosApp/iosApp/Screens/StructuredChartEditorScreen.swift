@@ -12,6 +12,11 @@ struct StructuredChartEditorScreen: View {
     @State private var showDiscardConfirm = false
     @State private var showError = false
     @State private var savedCloseable: Closeable?
+    // Decoupled from ViewModel state so the sheet's presented flag is driven by an
+    // explicit handler, not by reading back from the reactive state flow (avoids a
+    // transient race on confirm where the flag would spuriously fire CancelParameterInput).
+    @State private var isParameterSheetPresented = false
+    @State private var activeParameterPending: PendingParameterInput?
     private let catalog: SymbolCatalog
 
     private var viewModel: ChartEditorViewModel { holder.viewModel }
@@ -150,6 +155,41 @@ struct StructuredChartEditorScreen: View {
             }
         } message: {
             Text("You have unsaved changes. Discard them?")
+        }
+        .onChange(of: state.pendingParameterInput) { _, newPending in
+            if let pending = newPending {
+                activeParameterPending = pending
+                isParameterSheetPresented = true
+            } else {
+                // ViewModel cleared the pending (confirm or cancel handled).
+                isParameterSheetPresented = false
+                activeParameterPending = nil
+            }
+        }
+        .sheet(isPresented: $isParameterSheetPresented, onDismiss: {
+            // User-initiated swipe-down dismiss — if VM still has a pending, treat as cancel.
+            if holder.state.pendingParameterInput != nil {
+                viewModel.onEvent(event: ChartEditorEventCancelParameterInput.shared)
+            }
+            activeParameterPending = nil
+        }) {
+            if let pending = activeParameterPending {
+                ParameterInputSheet(
+                    pending: pending,
+                    onConfirm: { values in
+                        viewModel.onEvent(
+                            event: ChartEditorEventConfirmParameterInput(values: values)
+                        )
+                    },
+                    onCancel: {
+                        viewModel.onEvent(event: ChartEditorEventCancelParameterInput.shared)
+                    }
+                )
+                // Force a fresh view instance per-pending so .onAppear re-seeds drafts
+                // when a new cell is tapped while the sheet is already dismissed/re-opening.
+                .id("\(pending.symbolId)@\(pending.x),\(pending.y)")
+                .presentationDetents([.medium])
+            }
         }
     }
 
@@ -496,5 +536,60 @@ private struct PaletteSymbolCell: View {
             )
         }
         .accessibilityIdentifier("paletteSymbol_\(def.id)")
+    }
+}
+
+// MARK: - Parametric symbol input
+
+/// Inline input sheet shown when placing or re-editing a parametric cell (ADR-009 §7).
+/// Mirrors the Compose `ParameterInputDialog`.
+private struct ParameterInputSheet: View {
+    let pending: PendingParameterInput
+    let onConfirm: ([String: String]) -> Void
+    let onCancel: () -> Void
+
+    @State private var drafts: [String: String] = [:]
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                ForEach(pending.slots, id: \.key) { slot in
+                    TextField(
+                        slot.enLabel,
+                        text: Binding(
+                            get: { drafts[slot.key] ?? "" },
+                            set: { drafts[slot.key] = $0 }
+                        )
+                    )
+                    .accessibilityIdentifier("parameterInput_\(slot.key)")
+                }
+            }
+            .navigationTitle(pending.isEditingExisting ? "Edit parameter" : "Enter parameter")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { onCancel() }
+                        .accessibilityIdentifier("parameterCancelButton")
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("OK") { onConfirm(drafts) }
+                        .accessibilityIdentifier("parameterConfirmButton")
+                }
+            }
+        }
+        .onAppear {
+            // Seed with current values (re-edit) or defaults (new placement).
+            var initial: [String: String] = [:]
+            for slot in pending.slots {
+                if let v = pending.currentValues[slot.key] {
+                    initial[slot.key] = v
+                } else if let d = slot.defaultValue {
+                    initial[slot.key] = d
+                } else {
+                    initial[slot.key] = ""
+                }
+            }
+            drafts = initial
+        }
     }
 }

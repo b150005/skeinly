@@ -630,4 +630,183 @@ class ChartEditorViewModelTest {
             assertEquals(seeded.extents, state.draftExtents)
             assertEquals(seeded.layers, state.draftLayers)
         }
+
+    // --- Phase 32.3: parametric symbol input (ADR-009 §7) ---
+    // Notes on K/N backtick restriction: no `(`, `)`, `,` in backticked fn names.
+
+    // 26. Parametric placement opens dialog without committing.
+    @Test
+    fun `placeCell with parametric selection on empty cell opens pending input and does not commit`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.crochet.ch-space"))
+
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 2, y = 3))
+
+            val state = viewModel.state.value
+            val pending = state.pendingParameterInput
+            assertNotNull(pending, "parametric placement must open pending input")
+            assertEquals("jis.crochet.ch-space", pending.symbolId)
+            assertEquals(2, pending.x)
+            assertEquals(3, pending.y)
+            assertFalse(pending.isEditingExisting)
+            assertTrue(pending.slots.isNotEmpty())
+            assertTrue(pending.currentValues.isEmpty(), "new placement starts with no values")
+            // Cell must NOT be committed yet.
+            assertTrue(state.draftLayers[0].cells.isEmpty())
+            assertFalse(state.canUndo)
+            assertFalse(state.hasUnsavedChanges)
+        }
+
+    // 27. Confirm commits the cell with symbolParameters, pushes history, marks unsaved.
+    @Test
+    fun `ConfirmParameterInput commits cell with symbolParameters and pushes history`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.crochet.ch-space"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 1, y = 1))
+
+            viewModel.onEvent(ChartEditorEvent.ConfirmParameterInput(mapOf("count" to "5")))
+
+            val state = viewModel.state.value
+            assertNull(state.pendingParameterInput)
+            val cells = state.draftLayers[0].cells
+            assertEquals(1, cells.size)
+            assertEquals("jis.crochet.ch-space", cells[0].symbolId)
+            assertEquals(mapOf("count" to "5"), cells[0].symbolParameters)
+            assertTrue(state.canUndo)
+            assertTrue(state.hasUnsavedChanges)
+        }
+
+    // 28. Cancel discards the pending input without committing or pushing history.
+    @Test
+    fun `CancelParameterInput clears pending input without committing a cell or pushing history`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.crochet.ch-space"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 1, y = 1))
+
+            viewModel.onEvent(ChartEditorEvent.CancelParameterInput)
+
+            val state = viewModel.state.value
+            assertNull(state.pendingParameterInput)
+            assertTrue(state.draftLayers[0].cells.isEmpty())
+            assertFalse(state.canUndo)
+            assertFalse(state.hasUnsavedChanges)
+        }
+
+    // 29. Re-edit: tapping an existing parametric cell with the same symbol selected
+    // reopens the dialog prepopulated with the cell's current values.
+    @Test
+    fun `placeCell on existing parametric cell with same selection opens re-edit prepopulated`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            // First place a ch-space with count=3.
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.crochet.ch-space"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+            viewModel.onEvent(ChartEditorEvent.ConfirmParameterInput(mapOf("count" to "3")))
+
+            // Tap the same cell again.
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+
+            val pending = viewModel.state.value.pendingParameterInput
+            assertNotNull(pending, "tapping parametric cell should reopen dialog")
+            assertTrue(pending.isEditingExisting)
+            assertEquals("jis.crochet.ch-space", pending.symbolId)
+            assertEquals(mapOf("count" to "3"), pending.currentValues)
+        }
+
+    // 30. Re-edit confirm replaces values in-place, no new cell.
+    @Test
+    fun `ConfirmParameterInput on re-edit replaces existing cell values without adding a new cell`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.crochet.ch-space"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+            viewModel.onEvent(ChartEditorEvent.ConfirmParameterInput(mapOf("count" to "3")))
+            // Re-open via second tap.
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+
+            viewModel.onEvent(ChartEditorEvent.ConfirmParameterInput(mapOf("count" to "7")))
+
+            val state = viewModel.state.value
+            assertNull(state.pendingParameterInput)
+            val cells = state.draftLayers[0].cells
+            assertEquals(1, cells.size, "re-edit must not add a second cell")
+            assertEquals(mapOf("count" to "7"), cells[0].symbolParameters)
+        }
+
+    // 31. Eraser (null selection) on a parametric cell erases immediately — no dialog.
+    @Test
+    fun `placeCell with null selection on parametric cell erases immediately without opening dialog`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.crochet.ch-space"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+            viewModel.onEvent(ChartEditorEvent.ConfirmParameterInput(mapOf("count" to "5")))
+            // Switch to eraser.
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol(null))
+
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+
+            val state = viewModel.state.value
+            assertNull(state.pendingParameterInput, "eraser must not open dialog")
+            assertTrue(state.draftLayers[0].cells.isEmpty())
+        }
+
+    // 32. Defensive: PlaceCell while pending input is set is ignored.
+    @Test
+    fun `placeCell while pendingParameterInput is set is ignored`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.crochet.ch-space"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 1, y = 1))
+            val firstPending = viewModel.state.value.pendingParameterInput
+            assertNotNull(firstPending)
+
+            // Second tap at a different cell should be ignored while dialog is open.
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 5, y = 5))
+
+            val state = viewModel.state.value
+            // Pending stays pointed at the first tap.
+            assertEquals(1, state.pendingParameterInput?.x)
+            assertEquals(1, state.pendingParameterInput?.y)
+            assertTrue(state.draftLayers[0].cells.isEmpty())
+        }
+
+    // 33. Overwrite parametric with non-parametric — immediate, no dialog.
+    @Test
+    fun `placeCell with non-parametric selection on parametric cell overwrites immediately`() =
+        runTest {
+            // Setup guard — the assertions below would pass vacuously if the catalog
+            // lookup returned null (fall-through to non-parametric branch). Pin the
+            // pre-condition explicitly.
+            val knitK = catalog.get("jis.knit.k")
+            assertNotNull(knitK, "catalog must expose jis.knit.k")
+            assertTrue(knitK.parameterSlots.isEmpty(), "jis.knit.k must be non-parametric")
+
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.crochet.ch-space"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+            viewModel.onEvent(ChartEditorEvent.ConfirmParameterInput(mapOf("count" to "4")))
+            // Switch to a non-parametric symbol.
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+
+            val state = viewModel.state.value
+            assertNull(state.pendingParameterInput)
+            val cells = state.draftLayers[0].cells
+            assertEquals(1, cells.size)
+            assertEquals("jis.knit.k", cells[0].symbolId)
+            assertTrue(cells[0].symbolParameters.isEmpty())
+        }
 }
