@@ -89,6 +89,68 @@ android {
     }
 }
 
+// Compose Multiplatform resources workaround for AGP 9.x KMP library plugin.
+// The `com.android.kotlin.multiplatform.library` plugin (used in :shared) does
+// not emit `assembledResources/androidMain/…` for the CMP resource generator,
+// so `composeResources/<package>/…` is never packaged into the APK and
+// `stringResource(Res.string.*)` throws MissingResourceException at runtime on
+// Android. Until upstream integration lands (JetBrains upstream gap), we
+// relocate :shared's `preparedResources/commonMain/composeResources/values*`
+// into each Android variant's assets via the AGP Variant API.
+@CacheableTask
+abstract class CopyComposeResourcesForAndroid : DefaultTask() {
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val sourceDir: DirectoryProperty
+
+    @get:Input
+    abstract val resourcePackage: Property<String>
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun run() {
+        val out = outputDir.get().asFile
+        // Full delete + copy: if a key is removed from strings.xml, the stale
+        // CVR must disappear from the APK too. Relying on copyRecursively
+        // overwrite alone would leave orphaned files behind.
+        out.deleteRecursively()
+        val dest = out.resolve("composeResources/${resourcePackage.get()}")
+        dest.mkdirs()
+        sourceDir.get().asFile.copyRecursively(dest, overwrite = true)
+    }
+}
+
+val copyComposeResourcesForAndroid =
+    tasks.register<CopyComposeResourcesForAndroid>("copyComposeResourcesForAndroid") {
+        dependsOn(":shared:prepareComposeResourcesTaskForCommonMain")
+        // Anchor to rootProject rather than this module's projectDirectory so
+        // that reorganizing `:androidApp`'s path does not silently break the
+        // relocation.
+        sourceDir.set(
+            rootProject.layout.projectDirectory
+                .dir("shared/build/generated/compose/resourceGenerator/preparedResources/commonMain/composeResources"),
+        )
+        resourcePackage.set("io.github.b150005.knitnote.generated.resources")
+        outputDir.set(layout.buildDirectory.dir("generated/composeResourcesForAndroid"))
+    }
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(
+            copyComposeResourcesForAndroid,
+            CopyComposeResourcesForAndroid::outputDir,
+        )
+        // Instrumented tests have their own asset pipeline — mirror the wiring
+        // so any UI test rendering a Compose screen with Res.string.* works.
+        variant.androidTest?.sources?.assets?.addGeneratedSourceDirectory(
+            copyComposeResourcesForAndroid,
+            CopyComposeResourcesForAndroid::outputDir,
+        )
+    }
+}
+
 dependencies {
     implementation(compose.material3)
     implementation(compose.foundation)
