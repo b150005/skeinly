@@ -99,4 +99,17 @@
     <string name="body_onboarding_count">編みかけの場所を見失いません。タップで段数を数え、メモや進捗写真を残せます。</string>
     <string name="title_onboarding_library">パターンライブラリを作る</string>
     <string name="body_onboarding_library">お気に入りのパターンをゲージ・糸情報・針号数と一緒に保存できます。</string>
+
+    <!-- Login screen -->
+    <string name="title_sign_in">サインイン</string>
+    <string name="title_create_account">アカウント作成</string>
+    <string name="title_error">エラー</string>
+    <string name="label_email">メールアドレス</string>
+    <string name="label_password">パスワード</string>
+    <string name="action_sign_in">サインイン</string>
+    <string name="action_sign_up">登録</string>
+    <string name="action_toggle_to_sign_in">すでにアカウントをお持ちですか？サインイン</string>
+    <string name="action_toggle_to_sign_up">アカウントをお持ちでない方？登録</string>
+    <string name="action_continue_with_google">Googleで続ける（近日公開）</string>
+    <string name="action_continue_with_apple">Appleで続ける（近日公開）</string>
 </resources>

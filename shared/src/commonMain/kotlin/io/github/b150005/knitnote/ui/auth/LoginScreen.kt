@@ -25,10 +25,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_continue_with_apple
+import io.github.b150005.knitnote.generated.resources.action_continue_with_google
+import io.github.b150005.knitnote.generated.resources.action_sign_in
+import io.github.b150005.knitnote.generated.resources.action_sign_up
+import io.github.b150005.knitnote.generated.resources.action_toggle_to_sign_in
+import io.github.b150005.knitnote.generated.resources.action_toggle_to_sign_up
+import io.github.b150005.knitnote.generated.resources.app_name
+import io.github.b150005.knitnote.generated.resources.label_email
+import io.github.b150005.knitnote.generated.resources.label_password
+import io.github.b150005.knitnote.generated.resources.title_create_account
+import io.github.b150005.knitnote.generated.resources.title_sign_in
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -51,19 +65,23 @@ fun LoginScreen(viewModel: AuthViewModel = koinViewModel()) {
                 Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(horizontal = 32.dp),
+                    .padding(horizontal = 32.dp)
+                    .testTag("loginScreen"),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = "Knit Note",
+                text = stringResource(Res.string.app_name),
                 style = MaterialTheme.typography.headlineLarge,
             )
 
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = if (state.isSignUp) "Create Account" else "Sign In",
+                text =
+                    stringResource(
+                        if (state.isSignUp) Res.string.title_create_account else Res.string.title_sign_in,
+                    ),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -73,14 +91,17 @@ fun LoginScreen(viewModel: AuthViewModel = koinViewModel()) {
             OutlinedTextField(
                 value = state.email,
                 onValueChange = { viewModel.onEvent(AuthEvent.UpdateEmail(it)) },
-                label = { Text("Email") },
+                label = { Text(stringResource(Res.string.label_email)) },
                 singleLine = true,
                 keyboardOptions =
                     KeyboardOptions(
                         keyboardType = KeyboardType.Email,
                         imeAction = ImeAction.Next,
                     ),
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .testTag("emailField"),
             )
 
             Spacer(Modifier.height(12.dp))
@@ -88,7 +109,7 @@ fun LoginScreen(viewModel: AuthViewModel = koinViewModel()) {
             OutlinedTextField(
                 value = state.password,
                 onValueChange = { viewModel.onEvent(AuthEvent.UpdatePassword(it)) },
-                label = { Text("Password") },
+                label = { Text(stringResource(Res.string.label_password)) },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions =
@@ -96,7 +117,10 @@ fun LoginScreen(viewModel: AuthViewModel = koinViewModel()) {
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Done,
                     ),
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .testTag("passwordField"),
             )
 
             Spacer(Modifier.height(24.dp))
@@ -104,7 +128,10 @@ fun LoginScreen(viewModel: AuthViewModel = koinViewModel()) {
             Button(
                 onClick = { viewModel.onEvent(AuthEvent.Submit) },
                 enabled = !state.isSubmitting && state.email.isNotBlank() && state.password.isNotBlank(),
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .testTag("submitButton"),
             ) {
                 if (state.isSubmitting) {
                     CircularProgressIndicator(
@@ -112,7 +139,11 @@ fun LoginScreen(viewModel: AuthViewModel = koinViewModel()) {
                         strokeWidth = 2.dp,
                     )
                 } else {
-                    Text(if (state.isSignUp) "Sign Up" else "Sign In")
+                    Text(
+                        stringResource(
+                            if (state.isSignUp) Res.string.action_sign_up else Res.string.action_sign_in,
+                        ),
+                    )
                 }
             }
 
@@ -122,11 +153,9 @@ fun LoginScreen(viewModel: AuthViewModel = koinViewModel()) {
                 onClick = { viewModel.onEvent(AuthEvent.ToggleMode) },
             ) {
                 Text(
-                    if (state.isSignUp) {
-                        "Already have an account? Sign In"
-                    } else {
-                        "Don't have an account? Sign Up"
-                    },
+                    stringResource(
+                        if (state.isSignUp) Res.string.action_toggle_to_sign_in else Res.string.action_toggle_to_sign_up,
+                    ),
                 )
             }
 
@@ -138,7 +167,7 @@ fun LoginScreen(viewModel: AuthViewModel = koinViewModel()) {
                 modifier = Modifier.fillMaxWidth(),
                 enabled = false,
             ) {
-                Text("Continue with Google (Coming soon)")
+                Text(stringResource(Res.string.action_continue_with_google))
             }
 
             Spacer(Modifier.height(8.dp))
@@ -148,7 +177,7 @@ fun LoginScreen(viewModel: AuthViewModel = koinViewModel()) {
                 modifier = Modifier.fillMaxWidth(),
                 enabled = false,
             ) {
-                Text("Continue with Apple (Coming soon)")
+                Text(stringResource(Res.string.action_continue_with_apple))
             }
         }
     }

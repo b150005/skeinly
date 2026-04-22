@@ -518,6 +518,83 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Save your favorite patterns with gauge, yarn info, and needle sizes for easy reference." } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "お気に入りのパターンをゲージ・糸情報・針号数と一緒に保存できます。" } }
       }
+    },
+    "title_sign_in" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign In" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "サインイン" } }
+      }
+    },
+    "title_create_account" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Create Account" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウント作成" } }
+      }
+    },
+    "title_error" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Error" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "エラー" } }
+      }
+    },
+    "label_email" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Email" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メールアドレス" } }
+      }
+    },
+    "label_password" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Password" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パスワード" } }
+      }
+    },
+    "action_sign_in" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign In" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "サインイン" } }
+      }
+    },
+    "action_sign_up" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign Up" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "登録" } }
+      }
+    },
+    "action_toggle_to_sign_in" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Already have an account? Sign In" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "すでにアカウントをお持ちですか？サインイン" } }
+      }
+    },
+    "action_toggle_to_sign_up" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Don't have an account? Sign Up" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウントをお持ちでない方？登録" } }
+      }
+    },
+    "action_continue_with_google" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue with Google (Coming soon)" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Googleで続ける（近日公開）" } }
+      }
+    },
+    "action_continue_with_apple" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue with Apple (Coming soon)" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Appleで続ける（近日公開）" } }
+      }
     }
   },
   "version" : "1.0"

@@ -19,10 +19,11 @@ struct LoginScreen: View {
 
             // App title
             VStack(spacing: 8) {
-                Text("Knit Note")
+                // app_name is locale-identical ("Knit Note" in both en and ja).
+                Text("app_name")
                     .font(.largeTitle)
                     .fontWeight(.bold)
-                Text(state.isSignUp ? "Create Account" : "Sign In")
+                Text(LocalizedStringKey(state.isSignUp ? "title_create_account" : "title_sign_in"))
                     .font(.title3)
                     .foregroundStyle(.secondary)
             }
@@ -31,7 +32,7 @@ struct LoginScreen: View {
 
             // Form fields
             VStack(spacing: 16) {
-                TextField("Email", text: Binding(
+                TextField(LocalizedStringKey("label_email"), text: Binding(
                     get: { state.email },
                     set: { viewModel.onEvent(event: AuthEventUpdateEmail(email: $0)) }
                 ))
@@ -39,13 +40,15 @@ struct LoginScreen: View {
                 .keyboardType(.emailAddress)
                 .autocapitalization(.none)
                 .textFieldStyle(.roundedBorder)
+                .accessibilityIdentifier("emailField")
 
-                SecureField("Password", text: Binding(
+                SecureField(LocalizedStringKey("label_password"), text: Binding(
                     get: { state.password },
                     set: { viewModel.onEvent(event: AuthEventUpdatePassword(password: $0)) }
                 ))
                 .textContentType(state.isSignUp ? .newPassword : .password)
                 .textFieldStyle(.roundedBorder)
+                .accessibilityIdentifier("passwordField")
             }
             .padding(.horizontal)
 
@@ -57,29 +60,32 @@ struct LoginScreen: View {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                 } else {
-                    Text(state.isSignUp ? "Sign Up" : "Sign In")
+                    Text(LocalizedStringKey(state.isSignUp ? "action_sign_up" : "action_sign_in"))
                         .frame(maxWidth: .infinity)
                 }
             }
             .buttonStyle(.borderedProminent)
             .disabled(state.isSubmitting || state.email.isEmpty || state.password.isEmpty)
             .padding(.horizontal)
+            .accessibilityIdentifier("submitButton")
 
             // Toggle mode
             Button {
                 viewModel.onEvent(event: AuthEventToggleMode.shared)
             } label: {
-                Text(state.isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up")
+                Text(LocalizedStringKey(state.isSignUp ? "action_toggle_to_sign_in" : "action_toggle_to_sign_up"))
                     .font(.footnote)
             }
 
             Spacer()
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("loginScreen")
         .onChange(of: state.error) { _, newError in
             showError = newError != nil
         }
-        .alert("Error", isPresented: $showError) {
-            Button("OK") {
+        .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
+            Button("action_ok") {
                 viewModel.onEvent(event: AuthEventClearError.shared)
             }
         } message: {

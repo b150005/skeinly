@@ -104,4 +104,17 @@
     <string name="body_onboarding_count">Never lose your place again. Tap to count rows, add notes, and attach progress photos.</string>
     <string name="title_onboarding_library">Build Your Pattern Library</string>
     <string name="body_onboarding_library">Save your favorite patterns with gauge, yarn info, and needle sizes for easy reference.</string>
+
+    <!-- Login screen -->
+    <string name="title_sign_in">Sign In</string>
+    <string name="title_create_account">Create Account</string>
+    <string name="title_error">Error</string>
+    <string name="label_email">Email</string>
+    <string name="label_password">Password</string>
+    <string name="action_sign_in">Sign In</string>
+    <string name="action_sign_up">Sign Up</string>
+    <string name="action_toggle_to_sign_in">Already have an account? Sign In</string>
+    <string name="action_toggle_to_sign_up">Don\'t have an account? Sign Up</string>
+    <string name="action_continue_with_google">Continue with Google (Coming soon)</string>
+    <string name="action_continue_with_apple">Continue with Apple (Coming soon)</string>
 </resources>

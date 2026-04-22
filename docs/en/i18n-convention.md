@@ -49,7 +49,11 @@ script runs in CI and blocks on drift.
     action (`action_save`, `action_undo`).
   - `state_*` for load / empty / idle state labels (`state_loading`).
   - `error_*` for error-message text (`error_load`, `error_save`).
-  - `dialog_*_title` / `dialog_*_body` for confirmation dialogs.
+  - `dialog_*_title` / `dialog_*_body` for confirmation dialogs that pair
+    a title with a distinct body string. Single-button error alerts that
+    do not have a paired body key (the alert body is the raw runtime
+    error message) use `title_error` rather than `dialog_error_title` to
+    avoid implying a non-existent `dialog_error_body` partner key.
   - `title_*` for screen titles that do not double as actions.
   - `body_*` for descriptive paragraph body copy paired with a title
     outside of a dialog or empty-state context (e.g. onboarding page
