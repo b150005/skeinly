@@ -34,7 +34,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_back
+import io.github.b150005.knitnote.generated.resources.action_cancel
+import io.github.b150005.knitnote.generated.resources.action_delete
+import io.github.b150005.knitnote.generated.resources.action_delete_account
+import io.github.b150005.knitnote.generated.resources.action_sign_out
+import io.github.b150005.knitnote.generated.resources.body_delete_account_warning
+import io.github.b150005.knitnote.generated.resources.dialog_delete_account_body
+import io.github.b150005.knitnote.generated.resources.dialog_delete_account_title
+import io.github.b150005.knitnote.generated.resources.label_account_section
+import io.github.b150005.knitnote.generated.resources.label_danger_zone
+import io.github.b150005.knitnote.generated.resources.state_deleting_account
+import io.github.b150005.knitnote.generated.resources.title_settings
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,6 +63,8 @@ fun SettingsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
 
+    // state.error is still rendered raw here — ViewModel error-message
+    // localization is deferred per Tech Debt Backlog.
     LaunchedEffect(state.error) {
         state.error?.let {
             snackbarHostState.showSnackbar(it)
@@ -62,12 +79,16 @@ fun SettingsScreen(
     }
 
     Scaffold(
+        modifier = Modifier.testTag("settingsScreen"),
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(Res.string.title_settings)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(Res.string.action_back),
+                        )
                     }
                 },
             )
@@ -91,7 +112,7 @@ fun SettingsScreen(
             ) {
                 // Account section
                 Text(
-                    text = "Account",
+                    text = stringResource(Res.string.label_account_section),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(vertical = 16.dp),
                 )
@@ -107,14 +128,14 @@ fun SettingsScreen(
 
                 Button(
                     onClick = { viewModel.onEvent(SettingsEvent.SignOut) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag("signOutButton"),
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.ExitToApp,
                         contentDescription = null,
                         modifier = Modifier.padding(end = 8.dp),
                     )
-                    Text("Sign Out")
+                    Text(stringResource(Res.string.action_sign_out))
                 }
 
                 Spacer(Modifier.height(24.dp))
@@ -123,15 +144,13 @@ fun SettingsScreen(
 
                 // Danger zone
                 Text(
-                    text = "Danger Zone",
+                    text = stringResource(Res.string.label_danger_zone),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
                 Text(
-                    text =
-                        "Deleting your account will permanently remove all your projects, " +
-                            "progress, and shared content. This action cannot be undone.",
+                    text = stringResource(Res.string.body_delete_account_warning),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 16.dp),
@@ -145,7 +164,7 @@ fun SettingsScreen(
                             contentColor = MaterialTheme.colorScheme.onError,
                         ),
                     enabled = !state.isDeletingAccount,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag("deleteAccountButton"),
                 ) {
                     if (state.isDeletingAccount) {
                         CircularProgressIndicator(
@@ -154,7 +173,13 @@ fun SettingsScreen(
                             strokeWidth = 2.dp,
                         )
                     }
-                    Text(if (state.isDeletingAccount) "Deleting Account..." else "Delete Account")
+                    Text(
+                        if (state.isDeletingAccount) {
+                            stringResource(Res.string.state_deleting_account)
+                        } else {
+                            stringResource(Res.string.action_delete_account)
+                        },
+                    )
                 }
             }
         }
@@ -163,12 +188,8 @@ fun SettingsScreen(
     if (showDeleteConfirmation) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmation = false },
-            title = { Text("Delete Account?") },
-            text = {
-                Text(
-                    "This will permanently delete your account and all associated data. This action cannot be undone.",
-                )
-            },
+            title = { Text(stringResource(Res.string.dialog_delete_account_title)) },
+            text = { Text(stringResource(Res.string.dialog_delete_account_body)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -180,12 +201,12 @@ fun SettingsScreen(
                             contentColor = MaterialTheme.colorScheme.error,
                         ),
                 ) {
-                    Text("Delete")
+                    Text(stringResource(Res.string.action_delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmation = false }) {
-                    Text("Cancel")
+                    Text(stringResource(Res.string.action_cancel))
                 }
             },
         )

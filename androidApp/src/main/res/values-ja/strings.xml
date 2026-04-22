@@ -121,6 +121,17 @@
     <string name="state_profile_load_failed">プロフィールを読み込めませんでした</string>
     <string name="message_profile_updated">プロフィールを更新しました</string>
 
+    <!-- Settings screen -->
+    <string name="title_settings">設定</string>
+    <string name="label_account_section">アカウント</string>
+    <string name="action_sign_out">サインアウト</string>
+    <string name="label_danger_zone">危険な操作</string>
+    <string name="body_delete_account_warning">アカウントを削除すると、すべてのプロジェクト、進捗、共有コンテンツが完全に削除されます。この操作は取り消せません。</string>
+    <string name="action_delete_account">アカウントを削除</string>
+    <string name="state_deleting_account">アカウントを削除中\u2026</string>
+    <string name="dialog_delete_account_title">アカウントを削除しますか？</string>
+    <string name="dialog_delete_account_body">アカウントと関連データがすべて完全に削除されます。この操作は取り消せません。</string>
+
     <!-- Activity feed screen -->
     <string name="title_activity_feed">アクティビティ</string>
     <string name="state_no_activity">アクティビティがまだありません</string>

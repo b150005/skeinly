@@ -645,6 +645,69 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "アクティビティ" } }
       }
     },
+    "title_settings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "設定" } }
+      }
+    },
+    "label_account_section" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Account" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウント" } }
+      }
+    },
+    "action_sign_out" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign Out" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "サインアウト" } }
+      }
+    },
+    "label_danger_zone" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Danger Zone" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "危険な操作" } }
+      }
+    },
+    "body_delete_account_warning" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Deleting your account will permanently remove all your projects, progress, and shared content. This action cannot be undone." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウントを削除すると、すべてのプロジェクト、進捗、共有コンテンツが完全に削除されます。この操作は取り消せません。" } }
+      }
+    },
+    "action_delete_account" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete Account" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウントを削除" } }
+      }
+    },
+    "state_deleting_account" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Deleting Account…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウントを削除中…" } }
+      }
+    },
+    "dialog_delete_account_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete Account?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウントを削除しますか？" } }
+      }
+    },
+    "dialog_delete_account_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This will permanently delete your account and all associated data. This action cannot be undone." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウントと関連データがすべて完全に削除されます。この操作は取り消せません。" } }
+      }
+    },
     "state_no_activity" : {
       "extractionState" : "manual",
       "localizations" : {

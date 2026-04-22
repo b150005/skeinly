@@ -29,9 +29,12 @@ tags:
 - assertVisible: "Knit Note"
 
 # --- Navigate to Settings ---
+# Route through testTags — the title/contentDescription resolve through i18n
+# ("設定" on ja), so string selectors drift with locale.
 - tapOn:
-    text: "Settings"
-- assertVisible: "Settings"
+    id: "settingsButton"
+- assertVisible:
+    id: "settingsScreen"
 
 # Go back to project list
 - tapOn:

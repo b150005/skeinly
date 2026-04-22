@@ -126,6 +126,17 @@
     <string name="state_profile_load_failed">Could not load profile</string>
     <string name="message_profile_updated">Profile updated</string>
 
+    <!-- Settings screen -->
+    <string name="title_settings">Settings</string>
+    <string name="label_account_section">Account</string>
+    <string name="action_sign_out">Sign Out</string>
+    <string name="label_danger_zone">Danger Zone</string>
+    <string name="body_delete_account_warning">Deleting your account will permanently remove all your projects, progress, and shared content. This action cannot be undone.</string>
+    <string name="action_delete_account">Delete Account</string>
+    <string name="state_deleting_account">Deleting Account\u2026</string>
+    <string name="dialog_delete_account_title">Delete Account?</string>
+    <string name="dialog_delete_account_body">This will permanently delete your account and all associated data. This action cannot be undone.</string>
+
     <!-- Activity feed screen -->
     <string name="title_activity_feed">Activity Feed</string>
     <string name="state_no_activity">No activity yet</string>

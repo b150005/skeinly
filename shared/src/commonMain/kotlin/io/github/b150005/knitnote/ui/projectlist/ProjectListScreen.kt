@@ -178,7 +178,10 @@ fun ProjectListScreen(
                             contentDescription = stringResource(Res.string.action_shared_with_me),
                         )
                     }
-                    IconButton(onClick = onSettingsClick) {
+                    IconButton(
+                        onClick = onSettingsClick,
+                        modifier = Modifier.testTag("settingsButton"),
+                    ) {
                         Icon(
                             Icons.Default.Settings,
                             contentDescription = stringResource(Res.string.action_settings),

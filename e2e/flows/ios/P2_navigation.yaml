@@ -31,10 +31,14 @@ tags:
 - assertVisible: "Knit Note"
 
 # --- Navigate to Settings ---
+# settingsScreen is the locale-independent landmark; the menu entry label
+# "Settings" is still a raw English literal because iOS ProjectListScreen is
+# not yet migrated — that flip happens in the iOS ProjectList i18n PR.
 - tapOn:
     id: "moreMenu"
 - tapOn: "Settings"
-- assertVisible: "Settings"
+- assertVisible:
+    id: "settingsScreen"
 
 # Go back to project list
 - tapOn: "Knit Note"
