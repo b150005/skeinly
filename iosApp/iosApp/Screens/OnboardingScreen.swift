@@ -1,6 +1,20 @@
 import SwiftUI
 import Shared
 
+// Index-keyed copy. Order MUST match OnboardingViewModel.DEFAULT_PAGES in
+// shared/src/commonMain/kotlin/io/github/b150005/knitnote/ui/onboarding/OnboardingViewModel.kt.
+private let onboardingTitleKeys: [LocalizedStringKey] = [
+    "title_onboarding_track",
+    "title_onboarding_count",
+    "title_onboarding_library",
+]
+
+private let onboardingBodyKeys: [LocalizedStringKey] = [
+    "body_onboarding_track",
+    "body_onboarding_count",
+    "body_onboarding_library",
+]
+
 struct OnboardingScreen: View {
     let onComplete: () -> Void
 
@@ -21,7 +35,7 @@ struct OnboardingScreen: View {
             // Skip button
             HStack {
                 Spacer()
-                Button("Skip") {
+                Button("action_skip") {
                     viewModel.onEvent(event: OnboardingEventSkip.shared)
                 }
                 .foregroundStyle(.secondary)
@@ -38,7 +52,7 @@ struct OnboardingScreen: View {
                 }
             )) {
                 ForEach(Array(state.pages.enumerated()), id: \.offset) { index, page in
-                    OnboardingPageView(page: page)
+                    OnboardingPageView(page: page, index: index)
                         .tag(index)
                 }
             }
@@ -55,7 +69,9 @@ struct OnboardingScreen: View {
                     viewModel.onEvent(event: OnboardingEventNextPage.shared)
                 }
             } label: {
-                Text(isLastPage ? "Get Started" : "Next")
+                Text(isLastPage
+                    ? LocalizedStringKey("action_get_started")
+                    : LocalizedStringKey("action_next"))
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -74,8 +90,19 @@ struct OnboardingScreen: View {
 
 private struct OnboardingPageView: View {
     let page: OnboardingPage
+    let index: Int
 
     var body: some View {
+        // Fallback to the first entry if a new page is added to DEFAULT_PAGES
+        // without matching key entries. Build should never ship in that state;
+        // adding a page requires updating onboardingTitleKeys + onboardingBodyKeys
+        // + i18n resources in the same change.
+        let titleKey = onboardingTitleKeys.indices.contains(index)
+            ? onboardingTitleKeys[index]
+            : onboardingTitleKeys[0]
+        let bodyKey = onboardingBodyKeys.indices.contains(index)
+            ? onboardingBodyKeys[index]
+            : onboardingBodyKeys[0]
         VStack(spacing: 16) {
             Spacer()
 
@@ -83,13 +110,13 @@ private struct OnboardingPageView: View {
                 .font(.system(size: 64))
                 .foregroundStyle(.tint)
 
-            Text(page.title)
+            Text(titleKey)
                 .font(.title)
                 .fontWeight(.bold)
                 .multilineTextAlignment(.center)
                 .padding(.top, 16)
 
-            Text(page.body)
+            Text(bodyKey)
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -99,6 +126,8 @@ private struct OnboardingPageView: View {
             Spacer()
         }
         .padding(.horizontal, 24)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("onboardingPage\(index + 1)")
     }
 
     private func mapIconName(_ name: String) -> String {

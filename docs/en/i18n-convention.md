@@ -51,6 +51,10 @@ script runs in CI and blocks on drift.
   - `error_*` for error-message text (`error_load`, `error_save`).
   - `dialog_*_title` / `dialog_*_body` for confirmation dialogs.
   - `title_*` for screen titles that do not double as actions.
+  - `body_*` for descriptive paragraph body copy paired with a title
+    outside of a dialog or empty-state context (e.g. onboarding page
+    body text next to a `title_*` headline). Use this prefix when the
+    body is not tied to a `state_*` or `dialog_*` primary.
   - `label_*` for non-action labels (form field labels, status chips,
     dropdown option labels).
   - `hint_*` for placeholder/hint text in input fields (`hint_search_projects`).

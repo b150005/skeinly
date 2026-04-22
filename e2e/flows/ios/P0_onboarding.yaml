@@ -12,8 +12,9 @@ tags:
 - launchApp:
     appId: io.github.b150005.knitnote.ios
 
-# Verify page 1 content
-- assertVisible: "Track Your Knitting Projects"
+# Verify page 1 via locale-independent testTag
+- assertVisible:
+    id: "onboardingPage1"
 
 # Verify Skip button is present
 - assertVisible:
@@ -24,14 +25,16 @@ tags:
     direction: LEFT
     duration: 400
 
-- assertVisible: "Count Every Stitch"
+- assertVisible:
+    id: "onboardingPage2"
 
 # Swipe to page 3 (last page)
 - swipe:
     direction: LEFT
     duration: 400
 
-- assertVisible: "Build Your Pattern Library"
+- assertVisible:
+    id: "onboardingPage3"
 
 # Verify "Get Started" button appears on last page
 - assertVisible:
@@ -41,15 +44,15 @@ tags:
 - tapOn:
     id: "getStartedButton"
 
-# Verify we landed on ProjectList
+# Verify we landed on ProjectList (app_name is locale-identical across en/ja)
 - assertVisible: "Knit Note"
-- assertVisible: "No Projects Yet"
 
 # Relaunch the app — onboarding should NOT appear again
 - stopApp: io.github.b150005.knitnote.ios
 - launchApp:
     appId: io.github.b150005.knitnote.ios
 
-# Should go directly to ProjectList
+# Should go directly to ProjectList — no onboarding page visible
 - assertVisible: "Knit Note"
-- assertNotVisible: "Track Your Knitting Projects"
+- assertNotVisible:
+    id: "onboardingPage1"

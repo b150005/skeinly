@@ -88,4 +88,15 @@
     <string name="hint_search_projects">Search projects\u2026</string>
     <string name="label_rows_of_total">%1$d / %2$d rows</string>
     <string name="label_rows_current">%1$d rows</string>
+
+    <!-- Onboarding carousel -->
+    <string name="action_skip">Skip</string>
+    <string name="action_next">Next</string>
+    <string name="action_get_started">Get Started</string>
+    <string name="title_onboarding_track">Track Your Knitting Projects</string>
+    <string name="body_onboarding_track">Keep all your knitting projects organized in one place with row counting and progress tracking.</string>
+    <string name="title_onboarding_count">Count Every Stitch</string>
+    <string name="body_onboarding_count">Never lose your place again. Tap to count rows, add notes, and attach progress photos.</string>
+    <string name="title_onboarding_library">Build Your Pattern Library</string>
+    <string name="body_onboarding_library">Save your favorite patterns with gauge, yarn info, and needle sizes for easy reference.</string>
 </resources>

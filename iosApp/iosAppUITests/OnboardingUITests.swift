@@ -6,6 +6,11 @@ import XCTest
 /// orphan ViewModel while the observer stayed bound to the original state flow.
 /// The ScopedViewModel holder fix pins the ViewModel via @StateObject so
 /// these flows complete deterministically.
+///
+/// Page asserts use the locale-independent `onboardingPage{1,2,3}` accessibility
+/// identifiers so the tests remain valid under any localization of the
+/// xcstrings catalog (Phase 33.1.4 rule: any literal migrated to i18n must
+/// be re-anchored to a testTag / accessibilityIdentifier).
 final class OnboardingUITests: XCTestCase {
     private var app: XCUIApplication!
 
@@ -21,7 +26,7 @@ final class OnboardingUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(
-            app.staticTexts["Track Your Knitting Projects"].waitForExistence(timeout: 5),
+            app.otherElements["onboardingPage1"].waitForExistence(timeout: 5),
             "Onboarding page 1 did not appear"
         )
 
@@ -30,13 +35,13 @@ final class OnboardingUITests: XCTestCase {
         nextButton.tap()
 
         XCTAssertTrue(
-            app.staticTexts["Count Every Stitch"].waitForExistence(timeout: 3),
+            app.otherElements["onboardingPage2"].waitForExistence(timeout: 3),
             "Page 2 did not render after tapping Next — ViewModel lifecycle bug regression"
         )
         nextButton.tap()
 
         XCTAssertTrue(
-            app.staticTexts["Build Your Pattern Library"].waitForExistence(timeout: 3),
+            app.otherElements["onboardingPage3"].waitForExistence(timeout: 3),
             "Page 3 did not render after tapping Next"
         )
 
@@ -47,6 +52,9 @@ final class OnboardingUITests: XCTestCase {
         )
         getStartedButton.tap()
 
+        // "Knit Note" is the `app_name` key, which resolves to the same
+        // literal in both en and ja (see androidApp/res/values{,-ja}/strings.xml).
+        // If that ever diverges, pivot this assertion to a testTag landmark.
         XCTAssertTrue(
             app.navigationBars["Knit Note"].waitForExistence(timeout: 5),
             "Onboarding did not complete — ProjectList never appeared"
@@ -57,7 +65,7 @@ final class OnboardingUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(
-            app.staticTexts["Track Your Knitting Projects"].waitForExistence(timeout: 5),
+            app.otherElements["onboardingPage1"].waitForExistence(timeout: 5),
             "Onboarding page 1 did not appear"
         )
 
@@ -65,6 +73,7 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertTrue(skipButton.waitForExistence(timeout: 3), "Skip button missing")
         skipButton.tap()
 
+        // See the note above on `app_name` locale-identity.
         XCTAssertTrue(
             app.navigationBars["Knit Note"].waitForExistence(timeout: 5),
             "Skip did not complete onboarding — ProjectList never appeared"

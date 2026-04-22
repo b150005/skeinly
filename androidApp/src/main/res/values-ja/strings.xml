@@ -88,4 +88,15 @@
     <string name="hint_search_projects">プロジェクトを検索\u2026</string>
     <string name="label_rows_of_total">%1$d / %2$d 行</string>
     <string name="label_rows_current">%1$d 行</string>
+
+    <!-- Onboarding carousel -->
+    <string name="action_skip">スキップ</string>
+    <string name="action_next">次へ</string>
+    <string name="action_get_started">はじめる</string>
+    <string name="title_onboarding_track">編み物プロジェクトを管理</string>
+    <string name="body_onboarding_track">段数カウントと進捗記録で、すべての編み物プロジェクトを一か所に整理できます。</string>
+    <string name="title_onboarding_count">一目ずつ数える</string>
+    <string name="body_onboarding_count">編みかけの場所を見失いません。タップで段数を数え、メモや進捗写真を残せます。</string>
+    <string name="title_onboarding_library">パターンライブラリを作る</string>
+    <string name="body_onboarding_library">お気に入りのパターンをゲージ・糸情報・針号数と一緒に保存できます。</string>
 </resources>

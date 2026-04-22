@@ -18,7 +18,8 @@ tags:
 # ============================================================
 # Screenshot 1: Onboarding
 # ============================================================
-- assertVisible: "Track Your Knitting Projects"
+- assertVisible:
+    id: "onboardingPage1"
 - takeScreenshot: screenshot_01_onboarding
 
 # Complete onboarding

@@ -455,6 +455,69 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Start tracking your first knitting project" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "最初の編み物プロジェクトを記録してみましょう" } }
       }
+    },
+    "action_skip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Skip" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "スキップ" } }
+      }
+    },
+    "action_next" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Next" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "次へ" } }
+      }
+    },
+    "action_get_started" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Get Started" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "はじめる" } }
+      }
+    },
+    "title_onboarding_track" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Track Your Knitting Projects" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "編み物プロジェクトを管理" } }
+      }
+    },
+    "body_onboarding_track" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep all your knitting projects organized in one place with row counting and progress tracking." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "段数カウントと進捗記録で、すべての編み物プロジェクトを一か所に整理できます。" } }
+      }
+    },
+    "title_onboarding_count" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Count Every Stitch" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "一目ずつ数える" } }
+      }
+    },
+    "body_onboarding_count" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Never lose your place again. Tap to count rows, add notes, and attach progress photos." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "編みかけの場所を見失いません。タップで段数を数え、メモや進捗写真を残せます。" } }
+      }
+    },
+    "title_onboarding_library" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Build Your Pattern Library" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターンライブラリを作る" } }
+      }
+    },
+    "body_onboarding_library" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save your favorite patterns with gauge, yarn info, and needle sizes for easy reference." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "お気に入りのパターンをゲージ・糸情報・針号数と一緒に保存できます。" } }
+      }
     }
   },
   "version" : "1.0"

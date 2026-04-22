@@ -18,7 +18,8 @@ tags:
 # ============================================================
 # Screenshot 1: Onboarding
 # ============================================================
-- assertVisible: "Track Your Knitting Projects"
+- assertVisible:
+    id: "onboardingPage1"
 - takeScreenshot: screenshot_01_onboarding
 
 # Complete onboarding
@@ -95,7 +96,8 @@ tags:
 # ============================================================
 # Screenshot 5: Search & Filter
 # ============================================================
-- tapOn: "Search projects..."
+- tapOn:
+    id: "searchField"
 - takeScreenshot: screenshot_05_search_filter
 
 # Close search

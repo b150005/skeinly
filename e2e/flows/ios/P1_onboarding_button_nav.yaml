@@ -18,19 +18,22 @@ tags:
 - launchApp:
     appId: io.github.b150005.knitnote.ios
 
-- assertVisible: "Track Your Knitting Projects"
+- assertVisible:
+    id: "onboardingPage1"
 - assertVisible:
     id: "nextButton"
 
 # Page 1 -> Page 2 via Next
 - tapOn:
     id: "nextButton"
-- assertVisible: "Count Every Stitch"
+- assertVisible:
+    id: "onboardingPage2"
 
 # Page 2 -> Page 3 via Next
 - tapOn:
     id: "nextButton"
-- assertVisible: "Build Your Pattern Library"
+- assertVisible:
+    id: "onboardingPage3"
 
 # Last page shows Get Started, not Next
 - assertVisible:
@@ -39,4 +42,3 @@ tags:
     id: "getStartedButton"
 
 - assertVisible: "Knit Note"
-- assertVisible: "No Projects Yet"

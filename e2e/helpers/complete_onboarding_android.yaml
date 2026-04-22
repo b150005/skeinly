@@ -2,7 +2,8 @@ appId: io.github.b150005.knitnote.android
 name: "Helper - Complete Onboarding"
 ---
 # Complete onboarding carousel after clearState
-- assertVisible: "Track Your Knitting Projects"
+- assertVisible:
+    id: "onboardingPage1"
 - swipe:
     direction: LEFT
     duration: 400

@@ -79,23 +79,17 @@ class OnboardingViewModel(
     }
 
     companion object {
+        // Page copy is resolved at the Screen layer from i18n resources keyed
+        // by index — `title_onboarding_{track,count,library}` and
+        // `body_onboarding_{track,count,library}` keys. Reordering this list
+        // requires matching updates to the titleKeys / bodyKeys arrays in
+        // OnboardingScreen.kt (Compose) and
+        // iosApp/.../OnboardingScreen.swift (SwiftUI).
         val DEFAULT_PAGES =
             listOf(
-                OnboardingPage(
-                    iconName = "home",
-                    title = "Track Your Knitting Projects",
-                    body = "Keep all your knitting projects organized in one place with row counting and progress tracking.",
-                ),
-                OnboardingPage(
-                    iconName = "add_circle",
-                    title = "Count Every Stitch",
-                    body = "Never lose your place again. Tap to count rows, add notes, and attach progress photos.",
-                ),
-                OnboardingPage(
-                    iconName = "favorite",
-                    title = "Build Your Pattern Library",
-                    body = "Save your favorite patterns with gauge, yarn info, and needle sizes for easy reference.",
-                ),
+                OnboardingPage(iconName = "home"),
+                OnboardingPage(iconName = "add_circle"),
+                OnboardingPage(iconName = "favorite"),
             )
     }
 }

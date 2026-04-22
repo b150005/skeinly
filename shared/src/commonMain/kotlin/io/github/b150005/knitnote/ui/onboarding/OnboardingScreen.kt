@@ -37,8 +37,35 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_get_started
+import io.github.b150005.knitnote.generated.resources.action_next
+import io.github.b150005.knitnote.generated.resources.action_skip
+import io.github.b150005.knitnote.generated.resources.body_onboarding_count
+import io.github.b150005.knitnote.generated.resources.body_onboarding_library
+import io.github.b150005.knitnote.generated.resources.body_onboarding_track
+import io.github.b150005.knitnote.generated.resources.title_onboarding_count
+import io.github.b150005.knitnote.generated.resources.title_onboarding_library
+import io.github.b150005.knitnote.generated.resources.title_onboarding_track
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
+
+// Index-keyed copy. Order MUST match OnboardingViewModel.DEFAULT_PAGES.
+private val onboardingTitleKeys: List<StringResource> =
+    listOf(
+        Res.string.title_onboarding_track,
+        Res.string.title_onboarding_count,
+        Res.string.title_onboarding_library,
+    )
+
+private val onboardingBodyKeys: List<StringResource> =
+    listOf(
+        Res.string.body_onboarding_track,
+        Res.string.body_onboarding_count,
+        Res.string.body_onboarding_library,
+    )
 
 @Composable
 fun OnboardingScreen(
@@ -78,7 +105,7 @@ fun OnboardingScreen(
                 onClick = { viewModel.onEvent(OnboardingEvent.Skip) },
                 modifier = Modifier.testTag("skipButton"),
             ) {
-                Text("Skip")
+                Text(stringResource(Res.string.action_skip))
             }
         }
 
@@ -92,7 +119,11 @@ fun OnboardingScreen(
         ) { pageIndex ->
             OnboardingPageContent(
                 page = state.pages[pageIndex],
-                modifier = Modifier.fillMaxSize(),
+                pageIndex = pageIndex,
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .testTag("onboardingPage${pageIndex + 1}"),
             )
         }
 
@@ -123,7 +154,11 @@ fun OnboardingScreen(
                     .fillMaxWidth()
                     .testTag(if (isLastPage) "getStartedButton" else "nextButton"),
         ) {
-            Text(if (isLastPage) "Get Started" else "Next")
+            Text(
+                stringResource(
+                    if (isLastPage) Res.string.action_get_started else Res.string.action_next,
+                ),
+            )
         }
     }
 }
@@ -131,8 +166,16 @@ fun OnboardingScreen(
 @Composable
 private fun OnboardingPageContent(
     page: OnboardingPage,
+    pageIndex: Int,
     modifier: Modifier = Modifier,
 ) {
+    // Fallback to the first entry if a new page is added to DEFAULT_PAGES
+    // without a matching key entry. This keeps the carousel renderable instead
+    // of crashing at index-out-of-bounds, but the build should never ship in
+    // that state — adding a page requires updating onboardingTitleKeys +
+    // onboardingBodyKeys + i18n resources in the same change.
+    val titleKey = onboardingTitleKeys.getOrElse(pageIndex) { onboardingTitleKeys.first() }
+    val bodyKey = onboardingBodyKeys.getOrElse(pageIndex) { onboardingBodyKeys.first() }
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -146,13 +189,13 @@ private fun OnboardingPageContent(
         )
         Spacer(modifier = Modifier.height(32.dp))
         Text(
-            text = page.title,
+            text = stringResource(titleKey),
             style = MaterialTheme.typography.headlineMedium,
             textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = page.body,
+            text = stringResource(bodyKey),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
