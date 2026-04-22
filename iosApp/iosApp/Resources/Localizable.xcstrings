@@ -595,6 +595,48 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue with Apple (Coming soon)" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "Appleで続ける（近日公開）" } }
       }
+    },
+    "title_profile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Profile" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロフィール" } }
+      }
+    },
+    "label_avatar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Avatar" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アバター" } }
+      }
+    },
+    "label_display_name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Display Name" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "表示名" } }
+      }
+    },
+    "label_bio" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Bio" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "自己紹介" } }
+      }
+    },
+    "state_profile_load_failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Could not load profile" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロフィールを読み込めませんでした" } }
+      }
+    },
+    "message_profile_updated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Profile updated" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロフィールを更新しました" } }
+      }
     }
   },
   "version" : "1.0"

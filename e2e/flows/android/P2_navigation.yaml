@@ -16,9 +16,12 @@ tags:
 - assertVisible: "Knit Note"
 
 # --- Navigate to Profile ---
+# Route through testTags — the contentDescription/title resolve through i18n
+# ("プロフィール" on ja), so string selectors drift with locale.
 - tapOn:
-    text: "Profile"
-- assertVisible: "Profile"
+    id: "profileButton"
+- assertVisible:
+    id: "profileScreen"
 
 # Go back to project list
 - tapOn:

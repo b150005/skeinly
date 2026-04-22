@@ -112,4 +112,12 @@
     <string name="action_toggle_to_sign_up">Don\'t have an account? Sign Up</string>
     <string name="action_continue_with_google">Continue with Google (Coming soon)</string>
     <string name="action_continue_with_apple">Continue with Apple (Coming soon)</string>
+
+    <!-- Profile screen -->
+    <string name="title_profile">Profile</string>
+    <string name="label_avatar">Avatar</string>
+    <string name="label_display_name">Display Name</string>
+    <string name="label_bio">Bio</string>
+    <string name="state_profile_load_failed">Could not load profile</string>
+    <string name="message_profile_updated">Profile updated</string>
 </resources>

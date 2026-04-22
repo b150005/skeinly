@@ -16,7 +16,12 @@ struct ProfileScreen: View {
     var body: some View {
         let state = holder.state
 
-        Group {
+        // ZStack owns a real layout node so `.accessibilityElement` +
+        // `.accessibilityIdentifier` attach to one concrete container.
+        // Applying them to a bare `Group` would propagate to each child
+        // branch independently and break the `profileScreen` landmark
+        // query used by Maestro flows and XCUITests.
+        ZStack {
             if state.isLoading {
                 ProgressView()
             } else if state.isEditing {
@@ -25,7 +30,9 @@ struct ProfileScreen: View {
                 displayView(state)
             }
         }
-        .navigationTitle("Profile")
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("profileScreen")
+        .navigationTitle(LocalizedStringKey("title_profile"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if !state.isEditing && !state.isLoading {
@@ -33,16 +40,21 @@ struct ProfileScreen: View {
                     Button {
                         viewModel.onEvent(event: ProfileEventStartEditing.shared)
                     } label: {
-                        Text("Edit")
+                        Text("action_edit")
                     }
+                    .accessibilityIdentifier("editButton")
                 }
             }
         }
         .onChange(of: state.error) { _, newError in
             showError = newError != nil
         }
-        .alert("Error", isPresented: $showError) {
-            Button("OK") { viewModel.onEvent(event: ProfileEventClearError.shared) }
+        // `.alert(_:isPresented:...)` has overloads for `String` and
+        // `LocalizedStringKey`; overload resolution on a bare literal can
+        // select the `String` form, which does not localize. Wrap
+        // explicitly per the LoginScreen precedent.
+        .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
+            Button("action_ok") { viewModel.onEvent(event: ProfileEventClearError.shared) }
         } message: {
             Text(state.error ?? "")
         }
@@ -58,6 +70,7 @@ struct ProfileScreen: View {
             Image(systemName: "person.circle.fill")
                 .font(.system(size: DesignTokens.avatarSizeLarge))
                 .foregroundStyle(.secondary)
+                .accessibilityLabel(LocalizedStringKey("label_avatar"))
 
             if let user = state.user {
                 Text(user.displayName)
@@ -72,7 +85,10 @@ struct ProfileScreen: View {
                         .padding(.horizontal)
                 }
             } else {
-                Text("No profile yet")
+                // `user == nil` post-load means the load failed — the
+                // ViewModel doesn't distinguish "no profile created" from
+                // a failure branch, so reuse the Kotlin-branch key.
+                Text("state_profile_load_failed")
                     .foregroundStyle(.secondary)
             }
 
@@ -91,31 +107,35 @@ struct ProfileScreen: View {
                     Image(systemName: "person.circle.fill")
                         .font(.system(size: DesignTokens.avatarSizeSmall))
                         .foregroundStyle(.secondary)
+                        .accessibilityLabel(LocalizedStringKey("label_avatar"))
                     Spacer()
                 }
             }
             .listRowBackground(Color.clear)
 
-            Section("Display Name") {
-                TextField("Display Name", text: Binding(
+            Section(LocalizedStringKey("label_display_name")) {
+                TextField(LocalizedStringKey("label_display_name"), text: Binding(
                     get: { state.editDisplayName },
                     set: { viewModel.onEvent(event: ProfileEventUpdateDisplayName(value: $0)) }
                 ))
+                .accessibilityIdentifier("displayNameField")
             }
 
-            Section("Bio") {
-                TextField("Bio", text: Binding(
+            Section(LocalizedStringKey("label_bio")) {
+                TextField(LocalizedStringKey("label_bio"), text: Binding(
                     get: { state.editBio },
                     set: { viewModel.onEvent(event: ProfileEventUpdateBio(value: $0)) }
                 ), axis: .vertical)
                 .lineLimit(3...6)
+                .accessibilityIdentifier("bioField")
             }
 
             Section {
                 HStack {
-                    Button("Cancel", role: .cancel) {
+                    Button("action_cancel", role: .cancel) {
                         viewModel.onEvent(event: ProfileEventCancelEditing.shared)
                     }
+                    .accessibilityIdentifier("cancelButton")
                     Spacer()
                     Button {
                         viewModel.onEvent(event: ProfileEventSaveProfile.shared)
@@ -123,10 +143,11 @@ struct ProfileScreen: View {
                         if state.isSaving {
                             ProgressView()
                         } else {
-                            Text("Save")
+                            Text("action_save")
                         }
                     }
                     .disabled(state.isSaving)
+                    .accessibilityIdentifier("saveButton")
                 }
             }
         }

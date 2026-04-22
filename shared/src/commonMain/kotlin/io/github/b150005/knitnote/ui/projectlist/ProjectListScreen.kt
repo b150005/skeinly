@@ -154,7 +154,10 @@ fun ProjectListScreen(
                             contentDescription = stringResource(Res.string.action_symbol_dictionary),
                         )
                     }
-                    IconButton(onClick = onProfileClick) {
+                    IconButton(
+                        onClick = onProfileClick,
+                        modifier = Modifier.testTag("profileButton"),
+                    ) {
                         Icon(
                             Icons.Default.Person,
                             contentDescription = stringResource(Res.string.action_profile),

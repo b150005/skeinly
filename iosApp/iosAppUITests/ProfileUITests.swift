@@ -12,10 +12,15 @@ final class ProfileUITests: XCTestCase {
 
     func testDefaultState_displaysProfileScreen() {
         app.buttons["moreMenu"].tapToolbarButton()
-        let profileButton = app.buttons["Profile"]
+        // `profileButton` accessibilityIdentifier is the locale-independent
+        // selector for the Profile menu entry. Per docs/en/i18n-convention.md.
+        let profileButton = app.buttons["profileButton"]
         XCTAssertTrue(profileButton.waitForExistence(timeout: 2), "Profile button not found")
         profileButton.tap()
 
-        XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 3))
+        // ProfileScreen root is tagged `profileScreen` — the navigation bar
+        // title is now i18n'd (`title_profile`) so querying it by the English
+        // literal "Profile" breaks on ja-locale simulators.
+        XCTAssertTrue(app.otherElements["profileScreen"].waitForExistence(timeout: 3))
     }
 }

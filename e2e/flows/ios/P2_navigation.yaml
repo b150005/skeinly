@@ -16,11 +16,15 @@ tags:
 - assertVisible: "Knit Note"
 
 # --- Navigate to Profile ---
-# iOS: Profile is inside a Menu dropdown — open menu first
+# iOS: Profile is inside a Menu dropdown — open menu first.
+# profileScreen is the locale-independent landmark; the menu entry label
+# "Profile" is still a raw English literal because iOS ProjectListScreen is
+# not yet migrated — that flip happens in the iOS ProjectList i18n PR.
 - tapOn:
     id: "moreMenu"
 - tapOn: "Profile"
-- assertVisible: "Profile"
+- assertVisible:
+    id: "profileScreen"
 
 # Go back to project list (iOS back button shows previous screen title)
 - tapOn: "Knit Note"

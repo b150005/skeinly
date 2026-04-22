@@ -62,6 +62,12 @@ script runs in CI and blocks on drift.
   - `label_*` for non-action labels (form field labels, status chips,
     dropdown option labels).
   - `hint_*` for placeholder/hint text in input fields (`hint_search_projects`).
+  - `message_*` for transient feedback shown after a user action completes —
+    Snackbar / Toast / Alert body text that is neither an error nor a
+    persistent state label (`message_profile_updated`). Distinct from
+    `state_*` (which covers load / empty / idle state labels, not
+    action-completion feedback) and from `error_*` (which covers failure
+    messages).
 - Only add a screen prefix when the same word legitimately means two
   different things in two places (rare). Prefer role-prefixed reusable
   keys.
@@ -109,6 +115,21 @@ let label = String(localized: "action_save")
 
 SwiftUI automatically resolves keys against `Localizable.xcstrings` when
 the literal matches a key. Do not wrap with `NSLocalizedString`.
+
+### Which SwiftUI constructors auto-localize a bare `String` literal?
+
+| Auto-localizes (bare literal is fine) | Needs explicit `LocalizedStringKey(...)` wrap |
+|---|---|
+| `Text("key")` | `.alert("key", isPresented: ...)` — overloads for `String` and `LocalizedStringKey` exist; overload resolution on a bare literal can select the `String` form, so wrap explicitly. |
+| `Button("key") { ... }` | `.navigationTitle("key")` for a computed/conditional expression (the `String`-typed overload may win). Use `.navigationTitle(LocalizedStringKey("key"))`. |
+| `Label("key", systemImage: "...")` | Ternary / conditional keys passed to `Text`: use `Text(LocalizedStringKey(isA ? "key_a" : "key_b"))`. |
+| `Section("key")` | Any API that takes `String` in one overload and `LocalizedStringKey` in another, where literal-promotion is ambiguous. When in doubt, wrap. |
+
+Rule of thumb: if the constructor's primary label parameter is typed
+`LocalizedStringKey` (e.g. `Text(_:)` via `ExpressibleByStringLiteral`),
+a bare literal works. If the API has both `String` and
+`LocalizedStringKey` overloads, wrap explicitly to avoid silent
+literal-as-String resolution.
 
 ## Adding a key
 

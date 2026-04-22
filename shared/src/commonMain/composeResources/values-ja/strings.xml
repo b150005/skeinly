@@ -109,4 +109,12 @@
     <string name="action_toggle_to_sign_up">アカウントをお持ちでない方？登録</string>
     <string name="action_continue_with_google">Googleで続ける（近日公開）</string>
     <string name="action_continue_with_apple">Appleで続ける（近日公開）</string>
+
+    <!-- Profile screen -->
+    <string name="title_profile">プロフィール</string>
+    <string name="label_avatar">アバター</string>
+    <string name="label_display_name">表示名</string>
+    <string name="label_bio">自己紹介</string>
+    <string name="state_profile_load_failed">プロフィールを読み込めませんでした</string>
+    <string name="message_profile_updated">プロフィールを更新しました</string>
 </resources>

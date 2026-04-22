@@ -37,9 +37,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import io.github.b150005.knitnote.domain.model.User
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_back
+import io.github.b150005.knitnote.generated.resources.action_cancel
+import io.github.b150005.knitnote.generated.resources.action_edit
+import io.github.b150005.knitnote.generated.resources.action_save
+import io.github.b150005.knitnote.generated.resources.label_avatar
+import io.github.b150005.knitnote.generated.resources.label_bio
+import io.github.b150005.knitnote.generated.resources.label_display_name
+import io.github.b150005.knitnote.generated.resources.message_profile_updated
+import io.github.b150005.knitnote.generated.resources.state_profile_load_failed
+import io.github.b150005.knitnote.generated.resources.title_profile
 import kotlinx.coroutines.flow.collect
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,7 +63,11 @@ fun ProfileScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val profileUpdatedMessage = stringResource(Res.string.message_profile_updated)
 
+    // `state.error` surfaces raw here per the Tech Debt Backlog
+    // "ViewModel error-message localization" deferral — typed error
+    // → StringResource mapping is scheduled after the screen sweep.
     LaunchedEffect(state.error) {
         state.error?.let {
             snackbarHostState.showSnackbar(it)
@@ -60,23 +77,32 @@ fun ProfileScreen(
 
     LaunchedEffect(Unit) {
         viewModel.saveSuccess.collect {
-            snackbarHostState.showSnackbar("Profile updated")
+            snackbarHostState.showSnackbar(profileUpdatedMessage)
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Profile") },
+                title = { Text(stringResource(Res.string.title_profile)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(Res.string.action_back),
+                        )
                     }
                 },
                 actions = {
                     if (!state.isEditing && state.user != null) {
-                        IconButton(onClick = { viewModel.onEvent(ProfileEvent.StartEditing) }) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit profile")
+                        IconButton(
+                            onClick = { viewModel.onEvent(ProfileEvent.StartEditing) },
+                            modifier = Modifier.testTag("editButton"),
+                        ) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = stringResource(Res.string.action_edit),
+                            )
                         }
                     }
                 },
@@ -85,7 +111,13 @@ fun ProfileScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         val user = state.user
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .testTag("profileScreen"),
+        ) {
             when {
                 state.isLoading -> {
                     CircularProgressIndicator(
@@ -94,7 +126,7 @@ fun ProfileScreen(
                 }
                 user == null -> {
                     Text(
-                        text = "Could not load profile",
+                        text = stringResource(Res.string.state_profile_load_failed),
                         modifier = Modifier.align(Alignment.Center),
                         style = MaterialTheme.typography.bodyLarge,
                     )
@@ -122,7 +154,7 @@ private fun ProfileAvatar() {
     ) {
         Icon(
             imageVector = Icons.Default.Person,
-            contentDescription = "Avatar",
+            contentDescription = stringResource(Res.string.label_avatar),
             modifier = Modifier.padding(24.dp),
             tint = MaterialTheme.colorScheme.onPrimaryContainer,
         )
@@ -179,9 +211,12 @@ private fun EditProfileContent(
         OutlinedTextField(
             value = state.editDisplayName,
             onValueChange = { onEvent(ProfileEvent.UpdateDisplayName(it)) },
-            label = { Text("Display Name") },
+            label = { Text(stringResource(Res.string.label_display_name)) },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .testTag("displayNameField"),
             enabled = !state.isSaving,
         )
 
@@ -190,9 +225,12 @@ private fun EditProfileContent(
         OutlinedTextField(
             value = state.editBio,
             onValueChange = { onEvent(ProfileEvent.UpdateBio(it)) },
-            label = { Text("Bio") },
+            label = { Text(stringResource(Res.string.label_bio)) },
             maxLines = 4,
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .testTag("bioField"),
             enabled = !state.isSaving,
         )
 
@@ -205,17 +243,19 @@ private fun EditProfileContent(
             TextButton(
                 onClick = { onEvent(ProfileEvent.CancelEditing) },
                 enabled = !state.isSaving,
+                modifier = Modifier.testTag("cancelButton"),
             ) {
-                Text("Cancel")
+                Text(stringResource(Res.string.action_cancel))
             }
             TextButton(
                 onClick = { onEvent(ProfileEvent.SaveProfile) },
                 enabled = !state.isSaving && state.editDisplayName.isNotBlank(),
+                modifier = Modifier.testTag("saveButton"),
             ) {
                 if (state.isSaving) {
                     CircularProgressIndicator(modifier = Modifier.size(16.dp))
                 } else {
-                    Text("Save")
+                    Text(stringResource(Res.string.action_save))
                 }
             }
         }

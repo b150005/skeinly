@@ -17,11 +17,15 @@ final class NavigationFlowUITests: XCTestCase {
 
     func testNavigateToProfile_andBack() {
         app.buttons["moreMenu"].tapToolbarButton()
-        let profileButton = app.buttons["Profile"]
+        // `profileButton` accessibilityIdentifier is locale-independent —
+        // the visible label resolves via i18n in a future iOS ProjectList PR.
+        let profileButton = app.buttons["profileButton"]
         XCTAssertTrue(profileButton.waitForExistence(timeout: 2), "Profile button not found")
         profileButton.tap()
 
-        XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 3))
+        // ProfileScreen root is tagged `profileScreen`; navigation bar title
+        // is now i18n'd so we assert the landmark instead of the title text.
+        XCTAssertTrue(app.otherElements["profileScreen"].waitForExistence(timeout: 3))
 
         app.navigationBars.buttons.element(boundBy: 0).tap()
         XCTAssertTrue(app.navigationBars["Knit Note"].waitForExistence(timeout: 3))

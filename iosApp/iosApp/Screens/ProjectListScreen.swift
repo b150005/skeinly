@@ -109,6 +109,7 @@ struct ProjectListScreen: View {
                     Button { path.append(Route.profile) } label: {
                         Label("Profile", systemImage: "person.circle")
                     }
+                    .accessibilityIdentifier("profileButton")
                     Button { path.append(Route.activityFeed) } label: {
                         Label("Activity", systemImage: "bell")
                     }
