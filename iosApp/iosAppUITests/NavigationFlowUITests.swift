@@ -55,13 +55,15 @@ final class NavigationFlowUITests: XCTestCase {
 
     func testNavigateToActivityFeed_andBack() {
         app.buttons["moreMenu"].tapToolbarButton()
-        let activityButton = app.buttons["Activity"]
-        XCTAssertTrue(activityButton.waitForExistence(timeout: 2), "Activity button not found")
+        let activityButton = app.buttons["activityFeedButton"]
+        XCTAssertTrue(activityButton.waitForExistence(timeout: 2), "Activity Feed button not found")
         activityButton.tap()
 
-        XCTAssertTrue(app.navigationBars["Activity Feed"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.otherElements["activityFeedScreen"].waitForExistence(timeout: 3))
 
         app.navigationBars.buttons.element(boundBy: 0).tap()
+        // app_name ("Knit Note") is locale-identical, so this nav-bar title
+        // query stays literal and does not need a testTag pivot.
         XCTAssertTrue(app.navigationBars["Knit Note"].waitForExistence(timeout: 3))
     }
 }

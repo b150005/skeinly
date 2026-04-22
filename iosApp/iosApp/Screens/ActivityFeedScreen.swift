@@ -12,16 +12,15 @@ struct ActivityFeedScreen: View {
 
     var body: some View {
         let state = holder.state
-        let viewModel = holder.viewModel
 
-        Group {
+        ZStack {
             if state.isLoading && state.activities.isEmpty {
                 ProgressView()
             } else if state.activities.isEmpty {
                 ContentUnavailableView(
-                    "No Activity Yet",
+                    "state_no_activity",
                     systemImage: "bell.slash",
-                    description: Text("Your activity will appear here.")
+                    description: Text("body_no_activity")
                 )
             } else {
                 List(state.activities, id: \.id) { activity in
@@ -32,13 +31,15 @@ struct ActivityFeedScreen: View {
                 }
             }
         }
-        .navigationTitle("Activity Feed")
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("activityFeedScreen")
+        .navigationTitle(LocalizedStringKey("title_activity_feed"))
         .navigationBarTitleDisplayMode(.inline)
     }
 
     private func userName(for activity: Activity, in state: ActivityFeedState) -> String {
         let user = state.users[activity.userId]
-        return user?.displayName ?? "Someone"
+        return user?.displayName ?? String(localized: "label_someone")
     }
 }
 
@@ -53,7 +54,7 @@ private struct ActivityRow: View {
                 .frame(width: 28)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("\(userName) \(verbText)")
+                Text(headline)
                     .font(.subheadline)
                 Text(formattedDate)
                     .font(.caption)
@@ -87,16 +88,23 @@ private struct ActivityRow: View {
         }
     }
 
-    private var verbText: String {
+    private var headline: String {
+        let key: String
         switch activity.type {
-        case .started: return "started a new project"
-        case .completed: return "completed a project"
-        case .shared: return "shared a pattern"
-        case .commented: return "commented on a project"
-        case .forked: return "forked a pattern"
-        case .created: return "created a new pattern"
-        default: return "performed an action"
+        case .started: key = "label_activity_started_by"
+        case .completed: key = "label_activity_completed_by"
+        case .shared: key = "label_activity_shared_by"
+        case .commented: key = "label_activity_commented_by"
+        case .forked: key = "label_activity_forked_by"
+        case .created: key = "label_activity_created_by"
+        // Kotlin `ActivityType` is bridged as a non-frozen enum, so Swift
+        // requires a default branch. Fall through to the "started" copy;
+        // unknown types should not reach users because serialization
+        // rejects values outside the enum.
+        default: key = "label_activity_started_by"
         }
+        let format = NSLocalizedString(key, comment: "")
+        return String(format: format, userName)
     }
 
     private var formattedDate: String {

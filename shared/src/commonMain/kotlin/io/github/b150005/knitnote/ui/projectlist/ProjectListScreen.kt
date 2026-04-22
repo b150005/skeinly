@@ -163,7 +163,10 @@ fun ProjectListScreen(
                             contentDescription = stringResource(Res.string.action_profile),
                         )
                     }
-                    IconButton(onClick = onActivityFeedClick) {
+                    IconButton(
+                        onClick = onActivityFeedClick,
+                        modifier = Modifier.testTag("activityFeedButton"),
+                    ) {
                         Icon(
                             Icons.Default.Notifications,
                             contentDescription = stringResource(Res.string.action_activity_feed),

@@ -120,4 +120,16 @@
     <string name="label_bio">自己紹介</string>
     <string name="state_profile_load_failed">プロフィールを読み込めませんでした</string>
     <string name="message_profile_updated">プロフィールを更新しました</string>
+
+    <!-- Activity feed screen -->
+    <string name="title_activity_feed">アクティビティ</string>
+    <string name="state_no_activity">アクティビティがまだありません</string>
+    <string name="body_no_activity">アクティビティはここに表示されます</string>
+    <string name="label_someone">だれか</string>
+    <string name="label_activity_started_by">%1$sが新しいプロジェクトを開始しました</string>
+    <string name="label_activity_completed_by">%1$sがプロジェクトを完了しました</string>
+    <string name="label_activity_shared_by">%1$sがパターンを共有しました</string>
+    <string name="label_activity_commented_by">%1$sがプロジェクトにコメントしました</string>
+    <string name="label_activity_forked_by">%1$sがパターンをフォークしました</string>
+    <string name="label_activity_created_by">%1$sが新しいパターンを作成しました</string>
 </resources>

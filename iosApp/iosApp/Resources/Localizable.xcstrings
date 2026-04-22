@@ -637,6 +637,76 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Profile updated" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロフィールを更新しました" } }
       }
+    },
+    "title_activity_feed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Activity Feed" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アクティビティ" } }
+      }
+    },
+    "state_no_activity" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No activity yet" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アクティビティがまだありません" } }
+      }
+    },
+    "body_no_activity" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your activity will appear here" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アクティビティはここに表示されます" } }
+      }
+    },
+    "label_someone" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Someone" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "だれか" } }
+      }
+    },
+    "label_activity_started_by" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ started a new project" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@が新しいプロジェクトを開始しました" } }
+      }
+    },
+    "label_activity_completed_by" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ completed a project" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@がプロジェクトを完了しました" } }
+      }
+    },
+    "label_activity_shared_by" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ shared a pattern" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@がパターンを共有しました" } }
+      }
+    },
+    "label_activity_commented_by" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ commented on a project" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@がプロジェクトにコメントしました" } }
+      }
+    },
+    "label_activity_forked_by" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ forked a pattern" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@がパターンをフォークしました" } }
+      }
+    },
+    "label_activity_created_by" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ created a new pattern" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@が新しいパターンを作成しました" } }
+      }
     }
   },
   "version" : "1.0"

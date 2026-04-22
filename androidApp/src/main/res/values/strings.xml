@@ -120,4 +120,16 @@
     <string name="label_bio">Bio</string>
     <string name="state_profile_load_failed">Could not load profile</string>
     <string name="message_profile_updated">Profile updated</string>
+
+    <!-- Activity feed screen -->
+    <string name="title_activity_feed">Activity Feed</string>
+    <string name="state_no_activity">No activity yet</string>
+    <string name="body_no_activity">Your activity will appear here</string>
+    <string name="label_someone">Someone</string>
+    <string name="label_activity_started_by">%1$s started a new project</string>
+    <string name="label_activity_completed_by">%1$s completed a project</string>
+    <string name="label_activity_shared_by">%1$s shared a pattern</string>
+    <string name="label_activity_commented_by">%1$s commented on a project</string>
+    <string name="label_activity_forked_by">%1$s forked a pattern</string>
+    <string name="label_activity_created_by">%1$s created a new pattern</string>
 </resources>

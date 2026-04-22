@@ -34,10 +34,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import io.github.b150005.knitnote.domain.model.Activity
 import io.github.b150005.knitnote.domain.model.ActivityType
 import io.github.b150005.knitnote.domain.model.User
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_back
+import io.github.b150005.knitnote.generated.resources.body_no_activity
+import io.github.b150005.knitnote.generated.resources.label_activity_commented_by
+import io.github.b150005.knitnote.generated.resources.label_activity_completed_by
+import io.github.b150005.knitnote.generated.resources.label_activity_created_by
+import io.github.b150005.knitnote.generated.resources.label_activity_forked_by
+import io.github.b150005.knitnote.generated.resources.label_activity_shared_by
+import io.github.b150005.knitnote.generated.resources.label_activity_started_by
+import io.github.b150005.knitnote.generated.resources.label_someone
+import io.github.b150005.knitnote.generated.resources.state_no_activity
+import io.github.b150005.knitnote.generated.resources.title_activity_feed
 import io.github.b150005.knitnote.ui.util.formatFull
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,6 +64,9 @@ fun ActivityFeedScreen(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // `state.error` surfaces raw here per the Tech Debt Backlog
+    // "ViewModel error-message localization" deferral — typed error
+    // → StringResource mapping is scheduled after the screen sweep.
     LaunchedEffect(state.error) {
         state.error?.let {
             snackbarHostState.showSnackbar(it)
@@ -59,17 +77,26 @@ fun ActivityFeedScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Activity Feed") },
+                title = { Text(stringResource(Res.string.title_activity_feed)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(Res.string.action_back),
+                        )
                     }
                 },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .testTag("activityFeedScreen"),
+        ) {
             when {
                 state.isLoading -> {
                     CircularProgressIndicator(
@@ -82,11 +109,11 @@ fun ActivityFeedScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
-                            text = "No activity yet",
+                            text = stringResource(Res.string.state_no_activity),
                             style = MaterialTheme.typography.bodyLarge,
                         )
                         Text(
-                            text = "Your activity will appear here",
+                            text = stringResource(Res.string.body_no_activity),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -114,22 +141,22 @@ private fun ActivityListItem(
     user: User?,
 ) {
     val dateText = activity.createdAt.formatFull()
-
-    val displayName = user?.displayName ?: "You"
-    val (icon, verb) = activityVerb(activity.type)
+    val displayName = user?.displayName ?: stringResource(Res.string.label_someone)
+    val (icon, templateRes) = activityTemplate(activity.type)
+    val headline = stringResource(templateRes, displayName)
 
     ListItem(
         modifier = Modifier.fillMaxWidth(),
         leadingContent = {
             Icon(
                 imageVector = icon,
-                contentDescription = verb,
+                contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
             )
         },
         headlineContent = {
             Text(
-                text = "$displayName $verb",
+                text = headline,
                 style = MaterialTheme.typography.bodyLarge,
             )
         },
@@ -143,12 +170,12 @@ private fun ActivityListItem(
     )
 }
 
-private fun activityVerb(type: ActivityType): Pair<ImageVector, String> =
+private fun activityTemplate(type: ActivityType): Pair<ImageVector, StringResource> =
     when (type) {
-        ActivityType.STARTED -> Icons.Default.Add to "started a new project"
-        ActivityType.COMPLETED -> Icons.Default.Check to "completed a project"
-        ActivityType.SHARED -> Icons.Default.Share to "shared a pattern"
-        ActivityType.COMMENTED -> Icons.AutoMirrored.Filled.Comment to "commented on a project"
-        ActivityType.FORKED -> Icons.AutoMirrored.Filled.CallSplit to "forked a pattern"
-        ActivityType.CREATED -> Icons.Default.Add to "created a new pattern"
+        ActivityType.STARTED -> Icons.Default.Add to Res.string.label_activity_started_by
+        ActivityType.COMPLETED -> Icons.Default.Check to Res.string.label_activity_completed_by
+        ActivityType.SHARED -> Icons.Default.Share to Res.string.label_activity_shared_by
+        ActivityType.COMMENTED -> Icons.AutoMirrored.Filled.Comment to Res.string.label_activity_commented_by
+        ActivityType.FORKED -> Icons.AutoMirrored.Filled.CallSplit to Res.string.label_activity_forked_by
+        ActivityType.CREATED -> Icons.Default.Add to Res.string.label_activity_created_by
     }
