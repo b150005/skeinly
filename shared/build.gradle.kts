@@ -193,6 +193,7 @@ kover {
                     "io.github.b150005.knitnote.ui.imagepicker.*",
                     "io.github.b150005.knitnote.ui.activityfeed.ActivityFeedScreenKt*",
                     "io.github.b150005.knitnote.ui.auth.LoginScreenKt*",
+                    "io.github.b150005.knitnote.ui.discovery.DiscoveryScreenKt*",
                     "io.github.b150005.knitnote.ui.comments.CommentSectionKt*",
                     "io.github.b150005.knitnote.ui.profile.ProfileScreenKt*",
                     "io.github.b150005.knitnote.ui.projectdetail.ProjectDetailScreenKt*",

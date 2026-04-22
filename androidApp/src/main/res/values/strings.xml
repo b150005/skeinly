@@ -132,6 +132,27 @@
     <string name="dialog_delete_account_title">Delete Account?</string>
     <string name="dialog_delete_account_body">This will permanently delete your account and all associated data. This action cannot be undone.</string>
 
+    <!-- Discovery screen -->
+    <string name="title_discover_patterns">Discover Patterns</string>
+    <string name="hint_search_public_patterns">Search public patterns\u2026</string>
+    <string name="label_difficulty_all">All</string>
+    <string name="label_difficulty_beginner">Beginner</string>
+    <string name="label_difficulty_intermediate">Intermediate</string>
+    <string name="label_difficulty_advanced">Advanced</string>
+    <string name="state_no_matching_patterns">No matching patterns</string>
+    <!-- Separate key from state_no_matching_projects_body even though current
+         wording is identical: the body is domain-scoped to "patterns" vs
+         "projects" so future translators can diverge per-context. -->
+    <string name="state_no_matching_patterns_body">Try adjusting your search or filters</string>
+    <string name="state_no_public_patterns">No public patterns yet</string>
+    <string name="state_no_public_patterns_body">Public patterns from other knitters will appear here</string>
+    <string name="action_fork_pattern">Fork pattern</string>
+    <string name="action_fork">Fork</string>
+    <string name="state_forking_pattern">Forking pattern\u2026</string>
+    <string name="label_gauge_value">Gauge: %1$s</string>
+    <string name="label_yarn_value">Yarn: %1$s</string>
+    <string name="label_needle_value">Needle: %1$s</string>
+
     <!-- Activity feed screen -->
     <string name="title_activity_feed">Activity Feed</string>
     <string name="state_no_activity">No activity yet</string>

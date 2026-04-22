@@ -770,6 +770,118 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ created a new pattern" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@が新しいパターンを作成しました" } }
       }
+    },
+    "title_discover_patterns" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Discover Patterns" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターンを探す" } }
+      }
+    },
+    "hint_search_public_patterns" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Search public patterns\u2026" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "公開パターンを検索\u2026" } }
+      }
+    },
+    "label_difficulty_all" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "All" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "すべて" } }
+      }
+    },
+    "label_difficulty_beginner" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Beginner" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "初級" } }
+      }
+    },
+    "label_difficulty_intermediate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Intermediate" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "中級" } }
+      }
+    },
+    "label_difficulty_advanced" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Advanced" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "上級" } }
+      }
+    },
+    "state_no_matching_patterns" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No matching patterns" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "一致するパターンがありません" } }
+      }
+    },
+    "state_no_matching_patterns_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Try adjusting your search or filters" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "検索条件やフィルターを調整してみてください" } }
+      }
+    },
+    "state_no_public_patterns" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No public patterns yet" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "公開パターンがまだありません" } }
+      }
+    },
+    "state_no_public_patterns_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Public patterns from other knitters will appear here" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "他のニッターが公開したパターンがここに表示されます" } }
+      }
+    },
+    "action_fork_pattern" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Fork pattern" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターンをフォーク" } }
+      }
+    },
+    "action_fork" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Fork" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フォーク" } }
+      }
+    },
+    "state_forking_pattern" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Forking pattern\u2026" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターンをフォーク中\u2026" } }
+      }
+    },
+    "label_gauge_value" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Gauge: %1$@" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ゲージ: %1$@" } }
+      }
+    },
+    "label_yarn_value" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Yarn: %1$@" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "糸: %1$@" } }
+      }
+    },
+    "label_needle_value" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Needle: %1$@" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "針: %1$@" } }
+      }
     }
   },
   "version" : "1.0"

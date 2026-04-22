@@ -132,6 +132,24 @@
     <string name="dialog_delete_account_title">アカウントを削除しますか？</string>
     <string name="dialog_delete_account_body">アカウントと関連データがすべて完全に削除されます。この操作は取り消せません。</string>
 
+    <!-- Discovery screen -->
+    <string name="title_discover_patterns">パターンを探す</string>
+    <string name="hint_search_public_patterns">公開パターンを検索\u2026</string>
+    <string name="label_difficulty_all">すべて</string>
+    <string name="label_difficulty_beginner">初級</string>
+    <string name="label_difficulty_intermediate">中級</string>
+    <string name="label_difficulty_advanced">上級</string>
+    <string name="state_no_matching_patterns">一致するパターンがありません</string>
+    <string name="state_no_matching_patterns_body">検索条件やフィルターを調整してみてください</string>
+    <string name="state_no_public_patterns">公開パターンがまだありません</string>
+    <string name="state_no_public_patterns_body">他のニッターが公開したパターンがここに表示されます</string>
+    <string name="action_fork_pattern">パターンをフォーク</string>
+    <string name="action_fork">フォーク</string>
+    <string name="state_forking_pattern">パターンをフォーク中\u2026</string>
+    <string name="label_gauge_value">ゲージ: %1$s</string>
+    <string name="label_yarn_value">糸: %1$s</string>
+    <string name="label_needle_value">針: %1$s</string>
+
     <!-- Activity feed screen -->
     <string name="title_activity_feed">アクティビティ</string>
     <string name="state_no_activity">アクティビティがまだありません</string>

@@ -54,7 +54,30 @@ import androidx.compose.ui.unit.dp
 import io.github.b150005.knitnote.domain.model.Difficulty
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.SortOrder
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_back
+import io.github.b150005.knitnote.generated.resources.action_clear_search
+import io.github.b150005.knitnote.generated.resources.action_fork_pattern
+import io.github.b150005.knitnote.generated.resources.action_sort
+import io.github.b150005.knitnote.generated.resources.hint_search_public_patterns
+import io.github.b150005.knitnote.generated.resources.label_difficulty_advanced
+import io.github.b150005.knitnote.generated.resources.label_difficulty_all
+import io.github.b150005.knitnote.generated.resources.label_difficulty_beginner
+import io.github.b150005.knitnote.generated.resources.label_difficulty_intermediate
+import io.github.b150005.knitnote.generated.resources.label_gauge_value
+import io.github.b150005.knitnote.generated.resources.label_needle_value
+import io.github.b150005.knitnote.generated.resources.label_sort_alphabetical
+import io.github.b150005.knitnote.generated.resources.label_sort_alphabetical_detail
+import io.github.b150005.knitnote.generated.resources.label_sort_recent
+import io.github.b150005.knitnote.generated.resources.label_yarn_value
+import io.github.b150005.knitnote.generated.resources.state_no_matching_patterns
+import io.github.b150005.knitnote.generated.resources.state_no_matching_patterns_body
+import io.github.b150005.knitnote.generated.resources.state_no_public_patterns
+import io.github.b150005.knitnote.generated.resources.state_no_public_patterns_body
+import io.github.b150005.knitnote.generated.resources.title_discover_patterns
 import io.github.b150005.knitnote.ui.components.EmptyStateView
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,14 +104,15 @@ fun DiscoveryScreen(
     }
 
     Scaffold(
+        modifier = Modifier.testTag("discoveryScreen"),
         topBar = {
             TopAppBar(
-                title = { Text("Discover Patterns") },
+                title = { Text(stringResource(Res.string.title_discover_patterns)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(Res.string.action_back),
                         )
                     }
                 },
@@ -143,13 +167,13 @@ fun DiscoveryScreen(
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
-                                    text = "No matching patterns",
+                                    text = stringResource(Res.string.state_no_matching_patterns),
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Try adjusting your search or filters",
+                                    text = stringResource(Res.string.state_no_matching_patterns_body),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -159,8 +183,8 @@ fun DiscoveryScreen(
                     state.patterns.isEmpty() -> {
                         EmptyStateView(
                             icon = Icons.Default.Explore,
-                            title = "No public patterns yet",
-                            body = "Public patterns from other knitters will appear here",
+                            title = stringResource(Res.string.state_no_public_patterns),
+                            body = stringResource(Res.string.state_no_public_patterns_body),
                         )
                     }
                     else -> {
@@ -197,12 +221,15 @@ private fun DiscoverySearchField(
             modifier
                 .fillMaxWidth()
                 .testTag("discoverySearchField"),
-        placeholder = { Text("Search public patterns...") },
+        placeholder = { Text(stringResource(Res.string.hint_search_public_patterns)) },
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
         trailingIcon = {
             if (query.isNotEmpty()) {
                 IconButton(onClick = { onQueryChange("") }) {
-                    Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                    Icon(
+                        Icons.Default.Clear,
+                        contentDescription = stringResource(Res.string.action_clear_search),
+                    )
                 }
             }
         },
@@ -230,7 +257,8 @@ private fun DiscoveryFilterSortRow(
                 FilterChip(
                     selected = difficultyFilter == null,
                     onClick = { onDifficultyFilterChange(null) },
-                    label = { Text("All") },
+                    label = { Text(stringResource(Res.string.label_difficulty_all)) },
+                    modifier = Modifier.testTag("difficultyAllChip"),
                 )
             }
             item {
@@ -241,7 +269,8 @@ private fun DiscoveryFilterSortRow(
                             if (difficultyFilter == Difficulty.BEGINNER) null else Difficulty.BEGINNER,
                         )
                     },
-                    label = { Text("Beginner") },
+                    label = { Text(stringResource(Difficulty.BEGINNER.labelKey)) },
+                    modifier = Modifier.testTag("difficultyBeginnerChip"),
                 )
             }
             item {
@@ -252,7 +281,8 @@ private fun DiscoveryFilterSortRow(
                             if (difficultyFilter == Difficulty.INTERMEDIATE) null else Difficulty.INTERMEDIATE,
                         )
                     },
-                    label = { Text("Intermediate") },
+                    label = { Text(stringResource(Difficulty.INTERMEDIATE.labelKey)) },
+                    modifier = Modifier.testTag("difficultyIntermediateChip"),
                 )
             }
             item {
@@ -263,7 +293,8 @@ private fun DiscoveryFilterSortRow(
                             if (difficultyFilter == Difficulty.ADVANCED) null else Difficulty.ADVANCED,
                         )
                     },
-                    label = { Text("Advanced") },
+                    label = { Text(stringResource(Difficulty.ADVANCED.labelKey)) },
+                    modifier = Modifier.testTag("difficultyAdvancedChip"),
                 )
             }
         }
@@ -280,20 +311,23 @@ private fun DiscoverySortDropdown(
     onSortOrderChange: (SortOrder) -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
-    val chipLabel =
+    val chipLabelKey =
         when (sortOrder) {
-            SortOrder.RECENT -> "Recent"
-            SortOrder.ALPHABETICAL -> "A\u2013Z"
-            SortOrder.PROGRESS -> "Recent"
+            SortOrder.RECENT -> Res.string.label_sort_recent
+            SortOrder.ALPHABETICAL -> Res.string.label_sort_alphabetical
+            SortOrder.PROGRESS -> Res.string.label_sort_recent
         }
 
     Box {
         FilterChip(
             selected = sortOrder != SortOrder.RECENT,
             onClick = { expanded = true },
-            label = { Text(chipLabel) },
+            label = { Text(stringResource(chipLabelKey)) },
             trailingIcon = {
-                Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort")
+                Icon(
+                    Icons.AutoMirrored.Filled.Sort,
+                    contentDescription = stringResource(Res.string.action_sort),
+                )
             },
         )
 
@@ -302,14 +336,14 @@ private fun DiscoverySortDropdown(
             onDismissRequest = { expanded = false },
         ) {
             DropdownMenuItem(
-                text = { Text("Recent") },
+                text = { Text(stringResource(Res.string.label_sort_recent)) },
                 onClick = {
                     onSortOrderChange(SortOrder.RECENT)
                     expanded = false
                 },
             )
             DropdownMenuItem(
-                text = { Text("Alphabetical (A\u2013Z)") },
+                text = { Text(stringResource(Res.string.label_sort_alphabetical_detail)) },
                 onClick = {
                     onSortOrderChange(SortOrder.ALPHABETICAL)
                     expanded = false
@@ -386,7 +420,7 @@ private fun DiscoveryPatternCard(
                     ) {
                         Icon(
                             Icons.Default.ContentCopy,
-                            contentDescription = "Fork pattern",
+                            contentDescription = stringResource(Res.string.action_fork_pattern),
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }
@@ -398,22 +432,34 @@ private fun DiscoveryPatternCard(
 
 @Composable
 private fun DiscoveryDifficultyBadge(difficulty: Difficulty) {
-    val (text, color) =
+    val color =
         when (difficulty) {
-            Difficulty.BEGINNER -> "Beginner" to MaterialTheme.colorScheme.tertiary
-            Difficulty.INTERMEDIATE -> "Intermediate" to MaterialTheme.colorScheme.primary
-            Difficulty.ADVANCED -> "Advanced" to MaterialTheme.colorScheme.error
+            Difficulty.BEGINNER -> MaterialTheme.colorScheme.tertiary
+            Difficulty.INTERMEDIATE -> MaterialTheme.colorScheme.primary
+            Difficulty.ADVANCED -> MaterialTheme.colorScheme.error
         }
     Text(
-        text = text,
+        text = stringResource(difficulty.labelKey),
         style = MaterialTheme.typography.labelSmall,
         color = color,
     )
 }
 
-private fun buildDiscoveryPatternDetails(pattern: Pattern): String =
-    listOfNotNull(
-        pattern.gauge?.let { "Gauge: $it" },
-        pattern.yarnInfo?.let { "Yarn: $it" },
-        pattern.needleSize?.let { "Needle: $it" },
-    ).joinToString(" \u2022 ")
+@Composable
+private fun buildDiscoveryPatternDetails(pattern: Pattern): String {
+    val gauge = pattern.gauge?.let { stringResource(Res.string.label_gauge_value, it) }
+    val yarn = pattern.yarnInfo?.let { stringResource(Res.string.label_yarn_value, it) }
+    val needle = pattern.needleSize?.let { stringResource(Res.string.label_needle_value, it) }
+    return listOfNotNull(gauge, yarn, needle).joinToString(" \u2022 ")
+}
+
+// Difficulty label keys are defined once here so filter chips, the badge, and any
+// future consumer within Discovery resolve via a single source. If PatternLibrary
+// needs the same mapping later, promote to a shared domain extension file.
+private val Difficulty.labelKey: StringResource
+    get() =
+        when (this) {
+            Difficulty.BEGINNER -> Res.string.label_difficulty_beginner
+            Difficulty.INTERMEDIATE -> Res.string.label_difficulty_intermediate
+            Difficulty.ADVANCED -> Res.string.label_difficulty_advanced
+        }

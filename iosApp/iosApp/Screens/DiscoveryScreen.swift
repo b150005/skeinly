@@ -19,7 +19,9 @@ struct DiscoveryScreen: View {
 
     var body: some View {
         contentView
-            .searchable(text: $searchText, prompt: "Search public patterns...")
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("discoveryScreen")
+            .searchable(text: $searchText, prompt: Text("hint_search_public_patterns"))
             .onChange(of: searchText) { _, newValue in
                 viewModel.onEvent(event: DiscoveryEventUpdateSearchQuery(query: newValue))
             }
@@ -30,12 +32,16 @@ struct DiscoveryScreen: View {
             .onChange(of: holder.state.error) { _, newError in
                 showError = newError != nil
             }
-            .alert("Error", isPresented: $showError) {
-                Button("OK") { viewModel.onEvent(event: DiscoveryEventClearError.shared) }
+            // `.alert` is in the "needs explicit LocalizedStringKey wrap" column of
+            // the SwiftUI literal-promotion table (see docs/en/i18n-convention.md) —
+            // overload resolution on a bare literal can silently select the
+            // String-typed overload and skip localization.
+            .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
+                Button("action_ok") { viewModel.onEvent(event: DiscoveryEventClearError.shared) }
             } message: {
                 Text(holder.state.error ?? "")
             }
-            .navigationTitle("Discover Patterns")
+            .navigationTitle(LocalizedStringKey("title_discover_patterns"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { sortToolbarItem }
             .overlay { forkingOverlay }
@@ -55,15 +61,15 @@ struct DiscoveryScreen: View {
             ProgressView()
         } else if state.patterns.isEmpty && hasActiveFilter {
             ContentUnavailableView(
-                "No Matching Patterns",
+                "state_no_matching_patterns",
                 systemImage: "magnifyingglass",
-                description: Text("Try adjusting your search or filters.")
+                description: Text("state_no_matching_patterns_body")
             )
         } else if state.patterns.isEmpty {
             ContentUnavailableView(
-                "No Public Patterns Yet",
+                "state_no_public_patterns",
                 systemImage: "globe",
-                description: Text("Public patterns from other knitters will appear here.")
+                description: Text("state_no_public_patterns_body")
             )
         } else {
             patternList(state: state)
@@ -86,7 +92,7 @@ struct DiscoveryScreen: View {
                         Button {
                             viewModel.onEvent(event: DiscoveryEventForkPattern(patternId: pattern.id))
                         } label: {
-                            Label("Fork", systemImage: "doc.on.doc")
+                            Label("action_fork", systemImage: "doc.on.doc")
                         }
                         .tint(.blue)
                     }
@@ -103,12 +109,12 @@ struct DiscoveryScreen: View {
                 Button {
                     viewModel.onEvent(event: DiscoveryEventUpdateSortOrder(order: .recent))
                 } label: {
-                    Label("Recent", systemImage: holder.state.sortOrder == .recent ? "checkmark" : "")
+                    Label("label_sort_recent", systemImage: holder.state.sortOrder == .recent ? "checkmark" : "")
                 }
                 Button {
                     viewModel.onEvent(event: DiscoveryEventUpdateSortOrder(order: .alphabetical))
                 } label: {
-                    Label("Alphabetical", systemImage: holder.state.sortOrder == .alphabetical ? "checkmark" : "")
+                    Label("label_sort_alphabetical_detail", systemImage: holder.state.sortOrder == .alphabetical ? "checkmark" : "")
                 }
             } label: {
                 Image(systemName: "arrow.up.arrow.down")
@@ -119,7 +125,7 @@ struct DiscoveryScreen: View {
     @ViewBuilder
     private var forkingOverlay: some View {
         if holder.state.forkingPatternId != nil {
-            ProgressView("Forking pattern...")
+            ProgressView("state_forking_pattern")
                 .padding()
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         }
@@ -152,16 +158,32 @@ private struct DiscoveryFilterSection: View {
         Section {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    DiscoveryFilterChip(label: "All", isSelected: difficultyFilter == nil) {
+                    DiscoveryFilterChip(
+                        labelKey: "label_difficulty_all",
+                        identifier: "difficultyAllChip",
+                        isSelected: difficultyFilter == nil
+                    ) {
                         onDifficultyFilterChange(nil)
                     }
-                    DiscoveryFilterChip(label: "Beginner", isSelected: difficultyFilter == .beginner) {
+                    DiscoveryFilterChip(
+                        labelKey: "label_difficulty_beginner",
+                        identifier: "difficultyBeginnerChip",
+                        isSelected: difficultyFilter == .beginner
+                    ) {
                         onDifficultyFilterChange(difficultyFilter == .beginner ? nil : .beginner)
                     }
-                    DiscoveryFilterChip(label: "Intermediate", isSelected: difficultyFilter == .intermediate) {
+                    DiscoveryFilterChip(
+                        labelKey: "label_difficulty_intermediate",
+                        identifier: "difficultyIntermediateChip",
+                        isSelected: difficultyFilter == .intermediate
+                    ) {
                         onDifficultyFilterChange(difficultyFilter == .intermediate ? nil : .intermediate)
                     }
-                    DiscoveryFilterChip(label: "Advanced", isSelected: difficultyFilter == .advanced) {
+                    DiscoveryFilterChip(
+                        labelKey: "label_difficulty_advanced",
+                        identifier: "difficultyAdvancedChip",
+                        isSelected: difficultyFilter == .advanced
+                    ) {
                         onDifficultyFilterChange(difficultyFilter == .advanced ? nil : .advanced)
                     }
                 }
@@ -173,13 +195,14 @@ private struct DiscoveryFilterSection: View {
 }
 
 private struct DiscoveryFilterChip: View {
-    let label: String
+    let labelKey: LocalizedStringKey
+    let identifier: String
     let isSelected: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Text(label)
+            Text(labelKey)
                 .font(.subheadline)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
@@ -188,6 +211,7 @@ private struct DiscoveryFilterChip: View {
                 .clipShape(Capsule())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(identifier)
     }
 }
 
@@ -227,9 +251,9 @@ private struct DiscoveryPatternRow: View {
 
     private func buildDetails() -> String {
         [
-            pattern.gauge.map { "Gauge: \($0)" },
-            pattern.yarnInfo.map { "Yarn: \($0)" },
-            pattern.needleSize.map { "Needle: \($0)" },
+            pattern.gauge.map { String(format: NSLocalizedString("label_gauge_value", comment: ""), $0) },
+            pattern.yarnInfo.map { String(format: NSLocalizedString("label_yarn_value", comment: ""), $0) },
+            pattern.needleSize.map { String(format: NSLocalizedString("label_needle_value", comment: ""), $0) },
         ]
         .compactMap { $0 }
         .joined(separator: " \u{2022} ")
@@ -240,16 +264,16 @@ private struct DiscoveryDifficultyBadge: View {
     let difficulty: Difficulty
 
     var body: some View {
-        Text(label)
+        Text(labelKey)
             .font(.caption2)
             .foregroundStyle(color)
     }
 
-    private var label: String {
+    private var labelKey: LocalizedStringKey {
         switch difficulty {
-        case .beginner: "Beginner"
-        case .intermediate: "Intermediate"
-        case .advanced: "Advanced"
+        case .beginner: "label_difficulty_beginner"
+        case .intermediate: "label_difficulty_intermediate"
+        case .advanced: "label_difficulty_advanced"
         default: ""
         }
     }

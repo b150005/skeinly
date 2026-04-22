@@ -16,10 +16,13 @@ tags:
 # Verify we start on the project list
 - assertVisible: "Knit Note"
 
-# Navigate to Discovery screen
+# Navigate to Discovery screen (content description still resolves in English
+# while ProjectListScreen is i18n'd; the screen we land on is asserted via
+# testTag below so it stays locale-independent).
 - tapOn:
     text: "Discover Patterns"
-- assertVisible: "Discover Patterns"
+- assertVisible:
+    id: "discoveryScreen"
 
 # Verify search field is present
 - assertVisible:
@@ -30,17 +33,19 @@ tags:
     id: "discoverySearchField"
 - inputText: "test"
 
-# Clear search
+# Clear search (icon contentDescription; English CI locale assumption)
 - tapOn:
     text: "Clear search"
 
-# Interact with difficulty filter
-- tapOn: "Beginner"
+# Interact with difficulty filter via testTag (locale-independent)
+- tapOn:
+    id: "difficultyBeginnerChip"
 
 # Reset filter to All
-- tapOn: "All"
+- tapOn:
+    id: "difficultyAllChip"
 
-# Back navigation
+# Back navigation (nav icon contentDescription; English CI locale assumption)
 - tapOn:
     text: "Back"
 - assertVisible: "Knit Note"
