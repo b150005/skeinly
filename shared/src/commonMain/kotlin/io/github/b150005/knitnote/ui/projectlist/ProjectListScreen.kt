@@ -312,7 +312,7 @@ private fun SearchField(
     OutlinedTextField(
         value = query,
         onValueChange = onQueryChange,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().testTag("searchField"),
         placeholder = { Text(stringResource(Res.string.hint_search_projects)) },
         leadingIcon = {
             Icon(Icons.Default.Search, contentDescription = null)

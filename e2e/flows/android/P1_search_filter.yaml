@@ -41,7 +41,12 @@ tags:
 - assertVisible: "Cotton Hat"
 
 # --- Search ---
-- tapOn: "Search projects..."
+# Phase 33.1.3 migration changed the placeholder from "Search projects..." (ASCII)
+# to "Search projects…" (U+2026) per the i18n-convention ellipsis style
+# (matches state_loading). Tap via the stable `searchField` testTag so the
+# flow stays locale-independent.
+- tapOn:
+    id: "searchField"
 - inputText: "Wool"
 
 # Only matching project should be visible
