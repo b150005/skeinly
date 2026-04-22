@@ -28,11 +28,18 @@ struct PatternEditScreen: View {
                 formContent(state)
             }
         }
-        .navigationTitle(patternId != nil ? "Edit Pattern" : "New Pattern")
+        // `.navigationTitle` is conditional — the SwiftUI literal-promotion table in
+        // docs/{en,ja}/i18n-convention.md requires an explicit LocalizedStringKey wrap
+        // to prevent overload resolution from silently dropping to the String overload.
+        .navigationTitle(
+            patternId != nil
+                ? LocalizedStringKey("title_edit_pattern")
+                : LocalizedStringKey("title_new_pattern")
+        )
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-                Button("Save") {
+                Button(LocalizedStringKey("action_save")) {
                     viewModel.onEvent(event: PatternEditEventSave.shared)
                 }
                 .disabled(state.title.trimmingCharacters(in: .whitespaces).isEmpty || state.isSaving)
@@ -53,8 +60,10 @@ struct PatternEditScreen: View {
         .onChange(of: state.error) { _, newError in
             showError = newError != nil
         }
-        .alert("Error", isPresented: $showError) {
-            Button("OK") { viewModel.onEvent(event: PatternEditEventClearError.shared) }
+        // `.alert` title sits in the "needs explicit wrap" column of the literal-
+        // promotion table — bare String would skip localization.
+        .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
+            Button(LocalizedStringKey("action_ok")) { viewModel.onEvent(event: PatternEditEventClearError.shared) }
         } message: {
             Text(state.error ?? "")
         }
@@ -63,14 +72,14 @@ struct PatternEditScreen: View {
     @ViewBuilder
     private func formContent(_ state: PatternEditState) -> some View {
         Form {
-            Section("Title") {
-                TextField("Pattern title", text: Binding(
+            Section(LocalizedStringKey("label_pattern_title")) {
+                TextField(LocalizedStringKey("label_pattern_title"), text: Binding(
                     get: { state.title },
                     set: { viewModel.onEvent(event: PatternEditEventUpdateTitle(title: $0)) }
                 ))
             }
 
-            Section("Description") {
+            Section(LocalizedStringKey("label_description_optional")) {
                 TextEditor(text: Binding(
                     get: { state.description_ },
                     set: { viewModel.onEvent(event: PatternEditEventUpdateDescription(description: $0)) }
@@ -78,26 +87,26 @@ struct PatternEditScreen: View {
                 .frame(minHeight: 80)
             }
 
-            Section("Details") {
+            Section(LocalizedStringKey("label_details")) {
                 difficultyPicker(state)
 
-                TextField("Gauge", text: Binding(
+                TextField(LocalizedStringKey("label_gauge"), text: Binding(
                     get: { state.gauge },
                     set: { viewModel.onEvent(event: PatternEditEventUpdateGauge(gauge: $0)) }
-                ), prompt: Text("20 sts = 4 in"))
+                ), prompt: Text(LocalizedStringKey("hint_gauge_example")))
 
-                TextField("Yarn Info", text: Binding(
+                TextField(LocalizedStringKey("label_yarn_info"), text: Binding(
                     get: { state.yarnInfo },
                     set: { viewModel.onEvent(event: PatternEditEventUpdateYarnInfo(yarnInfo: $0)) }
-                ), prompt: Text("Worsted weight, 100% merino"))
+                ), prompt: Text(LocalizedStringKey("hint_yarn_info_example")))
 
-                TextField("Needle Size", text: Binding(
+                TextField(LocalizedStringKey("label_needle_size"), text: Binding(
                     get: { state.needleSize },
                     set: { viewModel.onEvent(event: PatternEditEventUpdateNeedleSize(needleSize: $0)) }
-                ), prompt: Text("US 7 / 4.5mm"))
+                ), prompt: Text(LocalizedStringKey("hint_needle_size_example")))
             }
 
-            Section("Visibility") {
+            Section(LocalizedStringKey("label_visibility")) {
                 visibilityPicker(state)
             }
         }
@@ -105,24 +114,24 @@ struct PatternEditScreen: View {
 
     @ViewBuilder
     private func difficultyPicker(_ state: PatternEditState) -> some View {
-        Picker("Difficulty", selection: Binding(
+        Picker(LocalizedStringKey("label_difficulty"), selection: Binding(
             get: { DifficultyOption.from(state.difficulty) },
             set: { viewModel.onEvent(event: PatternEditEventUpdateDifficulty(difficulty: $0.toDifficulty())) }
         )) {
             ForEach(DifficultyOption.allCases, id: \.self) { option in
-                Text(option.label).tag(option)
+                Text(option.labelKey).tag(option)
             }
         }
     }
 
     @ViewBuilder
     private func visibilityPicker(_ state: PatternEditState) -> some View {
-        Picker("Visibility", selection: Binding(
+        Picker(LocalizedStringKey("label_visibility"), selection: Binding(
             get: { VisibilityOption.from(state.visibility) },
             set: { viewModel.onEvent(event: PatternEditEventUpdateVisibility(visibility: $0.toVisibility())) }
         )) {
             ForEach(VisibilityOption.allCases, id: \.self) { option in
-                Text(option.label).tag(option)
+                Text(option.labelKey).tag(option)
             }
         }
     }
@@ -136,12 +145,14 @@ private enum DifficultyOption: CaseIterable {
     case intermediate
     case advanced
 
-    var label: String {
+    // LocalizedStringKey so Text(option.labelKey) resolves via Localizable.xcstrings.
+    // A bare String here would skip localization.
+    var labelKey: LocalizedStringKey {
         switch self {
-        case .none: return "None"
-        case .beginner: return "Beginner"
-        case .intermediate: return "Intermediate"
-        case .advanced: return "Advanced"
+        case .none: return LocalizedStringKey("label_difficulty_none")
+        case .beginner: return LocalizedStringKey("label_difficulty_beginner")
+        case .intermediate: return LocalizedStringKey("label_difficulty_intermediate")
+        case .advanced: return LocalizedStringKey("label_difficulty_advanced")
         }
     }
 
@@ -172,11 +183,11 @@ private enum VisibilityOption: CaseIterable {
     case sharedVisibility
     case publicVisibility
 
-    var label: String {
+    var labelKey: LocalizedStringKey {
         switch self {
-        case .privateVisibility: return "Private"
-        case .sharedVisibility: return "Shared"
-        case .publicVisibility: return "Public"
+        case .privateVisibility: return LocalizedStringKey("label_visibility_private")
+        case .sharedVisibility: return LocalizedStringKey("label_visibility_shared")
+        case .publicVisibility: return LocalizedStringKey("label_visibility_public")
         }
     }
 

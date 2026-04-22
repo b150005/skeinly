@@ -938,6 +938,125 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Are you sure you want to delete \"%1$@\"? This cannot be undone." } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "「%1$@」を削除してもよろしいですか？この操作は取り消せません。" } }
       }
+    },
+    "title_new_pattern" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "New Pattern" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "新しいパターン" } }
+      }
+    },
+    "title_edit_pattern" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit Pattern" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターンを編集" } }
+      }
+    },
+    "label_pattern_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pattern Title" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターン名" } }
+      }
+    },
+    "label_description_optional" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Description (optional)" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "説明（任意）" } }
+      }
+    },
+    "label_details" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Details" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "詳細" } }
+      }
+    },
+    "label_difficulty" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Difficulty" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "難易度" } }
+      }
+    },
+    "label_difficulty_none" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "None" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "なし" } }
+      }
+    },
+    "label_gauge" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Gauge" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ゲージ" } }
+      }
+    },
+    "label_yarn_info" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Yarn Info" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "糸情報" } }
+      }
+    },
+    "label_needle_size" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Needle Size" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "針のサイズ" } }
+      }
+    },
+    "hint_gauge_example" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "20 sts = 4 in" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "20目 = 10cm" } }
+      }
+    },
+    "hint_yarn_info_example" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Worsted weight, 100% merino" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "並太、メリノ100%" } }
+      }
+    },
+    "hint_needle_size_example" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "US 7 / 4.5mm" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "7号 / 4.5mm" } }
+      }
+    },
+    "label_visibility" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Visibility" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "公開範囲" } }
+      }
+    },
+    "label_visibility_private" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Private" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "非公開" } }
+      }
+    },
+    "label_visibility_shared" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shared" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有" } }
+      }
+    },
+    "label_visibility_public" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Public" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "公開" } }
+      }
     }
   },
   "version" : "1.0"

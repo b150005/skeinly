@@ -157,6 +157,25 @@
     <string name="dialog_delete_pattern_title">パターンを削除しますか？</string>
     <string name="dialog_delete_pattern_body">「%1$s」を削除してもよろしいですか？この操作は取り消せません。</string>
 
+    <!-- Pattern edit screen -->
+    <string name="title_new_pattern">新しいパターン</string>
+    <string name="title_edit_pattern">パターンを編集</string>
+    <string name="label_pattern_title">パターン名</string>
+    <string name="label_description_optional">説明（任意）</string>
+    <string name="label_details">詳細</string>
+    <string name="label_difficulty">難易度</string>
+    <string name="label_difficulty_none">なし</string>
+    <string name="label_gauge">ゲージ</string>
+    <string name="label_yarn_info">糸情報</string>
+    <string name="label_needle_size">針のサイズ</string>
+    <string name="hint_gauge_example">20目 = 10cm</string>
+    <string name="hint_yarn_info_example">並太、メリノ100%</string>
+    <string name="hint_needle_size_example">7号 / 4.5mm</string>
+    <string name="label_visibility">公開範囲</string>
+    <string name="label_visibility_private">非公開</string>
+    <string name="label_visibility_shared">共有</string>
+    <string name="label_visibility_public">公開</string>
+
     <!-- Activity feed screen -->
     <string name="title_activity_feed">アクティビティ</string>
     <string name="state_no_activity">アクティビティがまだありません</string>
