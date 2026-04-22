@@ -37,7 +37,11 @@ final class ProjectDetailUITests: XCTestCase {
     }
 
     func testMarkComplete_showsReopenButton() {
-        let markComplete = app.buttons["Mark Complete"]
+        // Phase 33.1.12: pivoted from English-label queries
+        // ("Mark Complete" / "Reopen Project") to accessibilityIdentifier
+        // so the test stays stable when the ja locale resolves the button
+        // labels differently.
+        let markComplete = app.buttons["markCompleteButton"]
         XCTAssertTrue(markComplete.waitForExistence(timeout: 3), "Mark Complete button not found")
         if !markComplete.isHittable {
             app.swipeUp()
@@ -46,11 +50,13 @@ final class ProjectDetailUITests: XCTestCase {
         }
         markComplete.tap()
 
-        XCTAssertTrue(app.buttons["Reopen Project"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["reopenProjectButton"].waitForExistence(timeout: 3))
     }
 
     func testEmptyNotes_showsPlaceholder() {
         app.swipeUp()
-        XCTAssertTrue(app.staticTexts["No notes yet"].waitForExistence(timeout: 3))
+        // Phase 33.1.12: pivoted from english staticTexts["No notes yet"] to
+        // an accessibilityIdentifier for locale independence.
+        XCTAssertTrue(app.staticTexts["noNotesLabel"].waitForExistence(timeout: 3))
     }
 }

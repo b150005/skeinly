@@ -32,7 +32,9 @@ tags:
 
 # Start working on the first project so it becomes "In Progress"
 - tapOn: "Wool Scarf"
-- tapOn: "Increment row"
+# Phase 33.1.12: accessibilityLabel "Increment row" → id for locale independence.
+- tapOn:
+    id: "incrementButton"
 # Go back (iOS back button shows previous screen title)
 - tapOn: "Knit Note"
 

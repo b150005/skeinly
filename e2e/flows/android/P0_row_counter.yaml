@@ -46,10 +46,14 @@ tags:
 
 # Verify counter shows 3 (counter is a separate Text with testTag "rowCounter")
 - assertVisible: "3"
-- assertVisible: "of 10 rows"
+# Row-total label is testTag-based after Phase 33.1.12 i18n ("of 10 rows" / "全 10 行")
+- assertVisible:
+    id: "rowTotalLabel"
 
-# Status changes to In Progress when currentRow > 0 and < totalRows (domain rule)
-- assertVisible: "In Progress"
+# Status changes to In Progress when currentRow > 0 and < totalRows (domain rule).
+# Using a locale-independent testTag — rendered text is "In Progress" / "進行中".
+- assertVisible:
+    id: "projectStatusLabel"
 
 # Decrement once
 - tapOn:
@@ -57,4 +61,5 @@ tags:
 
 # Verify counter shows 2
 - assertVisible: "2"
-- assertVisible: "of 10 rows"
+- assertVisible:
+    id: "rowTotalLabel"

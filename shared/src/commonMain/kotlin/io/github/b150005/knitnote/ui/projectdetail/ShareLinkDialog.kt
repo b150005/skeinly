@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.AlertDialog
@@ -21,6 +22,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_close
+import io.github.b150005.knitnote.generated.resources.action_copy_link
+import io.github.b150005.knitnote.generated.resources.dialog_share_link_body
+import io.github.b150005.knitnote.generated.resources.dialog_share_link_title
+import io.github.b150005.knitnote.generated.resources.label_share_url
+import io.github.b150005.knitnote.generated.resources.message_link_copied
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ShareLinkDialog(
@@ -38,11 +47,11 @@ fun ShareLinkDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Share Link") },
+        title = { Text(stringResource(Res.string.dialog_share_link_title)) },
         text = {
             Column {
                 Text(
-                    text = "Share this link with others to give them view access to your project.",
+                    text = stringResource(Res.string.dialog_share_link_body),
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -52,7 +61,7 @@ fun ShareLinkDialog(
                     readOnly = true,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Share URL") },
+                    label = { Text(stringResource(Res.string.label_share_url)) },
                 )
             }
         },
@@ -64,12 +73,17 @@ fun ShareLinkDialog(
                 },
             ) {
                 Icon(Icons.Default.ContentCopy, contentDescription = null)
-                Text(if (copied) " Copied!" else " Copy Link")
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    stringResource(
+                        if (copied) Res.string.message_link_copied else Res.string.action_copy_link,
+                    ),
+                )
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close")
+                Text(stringResource(Res.string.action_close))
             }
         },
     )

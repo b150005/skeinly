@@ -1057,6 +1057,356 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Public" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "公開" } }
       }
+    },
+    "title_project" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Project" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロジェクト" } }
+      }
+    },
+    "state_project_not_found" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Project not found" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロジェクトが見つかりません" } }
+      }
+    },
+    "action_share_link" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share link" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有リンク" } }
+      }
+    },
+    "action_share_with_user" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share with user" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ユーザーと共有" } }
+      }
+    },
+    "action_edit_project" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit project" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロジェクトを編集" } }
+      }
+    },
+    "label_pattern_info_section" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pattern Info" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターン情報" } }
+      }
+    },
+    "label_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Title" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "タイトル" } }
+      }
+    },
+    "label_total_rows_optional" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Total Rows (optional)" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "総段数（任意）" } }
+      }
+    },
+    "dialog_edit_project_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit Project" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロジェクトを編集" } }
+      }
+    },
+    "label_notes_section" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Notes" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メモ" } }
+      }
+    },
+    "action_add_note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add note" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メモを追加" } }
+      }
+    },
+    "state_no_notes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No notes yet" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メモはまだありません" } }
+      }
+    },
+    "label_of_rows" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "of %1$d rows" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "全 %1$d 行" } }
+      }
+    },
+    "label_rows_only" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "rows" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "行" } }
+      }
+    },
+    "action_delete_note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete note" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メモを削除" } }
+      }
+    },
+    "label_note_row_timestamp" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Row %1$d • %2$@" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$d 段目 • %2$@" } }
+      }
+    },
+    "label_progress_photo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Progress photo" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "進捗写真" } }
+      }
+    },
+    "action_reopen" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reopen" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "再開" } }
+      }
+    },
+    "action_reopen_project" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reopen Project" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロジェクトを再開" } }
+      }
+    },
+    "action_mark_complete" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mark Complete" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "完了にする" } }
+      }
+    },
+    "dialog_add_note_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add Note" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メモを追加" } }
+      }
+    },
+    "label_note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Note" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メモ" } }
+      }
+    },
+    "hint_note_example" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "e.g., Decreased stitch, changed color…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "例: 減目、色替え…" } }
+      }
+    },
+    "label_photo_attached" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Photo attached" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "写真を添付しました" } }
+      }
+    },
+    "action_remove_photo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Remove photo" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "写真を削除" } }
+      }
+    },
+    "action_add_photo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add Photo" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "写真を追加" } }
+      }
+    },
+    "state_uploading_photo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Uploading photo…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "写真をアップロード中…" } }
+      }
+    },
+    "state_uploading_image" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Uploading…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アップロード中…" } }
+      }
+    },
+    "action_add" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "追加" } }
+      }
+    },
+    "label_pattern_value" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pattern: %1$@" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターン: %1$@" } }
+      }
+    },
+    "action_view_structured_chart" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "View structured chart" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "構造化チャートを表示" } }
+      }
+    },
+    "action_edit_structured_chart" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit structured chart" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "構造化チャートを編集" } }
+      }
+    },
+    "action_create_structured_chart" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Create structured chart" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "構造化チャートを作成" } }
+      }
+    },
+    "label_yarn" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Yarn" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "糸" } }
+      }
+    },
+    "label_chart_images_section" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Chart Images" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "チャート画像" } }
+      }
+    },
+    "state_no_chart_images" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No chart images yet" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "チャート画像はまだありません" } }
+      }
+    },
+    "action_remove" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Remove" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "削除" } }
+      }
+    },
+    "dialog_remove_chart_image_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Remove Chart Image?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "チャート画像を削除しますか？" } }
+      }
+    },
+    "dialog_remove_chart_image_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Are you sure you want to remove this chart image?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このチャート画像を削除してもよろしいですか？" } }
+      }
+    },
+    "dialog_delete_note_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete Note?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メモを削除しますか？" } }
+      }
+    },
+    "dialog_delete_note_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Are you sure you want to delete this note?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このメモを削除してもよろしいですか？" } }
+      }
+    },
+    "action_copy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Copy" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コピー" } }
+      }
+    },
+    "dialog_share_link_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share Link" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有リンク" } }
+      }
+    },
+    "dialog_share_link_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share this link with others to give them view access to your project." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このリンクを共有すると、他の人がプロジェクトを閲覧できるようになります。" } }
+      }
+    },
+    "label_share_url" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share URL" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有URL" } }
+      }
+    },
+    "message_link_copied" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Copied!" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コピーしました！" } }
+      }
+    },
+    "action_copy_link" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Copy Link" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "リンクをコピー" } }
+      }
+    },
+    "message_shared_successfully" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shared successfully!" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有しました！" } }
+      }
+    },
+    "action_decrement_row" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Decrement row" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "段数を減らす" } }
+      }
+    },
+    "action_increment_row" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Increment row" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "段数を増やす" } }
+      }
     }
   },
   "version" : "1.0"

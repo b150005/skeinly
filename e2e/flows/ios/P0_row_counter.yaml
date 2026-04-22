@@ -40,15 +40,25 @@ tags:
 # tap in that screen. Multi-tap and decrement testing is covered by
 # iOS XCTest instrumentation tests (ProjectDetailUITests).
 #
-# Selector strategy: icon-only buttons use accessibilityLabel text matching
-# (e.g. "Increment row") rather than accessibilityIdentifier (id:) because
-# the label-based tap is more reliable for the first interaction.
-- tapOn: "Increment row"
+# Selector pivot (Phase 33.1.12): accessibilityIdentifier ("id:") is now
+# locale-independent. The previous accessibilityLabel text match ("Increment
+# row") would break under Japanese locale after i18n.
+- tapOn:
+    id: "incrementButton"
 
 # Verify counter shows 1 (text "1" matches the counter display;
 # no other single-digit "1" appears on this screen at this point)
 - assertVisible: "1"
-- assertVisible: "of 10 rows"
+# Row-total label text is i18n'd ("of 10 rows" / "全 10 行"); assert via testTag.
+- assertVisible:
+    id: "rowTotalLabel"
 
-# Status changes to In Progress when currentRow > 0 (domain rule)
+# Status changes to In Progress when currentRow > 0 (domain rule).
+# The iOS counter renders status via `StatusBadge(status:)` in
+# iosApp/iosApp/Screens/ProjectListScreen.swift (line ~329) — the struct is
+# declared inside ProjectListScreen.swift but reused by the ProjectDetail
+# counterSection (line ~194) via `StatusBadge(status: project.status)`. It
+# is still English-hardcoded, so "In Progress" works on English CI today.
+# When StatusBadge is i18n'd alongside the iOS ProjectList migration, pivot
+# to a testTag then.
 - assertVisible: "In Progress"

@@ -41,7 +41,13 @@ struct ProjectDetailScreen: View {
                 projectContent(project, state: state)
             }
         }
-        .navigationTitle(state.project?.title ?? "Project")
+        // `.navigationTitle` takes a `LocalizedStringKey`-inferred `String` when the
+        // argument is a bare literal, but when the argument is a ternary of `String?`
+        // like `project.title ?? "Project"`, overload resolution picks the
+        // plain-String path and skips localization. Wrap the fallback explicitly
+        // and drive navigationTitle through a computed binding so both branches
+        // localize correctly (literal-promotion table rule from Phase 33.1.6).
+        .navigationTitle(navigationTitleText(for: state))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarItems(state) }
         .sheet(isPresented: $showEditSheet) { editSheet(state.project) }
@@ -59,11 +65,20 @@ struct ProjectDetailScreen: View {
         .onChange(of: state.shareLink) { _, newLink in
             showShareLink = newLink != nil
         }
-        .alert("Error", isPresented: $showError) {
-            Button("OK") { viewModel.onEvent(event: ProjectDetailEventClearError.shared) }
+        .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
+            Button(LocalizedStringKey("action_ok")) { viewModel.onEvent(event: ProjectDetailEventClearError.shared) }
         } message: {
             Text(state.error ?? "")
         }
+    }
+
+    // Returns the navigation title as a localizable Text. `project.title` is
+    // user-authored free text (not localized); the fallback is i18n'd.
+    private func navigationTitleText(for state: ProjectDetailState) -> Text {
+        if let title = state.project?.title {
+            return Text(verbatim: title)
+        }
+        return Text(LocalizedStringKey("title_project"))
     }
 
     // MARK: - Toolbar
@@ -74,10 +89,11 @@ struct ProjectDetailScreen: View {
             Button { viewModel.onEvent(event: ProjectDetailEventShareProject.shared) } label: {
                 Image(systemName: "square.and.arrow.up")
             }
+            .accessibilityLabel(Text(LocalizedStringKey("action_share_link")))
             Button { prepareEdit(state.project) } label: {
                 Image(systemName: "pencil")
             }
-            .accessibilityLabel("Edit project")
+            .accessibilityLabel(Text(LocalizedStringKey("action_edit_project")))
         }
     }
 
@@ -109,7 +125,7 @@ struct ProjectDetailScreen: View {
 
             // Pattern info section
             if let pattern = state.pattern {
-                Section("Pattern Info") {
+                Section(LocalizedStringKey("label_pattern_info_section")) {
                     patternInfoSection(
                         pattern,
                         hasStructuredChart: state.hasStructuredChart,
@@ -126,13 +142,15 @@ struct ProjectDetailScreen: View {
             // Status action
             Section {
                 if project.status == .completed {
-                    Button("Reopen Project") {
+                    Button(LocalizedStringKey("action_reopen_project")) {
                         viewModel.onEvent(event: ProjectDetailEventReopenProject.shared)
                     }
+                    .accessibilityIdentifier("reopenProjectButton")
                 } else {
-                    Button("Mark Complete") {
+                    Button(LocalizedStringKey("action_mark_complete")) {
                         viewModel.onEvent(event: ProjectDetailEventCompleteProject.shared)
                     }
+                    .accessibilityIdentifier("markCompleteButton")
                 }
             }
 
@@ -144,7 +162,7 @@ struct ProjectDetailScreen: View {
             // Notes section
             Section {
                 HStack {
-                    Text("Notes")
+                    Text(LocalizedStringKey("label_notes_section"))
                         .font(.headline)
                     Spacer()
                     Button {
@@ -152,12 +170,14 @@ struct ProjectDetailScreen: View {
                     } label: {
                         Image(systemName: "plus.circle")
                     }
+                    .accessibilityLabel(Text(LocalizedStringKey("action_add_note")))
                 }
 
                 if notes.isEmpty {
-                    Text("No notes yet")
+                    Text(LocalizedStringKey("state_no_notes"))
                         .foregroundStyle(.secondary)
                         .font(.subheadline)
+                        .accessibilityIdentifier("noNotesLabel")
                 } else {
                     ForEach(notes, id: \.id) { note in
                         NoteRow(
@@ -169,7 +189,7 @@ struct ProjectDetailScreen: View {
                                     noteToDelete = note
                                     showDeleteNoteConfirmation = true
                                 } label: {
-                                    Label("Delete", systemImage: "trash")
+                                    Label(LocalizedStringKey("action_delete"), systemImage: "trash")
                                 }
                             }
                     }
@@ -199,13 +219,14 @@ struct ProjectDetailScreen: View {
                 .accessibilityIdentifier("rowCounter")
 
             if let total = project.totalRows?.intValue {
-                Text("of \(total) rows")
+                Text(String(format: NSLocalizedString("label_of_rows", comment: ""), total))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("rowTotalLabel")
 
                 ProgressView(value: Double(project.currentRow), total: Double(total))
             } else {
-                Text("rows")
+                Text(LocalizedStringKey("label_rows_only"))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -219,7 +240,7 @@ struct ProjectDetailScreen: View {
                 }
                 .disabled(project.currentRow <= 0 || project.status == .completed)
                 .accessibilityIdentifier("decrementButton")
-                .accessibilityLabel("Decrement row")
+                .accessibilityLabel(Text(LocalizedStringKey("action_decrement_row")))
 
                 Button {
                     viewModel.onEvent(event: ProjectDetailEventIncrementRow.shared)
@@ -229,7 +250,7 @@ struct ProjectDetailScreen: View {
                 }
                 .disabled(project.status == .completed)
                 .accessibilityIdentifier("incrementButton")
-                .accessibilityLabel("Increment row")
+                .accessibilityLabel(Text(LocalizedStringKey("action_increment_row")))
             }
         }
         .frame(maxWidth: .infinity)
@@ -245,11 +266,11 @@ struct ProjectDetailScreen: View {
         onChartViewerTap: @escaping () -> Void,
         onChartEditorTap: @escaping () -> Void
     ) -> some View {
-        LabeledContent("Title", value: pattern.title)
+        LabeledContent(LocalizedStringKey("label_title"), value: pattern.title)
 
         if hasStructuredChart {
             Button(action: onChartViewerTap) {
-                Label("View structured chart", systemImage: "square.grid.3x3")
+                Label(LocalizedStringKey("action_view_structured_chart"), systemImage: "square.grid.3x3")
                     .font(.caption)
             }
             .accessibilityIdentifier("openChartViewerLink")
@@ -257,7 +278,9 @@ struct ProjectDetailScreen: View {
 
         Button(action: onChartEditorTap) {
             Label(
-                hasStructuredChart ? "Edit structured chart" : "Create structured chart",
+                hasStructuredChart
+                    ? LocalizedStringKey("action_edit_structured_chart")
+                    : LocalizedStringKey("action_create_structured_chart"),
                 systemImage: "square.and.pencil"
             )
             .font(.caption)
@@ -265,21 +288,21 @@ struct ProjectDetailScreen: View {
         .accessibilityIdentifier("openChartEditorLink")
 
         if let difficulty = pattern.difficulty {
-            LabeledContent("Difficulty") {
+            LabeledContent(LocalizedStringKey("label_difficulty")) {
                 DifficultyBadge(difficulty: difficulty)
             }
         }
 
         if let gauge = pattern.gauge, !gauge.isEmpty {
-            LabeledContent("Gauge", value: gauge)
+            LabeledContent(LocalizedStringKey("label_gauge"), value: gauge)
         }
 
         if let yarnInfo = pattern.yarnInfo, !yarnInfo.isEmpty {
-            LabeledContent("Yarn", value: yarnInfo)
+            LabeledContent(LocalizedStringKey("label_yarn"), value: yarnInfo)
         }
 
         if let needleSize = pattern.needleSize, !needleSize.isEmpty {
-            LabeledContent("Needle Size", value: needleSize)
+            LabeledContent(LocalizedStringKey("label_needle_size"), value: needleSize)
         }
     }
 
@@ -291,7 +314,7 @@ struct ProjectDetailScreen: View {
         let storagePaths = state.chartImagePaths
 
         HStack {
-            Text("Chart Images")
+            Text(LocalizedStringKey("label_chart_images_section"))
                 .font(.headline)
             Spacer()
             PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
@@ -303,13 +326,13 @@ struct ProjectDetailScreen: View {
             HStack {
                 ProgressView()
                     .padding(.trailing, 8)
-                Text("Uploading...")
+                Text(LocalizedStringKey("state_uploading_image"))
                     .foregroundStyle(.secondary)
             }
         }
 
         if signedUrls.isEmpty && !state.isUploadingImage {
-            Text("No chart images yet")
+            Text(LocalizedStringKey("state_no_chart_images"))
                 .foregroundStyle(.secondary)
                 .font(.subheadline)
         } else {
@@ -342,7 +365,7 @@ struct ProjectDetailScreen: View {
                                     chartImageToDelete = storagePaths[index]
                                     showDeleteChartImageConfirmation = true
                                 } label: {
-                                    Label("Remove", systemImage: "trash")
+                                    Label(LocalizedStringKey("action_remove"), systemImage: "trash")
                                 }
                             }
                         }
@@ -366,18 +389,18 @@ struct ProjectDetailScreen: View {
     private func editSheet(_ project: Project?) -> some View {
         NavigationStack {
             Form {
-                TextField("Title", text: $editTitle)
-                TextField("Total Rows (optional)", text: $editTotalRows)
+                TextField(LocalizedStringKey("label_title"), text: $editTitle)
+                TextField(LocalizedStringKey("label_total_rows_optional"), text: $editTotalRows)
                     .keyboardType(.numberPad)
             }
-            .navigationTitle("Edit Project")
+            .navigationTitle(LocalizedStringKey("dialog_edit_project_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { showEditSheet = false }
+                    Button(LocalizedStringKey("action_cancel")) { showEditSheet = false }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(LocalizedStringKey("action_save")) {
                         let totalRows = Int32(editTotalRows).map { Int($0) }
                         viewModel.onEvent(event: ProjectDetailEventEditProject(
                             title: editTitle,
@@ -400,7 +423,7 @@ struct ProjectDetailScreen: View {
     private var addNoteSheet: some View {
         NavigationStack {
             Form {
-                TextField("Note", text: $newNote, axis: .vertical)
+                TextField(LocalizedStringKey("label_note"), text: $newNote, axis: .vertical)
                     .lineLimit(3...6)
 
                 Section {
@@ -412,7 +435,7 @@ struct ProjectDetailScreen: View {
                                 .frame(width: 60, height: 60)
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
-                            Text("Photo attached")
+                            Text(LocalizedStringKey("label_photo_attached"))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
 
@@ -425,19 +448,20 @@ struct ProjectDetailScreen: View {
                                 Image(systemName: "xmark.circle.fill")
                                     .foregroundStyle(.secondary)
                             }
+                            .accessibilityLabel(Text(LocalizedStringKey("action_remove_photo")))
                         }
                     } else {
                         PhotosPicker(selection: $notePhotoItem, matching: .images) {
-                            Label("Add Photo", systemImage: "photo.on.rectangle.angled")
+                            Label(LocalizedStringKey("action_add_photo"), systemImage: "photo.on.rectangle.angled")
                         }
                     }
                 }
             }
-            .navigationTitle("Add Note")
+            .navigationTitle(LocalizedStringKey("dialog_add_note_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(LocalizedStringKey("action_cancel")) {
                         newNote = ""
                         notePhotoItem = nil
                         notePhotoData = nil
@@ -445,7 +469,7 @@ struct ProjectDetailScreen: View {
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") {
+                    Button(LocalizedStringKey("action_add")) {
                         if let photoData = notePhotoData {
                             let compressed = compressImageToJpeg(data: photoData, maxSize: 2 * 1024 * 1024)
                             let kotlinData = dataToKotlinByteArray(compressed)
@@ -511,7 +535,13 @@ private struct NoteRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(note.note)
                     .font(.body)
-                Text("Row \(note.rowNumber) \u{2022} \(formattedDate)")
+                Text(
+                    String(
+                        format: NSLocalizedString("label_note_row_timestamp", comment: ""),
+                        note.rowNumber,
+                        formattedDate
+                    )
+                )
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -557,14 +587,25 @@ private extension View {
         isPresented: Binding<Bool>,
         viewModel: ProjectDetailViewModel
     ) -> some View {
-        self.alert("Share Link", isPresented: isPresented) {
-            Button("Copy") {
+        // `.alert(_:isPresented:actions:message:)` takes a `LocalizedStringKey`
+        // overload, but bare `String` literals also resolve via `StringProtocol`.
+        // Wrap explicitly per the 33.1.6 literal-promotion table to guarantee
+        // localization.
+        self.alert(LocalizedStringKey("dialog_share_link_title"), isPresented: isPresented) {
+            // Platform-idiom divergence (documented per the 33.1.9 action_fork /
+            // action_fork_pattern precedent): iOS uses `action_copy` ("Copy") on
+            // the compact .alert button because the alert presents the URL as the
+            // message body; Compose ShareLinkDialog.kt uses `action_copy_link`
+            // ("Copy Link") because the URL is embedded in an OutlinedTextField
+            // above the button, so the verb needs to be clearer about what is
+            // being copied. Both keys exist in all 5 i18n sources.
+            Button(LocalizedStringKey("action_copy")) {
                 if let link = state.shareLink, let token = link.shareToken {
                     UIPasteboard.general.string = "knitnote://share/\(token)"
                 }
                 viewModel.onEvent(event: ProjectDetailEventDismissShareDialog.shared)
             }
-            Button("Close", role: .cancel) {
+            Button(LocalizedStringKey("action_close"), role: .cancel) {
                 viewModel.onEvent(event: ProjectDetailEventDismissShareDialog.shared)
             }
         } message: {
@@ -579,13 +620,13 @@ private extension View {
         chartImageToDelete: String?,
         viewModel: ProjectDetailViewModel
     ) -> some View {
-        self.alert("Remove Chart Image?", isPresented: isPresented) {
-            Button("Remove", role: .destructive) {
+        self.alert(LocalizedStringKey("dialog_remove_chart_image_title"), isPresented: isPresented) {
+            Button(LocalizedStringKey("action_remove"), role: .destructive) {
                 if let path = chartImageToDelete {
                     viewModel.onEvent(event: ProjectDetailEventDeleteChartImage(imagePath: path))
                 }
             }
-            Button("Cancel", role: .cancel) {}
+            Button(LocalizedStringKey("action_cancel"), role: .cancel) {}
         }
     }
 
@@ -609,13 +650,13 @@ private extension View {
         noteToDelete: Shared.Progress?,
         viewModel: ProjectDetailViewModel
     ) -> some View {
-        self.alert("Delete Note?", isPresented: isPresented) {
-            Button("Delete", role: .destructive) {
+        self.alert(LocalizedStringKey("dialog_delete_note_title"), isPresented: isPresented) {
+            Button(LocalizedStringKey("action_delete"), role: .destructive) {
                 if let note = noteToDelete {
                     viewModel.onEvent(event: ProjectDetailEventDeleteNote(progressId: note.id))
                 }
             }
-            Button("Cancel", role: .cancel) {}
+            Button(LocalizedStringKey("action_cancel"), role: .cancel) {}
         }
     }
 }

@@ -196,6 +196,69 @@
     <string name="label_visibility_shared">Shared</string>
     <string name="label_visibility_public">Public</string>
 
+    <!-- Project detail screen. Row-counter, pattern info, progress notes, and chart
+         images live here. `label_yarn` is a short form for iOS LabeledContent rows
+         (Android uses the parametric `label_yarn_value` for inline "Yarn: X"
+         rendering); similarly `label_pattern_value` is Android's parametric
+         inline title while iOS uses separate `LabeledContent("Title", ...)`.
+         `action_reopen` vs `action_reopen_project`: Compose uses the short form
+         inside a small icon+text button; iOS uses the full phrase on a plain
+         List Button — platform-idiom divergence per the 33.1.9 action_fork /
+         action_fork_pattern precedent. `dialog_*_title` keys are reused across
+         Compose AlertDialog and iOS NavigationStack sheet navigationTitle +
+         .alert titles per the 33.1.8 settings precedent — the copy intent is
+         "title for the surface", container type is a platform detail. -->
+    <string name="title_project">Project</string>
+    <string name="state_project_not_found">Project not found</string>
+    <string name="action_share_link">Share link</string>
+    <string name="action_share_with_user">Share with user</string>
+    <string name="action_edit_project">Edit project</string>
+    <string name="label_pattern_info_section">Pattern Info</string>
+    <string name="label_title">Title</string>
+    <string name="label_total_rows_optional">Total Rows (optional)</string>
+    <string name="dialog_edit_project_title">Edit Project</string>
+    <string name="label_notes_section">Notes</string>
+    <string name="action_add_note">Add note</string>
+    <string name="state_no_notes">No notes yet</string>
+    <string name="label_of_rows">of %1$d rows</string>
+    <string name="label_rows_only">rows</string>
+    <string name="action_delete_note">Delete note</string>
+    <string name="label_note_row_timestamp">Row %1$d \u2022 %2$s</string>
+    <string name="label_progress_photo">Progress photo</string>
+    <string name="action_reopen">Reopen</string>
+    <string name="action_reopen_project">Reopen Project</string>
+    <string name="action_mark_complete">Mark Complete</string>
+    <string name="dialog_add_note_title">Add Note</string>
+    <string name="label_note">Note</string>
+    <string name="hint_note_example">e.g., Decreased stitch, changed color\u2026</string>
+    <string name="label_photo_attached">Photo attached</string>
+    <string name="action_remove_photo">Remove photo</string>
+    <string name="action_add_photo">Add Photo</string>
+    <string name="state_uploading_photo">Uploading photo\u2026</string>
+    <string name="state_uploading_image">Uploading\u2026</string>
+    <string name="action_add">Add</string>
+    <string name="label_pattern_value">Pattern: %1$s</string>
+    <string name="action_view_structured_chart">View structured chart</string>
+    <string name="action_edit_structured_chart">Edit structured chart</string>
+    <string name="action_create_structured_chart">Create structured chart</string>
+    <string name="label_yarn">Yarn</string>
+    <string name="label_chart_images_section">Chart Images</string>
+    <string name="state_no_chart_images">No chart images yet</string>
+    <string name="action_remove">Remove</string>
+    <string name="dialog_remove_chart_image_title">Remove Chart Image?</string>
+    <string name="dialog_remove_chart_image_body">Are you sure you want to remove this chart image?</string>
+    <string name="dialog_delete_note_title">Delete Note?</string>
+    <string name="dialog_delete_note_body">Are you sure you want to delete this note?</string>
+    <string name="action_copy">Copy</string>
+    <string name="dialog_share_link_title">Share Link</string>
+    <string name="dialog_share_link_body">Share this link with others to give them view access to your project.</string>
+    <string name="label_share_url">Share URL</string>
+    <string name="message_link_copied">Copied!</string>
+    <string name="action_copy_link">Copy Link</string>
+    <string name="message_shared_successfully">Shared successfully!</string>
+    <string name="action_decrement_row">Decrement row</string>
+    <string name="action_increment_row">Increment row</string>
+
     <!-- Activity feed screen -->
     <string name="title_activity_feed">Activity Feed</string>
     <string name="state_no_activity">No activity yet</string>

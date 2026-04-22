@@ -69,13 +69,61 @@ import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.Progress
 import io.github.b150005.knitnote.domain.model.ProjectStatus
 import io.github.b150005.knitnote.domain.repository.AuthRepository
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_add
+import io.github.b150005.knitnote.generated.resources.action_add_note
+import io.github.b150005.knitnote.generated.resources.action_add_photo
+import io.github.b150005.knitnote.generated.resources.action_back
+import io.github.b150005.knitnote.generated.resources.action_cancel
+import io.github.b150005.knitnote.generated.resources.action_create_structured_chart
+import io.github.b150005.knitnote.generated.resources.action_delete
+import io.github.b150005.knitnote.generated.resources.action_delete_note
+import io.github.b150005.knitnote.generated.resources.action_edit_project
+import io.github.b150005.knitnote.generated.resources.action_edit_structured_chart
+import io.github.b150005.knitnote.generated.resources.action_mark_complete
+import io.github.b150005.knitnote.generated.resources.action_remove
+import io.github.b150005.knitnote.generated.resources.action_remove_photo
+import io.github.b150005.knitnote.generated.resources.action_reopen
+import io.github.b150005.knitnote.generated.resources.action_save
+import io.github.b150005.knitnote.generated.resources.action_share_link
+import io.github.b150005.knitnote.generated.resources.action_share_with_user
+import io.github.b150005.knitnote.generated.resources.action_view_structured_chart
+import io.github.b150005.knitnote.generated.resources.dialog_add_note_title
+import io.github.b150005.knitnote.generated.resources.dialog_delete_note_body
+import io.github.b150005.knitnote.generated.resources.dialog_delete_note_title
+import io.github.b150005.knitnote.generated.resources.dialog_edit_project_title
+import io.github.b150005.knitnote.generated.resources.dialog_remove_chart_image_body
+import io.github.b150005.knitnote.generated.resources.dialog_remove_chart_image_title
+import io.github.b150005.knitnote.generated.resources.hint_note_example
+import io.github.b150005.knitnote.generated.resources.label_gauge_value
+import io.github.b150005.knitnote.generated.resources.label_needle_value
+import io.github.b150005.knitnote.generated.resources.label_note
+import io.github.b150005.knitnote.generated.resources.label_note_row_timestamp
+import io.github.b150005.knitnote.generated.resources.label_notes_section
+import io.github.b150005.knitnote.generated.resources.label_of_rows
+import io.github.b150005.knitnote.generated.resources.label_pattern_value
+import io.github.b150005.knitnote.generated.resources.label_photo_attached
+import io.github.b150005.knitnote.generated.resources.label_progress_photo
+import io.github.b150005.knitnote.generated.resources.label_rows_only
+import io.github.b150005.knitnote.generated.resources.label_status_completed
+import io.github.b150005.knitnote.generated.resources.label_status_in_progress
+import io.github.b150005.knitnote.generated.resources.label_status_not_started
+import io.github.b150005.knitnote.generated.resources.label_title
+import io.github.b150005.knitnote.generated.resources.label_total_rows_optional
+import io.github.b150005.knitnote.generated.resources.label_yarn_value
+import io.github.b150005.knitnote.generated.resources.message_shared_successfully
+import io.github.b150005.knitnote.generated.resources.state_no_notes
+import io.github.b150005.knitnote.generated.resources.state_project_not_found
+import io.github.b150005.knitnote.generated.resources.state_uploading_photo
 import io.github.b150005.knitnote.ui.chartviewer.ChartImageGrid
 import io.github.b150005.knitnote.ui.chartviewer.ChartImageViewer
 import io.github.b150005.knitnote.ui.comments.CommentSection
+import io.github.b150005.knitnote.ui.components.labelKey
 import io.github.b150005.knitnote.ui.imagepicker.ImagePickerResult
 import io.github.b150005.knitnote.ui.imagepicker.rememberImagePickerLauncher
 import io.github.b150005.knitnote.ui.util.formatShort
 import kotlinx.coroutines.flow.collect
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -163,25 +211,28 @@ fun ProjectDetailScreen(
         )
     }
 
+    val sharedSuccessMessage = stringResource(Res.string.message_shared_successfully)
     LaunchedEffect(Unit) {
         viewModel.directShareSuccess.collect {
-            snackbarHostState.showSnackbar("Shared successfully!")
+            snackbarHostState.showSnackbar(sharedSuccessMessage)
         }
     }
 
     chartImageToDelete?.let { imagePath ->
         AlertDialog(
             onDismissRequest = { chartImageToDelete = null },
-            title = { Text("Remove Image") },
-            text = { Text("Are you sure you want to remove this chart image?") },
+            title = { Text(stringResource(Res.string.dialog_remove_chart_image_title)) },
+            text = { Text(stringResource(Res.string.dialog_remove_chart_image_body)) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.onEvent(ProjectDetailEvent.DeleteChartImage(imagePath))
                     chartImageToDelete = null
-                }) { Text("Remove") }
+                }) { Text(stringResource(Res.string.action_remove)) }
             },
             dismissButton = {
-                TextButton(onClick = { chartImageToDelete = null }) { Text("Cancel") }
+                TextButton(onClick = { chartImageToDelete = null }) {
+                    Text(stringResource(Res.string.action_cancel))
+                }
             },
         )
     }
@@ -189,16 +240,18 @@ fun ProjectDetailScreen(
     noteToDelete?.let { progressId ->
         AlertDialog(
             onDismissRequest = { noteToDelete = null },
-            title = { Text("Delete Note") },
-            text = { Text("Are you sure you want to delete this note?") },
+            title = { Text(stringResource(Res.string.dialog_delete_note_title)) },
+            text = { Text(stringResource(Res.string.dialog_delete_note_body)) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.onEvent(ProjectDetailEvent.DeleteNote(progressId))
                     noteToDelete = null
-                }) { Text("Delete") }
+                }) { Text(stringResource(Res.string.action_delete)) }
             },
             dismissButton = {
-                TextButton(onClick = { noteToDelete = null }) { Text("Cancel") }
+                TextButton(onClick = { noteToDelete = null }) {
+                    Text(stringResource(Res.string.action_cancel))
+                }
             },
         )
     }
@@ -209,7 +262,10 @@ fun ProjectDetailScreen(
                 title = { Text(state.project?.title ?: "") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(Res.string.action_back),
+                        )
                     }
                 },
                 actions = {
@@ -217,15 +273,24 @@ fun ProjectDetailScreen(
                         IconButton(
                             onClick = { viewModel.onEvent(ProjectDetailEvent.ShareProject) },
                         ) {
-                            Icon(Icons.Default.Share, contentDescription = "Share link")
+                            Icon(
+                                Icons.Default.Share,
+                                contentDescription = stringResource(Res.string.action_share_link),
+                            )
                         }
                         IconButton(
                             onClick = { showUserPickerDialog = true },
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "Share with user")
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = stringResource(Res.string.action_share_with_user),
+                            )
                         }
                         IconButton(onClick = { showEditDialog = true }) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit project")
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = stringResource(Res.string.action_edit_project),
+                            )
                         }
                     }
                 },
@@ -242,7 +307,7 @@ fun ProjectDetailScreen(
                 }
                 state.project == null -> {
                     Text(
-                        text = "Project not found",
+                        text = stringResource(Res.string.state_project_not_found),
                         modifier = Modifier.align(Alignment.Center),
                         style = MaterialTheme.typography.bodyLarge,
                     )
@@ -257,11 +322,17 @@ fun ProjectDetailScreen(
                         item {
                             CounterSection(
                                 statusText =
-                                    when (project.status) {
-                                        ProjectStatus.NOT_STARTED -> "Not Started"
-                                        ProjectStatus.IN_PROGRESS -> "In Progress"
-                                        ProjectStatus.COMPLETED -> "Completed!"
-                                    },
+                                    stringResource(
+                                        when (project.status) {
+                                            ProjectStatus.NOT_STARTED -> Res.string.label_status_not_started
+                                            ProjectStatus.IN_PROGRESS -> Res.string.label_status_in_progress
+                                            // Shares label_status_completed with ProjectList card status chip.
+                                            // The Phase-1 pre-i18n wording used "Completed!" with an
+                                            // exclamation here for celebration; standardized on the
+                                            // plain form during i18n rationalization.
+                                            ProjectStatus.COMPLETED -> Res.string.label_status_completed
+                                        },
+                                    ),
                                 statusColor =
                                     when (project.status) {
                                         ProjectStatus.COMPLETED -> MaterialTheme.colorScheme.tertiary
@@ -344,11 +415,14 @@ fun ProjectDetailScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    text = "Notes",
+                                    text = stringResource(Res.string.label_notes_section),
                                     style = MaterialTheme.typography.titleMedium,
                                 )
                                 IconButton(onClick = { showAddNoteDialog = true }) {
-                                    Icon(Icons.Default.Add, contentDescription = "Add note")
+                                    Icon(
+                                        Icons.Default.Add,
+                                        contentDescription = stringResource(Res.string.action_add_note),
+                                    )
                                 }
                             }
                         }
@@ -357,8 +431,11 @@ fun ProjectDetailScreen(
                         if (progressNotes.isEmpty()) {
                             item {
                                 Text(
-                                    text = "No notes yet",
-                                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                                    text = stringResource(Res.string.state_no_notes),
+                                    modifier =
+                                        Modifier
+                                            .padding(horizontal = 24.dp, vertical = 16.dp)
+                                            .testTag("noNotesLabel"),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -441,6 +518,9 @@ private fun CounterSection(
             text = statusText,
             style = MaterialTheme.typography.labelLarge,
             color = statusColor,
+            // testTag enables locale-independent E2E assertion; the rendered
+            // text is still i18n'd. Maestro flows use `id:` for presence only.
+            modifier = Modifier.testTag("projectStatusLabel"),
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -455,9 +535,10 @@ private fun CounterSection(
 
         if (totalRows != null) {
             Text(
-                text = "of $totalRows rows",
+                text = stringResource(Res.string.label_of_rows, totalRows),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.testTag("rowTotalLabel"),
             )
             Spacer(modifier = Modifier.height(16.dp))
             LinearProgressIndicator(
@@ -475,7 +556,7 @@ private fun CounterSection(
             )
         } else {
             Text(
-                text = "rows",
+                text = stringResource(Res.string.label_rows_only),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -544,7 +625,7 @@ private fun SwipeToDismissNoteItem(
             ) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = "Delete note",
+                    contentDescription = stringResource(Res.string.action_delete_note),
                     tint = MaterialTheme.colorScheme.onErrorContainer,
                 )
             }
@@ -572,14 +653,14 @@ private fun NoteItem(
             Text(text = note.note)
         },
         supportingContent = {
-            Text(text = "Row ${note.rowNumber} - $timestamp")
+            Text(text = stringResource(Res.string.label_note_row_timestamp, note.rowNumber, timestamp))
         },
         trailingContent =
             if (photoSignedUrl != null) {
                 {
                     AsyncImage(
                         model = photoSignedUrl,
-                        contentDescription = "Progress photo",
+                        contentDescription = stringResource(Res.string.label_progress_photo),
                         modifier =
                             Modifier
                                 .size(48.dp)
@@ -616,7 +697,7 @@ private fun StatusToggleButton(
                         modifier = Modifier.size(18.dp),
                     )
                     Spacer(modifier = Modifier.size(8.dp))
-                    Text("Reopen")
+                    Text(stringResource(Res.string.action_reopen))
                 }
             }
             else -> {
@@ -627,7 +708,7 @@ private fun StatusToggleButton(
                         modifier = Modifier.size(18.dp),
                     )
                     Spacer(modifier = Modifier.size(8.dp))
-                    Text("Mark Complete")
+                    Text(stringResource(Res.string.action_mark_complete))
                 }
             }
         }
@@ -649,14 +730,14 @@ private fun AddNoteDialog(
 
     AlertDialog(
         onDismissRequest = { if (!isUploading) onDismiss() },
-        title = { Text("Add Note") },
+        title = { Text(stringResource(Res.string.dialog_add_note_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = noteText,
                     onValueChange = { noteText = it },
-                    label = { Text("Note") },
-                    placeholder = { Text("e.g., Decreased stitch, changed color...") },
+                    label = { Text(stringResource(Res.string.label_note)) },
+                    placeholder = { Text(stringResource(Res.string.hint_note_example)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = false,
                     maxLines = 3,
@@ -674,7 +755,7 @@ private fun AddNoteDialog(
                             modifier = Modifier.size(16.dp),
                         )
                         Text(
-                            text = "Photo attached",
+                            text = stringResource(Res.string.label_photo_attached),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                         )
@@ -685,7 +766,7 @@ private fun AddNoteDialog(
                         ) {
                             Icon(
                                 Icons.Default.Close,
-                                contentDescription = "Remove photo",
+                                contentDescription = stringResource(Res.string.action_remove_photo),
                                 modifier = Modifier.size(16.dp),
                             )
                         }
@@ -701,7 +782,7 @@ private fun AddNoteDialog(
                             modifier = Modifier.size(16.dp),
                         )
                         Spacer(modifier = Modifier.size(4.dp))
-                        Text("Add Photo")
+                        Text(stringResource(Res.string.action_add_photo))
                     }
                 }
 
@@ -712,7 +793,7 @@ private fun AddNoteDialog(
                     ) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp))
                         Text(
-                            text = "Uploading photo...",
+                            text = stringResource(Res.string.state_uploading_photo),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
@@ -726,7 +807,7 @@ private fun AddNoteDialog(
                 },
                 enabled = noteText.isNotBlank() && !isUploading,
             ) {
-                Text("Add")
+                Text(stringResource(Res.string.action_add))
             }
         },
         dismissButton = {
@@ -734,7 +815,7 @@ private fun AddNoteDialog(
                 onClick = onDismiss,
                 enabled = !isUploading,
             ) {
-                Text("Cancel")
+                Text(stringResource(Res.string.action_cancel))
             }
         },
     )
@@ -754,20 +835,20 @@ private fun EditProjectDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit Project") },
+        title = { Text(stringResource(Res.string.dialog_edit_project_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Title") },
+                    label = { Text(stringResource(Res.string.label_title)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = totalRowsText,
                     onValueChange = { totalRowsText = it.filter { c -> c.isDigit() } },
-                    label = { Text("Total Rows (optional)") },
+                    label = { Text(stringResource(Res.string.label_total_rows_optional)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                 )
@@ -781,12 +862,12 @@ private fun EditProjectDialog(
                 },
                 enabled = title.isNotBlank(),
             ) {
-                Text("Save")
+                Text(stringResource(Res.string.action_save))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(Res.string.action_cancel))
             }
         },
     )
@@ -804,12 +885,12 @@ private fun PatternInfoSection(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            text = "Pattern: ${pattern.title}",
+            text = stringResource(Res.string.label_pattern_value, pattern.title),
             style = MaterialTheme.typography.titleMedium,
         )
         if (hasStructuredChart) {
             Text(
-                text = "View structured chart",
+                text = stringResource(Res.string.action_view_structured_chart),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier =
@@ -819,7 +900,14 @@ private fun PatternInfoSection(
             )
         }
         Text(
-            text = if (hasStructuredChart) "Edit structured chart" else "Create structured chart",
+            text =
+                stringResource(
+                    if (hasStructuredChart) {
+                        Res.string.action_edit_structured_chart
+                    } else {
+                        Res.string.action_create_structured_chart
+                    },
+                ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.primary,
             modifier =
@@ -829,28 +917,28 @@ private fun PatternInfoSection(
         )
         pattern.difficulty?.let { difficulty ->
             Text(
-                text = difficulty.name.lowercase().replaceFirstChar { it.uppercase() },
+                text = stringResource(difficulty.labelKey),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
             )
         }
         pattern.gauge?.let { gauge ->
             Text(
-                text = "Gauge: $gauge",
+                text = stringResource(Res.string.label_gauge_value, gauge),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         pattern.yarnInfo?.let { yarnInfo ->
             Text(
-                text = "Yarn: $yarnInfo",
+                text = stringResource(Res.string.label_yarn_value, yarnInfo),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         pattern.needleSize?.let { needleSize ->
             Text(
-                text = "Needle: $needleSize",
+                text = stringResource(Res.string.label_needle_value, needleSize),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
