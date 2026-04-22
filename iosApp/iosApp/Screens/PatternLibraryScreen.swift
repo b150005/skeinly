@@ -21,23 +21,24 @@ struct PatternLibraryScreen: View {
     var body: some View {
         let state = holder.state
         let hasActiveFilter = !state.searchQuery.isEmpty || state.difficultyFilter != nil
+        let pendingDeleteName = state.patterns.first(where: { $0.id == patternToDelete })?.title ?? ""
 
         Group {
             if state.isLoading && state.patterns.isEmpty {
                 ProgressView()
             } else if state.patterns.isEmpty && hasActiveFilter {
                 ContentUnavailableView(
-                    "No Matching Patterns",
+                    LocalizedStringKey("state_no_matching_patterns"),
                     systemImage: "magnifyingglass",
-                    description: Text("Try adjusting your search or filters.")
+                    description: Text(LocalizedStringKey("state_no_matching_patterns_body"))
                 )
             } else if state.patterns.isEmpty {
                 ContentUnavailableView {
-                    Label("No Patterns Yet", systemImage: "heart.text.square")
+                    Label(LocalizedStringKey("state_no_patterns"), systemImage: "heart.text.square")
                 } description: {
-                    Text("Build your pattern library with gauge, yarn, and needle info.")
+                    Text(LocalizedStringKey("state_no_patterns_body"))
                 } actions: {
-                    Button("Create Pattern") {
+                    Button(LocalizedStringKey("action_create_pattern")) {
                         path.append(Route.patternEdit(patternId: nil))
                     }
                     .buttonStyle(.borderedProminent)
@@ -62,14 +63,14 @@ struct PatternLibraryScreen: View {
                                     patternToDelete = pattern.id
                                     showDeleteConfirmation = true
                                 } label: {
-                                    Label("Delete", systemImage: "trash")
+                                    Label(LocalizedStringKey("action_delete"), systemImage: "trash")
                                 }
                             }
                     }
                 }
             }
         }
-        .searchable(text: $searchText, prompt: "Search patterns...")
+        .searchable(text: $searchText, prompt: Text(LocalizedStringKey("hint_search_patterns")))
         .onChange(of: searchText) { _, newValue in
             viewModel.onEvent(event: PatternLibraryEventUpdateSearchQuery(query: newValue))
         }
@@ -81,35 +82,53 @@ struct PatternLibraryScreen: View {
                 searchText = newQuery
             }
         }
-        .navigationTitle("Pattern Library")
+        .navigationTitle(LocalizedStringKey("title_pattern_library"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     path.append(Route.patternEdit(patternId: nil))
                 } label: {
                     Image(systemName: "plus")
+                        .accessibilityLabel(Text(LocalizedStringKey("action_new_pattern")))
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 sortMenu(currentOrder: state.sortOrder)
             }
         }
-        .alert("Delete Pattern?", isPresented: $showDeleteConfirmation) {
-            Button("Delete", role: .destructive) {
+        .alert(
+            LocalizedStringKey("dialog_delete_pattern_title"),
+            isPresented: $showDeleteConfirmation
+        ) {
+            Button(LocalizedStringKey("action_delete"), role: .destructive) {
                 if let id = patternToDelete {
                     viewModel.onEvent(event: PatternLibraryEventDeletePattern(id: id))
                 }
             }
-            Button("Cancel", role: .cancel) {}
+            Button(LocalizedStringKey("action_cancel"), role: .cancel) {}
         } message: {
-            Text("This action cannot be undone.")
+            // Parametric body — iOS `.alert` `message:` closure sits inside the
+            // SwiftUI literal-promotion-table "needs explicit LocalizedStringKey"
+            // column, so `Text(LocalizedStringKey(...))` can't accept format
+            // args. Resolve through NSLocalizedString + String(format:) to match
+            // the precedent established in Phase 33.1.7 for parametric activity
+            // strings.
+            Text(String(
+                format: NSLocalizedString("dialog_delete_pattern_body", comment: ""),
+                pendingDeleteName
+            ))
         }
         .onChange(of: state.error) { _, newError in
             showError = newError != nil
         }
-        .alert("Error", isPresented: $showError) {
-            Button("OK") { viewModel.onEvent(event: PatternLibraryEventClearError.shared) }
+        .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
+            Button(LocalizedStringKey("action_ok")) {
+                viewModel.onEvent(event: PatternLibraryEventClearError.shared)
+            }
         } message: {
+            // Raw ViewModel error string — localization of these messages is
+            // tracked in the Tech Debt Backlog "ViewModel error-message
+            // localization" item.
             Text(state.error ?? "")
         }
     }
@@ -120,15 +139,22 @@ struct PatternLibraryScreen: View {
             Button {
                 viewModel.onEvent(event: PatternLibraryEventUpdateSortOrder(order: .recent))
             } label: {
-                Label("Recent", systemImage: currentOrder == .recent ? "checkmark" : "")
+                Label(
+                    LocalizedStringKey("label_sort_recent"),
+                    systemImage: currentOrder == .recent ? "checkmark" : ""
+                )
             }
             Button {
                 viewModel.onEvent(event: PatternLibraryEventUpdateSortOrder(order: .alphabetical))
             } label: {
-                Label("Alphabetical", systemImage: currentOrder == .alphabetical ? "checkmark" : "")
+                Label(
+                    LocalizedStringKey("label_sort_alphabetical_detail"),
+                    systemImage: currentOrder == .alphabetical ? "checkmark" : ""
+                )
             }
         } label: {
             Image(systemName: "arrow.up.arrow.down")
+                .accessibilityLabel(Text(LocalizedStringKey("action_sort")))
         }
     }
 }
@@ -144,25 +170,29 @@ private struct DifficultyFilterSection: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     DifficultyFilterChip(
-                        title: "All",
+                        titleKey: LocalizedStringKey("label_difficulty_all"),
                         isSelected: difficultyFilter == nil,
                         action: { onDifficultyFilterChange(nil) }
                     )
+                    .accessibilityIdentifier("difficultyAllChip")
                     DifficultyFilterChip(
-                        title: "Beginner",
+                        titleKey: LocalizedStringKey("label_difficulty_beginner"),
                         isSelected: difficultyFilter == .beginner,
                         action: { onDifficultyFilterChange(difficultyFilter == .beginner ? nil : .beginner) }
                     )
+                    .accessibilityIdentifier("difficultyBeginnerChip")
                     DifficultyFilterChip(
-                        title: "Intermediate",
+                        titleKey: LocalizedStringKey("label_difficulty_intermediate"),
                         isSelected: difficultyFilter == .intermediate,
                         action: { onDifficultyFilterChange(difficultyFilter == .intermediate ? nil : .intermediate) }
                     )
+                    .accessibilityIdentifier("difficultyIntermediateChip")
                     DifficultyFilterChip(
-                        title: "Advanced",
+                        titleKey: LocalizedStringKey("label_difficulty_advanced"),
                         isSelected: difficultyFilter == .advanced,
                         action: { onDifficultyFilterChange(difficultyFilter == .advanced ? nil : .advanced) }
                     )
+                    .accessibilityIdentifier("difficultyAdvancedChip")
                 }
                 .padding(.vertical, DesignTokens.listRowPaddingV)
             }
@@ -172,13 +202,13 @@ private struct DifficultyFilterSection: View {
 }
 
 private struct DifficultyFilterChip: View {
-    let title: String
+    let titleKey: LocalizedStringKey
     let isSelected: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Text(title)
+            Text(titleKey)
                 .font(.subheadline)
                 .fontWeight(isSelected ? .semibold : .regular)
                 .padding(.horizontal, DesignTokens.chipPaddingH)
@@ -224,7 +254,7 @@ struct DifficultyBadge: View {
     let difficulty: Difficulty
 
     var body: some View {
-        Text(difficultyText)
+        Text(difficultyLabelKey)
             .font(.caption2)
             .fontWeight(.medium)
             .padding(.horizontal, DesignTokens.badgePaddingH)
@@ -234,12 +264,12 @@ struct DifficultyBadge: View {
             .clipShape(Capsule())
     }
 
-    private var difficultyText: String {
+    private var difficultyLabelKey: LocalizedStringKey {
         switch difficulty {
-        case .beginner: return "Beginner"
-        case .intermediate: return "Intermediate"
-        case .advanced: return "Advanced"
-        default: return "Unknown"
+        case .beginner: return LocalizedStringKey("label_difficulty_beginner")
+        case .intermediate: return LocalizedStringKey("label_difficulty_intermediate")
+        case .advanced: return LocalizedStringKey("label_difficulty_advanced")
+        default: return LocalizedStringKey("")
         }
     }
 

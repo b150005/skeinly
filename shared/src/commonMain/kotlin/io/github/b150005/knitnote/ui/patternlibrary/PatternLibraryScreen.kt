@@ -61,7 +61,32 @@ import androidx.compose.ui.unit.dp
 import io.github.b150005.knitnote.domain.model.Difficulty
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.SortOrder
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_back
+import io.github.b150005.knitnote.generated.resources.action_cancel
+import io.github.b150005.knitnote.generated.resources.action_clear_search
+import io.github.b150005.knitnote.generated.resources.action_create_pattern
+import io.github.b150005.knitnote.generated.resources.action_delete
+import io.github.b150005.knitnote.generated.resources.action_new_pattern
+import io.github.b150005.knitnote.generated.resources.action_sort
+import io.github.b150005.knitnote.generated.resources.dialog_delete_pattern_body
+import io.github.b150005.knitnote.generated.resources.dialog_delete_pattern_title
+import io.github.b150005.knitnote.generated.resources.hint_search_patterns
+import io.github.b150005.knitnote.generated.resources.label_difficulty_all
+import io.github.b150005.knitnote.generated.resources.label_gauge_value
+import io.github.b150005.knitnote.generated.resources.label_needle_value
+import io.github.b150005.knitnote.generated.resources.label_sort_alphabetical
+import io.github.b150005.knitnote.generated.resources.label_sort_alphabetical_detail
+import io.github.b150005.knitnote.generated.resources.label_sort_recent
+import io.github.b150005.knitnote.generated.resources.label_yarn_value
+import io.github.b150005.knitnote.generated.resources.state_no_matching_patterns
+import io.github.b150005.knitnote.generated.resources.state_no_matching_patterns_body
+import io.github.b150005.knitnote.generated.resources.state_no_patterns
+import io.github.b150005.knitnote.generated.resources.state_no_patterns_body
+import io.github.b150005.knitnote.generated.resources.title_pattern_library
 import io.github.b150005.knitnote.ui.components.EmptyStateView
+import io.github.b150005.knitnote.ui.components.labelKey
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -85,12 +110,12 @@ fun PatternLibraryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Pattern Library") },
+                title = { Text(stringResource(Res.string.title_pattern_library)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(Res.string.action_back),
                         )
                     }
                 },
@@ -102,7 +127,10 @@ fun PatternLibraryScreen(
                 onClick = onCreatePattern,
                 modifier = Modifier.testTag("createPatternFab"),
             ) {
-                Icon(Icons.Default.Add, contentDescription = "New Pattern")
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = stringResource(Res.string.action_new_pattern),
+                )
             }
         },
     ) { padding ->
@@ -167,13 +195,13 @@ fun PatternLibraryScreen(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = "No matching patterns",
+                                text = stringResource(Res.string.state_no_matching_patterns),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Try adjusting your search or filters",
+                                text = stringResource(Res.string.state_no_matching_patterns_body),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -183,9 +211,9 @@ fun PatternLibraryScreen(
                 state.patterns.isEmpty() -> {
                     EmptyStateView(
                         icon = Icons.Default.Favorite,
-                        title = "No patterns yet",
-                        body = "Build your pattern library with gauge, yarn, and needle info",
-                        actionLabel = "Create Pattern",
+                        title = stringResource(Res.string.state_no_patterns),
+                        body = stringResource(Res.string.state_no_patterns_body),
+                        actionLabel = stringResource(Res.string.action_create_pattern),
                         onAction = onCreatePattern,
                     )
                 }
@@ -220,15 +248,18 @@ private fun SearchField(
     OutlinedTextField(
         value = query,
         onValueChange = onQueryChange,
-        modifier = modifier.fillMaxWidth(),
-        placeholder = { Text("Search patterns...") },
+        modifier = modifier.fillMaxWidth().testTag("patternSearchField"),
+        placeholder = { Text(stringResource(Res.string.hint_search_patterns)) },
         leadingIcon = {
             Icon(Icons.Default.Search, contentDescription = null)
         },
         trailingIcon = {
             if (query.isNotEmpty()) {
                 IconButton(onClick = { onQueryChange("") }) {
-                    Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                    Icon(
+                        Icons.Default.Clear,
+                        contentDescription = stringResource(Res.string.action_clear_search),
+                    )
                 }
             }
         },
@@ -256,7 +287,8 @@ private fun FilterSortRow(
                 FilterChip(
                     selected = difficultyFilter == null,
                     onClick = { onDifficultyFilterChange(null) },
-                    label = { Text("All") },
+                    label = { Text(stringResource(Res.string.label_difficulty_all)) },
+                    modifier = Modifier.testTag("difficultyAllChip"),
                 )
             }
             item {
@@ -267,7 +299,8 @@ private fun FilterSortRow(
                             if (difficultyFilter == Difficulty.BEGINNER) null else Difficulty.BEGINNER,
                         )
                     },
-                    label = { Text("Beginner") },
+                    label = { Text(stringResource(Difficulty.BEGINNER.labelKey)) },
+                    modifier = Modifier.testTag("difficultyBeginnerChip"),
                 )
             }
             item {
@@ -282,7 +315,8 @@ private fun FilterSortRow(
                             },
                         )
                     },
-                    label = { Text("Intermediate") },
+                    label = { Text(stringResource(Difficulty.INTERMEDIATE.labelKey)) },
+                    modifier = Modifier.testTag("difficultyIntermediateChip"),
                 )
             }
             item {
@@ -293,7 +327,8 @@ private fun FilterSortRow(
                             if (difficultyFilter == Difficulty.ADVANCED) null else Difficulty.ADVANCED,
                         )
                     },
-                    label = { Text("Advanced") },
+                    label = { Text(stringResource(Difficulty.ADVANCED.labelKey)) },
+                    modifier = Modifier.testTag("difficultyAdvancedChip"),
                 )
             }
         }
@@ -313,16 +348,24 @@ private fun SortDropdown(
     onSortOrderChange: (SortOrder) -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
+    // PROGRESS is not a valid sort order for patterns; fall back to the RECENT
+    // label to keep the chip readable if the state ever ends up there.
+    val chipLabelKey =
+        when (sortOrder) {
+            SortOrder.RECENT -> Res.string.label_sort_recent
+            SortOrder.ALPHABETICAL -> Res.string.label_sort_alphabetical
+            SortOrder.PROGRESS -> Res.string.label_sort_recent
+        }
 
     Box {
         FilterChip(
             selected = sortOrder != SortOrder.RECENT,
             onClick = { expanded = true },
-            label = { Text(sortOrder.patternChipLabel) },
+            label = { Text(stringResource(chipLabelKey)) },
             trailingIcon = {
                 Icon(
                     Icons.AutoMirrored.Filled.Sort,
-                    contentDescription = "Sort",
+                    contentDescription = stringResource(Res.string.action_sort),
                 )
             },
         )
@@ -331,15 +374,20 @@ private fun SortDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false },
         ) {
-            PatternSortOption.entries.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(option.menuLabel) },
-                    onClick = {
-                        onSortOrderChange(option.order)
-                        expanded = false
-                    },
-                )
-            }
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.label_sort_recent)) },
+                onClick = {
+                    onSortOrderChange(SortOrder.RECENT)
+                    expanded = false
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.label_sort_alphabetical_detail)) },
+                onClick = {
+                    onSortOrderChange(SortOrder.ALPHABETICAL)
+                    expanded = false
+                },
+            )
         }
     }
 }
@@ -376,7 +424,7 @@ private fun SwipeToDismissPatternCard(
             ) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = "Delete",
+                    contentDescription = stringResource(Res.string.action_delete),
                     tint = MaterialTheme.colorScheme.onErrorContainer,
                 )
             }
@@ -443,14 +491,14 @@ private fun PatternCard(
 
 @Composable
 private fun DifficultyBadge(difficulty: Difficulty) {
-    val (text, color) =
+    val color =
         when (difficulty) {
-            Difficulty.BEGINNER -> "Beginner" to MaterialTheme.colorScheme.tertiary
-            Difficulty.INTERMEDIATE -> "Intermediate" to MaterialTheme.colorScheme.primary
-            Difficulty.ADVANCED -> "Advanced" to MaterialTheme.colorScheme.error
+            Difficulty.BEGINNER -> MaterialTheme.colorScheme.tertiary
+            Difficulty.INTERMEDIATE -> MaterialTheme.colorScheme.primary
+            Difficulty.ADVANCED -> MaterialTheme.colorScheme.error
         }
     Text(
-        text = text,
+        text = stringResource(difficulty.labelKey),
         style = MaterialTheme.typography.labelSmall,
         color = color,
     )
@@ -464,40 +512,30 @@ private fun DeleteConfirmDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete Pattern?") },
-        text = { Text("Are you sure you want to delete \"$itemName\"? This cannot be undone.") },
+        title = { Text(stringResource(Res.string.dialog_delete_pattern_title)) },
+        text = {
+            Text(stringResource(Res.string.dialog_delete_pattern_body, itemName))
+        },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("Delete", color = MaterialTheme.colorScheme.error)
+                Text(
+                    stringResource(Res.string.action_delete),
+                    color = MaterialTheme.colorScheme.error,
+                )
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(Res.string.action_cancel))
             }
         },
     )
 }
 
-private fun buildPatternDetails(pattern: Pattern): String =
-    listOfNotNull(
-        pattern.gauge?.let { "Gauge: $it" },
-        pattern.yarnInfo?.let { "Yarn: $it" },
-        pattern.needleSize?.let { "Needle: $it" },
-    ).joinToString(" \u2022 ")
-
-private val SortOrder.patternChipLabel: String
-    get() =
-        when (this) {
-            SortOrder.RECENT -> "Recent"
-            SortOrder.ALPHABETICAL -> "A\u2013Z"
-            SortOrder.PROGRESS -> "Recent" // Not applicable for patterns
-        }
-
-private enum class PatternSortOption(
-    val order: SortOrder,
-    val menuLabel: String,
-) {
-    RECENT(SortOrder.RECENT, "Recent"),
-    ALPHABETICAL(SortOrder.ALPHABETICAL, "Alphabetical (A\u2013Z)"),
+@Composable
+private fun buildPatternDetails(pattern: Pattern): String {
+    val gauge = pattern.gauge?.let { stringResource(Res.string.label_gauge_value, it) }
+    val yarn = pattern.yarnInfo?.let { stringResource(Res.string.label_yarn_value, it) }
+    val needle = pattern.needleSize?.let { stringResource(Res.string.label_needle_value, it) }
+    return listOfNotNull(gauge, yarn, needle).joinToString(" \u2022 ")
 }

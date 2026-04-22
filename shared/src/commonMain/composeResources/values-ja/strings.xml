@@ -147,6 +147,16 @@
     <string name="label_yarn_value">糸: %1$s</string>
     <string name="label_needle_value">針: %1$s</string>
 
+    <!-- Pattern library screen -->
+    <string name="title_pattern_library">パターンライブラリ</string>
+    <string name="action_new_pattern">新規パターン</string>
+    <string name="action_create_pattern">パターンを作成</string>
+    <string name="hint_search_patterns">パターンを検索\u2026</string>
+    <string name="state_no_patterns">パターンがまだありません</string>
+    <string name="state_no_patterns_body">ゲージ・糸情報・針号数でパターンライブラリを構築しましょう</string>
+    <string name="dialog_delete_pattern_title">パターンを削除しますか？</string>
+    <string name="dialog_delete_pattern_body">「%1$s」を削除してもよろしいですか？この操作は取り消せません。</string>
+
     <!-- Activity feed screen -->
     <string name="title_activity_feed">アクティビティ</string>
     <string name="state_no_activity">アクティビティがまだありません</string>

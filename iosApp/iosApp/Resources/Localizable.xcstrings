@@ -882,6 +882,62 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Needle: %1$@" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "針: %1$@" } }
       }
+    },
+    "title_pattern_library" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pattern Library" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターンライブラリ" } }
+      }
+    },
+    "action_new_pattern" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "New Pattern" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "新規パターン" } }
+      }
+    },
+    "action_create_pattern" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Create Pattern" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターンを作成" } }
+      }
+    },
+    "hint_search_patterns" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Search patterns\u2026" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターンを検索\u2026" } }
+      }
+    },
+    "state_no_patterns" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No patterns yet" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターンがまだありません" } }
+      }
+    },
+    "state_no_patterns_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Build your pattern library with gauge, yarn, and needle info" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ゲージ・糸情報・針号数でパターンライブラリを構築しましょう" } }
+      }
+    },
+    "dialog_delete_pattern_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete Pattern?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターンを削除しますか？" } }
+      }
+    },
+    "dialog_delete_pattern_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Are you sure you want to delete \"%1$@\"? This cannot be undone." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "「%1$@」を削除してもよろしいですか？この操作は取り消せません。" } }
+      }
     }
   },
   "version" : "1.0"

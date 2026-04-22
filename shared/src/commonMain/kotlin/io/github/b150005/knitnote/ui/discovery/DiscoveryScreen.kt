@@ -60,10 +60,7 @@ import io.github.b150005.knitnote.generated.resources.action_clear_search
 import io.github.b150005.knitnote.generated.resources.action_fork_pattern
 import io.github.b150005.knitnote.generated.resources.action_sort
 import io.github.b150005.knitnote.generated.resources.hint_search_public_patterns
-import io.github.b150005.knitnote.generated.resources.label_difficulty_advanced
 import io.github.b150005.knitnote.generated.resources.label_difficulty_all
-import io.github.b150005.knitnote.generated.resources.label_difficulty_beginner
-import io.github.b150005.knitnote.generated.resources.label_difficulty_intermediate
 import io.github.b150005.knitnote.generated.resources.label_gauge_value
 import io.github.b150005.knitnote.generated.resources.label_needle_value
 import io.github.b150005.knitnote.generated.resources.label_sort_alphabetical
@@ -76,7 +73,7 @@ import io.github.b150005.knitnote.generated.resources.state_no_public_patterns
 import io.github.b150005.knitnote.generated.resources.state_no_public_patterns_body
 import io.github.b150005.knitnote.generated.resources.title_discover_patterns
 import io.github.b150005.knitnote.ui.components.EmptyStateView
-import org.jetbrains.compose.resources.StringResource
+import io.github.b150005.knitnote.ui.components.labelKey
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -452,14 +449,3 @@ private fun buildDiscoveryPatternDetails(pattern: Pattern): String {
     val needle = pattern.needleSize?.let { stringResource(Res.string.label_needle_value, it) }
     return listOfNotNull(gauge, yarn, needle).joinToString(" \u2022 ")
 }
-
-// Difficulty label keys are defined once here so filter chips, the badge, and any
-// future consumer within Discovery resolve via a single source. If PatternLibrary
-// needs the same mapping later, promote to a shared domain extension file.
-private val Difficulty.labelKey: StringResource
-    get() =
-        when (this) {
-            Difficulty.BEGINNER -> Res.string.label_difficulty_beginner
-            Difficulty.INTERMEDIATE -> Res.string.label_difficulty_intermediate
-            Difficulty.ADVANCED -> Res.string.label_difficulty_advanced
-        }
