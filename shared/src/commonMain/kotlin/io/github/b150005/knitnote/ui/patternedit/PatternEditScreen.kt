@@ -36,6 +36,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.github.b150005.knitnote.domain.model.Difficulty
 import io.github.b150005.knitnote.domain.model.Visibility
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_back
+import io.github.b150005.knitnote.generated.resources.action_save
+import io.github.b150005.knitnote.generated.resources.hint_gauge_example
+import io.github.b150005.knitnote.generated.resources.hint_needle_size_example
+import io.github.b150005.knitnote.generated.resources.hint_yarn_info_example
+import io.github.b150005.knitnote.generated.resources.label_description_optional
+import io.github.b150005.knitnote.generated.resources.label_difficulty
+import io.github.b150005.knitnote.generated.resources.label_gauge
+import io.github.b150005.knitnote.generated.resources.label_needle_size
+import io.github.b150005.knitnote.generated.resources.label_pattern_title
+import io.github.b150005.knitnote.generated.resources.label_visibility
+import io.github.b150005.knitnote.generated.resources.label_visibility_private
+import io.github.b150005.knitnote.generated.resources.label_visibility_public
+import io.github.b150005.knitnote.generated.resources.label_visibility_shared
+import io.github.b150005.knitnote.generated.resources.label_yarn_info
+import io.github.b150005.knitnote.generated.resources.title_edit_pattern
+import io.github.b150005.knitnote.generated.resources.title_new_pattern
+import io.github.b150005.knitnote.ui.components.labelKey
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -56,6 +77,9 @@ fun PatternEditScreen(
 
     LaunchedEffect(state.error) {
         state.error?.let {
+            // ViewModel error messages (e.g. "Pattern not found", UseCaseError.toMessage)
+            // are still raw strings — see Tech Debt Backlog "ViewModel error-message
+            // localization".
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(PatternEditEvent.ClearError)
         }
@@ -65,13 +89,17 @@ fun PatternEditScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(if (patternId == null) "New Pattern" else "Edit Pattern")
+                    Text(
+                        stringResource(
+                            if (patternId == null) Res.string.title_new_pattern else Res.string.title_edit_pattern,
+                        ),
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(Res.string.action_back),
                         )
                     }
                 },
@@ -86,7 +114,7 @@ fun PatternEditScreen(
                             onClick = { viewModel.onEvent(PatternEditEvent.Save) },
                             enabled = state.title.isNotBlank(),
                         ) {
-                            Text("Save")
+                            Text(stringResource(Res.string.action_save))
                         }
                     }
                 },
@@ -114,7 +142,7 @@ fun PatternEditScreen(
                 OutlinedTextField(
                     value = state.title,
                     onValueChange = { viewModel.onEvent(PatternEditEvent.UpdateTitle(it)) },
-                    label = { Text("Pattern Title") },
+                    label = { Text(stringResource(Res.string.label_pattern_title)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -122,7 +150,7 @@ fun PatternEditScreen(
                 OutlinedTextField(
                     value = state.description,
                     onValueChange = { viewModel.onEvent(PatternEditEvent.UpdateDescription(it)) },
-                    label = { Text("Description (optional)") },
+                    label = { Text(stringResource(Res.string.label_description_optional)) },
                     maxLines = 3,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -135,7 +163,8 @@ fun PatternEditScreen(
                 OutlinedTextField(
                     value = state.gauge,
                     onValueChange = { viewModel.onEvent(PatternEditEvent.UpdateGauge(it)) },
-                    label = { Text("Gauge (e.g., 20 sts = 4 in)") },
+                    label = { Text(stringResource(Res.string.label_gauge)) },
+                    placeholder = { Text(stringResource(Res.string.hint_gauge_example)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -143,7 +172,8 @@ fun PatternEditScreen(
                 OutlinedTextField(
                     value = state.yarnInfo,
                     onValueChange = { viewModel.onEvent(PatternEditEvent.UpdateYarnInfo(it)) },
-                    label = { Text("Yarn (e.g., Worsted weight, 100% merino)") },
+                    label = { Text(stringResource(Res.string.label_yarn_info)) },
+                    placeholder = { Text(stringResource(Res.string.hint_yarn_info_example)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -151,7 +181,8 @@ fun PatternEditScreen(
                 OutlinedTextField(
                     value = state.needleSize,
                     onValueChange = { viewModel.onEvent(PatternEditEvent.UpdateNeedleSize(it)) },
-                    label = { Text("Needle Size (e.g., US 7 / 4.5mm)") },
+                    label = { Text(stringResource(Res.string.label_needle_size)) },
+                    placeholder = { Text(stringResource(Res.string.hint_needle_size_example)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -173,7 +204,7 @@ private fun DifficultySelector(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
-            text = "Difficulty",
+            text = stringResource(Res.string.label_difficulty),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -185,7 +216,7 @@ private fun DifficultySelector(
                     onClick = {
                         onSelected(if (isSelected) null else difficulty)
                     },
-                    label = { Text(difficulty.displayName()) },
+                    label = { Text(stringResource(difficulty.labelKey)) },
                 )
             }
         }
@@ -200,7 +231,7 @@ private fun VisibilitySelector(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
-            text = "Visibility",
+            text = stringResource(Res.string.label_visibility),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -209,23 +240,17 @@ private fun VisibilitySelector(
                 FilterChip(
                     selected = selected == visibility,
                     onClick = { onSelected(visibility) },
-                    label = { Text(visibility.displayName()) },
+                    label = { Text(stringResource(visibility.labelKey)) },
                 )
             }
         }
     }
 }
 
-private fun Difficulty.displayName(): String =
-    when (this) {
-        Difficulty.BEGINNER -> "Beginner"
-        Difficulty.INTERMEDIATE -> "Intermediate"
-        Difficulty.ADVANCED -> "Advanced"
-    }
-
-private fun Visibility.displayName(): String =
-    when (this) {
-        Visibility.PRIVATE -> "Private"
-        Visibility.SHARED -> "Shared"
-        Visibility.PUBLIC -> "Public"
-    }
+private val Visibility.labelKey: StringResource
+    get() =
+        when (this) {
+            Visibility.PRIVATE -> Res.string.label_visibility_private
+            Visibility.SHARED -> Res.string.label_visibility_shared
+            Visibility.PUBLIC -> Res.string.label_visibility_public
+        }

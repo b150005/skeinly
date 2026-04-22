@@ -166,6 +166,27 @@
     <string name="dialog_delete_pattern_title">Delete Pattern?</string>
     <string name="dialog_delete_pattern_body">Are you sure you want to delete \"%1$s\"? This cannot be undone.</string>
 
+    <!-- Pattern edit screen. Shared-Compose-only: these keys must mirror the
+         shared/src/commonMain/composeResources/values/strings.xml entries so
+         verify-i18n-keys.sh passes 5-source parity. -->
+    <string name="title_new_pattern">New Pattern</string>
+    <string name="title_edit_pattern">Edit Pattern</string>
+    <string name="label_pattern_title">Pattern Title</string>
+    <string name="label_description_optional">Description (optional)</string>
+    <string name="label_details">Details</string>
+    <string name="label_difficulty">Difficulty</string>
+    <string name="label_difficulty_none">None</string>
+    <string name="label_gauge">Gauge</string>
+    <string name="label_yarn_info">Yarn Info</string>
+    <string name="label_needle_size">Needle Size</string>
+    <string name="hint_gauge_example">20 sts = 4 in</string>
+    <string name="hint_yarn_info_example">Worsted weight, 100% merino</string>
+    <string name="hint_needle_size_example">US 7 / 4.5mm</string>
+    <string name="label_visibility">Visibility</string>
+    <string name="label_visibility_private">Private</string>
+    <string name="label_visibility_shared">Shared</string>
+    <string name="label_visibility_public">Public</string>
+
     <!-- Activity feed screen -->
     <string name="title_activity_feed">Activity Feed</string>
     <string name="state_no_activity">No activity yet</string>
