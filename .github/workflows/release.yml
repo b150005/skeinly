@@ -340,14 +340,14 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Download Android artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: android-release-apk
           path: artifacts/android
 
       - name: Download iOS IPA artifact
         if: needs.build-ios.outputs.ipa-available == 'true'
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ios-release-ipa
           path: artifacts/ios
@@ -361,7 +361,7 @@ jobs:
           fi
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           name: "v${{ needs.validate-tag.outputs.version }}"
