@@ -771,6 +771,48 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@が新しいパターンを作成しました" } }
       }
     },
+    "title_shared_pattern" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shared Pattern" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有パターン" } }
+      }
+    },
+    "state_pattern_not_found" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pattern not found" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターンが見つかりません" } }
+      }
+    },
+    "state_could_not_load" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Could not load" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み込めませんでした" } }
+      }
+    },
+    "state_view_only_share" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "View only \u2014 forking is not permitted for this share" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "閲覧のみ \u2014 このシェアではフォークが許可されていません" } }
+      }
+    },
+    "action_fork_to_projects" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Fork to My Projects" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "マイプロジェクトにフォーク" } }
+      }
+    },
+    "label_projects" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Projects" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロジェクト数" } }
+      }
+    },
     "title_discover_patterns" : {
       "extractionState" : "manual",
       "localizations" : {

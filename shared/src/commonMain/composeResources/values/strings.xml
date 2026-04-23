@@ -259,6 +259,22 @@
     <string name="action_decrement_row">Decrement row</string>
     <string name="action_increment_row">Increment row</string>
 
+    <!-- Shared content screen (deep-linked shared pattern viewer). `label_projects`
+         is a terse DetailRow label matching the existing `label_{gauge,yarn}` style;
+         previous Android wording "Projects using this pattern" was verbose for no
+         reason next to a visible count, and iOS was already on "Projects" — unified
+         here. `state_could_not_load` is iOS-only (ContentUnavailableView title
+         shown alongside the raw error as description); it still ships in Android
+         sources for 5-source parity per verify-i18n-keys.sh — Android's Compose
+         fallback branch renders `state.error` directly or `state_pattern_not_found`
+         in a centered Text. -->
+    <string name="title_shared_pattern">Shared Pattern</string>
+    <string name="state_pattern_not_found">Pattern not found</string>
+    <string name="state_could_not_load">Could not load</string>
+    <string name="state_view_only_share">View only \u2014 forking is not permitted for this share</string>
+    <string name="action_fork_to_projects">Fork to My Projects</string>
+    <string name="label_projects">Projects</string>
+
     <!-- Activity feed screen -->
     <string name="title_activity_feed">Activity Feed</string>
     <string name="state_no_activity">No activity yet</string>

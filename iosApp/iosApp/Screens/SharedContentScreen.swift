@@ -23,31 +23,39 @@ struct SharedContentScreen: View {
     var body: some View {
         let state = holder.state
 
-        Group {
+        // A bare state-branch `Group` is layout-transparent and propagates
+        // accessibility modifiers to each child branch independently, breaking
+        // the `sharedContentScreen` landmark query for XCUITest (per the 33.1.6
+        // HIGH convention). Wrap in ZStack so the accessibilityElement attaches
+        // to a single concrete container.
+        ZStack {
             if state.isLoading {
                 ProgressView()
             } else if let pattern = state.pattern {
                 patternContent(pattern: pattern, state: state)
             } else if let error = state.error {
                 ContentUnavailableView(
-                    "Could not load",
+                    LocalizedStringKey("state_could_not_load"),
                     systemImage: "exclamationmark.triangle",
                     description: Text(error)
                 )
+            } else {
+                Text(LocalizedStringKey("state_pattern_not_found"))
             }
         }
-        .navigationTitle("Shared Pattern")
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("sharedContentScreen")
+        .navigationTitle(LocalizedStringKey("title_shared_pattern"))
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: state.error) { _, newError in
             showError = newError != nil
         }
-        .alert("Error", isPresented: $showError) {
-            Button("OK") { viewModel.onEvent(event: SharedContentEventClearError.shared) }
+        .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
+            Button(LocalizedStringKey("action_ok")) {
+                viewModel.onEvent(event: SharedContentEventClearError.shared)
+            }
         } message: {
             Text(state.error ?? "")
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .init("forkedProject"))) { _ in
-            // Handled via observer below
         }
         .task {
             // `.task { }` re-fires on every view re-appearance. Close any prior
@@ -84,21 +92,27 @@ struct SharedContentScreen: View {
                 }
             }
 
-            Section("Details") {
+            Section(LocalizedStringKey("label_details")) {
                 if let difficulty = pattern.difficulty {
-                    DetailRow(label: "Difficulty", value: difficultyText(difficulty))
+                    DetailRow(
+                        label: LocalizedStringKey("label_difficulty"),
+                        value: difficultyText(difficulty)
+                    )
                 }
                 if let gauge = pattern.gauge, !gauge.isEmpty {
-                    DetailRow(label: "Gauge", value: gauge)
+                    DetailRow(label: LocalizedStringKey("label_gauge"), value: gauge)
                 }
                 if let yarnInfo = pattern.yarnInfo, !yarnInfo.isEmpty {
-                    DetailRow(label: "Yarn", value: yarnInfo)
+                    DetailRow(label: LocalizedStringKey("label_yarn"), value: yarnInfo)
                 }
                 if let needleSize = pattern.needleSize, !needleSize.isEmpty {
-                    DetailRow(label: "Needle Size", value: needleSize)
+                    DetailRow(label: LocalizedStringKey("label_needle_size"), value: needleSize)
                 }
                 if state.projectCount > 0 {
-                    DetailRow(label: "Projects", value: "\(state.projectCount)")
+                    DetailRow(
+                        label: LocalizedStringKey("label_projects"),
+                        value: "\(state.projectCount)"
+                    )
                 }
             }
 
@@ -111,14 +125,15 @@ struct SharedContentScreen: View {
                             if state.isForkInProgress {
                                 ProgressView()
                             }
-                            Text("Fork to My Projects")
+                            Text(LocalizedStringKey("action_fork_to_projects"))
                         }
                         .frame(maxWidth: .infinity)
                     }
+                    .accessibilityIdentifier("forkButton")
                     .buttonStyle(.borderedProminent)
                     .disabled(state.isForkInProgress)
                 } else {
-                    Text("View only — forking is not permitted for this share")
+                    Text(LocalizedStringKey("state_view_only_share"))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -127,17 +142,23 @@ struct SharedContentScreen: View {
     }
 
     private func difficultyText(_ difficulty: Difficulty) -> String {
+        // `Difficulty` is a Kotlin enum bridged to Swift as an NSEnum-like type,
+        // so Swift requires a `default` branch even though the 3 cases are
+        // exhaustive today. Fall back to the raw enum case name (locale-neutral,
+        // non-empty, self-documenting at runtime) so a future Kotlin enum
+        // addition without a matching Swift switch update surfaces visibly
+        // rather than rendering as a blank cell.
         switch difficulty {
-        case .beginner: return "Beginner"
-        case .intermediate: return "Intermediate"
-        case .advanced: return "Advanced"
-        default: return "Unknown"
+        case .beginner: return NSLocalizedString("label_difficulty_beginner", comment: "")
+        case .intermediate: return NSLocalizedString("label_difficulty_intermediate", comment: "")
+        case .advanced: return NSLocalizedString("label_difficulty_advanced", comment: "")
+        default: return difficulty.name
         }
     }
 }
 
 private struct DetailRow: View {
-    let label: String
+    let label: LocalizedStringKey
     let value: String
 
     var body: some View {

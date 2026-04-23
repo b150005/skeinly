@@ -30,10 +30,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.SharePermission
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_back
+import io.github.b150005.knitnote.generated.resources.action_fork_to_projects
+import io.github.b150005.knitnote.generated.resources.label_difficulty
+import io.github.b150005.knitnote.generated.resources.label_gauge
+import io.github.b150005.knitnote.generated.resources.label_needle_size
+import io.github.b150005.knitnote.generated.resources.label_projects
+import io.github.b150005.knitnote.generated.resources.label_yarn
+import io.github.b150005.knitnote.generated.resources.state_pattern_not_found
+import io.github.b150005.knitnote.generated.resources.state_view_only_share
+import io.github.b150005.knitnote.generated.resources.title_shared_pattern
+import io.github.b150005.knitnote.ui.components.labelKey
 import kotlinx.coroutines.flow.collect
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -50,6 +65,8 @@ fun SharedContentScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(state.error) {
+        // Snackbar surfaces the raw ViewModel error string — ViewModel error-message
+        // localization is deferred per the Tech Debt Backlog.
         state.error?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(SharedContentEvent.ClearError)
@@ -63,12 +80,16 @@ fun SharedContentScreen(
     }
 
     Scaffold(
+        modifier = Modifier.testTag("sharedContentScreen"),
         topBar = {
             TopAppBar(
-                title = { Text("Shared Pattern") },
+                title = { Text(stringResource(Res.string.title_shared_pattern)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(Res.string.action_back),
+                        )
                     }
                 },
             )
@@ -94,7 +115,7 @@ fun SharedContentScreen(
                 }
                 else -> {
                     Text(
-                        text = state.error ?: "Pattern not found",
+                        text = state.error ?: stringResource(Res.string.state_pattern_not_found),
                         modifier = Modifier.align(Alignment.Center),
                         style = MaterialTheme.typography.bodyLarge,
                     )
@@ -134,23 +155,26 @@ private fun PatternContent(
         }
 
         pattern.difficulty?.let { difficulty ->
-            DetailRow(label = "Difficulty", value = difficulty.name.lowercase().replaceFirstChar { it.uppercase() })
+            DetailRow(
+                labelRes = Res.string.label_difficulty,
+                value = stringResource(difficulty.labelKey),
+            )
         }
 
         pattern.gauge?.let { gauge ->
-            DetailRow(label = "Gauge", value = gauge)
+            DetailRow(labelRes = Res.string.label_gauge, value = gauge)
         }
 
         pattern.yarnInfo?.let { yarnInfo ->
-            DetailRow(label = "Yarn", value = yarnInfo)
+            DetailRow(labelRes = Res.string.label_yarn, value = yarnInfo)
         }
 
         pattern.needleSize?.let { needleSize ->
-            DetailRow(label = "Needle Size", value = needleSize)
+            DetailRow(labelRes = Res.string.label_needle_size, value = needleSize)
         }
 
         if (projectCount > 0) {
-            DetailRow(label = "Projects using this pattern", value = projectCount.toString())
+            DetailRow(labelRes = Res.string.label_projects, value = projectCount.toString())
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -158,7 +182,7 @@ private fun PatternContent(
         if (canFork) {
             Button(
                 onClick = onFork,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag("forkButton"),
                 enabled = !isForkInProgress,
             ) {
                 if (isForkInProgress) {
@@ -167,12 +191,12 @@ private fun PatternContent(
                         strokeWidth = 2.dp,
                     )
                 } else {
-                    Text("Fork to My Projects")
+                    Text(stringResource(Res.string.action_fork_to_projects))
                 }
             }
         } else {
             Text(
-                text = "View only — forking is not permitted for this share",
+                text = stringResource(Res.string.state_view_only_share),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -182,12 +206,12 @@ private fun PatternContent(
 
 @Composable
 private fun DetailRow(
-    label: String,
+    labelRes: StringResource,
     value: String,
 ) {
     Column {
         Text(
-            text = label,
+            text = stringResource(labelRes),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

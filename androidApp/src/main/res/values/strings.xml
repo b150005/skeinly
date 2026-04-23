@@ -240,6 +240,14 @@
     <string name="action_decrement_row">Decrement row</string>
     <string name="action_increment_row">Increment row</string>
 
+    <!-- Shared content screen. See shared/.../values/strings.xml for convention comment. -->
+    <string name="title_shared_pattern">Shared Pattern</string>
+    <string name="state_pattern_not_found">Pattern not found</string>
+    <string name="state_could_not_load">Could not load</string>
+    <string name="state_view_only_share">View only \u2014 forking is not permitted for this share</string>
+    <string name="action_fork_to_projects">Fork to My Projects</string>
+    <string name="label_projects">Projects</string>
+
     <!-- Activity feed screen -->
     <string name="title_activity_feed">Activity Feed</string>
     <string name="state_no_activity">No activity yet</string>

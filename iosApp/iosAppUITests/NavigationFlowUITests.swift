@@ -50,7 +50,11 @@ final class NavigationFlowUITests: XCTestCase {
         // App should remain on project list, not navigate to shared content
         XCTAssertTrue(app.navigationBars["Knit Note"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.staticTexts["No Projects Yet"].waitForExistence(timeout: 3), "Expected empty state after deep link in local mode")
-        XCTAssertFalse(app.navigationBars["Shared Content"].exists)
+        // Phase 33.1.13: pivoted from navigationBars["Shared Content"] to the
+        // accessibilityIdentifier landmark so the assert stays valid on a
+        // ja-locale simulator. (The prior string also did not match the actual
+        // nav-bar title "Shared Pattern".)
+        XCTAssertFalse(app.otherElements["sharedContentScreen"].exists)
     }
 
     func testNavigateToActivityFeed_andBack() {
