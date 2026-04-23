@@ -231,6 +231,14 @@
     <string name="action_decrement_row">段数を減らす</string>
     <string name="action_increment_row">段数を増やす</string>
 
+    <!-- Shared content screen -->
+    <string name="title_shared_pattern">共有パターン</string>
+    <string name="state_pattern_not_found">パターンが見つかりません</string>
+    <string name="state_could_not_load">読み込めませんでした</string>
+    <string name="state_view_only_share">閲覧のみ \u2014 このシェアではフォークが許可されていません</string>
+    <string name="action_fork_to_projects">マイプロジェクトにフォーク</string>
+    <string name="label_projects">プロジェクト数</string>
+
     <!-- Activity feed screen -->
     <string name="title_activity_feed">アクティビティ</string>
     <string name="state_no_activity">アクティビティがまだありません</string>
