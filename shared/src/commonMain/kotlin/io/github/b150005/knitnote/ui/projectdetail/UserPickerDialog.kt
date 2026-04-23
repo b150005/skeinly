@@ -29,7 +29,18 @@ import androidx.compose.ui.unit.dp
 import io.github.b150005.knitnote.domain.model.SharePermission
 import io.github.b150005.knitnote.domain.model.User
 import io.github.b150005.knitnote.domain.repository.UserRepository
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_cancel
+import io.github.b150005.knitnote.generated.resources.action_share
+import io.github.b150005.knitnote.generated.resources.dialog_share_with_user_title
+import io.github.b150005.knitnote.generated.resources.label_no_name
+import io.github.b150005.knitnote.generated.resources.label_permission
+import io.github.b150005.knitnote.generated.resources.label_permission_fork
+import io.github.b150005.knitnote.generated.resources.label_permission_view
+import io.github.b150005.knitnote.generated.resources.label_search_by_name
+import io.github.b150005.knitnote.generated.resources.label_selected_prefix
 import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 @Composable
@@ -43,6 +54,8 @@ fun UserPickerDialog(
     var selectedUser by remember { mutableStateOf<User?>(null) }
     var selectedPermission by remember { mutableStateOf(SharePermission.VIEW) }
 
+    val noNameLabel = stringResource(Res.string.label_no_name)
+
     // Debounced search
     LaunchedEffect(query) {
         if (query.length < 2) {
@@ -55,7 +68,7 @@ fun UserPickerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Share with User") },
+        title = { Text(stringResource(Res.string.dialog_share_with_user_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
@@ -64,14 +77,18 @@ fun UserPickerDialog(
                         query = it
                         if (selectedUser != null) selectedUser = null
                     },
-                    label = { Text("Search by name") },
+                    label = { Text(stringResource(Res.string.label_search_by_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                if (selectedUser != null) {
+                selectedUser?.let { user ->
                     Text(
-                        text = "Selected: ${selectedUser?.displayName}",
+                        text =
+                            stringResource(
+                                Res.string.label_selected_prefix,
+                                user.displayName,
+                            ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -89,7 +106,7 @@ fun UserPickerDialog(
                                         query = user.displayName
                                     },
                                 headlineContent = {
-                                    Text(user.displayName.ifBlank { "(no name)" })
+                                    Text(user.displayName.ifBlank { noNameLabel })
                                 },
                             )
                             HorizontalDivider()
@@ -98,7 +115,7 @@ fun UserPickerDialog(
                 }
 
                 Text(
-                    text = "Permission",
+                    text = stringResource(Res.string.label_permission),
                     style = MaterialTheme.typography.labelMedium,
                     modifier = Modifier.padding(top = 4.dp),
                 )
@@ -106,12 +123,12 @@ fun UserPickerDialog(
                     FilterChip(
                         selected = selectedPermission == SharePermission.VIEW,
                         onClick = { selectedPermission = SharePermission.VIEW },
-                        label = { Text("View") },
+                        label = { Text(stringResource(Res.string.label_permission_view)) },
                     )
                     FilterChip(
                         selected = selectedPermission == SharePermission.FORK,
                         onClick = { selectedPermission = SharePermission.FORK },
-                        label = { Text("Fork") },
+                        label = { Text(stringResource(Res.string.label_permission_fork)) },
                     )
                 }
             }
@@ -125,12 +142,12 @@ fun UserPickerDialog(
                 },
                 enabled = selectedUser != null,
             ) {
-                Text("Share")
+                Text(stringResource(Res.string.action_share))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(Res.string.action_cancel))
             }
         },
     )

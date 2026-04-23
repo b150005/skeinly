@@ -30,12 +30,25 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.b150005.knitnote.domain.model.Comment
 import io.github.b150005.knitnote.domain.model.CommentTargetType
 import io.github.b150005.knitnote.domain.model.User
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_cancel
+import io.github.b150005.knitnote.generated.resources.action_delete
+import io.github.b150005.knitnote.generated.resources.action_delete_comment
+import io.github.b150005.knitnote.generated.resources.action_send_comment
+import io.github.b150005.knitnote.generated.resources.dialog_delete_comment_body
+import io.github.b150005.knitnote.generated.resources.dialog_delete_comment_title
+import io.github.b150005.knitnote.generated.resources.hint_add_comment
+import io.github.b150005.knitnote.generated.resources.label_comments_section
+import io.github.b150005.knitnote.generated.resources.label_someone
+import io.github.b150005.knitnote.generated.resources.state_no_comments
 import io.github.b150005.knitnote.ui.util.formatShort
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -56,16 +69,18 @@ fun CommentSection(
     commentToDelete?.let { commentId ->
         AlertDialog(
             onDismissRequest = { commentToDelete = null },
-            title = { Text("Delete Comment") },
-            text = { Text("Are you sure you want to delete this comment?") },
+            title = { Text(stringResource(Res.string.dialog_delete_comment_title)) },
+            text = { Text(stringResource(Res.string.dialog_delete_comment_body)) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.onEvent(CommentSectionEvent.DeleteComment(commentId))
                     commentToDelete = null
-                }) { Text("Delete") }
+                }) { Text(stringResource(Res.string.action_delete)) }
             },
             dismissButton = {
-                TextButton(onClick = { commentToDelete = null }) { Text("Cancel") }
+                TextButton(onClick = { commentToDelete = null }) {
+                    Text(stringResource(Res.string.action_cancel))
+                }
             },
         )
     }
@@ -77,7 +92,12 @@ fun CommentSection(
         }
     }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .testTag("commentSection"),
+    ) {
         HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp))
 
         Row(
@@ -89,7 +109,7 @@ fun CommentSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Comments",
+                text = stringResource(Res.string.label_comments_section),
                 style = MaterialTheme.typography.titleMedium,
             )
             if (state.isLoading) {
@@ -110,7 +130,7 @@ fun CommentSection(
         // Comments list
         if (state.comments.isEmpty() && !state.isLoading) {
             Text(
-                text = "No comments yet",
+                text = stringResource(Res.string.state_no_comments),
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -145,7 +165,7 @@ private fun CommentInput(
         OutlinedTextField(
             value = text,
             onValueChange = { text = it },
-            placeholder = { Text("Add a comment...") },
+            placeholder = { Text(stringResource(Res.string.hint_add_comment)) },
             modifier = Modifier.weight(1f),
             singleLine = false,
             maxLines = 3,
@@ -164,7 +184,10 @@ private fun CommentInput(
                 },
                 enabled = text.isNotBlank(),
             ) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send comment")
+                Icon(
+                    Icons.AutoMirrored.Filled.Send,
+                    contentDescription = stringResource(Res.string.action_send_comment),
+                )
             }
         }
     }
@@ -178,6 +201,9 @@ private fun CommentItem(
     onDelete: () -> Unit,
 ) {
     val timestamp = remember(comment.createdAt) { comment.createdAt.formatShort() }
+    // Null-author fallback reuses `label_someone` from 33.1.7 ActivityFeed —
+    // same "user-record lookup failed" semantic, unified across platforms.
+    val authorName = author?.displayName ?: stringResource(Res.string.label_someone)
 
     Column(
         modifier =
@@ -192,7 +218,7 @@ private fun CommentItem(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = author?.displayName ?: "Unknown",
+                    text = authorName,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -207,7 +233,7 @@ private fun CommentItem(
                 IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                     Icon(
                         Icons.Default.Delete,
-                        contentDescription = "Delete comment",
+                        contentDescription = stringResource(Res.string.action_delete_comment),
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.error,
                     )

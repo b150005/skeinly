@@ -1533,6 +1533,97 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Decline" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "辞退" } }
       }
+    },
+    "label_comments_section" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Comments" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コメント" } }
+      }
+    },
+    "hint_add_comment" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add a comment\u2026" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コメントを追加\u2026" } }
+      }
+    },
+    "action_send_comment" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Send comment" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コメントを送信" } }
+      }
+    },
+    "state_no_comments" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No comments yet" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コメントはまだありません" } }
+      }
+    },
+    "action_delete_comment" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete comment" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コメントを削除" } }
+      }
+    },
+    "dialog_delete_comment_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete Comment?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コメントを削除しますか？" } }
+      }
+    },
+    "dialog_delete_comment_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Are you sure you want to delete this comment?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このコメントを削除してもよろしいですか？" } }
+      }
+    },
+    "dialog_share_with_user_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share with User" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ユーザーと共有" } }
+      }
+    },
+    "label_search_by_name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Search by name" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "名前で検索" } }
+      }
+    },
+    "label_selected_prefix" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Selected: %1$@" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "選択中: %1$@" } }
+      }
+    },
+    "label_no_name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "(no name)" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "(名前なし)" } }
+      }
+    },
+    "label_permission" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Permission" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "権限" } }
+      }
+    },
+    "action_share" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有" } }
+      }
     }
   },
   "version" : "1.0"

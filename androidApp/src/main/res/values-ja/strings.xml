@@ -264,4 +264,21 @@
     <string name="label_activity_commented_by">%1$sがプロジェクトにコメントしました</string>
     <string name="label_activity_forked_by">%1$sがパターンをフォークしました</string>
     <string name="label_activity_created_by">%1$sが新しいパターンを作成しました</string>
+
+    <!-- Comment section -->
+    <string name="label_comments_section">コメント</string>
+    <string name="hint_add_comment">コメントを追加\u2026</string>
+    <string name="action_send_comment">コメントを送信</string>
+    <string name="state_no_comments">コメントはまだありません</string>
+    <string name="action_delete_comment">コメントを削除</string>
+    <string name="dialog_delete_comment_title">コメントを削除しますか？</string>
+    <string name="dialog_delete_comment_body">このコメントを削除してもよろしいですか？</string>
+
+    <!-- User picker dialog -->
+    <string name="dialog_share_with_user_title">ユーザーと共有</string>
+    <string name="label_search_by_name">名前で検索</string>
+    <string name="label_selected_prefix">選択中: %1$s</string>
+    <string name="label_no_name">(名前なし)</string>
+    <string name="label_permission">権限</string>
+    <string name="action_share">共有</string>
 </resources>

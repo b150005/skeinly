@@ -6,6 +6,7 @@ struct CommentSectionView: View {
     let targetId: String
     @StateObject private var holder: ScopedViewModel<CommentSectionViewModel, CommentSectionState>
     @State private var commentText = ""
+    @State private var commentToDeleteId: String?
 
     private var viewModel: CommentSectionViewModel { holder.viewModel }
 
@@ -25,7 +26,7 @@ struct CommentSectionView: View {
 
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Comments")
+                Text(LocalizedStringKey("label_comments_section"))
                     .font(.headline)
                 if state.isLoading {
                     ProgressView()
@@ -35,9 +36,13 @@ struct CommentSectionView: View {
 
             // Comment input
             HStack {
-                TextField("Add a comment...", text: $commentText, axis: .vertical)
-                    .lineLimit(1...3)
-                    .textFieldStyle(.roundedBorder)
+                TextField(
+                    LocalizedStringKey("hint_add_comment"),
+                    text: $commentText,
+                    axis: .vertical
+                )
+                .lineLimit(1...3)
+                .textFieldStyle(.roundedBorder)
 
                 Button {
                     viewModel.onEvent(event: CommentSectionEventPostComment(body: commentText))
@@ -49,11 +54,12 @@ struct CommentSectionView: View {
                         Image(systemName: "paperplane.fill")
                     }
                 }
+                .accessibilityLabel(LocalizedStringKey("action_send_comment"))
                 .disabled(commentText.trimmingCharacters(in: .whitespaces).isEmpty || state.isSending)
             }
 
             if state.comments.isEmpty && !state.isLoading {
-                Text("No comments yet")
+                Text(LocalizedStringKey("state_no_comments"))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             } else {
@@ -62,17 +68,48 @@ struct CommentSectionView: View {
                         comment: comment,
                         authorName: authorName(for: comment, in: state),
                         onDelete: {
-                            viewModel.onEvent(event: CommentSectionEventDeleteComment(commentId: comment.id))
+                            commentToDeleteId = comment.id
                         }
                     )
                 }
             }
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("commentSection")
+        .confirmationDialog(
+            LocalizedStringKey("dialog_delete_comment_title"),
+            isPresented: Binding(
+                get: { commentToDeleteId != nil },
+                set: { if !$0 { commentToDeleteId = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: commentToDeleteId
+        ) { commentId in
+            Button(role: .destructive) {
+                viewModel.onEvent(event: CommentSectionEventDeleteComment(commentId: commentId))
+                commentToDeleteId = nil
+            } label: {
+                Text(LocalizedStringKey("action_delete"))
+            }
+            Button(role: .cancel) {
+                commentToDeleteId = nil
+            } label: {
+                Text(LocalizedStringKey("action_cancel"))
+            }
+        } message: { _ in
+            Text(LocalizedStringKey("dialog_delete_comment_body"))
+        }
     }
 
     private func authorName(for comment: Comment, in state: CommentSectionState) -> String {
+        // Null-author fallback unified with Android on `label_someone` (33.1.7
+        // ActivityFeed precedent). Previously iOS rendered "Unknown" as a bare
+        // English literal.
         let user = state.authors[comment.authorId]
-        return user?.displayName ?? "Unknown"
+        if let displayName = user?.displayName, !displayName.isEmpty {
+            return displayName
+        }
+        return NSLocalizedString("label_someone", comment: "")
     }
 }
 
@@ -84,11 +121,11 @@ private struct CommentRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(authorName)
+                Text(verbatim: authorName)
                     .font(.caption)
                     .fontWeight(.semibold)
                 Spacer()
-                Text(formattedDate)
+                Text(verbatim: formattedDate)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 Button(role: .destructive, action: onDelete) {
@@ -97,8 +134,9 @@ private struct CommentRow: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.red.opacity(0.7))
+                .accessibilityLabel(LocalizedStringKey("action_delete_comment"))
             }
-            Text(comment.body)
+            Text(verbatim: comment.body)
                 .font(.subheadline)
         }
         .padding(.vertical, 4)
