@@ -239,6 +239,20 @@
     <string name="action_fork_to_projects">マイプロジェクトにフォーク</string>
     <string name="label_projects">プロジェクト数</string>
 
+    <!-- Shared with me screen -->
+    <string name="title_shared_with_me">共有された項目</string>
+    <string name="state_no_shares">共有されたプロジェクトはありません</string>
+    <string name="state_no_shares_body">共有されたプロジェクトはここに表示されます</string>
+    <string name="label_unknown_pattern">不明なパターン</string>
+    <string name="label_from_user">%1$sから</string>
+    <string name="label_shared_on">共有日: %1$s</string>
+    <string name="label_permission_view">閲覧</string>
+    <string name="label_permission_fork">フォーク</string>
+    <string name="label_share_status_pending">保留中</string>
+    <string name="label_share_status_declined">辞退済み</string>
+    <string name="action_accept">承認</string>
+    <string name="action_decline">辞退</string>
+
     <!-- Activity feed screen -->
     <string name="title_activity_feed">アクティビティ</string>
     <string name="state_no_activity">アクティビティがまだありません</string>

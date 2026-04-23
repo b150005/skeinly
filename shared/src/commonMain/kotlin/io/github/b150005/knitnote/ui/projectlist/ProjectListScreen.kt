@@ -172,7 +172,10 @@ fun ProjectListScreen(
                             contentDescription = stringResource(Res.string.action_activity_feed),
                         )
                     }
-                    IconButton(onClick = onSharedWithMeClick) {
+                    IconButton(
+                        onClick = onSharedWithMeClick,
+                        modifier = Modifier.testTag("sharedWithMeButton"),
+                    ) {
                         Icon(
                             Icons.Default.People,
                             contentDescription = stringResource(Res.string.action_shared_with_me),

@@ -117,6 +117,7 @@ struct ProjectListScreen: View {
                     Button { path.append(Route.sharedWithMe) } label: {
                         Label("Shared With Me", systemImage: "shared.with.you")
                     }
+                    .accessibilityIdentifier("sharedWithMeButton")
                     Divider()
                     Button { path.append(Route.settings) } label: {
                         Label("Settings", systemImage: "gearshape")

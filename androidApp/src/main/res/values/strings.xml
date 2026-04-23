@@ -248,6 +248,30 @@
     <string name="action_fork_to_projects">Fork to My Projects</string>
     <string name="label_projects">Projects</string>
 
+    <!-- Shared with me screen (list of shares received by the current user).
+         Android renders a single "From X | Shared on Y | Permission | Status"
+         Text line with pipe separators; iOS renders bullet-separated Text
+         fragments in an HStack — platform-idiom divergence is acceptable. Both
+         resolve a null sharer to `label_someone` (reused from 33.1.7 ActivityFeed)
+         and a null patternTitle to `label_unknown_pattern`. `label_from_user` is
+         parametric so JA can use natural grammar (%1$sから) rather than EN-spaced
+         "From %1$s". `label_share_status_{pending,declined}` is a distinct domain
+         from `label_status_*` (project status filter) — share status and project
+         status are different taxonomies. ACCEPTED status has no label because
+         an accepted share is simply a visible list entry with no qualifier. -->
+    <string name="title_shared_with_me">Shared With Me</string>
+    <string name="state_no_shares">No shared projects yet</string>
+    <string name="state_no_shares_body">Projects shared with you will appear here</string>
+    <string name="label_unknown_pattern">Unknown pattern</string>
+    <string name="label_from_user">From %1$s</string>
+    <string name="label_shared_on">Shared on %1$s</string>
+    <string name="label_permission_view">View</string>
+    <string name="label_permission_fork">Fork</string>
+    <string name="label_share_status_pending">Pending</string>
+    <string name="label_share_status_declined">Declined</string>
+    <string name="action_accept">Accept</string>
+    <string name="action_decline">Decline</string>
+
     <!-- Activity feed screen -->
     <string name="title_activity_feed">Activity Feed</string>
     <string name="state_no_activity">No activity yet</string>

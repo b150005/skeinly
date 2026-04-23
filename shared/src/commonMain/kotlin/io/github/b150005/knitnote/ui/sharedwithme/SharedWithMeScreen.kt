@@ -32,10 +32,28 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import io.github.b150005.knitnote.domain.model.Share
+import io.github.b150005.knitnote.domain.model.SharePermission
 import io.github.b150005.knitnote.domain.model.ShareStatus
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_accept
+import io.github.b150005.knitnote.generated.resources.action_back
+import io.github.b150005.knitnote.generated.resources.action_decline
+import io.github.b150005.knitnote.generated.resources.label_from_user
+import io.github.b150005.knitnote.generated.resources.label_permission_fork
+import io.github.b150005.knitnote.generated.resources.label_permission_view
+import io.github.b150005.knitnote.generated.resources.label_share_status_declined
+import io.github.b150005.knitnote.generated.resources.label_share_status_pending
+import io.github.b150005.knitnote.generated.resources.label_shared_on
+import io.github.b150005.knitnote.generated.resources.label_someone
+import io.github.b150005.knitnote.generated.resources.label_unknown_pattern
+import io.github.b150005.knitnote.generated.resources.state_no_shares
+import io.github.b150005.knitnote.generated.resources.state_no_shares_body
+import io.github.b150005.knitnote.generated.resources.title_shared_with_me
 import io.github.b150005.knitnote.ui.util.formatFull
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,17 +76,26 @@ fun SharedWithMeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Shared With Me") },
+                title = { Text(stringResource(Res.string.title_shared_with_me)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(Res.string.action_back),
+                        )
                     }
                 },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .testTag("sharedWithMeScreen"),
+        ) {
             when {
                 state.isLoading -> {
                     CircularProgressIndicator(
@@ -81,11 +108,11 @@ fun SharedWithMeScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
-                            text = "No shared projects yet",
+                            text = stringResource(Res.string.state_no_shares),
                             style = MaterialTheme.typography.bodyLarge,
                         )
                         Text(
-                            text = "Projects shared with you will appear here",
+                            text = stringResource(Res.string.state_no_shares_body),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -126,27 +153,43 @@ private fun ShareListItem(
 ) {
     val dateText = share.sharedAt.formatFull()
 
-    val statusText =
+    // Resolve sharer → localized "From {name}" prefix; falls back to `label_someone`
+    // (reused from 33.1.7 ActivityFeed) when the user record is absent.
+    val resolvedSharer = sharerName ?: stringResource(Res.string.label_someone)
+    val fromText = stringResource(Res.string.label_from_user, resolvedSharer)
+    val sharedOnText = stringResource(Res.string.label_shared_on, dateText)
+
+    val permissionLabel =
+        stringResource(
+            when (share.permission) {
+                SharePermission.VIEW -> Res.string.label_permission_view
+                SharePermission.FORK -> Res.string.label_permission_fork
+            },
+        )
+
+    val statusSuffix =
         when (share.status) {
-            ShareStatus.PENDING -> " | Pending"
+            ShareStatus.PENDING ->
+                " | " + stringResource(Res.string.label_share_status_pending)
             ShareStatus.ACCEPTED -> ""
-            ShareStatus.DECLINED -> " | Declined"
+            ShareStatus.DECLINED ->
+                " | " + stringResource(Res.string.label_share_status_declined)
         }
 
-    val fromText = sharerName?.let { "From $it | " } ?: ""
+    val resolvedTitle = patternTitle ?: stringResource(Res.string.label_unknown_pattern)
 
     ListItem(
         modifier = Modifier.clickable(onClick = onClick),
         headlineContent = {
             Text(
-                text = patternTitle ?: "Unknown Pattern",
+                text = resolvedTitle,
                 style = MaterialTheme.typography.bodyLarge,
             )
         },
         supportingContent = {
             Column {
                 Text(
-                    text = "${fromText}Shared on $dateText | ${share.permission.name}$statusText",
+                    text = "$fromText | $sharedOnText | $permissionLabel$statusSuffix",
                     style = MaterialTheme.typography.bodySmall,
                 )
                 if (share.status == ShareStatus.PENDING) {
@@ -157,12 +200,12 @@ private fun ShareListItem(
                         Button(
                             onClick = onAccept,
                         ) {
-                            Text("Accept")
+                            Text(stringResource(Res.string.action_accept))
                         }
                         OutlinedButton(
                             onClick = onDecline,
                         ) {
-                            Text("Decline")
+                            Text(stringResource(Res.string.action_decline))
                         }
                     }
                 }

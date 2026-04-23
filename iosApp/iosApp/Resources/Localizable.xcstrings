@@ -1449,6 +1449,90 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Increment row" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "段数を増やす" } }
       }
+    },
+    "title_shared_with_me" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shared With Me" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有された項目" } }
+      }
+    },
+    "state_no_shares" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No shared projects yet" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有されたプロジェクトはありません" } }
+      }
+    },
+    "state_no_shares_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Projects shared with you will appear here" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有されたプロジェクトはここに表示されます" } }
+      }
+    },
+    "label_unknown_pattern" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unknown pattern" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "不明なパターン" } }
+      }
+    },
+    "label_from_user" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "From %1$@" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@から" } }
+      }
+    },
+    "label_shared_on" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shared on %1$@" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有日: %1$@" } }
+      }
+    },
+    "label_permission_view" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "View" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "閲覧" } }
+      }
+    },
+    "label_permission_fork" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Fork" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フォーク" } }
+      }
+    },
+    "label_share_status_pending" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pending" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "保留中" } }
+      }
+    },
+    "label_share_status_declined" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Declined" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "辞退済み" } }
+      }
+    },
+    "action_accept" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Accept" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "承認" } }
+      }
+    },
+    "action_decline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Decline" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "辞退" } }
+      }
     }
   },
   "version" : "1.0"
