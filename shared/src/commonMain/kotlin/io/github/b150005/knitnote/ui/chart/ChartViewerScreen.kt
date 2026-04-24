@@ -337,8 +337,21 @@ private fun ChartCanvas(
                     wipColor = segmentWipColor,
                     wipStrokeWidthPx = 2.dp.toPx(),
                 )
-                // Symbol rendering inside polar wedges is deferred to a follow-up
-                // slice per ADR-011 §2 — grid + overlay is acceptable for 35.1b.
+                // Glyphs paint on top of the overlay per ADR-011 §2 (matches rect
+                // AC-1.2 "overlay under glyph"). Parametric slot text is deferred
+                // to Phase 35.2+ along with the polar editor.
+                drawPolarCells(
+                    polar = extents,
+                    chart = chart,
+                    hiddenLayerIds = hiddenLayerIds,
+                    catalog = catalog,
+                    layout = layout,
+                    textMeasurer = textMeasurer,
+                    parsedPathCache = parsedPathCache,
+                    symbolColor = symbolColor,
+                    unknownBg = unknownBg,
+                    unknownFg = unknownFg,
+                )
             }
         }
     }

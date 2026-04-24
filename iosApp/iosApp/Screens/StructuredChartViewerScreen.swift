@@ -624,5 +624,63 @@ private struct ChartCanvasView: View {
             }
         }
         _ = segmentsVersion // force re-evaluation on segment map mutation
+
+        // Glyph pass — paints on top of the overlay per ADR-011 §2 (matches rect
+        // AC-1.2 "overlay under glyph"). Each cell is the largest axis-aligned
+        // square that fits inside the wedge at its mid-radius, then rotated CW
+        // by the wedge's angular center so the glyph's local "up" points
+        // radially outward. `cell.rotation` (author's discrete 0/90/180/270)
+        // composes on top via `SymbolRenderTransform.mapCommand`.
+        let symbolColor = GraphicsContext.Shading.color(.primary)
+        let unknownBg = GraphicsContext.Shading.color(.red.opacity(0.2))
+        for layer in chart.layers {
+            if !layer.visible || hiddenLayerIds.contains(layer.id) { continue }
+            for cell in layer.cells {
+                let ring = Int(cell.y)
+                let stitch = Int(cell.x)
+                if ring < 0 || ring >= ringsCount { continue }
+                if ring >= stitchesPerRing.count { continue }
+                let stitchesInRing = stitchesPerRing[ring]
+                if stitch < 0 || stitch >= stitchesInRing { continue }
+
+                let sweep = 2.0 * Double.pi / Double(stitchesInRing)
+                let rCenter = layout.innerRadius + (CGFloat(ring) + 0.5) * layout.ringThickness
+                let chord = 2.0 * Double(rCenter) * sin(sweep / 2.0)
+                let side = max(1.0, min(Double(layout.ringThickness), chord))
+                let half = CGFloat(side) / 2
+
+                // Center of the wedge at r_center — mirrors Kotlin
+                // PolarCellLayout.cellCenter (12-o'clock-CW, screen-angle = θ − π/2).
+                // `thetaCenter` mirrors `PolarCellLayout.cellRadialUpRotation` — update in
+                // lock-step when that formula changes (e.g. Phase 35.x widthUnits > 1).
+                let thetaCenter = Double(stitch) * sweep + sweep / 2
+                let screenAngle = thetaCenter - Double.pi / 2
+                let px = layout.cx + rCenter * CGFloat(cos(screenAngle))
+                let py = layout.cy + rCenter * CGFloat(sin(screenAngle))
+                let bounds = CGRect(x: px - half, y: py - half, width: half * 2, height: half * 2)
+                let strokeWidth = max(1, CGFloat(side) * 0.06)
+
+                // Rotate a subcontext around the cell center so the glyph's local
+                // "up" aligns with the radial direction. Positive radians rotate
+                // CW on SwiftUI's y-down screen — matches our 12-o'clock-CW convention.
+                var subcontext = context
+                subcontext.translateBy(x: px, y: py)
+                subcontext.rotate(by: .radians(thetaCenter))
+                subcontext.translateBy(x: -px, y: -py)
+
+                guard let def = catalog.get(id: cell.symbolId) else {
+                    drawUnknown(into: &subcontext, bounds: bounds, fill: unknownBg)
+                    continue
+                }
+                drawSymbolPath(
+                    into: &subcontext,
+                    def: def,
+                    bounds: bounds,
+                    rotation: Int(cell.rotation),
+                    color: symbolColor,
+                    lineWidth: strokeWidth
+                )
+            }
+        }
     }
 }
