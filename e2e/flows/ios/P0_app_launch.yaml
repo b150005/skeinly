@@ -14,12 +14,16 @@ tags:
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_ios.yaml
 
-# Verify the navigation title is visible
+# Verify the navigation title is visible ("Knit Note" is locale-identical per
+# the i18n-convention `app_name` rule — stays as a text assertion).
 - assertVisible: "Knit Note"
 
-# Verify empty state messaging (iOS ContentUnavailableView)
-- assertVisible: "No Projects Yet"
-- assertVisible: "Create Project"
+# Verify empty state messaging (Phase 33.5: locale-independent ids on the
+# ContentUnavailableView Label + its empty-state Create CTA).
+- assertVisible:
+    id: "emptyStateLabel"
+- assertVisible:
+    id: "createProjectEmptyCta"
 
 # Verify the create FAB is visible (Phase 33.4 renamed iOS toolbar +
 # from createProjectButton → createProjectFab to align with Kotlin.)

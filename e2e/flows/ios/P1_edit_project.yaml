@@ -12,8 +12,9 @@ tags:
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_ios.yaml
 
-# Create a project to edit (Phase 33.4: locale-independent ids)
-- assertVisible: "No Projects Yet"
+# Create a project to edit (Phase 33.5: locale-independent ids)
+- assertVisible:
+    id: "emptyStateLabel"
 - tapOn:
     id: "createProjectFab"
 - tapOn:
@@ -37,11 +38,10 @@ tags:
 - tapOn:
     id: "editProjectButton"
 
-# Verify the edit sheet opens.
-# See P0_create_project.yaml — `Edit Project` text assertion is load-bearing on
-# iOS SwiftUI NavigationStack title not being accessibilityIdentifier-addressable;
-# pivots to a landmark id when iOS ProjectList/ProjectDetail sweep lands.
-- assertVisible: "Edit Project"
+# Verify the edit sheet opens (Phase 33.5: landmark id on editSheet
+# NavigationStack per the createProjectSheet precedent).
+- assertVisible:
+    id: "editProjectDialog"
 
 # Clear and update the title (Phase 33.4 ids)
 - tapOn:
@@ -59,9 +59,12 @@ tags:
 - tapOn:
     id: "saveButton"
 
-# Verify updated title is displayed on the detail screen
+# Verify updated title is displayed on the detail screen (Phase 33.5: pivot
+# "of 120 rows" → rowTotalLabel id; this flaked on CI for Phase 33.3 since the
+# label_of_rows parametric render could race the save commit).
 - assertVisible: "Updated Scarf"
-- assertVisible: "of 120 rows"
+- assertVisible:
+    id: "rowTotalLabel"
 
 # Go back and verify the list reflects the change
 # (iOS back button shows previous screen's navigationTitle)

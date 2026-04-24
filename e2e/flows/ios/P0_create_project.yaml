@@ -12,8 +12,9 @@ tags:
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_ios.yaml
 
-# Wait for the empty state
-- assertVisible: "No Projects Yet"
+# Wait for the empty state (Phase 33.5: locale-independent id)
+- assertVisible:
+    id: "emptyStateLabel"
 
 # Tap the create FAB to open create sheet (Phase 33.4 renamed iOS toolbar +
 # from createProjectButton → createProjectFab to align with Kotlin and avoid
@@ -21,14 +22,11 @@ tags:
 - tapOn:
     id: "createProjectFab"
 
-# Verify the sheet opens.
-# `New Project` text assertion is load-bearing on iOS `ProjectListScreen.swift`
-# `createProjectSheet` still using LocalizedStringKey-resolved nav title —
-# SwiftUI's `NavigationStack` title is not an accessibilityIdentifier-addressable
-# element, so there's no direct `id:` equivalent. Pivot this to a landmark id
-# (e.g. `newProjectDialog` on an `.accessibilityElement(children: .contain)`
-# wrapper) when the iOS ProjectList i18n sweep lands.
-- assertVisible: "New Project"
+# Verify the sheet opens (Phase 33.5: landmark id on createProjectSheet
+# NavigationStack — SwiftUI nav title itself is not accessibilityIdentifier-
+# addressable, so the container landmark is the locale-independent route).
+- assertVisible:
+    id: "newProjectDialog"
 
 # Enter project name (accessibilityIdentifier — locale-independent)
 - tapOn:
@@ -46,7 +44,11 @@ tags:
 
 # Verify the project appears in the list
 - assertVisible: "My Test Scarf"
+# `Not Started` resolves through `label_status_not_started` on the StatusBadge;
+# on en-US CI it renders English. Pivot to a per-row status id once ProjectRow
+# gains stable per-project accessibility landmarks.
 - assertVisible: "Not Started"
 
-# Verify empty state is gone
-- assertNotVisible: "No Projects Yet"
+# Verify empty state is gone (Phase 33.5: locale-independent id)
+- assertNotVisible:
+    id: "emptyStateLabel"

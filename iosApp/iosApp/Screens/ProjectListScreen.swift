@@ -30,22 +30,38 @@ struct ProjectListScreen: View {
             if state.isLoading && state.projects.isEmpty {
                 ProgressView()
             } else if state.projects.isEmpty && hasActiveFilter {
+                // `emptyStateNoMatch` is a defensive landmark — no current
+                // Maestro/XCUITest flow asserts on the filter-empty state yet,
+                // but keeping the id matches the Kotlin side and unblocks a
+                // future search-filter E2E without a follow-up PR.
                 ContentUnavailableView(
-                    "No Matching Projects",
+                    LocalizedStringKey("state_no_matching_projects"),
                     systemImage: "magnifyingglass",
-                    description: Text("Try adjusting your search or filters.")
+                    description: Text(LocalizedStringKey("state_no_matching_projects_body"))
                 )
+                .accessibilityIdentifier("emptyStateNoMatch")
             } else if state.projects.isEmpty {
-                ContentUnavailableView {
-                    Label("No Projects Yet", systemImage: "folder")
-                } description: {
-                    Text("Start tracking your first knitting project.")
-                } actions: {
-                    Button("Create Project") {
-                        showCreateSheet = true
+                // `ContentUnavailableView` with a content closure renders its
+                // Label as two child accessibility elements; placing the id on
+                // an inner view makes cross-query lookup unreliable. Wrap in a
+                // ZStack-backed landmark so Maestro (`assertVisible: id`) and
+                // XCUITest (`otherElements[id]`) both resolve to a single
+                // container — same pattern as 33.1.6's ProfileScreen.swift.
+                ZStack {
+                    ContentUnavailableView {
+                        Label(LocalizedStringKey("state_no_projects"), systemImage: "folder")
+                    } description: {
+                        Text(LocalizedStringKey("state_no_projects_body"))
+                    } actions: {
+                        Button(LocalizedStringKey("action_create_project")) {
+                            showCreateSheet = true
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .accessibilityIdentifier("createProjectEmptyCta")
                     }
-                    .buttonStyle(.borderedProminent)
                 }
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("emptyStateLabel")
             } else {
                 List {
                     StatusFilterSection(
@@ -66,21 +82,28 @@ struct ProjectListScreen: View {
                                     projectToDelete = project
                                     showDeleteConfirmation = true
                                 } label: {
-                                    Label("Delete", systemImage: "trash")
+                                    Label(LocalizedStringKey("action_delete"), systemImage: "trash")
                                 }
                             }
                     }
                 }
             }
         }
-        .searchable(text: $searchText, prompt: "Search projects...")
+        .searchable(
+            text: $searchText,
+            prompt: Text(LocalizedStringKey("hint_search_projects"))
+        )
         .onChange(of: searchText) { _, newValue in
             viewModel.onEvent(event: ProjectListEventUpdateSearchQuery(query: newValue))
         }
         .onAppear {
             searchText = holder.state.searchQuery
         }
-        .navigationTitle("Knit Note")
+        // `app_name` is locale-identical ("Knit Note" in both en and ja) per the
+        // i18n-convention doc. The bare-literal nav-title is intentional —
+        // LocalizedStringKey would resolve to the same string and any future
+        // rename ships through the xcstrings source anyway.
+        .navigationTitle(LocalizedStringKey("app_name"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -92,6 +115,7 @@ struct ProjectListScreen: View {
                 // toolbar trigger and the sheet-confirm button both had identifier
                 // "createProjectButton", which collided when the sheet was present.
                 .accessibilityIdentifier("createProjectFab")
+                .accessibilityLabel(LocalizedStringKey("action_new_project"))
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
@@ -100,31 +124,34 @@ struct ProjectListScreen: View {
                     Divider()
 
                     Button { path.append(Route.discovery) } label: {
-                        Label("Discover Patterns", systemImage: "globe")
+                        Label(LocalizedStringKey("action_discover_patterns"), systemImage: "globe")
                     }
+                    .accessibilityIdentifier("discoverPatternsButton")
                     Button { path.append(Route.patternLibrary) } label: {
-                        Label("Pattern Library", systemImage: "heart.text.square")
+                        Label(LocalizedStringKey("action_pattern_library"), systemImage: "heart.text.square")
                     }
+                    .accessibilityIdentifier("patternLibraryButton")
                     Button { path.append(Route.symbolGallery) } label: {
-                        Label("Symbol Dictionary", systemImage: "square.grid.3x3")
+                        Label(LocalizedStringKey("action_symbol_dictionary"), systemImage: "square.grid.3x3")
                     }
                     .accessibilityIdentifier("symbolGalleryButton")
                     Button { path.append(Route.profile) } label: {
-                        Label("Profile", systemImage: "person.circle")
+                        Label(LocalizedStringKey("action_profile"), systemImage: "person.circle")
                     }
                     .accessibilityIdentifier("profileButton")
                     Button { path.append(Route.activityFeed) } label: {
-                        Label("Activity", systemImage: "bell")
+                        Label(LocalizedStringKey("action_activity_feed"), systemImage: "bell")
                     }
                     .accessibilityIdentifier("activityFeedButton")
                     Button { path.append(Route.sharedWithMe) } label: {
-                        Label("Shared With Me", systemImage: "shared.with.you")
+                        Label(LocalizedStringKey("action_shared_with_me"), systemImage: "shared.with.you")
                     }
                     .accessibilityIdentifier("sharedWithMeButton")
                     Divider()
                     Button { path.append(Route.settings) } label: {
-                        Label("Settings", systemImage: "gearshape")
+                        Label(LocalizedStringKey("action_settings"), systemImage: "gearshape")
                     }
+                    .accessibilityIdentifier("settingsButton")
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
@@ -134,23 +161,35 @@ struct ProjectListScreen: View {
         .sheet(isPresented: $showCreateSheet) {
             createProjectSheet
         }
-        .alert("Delete Project?", isPresented: $showDeleteConfirmation) {
-            Button("Delete", role: .destructive) {
-                if let project = projectToDelete {
-                    viewModel.onEvent(event: ProjectListEventDeleteProject(id: project.id))
-                }
+        .alert(
+            LocalizedStringKey("dialog_delete_project_title"),
+            isPresented: $showDeleteConfirmation,
+            presenting: projectToDelete
+        ) { project in
+            Button(LocalizedStringKey("action_delete"), role: .destructive) {
+                viewModel.onEvent(event: ProjectListEventDeleteProject(id: project.id))
             }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This action cannot be undone.")
+            Button(LocalizedStringKey("action_cancel"), role: .cancel) {}
+        } message: { project in
+            // `dialog_delete_project_body` is parametric ("%1$@" / "%1$s" in
+            // Android) — resolve via `String(format:)` so the project title
+            // substitutes in. Android uses `stringResource(res, name)`.
+            Text(
+                String(
+                    format: NSLocalizedString("dialog_delete_project_body", comment: ""),
+                    project.title
+                )
+            )
         }
         .onChange(of: state.error) { _, newError in
             showError = newError != nil
         }
-        .alert("Error", isPresented: $showError) {
-            Button("OK") { viewModel.onEvent(event: ProjectListEventClearError.shared) }
+        .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
+            Button(LocalizedStringKey("action_ok")) { viewModel.onEvent(event: ProjectListEventClearError.shared) }
         } message: {
-            Text(state.error ?? "")
+            // ViewModel error strings are still raw — typed error-channel
+            // localization is tracked in the Tech Debt Backlog.
+            Text(verbatim: state.error ?? "")
         }
     }
 
@@ -160,20 +199,33 @@ struct ProjectListScreen: View {
             Button {
                 viewModel.onEvent(event: ProjectListEventUpdateSortOrder(order: .recent))
             } label: {
-                Label("Recent", systemImage: currentOrder == .recent ? "checkmark" : "")
+                Label(
+                    LocalizedStringKey("label_sort_recent"),
+                    systemImage: currentOrder == .recent ? "checkmark" : ""
+                )
             }
             Button {
                 viewModel.onEvent(event: ProjectListEventUpdateSortOrder(order: .alphabetical))
             } label: {
-                Label("Alphabetical", systemImage: currentOrder == .alphabetical ? "checkmark" : "")
+                Label(
+                    LocalizedStringKey("label_sort_alphabetical_detail"),
+                    systemImage: currentOrder == .alphabetical ? "checkmark" : ""
+                )
             }
             Button {
                 viewModel.onEvent(event: ProjectListEventUpdateSortOrder(order: .progress))
             } label: {
-                Label("Progress", systemImage: currentOrder == .progress ? "checkmark" : "")
+                // Use the `_detail` variant to match the adjacent
+                // `label_sort_alphabetical_detail` menu entry — the short form
+                // `label_sort_progress` is reserved for the chip render that
+                // only Android uses today.
+                Label(
+                    LocalizedStringKey("label_sort_progress_detail"),
+                    systemImage: currentOrder == .progress ? "checkmark" : ""
+                )
             }
         } label: {
-            Label("Sort by", systemImage: "arrow.up.arrow.down")
+            Label(LocalizedStringKey("action_sort"), systemImage: "arrow.up.arrow.down")
         }
     }
 
@@ -207,6 +259,7 @@ struct ProjectListScreen: View {
                         resetCreateForm()
                         showCreateSheet = false
                     }
+                    .accessibilityIdentifier("cancelButton")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(LocalizedStringKey("action_create")) {
@@ -223,6 +276,12 @@ struct ProjectListScreen: View {
                     .disabled(newTitle.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
+            // Landmark for Maestro / XCUITest — SwiftUI `NavigationStack` nav
+            // title is not an `accessibilityIdentifier`-addressable element, so
+            // a container landmark is the only locale-independent route. Mirrors
+            // the Kotlin `newProjectDialog` landmark added in Phase 33.4.
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("newProjectDialog")
         }
         .presentationDetents([.medium])
     }
@@ -245,25 +304,29 @@ private struct StatusFilterSection: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     StatusFilterChip(
-                        title: "All",
+                        titleKey: LocalizedStringKey("label_status_all"),
                         isSelected: statusFilter == nil,
                         action: { onStatusFilterChange(nil) }
                     )
+                    .accessibilityIdentifier("filterAllChip")
                     StatusFilterChip(
-                        title: "In Progress",
+                        titleKey: LocalizedStringKey("label_status_in_progress"),
                         isSelected: statusFilter == .inProgress,
                         action: { onStatusFilterChange(statusFilter == .inProgress ? nil : .inProgress) }
                     )
+                    .accessibilityIdentifier("filterInProgressChip")
                     StatusFilterChip(
-                        title: "Not Started",
+                        titleKey: LocalizedStringKey("label_status_not_started"),
                         isSelected: statusFilter == .notStarted,
                         action: { onStatusFilterChange(statusFilter == .notStarted ? nil : .notStarted) }
                     )
+                    .accessibilityIdentifier("filterNotStartedChip")
                     StatusFilterChip(
-                        title: "Completed",
+                        titleKey: LocalizedStringKey("label_status_completed"),
                         isSelected: statusFilter == .completed,
                         action: { onStatusFilterChange(statusFilter == .completed ? nil : .completed) }
                     )
+                    .accessibilityIdentifier("filterCompletedChip")
                 }
                 .padding(.vertical, DesignTokens.listRowPaddingV)
             }
@@ -273,13 +336,13 @@ private struct StatusFilterSection: View {
 }
 
 private struct StatusFilterChip: View {
-    let title: String
+    let titleKey: LocalizedStringKey
     let isSelected: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Text(title)
+            Text(titleKey)
                 .font(.subheadline)
                 .fontWeight(isSelected ? .semibold : .regular)
                 .padding(.horizontal, DesignTokens.chipPaddingH)
@@ -300,7 +363,7 @@ private struct ProjectRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(project.title)
+                Text(verbatim: project.title)
                     .font(.headline)
                 Spacer()
                 StatusBadge(status: project.status)
@@ -308,13 +371,26 @@ private struct ProjectRow: View {
 
             HStack {
                 if let total = project.totalRows?.intValue {
-                    Text("\(project.currentRow) / \(total) rows")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    Text(
+                        String(
+                            format: NSLocalizedString("label_rows_of_total", comment: ""),
+                            project.currentRow,
+                            total
+                        )
+                    )
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("projectRowCount")
                 } else {
-                    Text("\(project.currentRow) rows")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    Text(
+                        String(
+                            format: NSLocalizedString("label_rows_current", comment: ""),
+                            project.currentRow
+                        )
+                    )
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("projectRowCount")
                 }
             }
 
@@ -341,7 +417,7 @@ struct StatusBadge: View {
     let status: ProjectStatus
 
     var body: some View {
-        Text(statusText)
+        statusText
             .font(.caption2)
             .fontWeight(.medium)
             .padding(.horizontal, DesignTokens.badgePaddingH)
@@ -349,14 +425,20 @@ struct StatusBadge: View {
             .background(statusColor.opacity(DesignTokens.highlightOpacity))
             .foregroundStyle(statusColor)
             .clipShape(Capsule())
+            .accessibilityIdentifier("projectStatusBadge")
     }
 
-    private var statusText: String {
+    @ViewBuilder
+    private var statusText: some View {
         switch status {
-        case .notStarted: return "Not Started"
-        case .inProgress: return "In Progress"
-        case .completed: return "Completed"
-        default: return "Unknown"
+        case .notStarted: Text(LocalizedStringKey("label_status_not_started"))
+        case .inProgress: Text(LocalizedStringKey("label_status_in_progress"))
+        case .completed: Text(LocalizedStringKey("label_status_completed"))
+        // `default` is forced by the Kotlin-enum→ObjC bridging — Kotlin
+        // `ProjectStatus` is a closed enum but Swift sees it as open. Per the
+        // Phase 33.1.13 precedent, return a locale-neutral non-empty fallback
+        // rather than an empty string so an unhandled case surfaces visibly.
+        default: Text(verbatim: "\(status)")
         }
     }
 
