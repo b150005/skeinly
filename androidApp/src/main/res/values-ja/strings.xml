@@ -64,6 +64,13 @@
     <string name="dialog_polar_extents_title">円形チャート</string>
     <string name="label_polar_rings">段数</string>
     <string name="label_polar_stitches_per_ring">各段の目数 (カンマ区切り)</string>
+    <!-- Phase 35.3 (ADR-011 §6): グリッドサイズピッカー -->
+    <string name="action_resize_chart">サイズ変更</string>
+    <string name="dialog_resize_chart_title">チャートのサイズ変更</string>
+    <string name="label_grid_width">幅</string>
+    <string name="label_grid_height">高さ</string>
+    <string name="label_polar_stitches_uniform">各段の目数 (一律)</string>
+    <string name="label_resize_trim_count">%1$d 個のセルが削除されます</string>
 
     <!-- Project list screen -->
     <string name="action_discover_patterns">パターンを探す</string>

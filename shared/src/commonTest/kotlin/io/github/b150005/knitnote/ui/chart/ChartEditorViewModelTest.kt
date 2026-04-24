@@ -1668,4 +1668,469 @@ class ChartEditorViewModelTest {
             ),
         )
     }
+
+    // ----------------------------------------------------------------
+    // Phase 35.3 (ADR-011 §6): grid-size picker — Resize chart event +
+    // trimCellsToExtents / trimRemovalCount helpers.
+    // ----------------------------------------------------------------
+
+    // 72.
+    @Test
+    fun `ResizeChart with unchanged extents emits no history entry and no state change`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            val before = viewModel.state.value
+
+            viewModel.onEvent(ChartEditorEvent.ResizeChart(before.draftExtents))
+
+            val after = viewModel.state.value
+            assertEquals(before.draftExtents, after.draftExtents)
+            assertFalse(after.canUndo)
+            assertFalse(after.hasUnsavedChanges)
+        }
+
+    // 73.
+    @Test
+    fun `ResizeChart growing rect extents keeps all cells and enables undo`() =
+        runTest {
+            val seeded =
+                seededChart(
+                    layers =
+                        listOf(
+                            ChartLayer(
+                                id = "L1",
+                                name = "Main",
+                                cells = listOf(ChartCell(symbolId = "jis.knit.k", x = 7, y = 7)),
+                            ),
+                        ),
+                )
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+
+            viewModel.onEvent(
+                ChartEditorEvent.ResizeChart(
+                    ChartExtents.Rect(minX = 0, maxX = 11, minY = 0, maxY = 11),
+                ),
+            )
+
+            val state = viewModel.state.value
+            assertEquals(ChartExtents.Rect(0, 11, 0, 11), state.draftExtents)
+            assertEquals(1, state.draftLayers[0].cells.size)
+            assertTrue(state.canUndo)
+            assertTrue(state.hasUnsavedChanges)
+        }
+
+    // 74.
+    @Test
+    fun `ResizeChart shrinking rect extents trims cells outside new bounds`() =
+        runTest {
+            val seeded =
+                seededChart(
+                    layers =
+                        listOf(
+                            ChartLayer(
+                                id = "L1",
+                                name = "Main",
+                                cells =
+                                    listOf(
+                                        ChartCell(symbolId = "jis.knit.k", x = 1, y = 1),
+                                        ChartCell(symbolId = "jis.knit.k", x = 6, y = 6),
+                                        ChartCell(symbolId = "jis.knit.k", x = 7, y = 0),
+                                    ),
+                            ),
+                        ),
+                )
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+
+            viewModel.onEvent(
+                ChartEditorEvent.ResizeChart(
+                    ChartExtents.Rect(minX = 0, maxX = 4, minY = 0, maxY = 4),
+                ),
+            )
+
+            val state = viewModel.state.value
+            val cells = state.draftLayers[0].cells
+            assertEquals(1, cells.size)
+            assertEquals(ChartCell(symbolId = "jis.knit.k", x = 1, y = 1), cells[0])
+            assertTrue(state.hasUnsavedChanges)
+            assertTrue(state.canUndo)
+        }
+
+    // 75.
+    @Test
+    fun `Undo after ResizeChart restores extents and trimmed cells in one step`() =
+        runTest {
+            val seeded =
+                seededChart(
+                    layers =
+                        listOf(
+                            ChartLayer(
+                                id = "L1",
+                                name = "Main",
+                                cells = listOf(ChartCell(symbolId = "jis.knit.k", x = 6, y = 6)),
+                            ),
+                        ),
+                )
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+
+            viewModel.onEvent(
+                ChartEditorEvent.ResizeChart(
+                    ChartExtents.Rect(minX = 0, maxX = 4, minY = 0, maxY = 4),
+                ),
+            )
+            assertEquals(
+                0,
+                viewModel.state.value.draftLayers[0]
+                    .cells.size,
+            )
+
+            viewModel.onEvent(ChartEditorEvent.Undo)
+
+            val state = viewModel.state.value
+            assertEquals(ChartExtents.Rect(0, 7, 0, 7), state.draftExtents)
+            assertEquals(1, state.draftLayers[0].cells.size)
+            assertEquals(ChartCell(symbolId = "jis.knit.k", x = 6, y = 6), state.draftLayers[0].cells[0])
+        }
+
+    // 76.
+    @Test
+    fun `ResizeChart trims cells across all layers preserving layer ids names and order`() =
+        runTest {
+            val seeded =
+                seededChart(
+                    layers =
+                        listOf(
+                            ChartLayer(
+                                id = "L1",
+                                name = "Main",
+                                cells =
+                                    listOf(
+                                        ChartCell(symbolId = "jis.knit.k", x = 0, y = 0),
+                                        ChartCell(symbolId = "jis.knit.k", x = 7, y = 7),
+                                    ),
+                            ),
+                            ChartLayer(
+                                id = "L2",
+                                name = "Cables",
+                                cells =
+                                    listOf(ChartCell(symbolId = "jis.knit.p", x = 6, y = 6)),
+                            ),
+                        ),
+                )
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+
+            viewModel.onEvent(
+                ChartEditorEvent.ResizeChart(
+                    ChartExtents.Rect(minX = 0, maxX = 4, minY = 0, maxY = 4),
+                ),
+            )
+
+            val state = viewModel.state.value
+            assertEquals(listOf("L1", "L2"), state.draftLayers.map { it.id })
+            assertEquals(listOf("Main", "Cables"), state.draftLayers.map { it.name })
+            assertEquals(1, state.draftLayers[0].cells.size)
+            assertEquals(0, state.draftLayers[1].cells.size)
+        }
+
+    // 77.
+    @Test
+    fun `ResizeChart shrinking polar rings trims cells whose ring is out of range`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            viewModel.onEvent(
+                ChartEditorEvent.SetExtents(
+                    ChartExtents.Polar(rings = 4, stitchesPerRing = listOf(8, 8, 8, 8)),
+                ),
+            )
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 3))
+
+            viewModel.onEvent(
+                ChartEditorEvent.ResizeChart(
+                    ChartExtents.Polar(rings = 2, stitchesPerRing = listOf(8, 8)),
+                ),
+            )
+
+            val state = viewModel.state.value
+            val polar = state.draftExtents as ChartExtents.Polar
+            assertEquals(2, polar.rings)
+            val cells = state.draftLayers[0].cells
+            assertEquals(1, cells.size)
+            assertEquals(0, cells[0].y)
+        }
+
+    // 78.
+    @Test
+    fun `ResizeChart shrinking polar stitches per ring trims cells with x out of range`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            viewModel.onEvent(
+                ChartEditorEvent.SetExtents(
+                    ChartExtents.Polar(rings = 1, stitchesPerRing = listOf(8)),
+                ),
+            )
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 7, y = 0))
+
+            viewModel.onEvent(
+                ChartEditorEvent.ResizeChart(
+                    ChartExtents.Polar(rings = 1, stitchesPerRing = listOf(4)),
+                ),
+            )
+
+            val state = viewModel.state.value
+            val cells = state.draftLayers[0].cells
+            assertEquals(1, cells.size)
+            assertEquals(0, cells[0].x)
+        }
+
+    // 79.
+    @Test
+    fun `ResizeChart with mismatched coordinate system is rejected as no-op`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            val before = viewModel.state.value
+            assertTrue(before.draftExtents is ChartExtents.Rect)
+
+            viewModel.onEvent(
+                ChartEditorEvent.ResizeChart(
+                    ChartExtents.Polar(rings = 3, stitchesPerRing = listOf(8, 8, 8)),
+                ),
+            )
+
+            val after = viewModel.state.value
+            assertEquals(before.draftExtents, after.draftExtents)
+            assertFalse(after.canUndo)
+        }
+
+    // 80.
+    @Test
+    fun `ResizeChart while pendingParameterInput is open is rejected`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            val parametric = catalog.all().firstOrNull { it.parameterSlots.isNotEmpty() }
+            assertNotNull(parametric)
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol(parametric.id))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 1, y = 1))
+            val midDialog = viewModel.state.value
+            assertNotNull(midDialog.pendingParameterInput)
+
+            viewModel.onEvent(
+                ChartEditorEvent.ResizeChart(
+                    ChartExtents.Rect(minX = 0, maxX = 11, minY = 0, maxY = 11),
+                ),
+            )
+
+            val after = viewModel.state.value
+            assertEquals(midDialog.draftExtents, after.draftExtents)
+        }
+
+    // 81.
+    @Test
+    fun `ResizeChart growing extents on existing chart sets hasUnsavedChanges`() =
+        runTest {
+            val seeded = seededChart(layers = listOf(ChartLayer(id = "L1", name = "Main")))
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+            assertFalse(viewModel.state.value.hasUnsavedChanges)
+
+            viewModel.onEvent(
+                ChartEditorEvent.ResizeChart(
+                    ChartExtents.Rect(minX = 0, maxX = 11, minY = 0, maxY = 11),
+                ),
+            )
+
+            assertTrue(viewModel.state.value.hasUnsavedChanges)
+        }
+
+    // 82.
+    @Test
+    fun `ResizeChart that trims all cells on a new chart leaves hasUnsavedChanges false`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 6, y = 6))
+            assertTrue(viewModel.state.value.hasUnsavedChanges)
+
+            viewModel.onEvent(
+                ChartEditorEvent.ResizeChart(
+                    ChartExtents.Rect(minX = 0, maxX = 0, minY = 0, maxY = 0),
+                ),
+            )
+
+            val state = viewModel.state.value
+            assertEquals(0, state.draftLayers[0].cells.size)
+            assertFalse(state.hasUnsavedChanges)
+        }
+
+    // 83.
+    @Test
+    fun `trimRemovalCount returns zero when all cells fit within new extents`() {
+        val layers =
+            listOf(
+                ChartLayer(
+                    id = "L1",
+                    name = "M",
+                    cells = listOf(ChartCell(symbolId = "jis.knit.k", x = 1, y = 2)),
+                ),
+            )
+        assertEquals(0, trimRemovalCount(layers, ChartExtents.Rect(0, 7, 0, 7)))
+        assertEquals(0, trimRemovalCount(layers, ChartExtents.Rect(0, 11, 0, 11)))
+    }
+
+    // 84.
+    @Test
+    fun `trimRemovalCount counts cells outside new rect bounds`() {
+        val layers =
+            listOf(
+                ChartLayer(
+                    id = "L1",
+                    name = "M",
+                    cells =
+                        listOf(
+                            ChartCell(symbolId = "jis.knit.k", x = 1, y = 1),
+                            ChartCell(symbolId = "jis.knit.k", x = 6, y = 1),
+                            ChartCell(symbolId = "jis.knit.k", x = 1, y = 6),
+                            ChartCell(symbolId = "jis.knit.k", x = 6, y = 6),
+                        ),
+                ),
+                ChartLayer(
+                    id = "L2",
+                    name = "C",
+                    cells = listOf(ChartCell(symbolId = "jis.knit.p", x = 5, y = 0)),
+                ),
+            )
+        assertEquals(4, trimRemovalCount(layers, ChartExtents.Rect(0, 4, 0, 4)))
+    }
+
+    // 85a. Phase 35.3: redo stack is cleared by ResizeChart, matching the
+    // EditHistory branching-after-undo invariant ("recording a new snapshot
+    // clears the redo stack"). Closes the gap that test 75 leaves open —
+    // 75 verifies undo restoration, this verifies redo invalidation.
+    @Test
+    fun `ResizeChart after Undo clears the redo stack`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+            viewModel.onEvent(ChartEditorEvent.Undo)
+            assertTrue(viewModel.state.value.canRedo)
+
+            viewModel.onEvent(
+                ChartEditorEvent.ResizeChart(
+                    ChartExtents.Rect(minX = 0, maxX = 11, minY = 0, maxY = 11),
+                ),
+            )
+
+            val state = viewModel.state.value
+            assertTrue(state.canUndo)
+            assertFalse(state.canRedo)
+        }
+
+    // 85b. Phase 35.3: resize on a chart with zero layers completes without
+    // exception. recordHistory captures the empty layer list; undo restores
+    // it via reconcileSelectedLayer fall-back to null.
+    @Test
+    fun `ResizeChart on a chart with no layers records history and undo restores extents`() =
+        runTest {
+            val seeded = seededChart(layers = emptyList())
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+            assertTrue(
+                viewModel.state.value.draftLayers
+                    .isEmpty(),
+            )
+            assertNull(viewModel.state.value.selectedLayerId)
+
+            viewModel.onEvent(
+                ChartEditorEvent.ResizeChart(
+                    ChartExtents.Rect(minX = 0, maxX = 3, minY = 0, maxY = 3),
+                ),
+            )
+
+            val resized = viewModel.state.value
+            assertEquals(ChartExtents.Rect(0, 3, 0, 3), resized.draftExtents)
+            assertTrue(resized.canUndo)
+            assertTrue(resized.draftLayers.isEmpty())
+
+            viewModel.onEvent(ChartEditorEvent.Undo)
+            val undone = viewModel.state.value
+            assertEquals(ChartExtents.Rect(0, 7, 0, 7), undone.draftExtents)
+            assertTrue(undone.draftLayers.isEmpty())
+            assertNull(undone.selectedLayerId)
+        }
+
+    // 85c. Phase 35.3: trim predicate checks the full footprint, not just
+    // the (x, y) anchor. A multi-cell symbol at (x = maxX - 1, width = 2)
+    // has its anchor inside the trimmed bounds but its right edge at maxX
+    // is on the edge. After shrinking maxX by one, the cell must be trimmed
+    // because its footprint now overflows. Anchor-only filtering would
+    // silently retain visually-overflowing cells from imported / forked charts.
+    @Test
+    fun `trimCellsToExtents drops cells whose footprint overflows the new rect bounds`() {
+        val layers =
+            listOf(
+                ChartLayer(
+                    id = "L1",
+                    name = "M",
+                    cells =
+                        listOf(
+                            ChartCell(symbolId = "jis.crochet.dc-cluster-5", x = 6, y = 0, width = 2),
+                            ChartCell(symbolId = "jis.knit.k", x = 0, y = 6, height = 2),
+                            ChartCell(symbolId = "jis.knit.k", x = 0, y = 0, width = 2),
+                        ),
+                ),
+            )
+        // Shrink to Rect(0, 6, 0, 6). The (x = 6, w = 2) cell's footprint occupies
+        // x ∈ [6, 7] but maxX = 6 means valid x ∈ [0, 6] — drop. Same for the
+        // (y = 6, h = 2) row-spanning cell. The (0, 0, w = 2) cell stays.
+        val trimmed = trimCellsToExtents(layers, ChartExtents.Rect(0, 6, 0, 6))
+        assertEquals(1, trimmed[0].cells.size)
+        assertEquals(0, trimmed[0].cells[0].x)
+        assertEquals(0, trimmed[0].cells[0].y)
+        assertEquals(2, trimRemovalCount(layers, ChartExtents.Rect(0, 6, 0, 6)))
+    }
+
+    // 85.
+    @Test
+    fun `trimRemovalCount counts cells outside new polar bounds`() {
+        val layers =
+            listOf(
+                ChartLayer(
+                    id = "L1",
+                    name = "M",
+                    cells =
+                        listOf(
+                            ChartCell(symbolId = "jis.knit.k", x = 0, y = 0),
+                            ChartCell(symbolId = "jis.knit.k", x = 5, y = 0),
+                            ChartCell(symbolId = "jis.knit.k", x = 0, y = 2),
+                        ),
+                ),
+            )
+        assertEquals(
+            2,
+            trimRemovalCount(
+                layers,
+                ChartExtents.Polar(rings = 2, stitchesPerRing = listOf(4, 4)),
+            ),
+        )
+    }
 }

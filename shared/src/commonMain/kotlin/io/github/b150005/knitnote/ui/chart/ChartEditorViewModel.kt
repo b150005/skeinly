@@ -222,6 +222,23 @@ sealed interface ChartEditorEvent {
     data class ToggleLayerLock(
         val layerId: String,
     ) : ChartEditorEvent
+
+    /**
+     * Phase 35.3 (ADR-011 §6): change extents within the current coordinate
+     * system, trimming any cells whose `(x, y)` falls outside the new bounds.
+     * Rejected as a silent no-op when [newExtents] uses a different coordinate
+     * system than the current draft — that is [SetExtents]'s job and only
+     * applies to new charts.
+     *
+     * Resize is one [EditHistory.Snapshot] including the trim. Works on both
+     * new and existing charts; on existing charts it sets [hasUnsavedChanges]
+     * even when no cells were trimmed because extents are part of the saved
+     * payload. Number-input bound validation (min 1, max 256) is the dialog's
+     * responsibility — the ViewModel trusts the value it receives.
+     */
+    data class ResizeChart(
+        val newExtents: ChartExtents,
+    ) : ChartEditorEvent
 }
 
 class ChartEditorViewModel(
@@ -280,6 +297,7 @@ class ChartEditorViewModel(
             is ChartEditorEvent.ReorderLayer -> reorderLayer(event.fromIndex, event.toIndex)
             is ChartEditorEvent.ToggleLayerVisibility -> toggleLayerVisibility(event.layerId)
             is ChartEditorEvent.ToggleLayerLock -> toggleLayerLock(event.layerId)
+            is ChartEditorEvent.ResizeChart -> resizeChart(event.newExtents)
         }
     }
 
@@ -874,6 +892,54 @@ class ChartEditorViewModel(
         commitLayerOp(current, updatedLayers, newSelection = current.selectedLayerId)
     }
 
+    // Phase 35.3 (ADR-011 §6): change extents in the same coordinate system,
+    // trim cells outside the new bounds, write a single EditHistory snapshot
+    // covering both the extents change and the trim. Cross-system resize is
+    // rejected silently — the dialog already constrains the input to the
+    // current system, and SetExtents handles the new-chart rect↔polar flip.
+    //
+    // isLoading guard is delegated to the UI layer: the overflow menu only
+    // renders once `state.isLoading == false`, so a resize event during load
+    // is unreachable from the in-app path. Same delegation pattern as
+    // [setExtents] / [commitCells] / [commitLayerOp].
+    private fun resizeChart(newExtents: ChartExtents) {
+        val current = _state.value
+        if (current.pendingParameterInput != null) return
+        val currentExtents = current.draftExtents
+        val sameSystem =
+            (currentExtents is ChartExtents.Rect && newExtents is ChartExtents.Rect) ||
+                (currentExtents is ChartExtents.Polar && newExtents is ChartExtents.Polar)
+        if (!sameSystem) return
+        if (currentExtents == newExtents) return
+        val trimmedLayers = trimCellsToExtents(current.draftLayers, newExtents)
+        recordHistory(current)
+        _state.update {
+            // The lambda reads `it.original` (not `current.original`) deliberately —
+            // `original` is mutated only by [load] and [save], both of which are
+            // gated behind isLoading / isSaving and cannot interleave with this
+            // synchronous handler. Reading from `it` keeps the unsaved-changes
+            // computation consistent with whatever else the same atomic update
+            // is committing. Same convention as [commitCells].
+            it.copy(
+                draftExtents = newExtents,
+                draftLayers = trimmedLayers,
+                canUndo = history.canUndo,
+                canRedo = history.canRedo,
+                // Resize invalidates an in-flight axis pick — the stitch index
+                // the user had in mind may no longer exist in the new extents.
+                isPickingReflectionAxis = false,
+                hasUnsavedChanges =
+                    computeUnsavedChanges(
+                        original = it.original,
+                        draftExtents = newExtents,
+                        draftLayers = trimmedLayers,
+                        draftCraftType = it.draftCraftType,
+                        draftReadingConvention = it.draftReadingConvention,
+                    ),
+            )
+        }
+    }
+
     private fun toggleLayerLock(layerId: String) {
         val current = _state.value
         if (current.pendingParameterInput != null) return
@@ -987,4 +1053,67 @@ internal fun reconcileSelectedLayer(
         return previousSelection
     }
     return restoredLayers.firstOrNull()?.id
+}
+
+/**
+ * Phase 35.3 (ADR-011 §6): drop cells whose footprint falls outside [extents].
+ *
+ * Rect: a cell at `(x, y)` with `width × height` occupies `[x, x+width)` × `[y, y+height)`.
+ * The cell is kept only when its full footprint stays inside `[minX, maxX]` × `[minY, maxY]`.
+ * The anchor alone is insufficient — a `width = 2` cell at `x = maxX` would visually overflow
+ * the trimmed canvas if only `x in minX..maxX` were checked.
+ *
+ * Polar: per ADR-011 §7, `ChartCell.width` is ignored in polar for MVP (a stitch that spans
+ * 2 angular positions is represented as a single-cell decrease symbol). The polar predicate
+ * therefore only checks the `(x, y)` anchor against the new ring/stitch bounds.
+ *
+ * Layer ids, names, visibility, lock state, and order are preserved; only the per-layer
+ * cell list narrows. Layers whose cells are unaffected are returned by reference so callers
+ * can identify a no-op trim via the helper's own equality.
+ */
+internal fun trimCellsToExtents(
+    layers: List<ChartLayer>,
+    extents: ChartExtents,
+): List<ChartLayer> =
+    when (extents) {
+        is ChartExtents.Rect ->
+            layers.map { layer ->
+                val kept =
+                    layer.cells.filter { cell ->
+                        // Footprint stays inside the new bounds. width/height ≥ 1 by the
+                        // ChartCell schema default, so `cell.width - 1` is non-negative.
+                        cell.x in extents.minX..(extents.maxX - cell.width + 1) &&
+                            cell.y in extents.minY..(extents.maxY - cell.height + 1)
+                    }
+                if (kept.size == layer.cells.size) layer else layer.copy(cells = kept)
+            }
+        is ChartExtents.Polar ->
+            layers.map { layer ->
+                val kept =
+                    layer.cells.filter { cell ->
+                        val ringIdx = cell.y
+                        if (ringIdx !in 0 until extents.rings) return@filter false
+                        val stitches = extents.stitchesPerRing.getOrNull(ringIdx) ?: 0
+                        cell.x in 0 until stitches
+                    }
+                if (kept.size == layer.cells.size) layer else layer.copy(cells = kept)
+            }
+    }
+
+/**
+ * Phase 35.3: count of cells that would be removed by trimming [layers] to
+ * [extents]. Drives the Resize dialog's "N cells will be removed" warning
+ * and the destructive-action color treatment when N > 0.
+ *
+ * Public (rather than internal) so the SwiftUI mirror of the Resize dialog
+ * can compute the same preview count without inlining the geometry — keeps
+ * Kotlin as the single source of truth for trim semantics.
+ */
+fun trimRemovalCount(
+    layers: List<ChartLayer>,
+    extents: ChartExtents,
+): Int {
+    val before = layers.sumOf { it.cells.size }
+    val after = trimCellsToExtents(layers, extents).sumOf { it.cells.size }
+    return before - after
 }
