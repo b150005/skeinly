@@ -2,6 +2,7 @@ package io.github.b150005.knitnote.ui.chart
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.b150005.knitnote.domain.chart.PolarSymmetry
 import io.github.b150005.knitnote.domain.model.ChartCell
 import io.github.b150005.knitnote.domain.model.ChartExtents
 import io.github.b150005.knitnote.domain.model.ChartLayer
@@ -107,6 +108,26 @@ sealed interface ChartEditorEvent {
 
     data object CancelParameterInput : ChartEditorEvent
 
+    /**
+     * Phase 35.2b: replicate cells on the target layer with [fold]-way
+     * rotational symmetry around each ring. Polar-only — silently ignored on
+     * rect charts. Rings whose `stitchesPerRing` is not divisible by [fold]
+     * pass through unchanged (see [PolarSymmetry.rotateCells]).
+     */
+    data class ApplyRotationalSymmetry(
+        val fold: Int,
+    ) : ChartEditorEvent
+
+    /**
+     * Phase 35.2b: reflect cells on the target layer across the radial ray
+     * at stitch index [axisStitch]. Polar-only — silently ignored on rect
+     * charts. Cell `rotation` is negated on reflection
+     * (see [PolarSymmetry.reflectCells]).
+     */
+    data class ApplyReflection(
+        val axisStitch: Int,
+    ) : ChartEditorEvent
+
     data object Undo : ChartEditorEvent
 
     data object Redo : ChartEditorEvent
@@ -157,6 +178,8 @@ class ChartEditorViewModel(
             is ChartEditorEvent.PlaceCell -> placeCell(event.x, event.y)
             is ChartEditorEvent.ConfirmParameterInput -> confirmParameterInput(event.values)
             ChartEditorEvent.CancelParameterInput -> cancelParameterInput()
+            is ChartEditorEvent.ApplyRotationalSymmetry -> applyRotationalSymmetry(event.fold)
+            is ChartEditorEvent.ApplyReflection -> applyReflection(event.axisStitch)
             ChartEditorEvent.Undo -> undo()
             ChartEditorEvent.Redo -> redo()
             ChartEditorEvent.Save -> save()
@@ -366,6 +389,35 @@ class ChartEditorViewModel(
 
     private fun cancelParameterInput() {
         _state.update { it.copy(pendingParameterInput = null) }
+    }
+
+    // Phase 35.2b polar authoring ops. Both ops mutate the target layer (MVP = layers[0])
+    // and route through commitCells so EditHistory + hasUnsavedChanges stay consistent with
+    // the tap-to-place path. Gated on polar extents and no in-flight parametric dialog.
+    private fun applyRotationalSymmetry(fold: Int) {
+        val current = _state.value
+        if (current.pendingParameterInput != null) return
+        val polar = current.draftExtents as? ChartExtents.Polar ?: return
+        val layers = current.draftLayers
+        if (layers.isEmpty()) return
+        val targetLayer = layers[0]
+        val newCells = PolarSymmetry.rotateCells(targetLayer.cells, polar, fold)
+        if (newCells === targetLayer.cells) return
+        if (newCells.size == targetLayer.cells.size && newCells == targetLayer.cells) return
+        commitCells(current, newCells)
+    }
+
+    private fun applyReflection(axisStitch: Int) {
+        val current = _state.value
+        if (current.pendingParameterInput != null) return
+        val polar = current.draftExtents as? ChartExtents.Polar ?: return
+        val layers = current.draftLayers
+        if (layers.isEmpty()) return
+        val targetLayer = layers[0]
+        val newCells = PolarSymmetry.reflectCells(targetLayer.cells, polar, axisStitch)
+        if (newCells === targetLayer.cells) return
+        if (newCells.size == targetLayer.cells.size && newCells == targetLayer.cells) return
+        commitCells(current, newCells)
     }
 
     private fun commitCells(

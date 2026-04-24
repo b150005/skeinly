@@ -367,4 +367,14 @@
     <string name="label_no_name">(no name)</string>
     <string name="label_permission">Permission</string>
     <string name="action_share">Share</string>
+
+    <!-- Chart editor polar symmetry ops (Phase 35.2b, ADR-011 §3). Surfaces
+         only when the draft chart is polar. `action_symmetry_fold` is
+         parametric — the fold divisor is substituted at render time so a
+         single key covers ×2/×3/×4/×6/×8. `action_symmetry_reflect` mirrors
+         cells across the 12-o'clock axis (stitch 0); a variable-axis picker
+         is Phase 35.2c scope. -->
+    <string name="label_symmetry_section">Symmetry</string>
+    <string name="action_symmetry_fold">Fold \u00D7%1$d</string>
+    <string name="action_symmetry_reflect">Reflect</string>
 </resources>

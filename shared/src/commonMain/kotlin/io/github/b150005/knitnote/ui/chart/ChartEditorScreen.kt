@@ -60,6 +60,8 @@ import io.github.b150005.knitnote.generated.resources.action_more_options
 import io.github.b150005.knitnote.generated.resources.action_ok
 import io.github.b150005.knitnote.generated.resources.action_redo
 import io.github.b150005.knitnote.generated.resources.action_save
+import io.github.b150005.knitnote.generated.resources.action_symmetry_fold
+import io.github.b150005.knitnote.generated.resources.action_symmetry_reflect
 import io.github.b150005.knitnote.generated.resources.action_undo
 import io.github.b150005.knitnote.generated.resources.dialog_parameter_edit_title
 import io.github.b150005.knitnote.generated.resources.dialog_parameter_enter_title
@@ -78,6 +80,7 @@ import io.github.b150005.knitnote.generated.resources.label_reading
 import io.github.b150005.knitnote.generated.resources.label_reading_crochet_flat
 import io.github.b150005.knitnote.generated.resources.label_reading_knit_flat
 import io.github.b150005.knitnote.generated.resources.label_reading_round
+import io.github.b150005.knitnote.generated.resources.label_symmetry_section
 import io.github.b150005.knitnote.generated.resources.state_empty_chart
 import io.github.b150005.knitnote.generated.resources.title_edit_chart
 import io.github.b150005.knitnote.ui.platform.SystemBackHandler
@@ -180,6 +183,8 @@ fun ChartEditorScreen(
                             // Extents section only actionable on a new chart —
                             // ViewModel rejects SetExtents on existing charts.
                             canChangeExtents = state.original == null,
+                            // Phase 35.2b: symmetry section visible only on polar charts.
+                            showSymmetrySection = state.draftExtents is ChartExtents.Polar,
                             onDismiss = { showOverflowMenu = false },
                             onCraftSelected = {
                                 viewModel.onEvent(ChartEditorEvent.SelectCraft(it))
@@ -196,6 +201,12 @@ fun ChartEditorScreen(
                             },
                             onPolarSelected = {
                                 showPolarPicker = true
+                            },
+                            onRotationalSymmetry = { fold ->
+                                viewModel.onEvent(ChartEditorEvent.ApplyRotationalSymmetry(fold))
+                            },
+                            onReflection = {
+                                viewModel.onEvent(ChartEditorEvent.ApplyReflection(axisStitch = 0))
                             },
                         )
                     }
@@ -652,11 +663,14 @@ private fun ChartMetadataMenu(
     readingConvention: ReadingConvention,
     currentExtents: ChartExtents,
     canChangeExtents: Boolean,
+    showSymmetrySection: Boolean,
     onDismiss: () -> Unit,
     onCraftSelected: (CraftType) -> Unit,
     onReadingSelected: (ReadingConvention) -> Unit,
     onFlatSelected: () -> Unit,
     onPolarSelected: () -> Unit,
+    onRotationalSymmetry: (Int) -> Unit,
+    onReflection: () -> Unit,
 ) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
         MetadataMenuHeader(stringResource(Res.string.label_craft))
@@ -715,6 +729,35 @@ private fun ChartMetadataMenu(
                     onDismiss()
                 },
                 modifier = Modifier.testTag("extentsOption_POLAR"),
+            )
+        }
+        if (showSymmetrySection) {
+            HorizontalDivider()
+            MetadataMenuHeader(stringResource(Res.string.label_symmetry_section))
+            // Phase 35.2b: v1 offers a fixed fold set (×2, ×3, ×4, ×6, ×8) and a
+            // fixed reflection axis at stitch 0 (12 o'clock). Variable-axis picker
+            // is Phase 35.2c scope per ADR-011 §3.
+            listOf(2, 3, 4, 6, 8).forEach { fold ->
+                DropdownMenuItem(
+                    text = {
+                        Text("  ${stringResource(Res.string.action_symmetry_fold, fold)}")
+                    },
+                    onClick = {
+                        onRotationalSymmetry(fold)
+                        onDismiss()
+                    },
+                    modifier = Modifier.testTag("symmetryFold_$fold"),
+                )
+            }
+            DropdownMenuItem(
+                text = {
+                    Text("  ${stringResource(Res.string.action_symmetry_reflect)}")
+                },
+                onClick = {
+                    onReflection()
+                    onDismiss()
+                },
+                modifier = Modifier.testTag("symmetryReflect"),
             )
         }
     }

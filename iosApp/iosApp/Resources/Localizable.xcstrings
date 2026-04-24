@@ -1695,6 +1695,27 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有" } }
       }
     },
+    "label_symmetry_section" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Symmetry" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "対称コピー" } }
+      }
+    },
+    "action_symmetry_fold" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Fold ×%1$d" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "回転 ×%1$d" } }
+      }
+    },
+    "action_symmetry_reflect" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reflect" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "鏡映" } }
+      }
+    },
     "action_reset_progress" : {
       "extractionState" : "manual",
       "localizations" : {

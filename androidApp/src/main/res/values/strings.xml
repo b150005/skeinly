@@ -323,4 +323,9 @@
     <string name="label_no_name">(no name)</string>
     <string name="label_permission">Permission</string>
     <string name="action_share">Share</string>
+
+    <!-- Chart editor polar symmetry ops (Phase 35.2b) -->
+    <string name="label_symmetry_section">Symmetry</string>
+    <string name="action_symmetry_fold">Fold \u00D7%1$d</string>
+    <string name="action_symmetry_reflect">Reflect</string>
 </resources>

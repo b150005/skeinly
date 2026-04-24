@@ -161,6 +161,34 @@ struct StructuredChartEditorScreen: View {
                             .accessibilityIdentifier("extentsOption_POLAR")
                         }
                     }
+                    // Phase 35.2b: polar-only symmetry ops (ADR-011 §3). Fixed
+                    // fold set + reflection axis at stitch 0 for v1; variable-axis
+                    // picker is Phase 35.2c scope.
+                    if state.draftExtents is ChartExtentsPolar {
+                        Section(LocalizedStringKey("label_symmetry_section")) {
+                            ForEach([2, 3, 4, 6, 8], id: \.self) { fold in
+                                Button {
+                                    viewModel.onEvent(
+                                        event: ChartEditorEventApplyRotationalSymmetry(fold: Int32(fold))
+                                    )
+                                } label: {
+                                    Text(String(
+                                        format: NSLocalizedString("action_symmetry_fold", comment: ""),
+                                        fold
+                                    ))
+                                }
+                                .accessibilityIdentifier("symmetryFold_\(fold)")
+                            }
+                            Button {
+                                viewModel.onEvent(
+                                    event: ChartEditorEventApplyReflection(axisStitch: 0)
+                                )
+                            } label: {
+                                Text(LocalizedStringKey("action_symmetry_reflect"))
+                            }
+                            .accessibilityIdentifier("symmetryReflect")
+                        }
+                    }
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }

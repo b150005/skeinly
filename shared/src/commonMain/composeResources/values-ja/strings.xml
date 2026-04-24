@@ -299,4 +299,9 @@
     <string name="label_no_name">(名前なし)</string>
     <string name="label_permission">権限</string>
     <string name="action_share">共有</string>
+
+    <!-- Chart editor polar symmetry ops (Phase 35.2b, ADR-011 §3) -->
+    <string name="label_symmetry_section">対称コピー</string>
+    <string name="action_symmetry_fold">回転 \u00D7%1$d</string>
+    <string name="action_symmetry_reflect">鏡映</string>
 </resources>

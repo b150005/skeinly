@@ -933,4 +933,114 @@ class ChartEditorViewModelTest {
             assertEquals(polar, original.extents)
             assertFalse(state.hasUnsavedChanges)
         }
+
+    // 40. Phase 35.2b: rotational symmetry replicates cells around the ring.
+    @Test
+    fun `ApplyRotationalSymmetry fold 4 replicates a polar cell to three more stitches`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-polar-sym")
+            awaitReady(viewModel)
+            val polar = ChartExtents.Polar(rings = 1, stitchesPerRing = listOf(8))
+            viewModel.onEvent(ChartEditorEvent.SetExtents(polar))
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+
+            viewModel.onEvent(ChartEditorEvent.ApplyRotationalSymmetry(fold = 4))
+
+            val cells =
+                viewModel.state.value.draftLayers[0]
+                    .cells
+            assertEquals(4, cells.size)
+            assertEquals(setOf(0, 2, 4, 6), cells.map { it.x }.toSet())
+        }
+
+    // 41. Phase 35.2b: rotational symmetry on a rect chart is ignored.
+    @Test
+    fun `ApplyRotationalSymmetry on rect chart is a no-op`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-rect-sym")
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+            val before =
+                viewModel.state.value.draftLayers[0]
+                    .cells
+
+            viewModel.onEvent(ChartEditorEvent.ApplyRotationalSymmetry(fold = 4))
+
+            val after =
+                viewModel.state.value.draftLayers[0]
+                    .cells
+            assertEquals(before, after)
+        }
+
+    // 42. Phase 35.2b: undo reverses a rotational symmetry op.
+    @Test
+    fun `undo restores cells placed before ApplyRotationalSymmetry`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-polar-sym-undo")
+            awaitReady(viewModel)
+            val polar = ChartExtents.Polar(rings = 1, stitchesPerRing = listOf(8))
+            viewModel.onEvent(ChartEditorEvent.SetExtents(polar))
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+            val preSymmetry =
+                viewModel.state.value.draftLayers[0]
+                    .cells
+
+            viewModel.onEvent(ChartEditorEvent.ApplyRotationalSymmetry(fold = 2))
+            viewModel.onEvent(ChartEditorEvent.Undo)
+
+            val restored =
+                viewModel.state.value.draftLayers[0]
+                    .cells
+            assertEquals(preSymmetry, restored)
+            assertTrue(viewModel.state.value.canRedo)
+        }
+
+    // 43. Phase 35.2b: reflection mirrors cells across a stitch-index axis.
+    @Test
+    fun `ApplyReflection mirrors polar cell across axis 0`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-polar-refl")
+            awaitReady(viewModel)
+            val polar = ChartExtents.Polar(rings = 1, stitchesPerRing = listOf(8))
+            viewModel.onEvent(ChartEditorEvent.SetExtents(polar))
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 1, y = 0))
+
+            viewModel.onEvent(ChartEditorEvent.ApplyReflection(axisStitch = 0))
+
+            val cells =
+                viewModel.state.value.draftLayers[0]
+                    .cells
+            assertEquals(2, cells.size)
+            assertEquals(setOf(1, 7), cells.map { it.x }.toSet())
+        }
+
+    // 44. Phase 35.2b: symmetry ops ignored while a parametric dialog is open.
+    @Test
+    fun `ApplyRotationalSymmetry is ignored while pendingParameterInput is set`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-polar-sym-pending")
+            awaitReady(viewModel)
+            val polar = ChartExtents.Polar(rings = 1, stitchesPerRing = listOf(8))
+            viewModel.onEvent(ChartEditorEvent.SetExtents(polar))
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+            // Open a parametric dialog by selecting a parametric symbol and tapping.
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.crochet.ch-space"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 2, y = 0))
+            assertNotNull(viewModel.state.value.pendingParameterInput)
+            val before =
+                viewModel.state.value.draftLayers[0]
+                    .cells
+
+            viewModel.onEvent(ChartEditorEvent.ApplyRotationalSymmetry(fold = 4))
+
+            val after =
+                viewModel.state.value.draftLayers[0]
+                    .cells
+            assertEquals(before, after)
+        }
 }
