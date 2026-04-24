@@ -68,8 +68,11 @@ enum ViewModelFactory {
         )
     }
 
-    static func chartViewerViewModel(patternId: String) -> ChartViewerViewModel {
-        KoinHelperKt.getChartViewerViewModel(patternId: patternId)
+    static func chartViewerViewModel(
+        patternId: String,
+        projectId: String?
+    ) -> ChartViewerViewModel {
+        KoinHelperKt.getChartViewerViewModel(patternId: patternId, projectId: projectId)
     }
 
     static func chartEditorViewModel(patternId: String) -> ChartEditorViewModel {

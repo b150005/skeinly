@@ -1,0 +1,60 @@
+appId: io.github.b150005.knitnote.android
+name: "P1 - Per-Segment Progress (Phase 34)"
+tags:
+  - p1
+  - android
+  - requires-supabase
+---
+# Phase 34 per-segment progress flow. Requires a Supabase-connected build
+# because the chart viewer surface is gated on `state.pattern != null` and the
+# Reset Progress button is additionally gated on a linked StructuredChart +
+# at least one segment row. Pattern + chart creation over Compose/Maestro is
+# too chatty to script cleanly without a pre-seeded fixture project, so this
+# flow carries the `requires-supabase` tag and is excluded from local-only CI
+# via `scripts/run-android.sh --exclude-tags requires-supabase` — same policy
+# as P1_discovery_browse.
+#
+# Manual run (against a Supabase-connected build): the fixture project
+# "PhaseThirtyFourFixture" must already exist and be linked to a pattern
+# whose StructuredChart has RECT_GRID extents covering (0,0)..(2,2).
+
+- clearState: io.github.b150005.knitnote.android
+- launchApp:
+    appId: io.github.b150005.knitnote.android
+
+- runFlow: ../../helpers/complete_onboarding_android.yaml
+
+# Open the fixture project
+- tapOn: "PhaseThirtyFourFixture"
+
+# Reset Progress button is hidden initially (AC-4.1 gate: no segments yet).
+- assertNotVisible:
+    id: "resetProgressButton"
+
+# Navigate to the structured chart viewer.
+- tapOn:
+    id: "openChartViewerLink"
+
+# Overlay landmark should be present — also proves Phase 34 Canvas is mounted.
+- assertVisible:
+    id: "segmentOverlay"
+
+# Back to project detail.
+- tapOn:
+    id: "backButton"
+
+# With the fixture pre-seeded with at least one segment, the Reset button
+# must now be visible (AC-4.1). If the fixture reset state is clean, the
+# assertion below fails — reseed via Supabase before re-running.
+- assertVisible:
+    id: "resetProgressButton"
+
+# Tap reset → confirmation dialog → confirm (AC-4.2).
+- tapOn:
+    id: "resetProgressButton"
+- tapOn:
+    id: "resetProgressConfirmButton"
+
+# After reset the button is hidden again (hasSegmentProgress ⇒ false).
+- assertNotVisible:
+    id: "resetProgressButton"

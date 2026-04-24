@@ -238,6 +238,11 @@ class RealtimeSyncManagerTest {
                 localProject = LocalProjectDataSource(db, testDispatcher),
                 localProgress = LocalProgressDataSource(db, testDispatcher),
                 localPattern = LocalPatternDataSource(db, testDispatcher),
+                localProjectSegment =
+                    io.github.b150005.knitnote.data.local.LocalProjectSegmentDataSource(
+                        db,
+                        testDispatcher,
+                    ),
                 authRepository = fakeAuth,
                 scope = scope,
                 logger = logger,
@@ -254,7 +259,7 @@ class RealtimeSyncManagerTest {
     }
 
     @Test
-    fun `subscribe creates 3 channels with correct names`() =
+    fun `subscribe creates 4 channels with correct names`() =
         runTest {
             val (manager, channelProvider) = createManager()
 
@@ -263,7 +268,8 @@ class RealtimeSyncManagerTest {
             assertNotNull(channelProvider.channelFor("projects-owner-1"))
             assertNotNull(channelProvider.channelFor("progress-owner-1"))
             assertNotNull(channelProvider.channelFor("patterns-owner-1"))
-            assertEquals(3, channelProvider.createdChannels.size)
+            assertNotNull(channelProvider.channelFor("project-segments-owner-1"))
+            assertEquals(4, channelProvider.createdChannels.size)
         }
 
     @Test
@@ -370,13 +376,13 @@ class RealtimeSyncManagerTest {
 
             setup.manager.subscribe("owner-1")
             testScheduler.advanceUntilIdle()
-            assertEquals(3, setup.channelProvider.createCount)
+            assertEquals(4, setup.channelProvider.createCount)
 
             setup.channelProvider.channelFor("projects-owner-1")!!.completeWithError(RuntimeException("connection lost"))
             testScheduler.advanceUntilIdle()
 
-            // After error + retry, 3 new channels should be created (total 6)
-            assertTrue(setup.channelProvider.createCount > 3)
+            // After error + retry, 4 new channels should be created (total 8)
+            assertTrue(setup.channelProvider.createCount > 4)
         }
 
     @Test

@@ -2,6 +2,7 @@ package io.github.b150005.knitnote.ui.chart
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Box
@@ -23,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -35,8 +37,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -45,14 +52,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.b150005.knitnote.domain.chart.CellBounds
+import io.github.b150005.knitnote.domain.chart.GridHitTest
 import io.github.b150005.knitnote.domain.chart.SymbolRenderTransform
 import io.github.b150005.knitnote.domain.model.ChartCell
 import io.github.b150005.knitnote.domain.model.ChartExtents
 import io.github.b150005.knitnote.domain.model.ChartLayer
+import io.github.b150005.knitnote.domain.model.SegmentState
 import io.github.b150005.knitnote.domain.model.StructuredChart
 import io.github.b150005.knitnote.domain.symbol.SymbolCatalog
 import io.github.b150005.knitnote.generated.resources.Res
 import io.github.b150005.knitnote.generated.resources.action_back
+import io.github.b150005.knitnote.generated.resources.message_segment_progress_polar_deferred
 import io.github.b150005.knitnote.generated.resources.state_empty_chart
 import io.github.b150005.knitnote.generated.resources.state_no_structured_chart
 import io.github.b150005.knitnote.generated.resources.title_chart_viewer
@@ -71,7 +81,9 @@ private const val MAX_SCALE = 8f
 fun ChartViewerScreen(
     patternId: String,
     onBack: () -> Unit,
-    viewModel: ChartViewerViewModel = koinViewModel { parametersOf(patternId) },
+    projectId: String? = null,
+    viewModel: ChartViewerViewModel =
+        koinViewModel { parametersOf(patternId, projectId) },
     catalog: SymbolCatalog = koinInject(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -121,6 +133,9 @@ fun ChartViewerScreen(
 
                 else ->
                     Column(modifier = Modifier.fillMaxSize()) {
+                        if (state.isPolar) {
+                            PolarDeferredNotice()
+                        }
                         if (chart.layers.isNotEmpty()) {
                             LayerChips(
                                 layers = chart.layers,
@@ -135,11 +150,34 @@ fun ChartViewerScreen(
                             chart = chart,
                             catalog = catalog,
                             hiddenLayerIds = state.hiddenLayerIds,
+                            segments = state.segments,
+                            isPolar = state.isPolar,
+                            onTapCell = { layerId, x, y ->
+                                viewModel.onEvent(ChartViewerEvent.TapCell(layerId, x, y))
+                            },
+                            onLongPressCell = { layerId, x, y ->
+                                viewModel.onEvent(ChartViewerEvent.LongPressCell(layerId, x, y))
+                            },
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
             }
         }
+    }
+}
+
+@Composable
+private fun PolarDeferredNotice() {
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+    ) {
+        Text(
+            text = stringResource(Res.string.message_segment_progress_polar_deferred),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onTertiaryContainer,
+        )
     }
 }
 
@@ -173,6 +211,10 @@ private fun ChartCanvas(
     chart: StructuredChart,
     catalog: SymbolCatalog,
     hiddenLayerIds: Set<String>,
+    segments: Map<SegmentKey, SegmentState>,
+    isPolar: Boolean,
+    onTapCell: (layerId: String, x: Int, y: Int) -> Unit,
+    onLongPressCell: (layerId: String, x: Int, y: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var scale by remember { mutableFloatStateOf(1f) }
@@ -187,18 +229,19 @@ private fun ChartCanvas(
         }
 
     val textMeasurer = rememberTextMeasurer()
-    // Cache parsed SVG path commands across recompositions and frames. Symbol path
-    // data is immutable and keyed by id, so a never-evicted map is safe and avoids
-    // re-parsing the same string per cell on every pan/zoom redraw.
     val parsedPathCache =
         remember {
             mutableMapOf<String, List<io.github.b150005.knitnote.domain.symbol.PathCommand>>()
         }
+    val haptics = LocalHapticFeedback.current
     val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
     val symbolColor = MaterialTheme.colorScheme.onSurface
     val unknownBg = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
     val unknownFg = MaterialTheme.colorScheme.error
     val parameterColor = MaterialTheme.colorScheme.primary
+    // Per PRD AC-1.1: done → filled onSurface @ 20%, wip → 2dp outline primary.
+    val segmentDoneColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+    val segmentWipColor = MaterialTheme.colorScheme.primary
 
     val rect = (chart.extents as? ChartExtents.Rect) ?: return
     if (rect.maxX < rect.minX || rect.maxY < rect.minY) {
@@ -211,16 +254,45 @@ private fun ChartCanvas(
         return
     }
 
+    // Pre-filter layers that actually get drawn so tap hit-testing uses the same set.
+    val visibleLayers =
+        chart.layers.filter { it.visible && it.id !in hiddenLayerIds }
+
     Canvas(
         modifier =
             modifier
                 .fillMaxSize()
+                .testTag("segmentOverlay")
                 .graphicsLayer(
                     scaleX = scale,
                     scaleY = scale,
                     translationX = offsetX,
                     translationY = offsetY,
-                ).transformable(state = transformableState),
+                ).transformable(state = transformableState)
+                // Rekey only on extents + polar flag + layer visibility — deps that
+                // actually change hit-test geometry. PRD Q-3: co-composing
+                // detectTapGestures with transformable() is the established pattern.
+                .pointerInput(rect, isPolar, visibleLayers.map { it.id }) {
+                    if (isPolar) return@pointerInput
+                    detectTapGestures(
+                        onTap = { offset ->
+                            val hit = resolveHit(offset, size, rect, visibleLayers)
+                            if (hit != null) {
+                                // Top-most visible layer wins when multiple layers stack.
+                                // PRD AC-2.5 requires a no-op on empty cells; resolveHit
+                                // returns null unless some visible layer has a drawn cell.
+                                onTapCell(hit.layerId, hit.x, hit.y)
+                            }
+                        },
+                        onLongPress = { offset ->
+                            val hit = resolveHit(offset, size, rect, visibleLayers)
+                            if (hit != null) {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onLongPressCell(hit.layerId, hit.x, hit.y)
+                            }
+                        },
+                    )
+                },
     ) {
         val gridWidth = (rect.maxX - rect.minX + 1)
         val gridHeight = (rect.maxY - rect.minY + 1)
@@ -266,6 +338,26 @@ private fun ChartCanvas(
                         originX = originX,
                         originY = originY,
                     )
+                // Paint the segment overlay UNDER the symbol glyph per PRD AC-1.2.
+                // Skip entirely on polar charts (AC-1.4).
+                if (!isPolar) {
+                    when (segments[SegmentKey(layer.id, cell.x, cell.y)]) {
+                        SegmentState.DONE ->
+                            drawRect(
+                                color = segmentDoneColor,
+                                topLeft = bounds.topLeft,
+                                size = bounds.size,
+                            )
+                        SegmentState.WIP ->
+                            drawRect(
+                                color = segmentWipColor,
+                                topLeft = bounds.topLeft,
+                                size = bounds.size,
+                                style = Stroke(width = 2.dp.toPx()),
+                            )
+                        null -> { /* implicit todo — no overlay */ }
+                    }
+                }
                 val def = catalog.get(cell.symbolId)
                 if (def == null) {
                     drawRect(
@@ -307,6 +399,75 @@ private fun ChartCanvas(
             }
         }
     }
+}
+
+private data class ViewerCanvasLayout(
+    val cellSize: Float,
+    val originX: Float,
+    val originY: Float,
+)
+
+private fun computeViewerLayout(
+    size: Size,
+    rect: ChartExtents.Rect,
+): ViewerCanvasLayout {
+    val gridWidth = (rect.maxX - rect.minX + 1)
+    val gridHeight = (rect.maxY - rect.minY + 1)
+    val cellSize =
+        min(
+            size.width / gridWidth.toFloat(),
+            size.height / gridHeight.toFloat(),
+        ).coerceAtLeast(1f)
+    val drawW = cellSize * gridWidth
+    val drawH = cellSize * gridHeight
+    return ViewerCanvasLayout(
+        cellSize = cellSize,
+        originX = (size.width - drawW) / 2f,
+        originY = (size.height - drawH) / 2f,
+    )
+}
+
+/**
+ * Returns the id of the top-most visible layer that has a drawn [ChartCell]
+ * at ([x], [y]), or null if no visible layer has a cell there. "Top-most" is
+ * interpreted as the last entry in [layers] per the existing rendering order.
+ */
+private fun topmostLayerAt(
+    layers: List<ChartLayer>,
+    x: Int,
+    y: Int,
+): String? {
+    for (i in layers.indices.reversed()) {
+        val layer = layers[i]
+        if (layer.cells.any { it.x == x && it.y == y }) return layer.id
+    }
+    return null
+}
+
+private data class ResolvedHit(
+    val layerId: String,
+    val x: Int,
+    val y: Int,
+)
+
+private fun resolveHit(
+    offset: Offset,
+    sizePx: androidx.compose.ui.unit.IntSize,
+    rect: ChartExtents.Rect,
+    visibleLayers: List<ChartLayer>,
+): ResolvedHit? {
+    val layout = computeViewerLayout(Size(sizePx.width.toFloat(), sizePx.height.toFloat()), rect)
+    val cell =
+        GridHitTest.hitTest(
+            screenX = offset.x.toDouble(),
+            screenY = offset.y.toDouble(),
+            extents = rect,
+            cellSize = layout.cellSize.toDouble(),
+            originX = layout.originX.toDouble(),
+            originY = layout.originY.toDouble(),
+        ) ?: return null
+    val layerId = topmostLayerAt(visibleLayers, cell.x, cell.y) ?: return null
+    return ResolvedHit(layerId, cell.x, cell.y)
 }
 
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawParameterSlots(

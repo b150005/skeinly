@@ -1652,6 +1652,48 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Share" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有" } }
       }
+    },
+    "action_reset_progress" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reset progress" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "進捗をリセット" } }
+      }
+    },
+    "dialog_reset_progress_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reset progress?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "進捗をリセットしますか？" } }
+      }
+    },
+    "dialog_reset_progress_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This clears every stitch marked on this project. Your row-counter notes and photos are kept. This cannot be undone." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このプロジェクトでマークしたすべての目がクリアされます。段カウンターのメモと写真は保持されます。この操作は取り消せません。" } }
+      }
+    },
+    "label_segments_completed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$d / %2$d stitches (%3$d%%)" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$d / %2$d 目 (%3$d%%)" } }
+      }
+    },
+    "message_reset_progress_done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Progress reset" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "進捗をリセットしました" } }
+      }
+    },
+    "message_segment_progress_polar_deferred" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Segment progress for round charts ships in Phase 35" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "円形チャートの目進捗は Phase 35 で対応予定です" } }
+      }
     }
   },
   "version" : "1.0"

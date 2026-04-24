@@ -19,8 +19,10 @@ import io.github.b150005.knitnote.domain.usecase.DeleteProgressNoteUseCase
 import io.github.b150005.knitnote.domain.usecase.DeleteProgressPhotoUseCase
 import io.github.b150005.knitnote.domain.usecase.GetProgressNotesUseCase
 import io.github.b150005.knitnote.domain.usecase.IncrementRowUseCase
+import io.github.b150005.knitnote.domain.usecase.ObserveProjectSegmentsUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveStructuredChartUseCase
 import io.github.b150005.knitnote.domain.usecase.ReopenProjectUseCase
+import io.github.b150005.knitnote.domain.usecase.ResetProjectProgressUseCase
 import io.github.b150005.knitnote.domain.usecase.ShareProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.UploadChartImageUseCase
@@ -57,6 +59,11 @@ data class ProjectDetailState(
     val photoSignedUrls: Map<String, String> = emptyMap(),
     val isUploadingPhoto: Boolean = false,
     val hasStructuredChart: Boolean = false,
+    /**
+     * True when the linked chart has at least one marked segment. Gates the
+     * Reset progress action per PRD AC-4.1.
+     */
+    val hasSegmentProgress: Boolean = false,
 )
 
 sealed interface ProjectDetailEvent {
@@ -112,6 +119,9 @@ sealed interface ProjectDetailEvent {
     ) : ProjectDetailEvent
 
     data object CloseChartViewer : ProjectDetailEvent
+
+    /** Phase 34 US-4. Clears every segment for this project. */
+    data object ResetProgress : ProjectDetailEvent
 }
 
 class ProjectDetailViewModel(
@@ -134,6 +144,8 @@ class ProjectDetailViewModel(
     private val deleteProgressPhoto: DeleteProgressPhotoUseCase,
     private val progressPhotoStorage: StorageOperations?,
     private val observeStructuredChart: ObserveStructuredChartUseCase,
+    private val observeProjectSegments: ObserveProjectSegmentsUseCase,
+    private val resetProjectProgress: ResetProjectProgressUseCase,
 ) : ViewModel() {
     private val counterMutex = Mutex()
     private var cachedPhotoPaths = emptyList<String>()
@@ -141,6 +153,12 @@ class ProjectDetailViewModel(
     private val _uiOverlay = MutableStateFlow(UiOverlay())
     private val _directShareSuccessChannel = Channel<Unit>(Channel.BUFFERED)
     val directShareSuccess: Flow<Unit> = _directShareSuccessChannel.receiveAsFlow()
+
+    private val _resetProgressDoneChannel = Channel<Unit>(Channel.BUFFERED)
+    val resetProgressDone: Flow<Unit> = _resetProgressDoneChannel.receiveAsFlow()
+
+    private val segmentsFlow =
+        observeProjectSegments(projectId).catch { emit(emptyList()) }
 
     private val projectFlow =
         projectRepository
@@ -176,7 +194,8 @@ class ProjectDetailViewModel(
             patternFlow,
             structuredChartFlow,
             _uiOverlay,
-        ) { project, pattern, structuredChart, overlay ->
+            segmentsFlow,
+        ) { project, pattern, structuredChart, overlay, segments ->
             ProjectDetailState(
                 project = project,
                 pattern = pattern,
@@ -190,6 +209,7 @@ class ProjectDetailViewModel(
                 photoSignedUrls = overlay.photoSignedUrls,
                 isUploadingPhoto = overlay.isUploadingPhoto,
                 hasStructuredChart = structuredChart != null,
+                hasSegmentProgress = segments.isNotEmpty(),
             )
         }.stateIn(
             scope = viewModelScope,
@@ -331,6 +351,14 @@ class ProjectDetailViewModel(
             }
             ProjectDetailEvent.CloseChartViewer -> {
                 _uiOverlay.update { it.copy(selectedChartImageIndex = null) }
+            }
+            ProjectDetailEvent.ResetProgress -> {
+                viewModelScope.launch {
+                    when (val result = resetProjectProgress(projectId)) {
+                        is UseCaseResult.Success -> _resetProgressDoneChannel.send(Unit)
+                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
+                    }
+                }
             }
         }
     }
