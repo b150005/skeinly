@@ -6,6 +6,7 @@ import io.github.b150005.knitnote.domain.model.CoordinateSystem
 import io.github.b150005.knitnote.domain.model.ProjectSegment
 import io.github.b150005.knitnote.domain.model.SegmentState
 import io.github.b150005.knitnote.domain.model.StructuredChart
+import io.github.b150005.knitnote.domain.usecase.MarkRowSegmentsDoneUseCase
 import io.github.b150005.knitnote.domain.usecase.MarkSegmentDoneUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveProjectSegmentsUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveStructuredChartUseCase
@@ -66,6 +67,16 @@ sealed interface ChartViewerEvent {
         val x: Int,
         val y: Int,
     ) : ChartViewerEvent
+
+    /**
+     * Long-press on a row-number (rect) or ring-number (polar) label — marks
+     * every cell on that row/ring as `done` across visible layers. Per
+     * ADR-011 §4; [row] maps to chart y-coordinate on rect or ring index on
+     * polar without reinterpretation.
+     */
+    data class MarkRowDone(
+        val row: Int,
+    ) : ChartViewerEvent
 }
 
 class ChartViewerViewModel(
@@ -75,6 +86,7 @@ class ChartViewerViewModel(
     private val observeProjectSegments: ObserveProjectSegmentsUseCase,
     private val toggleSegmentState: ToggleSegmentStateUseCase,
     private val markSegmentDone: MarkSegmentDoneUseCase,
+    private val markRowSegmentsDone: MarkRowSegmentsDoneUseCase,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ChartViewerState())
     val state: StateFlow<ChartViewerState> = _state.asStateFlow()
@@ -117,6 +129,7 @@ class ChartViewerViewModel(
             is ChartViewerEvent.ToggleLayer -> toggleLayer(event.layerId)
             is ChartViewerEvent.TapCell -> tapCell(event.layerId, event.x, event.y)
             is ChartViewerEvent.LongPressCell -> longPressCell(event.layerId, event.x, event.y)
+            is ChartViewerEvent.MarkRowDone -> markRowDone(event.row)
         }
     }
 
@@ -166,6 +179,18 @@ class ChartViewerViewModel(
         if (layerId in _state.value.hiddenLayerIds) return
         viewModelScope.launch {
             when (val result = markSegmentDone(pid, layerId, x, y)) {
+                is UseCaseResult.Success -> { /* overlay updates via Flow */ }
+                is UseCaseResult.Failure ->
+                    _state.update { it.copy(errorMessage = result.error.toMessage()) }
+            }
+        }
+    }
+
+    private fun markRowDone(row: Int) {
+        val pid = projectId ?: return
+        viewModelScope.launch {
+            val hiddenLayerIds = _state.value.hiddenLayerIds
+            when (val result = markRowSegmentsDone(patternId, pid, row, hiddenLayerIds)) {
                 is UseCaseResult.Success -> { /* overlay updates via Flow */ }
                 is UseCaseResult.Failure ->
                     _state.update { it.copy(errorMessage = result.error.toMessage()) }

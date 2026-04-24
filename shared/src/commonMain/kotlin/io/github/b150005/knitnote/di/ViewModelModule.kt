@@ -87,6 +87,7 @@ val viewModelModule =
                 observeProjectSegments = get(),
                 toggleSegmentState = get(),
                 markSegmentDone = get(),
+                markRowSegmentsDone = get(),
             )
         }
         viewModel { params ->

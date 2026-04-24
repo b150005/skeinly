@@ -11,6 +11,8 @@ import io.github.b150005.knitnote.domain.model.StorageVariant
 import io.github.b150005.knitnote.domain.model.StructuredChart
 import io.github.b150005.knitnote.domain.usecase.FakeProjectSegmentRepository
 import io.github.b150005.knitnote.domain.usecase.FakeStructuredChartRepository
+import io.github.b150005.knitnote.domain.usecase.GetStructuredChartByPatternIdUseCase
+import io.github.b150005.knitnote.domain.usecase.MarkRowSegmentsDoneUseCase
 import io.github.b150005.knitnote.domain.usecase.MarkSegmentDoneUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveProjectSegmentsUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveStructuredChartUseCase
@@ -81,6 +83,12 @@ class ChartViewerViewModelTest {
             observeProjectSegments = ObserveProjectSegmentsUseCase(segmentRepo),
             toggleSegmentState = ToggleSegmentStateUseCase(segmentRepo, authRepository = null),
             markSegmentDone = MarkSegmentDoneUseCase(segmentRepo, authRepository = null),
+            markRowSegmentsDone =
+                MarkRowSegmentsDoneUseCase(
+                    repository = segmentRepo,
+                    getStructuredChart = GetStructuredChartByPatternIdUseCase(repo),
+                    authRepository = null,
+                ),
         )
 
     @Test
@@ -151,6 +159,12 @@ class ChartViewerViewModelTest {
                     observeProjectSegments = ObserveProjectSegmentsUseCase(segmentRepo),
                     toggleSegmentState = ToggleSegmentStateUseCase(segmentRepo, authRepository = null),
                     markSegmentDone = MarkSegmentDoneUseCase(segmentRepo, authRepository = null),
+                    markRowSegmentsDone =
+                        MarkRowSegmentsDoneUseCase(
+                            repository = segmentRepo,
+                            getStructuredChart = GetStructuredChartByPatternIdUseCase(failingRepo),
+                            authRepository = null,
+                        ),
                 )
 
             viewModel.state.test {
@@ -327,5 +341,148 @@ class ChartViewerViewModelTest {
 
             val stored = segmentRepo.getById(ProjectSegment.buildId("proj-1", "L1", 2, 1))
             assertEquals(SegmentState.DONE, stored?.state)
+        }
+
+    @Test
+    fun `markRowDone flips every visible cell on the target row to done`() =
+        runTest {
+            repo.seed(
+                chart(
+                    "pat-1",
+                    listOf(
+                        ChartLayer(
+                            id = "L1",
+                            name = "Main",
+                            cells =
+                                listOf(
+                                    ChartCell(symbolId = "jis.knit.k", x = 0, y = 2),
+                                    ChartCell(symbolId = "jis.knit.k", x = 1, y = 2),
+                                ),
+                        ),
+                    ),
+                ),
+            )
+            val viewModel = makeViewModel("pat-1", projectId = "proj-1")
+
+            viewModel.onEvent(ChartViewerEvent.MarkRowDone(row = 2))
+            advanceUntilIdle()
+
+            assertEquals(
+                SegmentState.DONE,
+                segmentRepo.getById(ProjectSegment.buildId("proj-1", "L1", 0, 2))?.state,
+            )
+            assertEquals(
+                SegmentState.DONE,
+                segmentRepo.getById(ProjectSegment.buildId("proj-1", "L1", 1, 2))?.state,
+            )
+        }
+
+    @Test
+    fun `markRowDone is a no-op when projectId is null`() =
+        runTest {
+            repo.seed(
+                chart(
+                    "pat-1",
+                    listOf(
+                        ChartLayer(
+                            id = "L1",
+                            name = "Main",
+                            cells = listOf(ChartCell(symbolId = "jis.knit.k", x = 0, y = 2)),
+                        ),
+                    ),
+                ),
+            )
+            val viewModel = makeViewModel("pat-1", projectId = null)
+
+            viewModel.onEvent(ChartViewerEvent.MarkRowDone(row = 2))
+            advanceUntilIdle()
+
+            assertNull(segmentRepo.getById(ProjectSegment.buildId("proj-1", "L1", 0, 2)))
+        }
+
+    @Test
+    fun `markRowDone skips layers toggled off via hiddenLayerIds`() =
+        runTest {
+            repo.seed(
+                chart(
+                    "pat-1",
+                    listOf(
+                        ChartLayer(
+                            id = "L1",
+                            name = "Main",
+                            cells = listOf(ChartCell(symbolId = "jis.knit.k", x = 0, y = 3)),
+                        ),
+                        ChartLayer(
+                            id = "L2",
+                            name = "Reference",
+                            cells = listOf(ChartCell(symbolId = "jis.knit.p", x = 1, y = 3)),
+                        ),
+                    ),
+                ),
+            )
+            val viewModel = makeViewModel("pat-1", projectId = "proj-1")
+
+            viewModel.onEvent(ChartViewerEvent.ToggleLayer("L2"))
+            viewModel.onEvent(ChartViewerEvent.MarkRowDone(row = 3))
+            advanceUntilIdle()
+
+            assertEquals(
+                SegmentState.DONE,
+                segmentRepo.getById(ProjectSegment.buildId("proj-1", "L1", 0, 3))?.state,
+            )
+            // L2 was UI-hidden; the row-done dispatch must NOT have written its cells.
+            assertNull(segmentRepo.getById(ProjectSegment.buildId("proj-1", "L2", 1, 3)))
+        }
+
+    @Test
+    fun `markRowDone surfaces a failure from the use case as errorMessage`() =
+        runTest {
+            val failingSegmentRepo =
+                object : io.github.b150005.knitnote.domain.repository.ProjectSegmentRepository {
+                    override fun observeByProjectId(projectId: String): kotlinx.coroutines.flow.Flow<List<ProjectSegment>> =
+                        kotlinx.coroutines.flow.flowOf(emptyList())
+
+                    override suspend fun getById(id: String): ProjectSegment? = null
+
+                    override suspend fun getByProjectId(projectId: String): List<ProjectSegment> = emptyList()
+
+                    override suspend fun upsert(segment: ProjectSegment): ProjectSegment = throw RuntimeException("db offline")
+
+                    override suspend fun resetSegment(id: String) {}
+
+                    override suspend fun resetProject(projectId: String) {}
+                }
+            repo.seed(
+                chart(
+                    "pat-1",
+                    listOf(
+                        ChartLayer(
+                            id = "L1",
+                            name = "Main",
+                            cells = listOf(ChartCell(symbolId = "jis.knit.k", x = 0, y = 2)),
+                        ),
+                    ),
+                ),
+            )
+            val viewModel =
+                ChartViewerViewModel(
+                    patternId = "pat-1",
+                    projectId = "proj-1",
+                    observeStructuredChart = ObserveStructuredChartUseCase(repo),
+                    observeProjectSegments = ObserveProjectSegmentsUseCase(failingSegmentRepo),
+                    toggleSegmentState = ToggleSegmentStateUseCase(segmentRepo, authRepository = null),
+                    markSegmentDone = MarkSegmentDoneUseCase(segmentRepo, authRepository = null),
+                    markRowSegmentsDone =
+                        MarkRowSegmentsDoneUseCase(
+                            repository = failingSegmentRepo,
+                            getStructuredChart = GetStructuredChartByPatternIdUseCase(repo),
+                            authRepository = null,
+                        ),
+                )
+
+            viewModel.onEvent(ChartViewerEvent.MarkRowDone(row = 2))
+            advanceUntilIdle()
+
+            assertTrue(viewModel.state.value.errorMessage != null)
         }
 }

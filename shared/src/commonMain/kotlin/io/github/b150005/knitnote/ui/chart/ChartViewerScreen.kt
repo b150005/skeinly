@@ -74,6 +74,22 @@ import kotlin.math.min
 private const val MIN_SCALE = 0.5f
 private const val MAX_SCALE = 8f
 
+/**
+ * Reserved left-gutter width (in raw pixels, pre-graphicsLayer scale) for
+ * rect-chart row-number labels. Sized for up to 3-digit rows at the label's
+ * font size. Long-press in this band routes to `MarkRowDone(row)` per
+ * ADR-011 §4.
+ */
+private const val RECT_ROW_LABEL_GUTTER_PX = 28f
+
+/**
+ * Half-width of the polar ring-label hit rectangle, measured horizontally
+ * from the 12 o'clock diameter line. Narrow enough to stay out of stitch-0
+ * and stitch-N-1 wedges at typical ring thicknesses; wide enough to land a
+ * finger tap.
+ */
+private const val POLAR_RING_LABEL_HALF_W_PX = 16f
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChartViewerScreen(
@@ -152,6 +168,9 @@ fun ChartViewerScreen(
                             onLongPressCell = { layerId, x, y ->
                                 viewModel.onEvent(ChartViewerEvent.LongPressCell(layerId, x, y))
                             },
+                            onMarkRowDone = { row ->
+                                viewModel.onEvent(ChartViewerEvent.MarkRowDone(row))
+                            },
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
@@ -193,6 +212,7 @@ private fun ChartCanvas(
     segments: Map<SegmentKey, SegmentState>,
     onTapCell: (layerId: String, x: Int, y: Int) -> Unit,
     onLongPressCell: (layerId: String, x: Int, y: Int) -> Unit,
+    onMarkRowDone: (row: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var scale by remember { mutableFloatStateOf(1f) }
@@ -220,6 +240,7 @@ private fun ChartCanvas(
     // Per PRD AC-1.1: done → filled onSurface @ 20%, wip → 2dp outline primary.
     val segmentDoneColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
     val segmentWipColor = MaterialTheme.colorScheme.primary
+    val rowLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     val extents = chart.extents
     val isEmpty =
@@ -276,6 +297,20 @@ private fun ChartCanvas(
                             }
                         },
                         onLongPress = { offset ->
+                            // Phase 35.2d: label hits take priority over cell hits so
+                            // long-press on the row/ring number dispatches MarkRowDone.
+                            val labelRow =
+                                when (extents) {
+                                    is ChartExtents.Rect ->
+                                        resolveRowLabelHit(offset, size, extents)
+                                    is ChartExtents.Polar ->
+                                        resolvePolarRingLabelHit(offset, size, extents)
+                                }
+                            if (labelRow != null) {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onMarkRowDone(labelRow)
+                                return@detectTapGestures
+                            }
                             val hit =
                                 when (extents) {
                                     is ChartExtents.Rect ->
@@ -308,6 +343,7 @@ private fun ChartCanvas(
                     parameterColor = parameterColor,
                     segmentDoneColor = segmentDoneColor,
                     segmentWipColor = segmentWipColor,
+                    rowLabelColor = rowLabelColor,
                 )
             is ChartExtents.Polar -> {
                 val layout = polarLayoutFor(size.width, size.height, extents)
@@ -337,6 +373,12 @@ private fun ChartCanvas(
                     unknownBg = unknownBg,
                     unknownFg = unknownFg,
                 )
+                drawPolarRingLabels(
+                    polar = extents,
+                    layout = layout,
+                    textMeasurer = textMeasurer,
+                    color = rowLabelColor,
+                )
             }
         }
     }
@@ -358,18 +400,18 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawRectChart(
     parameterColor: Color,
     segmentDoneColor: Color,
     segmentWipColor: Color,
+    rowLabelColor: Color,
 ) {
     val gridWidth = (rect.maxX - rect.minX + 1)
     val gridHeight = (rect.maxY - rect.minY + 1)
-    val cellSize =
-        min(
-            size.width / gridWidth.toFloat(),
-            size.height / gridHeight.toFloat(),
-        ).coerceAtLeast(1f)
+    // Route through computeViewerLayout so draw and hit-test share a single
+    // cellSize/origin math — required after Phase 35.2d reserved a left gutter.
+    val layout = computeViewerLayout(size, rect)
+    val cellSize = layout.cellSize
+    val originX = layout.originX
+    val originY = layout.originY
     val drawW = cellSize * gridWidth
     val drawH = cellSize * gridHeight
-    val originX = (size.width - drawW) / 2f
-    val originY = (size.height - drawH) / 2f
 
     // Grid background
     for (gx in 0..gridWidth) {
@@ -460,6 +502,30 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawRectChart(
             }
         }
     }
+
+    // Row-number labels in the reserved left gutter. Labels are 1-indexed
+    // from the bottom row per chart y-up convention (docs/en/chart-coordinates.md)
+    // and locale-independent digits, so no i18n involvement. Reading-convention-
+    // aware orientation is out-of-scope for Phase 35.2d.
+    val labelFontPx = (cellSize * 0.35f).coerceAtLeast(8f)
+    val gutterCenterX = originX - RECT_ROW_LABEL_GUTTER_PX / 2f
+    for (gy in 0 until gridHeight) {
+        val rowCenterY = originY + (gridHeight - gy - 0.5f) * cellSize
+        val rowNumber = gy + 1
+        val measured =
+            textMeasurer.measure(
+                text = rowNumber.toString(),
+                style =
+                    TextStyle(
+                        color = rowLabelColor,
+                        fontSize = labelFontPx.sp,
+                        textAlign = TextAlign.Center,
+                    ),
+            )
+        val tx = gutterCenterX - measured.size.width / 2f
+        val ty = rowCenterY - measured.size.height / 2f
+        drawText(measured, topLeft = Offset(tx, ty))
+    }
 }
 
 private data class ViewerCanvasLayout(
@@ -474,16 +540,19 @@ private fun computeViewerLayout(
 ): ViewerCanvasLayout {
     val gridWidth = (rect.maxX - rect.minX + 1)
     val gridHeight = (rect.maxY - rect.minY + 1)
+    // Reserve the left gutter for row-number labels (Phase 35.2d). The grid
+    // centers in the remaining width so small charts still look balanced.
+    val availableW = (size.width - RECT_ROW_LABEL_GUTTER_PX).coerceAtLeast(1f)
     val cellSize =
         min(
-            size.width / gridWidth.toFloat(),
+            availableW / gridWidth.toFloat(),
             size.height / gridHeight.toFloat(),
         ).coerceAtLeast(1f)
     val drawW = cellSize * gridWidth
     val drawH = cellSize * gridHeight
     return ViewerCanvasLayout(
         cellSize = cellSize,
-        originX = (size.width - drawW) / 2f,
+        originX = RECT_ROW_LABEL_GUTTER_PX + (availableW - drawW) / 2f,
         originY = (size.height - drawH) / 2f,
     )
 }
@@ -529,6 +598,98 @@ private fun resolveHit(
         ) ?: return null
     val layerId = topmostLayerAt(visibleLayers, cell.x, cell.y) ?: return null
     return ResolvedHit(layerId, cell.x, cell.y)
+}
+
+/**
+ * Hit-test a tap against the reserved row-label gutter. Returns the chart
+ * y-coordinate of the row (matching `ChartCell.y` storage, offset by
+ * `rect.minY` for non-zero-origin extents) when the tap falls within the
+ * gutter band aligned vertically with the grid, or null otherwise.
+ *
+ * The gutter spans screen-x `[0, originX)`. Rows are 1-indexed upward from
+ * the bottom per chart y-up convention; the returned value is a chart-y
+ * coordinate, not a 1-indexed label.
+ */
+private fun resolveRowLabelHit(
+    offset: Offset,
+    sizePx: androidx.compose.ui.unit.IntSize,
+    rect: ChartExtents.Rect,
+): Int? {
+    val layout = computeViewerLayout(Size(sizePx.width.toFloat(), sizePx.height.toFloat()), rect)
+    if (offset.x < 0f || offset.x >= layout.originX) return null
+    val gridHeight = rect.maxY - rect.minY + 1
+    val drawH = layout.cellSize * gridHeight
+    if (offset.y < layout.originY) return null
+    if (offset.y >= layout.originY + drawH) return null
+    val rowFromTop = kotlin.math.floor((offset.y - layout.originY) / layout.cellSize).toInt()
+    val gy = gridHeight - 1 - rowFromTop
+    if (gy !in 0 until gridHeight) return null
+    return rect.minY + gy
+}
+
+/**
+ * Hit-test a tap against polar ring-number labels, painted along the 12
+ * o'clock diameter above the center at each ring's mid-radius. Returns the
+ * ring index (0 = innermost, matching `ChartCell.y` storage) when the tap
+ * lands within the narrow hit rectangle straddling the 12 o'clock line, or
+ * null otherwise.
+ *
+ * The hit region is orthogonal to the stitch wedges so ring-label taps can
+ * never be ambiguous with stitch-0 / stitch-N-1 long-press for `MarkSegmentDone`.
+ */
+private fun resolvePolarRingLabelHit(
+    offset: Offset,
+    sizePx: androidx.compose.ui.unit.IntSize,
+    polar: ChartExtents.Polar,
+): Int? {
+    if (polar.rings <= 0) return null
+    val layout = polarLayoutFor(sizePx.width.toFloat(), sizePx.height.toFloat(), polar)
+    val cx = layout.cx.toFloat()
+    val cy = layout.cy.toFloat()
+    if (offset.x < cx - POLAR_RING_LABEL_HALF_W_PX) return null
+    if (offset.x >= cx + POLAR_RING_LABEL_HALF_W_PX) return null
+    if (offset.y >= cy) return null
+    val dy = (cy - offset.y).toDouble()
+    val innerR = layout.innerRadius
+    val ringThickness = layout.ringThickness
+    val outerR = innerR + polar.rings * ringThickness
+    if (dy < innerR || dy >= outerR) return null
+    val ring = kotlin.math.floor((dy - innerR) / ringThickness).toInt()
+    return ring.coerceIn(0, polar.rings - 1)
+}
+
+/**
+ * Paint ring-number labels along the 12 o'clock diameter at each ring's
+ * mid-radius. Ring 0 (innermost) renders as "1" per the 1-indexed display
+ * convention matching rect row labels. Locale-independent digits, no i18n.
+ */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPolarRingLabels(
+    polar: ChartExtents.Polar,
+    layout: io.github.b150005.knitnote.domain.chart.PolarCellLayout.Layout,
+    textMeasurer: androidx.compose.ui.text.TextMeasurer,
+    color: Color,
+) {
+    if (polar.rings <= 0) return
+    val cx = layout.cx.toFloat()
+    val cy = layout.cy.toFloat()
+    val fontPx = (layout.ringThickness.toFloat() * 0.4f).coerceAtLeast(10f)
+    for (ring in 0 until polar.rings) {
+        val rCenter = layout.innerRadius + (ring + 0.5) * layout.ringThickness
+        val py = cy - rCenter.toFloat()
+        val measured =
+            textMeasurer.measure(
+                text = (ring + 1).toString(),
+                style =
+                    TextStyle(
+                        color = color,
+                        fontSize = fontPx.sp,
+                        textAlign = TextAlign.Center,
+                    ),
+            )
+        val tx = cx - measured.size.width / 2f
+        val ty = py - measured.size.height / 2f
+        drawText(measured, topLeft = Offset(tx, ty))
+    }
 }
 
 /**

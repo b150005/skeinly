@@ -17,10 +17,14 @@ import kotlin.time.Clock
  * [row] is the chart y-coordinate on rect charts or the ring index on polar
  * charts — both map to `ChartCell.y` without reinterpretation per ADR-010 §4.
  *
- * Invisible layers are skipped so a user toggling off a reference layer does
- * not accidentally have its cells counted as "row done." Cells that do not
- * lie on [row] are left untouched. If [patternId] has no chart or the chart
- * has no cells on [row], the call succeeds as a no-op.
+ * Invisible layers (domain-level `ChartLayer.visible = false`) are skipped so a
+ * user toggling off a reference layer does not accidentally have its cells
+ * counted as "row done." [hiddenLayerIds] applies the same filter for the
+ * viewer's UI-level hide toggle (`ChartViewerState.hiddenLayerIds`) — if a user
+ * has hidden layer "L2" via the layer chips, a row-done dispatch must not
+ * silently flip L2's cells. Cells that do not lie on [row] are left untouched.
+ * If [patternId] has no chart or the chart has no cells on [row], the call
+ * succeeds as a no-op.
  */
 class MarkRowSegmentsDoneUseCase(
     private val repository: ProjectSegmentRepository,
@@ -32,6 +36,7 @@ class MarkRowSegmentsDoneUseCase(
         patternId: String,
         projectId: String,
         row: Int,
+        hiddenLayerIds: Set<String> = emptySet(),
     ): UseCaseResult<Unit> =
         try {
             when (val chartResult = getStructuredChart(patternId)) {
@@ -45,6 +50,7 @@ class MarkRowSegmentsDoneUseCase(
                         val now = clock.now()
                         chart.layers.forEach { layer ->
                             if (!layer.visible) return@forEach
+                            if (layer.id in hiddenLayerIds) return@forEach
                             layer.cells.forEach inner@{ cell ->
                                 if (cell.y != row) return@inner
                                 val id = ProjectSegment.buildId(projectId, layer.id, cell.x, cell.y)

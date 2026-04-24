@@ -82,6 +82,11 @@ struct StructuredChartViewerScreen: View {
                     let generator = UIImpactFeedbackGenerator(style: .medium)
                     generator.impactOccurred()
                     viewModel.onEvent(event: ChartViewerEventLongPressCell(layerId: layerId, x: Int32(x), y: Int32(y)))
+                },
+                onMarkRowDone: { row in
+                    let generator = UIImpactFeedbackGenerator(style: .medium)
+                    generator.impactOccurred()
+                    viewModel.onEvent(event: ChartViewerEventMarkRowDone(row: Int32(row)))
                 }
             )
             .accessibilityIdentifier("segmentOverlay")
@@ -118,6 +123,15 @@ private struct ChartCanvasView: View {
     let segmentsVersion: Int
     let onTap: (String, Int, Int) -> Void
     let onLongPress: (String, Int, Int) -> Void
+    let onMarkRowDone: (Int) -> Void
+
+    /// Reserved left-gutter width for rect row-number labels. Mirrors Kotlin
+    /// `RECT_ROW_LABEL_GUTTER_PX` in ChartViewerScreen.kt — update in lock-step.
+    private let rectRowLabelGutter: CGFloat = 28
+
+    /// Half-width of the polar ring-label hit rectangle around the 12 o'clock
+    /// diameter. Mirrors Kotlin `POLAR_RING_LABEL_HALF_W_PX`.
+    private let polarRingLabelHalfW: CGFloat = 16
 
     @State private var scale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
@@ -225,8 +239,67 @@ private struct ChartCanvasView: View {
 
     private func handleLongPress(at location: CGPoint) {
         let (p, s) = toCanvasSpace(location)
+        // Phase 35.2d: label hits take priority over cell hits so long-press on
+        // the row/ring number dispatches MarkRowDone.
+        if let row = resolveAnyLabelHit(location: p, size: s) {
+            onMarkRowDone(row)
+            return
+        }
         guard let hit = resolveAnyHit(location: p, size: s) else { return }
         onLongPress(hit.layerId, hit.x, hit.y)
+    }
+
+    /// Dispatches to the rect row-label or polar ring-label hit-test. Returns
+    /// the chart y-coordinate (rect) or ring index (polar) — both map to
+    /// `ChartCell.y` without reinterpretation per ADR-010 §4.
+    private func resolveAnyLabelHit(location: CGPoint, size: CGSize) -> Int? {
+        if let rect = chart.extents as? ChartExtentsRect {
+            return resolveRowLabelHit(location: location, size: size, rect: rect)
+        } else if let polar = chart.extents as? ChartExtentsPolar {
+            return resolvePolarRingLabelHit(location: location, size: size, polar: polar)
+        }
+        return nil
+    }
+
+    /// Hit-test the reserved left gutter for rect row-number labels.
+    /// Returns the chart y-coordinate (row, offset by `rect.minY`) or nil.
+    private func resolveRowLabelHit(location: CGPoint, size: CGSize, rect: ChartExtentsRect) -> Int? {
+        let gridWidth = Int(rect.maxX - rect.minX + 1)
+        let gridHeight = Int(rect.maxY - rect.minY + 1)
+        let availableW = max(1, size.width - rectRowLabelGutter)
+        let cellSize = max(
+            1,
+            min(availableW / CGFloat(gridWidth), size.height / CGFloat(gridHeight))
+        )
+        let drawW = cellSize * CGFloat(gridWidth)
+        let drawH = cellSize * CGFloat(gridHeight)
+        let originX = rectRowLabelGutter + (availableW - drawW) / 2
+        let originY = (size.height - drawH) / 2
+        if location.x < 0 || location.x >= originX { return nil }
+        if location.y < originY { return nil }
+        if location.y >= originY + drawH { return nil }
+        let rowFromTop = Int(floor((location.y - originY) / cellSize))
+        let gy = gridHeight - 1 - rowFromTop
+        if gy < 0 || gy >= gridHeight { return nil }
+        return Int(rect.minY) + gy
+    }
+
+    /// Hit-test the polar ring-label column along the 12 o'clock diameter.
+    /// Returns the ring index (0-based, matches `ChartCell.y` storage) or nil.
+    private func resolvePolarRingLabelHit(location: CGPoint, size: CGSize, polar: ChartExtentsPolar) -> Int? {
+        let ringsCount = Int(polar.rings)
+        if ringsCount <= 0 { return nil }
+        let layout = polarLayout(for: polar, canvasSize: size, ringsCount: ringsCount)
+        if location.x < layout.cx - polarRingLabelHalfW { return nil }
+        if location.x >= layout.cx + polarRingLabelHalfW { return nil }
+        if location.y >= layout.cy { return nil }
+        let dy = Double(layout.cy - location.y)
+        let innerR = Double(layout.innerRadius)
+        let ringThickness = Double(layout.ringThickness)
+        let outerR = innerR + Double(ringsCount) * ringThickness
+        if dy < innerR || dy >= outerR { return nil }
+        let ring = Int(floor((dy - innerR) / ringThickness))
+        return min(max(ring, 0), ringsCount - 1)
     }
 
     /// Dispatches to the rect or polar hit-test depending on the chart extents.
@@ -245,13 +318,16 @@ private struct ChartCanvasView: View {
     private func resolveHit(location: CGPoint, size: CGSize, rect: ChartExtentsRect) -> HitResult? {
         let gridWidth = Int(rect.maxX - rect.minX + 1)
         let gridHeight = Int(rect.maxY - rect.minY + 1)
+        // Reserve the left gutter for row labels (Phase 35.2d). Mirrors the
+        // Kotlin `computeViewerLayout` math to keep hit-test and draw in lockstep.
+        let availableW = max(1, size.width - rectRowLabelGutter)
         let cellSize = max(
             1,
-            min(size.width / CGFloat(gridWidth), size.height / CGFloat(gridHeight))
+            min(availableW / CGFloat(gridWidth), size.height / CGFloat(gridHeight))
         )
         let drawW = cellSize * CGFloat(gridWidth)
         let drawH = cellSize * CGFloat(gridHeight)
-        let originX = (size.width - drawW) / 2
+        let originX = rectRowLabelGutter + (availableW - drawW) / 2
         let originY = (size.height - drawH) / 2
 
         // GridHitTest.hitTest semantics — mirror Kotlin for consistency.
@@ -325,13 +401,16 @@ private struct ChartCanvasView: View {
     private func draw(into context: inout GraphicsContext, size: CGSize, rect: ChartExtentsRect) {
         let gridWidth = Int(rect.maxX - rect.minX + 1)
         let gridHeight = Int(rect.maxY - rect.minY + 1)
+        // Reserve the left gutter (Phase 35.2d). Shared with resolveHit so the
+        // tap coords and drawn cells agree.
+        let availableW = max(1, size.width - rectRowLabelGutter)
         let cellSize = max(
             1,
-            min(size.width / CGFloat(gridWidth), size.height / CGFloat(gridHeight))
+            min(availableW / CGFloat(gridWidth), size.height / CGFloat(gridHeight))
         )
         let drawW = cellSize * CGFloat(gridWidth)
         let drawH = cellSize * CGFloat(gridHeight)
-        let originX = (size.width - drawW) / 2
+        let originX = rectRowLabelGutter + (availableW - drawW) / 2
         let originY = (size.height - drawH) / 2
 
         // Grid background
@@ -404,6 +483,19 @@ private struct ChartCanvasView: View {
                     cellSize: cellSize
                 )
             }
+        }
+
+        // Phase 35.2d: paint row-number labels in the left gutter. Labels are
+        // 1-indexed upward from the bottom row per chart y-up convention
+        // (docs/en/chart-coordinates.md). Locale-independent digits — no i18n.
+        let labelFontPx = max(8, cellSize * 0.35)
+        let gutterCenterX = originX - rectRowLabelGutter / 2
+        for gy in 0..<gridHeight {
+            let rowCenterY = originY + CGFloat(gridHeight - gy) * cellSize - cellSize / 2
+            let label = Text(verbatim: "\(gy + 1)")
+                .font(.system(size: labelFontPx))
+                .foregroundColor(.secondary)
+            context.draw(label, at: CGPoint(x: gutterCenterX, y: rowCenterY), anchor: .center)
         }
     }
 
@@ -726,6 +818,18 @@ private struct ChartCanvasView: View {
                     lineWidth: strokeWidth
                 )
             }
+        }
+
+        // Phase 35.2d: paint ring-number labels along the 12 o'clock diameter
+        // at each ring's mid-radius. 1-indexed display; ring 0 renders as "1".
+        let fontPx = max(10, layout.ringThickness * 0.4)
+        for ring in 0..<ringsCount {
+            let rCenter = layout.innerRadius + (CGFloat(ring) + 0.5) * layout.ringThickness
+            let py = layout.cy - rCenter
+            let label = Text(verbatim: "\(ring + 1)")
+                .font(.system(size: fontPx))
+                .foregroundColor(.secondary)
+            context.draw(label, at: CGPoint(x: layout.cx, y: py), anchor: .center)
         }
     }
 }
