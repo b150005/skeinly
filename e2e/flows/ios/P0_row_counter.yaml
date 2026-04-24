@@ -12,8 +12,9 @@ tags:
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_ios.yaml
 
-# Wait for list screen to be ready
-- assertVisible: "No Projects Yet"
+# Wait for list screen to be ready (Phase 33.5: locale-independent id)
+- assertVisible:
+    id: "emptyStateLabel"
 
 # Create a project first (Phase 33.4 iOS ids: createProjectFab FAB;
 # projectNameInput, totalRowsInput, createProjectButton in the sheet.)
@@ -57,12 +58,10 @@ tags:
 - assertVisible:
     id: "rowTotalLabel"
 
-# Status changes to In Progress when currentRow > 0 (domain rule).
-# The iOS counter renders status via `StatusBadge(status:)` in
-# iosApp/iosApp/Screens/ProjectListScreen.swift (line ~329) — the struct is
-# declared inside ProjectListScreen.swift but reused by the ProjectDetail
-# counterSection (line ~194) via `StatusBadge(status: project.status)`. It
-# is still English-hardcoded, so "In Progress" works on English CI today.
-# When StatusBadge is i18n'd alongside the iOS ProjectList migration, pivot
-# to a testTag then.
+# Status changes to In Progress when currentRow > 0 (domain rule). Phase 33.5
+# i18n'd StatusBadge; on en-US CI it still renders "In Progress" via
+# `label_status_in_progress`. A per-row status id landmark is future work — the
+# current `projectStatusBadge` identifier repeats for every row so it cannot
+# disambiguate this specific project's badge from the empty-state or filter
+# chips.
 - assertVisible: "In Progress"

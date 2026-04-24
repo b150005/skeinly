@@ -414,6 +414,12 @@ struct ProjectDetailScreen: View {
                     .disabled(editTitle.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
+            // Landmark mirrors Kotlin `editProjectDialog` (Phase 33.4) — iOS
+            // `NavigationStack` nav title is not accessibilityIdentifier-
+            // addressable, so a container landmark is the only locale-
+            // independent route.
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("editProjectDialog")
         }
         .presentationDetents([.medium])
     }

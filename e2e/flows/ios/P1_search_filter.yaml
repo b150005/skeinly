@@ -59,9 +59,14 @@ tags:
 # Guard: verify increment actually registered before testing filters.
 # If the Maestro tap bug caused the increment to silently fail, the project
 # will still show "Not Started" and the filter assertions would be meaningless.
+# Phase 33.5 i18n'd StatusBadge; `projectStatusBadge` repeats for every row so
+# we still assert on the en-US rendered text here (matches what the ProjectRow
+# body actually reads; CI is en-US-only).
 - assertVisible: "In Progress"
 
-# Filter: In Progress — only Wool Scarf (1/10 rows) should remain
-- tapOn: "In Progress"
+# Filter: In Progress — only Wool Scarf (1/10 rows) should remain. Phase 33.5
+# pivoted the chip tap from the English label text to a per-chip id landmark.
+- tapOn:
+    id: "filterInProgressChip"
 - assertVisible: "Wool Scarf"
 - assertNotVisible: "Cotton Hat"

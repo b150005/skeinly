@@ -28,7 +28,8 @@ tags:
 # ============================================================
 # Screenshot 2: Empty State (Project List)
 # ============================================================
-- assertVisible: "No Projects Yet"
+- assertVisible:
+    id: "emptyStateLabel"
 - takeScreenshot: screenshot_02_empty_state
 
 # ============================================================
@@ -39,11 +40,9 @@ tags:
 # projectNameInput, totalRowsInput, createProjectButton in the sheet.)
 - tapOn:
     id: "createProjectFab"
-# `assertVisible: "New Project"` — load-bearing on iOS ProjectListScreen.swift
-# staying English-hardcoded (the sheet's navigation title is not an
-# accessibilityIdentifier-addressable element). Pivot to a landmark id when
-# the iOS ProjectList i18n sweep lands.
-- assertVisible: "New Project"
+# Phase 33.5 added `newProjectDialog` landmark on createProjectSheet.
+- assertVisible:
+    id: "newProjectDialog"
 - tapOn:
     id: "projectNameInput"
 - inputText: "Autumn Cardigan"
@@ -61,10 +60,12 @@ tags:
 - tapOn: "Autumn Cardigan"
 - assertVisible:
     id: "rowCounter"
-- tapOn: "Increment row"
+- tapOn:
+    id: "incrementButton"
 
-# Go back to project list
-- tapOn: "Projects"
+# Go back to project list (iOS back button shows parent nav title "Knit Note",
+# which is locale-identical per the app_name convention).
+- tapOn: "Knit Note"
 
 # Project 2: Winter Socks
 - tapOn:
@@ -107,18 +108,27 @@ tags:
 - takeScreenshot: screenshot_04_row_counter
 
 # Go back
-- tapOn: "Projects"
+- tapOn: "Knit Note"
 
 # ============================================================
-# Screenshot 5: Pattern Library
+# Screenshot 5: Pattern Library (Phase 33.5: open overflow menu, then tap
+# locale-independent id `patternLibraryButton`)
 # ============================================================
-- tapOn: "Patterns"
+- tapOn:
+    id: "moreMenu"
+- tapOn:
+    id: "patternLibraryButton"
 - takeScreenshot: screenshot_05_pattern_library
+- tapOn: "Knit Note"
 
 # ============================================================
-# Screenshot 6: Profile
+# Screenshot 6: Profile (Phase 33.5: open overflow menu, then tap
+# locale-independent id `profileButton`)
 # ============================================================
-- tapOn: "Profile"
+- tapOn:
+    id: "moreMenu"
+- tapOn:
+    id: "profileButton"
 - takeScreenshot: screenshot_06_profile
 
 # ============================================================

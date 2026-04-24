@@ -16,13 +16,11 @@ tags:
 - assertVisible: "Knit Note"
 
 # --- Navigate to Profile ---
-# iOS: Profile is inside a Menu dropdown — open menu first.
-# profileScreen is the locale-independent landmark; the menu entry label
-# "Profile" is still a raw English literal because iOS ProjectListScreen is
-# not yet migrated — that flip happens in the iOS ProjectList i18n PR.
+# Phase 33.5: menu entry now has `profileButton` accessibilityIdentifier.
 - tapOn:
     id: "moreMenu"
-- tapOn: "Profile"
+- tapOn:
+    id: "profileButton"
 - assertVisible:
     id: "profileScreen"
 
@@ -31,12 +29,11 @@ tags:
 - assertVisible: "Knit Note"
 
 # --- Navigate to Settings ---
-# settingsScreen is the locale-independent landmark; the menu entry label
-# "Settings" is still a raw English literal because iOS ProjectListScreen is
-# not yet migrated — that flip happens in the iOS ProjectList i18n PR.
+# Phase 33.5: menu entry now has `settingsButton` accessibilityIdentifier.
 - tapOn:
     id: "moreMenu"
-- tapOn: "Settings"
+- tapOn:
+    id: "settingsButton"
 - assertVisible:
     id: "settingsScreen"
 

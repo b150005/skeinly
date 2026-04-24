@@ -11,7 +11,10 @@ final class ProjectListUITests: XCTestCase {
     }
 
     func testEmptyState_displaysNoProjectsMessage() {
-        XCTAssertTrue(app.staticTexts["No Projects Yet"].waitForExistence(timeout: 5))
+        // Phase 33.5: pivoted from `app.staticTexts["No Projects Yet"]` to
+        // the landmark accessibilityIdentifier on the ContentUnavailableView
+        // Label — robust once the app runs under a non-English locale.
+        XCTAssertTrue(app.otherElements["emptyStateLabel"].waitForExistence(timeout: 5))
     }
 
     func testPlusButton_opensCreateSheet() {
@@ -42,7 +45,11 @@ final class ProjectListUITests: XCTestCase {
         // Go back and verify list shows progress
         app.navigationBars.buttons.element(boundBy: 0).tap()
         XCTAssertTrue(app.staticTexts["Cable Sweater"].waitForExistence(timeout: 5), "Cable Sweater not found in list")
-        XCTAssertTrue(app.staticTexts["1 / 100 rows"].waitForExistence(timeout: 5))
+        // Phase 33.5: pivoted from `app.staticTexts["1 / 100 rows"]` to the
+        // `projectRowCount` accessibilityIdentifier. The identifier repeats
+        // for every row in the list, but since this test creates exactly one
+        // project the single-match query is unambiguous.
+        XCTAssertTrue(app.staticTexts["projectRowCount"].waitForExistence(timeout: 5))
     }
 
     func testTapProject_navigatesToDetail() {
@@ -54,10 +61,9 @@ final class ProjectListUITests: XCTestCase {
     func testCreateSheet_cancelDismisses() {
         app.buttons["createProjectFab"].tap()
         XCTAssertTrue(app.textFields["projectNameInput"].waitForExistence(timeout: 3), "Title field not found")
-        // "Cancel" text selector acceptable: ProjectListScreen.swift is not yet i18n'd
-        // (its other literals — "No Projects Yet", "Create Project" CTA — remain English).
-        // Pivots to `.accessibilityIdentifier` alongside the pending iOS ProjectList sweep.
-        app.buttons["Cancel"].tap()
-        XCTAssertTrue(app.staticTexts["No Projects Yet"].waitForExistence(timeout: 3))
+        // Phase 33.5: pivoted to the `cancelButton` accessibilityIdentifier on
+        // the createProjectSheet toolbar cancel Button.
+        app.buttons["cancelButton"].tap()
+        XCTAssertTrue(app.otherElements["emptyStateLabel"].waitForExistence(timeout: 3))
     }
 }

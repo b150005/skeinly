@@ -16,11 +16,12 @@ tags:
 # Verify we start on the project list
 - assertVisible: "Knit Note"
 
-# Navigate to Discovery screen via menu (iOS ProjectListScreen.swift is not
-# i18n'd yet — pivot to testTag when that migration ships).
+# Navigate to Discovery screen via menu (Phase 33.5 pivoted ProjectListScreen
+# menu entry to `discoverPatternsButton` accessibilityIdentifier).
 - tapOn:
     id: "moreMenu"
-- tapOn: "Discover Patterns"
+- tapOn:
+    id: "discoverPatternsButton"
 - assertVisible:
     id: "discoveryScreen"
 
