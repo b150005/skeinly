@@ -38,6 +38,24 @@ android {
         compose = true
     }
 
+    // Opt into AGP's per-app locale support: AGP scans `values-*/` resource
+    // directories and generates `xml/_generated_res_locale_config.xml`, then
+    // auto-injects `android:localeConfig="@xml/_generated_res_locale_config"`
+    // into the merged manifest. Without this, Android 13+'s LocaleManagerService
+    // stores per-app locale values but the runtime Activity.Configuration does
+    // not honor them — CMP `Res.string.*` and native `R.string.*` both fall back
+    // to the system locale regardless of the user's Settings > App Info > Language
+    // selection. `localeFilters` constrains generation to locales we actually ship.
+    androidResources {
+        generateLocaleConfig = true
+        // `localeFilters` uses aapt2 resource-qualifier format (bare language
+        // tag, or `<lang>-r<REGION>` for region-qualified), NOT BCP 47 —
+        // `listOf("en-US", "ja-JP")` fails with "invalid config 'en-US'".
+        // Keep these in sync with the `values-*/` directories we actually ship.
+        // A future region-specific variant would be added as e.g. `"en-rGB"`.
+        localeFilters += listOf("en", "ja")
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
