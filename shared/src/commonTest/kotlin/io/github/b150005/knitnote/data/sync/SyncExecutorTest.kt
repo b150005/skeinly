@@ -6,7 +6,9 @@ import io.github.b150005.knitnote.domain.model.CoordinateSystem
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.Progress
 import io.github.b150005.knitnote.domain.model.Project
+import io.github.b150005.knitnote.domain.model.ProjectSegment
 import io.github.b150005.knitnote.domain.model.ProjectStatus
+import io.github.b150005.knitnote.domain.model.SegmentState
 import io.github.b150005.knitnote.domain.model.StorageVariant
 import io.github.b150005.knitnote.domain.model.StructuredChart
 import io.github.b150005.knitnote.domain.model.Visibility
@@ -423,6 +425,134 @@ class SyncExecutorTest {
             try {
                 executor.execute(
                     entry(SyncEntityType.STRUCTURED_CHART, "chart-1", SyncOperation.INSERT, json.encodeToString(testStructuredChart)),
+                )
+            } catch (_: Exception) {
+                threw = true
+            }
+            assertTrue(threw, "remote failure must propagate so SyncManager can retry")
+        }
+
+    // --- Project segment dispatch tests ---
+
+    private val testSegment =
+        ProjectSegment(
+            id = "seg:p-1:L1:3:5",
+            projectId = "p-1",
+            layerId = "L1",
+            cellX = 3,
+            cellY = 5,
+            state = SegmentState.WIP,
+            ownerId = "user-1",
+            updatedAt = Instant.fromEpochMilliseconds(2000),
+        )
+
+    @Test
+    fun `null remoteProjectSegment returns true`() =
+        runTest {
+            val executor =
+                SyncExecutor(
+                    remoteProject = null,
+                    remoteProgress = null,
+                    remotePattern = null,
+                    remoteStructuredChart = null,
+                    json = json,
+                )
+            val result =
+                executor.execute(
+                    entry(SyncEntityType.PROJECT_SEGMENT, testSegment.id, SyncOperation.INSERT, json.encodeToString(testSegment)),
+                )
+            assertTrue(result)
+        }
+
+    @Test
+    fun `project segment insert dispatches upsert to remote`() =
+        runTest {
+            val fakeRemote = FakeRemoteProjectSegmentDataSource()
+            val executor =
+                SyncExecutor(
+                    remoteProject = null,
+                    remoteProgress = null,
+                    remotePattern = null,
+                    remoteStructuredChart = null,
+                    json = json,
+                    remoteProjectSegment = fakeRemote,
+                )
+
+            val result =
+                executor.execute(
+                    entry(SyncEntityType.PROJECT_SEGMENT, testSegment.id, SyncOperation.INSERT, json.encodeToString(testSegment)),
+                )
+
+            assertTrue(result)
+            assertEquals(1, fakeRemote.upsertedSegments.size)
+            assertEquals("seg:p-1:L1:3:5", fakeRemote.upsertedSegments[0].id)
+            assertEquals(SegmentState.WIP, fakeRemote.upsertedSegments[0].state)
+        }
+
+    @Test
+    fun `project segment update maps to upsert for idempotency`() =
+        runTest {
+            val fakeRemote = FakeRemoteProjectSegmentDataSource()
+            val executor =
+                SyncExecutor(
+                    remoteProject = null,
+                    remoteProgress = null,
+                    remotePattern = null,
+                    remoteStructuredChart = null,
+                    json = json,
+                    remoteProjectSegment = fakeRemote,
+                )
+            val doneSeg = testSegment.copy(state = SegmentState.DONE)
+
+            val result =
+                executor.execute(
+                    entry(SyncEntityType.PROJECT_SEGMENT, doneSeg.id, SyncOperation.UPDATE, json.encodeToString(doneSeg)),
+                )
+
+            assertTrue(result)
+            // wip->done transitions route through upsert so late retries stay idempotent
+            assertEquals(1, fakeRemote.upsertedSegments.size)
+            assertEquals(SegmentState.DONE, fakeRemote.upsertedSegments[0].state)
+        }
+
+    @Test
+    fun `project segment delete dispatches to remote`() =
+        runTest {
+            val fakeRemote = FakeRemoteProjectSegmentDataSource()
+            val executor =
+                SyncExecutor(
+                    remoteProject = null,
+                    remoteProgress = null,
+                    remotePattern = null,
+                    remoteStructuredChart = null,
+                    json = json,
+                    remoteProjectSegment = fakeRemote,
+                )
+
+            val result = executor.execute(entry(SyncEntityType.PROJECT_SEGMENT, testSegment.id, SyncOperation.DELETE))
+
+            assertTrue(result)
+            assertEquals(1, fakeRemote.deletedIds.size)
+            assertEquals("seg:p-1:L1:3:5", fakeRemote.deletedIds[0])
+        }
+
+    @Test
+    fun `project segment remote failure propagates for retry`() =
+        runTest {
+            val fakeRemote = FakeRemoteProjectSegmentDataSource().apply { shouldFail = true }
+            val executor =
+                SyncExecutor(
+                    remoteProject = null,
+                    remoteProgress = null,
+                    remotePattern = null,
+                    remoteStructuredChart = null,
+                    json = json,
+                    remoteProjectSegment = fakeRemote,
+                )
+            var threw = false
+            try {
+                executor.execute(
+                    entry(SyncEntityType.PROJECT_SEGMENT, testSegment.id, SyncOperation.INSERT, json.encodeToString(testSegment)),
                 )
             } catch (_: Exception) {
                 threw = true

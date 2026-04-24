@@ -3,6 +3,7 @@ package io.github.b150005.knitnote.di
 import io.github.b150005.knitnote.data.local.LocalPatternDataSource
 import io.github.b150005.knitnote.data.local.LocalProgressDataSource
 import io.github.b150005.knitnote.data.local.LocalProjectDataSource
+import io.github.b150005.knitnote.data.local.LocalProjectSegmentDataSource
 import io.github.b150005.knitnote.data.local.LocalStructuredChartDataSource
 import io.github.b150005.knitnote.data.realtime.RealtimeChannelProvider
 import io.github.b150005.knitnote.data.realtime.SupabaseRealtimeChannelProvider
@@ -15,6 +16,7 @@ import io.github.b150005.knitnote.data.remote.RemoteCommentDataSource
 import io.github.b150005.knitnote.data.remote.RemotePatternDataSource
 import io.github.b150005.knitnote.data.remote.RemoteProgressDataSource
 import io.github.b150005.knitnote.data.remote.RemoteProjectDataSource
+import io.github.b150005.knitnote.data.remote.RemoteProjectSegmentDataSource
 import io.github.b150005.knitnote.data.remote.RemoteShareDataSource
 import io.github.b150005.knitnote.data.remote.RemoteStorageDataSource
 import io.github.b150005.knitnote.data.remote.RemoteStructuredChartDataSource
@@ -29,6 +31,7 @@ import io.github.b150005.knitnote.data.repository.OfflineUserRepository
 import io.github.b150005.knitnote.data.repository.PatternRepositoryImpl
 import io.github.b150005.knitnote.data.repository.ProgressRepositoryImpl
 import io.github.b150005.knitnote.data.repository.ProjectRepositoryImpl
+import io.github.b150005.knitnote.data.repository.ProjectSegmentRepositoryImpl
 import io.github.b150005.knitnote.data.repository.ShareRepositoryImpl
 import io.github.b150005.knitnote.data.repository.StructuredChartRepositoryImpl
 import io.github.b150005.knitnote.data.repository.UserRepositoryImpl
@@ -38,6 +41,7 @@ import io.github.b150005.knitnote.domain.repository.CommentRepository
 import io.github.b150005.knitnote.domain.repository.PatternRepository
 import io.github.b150005.knitnote.domain.repository.ProgressRepository
 import io.github.b150005.knitnote.domain.repository.ProjectRepository
+import io.github.b150005.knitnote.domain.repository.ProjectSegmentRepository
 import io.github.b150005.knitnote.domain.repository.ShareRepository
 import io.github.b150005.knitnote.domain.repository.StorageOperations
 import io.github.b150005.knitnote.domain.repository.StructuredChartRepository
@@ -58,6 +62,7 @@ val repositoryModule =
         single { LocalProgressDataSource(get(), get(ioDispatcherQualifier)) }
         single { LocalPatternDataSource(get(), get(ioDispatcherQualifier)) }
         single { LocalStructuredChartDataSource(get(), get(ioDispatcherQualifier), get()) }
+        single { LocalProjectSegmentDataSource(get(), get(ioDispatcherQualifier)) }
 
         // Remote data sources & repositories — only registered when Supabase is configured.
         // Consumers use getOrNull() to handle their absence in local-only mode.
@@ -67,6 +72,7 @@ val repositoryModule =
             single { RemotePatternDataSource(get<SupabaseClient>()) }
             single<PublicPatternDataSource> { get<RemotePatternDataSource>() }
             single { RemoteStructuredChartDataSource(get<SupabaseClient>()) }
+            single { RemoteProjectSegmentDataSource(get<SupabaseClient>()) }
             single<ShareDataSourceOperations> { RemoteShareDataSource(get<SupabaseClient>()) }
             single { RemoteUserDataSource(get<SupabaseClient>()) }
             single<CommentDataSourceOperations> { RemoteCommentDataSource(get<SupabaseClient>()) }
@@ -138,6 +144,13 @@ val repositoryModule =
                 local = get(),
                 remote = getOrNull(),
                 isOnline = get<ConnectivityMonitor>().isOnline,
+                syncManager = get(),
+                json = get(),
+            )
+        }
+        single<ProjectSegmentRepository> {
+            ProjectSegmentRepositoryImpl(
+                local = get(),
                 syncManager = get(),
                 json = get(),
             )

@@ -270,6 +270,46 @@ class SyncManagerTest {
             assertEquals(2, fakePendingSync.countPending())
         }
 
+    @Test
+    fun `coalescing rapid segment double-tap collapses to one pending insert`() =
+        runTest {
+            // Documents PRD NFR-2 behaviour: rapid toggles on the same segment
+            // must fold through existing (entity_type, entity_id) coalescing.
+            // Deterministic segment id (ADR-010 §3) is what makes this work —
+            // both taps share `seg:p-1:L1:3:5` so coalescing matches.
+            isOnline.value = false
+            val manager = createSyncManager()
+            val segId = "seg:p-1:L1:3:5"
+
+            manager.syncOrEnqueue(SyncEntityType.PROJECT_SEGMENT, segId, SyncOperation.INSERT, """{"state":"wip"}""")
+            manager.syncOrEnqueue(SyncEntityType.PROJECT_SEGMENT, segId, SyncOperation.INSERT, """{"state":"done"}""")
+
+            val entries = fakePendingSync.getAllPending()
+            assertEquals(1, entries.size)
+            assertEquals(SyncEntityType.PROJECT_SEGMENT, entries[0].entityType)
+            // INSERT+INSERT falls to the `else` branch in
+            // SyncManager.enqueueWithCoalescing (updatePayload on the prior
+            // entry). The named INSERT+UPDATE branch does NOT fire.
+            // Net result: one INSERT entry with the latest payload.
+            assertEquals(SyncOperation.INSERT, entries[0].operation)
+            assertEquals("""{"state":"done"}""", entries[0].payload)
+        }
+
+    @Test
+    fun `coalescing segment insert then delete cancels both`() =
+        runTest {
+            // User taps a segment (todo → wip) then resets it offline before
+            // the queue drains. Nothing should ever hit the server.
+            isOnline.value = false
+            val manager = createSyncManager()
+            val segId = "seg:p-1:L1:3:5"
+
+            manager.syncOrEnqueue(SyncEntityType.PROJECT_SEGMENT, segId, SyncOperation.INSERT, """{"state":"wip"}""")
+            manager.syncOrEnqueue(SyncEntityType.PROJECT_SEGMENT, segId, SyncOperation.DELETE, "")
+
+            assertEquals(0, fakePendingSync.countPending())
+        }
+
     // --- Other tests ---
 
     @Test

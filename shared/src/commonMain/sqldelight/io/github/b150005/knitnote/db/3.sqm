@@ -1,0 +1,16 @@
+-- Phase 34: Per-segment progress (ADR-010)
+CREATE TABLE ProjectSegmentEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    layer_id TEXT NOT NULL,
+    cell_x INTEGER NOT NULL,
+    cell_y INTEGER NOT NULL,
+    state TEXT NOT NULL CHECK (state IN ('wip', 'done')),
+    updated_at TEXT NOT NULL,
+    owner_id TEXT NOT NULL DEFAULT 'local-user',
+    FOREIGN KEY (project_id) REFERENCES ProjectEntity(id) ON DELETE CASCADE,
+    UNIQUE(project_id, layer_id, cell_x, cell_y)
+);
+
+CREATE INDEX IF NOT EXISTS idx_project_segments_project_id ON ProjectSegmentEntity(project_id);
+CREATE INDEX IF NOT EXISTS idx_project_segments_owner_id ON ProjectSegmentEntity(owner_id);

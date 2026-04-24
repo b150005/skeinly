@@ -7,6 +7,7 @@ enum class SyncEntityType(
     PROGRESS("progress"),
     PATTERN("pattern"),
     STRUCTURED_CHART("structured_chart"),
+    PROJECT_SEGMENT("project_segment"),
     ;
 
     companion object {
