@@ -54,6 +54,15 @@ data class ChartEditorState(
     val errorMessage: String? = null,
     val hasUnsavedChanges: Boolean = false,
     val pendingParameterInput: PendingParameterInput? = null,
+    /**
+     * Phase 35.2c: when true, the next canvas tap is interpreted as "pick the
+     * reflection axis stitch" rather than "place/erase a cell." Polar-only —
+     * set by [ChartEditorEvent.StartPickReflectionAxis] from the symmetry menu
+     * and cleared when the reflection actually applies, the user cancels, or
+     * the user places a cell in a mode that invalidates the pick (e.g. switches
+     * craft / reading / extents mid-pick).
+     */
+    val isPickingReflectionAxis: Boolean = false,
 )
 
 /**
@@ -128,6 +137,20 @@ sealed interface ChartEditorEvent {
         val axisStitch: Int,
     ) : ChartEditorEvent
 
+    /**
+     * Phase 35.2c: enter axis-picking mode. The next canvas tap is rerouted
+     * to [ApplyReflection] with `axisStitch` resolved from the tapped stitch
+     * index. Polar-only — silently ignored on rect charts. Idempotent.
+     */
+    data object StartPickReflectionAxis : ChartEditorEvent
+
+    /**
+     * Phase 35.2c: exit axis-picking mode without applying. Invoked by the
+     * dedicated cancel affordance on the picking-mode banner or by the
+     * system-back handler when the banner is visible.
+     */
+    data object CancelPickReflectionAxis : ChartEditorEvent
+
     data object Undo : ChartEditorEvent
 
     data object Redo : ChartEditorEvent
@@ -180,6 +203,8 @@ class ChartEditorViewModel(
             ChartEditorEvent.CancelParameterInput -> cancelParameterInput()
             is ChartEditorEvent.ApplyRotationalSymmetry -> applyRotationalSymmetry(event.fold)
             is ChartEditorEvent.ApplyReflection -> applyReflection(event.axisStitch)
+            ChartEditorEvent.StartPickReflectionAxis -> startPickReflectionAxis()
+            ChartEditorEvent.CancelPickReflectionAxis -> cancelPickReflectionAxis()
             ChartEditorEvent.Undo -> undo()
             ChartEditorEvent.Redo -> redo()
             ChartEditorEvent.Save -> save()
@@ -195,6 +220,9 @@ class ChartEditorViewModel(
             if (it.draftCraftType == craft) return@update it
             it.copy(
                 draftCraftType = craft,
+                // Metadata change via the overflow menu cancels any in-flight axis pick
+                // per the contract in `isPickingReflectionAxis` KDoc.
+                isPickingReflectionAxis = false,
                 hasUnsavedChanges =
                     computeUnsavedChanges(
                         original = it.original,
@@ -212,6 +240,8 @@ class ChartEditorViewModel(
             if (it.draftReadingConvention == reading) return@update it
             it.copy(
                 draftReadingConvention = reading,
+                // Same rationale as selectCraft — metadata changes cancel the pick.
+                isPickingReflectionAxis = false,
                 hasUnsavedChanges =
                     computeUnsavedChanges(
                         original = it.original,
@@ -241,6 +271,9 @@ class ChartEditorViewModel(
                 draftLayers = resetLayers,
                 canUndo = history.canUndo,
                 canRedo = history.canRedo,
+                // Coordinate-system switch invalidates any in-flight axis pick —
+                // stitch indices are not portable across the polar↔rect boundary.
+                isPickingReflectionAxis = false,
                 hasUnsavedChanges =
                     computeUnsavedChanges(
                         original = it.original,
@@ -288,6 +321,14 @@ class ChartEditorViewModel(
         // Defensive: ignore placement while a parameter dialog is open — the UI is modal,
         // but suppressing here keeps the ViewModel consistent even without UI cooperation.
         if (current.pendingParameterInput != null) return
+        // Phase 35.2c: reroute the tap to apply-reflection when axis-picking mode is
+        // active. Polar-only guarantee: `StartPickReflectionAxis` only sets the flag on
+        // polar extents (see [startPickReflectionAxis]), so [applyReflection]'s own
+        // polar guard is not load-bearing here — it's a second line of defense.
+        if (current.isPickingReflectionAxis) {
+            applyReflection(axisStitch = x)
+            return
+        }
         val layers = current.draftLayers
         if (layers.isEmpty()) return
         val targetLayer = layers[0]
@@ -415,15 +456,40 @@ class ChartEditorViewModel(
         if (layers.isEmpty()) return
         val targetLayer = layers[0]
         val newCells = PolarSymmetry.reflectCells(targetLayer.cells, polar, axisStitch)
-        if (newCells === targetLayer.cells) return
-        if (newCells.size == targetLayer.cells.size && newCells == targetLayer.cells) return
-        commitCells(current, newCells)
+        // Always clear the pick flag on an ApplyReflection dispatch, even when the
+        // reflection is a geometric no-op (e.g. empty layer, or authored cells that
+        // are already symmetric about the chosen axis). Leaving the flag set after a
+        // no-op would silently strand the editor in picking mode.
+        if (newCells === targetLayer.cells ||
+            (newCells.size == targetLayer.cells.size && newCells == targetLayer.cells)
+        ) {
+            if (current.isPickingReflectionAxis) {
+                _state.update { it.copy(isPickingReflectionAxis = false) }
+            }
+            return
+        }
+        commitCells(current, newCells, clearPickingAxis = current.isPickingReflectionAxis)
+    }
+
+    private fun startPickReflectionAxis() {
+        val current = _state.value
+        if (current.pendingParameterInput != null) return
+        if (current.draftExtents !is ChartExtents.Polar) return
+        if (current.isPickingReflectionAxis) return
+        _state.update { it.copy(isPickingReflectionAxis = true) }
+    }
+
+    private fun cancelPickReflectionAxis() {
+        val current = _state.value
+        if (!current.isPickingReflectionAxis) return
+        _state.update { it.copy(isPickingReflectionAxis = false) }
     }
 
     private fun commitCells(
         snapshotBefore: ChartEditorState,
         newCells: List<ChartCell>,
         clearPending: Boolean = false,
+        clearPickingAxis: Boolean = false,
     ) {
         val layers = snapshotBefore.draftLayers
         if (layers.isEmpty()) return
@@ -436,6 +502,7 @@ class ChartEditorViewModel(
                 canUndo = history.canUndo,
                 canRedo = history.canRedo,
                 pendingParameterInput = if (clearPending) null else it.pendingParameterInput,
+                isPickingReflectionAxis = if (clearPickingAxis) false else it.isPickingReflectionAxis,
                 hasUnsavedChanges =
                     computeUnsavedChanges(
                         original = it.original,
@@ -466,6 +533,9 @@ class ChartEditorViewModel(
                 draftLayers = previous.layers,
                 canUndo = history.canUndo,
                 canRedo = history.canRedo,
+                // Undo restores prior drawing state, which may predate the axis pick —
+                // clear the flag so the banner + ring hint don't survive the restore.
+                isPickingReflectionAxis = false,
                 hasUnsavedChanges =
                     computeUnsavedChanges(
                         original = it.original,
@@ -489,6 +559,8 @@ class ChartEditorViewModel(
                 draftLayers = next.layers,
                 canUndo = history.canUndo,
                 canRedo = history.canRedo,
+                // Symmetric to undo — redo should not leave the banner stranded either.
+                isPickingReflectionAxis = false,
                 hasUnsavedChanges =
                     computeUnsavedChanges(
                         original = it.original,
@@ -549,6 +621,11 @@ class ChartEditorViewModel(
                             draftLayers = result.value.layers,
                             draftCraftType = result.value.craftType,
                             draftReadingConvention = result.value.readingConvention,
+                            // Defensive: a save that lands between StartPickReflectionAxis and
+                            // the tap that resolves the axis should not leave the banner
+                            // stranded post-save. _saved.send triggers onBack() in the normal
+                            // path, so this is a narrow race guard.
+                            isPickingReflectionAxis = false,
                             hasUnsavedChanges = false,
                         )
                     }

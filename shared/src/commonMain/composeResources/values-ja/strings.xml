@@ -304,4 +304,6 @@
     <string name="label_symmetry_section">対称コピー</string>
     <string name="action_symmetry_fold">回転 \u00D7%1$d</string>
     <string name="action_symmetry_reflect">鏡映</string>
+    <!-- Phase 35.2c axis-picker banner (ADR-011 §3) -->
+    <string name="banner_pick_reflection_axis">鏡映軸にしたい目をタップしてください。</string>
 </resources>

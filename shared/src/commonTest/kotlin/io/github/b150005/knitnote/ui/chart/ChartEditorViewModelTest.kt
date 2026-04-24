@@ -1043,4 +1043,171 @@ class ChartEditorViewModelTest {
                     .cells
             assertEquals(before, after)
         }
+
+    // 45. Phase 35.2c: StartPickReflectionAxis sets the flag on a polar chart.
+    @Test
+    fun `StartPickReflectionAxis sets isPickingReflectionAxis on polar chart`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-axis-pick")
+            awaitReady(viewModel)
+            val polar = ChartExtents.Polar(rings = 1, stitchesPerRing = listOf(8))
+            viewModel.onEvent(ChartEditorEvent.SetExtents(polar))
+
+            viewModel.onEvent(ChartEditorEvent.StartPickReflectionAxis)
+
+            assertTrue(viewModel.state.value.isPickingReflectionAxis)
+        }
+
+    // 46. Phase 35.2c: StartPickReflectionAxis on a rect chart is a silent no-op.
+    @Test
+    fun `StartPickReflectionAxis is a no-op on rect chart`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-axis-pick-rect")
+            awaitReady(viewModel)
+
+            viewModel.onEvent(ChartEditorEvent.StartPickReflectionAxis)
+
+            assertFalse(viewModel.state.value.isPickingReflectionAxis)
+        }
+
+    // 47. Phase 35.2c: tap on canvas while picking reroutes to ApplyReflection with tapped x.
+    @Test
+    fun `PlaceCell while picking reroutes to ApplyReflection at tapped stitch`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-axis-pick-reroute")
+            awaitReady(viewModel)
+            val polar = ChartExtents.Polar(rings = 1, stitchesPerRing = listOf(8))
+            viewModel.onEvent(ChartEditorEvent.SetExtents(polar))
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            // Seed one cell at stitch 1 so reflection has something to mirror.
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 1, y = 0))
+            viewModel.onEvent(ChartEditorEvent.StartPickReflectionAxis)
+            assertTrue(viewModel.state.value.isPickingReflectionAxis)
+
+            // Tap stitch 2 — should reroute to ApplyReflection(axisStitch=2) and clear flag.
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 2, y = 0))
+
+            val state = viewModel.state.value
+            assertFalse(state.isPickingReflectionAxis)
+            val cells = state.draftLayers[0].cells
+            // 2 * 2 - 1 = 3 → mirrored stitch. Original stays, new one at x=3.
+            assertEquals(setOf(1, 3), cells.map { it.x }.toSet())
+        }
+
+    // 48. Phase 35.2c: CancelPickReflectionAxis exits picking mode without mutating cells.
+    @Test
+    fun `CancelPickReflectionAxis clears flag and leaves cells untouched`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-axis-pick-cancel")
+            awaitReady(viewModel)
+            val polar = ChartExtents.Polar(rings = 1, stitchesPerRing = listOf(8))
+            viewModel.onEvent(ChartEditorEvent.SetExtents(polar))
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 1, y = 0))
+            viewModel.onEvent(ChartEditorEvent.StartPickReflectionAxis)
+            val before =
+                viewModel.state.value.draftLayers[0]
+                    .cells
+
+            viewModel.onEvent(ChartEditorEvent.CancelPickReflectionAxis)
+
+            val after = viewModel.state.value
+            assertFalse(after.isPickingReflectionAxis)
+            assertEquals(before, after.draftLayers[0].cells)
+        }
+
+    // 49. Phase 35.2c: direct ApplyReflection dispatch still works and clears an active pick.
+    @Test
+    fun `ApplyReflection clears picking flag as a defensive cleanup`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-axis-direct-refl")
+            awaitReady(viewModel)
+            val polar = ChartExtents.Polar(rings = 1, stitchesPerRing = listOf(8))
+            viewModel.onEvent(ChartEditorEvent.SetExtents(polar))
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 1, y = 0))
+            viewModel.onEvent(ChartEditorEvent.StartPickReflectionAxis)
+
+            viewModel.onEvent(ChartEditorEvent.ApplyReflection(axisStitch = 0))
+
+            assertFalse(viewModel.state.value.isPickingReflectionAxis)
+        }
+
+    // 50. Phase 35.2c: SetExtents polar→rect clears an in-flight axis pick.
+    @Test
+    fun `SetExtents clears isPickingReflectionAxis on coordinate switch`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-axis-extents-switch")
+            awaitReady(viewModel)
+            val polar = ChartExtents.Polar(rings = 1, stitchesPerRing = listOf(8))
+            viewModel.onEvent(ChartEditorEvent.SetExtents(polar))
+            viewModel.onEvent(ChartEditorEvent.StartPickReflectionAxis)
+            assertTrue(viewModel.state.value.isPickingReflectionAxis)
+
+            viewModel.onEvent(
+                ChartEditorEvent.SetExtents(ChartExtents.Rect(minX = 0, maxX = 7, minY = 0, maxY = 7)),
+            )
+
+            assertFalse(viewModel.state.value.isPickingReflectionAxis)
+        }
+
+    // 51a. Phase 35.2c: undo while picking clears the banner/ring state.
+    @Test
+    fun `undo while picking clears isPickingReflectionAxis`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-axis-undo")
+            awaitReady(viewModel)
+            val polar = ChartExtents.Polar(rings = 1, stitchesPerRing = listOf(8))
+            viewModel.onEvent(ChartEditorEvent.SetExtents(polar))
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 1, y = 0))
+            viewModel.onEvent(ChartEditorEvent.StartPickReflectionAxis)
+            assertTrue(viewModel.state.value.isPickingReflectionAxis)
+
+            viewModel.onEvent(ChartEditorEvent.Undo)
+
+            assertFalse(viewModel.state.value.isPickingReflectionAxis)
+        }
+
+    // 51b. Phase 35.2c: metadata changes cancel the pick per the state KDoc contract.
+    @Test
+    fun `selectCraft while picking clears isPickingReflectionAxis`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-axis-craft")
+            awaitReady(viewModel)
+            val polar = ChartExtents.Polar(rings = 1, stitchesPerRing = listOf(8))
+            viewModel.onEvent(ChartEditorEvent.SetExtents(polar))
+            viewModel.onEvent(ChartEditorEvent.StartPickReflectionAxis)
+            assertTrue(viewModel.state.value.isPickingReflectionAxis)
+
+            viewModel.onEvent(ChartEditorEvent.SelectCraft(CraftType.CROCHET))
+
+            assertFalse(viewModel.state.value.isPickingReflectionAxis)
+        }
+
+    // 51. Phase 35.2c: axis-picking mode blocks placeCell from actually placing/erasing cells.
+    @Test
+    fun `placeCell while picking does not add or remove cells on the layer`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-axis-no-place")
+            awaitReady(viewModel)
+            val polar = ChartExtents.Polar(rings = 1, stitchesPerRing = listOf(8))
+            viewModel.onEvent(ChartEditorEvent.SetExtents(polar))
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+            viewModel.onEvent(ChartEditorEvent.StartPickReflectionAxis)
+
+            // Tap stitch 0 — axis=0 reflection on a cell at stitch 0 is self-mirror,
+            // so cells must NOT grow; the picking path must short-circuit placement.
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+
+            val cells =
+                viewModel.state.value.draftLayers[0]
+                    .cells
+            // Exactly the seed cell remains — no second placement, no erase.
+            assertEquals(1, cells.size)
+            assertEquals(0, cells[0].x)
+            // And picking flag is cleared even on the geometric no-op.
+            assertFalse(viewModel.state.value.isPickingReflectionAxis)
+        }
 }

@@ -32,6 +32,7 @@ import io.github.b150005.knitnote.domain.usecase.GetPublicPatternsUseCase
 import io.github.b150005.knitnote.domain.usecase.GetReceivedSharesUseCase
 import io.github.b150005.knitnote.domain.usecase.GetStructuredChartByPatternIdUseCase
 import io.github.b150005.knitnote.domain.usecase.IncrementRowUseCase
+import io.github.b150005.knitnote.domain.usecase.MarkRowSegmentsDoneUseCase
 import io.github.b150005.knitnote.domain.usecase.MarkSegmentDoneUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveAuthStateUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveProjectSegmentsUseCase
@@ -128,4 +129,7 @@ val useCaseModule =
         factory { ToggleSegmentStateUseCase(get(), getOrNull()) }
         factory { MarkSegmentDoneUseCase(get(), getOrNull()) }
         factory { ResetProjectProgressUseCase(get()) }
+        // Phase 35.2c — batch "mark row done" (ADR-011 §4). Pre-registered so the
+        // first Phase 35.2d ViewModel consumer can `get()` without touching DI.
+        factory { MarkRowSegmentsDoneUseCase(get(), get(), getOrNull()) }
     }

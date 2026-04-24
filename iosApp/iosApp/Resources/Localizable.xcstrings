@@ -1716,6 +1716,13 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "鏡映" } }
       }
     },
+    "banner_pick_reflection_axis" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tap a stitch to set the reflection axis." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "鏡映軸にしたい目をタップしてください。" } }
+      }
+    },
     "action_reset_progress" : {
       "extractionState" : "manual",
       "localizations" : {

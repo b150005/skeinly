@@ -42,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -63,6 +64,7 @@ import io.github.b150005.knitnote.generated.resources.action_save
 import io.github.b150005.knitnote.generated.resources.action_symmetry_fold
 import io.github.b150005.knitnote.generated.resources.action_symmetry_reflect
 import io.github.b150005.knitnote.generated.resources.action_undo
+import io.github.b150005.knitnote.generated.resources.banner_pick_reflection_axis
 import io.github.b150005.knitnote.generated.resources.dialog_parameter_edit_title
 import io.github.b150005.knitnote.generated.resources.dialog_parameter_enter_title
 import io.github.b150005.knitnote.generated.resources.dialog_polar_extents_title
@@ -113,13 +115,25 @@ fun ChartEditorScreen(
     }
 
     val attemptBack: () -> Unit = {
-        if (state.hasUnsavedChanges) showDiscardDialog = true else onBack()
+        when {
+            // Phase 35.2c: back while axis-picking cancels the pick instead of
+            // popping the screen — the banner-cancel button also dispatches this
+            // but users reflexively reach for the system back gesture first.
+            state.isPickingReflectionAxis ->
+                viewModel.onEvent(ChartEditorEvent.CancelPickReflectionAxis)
+            state.hasUnsavedChanges -> showDiscardDialog = true
+            else -> onBack()
+        }
     }
 
-    // Intercept system-back (hardware / predictive-back gesture) only while
-    // there are unsaved edits; otherwise let the navigator pop normally.
-    SystemBackHandler(enabled = state.hasUnsavedChanges) {
-        showDiscardDialog = true
+    // Intercept system-back (hardware / predictive-back gesture) while there are
+    // unsaved edits OR an axis pick is in flight; otherwise let the navigator pop.
+    SystemBackHandler(enabled = state.hasUnsavedChanges || state.isPickingReflectionAxis) {
+        if (state.isPickingReflectionAxis) {
+            viewModel.onEvent(ChartEditorEvent.CancelPickReflectionAxis)
+        } else {
+            showDiscardDialog = true
+        }
     }
 
     Scaffold(
@@ -206,7 +220,7 @@ fun ChartEditorScreen(
                                 viewModel.onEvent(ChartEditorEvent.ApplyRotationalSymmetry(fold))
                             },
                             onReflection = {
-                                viewModel.onEvent(ChartEditorEvent.ApplyReflection(axisStitch = 0))
+                                viewModel.onEvent(ChartEditorEvent.StartPickReflectionAxis)
                             },
                         )
                     }
@@ -238,10 +252,18 @@ fun ChartEditorScreen(
                             SymbolCategory.entries.filter { catalog.listByCategory(it).isNotEmpty() }
                         }
                     Column(modifier = Modifier.fillMaxSize()) {
+                        if (state.isPickingReflectionAxis) {
+                            ReflectionAxisPickBanner(
+                                onCancel = {
+                                    viewModel.onEvent(ChartEditorEvent.CancelPickReflectionAxis)
+                                },
+                            )
+                        }
                         EditorCanvas(
                             extents = state.draftExtents,
                             layers = state.draftLayers,
                             catalog = catalog,
+                            isPickingReflectionAxis = state.isPickingReflectionAxis,
                             onCellTap = { x, y ->
                                 viewModel.onEvent(ChartEditorEvent.PlaceCell(x = x, y = y))
                             },
@@ -374,12 +396,21 @@ private fun EditorCanvas(
     extents: ChartExtents,
     layers: List<io.github.b150005.knitnote.domain.model.ChartLayer>,
     catalog: SymbolCatalog,
+    isPickingReflectionAxis: Boolean,
     onCellTap: (Int, Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when (extents) {
         is ChartExtents.Rect -> RectEditorCanvas(extents, layers, catalog, onCellTap, modifier)
-        is ChartExtents.Polar -> PolarEditorCanvas(extents, layers, catalog, onCellTap, modifier)
+        is ChartExtents.Polar ->
+            PolarEditorCanvas(
+                extents = extents,
+                layers = layers,
+                catalog = catalog,
+                isPickingReflectionAxis = isPickingReflectionAxis,
+                onCellTap = onCellTap,
+                modifier = modifier,
+            )
     }
 }
 
@@ -507,6 +538,7 @@ private fun PolarEditorCanvas(
     extents: ChartExtents.Polar,
     layers: List<io.github.b150005.knitnote.domain.model.ChartLayer>,
     catalog: SymbolCatalog,
+    isPickingReflectionAxis: Boolean,
     onCellTap: (Int, Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -524,6 +556,11 @@ private fun PolarEditorCanvas(
     val symbolColor = MaterialTheme.colorScheme.onSurface
     val unknownBg = MaterialTheme.colorScheme.errorContainer
     val unknownFg = MaterialTheme.colorScheme.onErrorContainer
+    // Phase 35.2c: accent ring highlight when axis-picking mode is active. Paired
+    // with the ReflectionAxisPickBanner above the canvas — the banner carries the
+    // text explanation, the ring just adds a visual "anywhere on this wheel is a
+    // valid target" hint without intruding on the chart itself.
+    val axisPickHintColor = MaterialTheme.colorScheme.primary
     val textMeasurer =
         androidx.compose.ui.text
             .rememberTextMeasurer()
@@ -593,6 +630,15 @@ private fun PolarEditorCanvas(
             unknownBg = unknownBg,
             unknownFg = unknownFg,
         )
+        if (isPickingReflectionAxis) {
+            val outerRadius = (layout.innerRadius + extents.rings * layout.ringThickness).toFloat()
+            drawCircle(
+                color = axisPickHintColor,
+                radius = outerRadius,
+                center = Offset(layout.cx.toFloat(), layout.cy.toFloat()),
+                style = Stroke(width = 3f),
+            )
+        }
     }
 }
 
@@ -761,6 +807,31 @@ private fun ChartMetadataMenu(
             )
         }
     }
+}
+
+@Composable
+private fun ReflectionAxisPickBanner(onCancel: () -> Unit) {
+    androidx.compose.foundation.layout
+        .Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .testTag("axisPickBanner"),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(Res.string.banner_pick_reflection_axis),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(
+                onClick = onCancel,
+                modifier = Modifier.testTag("axisPickCancelButton"),
+            ) { Text(stringResource(Res.string.action_cancel)) }
+        }
 }
 
 @Composable

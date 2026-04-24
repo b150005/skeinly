@@ -38,10 +38,19 @@ struct StructuredChartEditorScreen: View {
             if state.isLoading {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
+                // Phase 35.2c: axis-picker banner — only visible while the ViewModel
+                // is waiting for a stitch-index tap to set the reflection axis. Banner
+                // carries the text affordance; EditorCanvasView paints a ring hint.
+                if state.isPickingReflectionAxis {
+                    ReflectionAxisPickBanner(onCancel: {
+                        viewModel.onEvent(event: ChartEditorEventCancelPickReflectionAxis.shared)
+                    })
+                }
                 EditorCanvasView(
                     extents: state.draftExtents,
                     layers: state.draftLayers,
                     catalog: catalog,
+                    isPickingReflectionAxis: state.isPickingReflectionAxis,
                     onCellTap: { x, y in
                         viewModel.onEvent(
                             event: ChartEditorEventPlaceCell(x: Int32(x), y: Int32(y))
@@ -181,7 +190,7 @@ struct StructuredChartEditorScreen: View {
                             }
                             Button {
                                 viewModel.onEvent(
-                                    event: ChartEditorEventApplyReflection(axisStitch: 0)
+                                    event: ChartEditorEventStartPickReflectionAxis.shared
                                 )
                             } label: {
                                 Text(LocalizedStringKey("action_symmetry_reflect"))
@@ -280,6 +289,13 @@ struct StructuredChartEditorScreen: View {
     }
 
     private func attemptBack(state: ChartEditorState) {
+        // Phase 35.2c: while axis-picking, back cancels the pick rather than popping.
+        // Mirrors the Compose `attemptBack` branching — users reflexively reach for
+        // the nav-bar back button and expect it to exit the transient mode.
+        if state.isPickingReflectionAxis {
+            viewModel.onEvent(event: ChartEditorEventCancelPickReflectionAxis.shared)
+            return
+        }
         if state.hasUnsavedChanges {
             showDiscardConfirm = true
         } else if !path.isEmpty {
@@ -300,6 +316,7 @@ private struct EditorCanvasView: View {
     let extents: ChartExtents
     let layers: [ChartLayer]
     let catalog: SymbolCatalog
+    let isPickingReflectionAxis: Bool
     let onCellTap: (Int, Int) -> Void
 
     @State private var canvasSize: CGSize = .zero
@@ -483,6 +500,20 @@ private struct EditorCanvasView: View {
                 )
             }
         }
+
+        // Phase 35.2c: outer-ring accent hint while the picker is awaiting a tap.
+        if isPickingReflectionAxis {
+            let outerRadius = layout.innerRadius + Double(ringsCount) * layout.ringThickness
+            var path = Path()
+            path.addArc(
+                center: CGPoint(x: layout.cx, y: layout.cy),
+                radius: CGFloat(outerRadius),
+                startAngle: .zero,
+                endAngle: .degrees(360),
+                clockwise: false
+            )
+            context.stroke(path, with: .color(.accentColor), lineWidth: 3)
+        }
     }
 
     private struct Layout {
@@ -636,6 +667,37 @@ private final class PalettePathCache: ObservableObject {
         let parsed = parser()
         entries[id] = parsed
         return parsed
+    }
+}
+
+// MARK: - Reflection axis pick banner (Phase 35.2c)
+
+/// Mirrors Compose `ReflectionAxisPickBanner`. Visible only while the editor is
+/// awaiting a stitch-index tap to set the reflection axis (ADR-011 §3). Pairs
+/// with the outer-ring accent hint painted by `EditorCanvasView.drawPolar`.
+private struct ReflectionAxisPickBanner: View {
+    let onCancel: () -> Void
+
+    var body: some View {
+        HStack {
+            Text(LocalizedStringKey("banner_pick_reflection_axis"))
+                .font(.subheadline)
+                .foregroundStyle(.primary)
+            Spacer()
+            Button(LocalizedStringKey("action_cancel")) { onCancel() }
+                .accessibilityIdentifier("axisPickCancelButton")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .background(Color.accentColor.opacity(0.15))
+        // `.accessibilityElement(children: .contain)` exposes the HStack as a
+        // landmark container in the accessibility tree so XCUITest /
+        // Maestro resolve `app.otherElements["axisPickBanner"]`. Without it, a
+        // bare `.accessibilityIdentifier` on an HStack is not reliably addressable
+        // as a container across devices. Per Phase 33.1.6+ landmark conventions.
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("axisPickBanner")
     }
 }
 

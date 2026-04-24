@@ -328,4 +328,6 @@
     <string name="label_symmetry_section">Symmetry</string>
     <string name="action_symmetry_fold">Fold \u00D7%1$d</string>
     <string name="action_symmetry_reflect">Reflect</string>
+    <!-- Phase 35.2c axis-picker banner (ADR-011 §3) -->
+    <string name="banner_pick_reflection_axis">Tap a stitch to set the reflection axis.</string>
 </resources>

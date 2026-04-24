@@ -371,10 +371,15 @@
     <!-- Chart editor polar symmetry ops (Phase 35.2b, ADR-011 §3). Surfaces
          only when the draft chart is polar. `action_symmetry_fold` is
          parametric — the fold divisor is substituted at render time so a
-         single key covers ×2/×3/×4/×6/×8. `action_symmetry_reflect` mirrors
-         cells across the 12-o'clock axis (stitch 0); a variable-axis picker
-         is Phase 35.2c scope. -->
+         single key covers ×2/×3/×4/×6/×8. `action_symmetry_reflect` opens
+         the axis-picker banner (Phase 35.2c) — the next canvas tap decides
+         the reflection axis stitch. -->
     <string name="label_symmetry_section">Symmetry</string>
     <string name="action_symmetry_fold">Fold \u00D7%1$d</string>
     <string name="action_symmetry_reflect">Reflect</string>
+    <!-- Phase 35.2c (ADR-011 §3) reflection-axis picker banner. Displayed
+         above the polar canvas while the editor awaits a stitch-index tap
+         to set the reflection axis. Pairs with `action_cancel` for the
+         in-banner dismiss affordance. -->
+    <string name="banner_pick_reflection_axis">Tap a stitch to set the reflection axis.</string>
 </resources>
