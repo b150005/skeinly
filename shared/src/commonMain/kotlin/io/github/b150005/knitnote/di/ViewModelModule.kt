@@ -59,6 +59,8 @@ val viewModelModule =
                 deleteProgressPhoto = get(),
                 progressPhotoStorage = getOrNull(progressPhotosStorageQualifier),
                 observeStructuredChart = get(),
+                observeProjectSegments = get(),
+                resetProjectProgress = get(),
             )
         }
         viewModel { SharedWithMeViewModel(get(), get(), get(), get()) }
@@ -73,9 +75,18 @@ val viewModelModule =
             )
         }
         viewModel { params ->
+            // Use explicit positional indices — `params.getOrNull<String>()` without
+            // an index uses the cursor-based read, but `params.get<T>(0)` above does
+            // not advance the cursor, so `getOrNull<String>()` would re-return the
+            // patternId and silently scope segment observation to the wrong id. See
+            // the SharedContentViewModel binding below for the positional pattern.
             ChartViewerViewModel(
-                patternId = params.get(),
+                patternId = params.get<String>(0),
+                projectId = params.get<String?>(1),
                 observeStructuredChart = get(),
+                observeProjectSegments = get(),
+                toggleSegmentState = get(),
+                markSegmentDone = get(),
             )
         }
         viewModel { params ->

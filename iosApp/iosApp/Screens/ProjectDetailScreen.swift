@@ -11,6 +11,7 @@ struct ProjectDetailScreen: View {
     @State private var showAddNoteSheet = false
     @State private var showShareLink = false
     @State private var showDeleteNoteConfirmation = false
+    @State private var showResetProgressConfirmation = false
     @State private var noteToDelete: Shared.Progress?
     @State private var showCompleteConfirmation = false
     @State private var showDeleteChartImageConfirmation = false
@@ -59,6 +60,19 @@ struct ProjectDetailScreen: View {
             handlePhotoSelection(newItem)
         }
         .deleteNoteAlert(isPresented: $showDeleteNoteConfirmation, noteToDelete: noteToDelete, viewModel: viewModel)
+        .confirmationDialog(
+            LocalizedStringKey("dialog_reset_progress_title"),
+            isPresented: $showResetProgressConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(LocalizedStringKey("action_reset_progress"), role: .destructive) {
+                viewModel.onEvent(event: ProjectDetailEventResetProgress.shared)
+            }
+            .accessibilityIdentifier("resetProgressConfirmButton")
+            Button(LocalizedStringKey("action_cancel"), role: .cancel) {}
+        } message: {
+            Text(LocalizedStringKey("dialog_reset_progress_body"))
+        }
         .onChange(of: state.error) { _, newError in
             showError = newError != nil
         }
@@ -131,7 +145,7 @@ struct ProjectDetailScreen: View {
                         pattern,
                         hasStructuredChart: state.hasStructuredChart,
                         onChartViewerTap: {
-                            path.append(Route.chartViewer(patternId: pattern.id))
+                            path.append(Route.chartViewer(patternId: pattern.id, projectId: projectId))
                         },
                         onChartEditorTap: {
                             path.append(Route.chartEditor(patternId: pattern.id))
@@ -152,6 +166,21 @@ struct ProjectDetailScreen: View {
                         viewModel.onEvent(event: ProjectDetailEventCompleteProject.shared)
                     }
                     .accessibilityIdentifier("markCompleteButton")
+                }
+
+                // Phase 34 US-4: Reset segment progress. Enabled only when the
+                // project has a linked structured chart AND at least one segment
+                // row exists — matches PRD AC-4.1.
+                if state.hasStructuredChart && state.hasSegmentProgress {
+                    Button(role: .destructive) {
+                        showResetProgressConfirmation = true
+                    } label: {
+                        Label(
+                            LocalizedStringKey("action_reset_progress"),
+                            systemImage: "arrow.counterclockwise"
+                        )
+                    }
+                    .accessibilityIdentifier("resetProgressButton")
                 }
             }
 

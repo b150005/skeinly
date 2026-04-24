@@ -84,6 +84,7 @@ import io.github.b150005.knitnote.generated.resources.action_mark_complete
 import io.github.b150005.knitnote.generated.resources.action_remove
 import io.github.b150005.knitnote.generated.resources.action_remove_photo
 import io.github.b150005.knitnote.generated.resources.action_reopen
+import io.github.b150005.knitnote.generated.resources.action_reset_progress
 import io.github.b150005.knitnote.generated.resources.action_save
 import io.github.b150005.knitnote.generated.resources.action_share_link
 import io.github.b150005.knitnote.generated.resources.action_share_with_user
@@ -94,6 +95,8 @@ import io.github.b150005.knitnote.generated.resources.dialog_delete_note_title
 import io.github.b150005.knitnote.generated.resources.dialog_edit_project_title
 import io.github.b150005.knitnote.generated.resources.dialog_remove_chart_image_body
 import io.github.b150005.knitnote.generated.resources.dialog_remove_chart_image_title
+import io.github.b150005.knitnote.generated.resources.dialog_reset_progress_body
+import io.github.b150005.knitnote.generated.resources.dialog_reset_progress_title
 import io.github.b150005.knitnote.generated.resources.hint_note_example
 import io.github.b150005.knitnote.generated.resources.label_gauge_value
 import io.github.b150005.knitnote.generated.resources.label_needle_value
@@ -111,6 +114,7 @@ import io.github.b150005.knitnote.generated.resources.label_status_not_started
 import io.github.b150005.knitnote.generated.resources.label_title
 import io.github.b150005.knitnote.generated.resources.label_total_rows_optional
 import io.github.b150005.knitnote.generated.resources.label_yarn_value
+import io.github.b150005.knitnote.generated.resources.message_reset_progress_done
 import io.github.b150005.knitnote.generated.resources.message_shared_successfully
 import io.github.b150005.knitnote.generated.resources.state_no_notes
 import io.github.b150005.knitnote.generated.resources.state_project_not_found
@@ -144,6 +148,7 @@ fun ProjectDetailScreen(
     var showAddNoteDialog by rememberSaveable { mutableStateOf(false) }
     var showEditDialog by rememberSaveable { mutableStateOf(false) }
     var showUserPickerDialog by remember { mutableStateOf(false) }
+    var showResetProgressDialog by remember { mutableStateOf(false) }
     var noteToDelete by remember { mutableStateOf<String?>(null) }
     var chartImageToDelete by remember { mutableStateOf<String?>(null) }
     var progressPhotoViewerUrl by remember { mutableStateOf<String?>(null) }
@@ -217,6 +222,35 @@ fun ProjectDetailScreen(
         viewModel.directShareSuccess.collect {
             snackbarHostState.showSnackbar(sharedSuccessMessage)
         }
+    }
+
+    val resetProgressDoneMessage = stringResource(Res.string.message_reset_progress_done)
+    LaunchedEffect(Unit) {
+        viewModel.resetProgressDone.collect {
+            snackbarHostState.showSnackbar(resetProgressDoneMessage)
+        }
+    }
+
+    if (showResetProgressDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetProgressDialog = false },
+            title = { Text(stringResource(Res.string.dialog_reset_progress_title)) },
+            text = { Text(stringResource(Res.string.dialog_reset_progress_body)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.onEvent(ProjectDetailEvent.ResetProgress)
+                        showResetProgressDialog = false
+                    },
+                    modifier = Modifier.testTag("resetProgressConfirmButton"),
+                ) { Text(stringResource(Res.string.action_reset_progress)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetProgressDialog = false }) {
+                    Text(stringResource(Res.string.action_cancel))
+                }
+            },
+        )
     }
 
     chartImageToDelete?.let { imagePath ->
@@ -357,6 +391,17 @@ fun ProjectDetailScreen(
                                 onComplete = { viewModel.onEvent(ProjectDetailEvent.CompleteProject) },
                                 onReopen = { viewModel.onEvent(ProjectDetailEvent.ReopenProject) },
                             )
+                        }
+
+                        // Phase 34 US-4: Reset segment progress. Enabled only when
+                        // the project has a linked structured chart AND at least one
+                        // segment row exists — matches PRD AC-4.1.
+                        if (state.hasStructuredChart && state.hasSegmentProgress) {
+                            item {
+                                ResetProgressButton(
+                                    onClick = { showResetProgressDialog = true },
+                                )
+                            }
                         }
 
                         // Pattern metadata section
@@ -715,6 +760,34 @@ private fun StatusToggleButton(
                     Text(stringResource(Res.string.action_mark_complete))
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ResetProgressButton(onClick: () -> Unit) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        TextButton(
+            onClick = onClick,
+            modifier = Modifier.testTag("resetProgressButton"),
+        ) {
+            Icon(
+                Icons.Default.Refresh,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.error,
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+            Text(
+                text = stringResource(Res.string.action_reset_progress),
+                color = MaterialTheme.colorScheme.error,
+            )
         }
     }
 }

@@ -12,7 +12,7 @@ enum Route: Hashable {
     case discovery
     case patternLibrary
     case patternEdit(patternId: String?)
-    case chartViewer(patternId: String)
+    case chartViewer(patternId: String, projectId: String?)
     case chartEditor(patternId: String)
     case symbolGallery
 
@@ -41,9 +41,10 @@ enum Route: Hashable {
         case .patternEdit(let patternId):
             hasher.combine("patternEdit")
             hasher.combine(patternId)
-        case .chartViewer(let patternId):
+        case .chartViewer(let patternId, let projectId):
             hasher.combine("chartViewer")
             hasher.combine(patternId)
+            hasher.combine(projectId)
         case .chartEditor(let patternId):
             hasher.combine("chartEditor")
             hasher.combine(patternId)
@@ -131,8 +132,8 @@ struct AppRootView: View {
             PatternLibraryScreen(path: $path)
         case .patternEdit(let patternId):
             PatternEditScreen(patternId: patternId, path: $path)
-        case .chartViewer(let patternId):
-            StructuredChartViewerScreen(patternId: patternId)
+        case .chartViewer(let patternId, let projectId):
+            StructuredChartViewerScreen(patternId: patternId, projectId: projectId)
         case .chartEditor(let patternId):
             StructuredChartEditorScreen(patternId: patternId, path: $path)
         case .symbolGallery:

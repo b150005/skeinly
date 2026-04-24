@@ -1,0 +1,41 @@
+appId: io.github.b150005.knitnote
+name: "P1 - Per-Segment Progress (Phase 34)"
+tags:
+  - p1
+  - ios
+  - requires-supabase
+---
+# See android/P1_per_segment_progress.yaml for the rationale behind the
+# `requires-supabase` tag. Phase 34 chart viewer + reset button surface
+# requires a pre-seeded fixture project with a linked StructuredChart and
+# at least one ProjectSegment row — unreachable from the onboarding path
+# without a Supabase round-trip.
+
+- clearState: io.github.b150005.knitnote
+- launchApp:
+    appId: io.github.b150005.knitnote
+
+- tapOn: "PhaseThirtyFourFixture"
+
+- assertNotVisible:
+    id: "resetProgressButton"
+
+- tapOn:
+    id: "openChartViewerLink"
+
+- assertVisible:
+    id: "segmentOverlay"
+
+- tapOn:
+    id: "backButton"
+
+- assertVisible:
+    id: "resetProgressButton"
+
+- tapOn:
+    id: "resetProgressButton"
+- tapOn:
+    id: "resetProgressConfirmButton"
+
+- assertNotVisible:
+    id: "resetProgressButton"

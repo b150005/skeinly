@@ -75,6 +75,13 @@ data object Discovery
 @Serializable
 data class ChartViewer(
     val patternId: String,
+    /**
+     * Project this chart is viewed from. Per-segment progress (Phase 34) is
+     * stored per-project, so the overlay wiring only engages when opened from
+     * a project context. Null when the viewer is reached for bare pattern
+     * inspection.
+     */
+    val projectId: String? = null,
 )
 
 @Serializable
@@ -266,7 +273,9 @@ fun KnitNoteNavHost(
                 projectId = route.projectId,
                 onBack = { navController.popBackStack() },
                 onChartViewerClick = { patternId ->
-                    navController.navigate(ChartViewer(patternId = patternId))
+                    navController.navigate(
+                        ChartViewer(patternId = patternId, projectId = route.projectId),
+                    )
                 },
                 onChartEditorClick = { patternId ->
                     navController.navigate(ChartEditor(patternId = patternId))
@@ -277,6 +286,7 @@ fun KnitNoteNavHost(
             val route = backStackEntry.toRoute<ChartViewer>()
             ChartViewerScreen(
                 patternId = route.patternId,
+                projectId = route.projectId,
                 onBack = { navController.popBackStack() },
             )
         }

@@ -4,6 +4,7 @@ import io.github.b150005.knitnote.data.local.LocalPatternDataSource
 import io.github.b150005.knitnote.data.local.LocalPendingSyncDataSource
 import io.github.b150005.knitnote.data.local.LocalProgressDataSource
 import io.github.b150005.knitnote.data.local.LocalProjectDataSource
+import io.github.b150005.knitnote.data.local.LocalProjectSegmentDataSource
 import io.github.b150005.knitnote.data.realtime.RealtimeChannelProvider
 import io.github.b150005.knitnote.data.remote.ConnectivityMonitor
 import io.github.b150005.knitnote.data.remote.RemotePatternDataSource
@@ -73,6 +74,7 @@ val syncModule =
                     localProject = get<LocalProjectDataSource>(),
                     localProgress = get<LocalProgressDataSource>(),
                     localPattern = get<LocalPatternDataSource>(),
+                    localProjectSegment = get<LocalProjectSegmentDataSource>(),
                     authRepository = get<AuthRepository>(),
                     scope = get<CoroutineScope>(applicationScopeQualifier),
                     isOnline = get<ConnectivityMonitor>().isOnline,

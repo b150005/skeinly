@@ -1,17 +1,20 @@
 import SwiftUI
 import Shared
 
-/// Phase 31 SwiftUI counterpart of `ChartViewerScreen` (Compose Multiplatform).
-/// Owns a Koin-resolved `ChartViewerViewModel` via `ScopedViewModel` so the
-/// observed state survives parent re-inits (see `ScopedViewModel` for context).
+/// SwiftUI counterpart of `ChartViewerScreen`. Owns a Koin-resolved
+/// `ChartViewerViewModel` via `ScopedViewModel` so the observed state survives
+/// parent re-inits. Phase 34 adds per-segment progress overlay + tap/long-press
+/// gestures when `projectId` is non-null.
 struct StructuredChartViewerScreen: View {
     let patternId: String
+    let projectId: String?
     @StateObject private var holder: ScopedViewModel<ChartViewerViewModel, ChartViewerState>
     private let catalog: SymbolCatalog
 
-    init(patternId: String) {
+    init(patternId: String, projectId: String?) {
         self.patternId = patternId
-        let vm = ViewModelFactory.chartViewerViewModel(patternId: patternId)
+        self.projectId = projectId
+        let vm = ViewModelFactory.chartViewerViewModel(patternId: patternId, projectId: projectId)
         let wrapper = KoinHelperKt.wrapChartViewerState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
         self.catalog = ViewModelFactory.symbolCatalog()
@@ -27,19 +30,27 @@ struct StructuredChartViewerScreen: View {
                 content(chart: chart)
             } else {
                 ContentUnavailableView(
-                    "No structured chart available",
-                    systemImage: "square.grid.3x3",
-                    description: Text("This pattern does not have a chart yet.")
+                    LocalizedStringKey("state_no_structured_chart"),
+                    systemImage: "square.grid.3x3"
                 )
             }
         }
-        .navigationTitle("Chart")
+        .navigationTitle(LocalizedStringKey("title_chart_viewer"))
         .navigationBarTitleDisplayMode(.inline)
     }
 
     @ViewBuilder
     private func content(chart: StructuredChart) -> some View {
         VStack(spacing: 4) {
+            if holder.state.isPolar {
+                Text(LocalizedStringKey("message_segment_progress_polar_deferred"))
+                    .font(.caption)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.accentColor.opacity(0.15))
+            }
+
             if !chart.layers.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack {
@@ -50,7 +61,7 @@ struct StructuredChartViewerScreen: View {
                                     event: ChartViewerEventToggleLayer(layerId: layer.id)
                                 )
                             } label: {
-                                Text(layer.name)
+                                Text(verbatim: layer.name)
                                     .font(.caption)
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 6)
@@ -68,19 +79,28 @@ struct StructuredChartViewerScreen: View {
             ChartCanvasView(
                 chart: chart,
                 catalog: catalog,
-                hiddenLayerIds: holder.state.hiddenLayerIds
+                hiddenLayerIds: holder.state.hiddenLayerIds,
+                segmentLookup: { layerId, x, y in
+                    viewModel.segmentStateAt(layerId: layerId, x: Int32(x), y: Int32(y))
+                },
+                segmentsVersion: holder.state.segments.count,
+                isPolar: holder.state.isPolar,
+                onTap: { layerId, x, y in
+                    viewModel.onEvent(event: ChartViewerEventTapCell(layerId: layerId, x: Int32(x), y: Int32(y)))
+                },
+                onLongPress: { layerId, x, y in
+                    let generator = UIImpactFeedbackGenerator(style: .medium)
+                    generator.impactOccurred()
+                    viewModel.onEvent(event: ChartViewerEventLongPressCell(layerId: layerId, x: Int32(x), y: Int32(y)))
+                }
             )
+            .accessibilityIdentifier("segmentOverlay")
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }
 
-/// Mutable cache for parsed SVG path commands keyed by symbol id. Held as an
-/// `ObservableObject` so writes during `Canvas` drawing do not trigger SwiftUI
-/// state-graph invalidations. SwiftUI's `Canvas` always invokes its drawing
-/// closure on the main thread, so this is safe to use from there without an
-/// explicit `@MainActor` annotation (avoids actor-isolation mismatch with the
-/// `Canvas` closure's `nonisolated` signature).
+/// Mutable cache for parsed SVG path commands keyed by symbol id.
 private final class PathCommandCache: ObservableObject {
     private var entries: [String: [PathCommand]] = [:]
 
@@ -92,58 +112,163 @@ private final class PathCommandCache: ObservableObject {
     }
 }
 
-/// Pure-SwiftUI canvas that draws a `StructuredChart` using `Canvas`. Pinch and
-/// drag gestures provide zoom/pan; the underlying chart geometry is recomputed
-/// on every redraw so the picture stays sharp across scale changes.
+/// Canvas with overlay + tap/long-press support. Canvas geometry is recomputed
+/// on every draw so hit-test math stays in lockstep. The gesture layer sits in
+/// parallel via `.simultaneousGesture` so pinch-to-zoom keeps working.
 private struct ChartCanvasView: View {
     let chart: StructuredChart
     let catalog: SymbolCatalog
     let hiddenLayerIds: Set<String>
+    /// Reads segment state by (layerId, x, y) — routes through the Kotlin
+    /// helper to avoid bridging a Kotlin `Map<SegmentKey, SegmentState>`
+    /// through Swift `Hashable`.
+    let segmentLookup: (String, Int, Int) -> SegmentState?
+    /// Sentinel value that changes whenever the segment map changes — forces
+    /// SwiftUI to re-evaluate the Canvas closure when the lookup result flips.
+    let segmentsVersion: Int
+    let isPolar: Bool
+    let onTap: (String, Int, Int) -> Void
+    let onLongPress: (String, Int, Int) -> Void
 
     @State private var scale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
-    /// Cache parsed SVG path commands per symbol id. Reference-typed so writes
-    /// from inside `Canvas { ... }` do not mark the SwiftUI state graph dirty.
-    /// Symbol path data is immutable per id, so entries never need invalidation.
+    @State private var canvasSize: CGSize = .zero
+    /// Flag set briefly when a long-press fires so the subsequent `onTapGesture`
+    /// callback can short-circuit. Without this, SwiftUI fires both gesture
+    /// recognizers on long-press release and the tap handler immediately
+    /// cycles the now-done cell back to todo.
+    @State private var longPressActive = false
     @StateObject private var pathCache = PathCommandCache()
 
     private let minScale: CGFloat = 0.5
     private let maxScale: CGFloat = 8.0
 
     var body: some View {
-        Canvas { context, size in
-            guard let rect = chart.extents as? ChartExtentsRect else { return }
-            if rect.maxX < rect.minX || rect.maxY < rect.minY { return }
-            draw(into: &context, size: size, rect: rect)
-        }
-        .scaleEffect(scale)
-        .offset(offset)
-        .gesture(
-            SimultaneousGesture(
-                MagnificationGesture()
-                    .onChanged { value in
-                        let proposed = lastScale * value
-                        scale = min(max(proposed, minScale), maxScale)
-                    }
-                    .onEnded { _ in
-                        lastScale = scale
-                    },
-                DragGesture()
-                    .onChanged { value in
-                        offset = CGSize(
-                            width: lastOffset.width + value.translation.width,
-                            height: lastOffset.height + value.translation.height
-                        )
-                    }
-                    .onEnded { _ in
-                        lastOffset = offset
+        GeometryReader { proxy in
+            Canvas { context, size in
+                guard let rect = chart.extents as? ChartExtentsRect else { return }
+                if rect.maxX < rect.minX || rect.maxY < rect.minY { return }
+                draw(into: &context, size: size, rect: rect)
+            }
+            .scaleEffect(scale)
+            .offset(offset)
+            .gesture(
+                SimultaneousGesture(
+                    MagnificationGesture()
+                        .onChanged { value in
+                            let proposed = lastScale * value
+                            scale = min(max(proposed, minScale), maxScale)
+                        }
+                        .onEnded { _ in lastScale = scale },
+                    DragGesture()
+                        .onChanged { value in
+                            offset = CGSize(
+                                width: lastOffset.width + value.translation.width,
+                                height: lastOffset.height + value.translation.height
+                            )
+                        }
+                        .onEnded { _ in lastOffset = offset }
+                )
+            )
+            .onAppear { canvasSize = proxy.size }
+            .onChange(of: proxy.size) { _, newSize in canvasSize = newSize }
+            .background(Color(.systemBackground))
+            .clipped()
+            // Phase 34 gestures — coexist with pinch/drag via .simultaneousGesture.
+            // Gesture handlers early-return when `isPolar` to satisfy AC-1.4 without
+            // needing `nil` branches (which do not conform to `Gesture`).
+            .contentShape(Rectangle())
+            .simultaneousGesture(
+                LongPressGesture(minimumDuration: 0.5)
+                    .sequenced(before: DragGesture(minimumDistance: 0))
+                    .onEnded { value in
+                        guard !isPolar else { return }
+                        if case .second(true, let drag) = value, let d = drag {
+                            longPressActive = true
+                            handleLongPress(at: d.startLocation)
+                            // Defer the clear so the subsequent onTapGesture that
+                            // SwiftUI fires on finger-lift is suppressed.
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                longPressActive = false
+                            }
+                        }
                     }
             )
+            .onTapGesture { location in
+                guard !isPolar, !longPressActive else { return }
+                handleTap(at: location)
+            }
+        }
+    }
+
+    /// Converts a gesture-space tap location into the Canvas's unscaled/unpanned
+    /// coordinate space. `.scaleEffect` + `.offset` are render-only transforms;
+    /// the gesture recognizer delivers coordinates in the view's layout space.
+    /// Without inverting the transform, hit-tests at any zoom ≠ 1.0 or non-zero
+    /// pan land on the wrong cell.
+    private func toCanvasSpace(_ location: CGPoint) -> (point: CGPoint, size: CGSize) {
+        let safeScale = scale == 0 ? 1 : scale
+        let adjusted = CGPoint(
+            x: (location.x - offset.width) / safeScale,
+            y: (location.y - offset.height) / safeScale,
         )
-        .background(Color(.systemBackground))
-        .clipped()
+        let adjustedSize = CGSize(
+            width: canvasSize.width / safeScale,
+            height: canvasSize.height / safeScale,
+        )
+        return (adjusted, adjustedSize)
+    }
+
+    private func handleTap(at location: CGPoint) {
+        guard let rect = chart.extents as? ChartExtentsRect else { return }
+        let (p, s) = toCanvasSpace(location)
+        guard let hit = resolveHit(location: p, size: s, rect: rect) else { return }
+        onTap(hit.layerId, hit.x, hit.y)
+    }
+
+    private func handleLongPress(at location: CGPoint) {
+        guard let rect = chart.extents as? ChartExtentsRect else { return }
+        let (p, s) = toCanvasSpace(location)
+        guard let hit = resolveHit(location: p, size: s, rect: rect) else { return }
+        onLongPress(hit.layerId, hit.x, hit.y)
+    }
+
+    private struct HitResult { let layerId: String; let x: Int; let y: Int }
+
+    private func resolveHit(location: CGPoint, size: CGSize, rect: ChartExtentsRect) -> HitResult? {
+        let gridWidth = Int(rect.maxX - rect.minX + 1)
+        let gridHeight = Int(rect.maxY - rect.minY + 1)
+        let cellSize = max(
+            1,
+            min(size.width / CGFloat(gridWidth), size.height / CGFloat(gridHeight))
+        )
+        let drawW = cellSize * CGFloat(gridWidth)
+        let drawH = cellSize * CGFloat(gridHeight)
+        let originX = (size.width - drawW) / 2
+        let originY = (size.height - drawH) / 2
+
+        // GridHitTest.hitTest semantics — mirror Kotlin for consistency.
+        let localX = location.x - originX
+        let localY = location.y - originY
+        if localX < 0 || localY < 0 { return nil }
+        if localX >= cellSize * CGFloat(gridWidth) { return nil }
+        if localY >= cellSize * CGFloat(gridHeight) { return nil }
+        let gx = Int(floor(localX / cellSize))
+        let rowFromTop = Int(floor(localY / cellSize))
+        let gy = gridHeight - 1 - rowFromTop
+        let cellX = Int(rect.minX) + gx
+        let cellY = Int(rect.minY) + gy
+
+        // Top-most visible layer that has a drawn cell at (cellX, cellY) wins.
+        for layer in chart.layers.reversed() {
+            if !layer.visible || hiddenLayerIds.contains(layer.id) { continue }
+            if layer.cells.contains(where: { Int($0.x) == cellX && Int($0.y) == cellY }) {
+                return HitResult(layerId: layer.id, x: cellX, y: cellY)
+            }
+        }
+        return nil
     }
 
     private func draw(into context: inout GraphicsContext, size: CGSize, rect: ChartExtentsRect) {
@@ -178,6 +303,10 @@ private struct ChartCanvasView: View {
         let strokeWidth = max(1, cellSize * 0.06)
         let symbolColor = GraphicsContext.Shading.color(.primary)
         let unknownBg = GraphicsContext.Shading.color(.red.opacity(0.2))
+        // Per PRD AC-1.1 — done → filled 20% primary (SwiftUI has no true onSurface);
+        // wip → 2pt outline in accent.
+        let segmentDoneShading = GraphicsContext.Shading.color(.primary.opacity(0.2))
+        let segmentWipShading = GraphicsContext.Shading.color(.accentColor)
 
         for layer in chart.layers {
             if !layer.visible || hiddenLayerIds.contains(layer.id) { continue }
@@ -190,6 +319,16 @@ private struct ChartCanvasView: View {
                     originX: originX,
                     originY: originY
                 )
+
+                // Paint overlay under the glyph (AC-1.2) — polar suppresses (AC-1.4).
+                if !isPolar, let s = segmentLookup(layer.id, Int(cell.x), Int(cell.y)) {
+                    if s == .done {
+                        context.fill(Path(bounds), with: segmentDoneShading)
+                    } else if s == .wip {
+                        context.stroke(Path(bounds), with: segmentWipShading, lineWidth: 2)
+                    }
+                }
+                _ = segmentsVersion // capture to drive re-evaluation when map mutates
 
                 guard let def = catalog.get(id: cell.symbolId) else {
                     drawUnknown(into: &context, bounds: bounds, fill: unknownBg)
@@ -289,8 +428,6 @@ private struct ChartCanvasView: View {
                 break
             }
         }
-        // Honour SymbolDefinition.fill so glyphs whose JIS / publisher convention
-        // is a solid fill (e.g. `jis.crochet.sl-st`) read correctly. Phase 30.2-fix.
         if def.fill {
             context.fill(path, with: color)
         } else {
@@ -332,7 +469,7 @@ private struct ChartCanvasView: View {
                 bounds: cellBounds,
                 rotation: Int32(cell.rotation)
             )
-            let text = Text(value).font(.system(size: fontSize)).foregroundColor(.accentColor)
+            let text = Text(verbatim: value).font(.system(size: fontSize)).foregroundColor(.accentColor)
             context.draw(text, at: CGPoint(x: anchor.x, y: anchor.y), anchor: .center)
         }
     }

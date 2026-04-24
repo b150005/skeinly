@@ -76,7 +76,10 @@ fun getSharedContentViewModel(
     shareId: String?,
 ): SharedContentViewModel = KoinPlatform.getKoin().get { parametersOf(token, shareId) }
 
-fun getChartViewerViewModel(patternId: String): ChartViewerViewModel = KoinPlatform.getKoin().get { parametersOf(patternId) }
+fun getChartViewerViewModel(
+    patternId: String,
+    projectId: String?,
+): ChartViewerViewModel = KoinPlatform.getKoin().get { parametersOf(patternId, projectId) }
 
 fun getChartEditorViewModel(patternId: String): ChartEditorViewModel = KoinPlatform.getKoin().get { parametersOf(patternId) }
 

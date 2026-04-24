@@ -1,16 +1,24 @@
 package io.github.b150005.knitnote.ui.chart
 
 import app.cash.turbine.test
+import io.github.b150005.knitnote.domain.model.ChartCell
 import io.github.b150005.knitnote.domain.model.ChartExtents
 import io.github.b150005.knitnote.domain.model.ChartLayer
 import io.github.b150005.knitnote.domain.model.CoordinateSystem
+import io.github.b150005.knitnote.domain.model.ProjectSegment
+import io.github.b150005.knitnote.domain.model.SegmentState
 import io.github.b150005.knitnote.domain.model.StorageVariant
 import io.github.b150005.knitnote.domain.model.StructuredChart
+import io.github.b150005.knitnote.domain.usecase.FakeProjectSegmentRepository
 import io.github.b150005.knitnote.domain.usecase.FakeStructuredChartRepository
+import io.github.b150005.knitnote.domain.usecase.MarkSegmentDoneUseCase
+import io.github.b150005.knitnote.domain.usecase.ObserveProjectSegmentsUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveStructuredChartUseCase
+import io.github.b150005.knitnote.domain.usecase.ToggleSegmentStateUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -27,11 +35,13 @@ import kotlin.time.Instant
 class ChartViewerViewModelTest {
     private val now = Instant.parse("2026-04-18T00:00:00Z")
     private lateinit var repo: FakeStructuredChartRepository
+    private lateinit var segmentRepo: FakeProjectSegmentRepository
 
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         repo = FakeStructuredChartRepository()
+        segmentRepo = FakeProjectSegmentRepository()
     }
 
     @AfterTest
@@ -42,6 +52,7 @@ class ChartViewerViewModelTest {
     private fun chart(
         patternId: String,
         layers: List<ChartLayer>,
+        coordinateSystem: CoordinateSystem = CoordinateSystem.RECT_GRID,
     ): StructuredChart =
         StructuredChart(
             id = "chart-$patternId",
@@ -49,8 +60,8 @@ class ChartViewerViewModelTest {
             ownerId = "user-1",
             schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
             storageVariant = StorageVariant.INLINE,
-            coordinateSystem = CoordinateSystem.RECT_GRID,
-            extents = ChartExtents.Rect(minX = 0, maxX = 0, minY = 0, maxY = 0),
+            coordinateSystem = coordinateSystem,
+            extents = ChartExtents.Rect(minX = 0, maxX = 2, minY = 0, maxY = 2),
             layers = layers,
             revisionId = "rev-0",
             parentRevisionId = null,
@@ -59,15 +70,27 @@ class ChartViewerViewModelTest {
             updatedAt = now,
         )
 
+    private fun makeViewModel(
+        patternId: String,
+        projectId: String? = null,
+    ): ChartViewerViewModel =
+        ChartViewerViewModel(
+            patternId = patternId,
+            projectId = projectId,
+            observeStructuredChart = ObserveStructuredChartUseCase(repo),
+            observeProjectSegments = ObserveProjectSegmentsUseCase(segmentRepo),
+            toggleSegmentState = ToggleSegmentStateUseCase(segmentRepo, authRepository = null),
+            markSegmentDone = MarkSegmentDoneUseCase(segmentRepo, authRepository = null),
+        )
+
     @Test
     fun `state emits chart when repository observes a value`() =
         runTest {
             val seeded = chart("pat-1", listOf(ChartLayer(id = "L1", name = "Main")))
             repo.seed(seeded)
-            val viewModel = ChartViewerViewModel("pat-1", ObserveStructuredChartUseCase(repo))
+            val viewModel = makeViewModel("pat-1")
 
             viewModel.state.test {
-                // Initial state — loading or already populated, depending on dispatcher race.
                 val first = awaitItem()
                 if (first.chart == null) {
                     val second = awaitItem()
@@ -84,7 +107,7 @@ class ChartViewerViewModelTest {
     @Test
     fun `state stays empty for pattern without a chart`() =
         runTest {
-            val viewModel = ChartViewerViewModel("missing", ObserveStructuredChartUseCase(repo))
+            val viewModel = makeViewModel("missing")
 
             viewModel.state.test {
                 val first = awaitItem()
@@ -120,7 +143,15 @@ class ChartViewerViewModelTest {
 
                     override suspend fun delete(id: String) {}
                 }
-            val viewModel = ChartViewerViewModel("pat-1", ObserveStructuredChartUseCase(failingRepo))
+            val viewModel =
+                ChartViewerViewModel(
+                    patternId = "pat-1",
+                    projectId = null,
+                    observeStructuredChart = ObserveStructuredChartUseCase(failingRepo),
+                    observeProjectSegments = ObserveProjectSegmentsUseCase(segmentRepo),
+                    toggleSegmentState = ToggleSegmentStateUseCase(segmentRepo, authRepository = null),
+                    markSegmentDone = MarkSegmentDoneUseCase(segmentRepo, authRepository = null),
+                )
 
             viewModel.state.test {
                 var seenError = awaitItem()
@@ -136,7 +167,7 @@ class ChartViewerViewModelTest {
     @Test
     fun `toggleLayer adds and removes layer id from hidden set`() =
         runTest {
-            val viewModel = ChartViewerViewModel("pat-1", ObserveStructuredChartUseCase(repo))
+            val viewModel = makeViewModel("pat-1")
 
             assertTrue(
                 viewModel.state.value.hiddenLayerIds
@@ -151,5 +182,112 @@ class ChartViewerViewModelTest {
 
             viewModel.onEvent(ChartViewerEvent.ToggleLayer("L1"))
             assertEquals(setOf("L2"), viewModel.state.value.hiddenLayerIds)
+        }
+
+    @Test
+    fun `segments flow populates overlay map keyed by layerId and cell coords`() =
+        runTest {
+            repo.seed(chart("pat-1", listOf(ChartLayer(id = "L1", name = "Main"))))
+            segmentRepo.seed(
+                ProjectSegment(
+                    id = ProjectSegment.buildId("proj-1", "L1", 2, 3),
+                    projectId = "proj-1",
+                    layerId = "L1",
+                    cellX = 2,
+                    cellY = 3,
+                    state = SegmentState.WIP,
+                    updatedAt = now,
+                ),
+            )
+            val viewModel = makeViewModel("pat-1", projectId = "proj-1")
+
+            advanceUntilIdle()
+
+            val map = viewModel.state.value.segments
+            assertEquals(1, map.size)
+            assertEquals(SegmentState.WIP, map[SegmentKey("L1", 2, 3)])
+        }
+
+    @Test
+    fun `tapCell on todo inserts a wip segment via use case`() =
+        runTest {
+            repo.seed(chart("pat-1", listOf(ChartLayer(id = "L1", name = "Main"))))
+            val viewModel = makeViewModel("pat-1", projectId = "proj-1")
+
+            viewModel.onEvent(ChartViewerEvent.TapCell("L1", 1, 2))
+            advanceUntilIdle()
+
+            val stored = segmentRepo.getById(ProjectSegment.buildId("proj-1", "L1", 1, 2))
+            assertEquals(SegmentState.WIP, stored?.state)
+            assertEquals(SegmentState.WIP, viewModel.state.value.segments[SegmentKey("L1", 1, 2)])
+        }
+
+    @Test
+    fun `tapCell is a no-op when projectId is null`() =
+        runTest {
+            repo.seed(chart("pat-1", listOf(ChartLayer(id = "L1", name = "Main"))))
+            val viewModel = makeViewModel("pat-1", projectId = null)
+
+            viewModel.onEvent(ChartViewerEvent.TapCell("L1", 1, 2))
+            advanceUntilIdle()
+
+            assertNull(segmentRepo.getById(ProjectSegment.buildId("pat-1", "L1", 1, 2)))
+            assertTrue(
+                viewModel.state.value.segments
+                    .isEmpty(),
+            )
+        }
+
+    @Test
+    fun `tapCell is a no-op when the layer is hidden`() =
+        runTest {
+            repo.seed(
+                chart(
+                    "pat-1",
+                    listOf(
+                        ChartLayer(id = "L1", name = "Main", cells = listOf(ChartCell("knit", 1, 2))),
+                    ),
+                ),
+            )
+            val viewModel = makeViewModel("pat-1", projectId = "proj-1")
+
+            viewModel.onEvent(ChartViewerEvent.ToggleLayer("L1"))
+            viewModel.onEvent(ChartViewerEvent.TapCell("L1", 1, 2))
+            advanceUntilIdle()
+
+            assertNull(segmentRepo.getById(ProjectSegment.buildId("proj-1", "L1", 1, 2)))
+        }
+
+    @Test
+    fun `longPressCell forces segment to done regardless of prior state`() =
+        runTest {
+            repo.seed(chart("pat-1", listOf(ChartLayer(id = "L1", name = "Main"))))
+            val viewModel = makeViewModel("pat-1", projectId = "proj-1")
+
+            viewModel.onEvent(ChartViewerEvent.LongPressCell("L1", 4, 5))
+            advanceUntilIdle()
+
+            val stored = segmentRepo.getById(ProjectSegment.buildId("proj-1", "L1", 4, 5))
+            assertEquals(SegmentState.DONE, stored?.state)
+        }
+
+    @Test
+    fun `isPolar flag mirrors the chart coordinate system and disables tap events`() =
+        runTest {
+            repo.seed(
+                chart(
+                    patternId = "pat-1",
+                    layers = listOf(ChartLayer(id = "L1", name = "Main")),
+                    coordinateSystem = CoordinateSystem.POLAR_ROUND,
+                ),
+            )
+            val viewModel = makeViewModel("pat-1", projectId = "proj-1")
+
+            advanceUntilIdle()
+            assertTrue(viewModel.state.value.isPolar)
+
+            viewModel.onEvent(ChartViewerEvent.TapCell("L1", 0, 0))
+            advanceUntilIdle()
+            assertNull(segmentRepo.getById(ProjectSegment.buildId("proj-1", "L1", 0, 0)))
         }
 }

@@ -3,6 +3,7 @@ package io.github.b150005.knitnote.data.sync
 import io.github.b150005.knitnote.data.local.LocalPatternDataSource
 import io.github.b150005.knitnote.data.local.LocalProgressDataSource
 import io.github.b150005.knitnote.data.local.LocalProjectDataSource
+import io.github.b150005.knitnote.data.local.LocalProjectSegmentDataSource
 import io.github.b150005.knitnote.data.realtime.ChangeFilter
 import io.github.b150005.knitnote.data.realtime.ChannelHandle
 import io.github.b150005.knitnote.data.realtime.RealtimeChannelProvider
@@ -10,6 +11,7 @@ import io.github.b150005.knitnote.domain.model.AuthState
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.Progress
 import io.github.b150005.knitnote.domain.model.Project
+import io.github.b150005.knitnote.domain.model.ProjectSegment
 import io.github.b150005.knitnote.domain.repository.AuthRepository
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.decodeOldRecord
@@ -33,6 +35,7 @@ class RealtimeSyncManager(
     private val localProject: LocalProjectDataSource,
     private val localProgress: LocalProgressDataSource,
     private val localPattern: LocalPatternDataSource,
+    private val localProjectSegment: LocalProjectSegmentDataSource,
     private val authRepository: AuthRepository,
     private val scope: CoroutineScope,
     private val logger: SyncLogger = DefaultSyncLogger,
@@ -43,6 +46,7 @@ class RealtimeSyncManager(
     private var projectChannel: ChannelHandle? = null
     private var progressChannel: ChannelHandle? = null
     private var patternChannel: ChannelHandle? = null
+    private var projectSegmentChannel: ChannelHandle? = null
     private var authObserverJob: Job? = null
     private var connectivityJob: Job? = null
     private var retryJob: Job? = null
@@ -103,6 +107,7 @@ class RealtimeSyncManager(
             subscribeToProjects(ownerId)
             subscribeToProgress(ownerId)
             subscribeToPatterns(ownerId)
+            subscribeToProjectSegments(ownerId)
         }
 
     internal suspend fun unsubscribe() =
@@ -117,6 +122,8 @@ class RealtimeSyncManager(
         progressChannel = null
         patternChannel?.unsubscribe()
         patternChannel = null
+        projectSegmentChannel?.unsubscribe()
+        projectSegmentChannel = null
     }
 
     /**
@@ -211,6 +218,25 @@ class RealtimeSyncManager(
         handle.subscribe()
     }
 
+    private suspend fun subscribeToProjectSegments(ownerId: String) {
+        val handle = channelProvider.createChannel("project-segments-$ownerId")
+        projectSegmentChannel = handle
+
+        handle
+            .postgresChangeFlow(
+                table = "project_segments",
+                filter = ChangeFilter("owner_id", ownerId),
+            ).onEach { action ->
+                handleProjectSegmentAction(action)
+            }.catch { e ->
+                if (e is CancellationException) throw e
+                logger.log(TAG, "Channel flow error on project_segments", e)
+                scheduleRetry(ownerId)
+            }.launchIn(scope)
+
+        handle.subscribe()
+    }
+
     private suspend fun handleProjectAction(action: PostgresAction) {
         when (action) {
             is PostgresAction.Insert -> {
@@ -273,6 +299,31 @@ class RealtimeSyncManager(
     }
 
     private suspend fun isKnownProject(projectId: String): Boolean = localProject.getById(projectId) != null
+
+    private suspend fun handleProjectSegmentAction(action: PostgresAction) {
+        when (action) {
+            is PostgresAction.Insert -> {
+                val segment = action.decodeRecord<ProjectSegment>()
+                if (isKnownProject(segment.projectId)) {
+                    localProjectSegment.upsert(segment)
+                }
+            }
+            is PostgresAction.Update -> {
+                val segment = action.decodeRecord<ProjectSegment>()
+                if (isKnownProject(segment.projectId)) {
+                    localProjectSegment.upsert(segment)
+                }
+            }
+            is PostgresAction.Delete -> {
+                // Best-effort extract id from the old record; delete may race with
+                // a local reset that already cleared the row, in which case the
+                // local datasource silently no-ops.
+                val old = action.decodeOldRecord<ProjectSegment>()
+                localProjectSegment.delete(old.id)
+            }
+            is PostgresAction.Select -> { /* no-op */ }
+        }
+    }
 
     companion object {
         private const val TAG = "RealtimeSyncManager"
