@@ -24,7 +24,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -62,7 +61,6 @@ import io.github.b150005.knitnote.domain.model.StructuredChart
 import io.github.b150005.knitnote.domain.symbol.SymbolCatalog
 import io.github.b150005.knitnote.generated.resources.Res
 import io.github.b150005.knitnote.generated.resources.action_back
-import io.github.b150005.knitnote.generated.resources.message_segment_progress_polar_deferred
 import io.github.b150005.knitnote.generated.resources.state_empty_chart
 import io.github.b150005.knitnote.generated.resources.state_no_structured_chart
 import io.github.b150005.knitnote.generated.resources.title_chart_viewer
@@ -133,9 +131,6 @@ fun ChartViewerScreen(
 
                 else ->
                     Column(modifier = Modifier.fillMaxSize()) {
-                        if (state.isPolar) {
-                            PolarDeferredNotice()
-                        }
                         if (chart.layers.isNotEmpty()) {
                             LayerChips(
                                 layers = chart.layers,
@@ -151,7 +146,6 @@ fun ChartViewerScreen(
                             catalog = catalog,
                             hiddenLayerIds = state.hiddenLayerIds,
                             segments = state.segments,
-                            isPolar = state.isPolar,
                             onTapCell = { layerId, x, y ->
                                 viewModel.onEvent(ChartViewerEvent.TapCell(layerId, x, y))
                             },
@@ -163,21 +157,6 @@ fun ChartViewerScreen(
                     }
             }
         }
-    }
-}
-
-@Composable
-private fun PolarDeferredNotice() {
-    Surface(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-        color = MaterialTheme.colorScheme.tertiaryContainer,
-    ) {
-        Text(
-            text = stringResource(Res.string.message_segment_progress_polar_deferred),
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onTertiaryContainer,
-        )
     }
 }
 
@@ -212,7 +191,6 @@ private fun ChartCanvas(
     catalog: SymbolCatalog,
     hiddenLayerIds: Set<String>,
     segments: Map<SegmentKey, SegmentState>,
-    isPolar: Boolean,
     onTapCell: (layerId: String, x: Int, y: Int) -> Unit,
     onLongPressCell: (layerId: String, x: Int, y: Int) -> Unit,
     modifier: Modifier = Modifier,
@@ -277,27 +255,34 @@ private fun ChartCanvas(
                     translationX = offsetX,
                     translationY = offsetY,
                 ).transformable(state = transformableState)
-                // Rekey only on extents + polar flag + layer visibility — deps that
-                // actually change hit-test geometry. PRD Q-3: co-composing
-                // detectTapGestures with transformable() is the established pattern.
-                .pointerInput(extents, isPolar, visibleLayers.map { it.id }) {
-                    if (isPolar) return@pointerInput
-                    // Polar tap-to-toggle is deferred to Phase 35.2. On rect, resolve
-                    // cast defensively — branch is unreachable when isPolar=false given
-                    // the sealed type, but the guard avoids a throw in edge cases.
-                    val rect = extents as? ChartExtents.Rect ?: return@pointerInput
+                // Rekey only on extents + layer visibility — deps that actually
+                // change hit-test geometry. PRD Q-3: co-composing detectTapGestures
+                // with transformable() is the established pattern.
+                .pointerInput(extents, visibleLayers.map { it.id }) {
                     detectTapGestures(
                         onTap = { offset ->
-                            val hit = resolveHit(offset, size, rect, visibleLayers)
+                            val hit =
+                                when (extents) {
+                                    is ChartExtents.Rect ->
+                                        resolveHit(offset, size, extents, visibleLayers)
+                                    is ChartExtents.Polar ->
+                                        resolvePolarHit(offset, size, extents, visibleLayers)
+                                }
                             if (hit != null) {
                                 // Top-most visible layer wins when multiple layers stack.
-                                // PRD AC-2.5 requires a no-op on empty cells; resolveHit
+                                // PRD AC-2.5 requires a no-op on empty cells; resolveHit*
                                 // returns null unless some visible layer has a drawn cell.
                                 onTapCell(hit.layerId, hit.x, hit.y)
                             }
                         },
                         onLongPress = { offset ->
-                            val hit = resolveHit(offset, size, rect, visibleLayers)
+                            val hit =
+                                when (extents) {
+                                    is ChartExtents.Rect ->
+                                        resolveHit(offset, size, extents, visibleLayers)
+                                    is ChartExtents.Polar ->
+                                        resolvePolarHit(offset, size, extents, visibleLayers)
+                                }
                             if (hit != null) {
                                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                 onLongPressCell(hit.layerId, hit.x, hit.y)
@@ -541,6 +526,29 @@ private fun resolveHit(
             cellSize = layout.cellSize.toDouble(),
             originX = layout.originX.toDouble(),
             originY = layout.originY.toDouble(),
+        ) ?: return null
+    val layerId = topmostLayerAt(visibleLayers, cell.x, cell.y) ?: return null
+    return ResolvedHit(layerId, cell.x, cell.y)
+}
+
+/**
+ * Polar analog of [resolveHit]. Shares the `topmostLayerAt` layer-resolution
+ * semantics — in polar, `cell.x = stitch` and `cell.y = ring`, matching the
+ * storage convention established by the Phase 35.1b/c overlay + glyph passes.
+ */
+private fun resolvePolarHit(
+    offset: Offset,
+    sizePx: androidx.compose.ui.unit.IntSize,
+    polar: ChartExtents.Polar,
+    visibleLayers: List<ChartLayer>,
+): ResolvedHit? {
+    val layout = polarLayoutFor(sizePx.width.toFloat(), sizePx.height.toFloat(), polar)
+    val cell =
+        GridHitTest.hitTestPolar(
+            screenX = offset.x.toDouble(),
+            screenY = offset.y.toDouble(),
+            extents = polar,
+            layout = layout,
         ) ?: return null
     val layerId = topmostLayerAt(visibleLayers, cell.x, cell.y) ?: return null
     return ResolvedHit(layerId, cell.x, cell.y)

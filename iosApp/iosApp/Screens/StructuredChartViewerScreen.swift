@@ -42,15 +42,6 @@ struct StructuredChartViewerScreen: View {
     @ViewBuilder
     private func content(chart: StructuredChart) -> some View {
         VStack(spacing: 4) {
-            if holder.state.isPolar {
-                Text(LocalizedStringKey("message_segment_progress_polar_deferred"))
-                    .font(.caption)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.accentColor.opacity(0.15))
-            }
-
             if !chart.layers.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack {
@@ -84,7 +75,6 @@ struct StructuredChartViewerScreen: View {
                     viewModel.segmentStateAt(layerId: layerId, x: Int32(x), y: Int32(y))
                 },
                 segmentsVersion: holder.state.segments.count,
-                isPolar: holder.state.isPolar,
                 onTap: { layerId, x, y in
                     viewModel.onEvent(event: ChartViewerEventTapCell(layerId: layerId, x: Int32(x), y: Int32(y)))
                 },
@@ -126,7 +116,6 @@ private struct ChartCanvasView: View {
     /// Sentinel value that changes whenever the segment map changes — forces
     /// SwiftUI to re-evaluate the Canvas closure when the lookup result flips.
     let segmentsVersion: Int
-    let isPolar: Bool
     let onTap: (String, Int, Int) -> Void
     let onLongPress: (String, Int, Int) -> Void
 
@@ -185,14 +174,13 @@ private struct ChartCanvasView: View {
             .background(Color(.systemBackground))
             .clipped()
             // Phase 34 gestures — coexist with pinch/drag via .simultaneousGesture.
-            // Gesture handlers early-return when `isPolar` to satisfy AC-1.4 without
-            // needing `nil` branches (which do not conform to `Gesture`).
+            // Phase 35.1d wired polar through `resolveAnyHit` so both rect and polar
+            // taps dispatch to the ViewModel.
             .contentShape(Rectangle())
             .simultaneousGesture(
                 LongPressGesture(minimumDuration: 0.5)
                     .sequenced(before: DragGesture(minimumDistance: 0))
                     .onEnded { value in
-                        guard !isPolar else { return }
                         if case .second(true, let drag) = value, let d = drag {
                             longPressActive = true
                             handleLongPress(at: d.startLocation)
@@ -205,7 +193,7 @@ private struct ChartCanvasView: View {
                     }
             )
             .onTapGesture { location in
-                guard !isPolar, !longPressActive else { return }
+                guard !longPressActive else { return }
                 handleTap(at: location)
             }
         }
@@ -230,17 +218,26 @@ private struct ChartCanvasView: View {
     }
 
     private func handleTap(at location: CGPoint) {
-        guard let rect = chart.extents as? ChartExtentsRect else { return }
         let (p, s) = toCanvasSpace(location)
-        guard let hit = resolveHit(location: p, size: s, rect: rect) else { return }
+        guard let hit = resolveAnyHit(location: p, size: s) else { return }
         onTap(hit.layerId, hit.x, hit.y)
     }
 
     private func handleLongPress(at location: CGPoint) {
-        guard let rect = chart.extents as? ChartExtentsRect else { return }
         let (p, s) = toCanvasSpace(location)
-        guard let hit = resolveHit(location: p, size: s, rect: rect) else { return }
+        guard let hit = resolveAnyHit(location: p, size: s) else { return }
         onLongPress(hit.layerId, hit.x, hit.y)
+    }
+
+    /// Dispatches to the rect or polar hit-test depending on the chart extents.
+    /// Matches the Kotlin `resolveHit` / `resolvePolarHit` split.
+    private func resolveAnyHit(location: CGPoint, size: CGSize) -> HitResult? {
+        if let rect = chart.extents as? ChartExtentsRect {
+            return resolveHit(location: location, size: size, rect: rect)
+        } else if let polar = chart.extents as? ChartExtentsPolar {
+            return resolvePolarHit(location: location, size: size, polar: polar)
+        }
+        return nil
     }
 
     private struct HitResult { let layerId: String; let x: Int; let y: Int }
@@ -274,6 +271,52 @@ private struct ChartCanvasView: View {
             if !layer.visible || hiddenLayerIds.contains(layer.id) { continue }
             if layer.cells.contains(where: { Int($0.x) == cellX && Int($0.y) == cellY }) {
                 return HitResult(layerId: layer.id, x: cellX, y: cellY)
+            }
+        }
+        return nil
+    }
+
+    /// Polar analog of `resolveHit`. Mirrors Kotlin `GridHitTest.hitTestPolar`:
+    /// 12-o'clock-CW-positive convention, inner-hole tap returns nil, outer
+    /// boundary exclusive. `cell.x = stitch`, `cell.y = ring` — same storage
+    /// convention the Phase 35.1b/c overlay + glyph passes use.
+    private func resolvePolarHit(location: CGPoint, size: CGSize, polar: ChartExtentsPolar) -> HitResult? {
+        let ringsCount = Int(polar.rings)
+        if ringsCount <= 0 { return nil }
+        let perRing = polar.stitchesPerRing.map { Int(truncating: $0) }
+        if perRing.count < ringsCount || perRing.contains(where: { $0 <= 0 }) { return nil }
+
+        let layout = polarLayout(for: polar, canvasSize: size, ringsCount: ringsCount)
+        if layout.ringThickness <= 0 || layout.innerRadius < 0 { return nil }
+
+        let dx = Double(location.x - layout.cx)
+        let dy = Double(location.y - layout.cy)
+        let radius = (dx * dx + dy * dy).squareRoot()
+        if radius < Double(layout.innerRadius) { return nil }
+        let outerRadius = Double(layout.innerRadius) + Double(ringsCount) * Double(layout.ringThickness)
+        if radius >= outerRadius { return nil }
+
+        let ringRaw = Int(floor((radius - Double(layout.innerRadius)) / Double(layout.ringThickness)))
+        let ring = min(max(ringRaw, 0), ringsCount - 1) // defensive against fp boundary rounding
+        let stitchesInRing = perRing[ring]
+        if stitchesInRing <= 0 { return nil }
+
+        // Screen atan2 runs CW from +x (3 o'clock); adding π/2 shifts origin to
+        // 12 o'clock, mod 2π normalizes.
+        let twoPi = 2.0 * Double.pi
+        let rawTheta = atan2(dy, dx) + Double.pi / 2
+        // Mirror Kotlin's `((rawTheta % 2π) + 2π) % 2π` for positive normalization.
+        let theta = (rawTheta.truncatingRemainder(dividingBy: twoPi) + twoPi)
+            .truncatingRemainder(dividingBy: twoPi)
+
+        let sweep = twoPi / Double(stitchesInRing)
+        let stitchRaw = Int(floor(theta / sweep))
+        let stitch = min(max(stitchRaw, 0), stitchesInRing - 1)
+
+        for layer in chart.layers.reversed() {
+            if !layer.visible || hiddenLayerIds.contains(layer.id) { continue }
+            if layer.cells.contains(where: { Int($0.x) == stitch && Int($0.y) == ring }) {
+                return HitResult(layerId: layer.id, x: stitch, y: ring)
             }
         }
         return nil
@@ -328,8 +371,10 @@ private struct ChartCanvasView: View {
                     originY: originY
                 )
 
-                // Paint overlay under the glyph (AC-1.2) — polar suppresses (AC-1.4).
-                if !isPolar, let s = segmentLookup(layer.id, Int(cell.x), Int(cell.y)) {
+                // Paint overlay under the glyph (AC-1.2). The rect draw path is
+                // only reached for rect extents; polar routes through `drawPolar`
+                // which has its own segment overlay. No `!isPolar` guard needed here.
+                if let s = segmentLookup(layer.id, Int(cell.x), Int(cell.y)) {
                     if s == .done {
                         context.fill(Path(bounds), with: segmentDoneShading)
                     } else if s == .wip {

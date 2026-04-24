@@ -147,7 +147,6 @@ class ChartViewerViewModel(
         y: Int,
     ) {
         val pid = projectId ?: return
-        if (_state.value.isPolar) return
         if (layerId in _state.value.hiddenLayerIds) return
         viewModelScope.launch {
             when (val result = toggleSegmentState(pid, layerId, x, y)) {
@@ -164,7 +163,6 @@ class ChartViewerViewModel(
         y: Int,
     ) {
         val pid = projectId ?: return
-        if (_state.value.isPolar) return
         if (layerId in _state.value.hiddenLayerIds) return
         viewModelScope.launch {
             when (val result = markSegmentDone(pid, layerId, x, y)) {

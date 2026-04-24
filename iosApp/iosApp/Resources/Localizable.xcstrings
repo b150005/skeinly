@@ -1687,13 +1687,6 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Progress reset" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "進捗をリセットしました" } }
       }
-    },
-    "message_segment_progress_polar_deferred" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Segment progress for round charts ships in Phase 35" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "円形チャートの目進捗は Phase 35 で対応予定です" } }
-      }
     }
   },
   "version" : "1.0"

@@ -338,15 +338,14 @@
          parametric "X / Y stitches (Z%)" project-detail summary (US-7, P2 but the
          key ships now so US-7 is a pure UI add later); `message_reset_progress_done`
          is the post-reset Snackbar feedback (role prefix `message_*` per the 33.1.6
-         convention for transient action-completion); `message_segment_progress_polar_deferred`
-         is the inline notice shown on POLAR_ROUND charts where overlay + tap
-         interactions are deferred to Phase 35 per ADR-010 §4. -->
+         convention for transient action-completion). The Phase 34 polar-deferral
+         notice `message_segment_progress_polar_deferred` was retired in Phase 35.1d
+         when polar tap-to-toggle shipped. -->
     <string name="action_reset_progress">Reset progress</string>
     <string name="dialog_reset_progress_title">Reset progress?</string>
     <string name="dialog_reset_progress_body">This clears every stitch marked on this project. Your row-counter notes and photos are kept. This cannot be undone.</string>
     <string name="label_segments_completed">%1$d / %2$d stitches (%3$d%%)</string>
     <string name="message_reset_progress_done">Progress reset</string>
-    <string name="message_segment_progress_polar_deferred">Segment progress for round charts ships in Phase 35</string>
 
     <!-- User picker dialog (Android-only, triggered from ProjectDetailScreen's
          `action_share_with_user` toolbar IconButton; iOS has no mirror). The
