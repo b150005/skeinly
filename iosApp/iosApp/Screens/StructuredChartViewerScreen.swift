@@ -148,9 +148,17 @@ private struct ChartCanvasView: View {
     var body: some View {
         GeometryReader { proxy in
             Canvas { context, size in
-                guard let rect = chart.extents as? ChartExtentsRect else { return }
-                if rect.maxX < rect.minX || rect.maxY < rect.minY { return }
-                draw(into: &context, size: size, rect: rect)
+                if let rect = chart.extents as? ChartExtentsRect {
+                    if rect.maxX < rect.minX || rect.maxY < rect.minY { return }
+                    draw(into: &context, size: size, rect: rect)
+                } else if let polar = chart.extents as? ChartExtentsPolar {
+                    let rings = Int(polar.rings)
+                    let perRing = polar.stitchesPerRing.map { Int(truncating: $0) }
+                    if rings <= 0 || perRing.count < rings || perRing.contains(where: { $0 <= 0 }) {
+                        return
+                    }
+                    drawPolar(into: &context, size: size, polar: polar, ringsCount: rings, stitchesPerRing: perRing)
+                }
             }
             .scaleEffect(scale)
             .offset(offset)
@@ -472,5 +480,149 @@ private struct ChartCanvasView: View {
             let text = Text(verbatim: value).font(.system(size: fontSize)).foregroundColor(.accentColor)
             context.draw(text, at: CGPoint(x: anchor.x, y: anchor.y), anchor: .center)
         }
+    }
+
+    // MARK: - Polar rendering (ADR-011 §2)
+
+    /// Screen-space layout for a polar chart, parallel to the Kotlin
+    /// `PolarCellLayout.Layout` — kept inlined in Swift to avoid bridging the
+    /// `PolarCellLayout` object + its `Layout`/`Wedge` data classes through
+    /// the Shared framework.
+    private struct PolarLayout {
+        let cx: CGFloat
+        let cy: CGFloat
+        let innerRadius: CGFloat
+        let ringThickness: CGFloat
+    }
+
+    private func polarLayout(for polar: ChartExtentsPolar, canvasSize: CGSize, ringsCount: Int) -> PolarLayout {
+        // 0.47 ≈ 94% of the half-extent — leaves a visible margin on the canvas edge.
+        let maxRadius = min(canvasSize.width, canvasSize.height) * 0.47
+        let innerRadius = maxRadius * 0.15
+        let rings = max(1, ringsCount)
+        let ringThickness = (maxRadius - innerRadius) / CGFloat(rings)
+        return PolarLayout(
+            cx: canvasSize.width / 2,
+            cy: canvasSize.height / 2,
+            innerRadius: innerRadius,
+            ringThickness: ringThickness
+        )
+    }
+
+    /// Build an annular-wedge `Path` for the (stitch, ring) wedge in our
+    /// 12-o'clock-CW-positive convention.
+    /// Outer arc traces CW on screen from startAngle to endAngle, inner arc
+    /// traces CCW back — produces a closed annular region.
+    private func polarWedgePath(
+        stitch: Int,
+        ring: Int,
+        stitchesInRing: Int,
+        layout: PolarLayout
+    ) -> Path {
+        let sweep = 2.0 * Double.pi / Double(stitchesInRing)
+        let startTheta = Double(stitch) * sweep
+        let endTheta = startTheta + sweep
+        // Shift from 12-o'clock origin to SwiftUI's 3-o'clock origin.
+        let startAngleScreen = startTheta - Double.pi / 2
+        let endAngleScreen = endTheta - Double.pi / 2
+        let innerR = layout.innerRadius + CGFloat(ring) * layout.ringThickness
+        let outerR = layout.innerRadius + CGFloat(ring + 1) * layout.ringThickness
+        let center = CGPoint(x: layout.cx, y: layout.cy)
+        var path = Path()
+        // SwiftUI Path.addArc clockwise parameter is defined in the math (y-up)
+        // coordinate system. Under SwiftUI's y-down screen coords, clockwise:false
+        // renders visually clockwise — matching our CW-positive convention.
+        path.addArc(
+            center: center,
+            radius: outerR,
+            startAngle: .radians(startAngleScreen),
+            endAngle: .radians(endAngleScreen),
+            clockwise: false
+        )
+        path.addArc(
+            center: center,
+            radius: innerR,
+            startAngle: .radians(endAngleScreen),
+            endAngle: .radians(startAngleScreen),
+            clockwise: true
+        )
+        path.closeSubpath()
+        return path
+    }
+
+    private func drawPolar(
+        into context: inout GraphicsContext,
+        size: CGSize,
+        polar: ChartExtentsPolar,
+        ringsCount: Int,
+        stitchesPerRing: [Int]
+    ) {
+        let layout = polarLayout(for: polar, canvasSize: size, ringsCount: ringsCount)
+        let gridColor = GraphicsContext.Shading.color(.gray.opacity(0.3))
+        let segmentDoneShading = GraphicsContext.Shading.color(.primary.opacity(0.2))
+        let segmentWipShading = GraphicsContext.Shading.color(.accentColor)
+
+        // Ring boundaries (includes innermost + outermost).
+        for i in 0...ringsCount {
+            let r = layout.innerRadius + CGFloat(i) * layout.ringThickness
+            let rect = CGRect(
+                x: layout.cx - r,
+                y: layout.cy - r,
+                width: r * 2,
+                height: r * 2
+            )
+            context.stroke(Path(ellipseIn: rect), with: gridColor, lineWidth: 1)
+        }
+
+        // Radial spokes — outermost ring stitch count, per-ring spokes is a
+        // Phase 35.x polish item per ADR-011 §2.
+        if let outerStitches = stitchesPerRing.last, outerStitches > 0 {
+            let innerR = layout.innerRadius
+            let outerR = layout.innerRadius + CGFloat(ringsCount) * layout.ringThickness
+            let sweep = 2.0 * Double.pi / Double(outerStitches)
+            for s in 0..<outerStitches {
+                // 12-o'clock-CW convention → screen cartesian: subtract π/2.
+                let screenAngle = Double(s) * sweep - Double.pi / 2
+                let dx = cos(screenAngle)
+                let dy = sin(screenAngle)
+                var path = Path()
+                path.move(to: CGPoint(
+                    x: layout.cx + innerR * CGFloat(dx),
+                    y: layout.cy + innerR * CGFloat(dy)
+                ))
+                path.addLine(to: CGPoint(
+                    x: layout.cx + outerR * CGFloat(dx),
+                    y: layout.cy + outerR * CGFloat(dy)
+                ))
+                context.stroke(path, with: gridColor, lineWidth: 1)
+            }
+        }
+
+        // Segment overlay — paint done/wip wedges. Out-of-range cells silently
+        // skip, matching the rect renderer's defensive clipping.
+        for layer in chart.layers {
+            if !layer.visible || hiddenLayerIds.contains(layer.id) { continue }
+            for cell in layer.cells {
+                let ring = Int(cell.y)
+                let stitch = Int(cell.x)
+                if ring < 0 || ring >= ringsCount { continue }
+                if ring >= stitchesPerRing.count { continue }
+                let stitchesInRing = stitchesPerRing[ring]
+                if stitch < 0 || stitch >= stitchesInRing { continue }
+                guard let state = segmentLookup(layer.id, stitch, ring) else { continue }
+                let path = polarWedgePath(
+                    stitch: stitch,
+                    ring: ring,
+                    stitchesInRing: stitchesInRing,
+                    layout: layout
+                )
+                if state == .done {
+                    context.fill(path, with: segmentDoneShading)
+                } else if state == .wip {
+                    context.stroke(path, with: segmentWipShading, lineWidth: 2)
+                }
+            }
+        }
+        _ = segmentsVersion // force re-evaluation on segment map mutation
     }
 }

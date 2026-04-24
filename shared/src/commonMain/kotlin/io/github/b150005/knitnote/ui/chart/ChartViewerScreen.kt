@@ -243,8 +243,16 @@ private fun ChartCanvas(
     val segmentDoneColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
     val segmentWipColor = MaterialTheme.colorScheme.primary
 
-    val rect = (chart.extents as? ChartExtents.Rect) ?: return
-    if (rect.maxX < rect.minX || rect.maxY < rect.minY) {
+    val extents = chart.extents
+    val isEmpty =
+        when (extents) {
+            is ChartExtents.Rect -> extents.maxX < extents.minX || extents.maxY < extents.minY
+            is ChartExtents.Polar ->
+                extents.rings <= 0 ||
+                    extents.stitchesPerRing.size < extents.rings ||
+                    extents.stitchesPerRing.any { it <= 0 }
+        }
+    if (isEmpty) {
         Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
                 text = stringResource(Res.string.state_empty_chart),
@@ -272,8 +280,12 @@ private fun ChartCanvas(
                 // Rekey only on extents + polar flag + layer visibility — deps that
                 // actually change hit-test geometry. PRD Q-3: co-composing
                 // detectTapGestures with transformable() is the established pattern.
-                .pointerInput(rect, isPolar, visibleLayers.map { it.id }) {
+                .pointerInput(extents, isPolar, visibleLayers.map { it.id }) {
                     if (isPolar) return@pointerInput
+                    // Polar tap-to-toggle is deferred to Phase 35.2. On rect, resolve
+                    // cast defensively — branch is unreachable when isPolar=false given
+                    // the sealed type, but the guard avoids a throw in edge cases.
+                    val rect = extents as? ChartExtents.Rect ?: return@pointerInput
                     detectTapGestures(
                         onTap = { offset ->
                             val hit = resolveHit(offset, size, rect, visibleLayers)
@@ -294,108 +306,159 @@ private fun ChartCanvas(
                     )
                 },
     ) {
-        val gridWidth = (rect.maxX - rect.minX + 1)
-        val gridHeight = (rect.maxY - rect.minY + 1)
-        val cellSize =
-            min(
-                size.width / gridWidth.toFloat(),
-                size.height / gridHeight.toFloat(),
-            ).coerceAtLeast(1f)
-        val drawW = cellSize * gridWidth
-        val drawH = cellSize * gridHeight
-        val originX = (size.width - drawW) / 2f
-        val originY = (size.height - drawH) / 2f
-
-        // Grid background
-        for (gx in 0..gridWidth) {
-            val x = originX + gx * cellSize
-            drawLine(
-                color = gridColor,
-                start = Offset(x, originY),
-                end = Offset(x, originY + drawH),
-                strokeWidth = 1f,
-            )
+        when (extents) {
+            is ChartExtents.Rect ->
+                drawRectChart(
+                    rect = extents,
+                    chart = chart,
+                    catalog = catalog,
+                    hiddenLayerIds = hiddenLayerIds,
+                    segments = segments,
+                    textMeasurer = textMeasurer,
+                    parsedPathCache = parsedPathCache,
+                    gridColor = gridColor,
+                    symbolColor = symbolColor,
+                    unknownBg = unknownBg,
+                    unknownFg = unknownFg,
+                    parameterColor = parameterColor,
+                    segmentDoneColor = segmentDoneColor,
+                    segmentWipColor = segmentWipColor,
+                )
+            is ChartExtents.Polar -> {
+                val layout = polarLayoutFor(size.width, size.height, extents)
+                drawPolarGrid(extents, layout, gridColor)
+                drawPolarSegmentOverlay(
+                    polar = extents,
+                    chart = chart,
+                    hiddenLayerIds = hiddenLayerIds,
+                    segments = segments,
+                    layout = layout,
+                    doneColor = segmentDoneColor,
+                    wipColor = segmentWipColor,
+                    wipStrokeWidthPx = 2.dp.toPx(),
+                )
+                // Symbol rendering inside polar wedges is deferred to a follow-up
+                // slice per ADR-011 §2 — grid + overlay is acceptable for 35.1b.
+            }
         }
-        for (gy in 0..gridHeight) {
-            val y = originY + gy * cellSize
-            drawLine(
-                color = gridColor,
-                start = Offset(originX, y),
-                end = Offset(originX + drawW, y),
-                strokeWidth = 1f,
-            )
-        }
+    }
+}
 
-        chart.layers.forEach { layer ->
-            if (!layer.visible || layer.id in hiddenLayerIds) return@forEach
-            layer.cells.forEach { cell ->
-                val bounds =
-                    cellScreenRect(
-                        cell = cell,
-                        rect = rect,
-                        gridHeight = gridHeight,
-                        cellSize = cellSize,
-                        originX = originX,
-                        originY = originY,
-                    )
-                // Paint the segment overlay UNDER the symbol glyph per PRD AC-1.2.
-                // Skip entirely on polar charts (AC-1.4).
-                if (!isPolar) {
-                    when (segments[SegmentKey(layer.id, cell.x, cell.y)]) {
-                        SegmentState.DONE ->
-                            drawRect(
-                                color = segmentDoneColor,
-                                topLeft = bounds.topLeft,
-                                size = bounds.size,
-                            )
-                        SegmentState.WIP ->
-                            drawRect(
-                                color = segmentWipColor,
-                                topLeft = bounds.topLeft,
-                                size = bounds.size,
-                                style = Stroke(width = 2.dp.toPx()),
-                            )
-                        null -> { /* implicit todo — no overlay */ }
-                    }
-                }
-                val def = catalog.get(cell.symbolId)
-                if (def == null) {
+@Suppress("LongParameterList")
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawRectChart(
+    rect: ChartExtents.Rect,
+    chart: StructuredChart,
+    catalog: SymbolCatalog,
+    hiddenLayerIds: Set<String>,
+    segments: Map<SegmentKey, SegmentState>,
+    textMeasurer: androidx.compose.ui.text.TextMeasurer,
+    parsedPathCache: MutableMap<String, List<io.github.b150005.knitnote.domain.symbol.PathCommand>>,
+    gridColor: Color,
+    symbolColor: Color,
+    unknownBg: Color,
+    unknownFg: Color,
+    parameterColor: Color,
+    segmentDoneColor: Color,
+    segmentWipColor: Color,
+) {
+    val gridWidth = (rect.maxX - rect.minX + 1)
+    val gridHeight = (rect.maxY - rect.minY + 1)
+    val cellSize =
+        min(
+            size.width / gridWidth.toFloat(),
+            size.height / gridHeight.toFloat(),
+        ).coerceAtLeast(1f)
+    val drawW = cellSize * gridWidth
+    val drawH = cellSize * gridHeight
+    val originX = (size.width - drawW) / 2f
+    val originY = (size.height - drawH) / 2f
+
+    // Grid background
+    for (gx in 0..gridWidth) {
+        val x = originX + gx * cellSize
+        drawLine(
+            color = gridColor,
+            start = Offset(x, originY),
+            end = Offset(x, originY + drawH),
+            strokeWidth = 1f,
+        )
+    }
+    for (gy in 0..gridHeight) {
+        val y = originY + gy * cellSize
+        drawLine(
+            color = gridColor,
+            start = Offset(originX, y),
+            end = Offset(originX + drawW, y),
+            strokeWidth = 1f,
+        )
+    }
+
+    chart.layers.forEach { layer ->
+        if (!layer.visible || layer.id in hiddenLayerIds) return@forEach
+        layer.cells.forEach { cell ->
+            val bounds =
+                cellScreenRect(
+                    cell = cell,
+                    rect = rect,
+                    gridHeight = gridHeight,
+                    cellSize = cellSize,
+                    originX = originX,
+                    originY = originY,
+                )
+            // Paint the segment overlay UNDER the symbol glyph per PRD AC-1.2.
+            when (segments[SegmentKey(layer.id, cell.x, cell.y)]) {
+                SegmentState.DONE ->
                     drawRect(
-                        color = unknownBg,
+                        color = segmentDoneColor,
                         topLeft = bounds.topLeft,
                         size = bounds.size,
                     )
-                    val measured =
-                        textMeasurer.measure(
-                            text = "?",
-                            style =
-                                TextStyle(
-                                    color = unknownFg,
-                                    fontSize = (bounds.height * 0.5f).coerceAtLeast(8f).sp,
-                                    textAlign = TextAlign.Center,
-                                ),
-                        )
-                    val tx = bounds.left + (bounds.width - measured.size.width) / 2f
-                    val ty = bounds.top + (bounds.height - measured.size.height) / 2f
-                    drawText(measured, topLeft = Offset(tx, ty))
-                } else {
-                    drawSymbolPath(
-                        def = def,
-                        bounds = bounds,
-                        rotation = cell.rotation,
-                        color = symbolColor,
-                        strokeWidthPx = max(1f, cellSize * 0.06f),
-                        parsedPathCache = parsedPathCache,
+                SegmentState.WIP ->
+                    drawRect(
+                        color = segmentWipColor,
+                        topLeft = bounds.topLeft,
+                        size = bounds.size,
+                        style = Stroke(width = 2.dp.toPx()),
                     )
-                    drawParameterSlots(
-                        def = def,
-                        cell = cell,
-                        bounds = bounds,
-                        cellSize = cellSize,
-                        textMeasurer = textMeasurer,
-                        color = parameterColor,
+                null -> { /* implicit todo — no overlay */ }
+            }
+            val def = catalog.get(cell.symbolId)
+            if (def == null) {
+                drawRect(
+                    color = unknownBg,
+                    topLeft = bounds.topLeft,
+                    size = bounds.size,
+                )
+                val measured =
+                    textMeasurer.measure(
+                        text = "?",
+                        style =
+                            TextStyle(
+                                color = unknownFg,
+                                fontSize = (bounds.height * 0.5f).coerceAtLeast(8f).sp,
+                                textAlign = TextAlign.Center,
+                            ),
                     )
-                }
+                val tx = bounds.left + (bounds.width - measured.size.width) / 2f
+                val ty = bounds.top + (bounds.height - measured.size.height) / 2f
+                drawText(measured, topLeft = Offset(tx, ty))
+            } else {
+                drawSymbolPath(
+                    def = def,
+                    bounds = bounds,
+                    rotation = cell.rotation,
+                    color = symbolColor,
+                    strokeWidthPx = max(1f, cellSize * 0.06f),
+                    parsedPathCache = parsedPathCache,
+                )
+                drawParameterSlots(
+                    def = def,
+                    cell = cell,
+                    bounds = bounds,
+                    cellSize = cellSize,
+                    textMeasurer = textMeasurer,
+                    color = parameterColor,
+                )
             }
         }
     }
