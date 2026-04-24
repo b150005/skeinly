@@ -94,6 +94,7 @@ import io.github.b150005.knitnote.generated.resources.action_more_options
 import io.github.b150005.knitnote.generated.resources.action_ok
 import io.github.b150005.knitnote.generated.resources.action_redo
 import io.github.b150005.knitnote.generated.resources.action_rename_layer
+import io.github.b150005.knitnote.generated.resources.action_resize_chart
 import io.github.b150005.knitnote.generated.resources.action_save
 import io.github.b150005.knitnote.generated.resources.action_symmetry_fold
 import io.github.b150005.knitnote.generated.resources.action_symmetry_reflect
@@ -106,6 +107,7 @@ import io.github.b150005.knitnote.generated.resources.dialog_delete_layer_title
 import io.github.b150005.knitnote.generated.resources.dialog_parameter_edit_title
 import io.github.b150005.knitnote.generated.resources.dialog_parameter_enter_title
 import io.github.b150005.knitnote.generated.resources.dialog_polar_extents_title
+import io.github.b150005.knitnote.generated.resources.dialog_resize_chart_title
 import io.github.b150005.knitnote.generated.resources.dialog_unsaved_changes_body
 import io.github.b150005.knitnote.generated.resources.dialog_unsaved_changes_title
 import io.github.b150005.knitnote.generated.resources.label_craft
@@ -114,14 +116,18 @@ import io.github.b150005.knitnote.generated.resources.label_craft_knit
 import io.github.b150005.knitnote.generated.resources.label_extents
 import io.github.b150005.knitnote.generated.resources.label_extents_flat
 import io.github.b150005.knitnote.generated.resources.label_extents_polar
+import io.github.b150005.knitnote.generated.resources.label_grid_height
+import io.github.b150005.knitnote.generated.resources.label_grid_width
 import io.github.b150005.knitnote.generated.resources.label_layer_default_name
 import io.github.b150005.knitnote.generated.resources.label_layers_section
 import io.github.b150005.knitnote.generated.resources.label_polar_rings
 import io.github.b150005.knitnote.generated.resources.label_polar_stitches_per_ring
+import io.github.b150005.knitnote.generated.resources.label_polar_stitches_uniform
 import io.github.b150005.knitnote.generated.resources.label_reading
 import io.github.b150005.knitnote.generated.resources.label_reading_crochet_flat
 import io.github.b150005.knitnote.generated.resources.label_reading_knit_flat
 import io.github.b150005.knitnote.generated.resources.label_reading_round
+import io.github.b150005.knitnote.generated.resources.label_resize_trim_count
 import io.github.b150005.knitnote.generated.resources.label_symmetry_section
 import io.github.b150005.knitnote.generated.resources.state_empty_chart
 import io.github.b150005.knitnote.generated.resources.state_no_layers
@@ -152,6 +158,9 @@ fun ChartEditorScreen(
     // sense on a new chart — the menu entry is hidden when state.original != null
     // and the ViewModel rejects SetExtents on existing charts as a second line.
     var showPolarPicker by remember { mutableStateOf(false) }
+    // Phase 35.3 (ADR-011 §6): grid-size picker. Available on both new and
+    // existing charts within the same coordinate system.
+    var showResizeDialog by remember { mutableStateOf(false) }
     // Phase 35.2f-ui: right-side modal layer-list drawer. `gesturesEnabled = false`
     // because swipe-from-right would conflict with Android predictive-back —
     // toolbar tap is the only open path. Closed by tapping the scrim or via
@@ -280,6 +289,7 @@ fun ChartEditorScreen(
                         )
                     },
                     onPolarSelected = { showPolarPicker = true },
+                    onResize = { showResizeDialog = true },
                     onRotationalSymmetry = { fold ->
                         viewModel.onEvent(ChartEditorEvent.ApplyRotationalSymmetry(fold))
                     },
@@ -369,6 +379,18 @@ fun ChartEditorScreen(
             onCancel = { showPolarPicker = false },
         )
     }
+
+    if (showResizeDialog) {
+        ResizeChartDialog(
+            currentExtents = state.draftExtents,
+            currentLayers = state.draftLayers,
+            onConfirm = { newExtents ->
+                showResizeDialog = false
+                viewModel.onEvent(ChartEditorEvent.ResizeChart(newExtents))
+            },
+            onCancel = { showResizeDialog = false },
+        )
+    }
 }
 
 /**
@@ -394,6 +416,7 @@ private fun EditorBody(
     onReadingSelected: (ReadingConvention) -> Unit,
     onFlatSelected: () -> Unit,
     onPolarSelected: () -> Unit,
+    onResize: () -> Unit,
     onRotationalSymmetry: (Int) -> Unit,
     onReflection: () -> Unit,
     onCancelPickReflectionAxis: () -> Unit,
@@ -479,6 +502,7 @@ private fun EditorBody(
                             onReadingSelected = onReadingSelected,
                             onFlatSelected = onFlatSelected,
                             onPolarSelected = onPolarSelected,
+                            onResize = onResize,
                             onRotationalSymmetry = onRotationalSymmetry,
                             onReflection = onReflection,
                         )
@@ -1163,6 +1187,176 @@ private fun PolarExtentsDialog(
     )
 }
 
+/**
+ * Phase 35.3 (ADR-011 §6): grid-size picker dialog. Stays within the current
+ * coordinate system — rect-vs-polar variant is selected from [currentExtents],
+ * not user input. Polar resize uses a single uniform stitch count applied to
+ * every ring (per-ring list editing is deferred per §6 MVP).
+ *
+ * Validation is local (W/H/rings/stitches each in `[1, MAX_DIM]`); on confirm
+ * the ViewModel re-validates the same-system invariant defensively.
+ *
+ * The destructive trim warning is displayed below the inputs whenever the
+ * computed new extents would drop ≥ 1 cell from [currentLayers]; the warning
+ * uses [MaterialTheme.colorScheme.error] to match the layer-delete confirm
+ * pattern from Phase 35.2f.
+ */
+@Composable
+private fun ResizeChartDialog(
+    currentExtents: ChartExtents,
+    currentLayers: List<ChartLayer>,
+    onConfirm: (ChartExtents) -> Unit,
+    onCancel: () -> Unit,
+) {
+    when (currentExtents) {
+        is ChartExtents.Rect -> {
+            val initialWidth = currentExtents.maxX - currentExtents.minX + 1
+            val initialHeight = currentExtents.maxY - currentExtents.minY + 1
+            // Key on currentExtents so a future flow that leaves the dialog
+            // open across an extents change (e.g. async Realtime sync of an
+            // existing chart) reseeds the inputs rather than displaying stale
+            // initial values. Matches the precedent in [ParameterInputDialog].
+            var widthText by remember(currentExtents) { mutableStateOf(initialWidth.toString()) }
+            var heightText by remember(currentExtents) { mutableStateOf(initialHeight.toString()) }
+
+            val parsed =
+                remember(widthText, heightText) {
+                    val w = widthText.trim().toIntOrNull() ?: return@remember null
+                    val h = heightText.trim().toIntOrNull() ?: return@remember null
+                    if (w !in 1..MAX_GRID_DIMENSION || h !in 1..MAX_GRID_DIMENSION) {
+                        return@remember null
+                    }
+                    ChartExtents.Rect(minX = 0, maxX = w - 1, minY = 0, maxY = h - 1)
+                }
+            val trimCount =
+                remember(parsed, currentLayers) {
+                    parsed?.let { trimRemovalCount(currentLayers, it) } ?: 0
+                }
+
+            AlertDialog(
+                onDismissRequest = onCancel,
+                title = { Text(stringResource(Res.string.dialog_resize_chart_title)) },
+                text = {
+                    Column {
+                        OutlinedTextField(
+                            value = widthText,
+                            onValueChange = { widthText = it },
+                            label = { Text(stringResource(Res.string.label_grid_width)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth().testTag("resizeWidthInput"),
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = heightText,
+                            onValueChange = { heightText = it },
+                            label = { Text(stringResource(Res.string.label_grid_height)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth().testTag("resizeHeightInput"),
+                        )
+                        if (trimCount > 0) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(Res.string.label_resize_trim_count, trimCount),
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.testTag("resizeTrimWarning"),
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = { parsed?.let(onConfirm) },
+                        enabled = parsed != null,
+                        modifier = Modifier.testTag("resizeChartConfirmButton"),
+                    ) { Text(stringResource(Res.string.action_ok)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = onCancel) {
+                        Text(stringResource(Res.string.action_cancel))
+                    }
+                },
+            )
+        }
+        is ChartExtents.Polar -> {
+            val initialRings = currentExtents.rings
+            // Seed the uniform-stitch input with ring 0's count when present.
+            // A non-uniform polar chart will collapse to uniform on resize per
+            // §6 MVP — the user can see (and edit) this default before confirm.
+            val initialStitches = currentExtents.stitchesPerRing.firstOrNull() ?: 8
+            var ringsText by remember(currentExtents) { mutableStateOf(initialRings.toString()) }
+            var stitchesText by remember(currentExtents) { mutableStateOf(initialStitches.toString()) }
+
+            val parsed =
+                remember(ringsText, stitchesText) {
+                    val r = ringsText.trim().toIntOrNull() ?: return@remember null
+                    val s = stitchesText.trim().toIntOrNull() ?: return@remember null
+                    if (r !in 1..MAX_GRID_DIMENSION || s !in 1..MAX_GRID_DIMENSION) {
+                        return@remember null
+                    }
+                    ChartExtents.Polar(rings = r, stitchesPerRing = List(r) { s })
+                }
+            val trimCount =
+                remember(parsed, currentLayers) {
+                    parsed?.let { trimRemovalCount(currentLayers, it) } ?: 0
+                }
+
+            AlertDialog(
+                onDismissRequest = onCancel,
+                title = { Text(stringResource(Res.string.dialog_resize_chart_title)) },
+                text = {
+                    Column {
+                        OutlinedTextField(
+                            value = ringsText,
+                            onValueChange = { ringsText = it },
+                            label = { Text(stringResource(Res.string.label_polar_rings)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth().testTag("resizeRingsInput"),
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = stitchesText,
+                            onValueChange = { stitchesText = it },
+                            label = {
+                                Text(stringResource(Res.string.label_polar_stitches_uniform))
+                            },
+                            singleLine = true,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .testTag("resizeStitchesUniformInput"),
+                        )
+                        if (trimCount > 0) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(Res.string.label_resize_trim_count, trimCount),
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.testTag("resizeTrimWarning"),
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = { parsed?.let(onConfirm) },
+                        enabled = parsed != null,
+                        modifier = Modifier.testTag("resizeChartConfirmButton"),
+                    ) { Text(stringResource(Res.string.action_ok)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = onCancel) {
+                        Text(stringResource(Res.string.action_cancel))
+                    }
+                },
+            )
+        }
+    }
+}
+
+/** ADR-011 §6 hard cap on per-axis grid dimension. */
+private const val MAX_GRID_DIMENSION: Int = 256
+
 @Composable
 private fun ChartMetadataMenu(
     expanded: Boolean,
@@ -1176,6 +1370,7 @@ private fun ChartMetadataMenu(
     onReadingSelected: (ReadingConvention) -> Unit,
     onFlatSelected: () -> Unit,
     onPolarSelected: () -> Unit,
+    onResize: () -> Unit,
     onRotationalSymmetry: (Int) -> Unit,
     onReflection: () -> Unit,
 ) {
@@ -1211,9 +1406,14 @@ private fun ChartMetadataMenu(
                 modifier = Modifier.testTag("readingOption_${reading.name}"),
             )
         }
+        // Phase 35.3 (ADR-011 §6): the Grid section is always rendered; the
+        // rect↔polar coordinate-system toggle stays conditional on a new
+        // chart (cell indices are not portable across systems), but the
+        // "Resize chart" entry always shows because resize keeps the
+        // current coordinate system.
+        HorizontalDivider()
+        MetadataMenuHeader(stringResource(Res.string.label_extents))
         if (canChangeExtents) {
-            HorizontalDivider()
-            MetadataMenuHeader(stringResource(Res.string.label_extents))
             val isFlat = currentExtents is ChartExtents.Rect
             DropdownMenuItem(
                 text = {
@@ -1238,6 +1438,14 @@ private fun ChartMetadataMenu(
                 modifier = Modifier.testTag("extentsOption_POLAR"),
             )
         }
+        DropdownMenuItem(
+            text = { Text("  ${stringResource(Res.string.action_resize_chart)}") },
+            onClick = {
+                onResize()
+                onDismiss()
+            },
+            modifier = Modifier.testTag("resizeChartMenuItem"),
+        )
         if (showSymmetrySection) {
             HorizontalDivider()
             MetadataMenuHeader(stringResource(Res.string.label_symmetry_section))

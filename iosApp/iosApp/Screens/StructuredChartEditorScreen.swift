@@ -18,6 +18,9 @@ struct StructuredChartEditorScreen: View {
     @State private var isParameterSheetPresented = false
     @State private var activeParameterPending: PendingParameterInput?
     @State private var showPolarPicker = false
+    // Phase 35.3 (ADR-011 §6): grid-size picker. Available on both new and
+    // existing charts within the same coordinate system.
+    @State private var showResizeSheet = false
     // Phase 35.2f-ui: right-side layer panel. iOS surfaces it as a
     // .sheet(isPresented:) per ADR-011 §5 addendum decision 4 — native idiom
     // matching iOS user expectation.
@@ -155,10 +158,13 @@ struct StructuredChartEditorScreen: View {
                             Text("Round (center out)").tag(ReadingConvention.round)
                         }
                     }
-                    // Phase 35.2a: extents picker only on new charts.
-                    // ViewModel rejects SetExtents when original != nil as a second line.
-                    if state.original == nil {
-                        Section(LocalizedStringKey("label_extents")) {
+                    // Phase 35.3 (ADR-011 §6): the Grid section is always
+                    // rendered. The rect↔polar coordinate-system toggle stays
+                    // conditional on a new chart (cell indices are not portable
+                    // across systems); the "Resize chart" entry always shows
+                    // because resize keeps the current coordinate system.
+                    Section(LocalizedStringKey("label_extents")) {
+                        if state.original == nil {
                             Button {
                                 viewModel.onEvent(
                                     event: ChartEditorEventSetExtents(
@@ -185,6 +191,13 @@ struct StructuredChartEditorScreen: View {
                             }
                             .accessibilityIdentifier("extentsOption_POLAR")
                         }
+
+                        Button {
+                            showResizeSheet = true
+                        } label: {
+                            Text(LocalizedStringKey("action_resize_chart"))
+                        }
+                        .accessibilityIdentifier("resizeChartMenuItem")
                     }
                     // Phase 35.2b: polar-only symmetry ops (ADR-011 §3). Fixed
                     // fold set + reflection axis at stitch 0 for v1; variable-axis
@@ -274,6 +287,23 @@ struct StructuredChartEditorScreen: View {
                     viewModel.onEvent(event: ChartEditorEventSetExtents(extents: polar))
                 },
                 onCancel: { showPolarPicker = false }
+            )
+            .presentationDetents([.medium])
+        }
+        .sheet(isPresented: $showResizeSheet) {
+            ResizeChartSheet(
+                currentExtents: holder.state.draftExtents,
+                currentLayers: holder.state.draftLayers,
+                onConfirm: { newExtents in
+                    // Dispatch BEFORE dismissing so the ViewModel commits the
+                    // new extents on the same run-loop tick that the sheet
+                    // tears down — avoids a transient stale-extents flash if
+                    // a body re-eval lands between the @State mutation and
+                    // the synchronous onEvent.
+                    viewModel.onEvent(event: ChartEditorEventResizeChart(newExtents: newExtents))
+                    showResizeSheet = false
+                },
+                onCancel: { showResizeSheet = false }
             )
             .presentationDetents([.medium])
         }
@@ -1052,6 +1082,156 @@ private struct PolarExtentsSheet: View {
                     }
                     .disabled(parsed == nil)
                     .accessibilityIdentifier("polarExtentsConfirmButton")
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Resize chart sheet (Phase 35.3, ADR-011 §6)
+
+/// Grid-size picker — works on both new and existing charts within the same
+/// coordinate system. Polar resize MVP applies a uniform stitch count to every
+/// ring (per-ring list editing is deferred per §6).
+///
+/// The trim count preview reuses the Kotlin shared `trimRemovalCount` helper
+/// so dialog warnings stay in lock-step with the ViewModel's actual trim
+/// behavior — no duplicated geometry between Compose and SwiftUI.
+private struct ResizeChartSheet: View {
+    let currentExtents: ChartExtents
+    let currentLayers: [ChartLayer]
+    let onConfirm: (ChartExtents) -> Void
+    let onCancel: () -> Void
+
+    /// ADR-011 §6 hard cap on per-axis grid dimension.
+    private static let maxGridDimension: Int = 256
+
+    @State private var widthText: String = ""
+    @State private var heightText: String = ""
+    @State private var ringsText: String = ""
+    @State private var stitchesText: String = ""
+
+    private var parsed: ChartExtents? {
+        if currentExtents is ChartExtentsRect {
+            guard let w = Int(widthText.trimmingCharacters(in: .whitespaces)),
+                  let h = Int(heightText.trimmingCharacters(in: .whitespaces)),
+                  (1...Self.maxGridDimension).contains(w),
+                  (1...Self.maxGridDimension).contains(h) else { return nil }
+            return ChartExtentsRect(
+                minX: 0,
+                maxX: Int32(w - 1),
+                minY: 0,
+                maxY: Int32(h - 1)
+            )
+        }
+        if currentExtents is ChartExtentsPolar {
+            guard let r = Int(ringsText.trimmingCharacters(in: .whitespaces)),
+                  let s = Int(stitchesText.trimmingCharacters(in: .whitespaces)),
+                  (1...Self.maxGridDimension).contains(r),
+                  (1...Self.maxGridDimension).contains(s) else { return nil }
+            // Uniform broadcast — every ring gets the same stitch count.
+            let perRing = (0..<r).map { _ in KotlinInt(value: Int32(s)) }
+            return ChartExtentsPolar(rings: Int32(r), stitchesPerRing: perRing)
+        }
+        return nil
+    }
+
+    private var trimCount: Int {
+        guard let candidate = parsed else { return 0 }
+        // Kotlin `Int` (non-nullable, primitive) bridges to Swift `Int32`
+        // through the Kotlin/Native ObjC bridge — not as a boxed `KotlinInt`,
+        // which only applies to nullable / generic-parameter Int. The Int()
+        // initializer below is therefore a 32→64 widening cast, never a
+        // silent NSNumber.intValue truncation.
+        return Int(
+            ChartEditorViewModelKt.trimRemovalCount(
+                layers: currentLayers,
+                extents: candidate
+            )
+        )
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                if let rect = currentExtents as? ChartExtentsRect {
+                    TextField(
+                        LocalizedStringKey("label_grid_width"),
+                        text: $widthText
+                    )
+                    .keyboardType(.numberPad)
+                    .accessibilityIdentifier("resizeWidthInput")
+                    .onAppear {
+                        // SwiftUI recreates this struct value on each body
+                        // re-eval, but `@State` storage is keyed on the view's
+                        // graph identity (not struct value), so the isEmpty
+                        // guard correctly seeds exactly once per sheet
+                        // presentation. Removing this guard would clobber
+                        // user edits on every re-eval of the parent.
+                        if widthText.isEmpty {
+                            widthText = String(rect.maxX - rect.minX + 1)
+                        }
+                    }
+                    TextField(
+                        LocalizedStringKey("label_grid_height"),
+                        text: $heightText
+                    )
+                    .keyboardType(.numberPad)
+                    .accessibilityIdentifier("resizeHeightInput")
+                    .onAppear {
+                        if heightText.isEmpty {
+                            heightText = String(rect.maxY - rect.minY + 1)
+                        }
+                    }
+                } else if let polar = currentExtents as? ChartExtentsPolar {
+                    TextField(
+                        LocalizedStringKey("label_polar_rings"),
+                        text: $ringsText
+                    )
+                    .keyboardType(.numberPad)
+                    .accessibilityIdentifier("resizeRingsInput")
+                    .onAppear {
+                        if ringsText.isEmpty {
+                            ringsText = String(polar.rings)
+                        }
+                    }
+                    TextField(
+                        LocalizedStringKey("label_polar_stitches_uniform"),
+                        text: $stitchesText
+                    )
+                    .keyboardType(.numberPad)
+                    .accessibilityIdentifier("resizeStitchesUniformInput")
+                    .onAppear {
+                        if stitchesText.isEmpty {
+                            // Seed from ring 0; non-uniform polar charts collapse
+                            // to uniform on resize per §6 MVP.
+                            let first = polar.stitchesPerRing.first?.intValue ?? 8
+                            stitchesText = String(first)
+                        }
+                    }
+                }
+
+                if trimCount > 0 {
+                    Text(String(
+                        format: NSLocalizedString("label_resize_trim_count", comment: ""),
+                        trimCount
+                    ))
+                    .foregroundStyle(.red)
+                    .accessibilityIdentifier("resizeTrimWarning")
+                }
+            }
+            .navigationTitle(LocalizedStringKey("dialog_resize_chart_title"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(LocalizedStringKey("action_cancel")) { onCancel() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(LocalizedStringKey("action_ok")) {
+                        if let candidate = parsed { onConfirm(candidate) }
+                    }
+                    .disabled(parsed == nil)
+                    .accessibilityIdentifier("resizeChartConfirmButton")
                 }
             }
         }

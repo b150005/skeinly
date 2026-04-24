@@ -64,6 +64,13 @@
     <string name="dialog_polar_extents_title">Round chart</string>
     <string name="label_polar_rings">Rings</string>
     <string name="label_polar_stitches_per_ring">Stitches per ring (comma-separated)</string>
+    <!-- Phase 35.3 (ADR-011 §6): grid-size picker -->
+    <string name="action_resize_chart">Resize chart</string>
+    <string name="dialog_resize_chart_title">Resize chart</string>
+    <string name="label_grid_width">Width</string>
+    <string name="label_grid_height">Height</string>
+    <string name="label_polar_stitches_uniform">Stitches per ring (uniform)</string>
+    <string name="label_resize_trim_count">%1$d cells will be removed</string>
 
     <!-- Project list screen -->
     <string name="action_discover_patterns">Discover Patterns</string>

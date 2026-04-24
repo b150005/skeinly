@@ -246,6 +246,48 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "各段の目数 (カンマ区切り)" } }
       }
     },
+    "action_resize_chart" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Resize chart" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "サイズ変更" } }
+      }
+    },
+    "dialog_resize_chart_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Resize chart" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "チャートのサイズ変更" } }
+      }
+    },
+    "label_grid_width" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Width" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "幅" } }
+      }
+    },
+    "label_grid_height" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Height" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "高さ" } }
+      }
+    },
+    "label_polar_stitches_uniform" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Stitches per ring (uniform)" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "各段の目数 (一律)" } }
+      }
+    },
+    "label_resize_trim_count" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$d cells will be removed" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$d 個のセルが削除されます" } }
+      }
+    },
     "state_empty" : {
       "extractionState" : "manual",
       "localizations" : {
