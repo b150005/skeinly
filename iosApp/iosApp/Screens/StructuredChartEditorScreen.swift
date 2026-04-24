@@ -864,7 +864,7 @@ private struct PolarExtentsSheet: View {
         guard perRing.count == rings, perRing.allSatisfy({ $0 >= 1 }) else { return nil }
         return ChartExtentsPolar(
             rings: Int32(rings),
-            stitchesPerRing: perRing.map { NSNumber(value: Int32($0)) }
+            stitchesPerRing: perRing.map { KotlinInt(value: Int32($0)) }
         )
     }
 
