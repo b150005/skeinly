@@ -204,6 +204,48 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "輪編み (中心から)" } }
       }
     },
+    "dialog_polar_extents_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Round chart" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "円形チャート" } }
+      }
+    },
+    "label_extents" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Grid" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "グリッド" } }
+      }
+    },
+    "label_extents_flat" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Flat grid" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "平面グリッド" } }
+      }
+    },
+    "label_extents_polar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Round (polar)" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "円形グリッド" } }
+      }
+    },
+    "label_polar_rings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rings" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "段数" } }
+      }
+    },
+    "label_polar_stitches_per_ring" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Stitches per ring (comma-separated)" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "各段の目数 (カンマ区切り)" } }
+      }
+    },
     "state_empty" : {
       "extractionState" : "manual",
       "localizations" : {

@@ -17,6 +17,7 @@ struct StructuredChartEditorScreen: View {
     // transient race on confirm where the flag would spuriously fire CancelParameterInput).
     @State private var isParameterSheetPresented = false
     @State private var activeParameterPending: PendingParameterInput?
+    @State private var showPolarPicker = false
     private let catalog: SymbolCatalog
 
     private var viewModel: ChartEditorViewModel { holder.viewModel }
@@ -38,7 +39,7 @@ struct StructuredChartEditorScreen: View {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 EditorCanvasView(
-                    extents: state.draftExtents as? ChartExtentsRect,
+                    extents: state.draftExtents,
                     layers: state.draftLayers,
                     catalog: catalog,
                     onCellTap: { x, y in
@@ -129,6 +130,37 @@ struct StructuredChartEditorScreen: View {
                             Text("Round (center out)").tag(ReadingConvention.round)
                         }
                     }
+                    // Phase 35.2a: extents picker only on new charts.
+                    // ViewModel rejects SetExtents when original != nil as a second line.
+                    if state.original == nil {
+                        Section(LocalizedStringKey("label_extents")) {
+                            Button {
+                                viewModel.onEvent(
+                                    event: ChartEditorEventSetExtents(
+                                        extents: ChartExtentsRect(minX: 0, maxX: 7, minY: 0, maxY: 7)
+                                    )
+                                )
+                            } label: {
+                                if state.draftExtents is ChartExtentsRect {
+                                    Label(LocalizedStringKey("label_extents_flat"), systemImage: "checkmark")
+                                } else {
+                                    Text(LocalizedStringKey("label_extents_flat"))
+                                }
+                            }
+                            .accessibilityIdentifier("extentsOption_FLAT")
+
+                            Button {
+                                showPolarPicker = true
+                            } label: {
+                                if state.draftExtents is ChartExtentsPolar {
+                                    Label(LocalizedStringKey("label_extents_polar"), systemImage: "checkmark")
+                                } else {
+                                    Text(LocalizedStringKey("label_extents_polar"))
+                                }
+                            }
+                            .accessibilityIdentifier("extentsOption_POLAR")
+                        }
+                    }
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
@@ -182,6 +214,16 @@ struct StructuredChartEditorScreen: View {
                 activeParameterPending = nil
             }
         }
+        .sheet(isPresented: $showPolarPicker) {
+            PolarExtentsSheet(
+                onConfirm: { polar in
+                    showPolarPicker = false
+                    viewModel.onEvent(event: ChartEditorEventSetExtents(extents: polar))
+                },
+                onCancel: { showPolarPicker = false }
+            )
+            .presentationDetents([.medium])
+        }
         .sheet(isPresented: $isParameterSheetPresented, onDismiss: {
             // User-initiated swipe-down dismiss — if VM still has a pending, treat as cancel.
             if holder.state.pendingParameterInput != nil {
@@ -227,7 +269,7 @@ struct StructuredChartEditorScreen: View {
 // MARK: - Canvas
 
 private struct EditorCanvasView: View {
-    let extents: ChartExtentsRect?
+    let extents: ChartExtents
     let layers: [ChartLayer]
     let catalog: SymbolCatalog
     let onCellTap: (Int, Int) -> Void
@@ -237,25 +279,180 @@ private struct EditorCanvasView: View {
     var body: some View {
         GeometryReader { proxy in
             Canvas { context, size in
-                guard let rect = extents else { return }
-                if rect.maxX < rect.minX || rect.maxY < rect.minY { return }
-                draw(into: &context, size: size, rect: rect)
+                switch extents {
+                case let rect as ChartExtentsRect:
+                    if rect.maxX < rect.minX || rect.maxY < rect.minY { return }
+                    draw(into: &context, size: size, rect: rect)
+                case let polar as ChartExtentsPolar:
+                    if polar.rings <= 0 || polar.stitchesPerRing.isEmpty { return }
+                    drawPolar(into: &context, size: size, polar: polar)
+                default:
+                    break
+                }
             }
             .background(Color(.systemBackground))
             .contentShape(Rectangle())
             .onTapGesture { location in
-                guard let rect = extents else { return }
-                let layout = Self.layout(for: proxy.size, rect: rect)
-                if let cell = GridHitTest.shared.hitTest(
-                    screenX: Double(location.x),
-                    screenY: Double(location.y),
-                    extents: rect,
-                    cellSize: Double(layout.cellSize),
-                    originX: Double(layout.originX),
-                    originY: Double(layout.originY)
-                ) {
-                    onCellTap(Int(cell.x), Int(cell.y))
+                switch extents {
+                case let rect as ChartExtentsRect:
+                    let layout = Self.layout(for: proxy.size, rect: rect)
+                    if let cell = GridHitTest.shared.hitTest(
+                        screenX: Double(location.x),
+                        screenY: Double(location.y),
+                        extents: rect,
+                        cellSize: Double(layout.cellSize),
+                        originX: Double(layout.originX),
+                        originY: Double(layout.originY)
+                    ) {
+                        onCellTap(Int(cell.x), Int(cell.y))
+                    }
+                case let polar as ChartExtentsPolar:
+                    let layout = Self.polarLayout(for: proxy.size, polar: polar)
+                    if let hit = Self.hitTestPolar(location: location, polar: polar, layout: layout) {
+                        // Polar convention (ADR-011): cell.x = stitch, cell.y = ring.
+                        onCellTap(hit.stitch, hit.ring)
+                    }
+                default:
+                    break
                 }
+            }
+        }
+    }
+
+    /// Inlined polar layout (mirrors `shared/ui/chart/PolarDrawing.kt:polarLayoutFor`).
+    /// Kept as a Swift struct — we avoid bridging `PolarCellLayout.Layout` through
+    /// the Shared framework to keep the boundary narrow. Same pattern as
+    /// `StructuredChartViewerScreen.swift:PolarLayout`.
+    private struct PolarLayout {
+        let cx: Double
+        let cy: Double
+        let innerRadius: Double
+        let ringThickness: Double
+    }
+
+    private static func polarLayout(for size: CGSize, polar: ChartExtentsPolar) -> PolarLayout {
+        let cx = Double(size.width / 2)
+        let cy = Double(size.height / 2)
+        let maxRadius = Double(min(size.width, size.height)) * 0.47
+        let innerRadius = maxRadius * 0.15
+        let rings = max(1, Int(polar.rings))
+        let ringThickness = (maxRadius - innerRadius) / Double(rings)
+        return PolarLayout(cx: cx, cy: cy, innerRadius: innerRadius, ringThickness: ringThickness)
+    }
+
+    /// Inlined polar hit-test (mirrors `GridHitTest.hitTestPolar` in Kotlin).
+    /// Returns nil for inner-hole / outer-of-grid / degenerate cases.
+    private static func hitTestPolar(
+        location: CGPoint,
+        polar: ChartExtentsPolar,
+        layout: PolarLayout
+    ) -> (stitch: Int, ring: Int)? {
+        let ringsCount = Int(polar.rings)
+        if ringsCount <= 0 { return nil }
+        if layout.ringThickness <= 0 || layout.innerRadius < 0 { return nil }
+        let perRing = polar.stitchesPerRing.map { Int(truncating: $0) }
+        if perRing.count < ringsCount { return nil }
+
+        let dx = Double(location.x) - layout.cx
+        let dy = Double(location.y) - layout.cy
+        let radius = (dx * dx + dy * dy).squareRoot()
+        if radius < layout.innerRadius { return nil }
+        let outerRadius = layout.innerRadius + Double(ringsCount) * layout.ringThickness
+        if radius >= outerRadius { return nil }
+
+        let ringRaw = Int(floor((radius - layout.innerRadius) / layout.ringThickness))
+        let ring = min(max(ringRaw, 0), ringsCount - 1)
+        let stitchesInRing = perRing[ring]
+        if stitchesInRing <= 0 { return nil }
+
+        let twoPi = 2.0 * Double.pi
+        let rawTheta = atan2(dy, dx) + Double.pi / 2
+        let theta = (rawTheta.truncatingRemainder(dividingBy: twoPi) + twoPi)
+            .truncatingRemainder(dividingBy: twoPi)
+        let sweep = twoPi / Double(stitchesInRing)
+        let stitchRaw = Int(floor(theta / sweep))
+        let stitch = min(max(stitchRaw, 0), stitchesInRing - 1)
+        return (stitch: stitch, ring: ring)
+    }
+
+    private func drawPolar(into context: inout GraphicsContext, size: CGSize, polar: ChartExtentsPolar) {
+        let layout = Self.polarLayout(for: size, polar: polar)
+        let gridShading = GraphicsContext.Shading.color(.gray.opacity(0.3))
+        let ringsCount = Int(polar.rings)
+
+        // Concentric ring boundaries.
+        for i in 0...ringsCount {
+            let r = layout.innerRadius + Double(i) * layout.ringThickness
+            var path = Path()
+            path.addArc(
+                center: CGPoint(x: layout.cx, y: layout.cy),
+                radius: CGFloat(r),
+                startAngle: .zero,
+                endAngle: .degrees(360),
+                clockwise: false
+            )
+            context.stroke(path, with: gridShading, lineWidth: 1)
+        }
+
+        // Outer-ring radial spokes.
+        let outerStitches = Int(polar.stitchesPerRing.last?.intValue ?? 0)
+        if outerStitches > 0 {
+            let innerR = layout.innerRadius
+            let outerR = layout.innerRadius + Double(ringsCount) * layout.ringThickness
+            let sweep = 2.0 * Double.pi / Double(outerStitches)
+            for s in 0..<outerStitches {
+                // 12-o'clock-CW convention → screen cartesian: subtract π/2.
+                let screenAngle = Double(s) * sweep - Double.pi / 2.0
+                let dx = cos(screenAngle)
+                let dy = sin(screenAngle)
+                var path = Path()
+                path.move(to: CGPoint(x: layout.cx + innerR * dx, y: layout.cy + innerR * dy))
+                path.addLine(to: CGPoint(x: layout.cx + outerR * dx, y: layout.cy + outerR * dy))
+                context.stroke(path, with: gridShading, lineWidth: 1)
+            }
+        }
+
+        // Glyphs per cell — inscribed square + radial rotation per ADR-011 §2.
+        let symbolShading = GraphicsContext.Shading.color(.primary)
+        // Defensive: guards against a polar chart round-tripped through storage
+        // with a stitchesPerRing list shorter than rings. hitTestPolar already
+        // has this guard; drawPolar needs the mirror so indexed access can't trap.
+        let perRing = polar.stitchesPerRing.map { Int(truncating: $0) }
+        if perRing.count < ringsCount { return }
+        for layer in layers where layer.visible {
+            for cell in layer.cells {
+                let ring = Int(cell.y)
+                let stitch = Int(cell.x)
+                if ring < 0 || ring >= ringsCount { continue }
+                let stitchesInRing = perRing[ring]
+                if stitch < 0 || stitch >= stitchesInRing { continue }
+                guard let def = catalog.get(id: cell.symbolId) else { continue }
+
+                let sweep = 2.0 * Double.pi / Double(stitchesInRing)
+                let rCenter = layout.innerRadius + (Double(ring) + 0.5) * layout.ringThickness
+                // cellCenter mirror: theta = stitch*sweep + sweep/2 (12-o'clock-CW).
+                let thetaCenter = Double(stitch) * sweep + sweep / 2.0
+                // Screen cartesian: subtract π/2.
+                let screenAngle = thetaCenter - Double.pi / 2.0
+                let px = layout.cx + rCenter * cos(screenAngle)
+                let py = layout.cy + rCenter * sin(screenAngle)
+                let chord = 2.0 * rCenter * sin(sweep / 2.0)
+                let side = max(1.0, min(layout.ringThickness, chord))
+                let half = side / 2.0
+                let bounds = CGRect(x: px - half, y: py - half, width: side, height: side)
+
+                var subcontext = context
+                subcontext.translateBy(x: CGFloat(px), y: CGFloat(py))
+                subcontext.rotate(by: .radians(thetaCenter))
+                subcontext.translateBy(x: -CGFloat(px), y: -CGFloat(py))
+                drawSymbolPath(
+                    into: &subcontext,
+                    def: def,
+                    bounds: bounds,
+                    rotation: Int(cell.rotation),
+                    color: symbolShading,
+                    lineWidth: max(1, CGFloat(side) * 0.06)
+                )
             }
         }
     }
@@ -614,6 +811,58 @@ private struct ParameterInputSheet: View {
                 }
             }
             drafts = initial
+        }
+    }
+}
+
+// MARK: - Polar extents picker (Phase 35.2a)
+
+/// New-chart-only polar extents input. Mirrors Compose `PolarExtentsDialog`.
+/// Requires rings ≥ 1 and a comma-separated list of `rings` positive integers.
+private struct PolarExtentsSheet: View {
+    let onConfirm: (ChartExtentsPolar) -> Void
+    let onCancel: () -> Void
+
+    @State private var ringsText: String = "3"
+    @State private var stitchesText: String = "8,16,24"
+
+    private var parsed: ChartExtentsPolar? {
+        guard let rings = Int(ringsText.trimmingCharacters(in: .whitespaces)), rings >= 1 else {
+            return nil
+        }
+        let perRing: [Int] = stitchesText
+            .split(separator: ",")
+            .compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+        guard perRing.count == rings, perRing.allSatisfy({ $0 >= 1 }) else { return nil }
+        return ChartExtentsPolar(
+            rings: Int32(rings),
+            stitchesPerRing: perRing.map { NSNumber(value: Int32($0)) }
+        )
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                TextField(LocalizedStringKey("label_polar_rings"), text: $ringsText)
+                    .keyboardType(.numberPad)
+                    .accessibilityIdentifier("polarRingsInput")
+                TextField(LocalizedStringKey("label_polar_stitches_per_ring"), text: $stitchesText)
+                    .accessibilityIdentifier("polarStitchesInput")
+            }
+            .navigationTitle(LocalizedStringKey("dialog_polar_extents_title"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(LocalizedStringKey("action_cancel")) { onCancel() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(LocalizedStringKey("action_ok")) {
+                        if let p = parsed { onConfirm(p) }
+                    }
+                    .disabled(parsed == nil)
+                    .accessibilityIdentifier("polarExtentsConfirmButton")
+                }
+            }
         }
     }
 }

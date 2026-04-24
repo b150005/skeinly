@@ -63,11 +63,17 @@ import io.github.b150005.knitnote.generated.resources.action_save
 import io.github.b150005.knitnote.generated.resources.action_undo
 import io.github.b150005.knitnote.generated.resources.dialog_parameter_edit_title
 import io.github.b150005.knitnote.generated.resources.dialog_parameter_enter_title
+import io.github.b150005.knitnote.generated.resources.dialog_polar_extents_title
 import io.github.b150005.knitnote.generated.resources.dialog_unsaved_changes_body
 import io.github.b150005.knitnote.generated.resources.dialog_unsaved_changes_title
 import io.github.b150005.knitnote.generated.resources.label_craft
 import io.github.b150005.knitnote.generated.resources.label_craft_crochet
 import io.github.b150005.knitnote.generated.resources.label_craft_knit
+import io.github.b150005.knitnote.generated.resources.label_extents
+import io.github.b150005.knitnote.generated.resources.label_extents_flat
+import io.github.b150005.knitnote.generated.resources.label_extents_polar
+import io.github.b150005.knitnote.generated.resources.label_polar_rings
+import io.github.b150005.knitnote.generated.resources.label_polar_stitches_per_ring
 import io.github.b150005.knitnote.generated.resources.label_reading
 import io.github.b150005.knitnote.generated.resources.label_reading_crochet_flat
 import io.github.b150005.knitnote.generated.resources.label_reading_knit_flat
@@ -94,6 +100,10 @@ fun ChartEditorScreen(
     val state by viewModel.state.collectAsState()
     var showDiscardDialog by remember { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
+    // Phase 35.2a: polar extents picker dialog visibility. Opening it only makes
+    // sense on a new chart — the menu entry is hidden when state.original != null
+    // and the ViewModel rejects SetExtents on existing charts as a second line.
+    var showPolarPicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel) {
         viewModel.saved.collect { onBack() }
@@ -166,12 +176,26 @@ fun ChartEditorScreen(
                             expanded = showOverflowMenu,
                             craftType = state.draftCraftType,
                             readingConvention = state.draftReadingConvention,
+                            currentExtents = state.draftExtents,
+                            // Extents section only actionable on a new chart —
+                            // ViewModel rejects SetExtents on existing charts.
+                            canChangeExtents = state.original == null,
                             onDismiss = { showOverflowMenu = false },
                             onCraftSelected = {
                                 viewModel.onEvent(ChartEditorEvent.SelectCraft(it))
                             },
                             onReadingSelected = {
                                 viewModel.onEvent(ChartEditorEvent.SelectReading(it))
+                            },
+                            onFlatSelected = {
+                                viewModel.onEvent(
+                                    ChartEditorEvent.SetExtents(
+                                        ChartExtents.Rect(minX = 0, maxX = 7, minY = 0, maxY = 7),
+                                    ),
+                                )
+                            },
+                            onPolarSelected = {
+                                showPolarPicker = true
                             },
                         )
                     }
@@ -204,7 +228,7 @@ fun ChartEditorScreen(
                         }
                     Column(modifier = Modifier.fillMaxSize()) {
                         EditorCanvas(
-                            extents = state.draftExtents as? ChartExtents.Rect,
+                            extents = state.draftExtents,
                             layers = state.draftLayers,
                             catalog = catalog,
                             onCellTap = { x, y ->
@@ -260,6 +284,16 @@ fun ChartEditorScreen(
                 viewModel.onEvent(ChartEditorEvent.ConfirmParameterInput(values))
             },
             onCancel = { viewModel.onEvent(ChartEditorEvent.CancelParameterInput) },
+        )
+    }
+
+    if (showPolarPicker) {
+        PolarExtentsDialog(
+            onConfirm = { polar ->
+                showPolarPicker = false
+                viewModel.onEvent(ChartEditorEvent.SetExtents(polar))
+            },
+            onCancel = { showPolarPicker = false },
         )
     }
 }
@@ -326,13 +360,27 @@ private fun ParameterInputDialog(
 
 @Composable
 private fun EditorCanvas(
-    extents: ChartExtents.Rect?,
+    extents: ChartExtents,
     layers: List<io.github.b150005.knitnote.domain.model.ChartLayer>,
     catalog: SymbolCatalog,
     onCellTap: (Int, Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (extents == null || extents.maxX < extents.minX || extents.maxY < extents.minY) {
+    when (extents) {
+        is ChartExtents.Rect -> RectEditorCanvas(extents, layers, catalog, onCellTap, modifier)
+        is ChartExtents.Polar -> PolarEditorCanvas(extents, layers, catalog, onCellTap, modifier)
+    }
+}
+
+@Composable
+private fun RectEditorCanvas(
+    extents: ChartExtents.Rect,
+    layers: List<io.github.b150005.knitnote.domain.model.ChartLayer>,
+    catalog: SymbolCatalog,
+    onCellTap: (Int, Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (extents.maxX < extents.minX || extents.maxY < extents.minY) {
         Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
                 text = stringResource(Res.string.state_empty_chart),
@@ -444,13 +492,171 @@ private fun computeLayout(
 }
 
 @Composable
+private fun PolarEditorCanvas(
+    extents: ChartExtents.Polar,
+    layers: List<io.github.b150005.knitnote.domain.model.ChartLayer>,
+    catalog: SymbolCatalog,
+    onCellTap: (Int, Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (extents.rings <= 0 || extents.stitchesPerRing.isEmpty()) {
+        Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(
+                text = stringResource(Res.string.state_empty_chart),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        return
+    }
+
+    val gridColor = MaterialTheme.colorScheme.outlineVariant
+    val symbolColor = MaterialTheme.colorScheme.onSurface
+    val unknownBg = MaterialTheme.colorScheme.errorContainer
+    val unknownFg = MaterialTheme.colorScheme.onErrorContainer
+    val textMeasurer =
+        androidx.compose.ui.text
+            .rememberTextMeasurer()
+    val parsedPathCache =
+        remember {
+            mutableMapOf<String, List<io.github.b150005.knitnote.domain.symbol.PathCommand>>()
+        }
+
+    // Minimal viewer-style chart for the renderers' drawPolarCells signature.
+    // drawPolarCells only reads `chart.layers` (for the iteration + visible /
+    // hiddenLayerIds filter) — the rest of StructuredChart is unused. We feed
+    // stub values for id/patternId/ownerId/revision/hash and DISTANT_PAST
+    // timestamps so the editor does not need the full chart construction path
+    // during tap-to-place authoring. If a future drawPolarCells refactor starts
+    // reading any other StructuredChart field (coordinateSystem, revisionId,
+    // contentHash, createdAt, updatedAt, ...), update this stub accordingly.
+    val draftChart =
+        remember(layers, extents) {
+            io.github.b150005.knitnote.domain.model
+                .StructuredChart(
+                    id = "editor-draft",
+                    patternId = "",
+                    ownerId = "",
+                    schemaVersion = io.github.b150005.knitnote.domain.model.StructuredChart.CURRENT_SCHEMA_VERSION,
+                    storageVariant = io.github.b150005.knitnote.domain.model.StorageVariant.INLINE,
+                    coordinateSystem = io.github.b150005.knitnote.domain.model.CoordinateSystem.POLAR_ROUND,
+                    extents = extents,
+                    layers = layers,
+                    revisionId = "",
+                    parentRevisionId = null,
+                    contentHash = "",
+                    createdAt = kotlin.time.Instant.DISTANT_PAST,
+                    updatedAt = kotlin.time.Instant.DISTANT_PAST,
+                )
+        }
+
+    Canvas(
+        modifier =
+            modifier
+                .testTag("editorCanvas")
+                .pointerInput(extents) {
+                    detectTapGestures { offset ->
+                        val layout = polarLayoutFor(size.width.toFloat(), size.height.toFloat(), extents)
+                        val hit =
+                            GridHitTest.hitTestPolar(
+                                screenX = offset.x.toDouble(),
+                                screenY = offset.y.toDouble(),
+                                extents = extents,
+                                layout = layout,
+                            )
+                        // Polar cell convention (ADR-011): cell.x = stitch, cell.y = ring.
+                        hit?.let { onCellTap(it.x, it.y) }
+                    }
+                },
+    ) {
+        val layout = polarLayoutFor(size.width, size.height, extents)
+        drawPolarGrid(extents, layout, gridColor)
+        drawPolarCells(
+            polar = extents,
+            chart = draftChart,
+            hiddenLayerIds = emptySet(),
+            catalog = catalog,
+            layout = layout,
+            textMeasurer = textMeasurer,
+            parsedPathCache = parsedPathCache,
+            symbolColor = symbolColor,
+            unknownBg = unknownBg,
+            unknownFg = unknownFg,
+        )
+    }
+}
+
+@Composable
+private fun PolarExtentsDialog(
+    onConfirm: (ChartExtents.Polar) -> Unit,
+    onCancel: () -> Unit,
+) {
+    // Defaults: a common amigurumi/hat-crown starter. Users can edit freely —
+    // validation only requires rings ≥ 1 and matching count of per-ring stitches.
+    var ringsText by remember { mutableStateOf("3") }
+    var stitchesText by remember { mutableStateOf("8,16,24") }
+
+    val parsed =
+        remember(ringsText, stitchesText) {
+            val rings = ringsText.trim().toIntOrNull()
+            val perRing =
+                stitchesText
+                    .split(',')
+                    .mapNotNull { it.trim().takeIf { s -> s.isNotEmpty() }?.toIntOrNull() }
+            if (rings == null || rings < 1) return@remember null
+            if (perRing.size != rings) return@remember null
+            if (perRing.any { it < 1 }) return@remember null
+            ChartExtents.Polar(rings = rings, stitchesPerRing = perRing)
+        }
+
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text(stringResource(Res.string.dialog_polar_extents_title)) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = ringsText,
+                    onValueChange = { ringsText = it },
+                    label = { Text(stringResource(Res.string.label_polar_rings)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().testTag("polarRingsInput"),
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = stitchesText,
+                    onValueChange = { stitchesText = it },
+                    label = { Text(stringResource(Res.string.label_polar_stitches_per_ring)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().testTag("polarStitchesInput"),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { parsed?.let(onConfirm) },
+                enabled = parsed != null,
+                modifier = Modifier.testTag("polarExtentsConfirmButton"),
+            ) { Text(stringResource(Res.string.action_ok)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel) {
+                Text(stringResource(Res.string.action_cancel))
+            }
+        },
+    )
+}
+
+@Composable
 private fun ChartMetadataMenu(
     expanded: Boolean,
     craftType: CraftType,
     readingConvention: ReadingConvention,
+    currentExtents: ChartExtents,
+    canChangeExtents: Boolean,
     onDismiss: () -> Unit,
     onCraftSelected: (CraftType) -> Unit,
     onReadingSelected: (ReadingConvention) -> Unit,
+    onFlatSelected: () -> Unit,
+    onPolarSelected: () -> Unit,
 ) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
         MetadataMenuHeader(stringResource(Res.string.label_craft))
@@ -482,6 +688,33 @@ private fun ChartMetadataMenu(
                     onDismiss()
                 },
                 modifier = Modifier.testTag("readingOption_${reading.name}"),
+            )
+        }
+        if (canChangeExtents) {
+            HorizontalDivider()
+            MetadataMenuHeader(stringResource(Res.string.label_extents))
+            val isFlat = currentExtents is ChartExtents.Rect
+            DropdownMenuItem(
+                text = {
+                    val prefix = if (isFlat) "\u2713 " else "  "
+                    Text("$prefix${stringResource(Res.string.label_extents_flat)}")
+                },
+                onClick = {
+                    onFlatSelected()
+                    onDismiss()
+                },
+                modifier = Modifier.testTag("extentsOption_FLAT"),
+            )
+            DropdownMenuItem(
+                text = {
+                    val prefix = if (!isFlat) "\u2713 " else "  "
+                    Text("$prefix${stringResource(Res.string.label_extents_polar)}")
+                },
+                onClick = {
+                    onPolarSelected()
+                    onDismiss()
+                },
+                modifier = Modifier.testTag("extentsOption_POLAR"),
             )
         }
     }

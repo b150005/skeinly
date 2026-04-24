@@ -809,4 +809,128 @@ class ChartEditorViewModelTest {
             assertEquals("jis.knit.k", cells[0].symbolId)
             assertTrue(cells[0].symbolParameters.isEmpty())
         }
+
+    // --- Phase 35.2a: polar extents picker ---
+
+    // 34. New-chart Flat → Polar switch updates draftExtents and leaves layers empty.
+    @Test
+    fun `SetExtents to Polar on new chart updates draftExtents and resets layers`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+
+            val polar = ChartExtents.Polar(rings = 3, stitchesPerRing = listOf(8, 16, 24))
+            viewModel.onEvent(ChartEditorEvent.SetExtents(polar))
+
+            val state = viewModel.state.value
+            assertEquals(polar, state.draftExtents)
+            assertEquals(1, state.draftLayers.size)
+            assertTrue(state.draftLayers[0].cells.isEmpty())
+            assertTrue(state.canUndo)
+            // Empty new chart → not dirty yet.
+            assertFalse(state.hasUnsavedChanges)
+        }
+
+    // 35. New-chart switch after placing cells clears those cells.
+    @Test
+    fun `SetExtents resets cells placed under the prior coordinate system`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+            assertTrue(
+                viewModel.state.value.draftLayers[0]
+                    .cells
+                    .isNotEmpty(),
+            )
+
+            val polar = ChartExtents.Polar(rings = 2, stitchesPerRing = listOf(6, 12))
+            viewModel.onEvent(ChartEditorEvent.SetExtents(polar))
+
+            val state = viewModel.state.value
+            assertEquals(polar, state.draftExtents)
+            assertTrue(state.draftLayers[0].cells.isEmpty(), "cells must reset on extents switch")
+        }
+
+    // 36. Existing-chart SetExtents is rejected.
+    @Test
+    fun `SetExtents is ignored when an original chart is loaded`() =
+        runTest {
+            val seeded = seededChart()
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+
+            val before = viewModel.state.value
+            val polar = ChartExtents.Polar(rings = 3, stitchesPerRing = listOf(8, 16, 24))
+            viewModel.onEvent(ChartEditorEvent.SetExtents(polar))
+
+            val after = viewModel.state.value
+            assertEquals(before.draftExtents, after.draftExtents)
+            assertEquals(before.draftLayers, after.draftLayers)
+            assertFalse(after.hasUnsavedChanges)
+            assertFalse(after.canUndo)
+        }
+
+    // 37. Undo after SetExtents restores prior extents + layers.
+    @Test
+    fun `undo after SetExtents restores the prior rect extents and layers`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 2, y = 2))
+            val priorExtents = viewModel.state.value.draftExtents
+            val priorLayers = viewModel.state.value.draftLayers
+
+            val polar = ChartExtents.Polar(rings = 3, stitchesPerRing = listOf(6, 12, 18))
+            viewModel.onEvent(ChartEditorEvent.SetExtents(polar))
+            viewModel.onEvent(ChartEditorEvent.Undo)
+
+            val state = viewModel.state.value
+            assertEquals(priorExtents, state.draftExtents)
+            assertEquals(priorLayers, state.draftLayers)
+        }
+
+    // 38. SetExtents to the same value is a no-op.
+    @Test
+    fun `SetExtents to the same value does not push history`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            val currentRect = viewModel.state.value.draftExtents
+
+            viewModel.onEvent(ChartEditorEvent.SetExtents(currentRect))
+
+            val state = viewModel.state.value
+            assertEquals(currentRect, state.draftExtents)
+            assertFalse(state.canUndo)
+        }
+
+    // 39. Save with polar extents creates a chart with POLAR_ROUND coordinate system.
+    @Test
+    fun `save with polar extents creates chart with POLAR_ROUND coordinateSystem`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-polar")
+            awaitReady(viewModel)
+            val polar = ChartExtents.Polar(rings = 2, stitchesPerRing = listOf(6, 12))
+            viewModel.onEvent(ChartEditorEvent.SetExtents(polar))
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            // polar cell: x = stitch, y = ring
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+
+            viewModel.saved.test {
+                viewModel.onEvent(ChartEditorEvent.Save)
+                awaitItem()
+                cancelAndConsumeRemainingEvents()
+            }
+
+            val state = viewModel.state.value
+            val original = state.original
+            assertNotNull(original)
+            assertEquals(CoordinateSystem.POLAR_ROUND, original.coordinateSystem)
+            assertEquals(polar, original.extents)
+            assertFalse(state.hasUnsavedChanges)
+        }
 }

@@ -54,6 +54,13 @@
     <string name="label_reading_knit_flat">往復編み (表段 \u2192, 裏段 \u2190)</string>
     <string name="label_reading_crochet_flat">平編み (左\u2192右)</string>
     <string name="label_reading_round">輪編み (中心から)</string>
+    <!-- Phase 35.2a: 円形グリッドピッカー（新規チャートのみ） -->
+    <string name="label_extents">グリッド</string>
+    <string name="label_extents_flat">平面グリッド</string>
+    <string name="label_extents_polar">円形グリッド</string>
+    <string name="dialog_polar_extents_title">円形チャート</string>
+    <string name="label_polar_rings">段数</string>
+    <string name="label_polar_stitches_per_ring">各段の目数 (カンマ区切り)</string>
 
     <!-- Project list screen -->
     <string name="action_discover_patterns">パターンを探す</string>
