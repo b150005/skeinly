@@ -516,3 +516,74 @@ requires explicit confirm.
 - Phase 32 Completed notes (editor MVP invariants, `EditHistory` scope)
 - Phase 34 Completed notes (segment overlay, iOS gesture-conflict pattern, polar deferral notice)
 - JIS L 0201 Table 2 + §5–§6 (round-chart angular convention, crochet symbol family)
+
+## Phase 35.2f addendum — Layer ops MVP implementation decisions
+
+§5 above reserved the scope (add / remove / rename / reorder / visibility /
+lock + `EditHistory` entries + right-side drawer panel). Phase 35.2f
+implements that scope; five implementation-detail decisions fell out of the
+agent-team pass and are recorded here rather than a new ADR because they
+resolve §5 rather than introduce new architecture.
+
+1. **Lock blocks placement, symmetry write-target, and segment-progress tap.**
+   Locked layers are read-only for (a) `PlaceCell` in the editor,
+   (b) `ApplyRotationalSymmetry` / `ApplyReflection` when the target layer
+   is locked, and (c) `ToggleSegmentState` / `MarkSegmentDone` in the viewer
+   — viewer taps on a cell that belongs to a locked layer are silently
+   dropped (the overlay still paints so the user can read prior progress).
+   Lock does NOT block `Undo` / `Redo` — history is authoritative and
+   each snapshot carries lock state itself, so undoing across a lock
+   toggle restores the prior lock value. Lock does NOT block visibility
+   toggle, rename, or delete — those are layer-list operations that
+   intentionally let the user manage metadata on locked layers.
+
+2. **Explicit `selectedLayerId` replaces the Phase 32 `layers[0]` hardcode.**
+   `ChartEditorState.selectedLayerId: String?` is the single source of
+   truth for placement target. Initial state points at the default
+   `"L1"` layer (unchanged observable behavior). Load reassigns to
+   `chart.layers.firstOrNull()?.id`. `AddLayer` auto-selects the new
+   layer. `RemoveLayer` re-selects the nearest sibling (prior layer, or
+   next layer if prior doesn't exist, or null if the list becomes empty).
+   A null `selectedLayerId` is a valid draft state — `PlaceCell` is a
+   no-op in that case rather than auto-creating a layer. Auto-create
+   only happens once, in the initial state. `SelectLayer` is blocked
+   while `pendingParameterInput` is set to prevent a parametric commit
+   from landing on a layer other than the one the dialog was opened
+   against.
+
+3. **Reorder gesture: long-press-and-drag on a dedicated handle, not full-row.**
+   Full-row long-press conflicts with tap-to-select. Reorder handle is the
+   standard Material 3 `DragHandle` icon on Compose; SwiftUI uses
+   `List.onMove` with `.editMode` toggled on drawer open. Reorder writes
+   one `EditHistory` entry (the full layer-list snapshot before the move).
+
+4. **Layer-list panel: right-side semi-modal drawer, toolbar-icon triggered.**
+   Both platforms: tap layers-icon in overflow menu → drawer slides in
+   from right. Compose: `ModalNavigationDrawer` with `drawerState` +
+   right-edge anchor, `gesturesEnabled=false` (swipe-from-right conflicts
+   with Android predictive-back). SwiftUI: `.sheet(isPresented:)` with
+   `.presentationDetents([.medium, .large])` — native idiom matches iOS
+   user expectation. Row content: drag handle · visibility eye · lock
+   padlock · name (tap-to-rename inline via swapped `OutlinedTextField`
+   / `TextField`) · overflow menu (delete). Delete confirmation dialog
+   appears only when the layer has cells (empty layers delete silently).
+
+5. **No schema bump.** `ChartLayer.visible` and `ChartLayer.locked` are
+   already in the schema v2 data class with default values; Phase 32
+   shipped them dormant. Phase 35.2f surfaces them in the editor UI and
+   wires them through placement + viewer-tap enforcement. No ADR-008
+   schema v3 bump is needed. `contentHash` depends on `layers`
+   serialization so any layer-ops edit naturally recomputes the hash —
+   matches `§5` "drawing identity changes" wording.
+
+### Phase 35.2f explicitly out of scope
+
+- **Symmetry-op lock respect in code path** — the `!locked` filter helper
+  lands in 35.2f (consumed by placement); Phase 35.2g symmetry-op layer
+  targeting consumes the same helper once symmetry ops gain a configurable
+  target layer (Phase 32.2b hardcodes target to `layers[0]` regardless of
+  selection; Phase 35.2g unifies symmetry-op target with `selectedLayerId`).
+- **Custom layer color/tint** — Phase 36+ discovery-polish work.
+- **Layer merge** — collaboration-era; Phase 37+.
+- **Per-layer opacity slider** — Phase 36+ polish; visibility is boolean for
+  MVP.

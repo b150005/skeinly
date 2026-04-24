@@ -36,6 +36,12 @@ private const val DEFAULT_GRID_SIZE = 8
 private const val DEFAULT_LAYER_ID = "L1"
 private const val DEFAULT_LAYER_NAME = "Main"
 
+// Phase 35.2f: pattern for auto-named layers created via AddLayer. The name is
+// user-visible default copy and intentionally English-only at the ViewModel
+// boundary — the layer panel renders the name as-is (user can rename inline),
+// and i18n of the default literal is tracked under the Phase 35.2f-ui slice.
+private const val DEFAULT_LAYER_NAME_PATTERN = "Layer {n}"
+
 data class ChartEditorState(
     val patternId: String = "",
     val isLoading: Boolean = true,
@@ -48,6 +54,14 @@ data class ChartEditorState(
     val selectedSymbolId: String? = null,
     val selectedCategory: SymbolCategory = SymbolCategory.KNIT,
     val paletteSymbols: List<SymbolDefinition> = emptyList(),
+    /**
+     * Phase 35.2f: id of the layer that receives placement and symmetry writes.
+     * Null is a valid state (user removed every layer) — `PlaceCell` is a no-op
+     * in that case rather than auto-creating, per the ADR-011 §5 addendum.
+     * Initial state matches [DEFAULT_LAYER_ID] so single-layer charts behave
+     * identically to the Phase 32 `layers[0]` hardcode.
+     */
+    val selectedLayerId: String? = DEFAULT_LAYER_ID,
     val canUndo: Boolean = false,
     val canRedo: Boolean = false,
     val isSaving: Boolean = false,
@@ -158,6 +172,45 @@ sealed interface ChartEditorEvent {
     data object Save : ChartEditorEvent
 
     data object ClearError : ChartEditorEvent
+
+    /**
+     * Phase 35.2f layer ops. Each op writes a full-layer-list
+     * [EditHistory.Snapshot] — undo walks back through reorder, rename,
+     * visibility, lock, add, and remove uniformly.
+     */
+    data class SelectLayer(
+        val layerId: String,
+    ) : ChartEditorEvent
+
+    /**
+     * Append a blank layer. Id auto-generated as `L{n}` where n is one greater
+     * than the maximum existing `L`-prefixed numeric id; name auto-generated
+     * as `"Layer {n}"`. Auto-selects the new layer so the next placement
+     * lands on it.
+     */
+    data object AddLayer : ChartEditorEvent
+
+    data class RemoveLayer(
+        val layerId: String,
+    ) : ChartEditorEvent
+
+    data class RenameLayer(
+        val layerId: String,
+        val newName: String,
+    ) : ChartEditorEvent
+
+    data class ReorderLayer(
+        val fromIndex: Int,
+        val toIndex: Int,
+    ) : ChartEditorEvent
+
+    data class ToggleLayerVisibility(
+        val layerId: String,
+    ) : ChartEditorEvent
+
+    data class ToggleLayerLock(
+        val layerId: String,
+    ) : ChartEditorEvent
 }
 
 class ChartEditorViewModel(
@@ -209,6 +262,13 @@ class ChartEditorViewModel(
             ChartEditorEvent.Redo -> redo()
             ChartEditorEvent.Save -> save()
             ChartEditorEvent.ClearError -> _state.update { it.copy(errorMessage = null) }
+            is ChartEditorEvent.SelectLayer -> selectLayer(event.layerId)
+            ChartEditorEvent.AddLayer -> addLayer()
+            is ChartEditorEvent.RemoveLayer -> removeLayer(event.layerId)
+            is ChartEditorEvent.RenameLayer -> renameLayer(event.layerId, event.newName)
+            is ChartEditorEvent.ReorderLayer -> reorderLayer(event.fromIndex, event.toIndex)
+            is ChartEditorEvent.ToggleLayerVisibility -> toggleLayerVisibility(event.layerId)
+            is ChartEditorEvent.ToggleLayerLock -> toggleLayerLock(event.layerId)
         }
     }
 
@@ -269,6 +329,9 @@ class ChartEditorViewModel(
             it.copy(
                 draftExtents = newExtents,
                 draftLayers = resetLayers,
+                // Phase 35.2f: layer reset invalidates any non-default selection;
+                // snap back to the default L1 which the reset list contains.
+                selectedLayerId = DEFAULT_LAYER_ID,
                 canUndo = history.canUndo,
                 canRedo = history.canRedo,
                 // Coordinate-system switch invalidates any in-flight axis pick —
@@ -301,6 +364,10 @@ class ChartEditorViewModel(
                             draftLayers = chart.layers,
                             draftCraftType = chart.craftType,
                             draftReadingConvention = chart.readingConvention,
+                            // Phase 35.2f: pin selection to the first layer of the loaded
+                            // chart. Null if the chart has no layers (a theoretically-possible
+                            // malformed state — placeCell will no-op per the ADR addendum).
+                            selectedLayerId = chart.layers.firstOrNull()?.id,
                             hasUnsavedChanges = false,
                         )
                     }
@@ -329,9 +396,11 @@ class ChartEditorViewModel(
             applyReflection(axisStitch = x)
             return
         }
-        val layers = current.draftLayers
-        if (layers.isEmpty()) return
-        val targetLayer = layers[0]
+        // Phase 35.2f: route placement via selectedLayerId. A null id or a
+        // locked target layer silently no-ops per the ADR-011 §5 addendum
+        // lock-semantics decision.
+        val targetLayer = current.selectedTargetLayer() ?: return
+        if (targetLayer.locked) return
         val existing = targetLayer.cells.firstOrNull { it.x == x && it.y == y }
         val selectedId = current.selectedSymbolId
 
@@ -399,12 +468,14 @@ class ChartEditorViewModel(
     private fun confirmParameterInput(values: Map<String, String>) {
         val current = _state.value
         val pending = current.pendingParameterInput ?: return
-        val layers = current.draftLayers
-        if (layers.isEmpty()) {
+        // Phase 35.2f: target the selected layer. SelectLayer is blocked while
+        // pendingParameterInput is set (see [selectLayer]) so the target is the
+        // same layer the dialog was opened against.
+        val targetLayer = current.selectedTargetLayer()
+        if (targetLayer == null || targetLayer.locked) {
             _state.update { it.copy(pendingParameterInput = null) }
             return
         }
-        val targetLayer = layers[0]
         val existing = targetLayer.cells.firstOrNull { it.x == pending.x && it.y == pending.y }
 
         val newCells: List<ChartCell> =
@@ -439,9 +510,11 @@ class ChartEditorViewModel(
         val current = _state.value
         if (current.pendingParameterInput != null) return
         val polar = current.draftExtents as? ChartExtents.Polar ?: return
-        val layers = current.draftLayers
-        if (layers.isEmpty()) return
-        val targetLayer = layers[0]
+        // Phase 35.2f: symmetry writes follow selectedLayerId + lock guard.
+        // Phase 32.2b used `layers[0]` unconditionally — symmetry and placement
+        // now share the same targeting convention.
+        val targetLayer = current.selectedTargetLayer() ?: return
+        if (targetLayer.locked) return
         val newCells = PolarSymmetry.rotateCells(targetLayer.cells, polar, fold)
         if (newCells === targetLayer.cells) return
         if (newCells.size == targetLayer.cells.size && newCells == targetLayer.cells) return
@@ -452,9 +525,15 @@ class ChartEditorViewModel(
         val current = _state.value
         if (current.pendingParameterInput != null) return
         val polar = current.draftExtents as? ChartExtents.Polar ?: return
-        val layers = current.draftLayers
-        if (layers.isEmpty()) return
-        val targetLayer = layers[0]
+        val targetLayer = current.selectedTargetLayer()
+        if (targetLayer == null || targetLayer.locked) {
+            // Clear picking flag even on a locked / missing target so the
+            // banner doesn't strand the editor in picking mode.
+            if (current.isPickingReflectionAxis) {
+                _state.update { it.copy(isPickingReflectionAxis = false) }
+            }
+            return
+        }
         val newCells = PolarSymmetry.reflectCells(targetLayer.cells, polar, axisStitch)
         // Always clear the pick flag on an ApplyReflection dispatch, even when the
         // reflection is a geometric no-op (e.g. empty layer, or authored cells that
@@ -493,9 +572,15 @@ class ChartEditorViewModel(
     ) {
         val layers = snapshotBefore.draftLayers
         if (layers.isEmpty()) return
-        val targetLayer = layers[0]
+        // Phase 35.2f: resolve target layer by id. Callers have already validated
+        // the target is present + unlocked, so these branches are defensive.
+        val targetId = snapshotBefore.selectedLayerId ?: return
+        val targetIndex = layers.indexOfFirst { it.id == targetId }
+        if (targetIndex < 0) return
+        val targetLayer = layers[targetIndex]
         recordHistory(snapshotBefore)
-        val updatedLayers = layers.toMutableList().apply { this[0] = targetLayer.copy(cells = newCells) }
+        val updatedLayers =
+            layers.toMutableList().apply { this[targetIndex] = targetLayer.copy(cells = newCells) }
         _state.update {
             it.copy(
                 draftLayers = updatedLayers,
@@ -531,6 +616,10 @@ class ChartEditorViewModel(
             it.copy(
                 draftExtents = previous.extents,
                 draftLayers = previous.layers,
+                // Phase 35.2f: reconcile selectedLayerId against the restored list.
+                // If the current selection still exists, keep it; otherwise fall
+                // back to the first layer (or null if the restored list is empty).
+                selectedLayerId = reconcileSelectedLayer(it.selectedLayerId, previous.layers),
                 canUndo = history.canUndo,
                 canRedo = history.canRedo,
                 // Undo restores prior drawing state, which may predate the axis pick —
@@ -557,6 +646,9 @@ class ChartEditorViewModel(
             it.copy(
                 draftExtents = next.extents,
                 draftLayers = next.layers,
+                // Phase 35.2f: same reconciliation as undo — restored list may
+                // predate the current selection.
+                selectedLayerId = reconcileSelectedLayer(it.selectedLayerId, next.layers),
                 canUndo = history.canUndo,
                 canRedo = history.canRedo,
                 // Symmetric to undo — redo should not leave the banner stranded either.
@@ -621,6 +713,16 @@ class ChartEditorViewModel(
                             draftLayers = result.value.layers,
                             draftCraftType = result.value.craftType,
                             draftReadingConvention = result.value.readingConvention,
+                            // Phase 35.2f: defensive reconciliation — current
+                            // UseCase implementations pass layers through
+                            // unchanged, so layer ids are stable round-trip
+                            // and this is a no-op. If a future UseCase ever
+                            // normalizes ids, this keeps the selection valid.
+                            selectedLayerId =
+                                reconcileSelectedLayer(
+                                    it.selectedLayerId,
+                                    result.value.layers,
+                                ),
                             // Defensive: a save that lands between StartPickReflectionAxis and
                             // the tap that resolves the axis should not leave the banner
                             // stranded post-save. _saved.send triggers onBack() in the normal
@@ -658,4 +760,209 @@ class ChartEditorViewModel(
             original.craftType != draftCraftType ||
             original.readingConvention != draftReadingConvention
     }
+
+    // --------------------------------------------------------------------
+    // Phase 35.2f: layer ops
+    // --------------------------------------------------------------------
+
+    private fun selectLayer(layerId: String) {
+        val current = _state.value
+        // SelectLayer is blocked while a parametric dialog is open so the
+        // eventual ConfirmParameterInput commits to the layer the dialog was
+        // opened against (see ADR-011 §5 addendum decision 2).
+        if (current.pendingParameterInput != null) return
+        if (current.selectedLayerId == layerId) return
+        if (current.draftLayers.none { it.id == layerId }) return
+        _state.update { it.copy(selectedLayerId = layerId) }
+    }
+
+    private fun addLayer() {
+        val current = _state.value
+        if (current.pendingParameterInput != null) return
+        // Id scheme assumption: every layer was created by this editor and
+        // follows `L{n}`. A future import path that accepts non-numeric ids
+        // (e.g. `"LA"`, `"LB"`) would leave `existingNums` empty here and
+        // generate `"L1"`, which may collide with an already-present literal
+        // `"L1"`. Flagged in ADR-011 §5 addendum out-of-scope list; revisit
+        // when import lands.
+        val existingNums =
+            current.draftLayers.mapNotNull { layer ->
+                layer.id
+                    .takeIf { it.startsWith("L") }
+                    ?.removePrefix("L")
+                    ?.toIntOrNull()
+            }
+        val nextNum = (existingNums.maxOrNull() ?: 0) + 1
+        val newLayer =
+            ChartLayer(
+                id = "L$nextNum",
+                name = DEFAULT_LAYER_NAME_PATTERN.replace("{n}", nextNum.toString()),
+            )
+        val updatedLayers = current.draftLayers + newLayer
+        commitLayerOp(current, updatedLayers, newSelection = newLayer.id)
+    }
+
+    private fun removeLayer(layerId: String) {
+        val current = _state.value
+        if (current.pendingParameterInput != null) return
+        val layers = current.draftLayers
+        val index = layers.indexOfFirst { it.id == layerId }
+        if (index < 0) return
+        val updatedLayers = layers.toMutableList().apply { removeAt(index) }
+        // Re-select the nearest sibling: prior layer, or next if none prior, or
+        // null if the list becomes empty.
+        val newSelection =
+            when {
+                updatedLayers.isEmpty() -> null
+                // The current selection is exactly the layer being removed —
+                // pick the layer now at the prior index (which is `index - 1`
+                // if index > 0, else `0` which is the new first layer).
+                current.selectedLayerId == layerId ->
+                    updatedLayers[if (index > 0) index - 1 else 0].id
+                // Another layer is selected — preserve it.
+                else -> current.selectedLayerId
+            }
+        commitLayerOp(current, updatedLayers, newSelection = newSelection)
+    }
+
+    private fun renameLayer(
+        layerId: String,
+        newName: String,
+    ) {
+        val current = _state.value
+        if (current.pendingParameterInput != null) return
+        val trimmed = newName.trim()
+        if (trimmed.isEmpty()) return
+        val layers = current.draftLayers
+        val index = layers.indexOfFirst { it.id == layerId }
+        if (index < 0) return
+        if (layers[index].name == trimmed) return
+        val updatedLayers =
+            layers.toMutableList().apply {
+                this[index] = this[index].copy(name = trimmed)
+            }
+        commitLayerOp(current, updatedLayers, newSelection = current.selectedLayerId)
+    }
+
+    private fun reorderLayer(
+        fromIndex: Int,
+        toIndex: Int,
+    ) {
+        val current = _state.value
+        if (current.pendingParameterInput != null) return
+        val layers = current.draftLayers
+        if (fromIndex == toIndex) return
+        if (fromIndex !in layers.indices) return
+        if (toIndex !in layers.indices) return
+        val updatedLayers =
+            layers.toMutableList().apply {
+                val moving = removeAt(fromIndex)
+                add(toIndex, moving)
+            }
+        commitLayerOp(current, updatedLayers, newSelection = current.selectedLayerId)
+    }
+
+    private fun toggleLayerVisibility(layerId: String) {
+        val current = _state.value
+        if (current.pendingParameterInput != null) return
+        val layers = current.draftLayers
+        val index = layers.indexOfFirst { it.id == layerId }
+        if (index < 0) return
+        val updatedLayers =
+            layers.toMutableList().apply {
+                this[index] = this[index].copy(visible = !this[index].visible)
+            }
+        commitLayerOp(current, updatedLayers, newSelection = current.selectedLayerId)
+    }
+
+    private fun toggleLayerLock(layerId: String) {
+        val current = _state.value
+        if (current.pendingParameterInput != null) return
+        val layers = current.draftLayers
+        val index = layers.indexOfFirst { it.id == layerId }
+        if (index < 0) return
+        val updatedLayers =
+            layers.toMutableList().apply {
+                this[index] = this[index].copy(locked = !this[index].locked)
+            }
+        commitLayerOp(current, updatedLayers, newSelection = current.selectedLayerId)
+    }
+
+    /**
+     * Shared write path for every layer-list mutation. Records a full
+     * [EditHistory.Snapshot] so undo walks back across the op uniformly, and
+     * recomputes [ChartEditorState.hasUnsavedChanges] against [draftLayers].
+     *
+     * History behaviour by [newSelection] / [updatedLayers] combination:
+     * - layers differ → history entry recorded, selection applied.
+     * - layers equal, selection differs → no history entry, selection applied.
+     *   (Pure selection changes are not undoable — matches ADR-011 §5
+     *   addendum decision 2 where `SelectLayer` is excluded from the
+     *   history-writing op list.)
+     * - both equal → no-op early return.
+     */
+    private fun commitLayerOp(
+        snapshotBefore: ChartEditorState,
+        updatedLayers: List<ChartLayer>,
+        newSelection: String?,
+    ) {
+        if (updatedLayers == snapshotBefore.draftLayers &&
+            newSelection == snapshotBefore.selectedLayerId
+        ) {
+            return
+        }
+        if (updatedLayers != snapshotBefore.draftLayers) {
+            recordHistory(snapshotBefore)
+        }
+        _state.update {
+            it.copy(
+                draftLayers = updatedLayers,
+                selectedLayerId = newSelection,
+                canUndo = history.canUndo,
+                canRedo = history.canRedo,
+                // Any layer-list mutation clears the pick banner. Strictly
+                // load-bearing on RemoveLayer (target may disappear) and
+                // ToggleLayerLock (target may become locked); for rename +
+                // visibility toggle it is over-conservative but not a UX
+                // regression — banner is dismissible and the user can
+                // re-enter picking mode with one tap.
+                isPickingReflectionAxis = false,
+                hasUnsavedChanges =
+                    computeUnsavedChanges(
+                        original = it.original,
+                        draftExtents = it.draftExtents,
+                        draftLayers = updatedLayers,
+                        draftCraftType = it.draftCraftType,
+                        draftReadingConvention = it.draftReadingConvention,
+                    ),
+            )
+        }
+    }
+}
+
+/**
+ * Resolve the selected layer from [ChartEditorState.selectedLayerId]. Returns
+ * null when the selection is null or no matching layer exists.
+ * Exposed as an extension on the state class so handler call sites read
+ * uniformly without threading a layers-by-id map.
+ */
+internal fun ChartEditorState.selectedTargetLayer(): ChartLayer? {
+    val id = selectedLayerId ?: return null
+    return draftLayers.firstOrNull { it.id == id }
+}
+
+/**
+ * Clamp [previousSelection] against [restoredLayers]: keep it if the layer
+ * still exists, else fall back to the first layer id (or null when the
+ * restored list is empty). Used by undo / redo to survive a layer-list op
+ * that removed the currently-selected layer.
+ */
+internal fun reconcileSelectedLayer(
+    previousSelection: String?,
+    restoredLayers: List<ChartLayer>,
+): String? {
+    if (previousSelection != null && restoredLayers.any { it.id == previousSelection }) {
+        return previousSelection
+    }
+    return restoredLayers.firstOrNull()?.id
 }

@@ -1210,4 +1210,379 @@ class ChartEditorViewModelTest {
             // And picking flag is cleared even on the geometric no-op.
             assertFalse(viewModel.state.value.isPickingReflectionAxis)
         }
+
+    // 52. Phase 35.2f: initial selectedLayerId matches the default L1 layer.
+    @Test
+    fun `initial state selects the default L1 layer for fresh charts`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            val ready = awaitReady(viewModel)
+            assertEquals("L1", ready.selectedLayerId)
+        }
+
+    // 53. Phase 35.2f: load reassigns selectedLayerId to the first layer of the chart.
+    @Test
+    fun `load pins selectedLayerId to the first layer of the loaded chart`() =
+        runTest {
+            val seeded =
+                seededChart(
+                    layers =
+                        listOf(
+                            ChartLayer(id = "LA", name = "Alpha"),
+                            ChartLayer(id = "LB", name = "Beta"),
+                        ),
+                )
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            val ready = awaitReady(viewModel)
+            assertEquals("LA", ready.selectedLayerId)
+        }
+
+    // 54. Phase 35.2f: SelectLayer updates selectedLayerId.
+    @Test
+    fun `SelectLayer event updates selectedLayerId when the id exists`() =
+        runTest {
+            val seeded =
+                seededChart(
+                    layers =
+                        listOf(
+                            ChartLayer(id = "LA", name = "Alpha"),
+                            ChartLayer(id = "LB", name = "Beta"),
+                        ),
+                )
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+
+            viewModel.onEvent(ChartEditorEvent.SelectLayer("LB"))
+
+            assertEquals("LB", viewModel.state.value.selectedLayerId)
+            assertFalse(viewModel.state.value.hasUnsavedChanges)
+        }
+
+    // 55. Phase 35.2f: SelectLayer with an unknown id is silently ignored.
+    @Test
+    fun `SelectLayer with unknown id is a silent no-op`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectLayer("Lnope"))
+            assertEquals("L1", viewModel.state.value.selectedLayerId)
+        }
+
+    // 56. Phase 35.2f: placeCell routes to selectedLayerId and leaves siblings alone.
+    @Test
+    fun `placeCell routes cells to the selected layer not the first layer`() =
+        runTest {
+            val seeded =
+                seededChart(
+                    layers =
+                        listOf(
+                            ChartLayer(id = "LA", name = "Alpha"),
+                            ChartLayer(id = "LB", name = "Beta"),
+                        ),
+                )
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+
+            viewModel.onEvent(ChartEditorEvent.SelectLayer("LB"))
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 4, y = 4))
+
+            val layers = viewModel.state.value.draftLayers
+            assertEquals(2, layers.size)
+            assertTrue(layers.first { it.id == "LA" }.cells.isEmpty())
+            val targetCells = layers.first { it.id == "LB" }.cells
+            assertEquals(1, targetCells.size)
+            assertEquals(ChartCell(symbolId = "jis.knit.k", x = 4, y = 4), targetCells[0])
+        }
+
+    // 57. Phase 35.2f: placeCell on a locked target layer is a silent no-op.
+    @Test
+    fun `placeCell on a locked target layer leaves state untouched`() =
+        runTest {
+            val seeded =
+                seededChart(
+                    layers = listOf(ChartLayer(id = "L1", name = "Main", locked = true)),
+                )
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 2, y = 2))
+
+            val state = viewModel.state.value
+            assertTrue(state.draftLayers[0].cells.isEmpty())
+            assertFalse(state.canUndo)
+            assertFalse(state.hasUnsavedChanges)
+        }
+
+    // 58. Phase 35.2f: AddLayer appends with auto id + name and auto-selects.
+    @Test
+    fun `AddLayer appends a new layer and auto-selects it`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+
+            viewModel.onEvent(ChartEditorEvent.AddLayer)
+
+            val state = viewModel.state.value
+            assertEquals(2, state.draftLayers.size)
+            assertEquals("L1", state.draftLayers[0].id)
+            assertEquals("L2", state.draftLayers[1].id)
+            assertEquals("Layer 2", state.draftLayers[1].name)
+            assertEquals("L2", state.selectedLayerId)
+            assertTrue(state.canUndo)
+        }
+
+    // 59. Phase 35.2f: RemoveLayer deletes + re-selects the prior sibling.
+    @Test
+    fun `RemoveLayer deletes the target and re-selects the prior sibling`() =
+        runTest {
+            val seeded =
+                seededChart(
+                    layers =
+                        listOf(
+                            ChartLayer(id = "LA", name = "Alpha"),
+                            ChartLayer(id = "LB", name = "Beta"),
+                            ChartLayer(id = "LC", name = "Gamma"),
+                        ),
+                )
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectLayer("LB"))
+
+            viewModel.onEvent(ChartEditorEvent.RemoveLayer("LB"))
+
+            val state = viewModel.state.value
+            assertEquals(2, state.draftLayers.size)
+            assertEquals(listOf("LA", "LC"), state.draftLayers.map { it.id })
+            assertEquals("LA", state.selectedLayerId)
+            assertTrue(state.canUndo)
+            assertTrue(state.hasUnsavedChanges)
+        }
+
+    // 60. Phase 35.2f: RemoveLayer of the only layer leaves selection null.
+    @Test
+    fun `RemoveLayer of the only layer results in null selectedLayerId`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+
+            viewModel.onEvent(ChartEditorEvent.RemoveLayer("L1"))
+
+            val state = viewModel.state.value
+            assertTrue(state.draftLayers.isEmpty())
+            assertNull(state.selectedLayerId)
+
+            // Subsequent placement is a silent no-op with nothing selected.
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+            assertTrue(
+                viewModel.state.value.draftLayers
+                    .isEmpty(),
+            )
+        }
+
+    // 61. Phase 35.2f: RenameLayer changes name with trimming + records history.
+    @Test
+    fun `RenameLayer updates the name when non-blank and records a history entry`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+
+            viewModel.onEvent(ChartEditorEvent.RenameLayer(layerId = "L1", newName = "  Pattern A  "))
+
+            val state = viewModel.state.value
+            assertEquals("Pattern A", state.draftLayers[0].name)
+            assertTrue(state.canUndo)
+        }
+
+    // 62. Phase 35.2f: ReorderLayer moves a layer and records history.
+    @Test
+    fun `ReorderLayer moves a layer from one index to another`() =
+        runTest {
+            val seeded =
+                seededChart(
+                    layers =
+                        listOf(
+                            ChartLayer(id = "LA", name = "Alpha"),
+                            ChartLayer(id = "LB", name = "Beta"),
+                            ChartLayer(id = "LC", name = "Gamma"),
+                        ),
+                )
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+
+            viewModel.onEvent(ChartEditorEvent.ReorderLayer(fromIndex = 0, toIndex = 2))
+
+            val state = viewModel.state.value
+            assertEquals(listOf("LB", "LC", "LA"), state.draftLayers.map { it.id })
+            assertTrue(state.canUndo)
+        }
+
+    // 63. Phase 35.2f: ToggleLayerVisibility flips visible and marks dirty.
+    @Test
+    fun `ToggleLayerVisibility flips the visible flag and records history`() =
+        runTest {
+            val seeded = seededChart(layers = listOf(ChartLayer(id = "L1", name = "Main")))
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+            assertTrue(
+                viewModel.state.value.draftLayers[0]
+                    .visible,
+            )
+
+            viewModel.onEvent(ChartEditorEvent.ToggleLayerVisibility("L1"))
+
+            val state = viewModel.state.value
+            assertFalse(state.draftLayers[0].visible)
+            assertTrue(state.hasUnsavedChanges)
+            assertTrue(state.canUndo)
+        }
+
+    // 64. Phase 35.2f: ToggleLayerLock flips locked + later placement is no-op.
+    @Test
+    fun `ToggleLayerLock flips the locked flag and blocks subsequent placement`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+
+            viewModel.onEvent(ChartEditorEvent.ToggleLayerLock("L1"))
+            assertTrue(
+                viewModel.state.value.draftLayers[0]
+                    .locked,
+            )
+
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+            assertTrue(
+                viewModel.state.value.draftLayers[0]
+                    .cells
+                    .isEmpty(),
+            )
+        }
+
+    // 65. Phase 35.2f: SelectLayer is blocked while a parametric dialog is open.
+    @Test
+    fun `SelectLayer is ignored while pendingParameterInput is set`() =
+        runTest {
+            val seeded =
+                seededChart(
+                    layers =
+                        listOf(
+                            ChartLayer(id = "LA", name = "Alpha"),
+                            ChartLayer(id = "LB", name = "Beta"),
+                        ),
+                )
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+
+            // Open a parametric dialog on the current selection.
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.crochet.ch-space"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 1, y = 1))
+            assertNotNull(viewModel.state.value.pendingParameterInput)
+
+            // SelectLayer while pending must not retarget the dialog.
+            viewModel.onEvent(ChartEditorEvent.SelectLayer("LB"))
+            assertEquals("LA", viewModel.state.value.selectedLayerId)
+        }
+
+    // 66. Phase 35.2f: undo after RemoveLayer restores the layer + re-selects it.
+    @Test
+    fun `Undo reconciles selectedLayerId when the removed layer is restored`() =
+        runTest {
+            val seeded =
+                seededChart(
+                    layers =
+                        listOf(
+                            ChartLayer(id = "LA", name = "Alpha"),
+                            ChartLayer(id = "LB", name = "Beta"),
+                        ),
+                )
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectLayer("LB"))
+            viewModel.onEvent(ChartEditorEvent.RemoveLayer("LB"))
+            assertEquals("LA", viewModel.state.value.selectedLayerId)
+
+            viewModel.onEvent(ChartEditorEvent.Undo)
+
+            val state = viewModel.state.value
+            assertEquals(2, state.draftLayers.size)
+            // Selection may be LA (preserved during RemoveLayer) or LB
+            // (reconciled to the restored list's first entry if selection was
+            // cleared). Either is consistent with reconcileSelectedLayer's
+            // contract: keep the current selection if it's present in the
+            // restored list. LA is still in the restored list, so LA wins.
+            assertEquals("LA", state.selectedLayerId)
+            assertNotEquals(null, state.draftLayers.firstOrNull { it.id == "LB" })
+        }
+
+    // 67. Phase 35.2f: undo reconciles selection via fall-back when the
+    // selected layer no longer exists in the restored list. Exercises the
+    // `restoredLayers.firstOrNull()?.id` branch of reconcileSelectedLayer
+    // that test 66 does not reach.
+    @Test
+    fun `Undo falls back to first restored layer when selection is not in the restored list`() =
+        runTest {
+            val seeded =
+                seededChart(
+                    layers =
+                        listOf(
+                            ChartLayer(id = "L1", name = "Main"),
+                            ChartLayer(id = "L2", name = "Cables"),
+                        ),
+                )
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+
+            // AddLayer auto-selects the new layer; undo must restore the
+            // pre-add list and reconcile selection since L3 is gone.
+            viewModel.onEvent(ChartEditorEvent.AddLayer)
+            assertEquals("L3", viewModel.state.value.selectedLayerId)
+
+            viewModel.onEvent(ChartEditorEvent.Undo)
+
+            val state = viewModel.state.value
+            assertEquals(listOf("L1", "L2"), state.draftLayers.map { it.id })
+            // Fall-back path: L3 is not in restored list, so selection
+            // clamps to the first restored layer.
+            assertEquals("L1", state.selectedLayerId)
+        }
+
+    // 68. Phase 35.2f: redo path also reconciles. Parallel to test 67 but
+    // via the redo stack.
+    @Test
+    fun `Redo reconciles selectedLayerId against the forward-restored layers`() =
+        runTest {
+            val seeded =
+                seededChart(
+                    layers = listOf(ChartLayer(id = "L1", name = "Main")),
+                )
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.AddLayer)
+            assertEquals("L2", viewModel.state.value.selectedLayerId)
+            viewModel.onEvent(ChartEditorEvent.Undo)
+            assertEquals("L1", viewModel.state.value.selectedLayerId)
+
+            viewModel.onEvent(ChartEditorEvent.Redo)
+
+            val state = viewModel.state.value
+            // Redo re-applies the add. Selection at redo time was "L1" which
+            // exists in the forward-restored ["L1", "L2"] list, so selection
+            // stays on "L1" via the keep-existing branch.
+            assertEquals(listOf("L1", "L2"), state.draftLayers.map { it.id })
+            assertEquals("L1", state.selectedLayerId)
+        }
 }
