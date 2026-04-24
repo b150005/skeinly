@@ -6,6 +6,7 @@ import io.github.b150005.knitnote.domain.LocalUser
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.Progress
 import io.github.b150005.knitnote.domain.model.Project
+import io.github.b150005.knitnote.domain.model.SegmentState
 import io.github.b150005.knitnote.domain.model.ShareLink
 import io.github.b150005.knitnote.domain.model.SharePermission
 import io.github.b150005.knitnote.domain.repository.PatternRepository
@@ -64,6 +65,20 @@ data class ProjectDetailState(
      * Reset progress action per PRD AC-4.1.
      */
     val hasSegmentProgress: Boolean = false,
+    /**
+     * Phase 34 US-7: count of DONE segments on visible layers. Null when no
+     * structured chart is linked OR the chart has no placed cells (nothing to
+     * summarize). WIP segments are NOT counted — "done" here means the user
+     * has explicitly marked the stitch complete.
+     */
+    val segmentsDone: Int? = null,
+    /**
+     * Phase 34 US-7: total placed-cell count on visible layers. Null when no
+     * structured chart is linked OR the chart has no placed cells. Cells on
+     * hidden layers are excluded so the summary matches the visible overlay
+     * (matches Phase 34 UI AC-1.3 semantics).
+     */
+    val segmentsTotal: Int? = null,
 )
 
 sealed interface ProjectDetailEvent {
@@ -196,6 +211,31 @@ class ProjectDetailViewModel(
             _uiOverlay,
             segmentsFlow,
         ) { project, pattern, structuredChart, overlay, segments ->
+            // `segments` is pre-filtered to this projectId by observeProjectSegments —
+            // no per-project guard needed here. See ProjectSegmentRepository contract.
+            // Each ChartCell counts as 1 toward `total` regardless of `width`: a
+            // `widthUnits=2` symbol (cable crossing, widthUnits=2 picot) counts as 1
+            // segment since ProjectSegment is keyed by (layerId, cellX, cellY) — one
+            // row per placed ChartCell, not per physical stitch column. AC-7.1.
+            val visibleLayers = structuredChart?.layers?.filter { it.visible }.orEmpty()
+            // Build a set of valid (layerId, x, y) triples so orphan segments from a
+            // chart edit that deleted the cell don't inflate `done > total`. The
+            // set is built only from visible layers, so membership implicitly
+            // enforces the hidden-layer filter (AC-1.3).
+            val visibleCellKeys =
+                visibleLayers
+                    .flatMap { layer -> layer.cells.map { Triple(layer.id, it.x, it.y) } }
+                    .toSet()
+            val total = visibleCellKeys.size
+            val done =
+                if (total > 0) {
+                    segments.count {
+                        it.state == SegmentState.DONE &&
+                            Triple(it.layerId, it.cellX, it.cellY) in visibleCellKeys
+                    }
+                } else {
+                    0
+                }
             ProjectDetailState(
                 project = project,
                 pattern = pattern,
@@ -210,6 +250,8 @@ class ProjectDetailViewModel(
                 isUploadingPhoto = overlay.isUploadingPhoto,
                 hasStructuredChart = structuredChart != null,
                 hasSegmentProgress = segments.isNotEmpty(),
+                segmentsDone = if (structuredChart != null && total > 0) done else null,
+                segmentsTotal = if (structuredChart != null && total > 0) total else null,
             )
         }.stateIn(
             scope = viewModelScope,

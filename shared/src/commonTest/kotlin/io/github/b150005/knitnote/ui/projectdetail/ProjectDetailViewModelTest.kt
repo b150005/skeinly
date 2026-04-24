@@ -4,10 +4,18 @@ import app.cash.turbine.test
 import io.github.b150005.knitnote.data.remote.FakeRemoteStorageDataSource
 import io.github.b150005.knitnote.domain.LocalUser
 import io.github.b150005.knitnote.domain.model.AuthState
+import io.github.b150005.knitnote.domain.model.ChartCell
+import io.github.b150005.knitnote.domain.model.ChartExtents
+import io.github.b150005.knitnote.domain.model.ChartLayer
+import io.github.b150005.knitnote.domain.model.CoordinateSystem
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.Project
+import io.github.b150005.knitnote.domain.model.ProjectSegment
 import io.github.b150005.knitnote.domain.model.ProjectStatus
+import io.github.b150005.knitnote.domain.model.SegmentState
 import io.github.b150005.knitnote.domain.model.SharePermission
+import io.github.b150005.knitnote.domain.model.StorageVariant
+import io.github.b150005.knitnote.domain.model.StructuredChart
 import io.github.b150005.knitnote.domain.model.Visibility
 import io.github.b150005.knitnote.domain.usecase.AddProgressNoteUseCase
 import io.github.b150005.knitnote.domain.usecase.CompleteProjectUseCase
@@ -723,4 +731,345 @@ class ProjectDetailViewModelTest {
     /** Minimal valid JPEG bytes with SOI and EOI markers for test data. */
     private fun jpegHeader(): ByteArray =
         byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte(), 0xFF.toByte(), 0xD9.toByte())
+
+    // --- Phase 34 US-7: segment progress summary ---
+
+    private fun createViewModelWithChartAndSegments(
+        chartRepo: FakeStructuredChartRepository,
+        segmentRepo: FakeProjectSegmentRepository,
+    ): ProjectDetailViewModel =
+        ProjectDetailViewModel(
+            projectId = "test-project",
+            projectRepository = projectRepository,
+            patternRepository = patternRepository,
+            incrementRow = IncrementRowUseCase(projectRepository),
+            decrementRow = DecrementRowUseCase(projectRepository),
+            addProgressNote = AddProgressNoteUseCase(progressRepository, authRepository),
+            getProgressNotes = GetProgressNotesUseCase(progressRepository),
+            deleteProgressNote = DeleteProgressNoteUseCase(progressRepository),
+            updateProject = UpdateProjectUseCase(projectRepository),
+            completeProject = CompleteProjectUseCase(projectRepository),
+            reopenProject = ReopenProjectUseCase(projectRepository),
+            shareProject =
+                ShareProjectUseCase(
+                    projectRepository = projectRepository,
+                    patternRepository = patternRepository,
+                    shareRepository = null,
+                    authRepository = authRepository,
+                ),
+            uploadChartImage = UploadChartImageUseCase(patternRepository, null, authRepository),
+            deleteChartImage = DeleteChartImageUseCase(patternRepository, null),
+            remoteStorage = null,
+            uploadProgressPhoto = UploadProgressPhotoUseCase(null, authRepository),
+            deleteProgressPhoto = DeleteProgressPhotoUseCase(null, authRepository),
+            progressPhotoStorage = null,
+            observeStructuredChart = ObserveStructuredChartUseCase(chartRepo),
+            observeProjectSegments = ObserveProjectSegmentsUseCase(segmentRepo),
+            resetProjectProgress = ResetProjectProgressUseCase(segmentRepo),
+        )
+
+    private fun buildChart(
+        patternId: String,
+        layers: List<ChartLayer>,
+    ): StructuredChart =
+        StructuredChart(
+            id = "chart-$patternId",
+            patternId = patternId,
+            ownerId = LocalUser.ID,
+            schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+            storageVariant = StorageVariant.INLINE,
+            coordinateSystem = CoordinateSystem.RECT_GRID,
+            extents = ChartExtents.Rect(minX = 0, maxX = 2, minY = 0, maxY = 1),
+            layers = layers,
+            revisionId = "rev-1",
+            parentRevisionId = null,
+            contentHash = "h1-00000000",
+            createdAt = Clock.System.now(),
+            updatedAt = Clock.System.now(),
+        )
+
+    private fun segment(
+        projectId: String,
+        layerId: String,
+        x: Int,
+        y: Int,
+        state: SegmentState,
+    ): ProjectSegment =
+        ProjectSegment(
+            id = ProjectSegment.buildId(projectId, layerId, x, y),
+            projectId = projectId,
+            layerId = layerId,
+            cellX = x,
+            cellY = y,
+            state = state,
+            updatedAt = Clock.System.now(),
+        )
+
+    private fun createProjectWithPattern(patternId: String): Project = createTestProject().copy(patternId = patternId)
+
+    @Test
+    fun `segment summary is null when no structured chart`() =
+        runTest(testDispatcher) {
+            projectRepository.create(createProjectWithPattern("pat-1"))
+            patternRepository.create(createTestPattern().copy(id = "pat-1"))
+            // Chart repo empty on purpose.
+            val viewModel =
+                createViewModelWithChartAndSegments(
+                    chartRepo = FakeStructuredChartRepository(),
+                    segmentRepo = FakeProjectSegmentRepository(),
+                )
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertFalse(state.hasStructuredChart)
+                assertNull(state.segmentsDone)
+                assertNull(state.segmentsTotal)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `segment summary reports zero done when chart has cells but no segments`() =
+        runTest(testDispatcher) {
+            projectRepository.create(createProjectWithPattern("pat-1"))
+            patternRepository.create(createTestPattern().copy(id = "pat-1"))
+            val chartRepo = FakeStructuredChartRepository()
+            chartRepo.seed(
+                buildChart(
+                    patternId = "pat-1",
+                    layers =
+                        listOf(
+                            ChartLayer(
+                                id = "L1",
+                                name = "Main",
+                                visible = true,
+                                cells =
+                                    listOf(
+                                        ChartCell(symbolId = "jis.knit.k", x = 0, y = 0),
+                                        ChartCell(symbolId = "jis.knit.k", x = 1, y = 0),
+                                        ChartCell(symbolId = "jis.knit.k", x = 2, y = 0),
+                                    ),
+                            ),
+                        ),
+                ),
+            )
+            val viewModel = createViewModelWithChartAndSegments(chartRepo, FakeProjectSegmentRepository())
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertTrue(state.hasStructuredChart)
+                assertEquals(0, state.segmentsDone)
+                assertEquals(3, state.segmentsTotal)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `segment summary counts only DONE segments on visible layers`() =
+        runTest(testDispatcher) {
+            projectRepository.create(createProjectWithPattern("pat-1"))
+            patternRepository.create(createTestPattern().copy(id = "pat-1"))
+            val chartRepo = FakeStructuredChartRepository()
+            chartRepo.seed(
+                buildChart(
+                    patternId = "pat-1",
+                    layers =
+                        listOf(
+                            ChartLayer(
+                                id = "L1",
+                                name = "Main",
+                                visible = true,
+                                cells =
+                                    listOf(
+                                        ChartCell(symbolId = "jis.knit.k", x = 0, y = 0),
+                                        ChartCell(symbolId = "jis.knit.k", x = 1, y = 0),
+                                        ChartCell(symbolId = "jis.knit.k", x = 2, y = 0),
+                                    ),
+                            ),
+                        ),
+                ),
+            )
+            val segmentRepo = FakeProjectSegmentRepository()
+            segmentRepo.seed(segment("test-project", "L1", 0, 0, SegmentState.DONE))
+            segmentRepo.seed(segment("test-project", "L1", 1, 0, SegmentState.WIP))
+            val viewModel = createViewModelWithChartAndSegments(chartRepo, segmentRepo)
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertEquals(1, state.segmentsDone) // WIP not counted
+                assertEquals(3, state.segmentsTotal)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `segment summary excludes hidden-layer cells and segments`() =
+        runTest(testDispatcher) {
+            projectRepository.create(createProjectWithPattern("pat-1"))
+            patternRepository.create(createTestPattern().copy(id = "pat-1"))
+            val chartRepo = FakeStructuredChartRepository()
+            chartRepo.seed(
+                buildChart(
+                    patternId = "pat-1",
+                    layers =
+                        listOf(
+                            ChartLayer(
+                                id = "L1",
+                                name = "Main",
+                                visible = true,
+                                cells =
+                                    listOf(
+                                        ChartCell(symbolId = "jis.knit.k", x = 0, y = 0),
+                                        ChartCell(symbolId = "jis.knit.k", x = 1, y = 0),
+                                    ),
+                            ),
+                            ChartLayer(
+                                id = "L2",
+                                name = "Hidden",
+                                visible = false,
+                                cells =
+                                    listOf(
+                                        ChartCell(symbolId = "jis.knit.k", x = 0, y = 1),
+                                        ChartCell(symbolId = "jis.knit.k", x = 1, y = 1),
+                                    ),
+                            ),
+                        ),
+                ),
+            )
+            val segmentRepo = FakeProjectSegmentRepository()
+            segmentRepo.seed(segment("test-project", "L1", 0, 0, SegmentState.DONE))
+            // Hidden-layer DONE segment must NOT count toward `done` (matches
+            // overlay semantics — AC-1.3 — hiding a layer hides its progress).
+            segmentRepo.seed(segment("test-project", "L2", 0, 1, SegmentState.DONE))
+            val viewModel = createViewModelWithChartAndSegments(chartRepo, segmentRepo)
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertEquals(1, state.segmentsDone)
+                assertEquals(2, state.segmentsTotal) // only visible layer cells
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `segment summary excludes orphan DONE segments when cell was removed from chart`() =
+        runTest(testDispatcher) {
+            projectRepository.create(createProjectWithPattern("pat-1"))
+            patternRepository.create(createTestPattern().copy(id = "pat-1"))
+            val chartRepo = FakeStructuredChartRepository()
+            // Chart has 2 placed cells at (0,0) and (1,0).
+            chartRepo.seed(
+                buildChart(
+                    patternId = "pat-1",
+                    layers =
+                        listOf(
+                            ChartLayer(
+                                id = "L1",
+                                name = "Main",
+                                visible = true,
+                                cells =
+                                    listOf(
+                                        ChartCell(symbolId = "jis.knit.k", x = 0, y = 0),
+                                        ChartCell(symbolId = "jis.knit.k", x = 1, y = 0),
+                                    ),
+                            ),
+                        ),
+                ),
+            )
+            val segmentRepo = FakeProjectSegmentRepository()
+            segmentRepo.seed(segment("test-project", "L1", 0, 0, SegmentState.DONE))
+            // Orphan: this segment references a cell the chart no longer has
+            // (e.g., user deleted (5, 5) after marking it done).
+            segmentRepo.seed(segment("test-project", "L1", 5, 5, SegmentState.DONE))
+            val viewModel = createViewModelWithChartAndSegments(chartRepo, segmentRepo)
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertEquals(1, state.segmentsDone) // Orphan NOT counted.
+                assertEquals(2, state.segmentsTotal)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `segment summary works for polar charts`() =
+        runTest(testDispatcher) {
+            projectRepository.create(createProjectWithPattern("pat-1"))
+            patternRepository.create(createTestPattern().copy(id = "pat-1"))
+            val chartRepo = FakeStructuredChartRepository()
+            val polarChart =
+                StructuredChart(
+                    id = "chart-polar",
+                    patternId = "pat-1",
+                    ownerId = LocalUser.ID,
+                    schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+                    storageVariant = StorageVariant.INLINE,
+                    coordinateSystem = CoordinateSystem.POLAR_ROUND,
+                    extents = ChartExtents.Polar(rings = 2, stitchesPerRing = listOf(6, 12)),
+                    layers =
+                        listOf(
+                            ChartLayer(
+                                id = "L1",
+                                name = "Ring 0",
+                                visible = true,
+                                cells =
+                                    listOf(
+                                        ChartCell(symbolId = "jis.crochet.sc", x = 0, y = 0),
+                                        ChartCell(symbolId = "jis.crochet.sc", x = 1, y = 0),
+                                    ),
+                            ),
+                        ),
+                    revisionId = "rev-1",
+                    parentRevisionId = null,
+                    contentHash = "h1-00000000",
+                    createdAt = Clock.System.now(),
+                    updatedAt = Clock.System.now(),
+                )
+            chartRepo.seed(polarChart)
+            val segmentRepo = FakeProjectSegmentRepository()
+            segmentRepo.seed(segment("test-project", "L1", 0, 0, SegmentState.DONE))
+            val viewModel = createViewModelWithChartAndSegments(chartRepo, segmentRepo)
+
+            viewModel.state.test {
+                val state = awaitItem()
+                // Polar charts count cells the same way — coordinate system
+                // doesn't affect the summary. (Phase 34 defers polar tap-to-
+                // progress UI, but existing segments still summarize correctly.)
+                assertEquals(1, state.segmentsDone)
+                assertEquals(2, state.segmentsTotal)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `segment summary is null when chart has zero visible placed cells`() =
+        runTest(testDispatcher) {
+            projectRepository.create(createProjectWithPattern("pat-1"))
+            patternRepository.create(createTestPattern().copy(id = "pat-1"))
+            val chartRepo = FakeStructuredChartRepository()
+            // Chart exists but has only a hidden layer (no visible cells to summarize).
+            chartRepo.seed(
+                buildChart(
+                    patternId = "pat-1",
+                    layers =
+                        listOf(
+                            ChartLayer(
+                                id = "L1",
+                                name = "Hidden",
+                                visible = false,
+                                cells = listOf(ChartCell(symbolId = "jis.knit.k", x = 0, y = 0)),
+                            ),
+                        ),
+                ),
+            )
+            val viewModel = createViewModelWithChartAndSegments(chartRepo, FakeProjectSegmentRepository())
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertTrue(state.hasStructuredChart)
+                assertNull(state.segmentsDone)
+                assertNull(state.segmentsTotal)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
 }

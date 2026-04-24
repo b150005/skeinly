@@ -108,6 +108,7 @@ import io.github.b150005.knitnote.generated.resources.label_pattern_value
 import io.github.b150005.knitnote.generated.resources.label_photo_attached
 import io.github.b150005.knitnote.generated.resources.label_progress_photo
 import io.github.b150005.knitnote.generated.resources.label_rows_only
+import io.github.b150005.knitnote.generated.resources.label_segments_completed
 import io.github.b150005.knitnote.generated.resources.label_status_completed
 import io.github.b150005.knitnote.generated.resources.label_status_in_progress
 import io.github.b150005.knitnote.generated.resources.label_status_not_started
@@ -382,6 +383,21 @@ fun ProjectDetailScreen(
                                 onIncrement = { viewModel.onEvent(ProjectDetailEvent.IncrementRow) },
                                 onDecrement = { viewModel.onEvent(ProjectDetailEvent.DecrementRow) },
                             )
+                        }
+
+                        // Phase 34 US-7: per-segment progress summary. Shows only when
+                        // a structured chart is linked and has placed cells on visible
+                        // layers. Tapping deep-links to ChartViewer for the pattern.
+                        val segmentsDone = state.segmentsDone
+                        val segmentsTotal = state.segmentsTotal
+                        if (segmentsDone != null && segmentsTotal != null) {
+                            item {
+                                SegmentProgressSummary(
+                                    done = segmentsDone,
+                                    total = segmentsTotal,
+                                    onClick = { onChartViewerClick(project.patternId) },
+                                )
+                            }
                         }
 
                         // Status toggle button
@@ -722,6 +738,35 @@ private fun NoteItem(
                 null
             },
     )
+}
+
+@Composable
+private fun SegmentProgressSummary(
+    done: Int,
+    total: Int,
+    onClick: () -> Unit,
+) {
+    // Caller guarantees total > 0 (null-gated in ProjectDetailState), so integer
+    // percent math is safe here. Floor-division matches the natural "X%" reading.
+    val percent = (done * 100) / total
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = stringResource(Res.string.label_segments_completed, done, total, percent),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier =
+                Modifier
+                    .clickable(onClick = onClick)
+                    .testTag("segmentProgressSummary")
+                    .padding(vertical = 8.dp),
+        )
+    }
 }
 
 @Composable

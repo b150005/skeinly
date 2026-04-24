@@ -136,6 +136,20 @@ struct ProjectDetailScreen: View {
             // Counter section
             Section {
                 counterSection(project)
+
+                // Phase 34 US-7: per-segment progress summary. Shows only when a
+                // structured chart is linked and has placed cells on visible
+                // layers. Tapping deep-links to ChartViewer for the pattern.
+                if let done = state.segmentsDone?.intValue,
+                   let total = state.segmentsTotal?.intValue {
+                    segmentProgressSummary(
+                        done: done,
+                        total: total,
+                        onTap: {
+                            path.append(Route.chartViewer(patternId: project.patternId, projectId: projectId))
+                        }
+                    )
+                }
             }
 
             // Pattern info section
@@ -285,6 +299,33 @@ struct ProjectDetailScreen: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical)
+    }
+
+    // MARK: - Segment Progress Summary (Phase 34 US-7)
+
+    @ViewBuilder
+    private func segmentProgressSummary(
+        done: Int,
+        total: Int,
+        onTap: @escaping () -> Void
+    ) -> some View {
+        // Caller guarantees total > 0 (null-gated in ProjectDetailState), so
+        // integer percent math is safe. Floor-division matches the "X%" reading.
+        let percent = (done * 100) / total
+        // %1$d / %2$d / %3$d — pass as Int32 per Phase 33.1.12 convention
+        // (xcstrings `%d` specifier matches Int32 unambiguously on all Apple
+        // architectures, including hypothetical 32-bit).
+        Button(action: onTap) {
+            Text(String(
+                format: NSLocalizedString("label_segments_completed", comment: ""),
+                Int32(done), Int32(total), Int32(percent)
+            ))
+            .font(.subheadline)
+            .foregroundStyle(Color.accentColor)
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("segmentProgressSummary")
     }
 
     // MARK: - Pattern Info Section
