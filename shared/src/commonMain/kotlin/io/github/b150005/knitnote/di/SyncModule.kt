@@ -9,6 +9,7 @@ import io.github.b150005.knitnote.data.remote.ConnectivityMonitor
 import io.github.b150005.knitnote.data.remote.RemotePatternDataSource
 import io.github.b150005.knitnote.data.remote.RemoteProgressDataSource
 import io.github.b150005.knitnote.data.remote.RemoteProjectDataSource
+import io.github.b150005.knitnote.data.remote.RemoteProjectSegmentDataSource
 import io.github.b150005.knitnote.data.remote.RemoteStructuredChartDataSource
 import io.github.b150005.knitnote.data.remote.SupabaseConfig
 import io.github.b150005.knitnote.data.remote.isConfigured
@@ -16,6 +17,7 @@ import io.github.b150005.knitnote.data.sync.PendingSyncDataSource
 import io.github.b150005.knitnote.data.sync.RealtimeSyncManager
 import io.github.b150005.knitnote.data.sync.RemotePatternSyncOperations
 import io.github.b150005.knitnote.data.sync.RemoteProgressSyncOperations
+import io.github.b150005.knitnote.data.sync.RemoteProjectSegmentSyncOperations
 import io.github.b150005.knitnote.data.sync.RemoteProjectSyncOperations
 import io.github.b150005.knitnote.data.sync.RemoteStructuredChartSyncOperations
 import io.github.b150005.knitnote.data.sync.SyncExecutor
@@ -39,9 +41,19 @@ val syncModule =
             single<RemoteProgressSyncOperations> { get<RemoteProgressDataSource>() }
             single<RemotePatternSyncOperations> { get<RemotePatternDataSource>() }
             single<RemoteStructuredChartSyncOperations> { get<RemoteStructuredChartDataSource>() }
+            single<RemoteProjectSegmentSyncOperations> { get<RemoteProjectSegmentDataSource>() }
         }
 
-        single { SyncExecutor(getOrNull(), getOrNull(), getOrNull(), getOrNull(), get()) }
+        single {
+            SyncExecutor(
+                remoteProject = getOrNull(),
+                remoteProgress = getOrNull(),
+                remotePattern = getOrNull(),
+                remoteStructuredChart = getOrNull(),
+                json = get(),
+                remoteProjectSegment = getOrNull(),
+            )
+        }
 
         single<SyncManagerOperations> {
             SyncManager(

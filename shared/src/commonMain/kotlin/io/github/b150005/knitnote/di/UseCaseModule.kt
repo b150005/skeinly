@@ -32,14 +32,18 @@ import io.github.b150005.knitnote.domain.usecase.GetPublicPatternsUseCase
 import io.github.b150005.knitnote.domain.usecase.GetReceivedSharesUseCase
 import io.github.b150005.knitnote.domain.usecase.GetStructuredChartByPatternIdUseCase
 import io.github.b150005.knitnote.domain.usecase.IncrementRowUseCase
+import io.github.b150005.knitnote.domain.usecase.MarkSegmentDoneUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveAuthStateUseCase
+import io.github.b150005.knitnote.domain.usecase.ObserveProjectSegmentsUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveStructuredChartUseCase
 import io.github.b150005.knitnote.domain.usecase.ReopenProjectUseCase
+import io.github.b150005.knitnote.domain.usecase.ResetProjectProgressUseCase
 import io.github.b150005.knitnote.domain.usecase.ResolveShareTokenUseCase
 import io.github.b150005.knitnote.domain.usecase.ShareProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.SignInUseCase
 import io.github.b150005.knitnote.domain.usecase.SignOutUseCase
 import io.github.b150005.knitnote.domain.usecase.SignUpUseCase
+import io.github.b150005.knitnote.domain.usecase.ToggleSegmentStateUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdatePatternUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateProfileUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateProjectUseCase
@@ -118,4 +122,10 @@ val useCaseModule =
         factory { CreateStructuredChartUseCase(get(), get(), get()) }
         factory { UpdateStructuredChartUseCase(get(), get()) }
         factory { DeleteStructuredChartUseCase(get()) }
+
+        // Per-segment progress use cases (Phase 34)
+        factory { ObserveProjectSegmentsUseCase(get()) }
+        factory { ToggleSegmentStateUseCase(get(), getOrNull()) }
+        factory { MarkSegmentDoneUseCase(get(), getOrNull()) }
+        factory { ResetProjectProgressUseCase(get()) }
     }

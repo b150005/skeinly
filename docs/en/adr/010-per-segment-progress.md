@@ -75,7 +75,7 @@ Remote (Supabase `migrations/013_project_segments.sql`):
 
 ```sql
 CREATE TABLE public.project_segments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id TEXT PRIMARY KEY,
     project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
     layer_id TEXT NOT NULL,
     cell_x INT NOT NULL,
@@ -87,6 +87,14 @@ CREATE TABLE public.project_segments (
     UNIQUE(project_id, layer_id, cell_x, cell_y)
 );
 ```
+
+Note on `id TEXT` vs the "UUID" shape used by other tables: §3 below
+resolves this by choosing a deterministic synthetic id
+(`seg:<projectId>:<layerId>:<x>:<y>`) over a server-assigned UUID.
+The column type is therefore `TEXT` end-to-end (client and server) to
+avoid round-trip format conversion. The draft of this ADR had `UUID`
+here until §3 landed; kept as `TEXT` consistently in the shipped
+Phase 34 migration.
 
 RLS: owner-only CRUD. No public-read policy — progress is always private.
 Even when the parent `Pattern` is public, each user's progress rows are
@@ -183,11 +191,29 @@ data class ProjectSegment(
 
 interface ProjectSegmentRepository {
     fun observeByProjectId(projectId: String): Flow<List<ProjectSegment>>
-    suspend fun upsert(segment: ProjectSegment): Result<Unit>
-    suspend fun resetSegment(projectId: String, layerId: String, cellX: Int, cellY: Int): Result<Unit>
-    suspend fun resetProject(projectId: String): Result<Unit>
+    suspend fun getById(id: String): ProjectSegment?
+    suspend fun getByProjectId(projectId: String): List<ProjectSegment>
+    suspend fun upsert(segment: ProjectSegment): ProjectSegment
+    suspend fun resetSegment(id: String)
+    suspend fun resetProject(projectId: String)
 }
 ```
+
+Repository-layer return-type note (Phase 34 amendment): the shipped
+interface uses plain-throw suspend functions rather than `Result<T>`,
+matching the existing codebase convention (`StructuredChartRepository`,
+`ProgressRepository`, `PatternRepository` all do the same). `Result<T>`
+wrapping lives at the use-case layer via the existing
+`UseCaseResult<T>` + `Throwable.toUseCaseError()` scaffold — this keeps
+the repository interface composable and avoids double-wrapping errors.
+
+`resetSegment` takes a flat deterministic `id: String` rather than the
+decomposed `(projectId, layerId, cellX, cellY)` tuple. The caller
+(viewmodel or use case) already resolves the id via
+`ProjectSegment.buildId(...)`, so the tuple-decomposed API would
+require either an extra `buildId` call on every site or a duplicate
+signature. This is a minor simplification from the original §8 draft
+above.
 
 UseCases (Phase 34 minimum):
 

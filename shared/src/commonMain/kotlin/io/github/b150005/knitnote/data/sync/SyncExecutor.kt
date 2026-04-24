@@ -3,6 +3,7 @@ package io.github.b150005.knitnote.data.sync
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.Progress
 import io.github.b150005.knitnote.domain.model.Project
+import io.github.b150005.knitnote.domain.model.ProjectSegment
 import io.github.b150005.knitnote.domain.model.StructuredChart
 import kotlinx.serialization.json.Json
 
@@ -12,6 +13,7 @@ class SyncExecutor(
     private val remotePattern: RemotePatternSyncOperations?,
     private val remoteStructuredChart: RemoteStructuredChartSyncOperations?,
     private val json: Json,
+    private val remoteProjectSegment: RemoteProjectSegmentSyncOperations? = null,
 ) {
     /**
      * Execute a pending sync entry against the remote data source.
@@ -24,6 +26,7 @@ class SyncExecutor(
             SyncEntityType.PROGRESS -> executeProgress(entry)
             SyncEntityType.PATTERN -> executePattern(entry)
             SyncEntityType.STRUCTURED_CHART -> executeStructuredChart(entry)
+            SyncEntityType.PROJECT_SEGMENT -> executeProjectSegment(entry)
         }
 
     private suspend fun executeProject(entry: PendingSyncEntry): Boolean {
@@ -61,6 +64,17 @@ class SyncExecutor(
         when (entry.operation) {
             SyncOperation.INSERT -> remote.upsert(json.decodeFromString<StructuredChart>(entry.payload)) // idempotent create
             SyncOperation.UPDATE -> remote.update(json.decodeFromString<StructuredChart>(entry.payload))
+            SyncOperation.DELETE -> remote.delete(entry.entityId)
+        }
+        return true
+    }
+
+    private suspend fun executeProjectSegment(entry: PendingSyncEntry): Boolean {
+        val remote = remoteProjectSegment ?: return true
+        when (entry.operation) {
+            // wip/done transitions both map to UPSERT; reset maps to DELETE. No distinct UPDATE.
+            SyncOperation.INSERT -> remote.upsert(json.decodeFromString<ProjectSegment>(entry.payload))
+            SyncOperation.UPDATE -> remote.upsert(json.decodeFromString<ProjectSegment>(entry.payload))
             SyncOperation.DELETE -> remote.delete(entry.entityId)
         }
         return true
