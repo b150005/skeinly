@@ -6,12 +6,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import io.github.b150005.knitnote.domain.chart.PolarCellLayout
 import io.github.b150005.knitnote.domain.model.ChartExtents
 import io.github.b150005.knitnote.domain.model.SegmentState
 import io.github.b150005.knitnote.domain.model.StructuredChart
+import io.github.b150005.knitnote.domain.symbol.PathCommand
+import io.github.b150005.knitnote.domain.symbol.SymbolCatalog
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
 
@@ -160,6 +169,90 @@ fun DrawScope.drawPolarSegmentOverlay(
                         color = wipColor,
                         style = Stroke(width = wipStrokeWidthPx),
                     )
+            }
+        }
+    }
+}
+
+/**
+ * Paint the glyph inside every visible polar cell. The cell is the largest
+ * axis-aligned square that fits inside the wedge at its mid-radius, then
+ * rotated CW by the wedge's angular center so the glyph's local "up" points
+ * radially outward. `cell.rotation` (author's discrete 0/90/180/270) is still
+ * applied within the cell bounds — the radial orientation composes on top.
+ *
+ * Inscribed-square side is `min(ringThickness, 2·r_center·sin(sweep/2))` —
+ * the `sin(sweep/2)` factor is the half-chord at r_center; clamped to ≥ 1f.
+ * Out-of-range cells are silently skipped, mirroring [drawPolarSegmentOverlay].
+ *
+ * Caller is responsible for ordering — ADR-011 §2 requires glyphs on top of
+ * the segment overlay (matches the rect renderer's AC-1.2 "overlay under glyph").
+ *
+ * [parsedPathCache] is a shared accumulator keyed by `SymbolDefinition.id`.
+ * The rect and polar render paths share a single instance per canvas so SVG
+ * path parsing happens at most once per symbol per composition.
+ */
+@Suppress("LongParameterList")
+fun DrawScope.drawPolarCells(
+    polar: ChartExtents.Polar,
+    chart: StructuredChart,
+    hiddenLayerIds: Set<String>,
+    catalog: SymbolCatalog,
+    layout: PolarCellLayout.Layout,
+    textMeasurer: TextMeasurer,
+    parsedPathCache: MutableMap<String, List<PathCommand>>,
+    symbolColor: Color,
+    unknownBg: Color,
+    unknownFg: Color,
+) {
+    chart.layers.forEach { layer ->
+        if (!layer.visible || layer.id in hiddenLayerIds) return@forEach
+        layer.cells.forEach { cell ->
+            val ring = cell.y
+            val stitch = cell.x
+            if (ring !in 0 until polar.rings) return@forEach
+            val stitchesInRing = polar.stitchesPerRing.getOrNull(ring) ?: return@forEach
+            if (stitch !in 0 until stitchesInRing) return@forEach
+
+            val (pxD, pyD) = PolarCellLayout.cellCenter(stitch, ring, polar, layout)
+            val px = pxD.toFloat()
+            val py = pyD.toFloat()
+            val sweep = 2.0 * PI / stitchesInRing
+            val rCenter = layout.innerRadius + (ring + 0.5) * layout.ringThickness
+            val chord = 2.0 * rCenter * sin(sweep / 2.0)
+            val side = min(layout.ringThickness, chord).toFloat().coerceAtLeast(1f)
+            val half = side / 2f
+            val bounds = Rect(px - half, py - half, px + half, py + half)
+            val radialDeg =
+                (PolarCellLayout.cellRadialUpRotation(stitch, ring, polar) * 180.0 / PI).toFloat()
+
+            rotate(degrees = radialDeg, pivot = Offset(px, py)) {
+                val def = catalog.get(cell.symbolId)
+                if (def == null) {
+                    drawRect(color = unknownBg, topLeft = bounds.topLeft, size = bounds.size)
+                    val measured =
+                        textMeasurer.measure(
+                            text = "?",
+                            style =
+                                TextStyle(
+                                    color = unknownFg,
+                                    fontSize = (bounds.height * 0.5f).coerceAtLeast(8f).sp,
+                                    textAlign = TextAlign.Center,
+                                ),
+                        )
+                    val tx = bounds.left + (bounds.width - measured.size.width) / 2f
+                    val ty = bounds.top + (bounds.height - measured.size.height) / 2f
+                    drawText(measured, topLeft = Offset(tx, ty))
+                } else {
+                    drawSymbolPath(
+                        def = def,
+                        bounds = bounds,
+                        rotation = cell.rotation,
+                        color = symbolColor,
+                        strokeWidthPx = max(1f, side * 0.06f),
+                        parsedPathCache = parsedPathCache,
+                    )
+                }
             }
         }
     }
