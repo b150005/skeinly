@@ -272,7 +272,7 @@ class ChartViewerViewModelTest {
         }
 
     @Test
-    fun `isPolar flag mirrors the chart coordinate system and disables tap events`() =
+    fun `isPolar flag mirrors the chart coordinate system`() =
         runTest {
             repo.seed(
                 chart(
@@ -285,9 +285,47 @@ class ChartViewerViewModelTest {
 
             advanceUntilIdle()
             assertTrue(viewModel.state.value.isPolar)
+        }
+
+    @Test
+    fun `tapCell on polar chart toggles segment state via use case`() =
+        runTest {
+            // Phase 35.1d regression anchor: prior to 35.1d the ViewModel dropped polar
+            // tap events behind an isPolar guard; removing that guard is what makes the
+            // polar overlay actually interactive end-to-end.
+            repo.seed(
+                chart(
+                    patternId = "pat-1",
+                    layers = listOf(ChartLayer(id = "L1", name = "Main")),
+                    coordinateSystem = CoordinateSystem.POLAR_ROUND,
+                ),
+            )
+            val viewModel = makeViewModel("pat-1", projectId = "proj-1")
 
             viewModel.onEvent(ChartViewerEvent.TapCell("L1", 0, 0))
             advanceUntilIdle()
-            assertNull(segmentRepo.getById(ProjectSegment.buildId("proj-1", "L1", 0, 0)))
+
+            val stored = segmentRepo.getById(ProjectSegment.buildId("proj-1", "L1", 0, 0))
+            assertEquals(SegmentState.WIP, stored?.state)
+            assertEquals(SegmentState.WIP, viewModel.state.value.segments[SegmentKey("L1", 0, 0)])
+        }
+
+    @Test
+    fun `longPressCell on polar chart marks segment done`() =
+        runTest {
+            repo.seed(
+                chart(
+                    patternId = "pat-1",
+                    layers = listOf(ChartLayer(id = "L1", name = "Main")),
+                    coordinateSystem = CoordinateSystem.POLAR_ROUND,
+                ),
+            )
+            val viewModel = makeViewModel("pat-1", projectId = "proj-1")
+
+            viewModel.onEvent(ChartViewerEvent.LongPressCell("L1", 2, 1))
+            advanceUntilIdle()
+
+            val stored = segmentRepo.getById(ProjectSegment.buildId("proj-1", "L1", 2, 1))
+            assertEquals(SegmentState.DONE, stored?.state)
         }
 }

@@ -308,7 +308,6 @@
     <string name="dialog_reset_progress_body">This clears every stitch marked on this project. Your row-counter notes and photos are kept. This cannot be undone.</string>
     <string name="label_segments_completed">%1$d / %2$d stitches (%3$d%%)</string>
     <string name="message_reset_progress_done">Progress reset</string>
-    <string name="message_segment_progress_polar_deferred">Segment progress for round charts ships in Phase 35</string>
 
     <!-- User picker dialog (Android-only). See shared/.../values/strings.xml for convention. -->
     <string name="dialog_share_with_user_title">Share with User</string>

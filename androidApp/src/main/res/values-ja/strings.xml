@@ -284,7 +284,6 @@
     <string name="dialog_reset_progress_body">このプロジェクトでマークしたすべての目がクリアされます。段カウンターのメモと写真は保持されます。この操作は取り消せません。</string>
     <string name="label_segments_completed">%1$d / %2$d 目 (%3$d%%)</string>
     <string name="message_reset_progress_done">進捗をリセットしました</string>
-    <string name="message_segment_progress_polar_deferred">円形チャートの目進捗は Phase 35 で対応予定です</string>
 
     <!-- User picker dialog -->
     <string name="dialog_share_with_user_title">ユーザーと共有</string>
