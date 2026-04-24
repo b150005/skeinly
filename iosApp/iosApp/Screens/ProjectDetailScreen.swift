@@ -94,6 +94,7 @@ struct ProjectDetailScreen: View {
                 Image(systemName: "pencil")
             }
             .accessibilityLabel(Text(LocalizedStringKey("action_edit_project")))
+            .accessibilityIdentifier("editProjectButton")
         }
     }
 
