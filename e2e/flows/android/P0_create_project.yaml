@@ -20,20 +20,26 @@ tags:
 - tapOn:
     id: "createProjectFab"
 
-# Verify the dialog opens
-- assertVisible: "New Project"
+# Verify the dialog opens (landmark id — Phase 33.4 closes the cross-window
+# testTag gap by applying `.semantics { testTagsAsResourceId = true }` inside
+# the AlertDialog composable; all descendant testTags now resolve as Android
+# resource-ids, enabling locale-independent `id:` selectors.)
+- assertVisible:
+    id: "newProjectDialog"
 
-# Enter project name (tap label text — dialog renders in a separate window
-# so testTag-based ids are not accessible via testTagsAsResourceId)
-- tapOn: "Project Name"
+# Enter project name
+- tapOn:
+    id: "projectNameInput"
 - inputText: "My Test Scarf"
 
 # Enter total rows
-- tapOn: "Total Rows (optional)"
+- tapOn:
+    id: "totalRowsInput"
 - inputText: "100"
 
-# Tap Create
-- tapOn: "Create"
+# Tap Create (dialog confirm button)
+- tapOn:
+    id: "createProjectButton"
 
 # Verify the project appears in the list (user-entered title is locale-independent)
 - assertVisible: "My Test Scarf"

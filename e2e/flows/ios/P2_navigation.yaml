@@ -45,12 +45,14 @@ tags:
 - assertVisible: "Knit Note"
 
 # --- Navigate to Project Detail and back ---
-# Create a project first
+# Create a project first (Phase 33.4 iOS ids — locale-independent)
+- tapOn:
+    id: "createProjectFab"
+- tapOn:
+    id: "projectNameInput"
+- inputText: "Nav Test"
 - tapOn:
     id: "createProjectButton"
-- tapOn: "Project Title"
-- inputText: "Nav Test"
-- tapOn: "Create"
 - assertVisible: "Nav Test"
 
 # Go to detail

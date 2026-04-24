@@ -188,7 +188,11 @@
     <string name="label_pattern_info_section">パターン情報</string>
     <string name="label_title">タイトル</string>
     <string name="label_total_rows_optional">総段数（任意）</string>
+    <string name="dialog_new_project_title">新規プロジェクト</string>
     <string name="dialog_edit_project_title">プロジェクトを編集</string>
+    <string name="label_pattern_optional">パターン（任意）</string>
+    <string name="label_none">なし</string>
+    <string name="action_create">作成</string>
     <string name="label_notes_section">メモ</string>
     <string name="action_add_note">メモを追加</string>
     <string name="state_no_notes">メモはまだありません</string>

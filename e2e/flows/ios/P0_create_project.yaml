@@ -15,23 +15,34 @@ tags:
 # Wait for the empty state
 - assertVisible: "No Projects Yet"
 
-# Tap the create button to open create sheet
+# Tap the create FAB to open create sheet (Phase 33.4 renamed iOS toolbar +
+# from createProjectButton → createProjectFab to align with Kotlin and avoid
+# collision with the sheet-confirm button, which now owns createProjectButton.)
 - tapOn:
-    id: "createProjectButton"
+    id: "createProjectFab"
 
-# Verify the sheet opens
+# Verify the sheet opens.
+# `New Project` text assertion is load-bearing on iOS `ProjectListScreen.swift`
+# `createProjectSheet` still using LocalizedStringKey-resolved nav title —
+# SwiftUI's `NavigationStack` title is not an accessibilityIdentifier-addressable
+# element, so there's no direct `id:` equivalent. Pivot this to a landmark id
+# (e.g. `newProjectDialog` on an `.accessibilityElement(children: .contain)`
+# wrapper) when the iOS ProjectList i18n sweep lands.
 - assertVisible: "New Project"
 
-# Enter project name (iOS uses a Form sheet with TextField placeholders)
-- tapOn: "Project Title"
+# Enter project name (accessibilityIdentifier — locale-independent)
+- tapOn:
+    id: "projectNameInput"
 - inputText: "My Test Scarf"
 
 # Enter total rows
-- tapOn: "Total Rows (optional)"
+- tapOn:
+    id: "totalRowsInput"
 - inputText: "100"
 
-# Tap Create
-- tapOn: "Create"
+# Tap Create (sheet confirm button)
+- tapOn:
+    id: "createProjectButton"
 
 # Verify the project appears in the list
 - assertVisible: "My Test Scarf"

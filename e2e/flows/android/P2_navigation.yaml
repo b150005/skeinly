@@ -42,12 +42,14 @@ tags:
 - assertVisible: "Knit Note"
 
 # --- Navigate to Project Detail and back ---
-# Create a project first
+# Create a project first (dialog ids locale-independent, Phase 33.4)
 - tapOn:
     id: "createProjectFab"
-- tapOn: "Project Name"
+- tapOn:
+    id: "projectNameInput"
 - inputText: "Nav Test"
-- tapOn: "Create"
+- tapOn:
+    id: "createProjectButton"
 - assertVisible: "Nav Test"
 
 # Go to detail

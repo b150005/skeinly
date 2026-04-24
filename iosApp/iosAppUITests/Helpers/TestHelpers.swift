@@ -42,20 +42,20 @@ func createProject(
     title: String,
     totalRows: String? = nil
 ) {
-    app.buttons["createProjectButton"].tap()
+    app.buttons["createProjectFab"].tap()
 
-    let titleField = app.textFields["Project Title"]
-    XCTAssertTrue(titleField.waitForExistence(timeout: 3), "Project Title field not found")
+    let titleField = app.textFields["projectNameInput"]
+    XCTAssertTrue(titleField.waitForExistence(timeout: 3), "Title field not found")
     titleField.tap()
     titleField.typeText(title)
 
     if let rows = totalRows {
-        let rowsField = app.textFields["Total Rows (optional)"]
+        let rowsField = app.textFields["totalRowsInput"]
         rowsField.tap()
         rowsField.typeText(rows)
     }
 
-    app.buttons["Create"].tap()
+    app.buttons["createProjectButton"].tap()
 
     // Wait for the project to appear in the list
     let projectCell = app.staticTexts[title]

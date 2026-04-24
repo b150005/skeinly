@@ -121,6 +121,7 @@ import io.github.b150005.knitnote.ui.comments.CommentSection
 import io.github.b150005.knitnote.ui.components.labelKey
 import io.github.b150005.knitnote.ui.imagepicker.ImagePickerResult
 import io.github.b150005.knitnote.ui.imagepicker.rememberImagePickerLauncher
+import io.github.b150005.knitnote.ui.platform.dialogTestTagsAsResourceId
 import io.github.b150005.knitnote.ui.util.formatShort
 import kotlinx.coroutines.flow.collect
 import org.jetbrains.compose.resources.stringResource
@@ -837,7 +838,14 @@ private fun EditProjectDialog(
     }
 
     AlertDialog(
-        modifier = Modifier.testTag("editProjectDialog"),
+        // See CreateProjectDialog.kt for the dialog-cross-window semantics spike
+        // rationale — `dialogTestTagsAsResourceId()` applies the Android
+        // `testTagsAsResourceId = true` semantics property so Maestro `id:`
+        // selectors resolve for descendant testTags inside the dialog Window.
+        modifier =
+            Modifier
+                .testTag("editProjectDialog")
+                .dialogTestTagsAsResourceId(),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(Res.string.dialog_edit_project_title)) },
         text = {
@@ -846,14 +854,14 @@ private fun EditProjectDialog(
                     value = title,
                     onValueChange = { title = it },
                     label = { Text(stringResource(Res.string.label_title)) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag("projectNameInput"),
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = totalRowsText,
                     onValueChange = { totalRowsText = it.filter { c -> c.isDigit() } },
                     label = { Text(stringResource(Res.string.label_total_rows_optional)) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag("totalRowsInput"),
                     singleLine = true,
                 )
             }

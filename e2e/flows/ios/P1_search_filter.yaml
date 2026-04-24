@@ -13,21 +13,27 @@ tags:
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_ios.yaml
 
-# Create two projects
+# Create two projects (Phase 33.4: FAB → createProjectFab; sheet ids are
+# locale-independent accessibilityIdentifiers.)
+- tapOn:
+    id: "createProjectFab"
+- tapOn:
+    id: "projectNameInput"
+- inputText: "Wool Scarf"
+- tapOn:
+    id: "totalRowsInput"
+- inputText: "10"
 - tapOn:
     id: "createProjectButton"
-- tapOn: "Project Title"
-- inputText: "Wool Scarf"
-- tapOn: "Total Rows (optional)"
-- inputText: "10"
-- tapOn: "Create"
 - assertVisible: "Wool Scarf"
 
 - tapOn:
-    id: "createProjectButton"
-- tapOn: "Project Title"
+    id: "createProjectFab"
+- tapOn:
+    id: "projectNameInput"
 - inputText: "Cotton Hat"
-- tapOn: "Create"
+- tapOn:
+    id: "createProjectButton"
 - assertVisible: "Cotton Hat"
 
 # Start working on the first project so it becomes "In Progress"

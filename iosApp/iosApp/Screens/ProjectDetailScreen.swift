@@ -390,8 +390,10 @@ struct ProjectDetailScreen: View {
         NavigationStack {
             Form {
                 TextField(LocalizedStringKey("label_title"), text: $editTitle)
+                    .accessibilityIdentifier("projectNameInput")
                 TextField(LocalizedStringKey("label_total_rows_optional"), text: $editTotalRows)
                     .keyboardType(.numberPad)
+                    .accessibilityIdentifier("totalRowsInput")
             }
             .navigationTitle(LocalizedStringKey("dialog_edit_project_title"))
             .navigationBarTitleDisplayMode(.inline)
@@ -408,6 +410,7 @@ struct ProjectDetailScreen: View {
                         ))
                         showEditSheet = false
                     }
+                    .accessibilityIdentifier("saveButton")
                     .disabled(editTitle.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }

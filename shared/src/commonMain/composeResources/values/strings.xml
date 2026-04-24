@@ -216,7 +216,16 @@
     <string name="label_pattern_info_section">Pattern Info</string>
     <string name="label_title">Title</string>
     <string name="label_total_rows_optional">Total Rows (optional)</string>
+    <!-- Project dialog surface (Create + Edit). `action_create` is the short
+         dialog-confirm button label; `action_create_project` is the full-phrase
+         empty-state CTA — same platform-idiom split as
+         `action_fork` / `action_fork_pattern` from Phase 33.1.9. `label_none`
+         is the Picker/Dropdown "no selection" option, reusable across surfaces. -->
+    <string name="dialog_new_project_title">New Project</string>
     <string name="dialog_edit_project_title">Edit Project</string>
+    <string name="label_pattern_optional">Pattern (optional)</string>
+    <string name="label_none">None</string>
+    <string name="action_create">Create</string>
     <string name="label_notes_section">Notes</string>
     <string name="action_add_note">Add note</string>
     <string name="state_no_notes">No notes yet</string>

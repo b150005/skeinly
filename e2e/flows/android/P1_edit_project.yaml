@@ -12,16 +12,19 @@ tags:
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_android.yaml
 
-# Create a project to edit (FAB testTag is locale-independent)
+# Create a project to edit (FAB + dialog ids all locale-independent after Phase 33.4)
 - assertVisible:
     id: "createProjectFab"
 - tapOn:
     id: "createProjectFab"
-- tapOn: "Project Name"
+- tapOn:
+    id: "projectNameInput"
 - inputText: "OldName"
-- tapOn: "Total Rows (optional)"
+- tapOn:
+    id: "totalRowsInput"
 - inputText: "50"
-- tapOn: "Create"
+- tapOn:
+    id: "createProjectButton"
 
 # Navigate to project detail
 - assertVisible: "OldName"
@@ -35,25 +38,26 @@ tags:
 - tapOn:
     id: "editProjectButton"
 
-# Verify the edit dialog opens
-- assertVisible: "Edit Project"
+# Verify the edit dialog opens (landmark id — Phase 33.4 semantics spike makes
+# testTags inside the dialog window resolve as Android resource-ids).
+- assertVisible:
+    id: "editProjectDialog"
 
-# Clear and update the title (dialog renders in a separate window,
-# so testTag-based ids are not accessible — use text selectors instead;
-# `below: "Edit Project"` scopes to the dialog field, not the top bar title)
+# Clear and update the title
 - tapOn:
-    text: "OldName"
-    below: "Edit Project"
+    id: "projectNameInput"
 - eraseText: 100
 - inputText: "Updated Scarf"
 
-# Clear and update total rows (use label text, not value, for stability)
-- tapOn: "Total Rows (optional)"
+# Clear and update total rows
+- tapOn:
+    id: "totalRowsInput"
 - eraseText: 100
 - inputText: "120"
 
 # Save changes
-- tapOn: "Save"
+- tapOn:
+    id: "saveButton"
 
 # Verify updated title is displayed on the detail screen
 - assertVisible: "Updated Scarf"

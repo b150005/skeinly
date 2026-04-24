@@ -15,14 +15,18 @@ tags:
 # Wait for list screen to be ready
 - assertVisible: "No Projects Yet"
 
-# Create a project first (iOS uses a Form sheet)
+# Create a project first (Phase 33.4 iOS ids: createProjectFab FAB;
+# projectNameInput, totalRowsInput, createProjectButton in the sheet.)
+- tapOn:
+    id: "createProjectFab"
+- tapOn:
+    id: "projectNameInput"
+- inputText: "Counter Test"
+- tapOn:
+    id: "totalRowsInput"
+- inputText: "10"
 - tapOn:
     id: "createProjectButton"
-- tapOn: "Project Title"
-- inputText: "Counter Test"
-- tapOn: "Total Rows (optional)"
-- inputText: "10"
-- tapOn: "Create"
 
 # Wait for project to appear in list
 - assertVisible: "Counter Test"

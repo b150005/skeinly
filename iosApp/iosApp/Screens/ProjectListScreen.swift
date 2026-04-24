@@ -88,7 +88,10 @@ struct ProjectListScreen: View {
                 } label: {
                     Image(systemName: "plus")
                 }
-                .accessibilityIdentifier("createProjectButton")
+                // Aligned with Kotlin `createProjectFab` testTag — previously the
+                // toolbar trigger and the sheet-confirm button both had identifier
+                // "createProjectButton", which collided when the sheet was present.
+                .accessibilityIdentifier("createProjectFab")
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
@@ -177,30 +180,36 @@ struct ProjectListScreen: View {
     private var createProjectSheet: some View {
         NavigationStack {
             Form {
-                TextField("Project Title", text: $newTitle)
-                TextField("Total Rows (optional)", text: $newTotalRows)
+                // `.accessibilityIdentifier` gives XCUITests + Maestro a locale-independent
+                // selector — TextField's bare-literal `titleKey` is still auto-localized
+                // via LocalizedStringKey per the SwiftUI literal-promotion table in
+                // docs/{en,ja}/i18n-convention.md.
+                TextField(LocalizedStringKey("label_title"), text: $newTitle)
+                    .accessibilityIdentifier("projectNameInput")
+                TextField(LocalizedStringKey("label_total_rows_optional"), text: $newTotalRows)
                     .keyboardType(.numberPad)
+                    .accessibilityIdentifier("totalRowsInput")
 
                 if !holder.state.patternsForCreate.isEmpty {
-                    Picker("Pattern", selection: $selectedPatternId) {
-                        Text("None").tag(nil as String?)
+                    Picker(LocalizedStringKey("label_pattern_optional"), selection: $selectedPatternId) {
+                        Text(LocalizedStringKey("label_none")).tag(nil as String?)
                         ForEach(holder.state.patternsForCreate, id: \.id) { pattern in
-                            Text(pattern.title).tag(pattern.id as String?)
+                            Text(verbatim: pattern.title).tag(pattern.id as String?)
                         }
                     }
                 }
             }
-            .navigationTitle("New Project")
+            .navigationTitle(LocalizedStringKey("dialog_new_project_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(LocalizedStringKey("action_cancel")) {
                         resetCreateForm()
                         showCreateSheet = false
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") {
+                    Button(LocalizedStringKey("action_create")) {
                         let totalRows = Int32(newTotalRows).map { KotlinInt(value: $0) }
                         viewModel.onEvent(event: ProjectListEventCreateProject(
                             title: newTitle,
@@ -210,6 +219,7 @@ struct ProjectListScreen: View {
                         resetCreateForm()
                         showCreateSheet = false
                     }
+                    .accessibilityIdentifier("createProjectButton")
                     .disabled(newTitle.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
