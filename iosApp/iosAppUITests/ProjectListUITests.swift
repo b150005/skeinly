@@ -15,9 +15,9 @@ final class ProjectListUITests: XCTestCase {
     }
 
     func testPlusButton_opensCreateSheet() {
-        app.buttons["createProjectButton"].tap()
-        XCTAssertTrue(app.textFields["Project Title"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.textFields["Total Rows (optional)"].exists)
+        app.buttons["createProjectFab"].tap()
+        XCTAssertTrue(app.textFields["projectNameInput"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.textFields["totalRowsInput"].exists)
     }
 
     func testCreateProject_appearsInList() {
@@ -52,8 +52,11 @@ final class ProjectListUITests: XCTestCase {
     }
 
     func testCreateSheet_cancelDismisses() {
-        app.buttons["createProjectButton"].tap()
-        XCTAssertTrue(app.textFields["Project Title"].waitForExistence(timeout: 3), "Project Title field not found")
+        app.buttons["createProjectFab"].tap()
+        XCTAssertTrue(app.textFields["projectNameInput"].waitForExistence(timeout: 3), "Title field not found")
+        // "Cancel" text selector acceptable: ProjectListScreen.swift is not yet i18n'd
+        // (its other literals — "No Projects Yet", "Create Project" CTA — remain English).
+        // Pivots to `.accessibilityIdentifier` alongside the pending iOS ProjectList sweep.
         app.buttons["Cancel"].tap()
         XCTAssertTrue(app.staticTexts["No Projects Yet"].waitForExistence(timeout: 3))
     }

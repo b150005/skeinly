@@ -16,15 +16,17 @@ tags:
 - assertVisible:
     id: "createProjectFab"
 
-# Create a project first (dialog renders in a separate window,
-# so testTag-based ids are not accessible — use text selectors instead)
+# Create a project first (dialog ids locale-independent after Phase 33.4)
 - tapOn:
     id: "createProjectFab"
-- tapOn: "Project Name"
+- tapOn:
+    id: "projectNameInput"
 - inputText: "Counter Test"
-- tapOn: "Total Rows (optional)"
+- tapOn:
+    id: "totalRowsInput"
 - inputText: "10"
-- tapOn: "Create"
+- tapOn:
+    id: "createProjectButton"
 
 # Wait for project to appear in list
 - assertVisible: "Counter Test"

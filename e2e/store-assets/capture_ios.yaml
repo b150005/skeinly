@@ -35,15 +35,23 @@ tags:
 # Create sample projects (mirror P0_create_project.yaml selectors)
 # ============================================================
 
-# Project 1: Autumn Cardigan
+# Project 1: Autumn Cardigan (Phase 33.4 iOS ids: createProjectFab toolbar +;
+# projectNameInput, totalRowsInput, createProjectButton in the sheet.)
+- tapOn:
+    id: "createProjectFab"
+# `assertVisible: "New Project"` — load-bearing on iOS ProjectListScreen.swift
+# staying English-hardcoded (the sheet's navigation title is not an
+# accessibilityIdentifier-addressable element). Pivot to a landmark id when
+# the iOS ProjectList i18n sweep lands.
+- assertVisible: "New Project"
+- tapOn:
+    id: "projectNameInput"
+- inputText: "Autumn Cardigan"
+- tapOn:
+    id: "totalRowsInput"
+- inputText: "240"
 - tapOn:
     id: "createProjectButton"
-- assertVisible: "New Project"
-- tapOn: "Project Title"
-- inputText: "Autumn Cardigan"
-- tapOn: "Total Rows (optional)"
-- inputText: "240"
-- tapOn: "Create"
 - assertVisible: "Autumn Cardigan"
 
 # Tap into project to increment rows
@@ -60,21 +68,27 @@ tags:
 
 # Project 2: Winter Socks
 - tapOn:
-    id: "createProjectButton"
-- tapOn: "Project Title"
+    id: "createProjectFab"
+- tapOn:
+    id: "projectNameInput"
 - inputText: "Winter Socks"
-- tapOn: "Total Rows (optional)"
+- tapOn:
+    id: "totalRowsInput"
 - inputText: "80"
-- tapOn: "Create"
+- tapOn:
+    id: "createProjectButton"
 
 # Project 3: Baby Blanket
 - tapOn:
-    id: "createProjectButton"
-- tapOn: "Project Title"
+    id: "createProjectFab"
+- tapOn:
+    id: "projectNameInput"
 - inputText: "Baby Blanket"
-- tapOn: "Total Rows (optional)"
+- tapOn:
+    id: "totalRowsInput"
 - inputText: "200"
-- tapOn: "Create"
+- tapOn:
+    id: "createProjectButton"
 
 # ============================================================
 # Screenshot 3: Project List (with data)

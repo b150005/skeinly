@@ -12,21 +12,26 @@ tags:
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_android.yaml
 
-# Create two projects
+# Create two projects (dialog ids locale-independent, Phase 33.4)
 - tapOn:
     id: "createProjectFab"
-- tapOn: "Project Name"
+- tapOn:
+    id: "projectNameInput"
 - inputText: "Wool Scarf"
-- tapOn: "Total Rows (optional)"
+- tapOn:
+    id: "totalRowsInput"
 - inputText: "10"
-- tapOn: "Create"
+- tapOn:
+    id: "createProjectButton"
 - assertVisible: "Wool Scarf"
 
 - tapOn:
     id: "createProjectFab"
-- tapOn: "Project Name"
+- tapOn:
+    id: "projectNameInput"
 - inputText: "Cotton Hat"
-- tapOn: "Create"
+- tapOn:
+    id: "createProjectButton"
 - assertVisible: "Cotton Hat"
 
 # Start working on the first project so it becomes "In Progress"

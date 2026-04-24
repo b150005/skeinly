@@ -12,15 +12,18 @@ tags:
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_ios.yaml
 
-# Create a project to edit
+# Create a project to edit (Phase 33.4: locale-independent ids)
 - assertVisible: "No Projects Yet"
 - tapOn:
-    id: "createProjectButton"
-- tapOn: "Project Title"
+    id: "createProjectFab"
+- tapOn:
+    id: "projectNameInput"
 - inputText: "OldName"
-- tapOn: "Total Rows (optional)"
+- tapOn:
+    id: "totalRowsInput"
 - inputText: "50"
-- tapOn: "Create"
+- tapOn:
+    id: "createProjectButton"
 
 # Navigate to project detail
 - assertVisible: "OldName"
@@ -30,27 +33,31 @@ tags:
 - assertVisible:
     id: "rowCounter"
 
-# Tap the edit button (matches accessibilityLabel)
-- tapOn: "Edit project"
+# Tap the edit button (accessibilityIdentifier, locale-independent)
+- tapOn:
+    id: "editProjectButton"
 
-# Verify the edit sheet opens
+# Verify the edit sheet opens.
+# See P0_create_project.yaml — `Edit Project` text assertion is load-bearing on
+# iOS SwiftUI NavigationStack title not being accessibilityIdentifier-addressable;
+# pivots to a landmark id when iOS ProjectList/ProjectDetail sweep lands.
 - assertVisible: "Edit Project"
 
-# Clear and update the title (the TextField shows "OldName" as its current value;
-# on iOS Form the field label may float above, so target the value text)
+# Clear and update the title (Phase 33.4 ids)
 - tapOn:
-    text: "OldName"
-    below: "Edit Project"
-- eraseText: 100  # large enough to clear any field content
+    id: "projectNameInput"
+- eraseText: 100
 - inputText: "Updated Scarf"
 
 # Clear and update total rows
-- tapOn: "Total Rows (optional)"
-- eraseText: 100  # large enough to clear any field content
+- tapOn:
+    id: "totalRowsInput"
+- eraseText: 100
 - inputText: "120"
 
 # Save changes
-- tapOn: "Save"
+- tapOn:
+    id: "saveButton"
 
 # Verify updated title is displayed on the detail screen
 - assertVisible: "Updated Scarf"

@@ -38,11 +38,14 @@ tags:
 # Project 1: In Progress
 - tapOn:
     id: "createProjectFab"
-- tapOn: "Project Name"
+- tapOn:
+    id: "projectNameInput"
 - inputText: "Autumn Cardigan"
-- tapOn: "Total Rows (optional)"
+- tapOn:
+    id: "totalRowsInput"
 - inputText: "240"
-- tapOn: "Create"
+- tapOn:
+    id: "createProjectButton"
 - assertVisible: "Autumn Cardigan"
 
 # Tap into project to increment rows
@@ -60,20 +63,26 @@ tags:
 # Project 2: Not Started
 - tapOn:
     id: "createProjectFab"
-- tapOn: "Project Name"
+- tapOn:
+    id: "projectNameInput"
 - inputText: "Winter Socks"
-- tapOn: "Total Rows (optional)"
+- tapOn:
+    id: "totalRowsInput"
 - inputText: "80"
-- tapOn: "Create"
+- tapOn:
+    id: "createProjectButton"
 
 # Project 3: Not Started
 - tapOn:
     id: "createProjectFab"
-- tapOn: "Project Name"
+- tapOn:
+    id: "projectNameInput"
 - inputText: "Baby Blanket"
-- tapOn: "Total Rows (optional)"
+- tapOn:
+    id: "totalRowsInput"
 - inputText: "200"
-- tapOn: "Create"
+- tapOn:
+    id: "createProjectButton"
 
 # ============================================================
 # Screenshot 3: Project List (with data)

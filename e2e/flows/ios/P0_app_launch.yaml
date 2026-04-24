@@ -21,6 +21,7 @@ tags:
 - assertVisible: "No Projects Yet"
 - assertVisible: "Create Project"
 
-# Verify the create button is visible
+# Verify the create FAB is visible (Phase 33.4 renamed iOS toolbar +
+# from createProjectButton → createProjectFab to align with Kotlin.)
 - assertVisible:
-    id: "createProjectButton"
+    id: "createProjectFab"

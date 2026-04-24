@@ -24,6 +24,16 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import io.github.b150005.knitnote.domain.model.Pattern
+import io.github.b150005.knitnote.generated.resources.Res
+import io.github.b150005.knitnote.generated.resources.action_cancel
+import io.github.b150005.knitnote.generated.resources.action_create
+import io.github.b150005.knitnote.generated.resources.dialog_new_project_title
+import io.github.b150005.knitnote.generated.resources.label_none
+import io.github.b150005.knitnote.generated.resources.label_pattern_optional
+import io.github.b150005.knitnote.generated.resources.label_title
+import io.github.b150005.knitnote.generated.resources.label_total_rows_optional
+import io.github.b150005.knitnote.ui.platform.dialogTestTagsAsResourceId
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,19 +47,31 @@ fun CreateProjectDialog(
     var selectedPatternId by remember { mutableStateOf<String?>(null) }
     var patternDropdownExpanded by remember { mutableStateOf(false) }
 
+    val noneLabel = stringResource(Res.string.label_none)
     val selectedPatternTitle =
-        patterns.find { it.id == selectedPatternId }?.title ?: "None"
+        patterns.find { it.id == selectedPatternId }?.title ?: noneLabel
 
     AlertDialog(
-        modifier = Modifier.testTag("newProjectDialog"),
+        // `testTagsAsResourceId = true` is applied at MainActivity's root Box but does
+        // NOT propagate into Compose Dialog windows — they create an independent
+        // composition subtree rooted in a separate Android Window. The
+        // `dialogTestTagsAsResourceId()` expect/actual helper applies that semantics
+        // on Android and is a no-op on iOS (SwiftUI dialogs don't need it). Lets
+        // Maestro route via `id:` selectors (newProjectDialog, projectNameInput,
+        // totalRowsInput, createProjectButton) and closes the "dialog-cross-window
+        // testTag" half of Phase 33.2's debt.
+        modifier =
+            Modifier
+                .testTag("newProjectDialog")
+                .dialogTestTagsAsResourceId(),
         onDismissRequest = onDismiss,
-        title = { Text("New Project") },
+        title = { Text(stringResource(Res.string.dialog_new_project_title)) },
         text = {
             Column {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Project Name") },
+                    label = { Text(stringResource(Res.string.label_title)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().testTag("projectNameInput"),
                 )
@@ -63,7 +85,7 @@ fun CreateProjectDialog(
                             value = selectedPatternTitle,
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Pattern (optional)") },
+                            label = { Text(stringResource(Res.string.label_pattern_optional)) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = patternDropdownExpanded) },
                             modifier =
                                 Modifier
@@ -75,7 +97,7 @@ fun CreateProjectDialog(
                             onDismissRequest = { patternDropdownExpanded = false },
                         ) {
                             DropdownMenuItem(
-                                text = { Text("None") },
+                                text = { Text(noneLabel) },
                                 onClick = {
                                     selectedPatternId = null
                                     patternDropdownExpanded = false
@@ -97,7 +119,7 @@ fun CreateProjectDialog(
                 OutlinedTextField(
                     value = totalRowsText,
                     onValueChange = { totalRowsText = it.filter { ch -> ch.isDigit() } },
-                    label = { Text("Total Rows (optional)") },
+                    label = { Text(stringResource(Res.string.label_total_rows_optional)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth().testTag("totalRowsInput"),
@@ -115,12 +137,12 @@ fun CreateProjectDialog(
                 enabled = title.isNotBlank(),
                 modifier = Modifier.testTag("createProjectButton"),
             ) {
-                Text("Create")
+                Text(stringResource(Res.string.action_create))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(Res.string.action_cancel))
             }
         },
     )

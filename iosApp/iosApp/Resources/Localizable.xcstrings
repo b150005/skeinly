@@ -1156,11 +1156,39 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "総段数（任意）" } }
       }
     },
+    "dialog_new_project_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "New Project" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "新規プロジェクト" } }
+      }
+    },
     "dialog_edit_project_title" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit Project" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "プロジェクトを編集" } }
+      }
+    },
+    "label_pattern_optional" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pattern (optional)" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターン（任意）" } }
+      }
+    },
+    "label_none" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "None" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "なし" } }
+      }
+    },
+    "action_create" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Create" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "作成" } }
       }
     },
     "label_notes_section" : {
