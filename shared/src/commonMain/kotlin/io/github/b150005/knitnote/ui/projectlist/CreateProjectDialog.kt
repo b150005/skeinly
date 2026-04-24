@@ -41,6 +41,7 @@ fun CreateProjectDialog(
         patterns.find { it.id == selectedPatternId }?.title ?: "None"
 
     AlertDialog(
+        modifier = Modifier.testTag("newProjectDialog"),
         onDismissRequest = onDismiss,
         title = { Text("New Project") },
         text = {

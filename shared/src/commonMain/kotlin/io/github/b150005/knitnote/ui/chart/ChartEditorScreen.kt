@@ -114,7 +114,7 @@ fun ChartEditorScreen(
             TopAppBar(
                 title = { Text(stringResource(Res.string.title_edit_chart)) },
                 navigationIcon = {
-                    IconButton(onClick = attemptBack, modifier = Modifier.testTag("editorBackButton")) {
+                    IconButton(onClick = attemptBack, modifier = Modifier.testTag("backButton")) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(Res.string.action_back),

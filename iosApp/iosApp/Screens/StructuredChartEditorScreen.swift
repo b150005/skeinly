@@ -88,7 +88,7 @@ struct StructuredChartEditorScreen: View {
                         Text("Back")
                     }
                 }
-                .accessibilityIdentifier("editorBackButton")
+                .accessibilityIdentifier("backButton")
             }
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button {

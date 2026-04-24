@@ -331,7 +331,10 @@ private fun SearchField(
         },
         trailingIcon = {
             if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) {
+                IconButton(
+                    onClick = { onQueryChange("") },
+                    modifier = Modifier.testTag("clearSearchButton"),
+                ) {
                     Icon(
                         Icons.Default.Clear,
                         contentDescription = stringResource(Res.string.action_clear_search),
@@ -364,6 +367,7 @@ private fun FilterSortRow(
                     selected = statusFilter == null,
                     onClick = { onStatusFilterChange(null) },
                     label = { Text(stringResource(Res.string.label_status_all)) },
+                    modifier = Modifier.testTag("filterAllChip"),
                 )
             }
             item {
@@ -375,6 +379,7 @@ private fun FilterSortRow(
                         )
                     },
                     label = { Text(stringResource(Res.string.label_status_in_progress)) },
+                    modifier = Modifier.testTag("filterInProgressChip"),
                 )
             }
             item {
@@ -386,6 +391,7 @@ private fun FilterSortRow(
                         )
                     },
                     label = { Text(stringResource(Res.string.label_status_not_started)) },
+                    modifier = Modifier.testTag("filterNotStartedChip"),
                 )
             }
             item {
@@ -397,6 +403,7 @@ private fun FilterSortRow(
                         )
                     },
                     label = { Text(stringResource(Res.string.label_status_completed)) },
+                    modifier = Modifier.testTag("filterCompletedChip"),
                 )
             }
         }

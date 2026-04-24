@@ -78,7 +78,7 @@ fun SharedWithMeScreen(
             TopAppBar(
                 title = { Text(stringResource(Res.string.title_shared_with_me)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = onBack, modifier = Modifier.testTag("backButton")) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(Res.string.action_back),

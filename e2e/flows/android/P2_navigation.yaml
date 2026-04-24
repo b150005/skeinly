@@ -23,9 +23,9 @@ tags:
 - assertVisible:
     id: "profileScreen"
 
-# Go back to project list
+# Go back to project list (testTag — locale-independent, Phase 33.2)
 - tapOn:
-    text: "Back"
+    id: "backButton"
 - assertVisible: "Knit Note"
 
 # --- Navigate to Settings ---
@@ -36,9 +36,9 @@ tags:
 - assertVisible:
     id: "settingsScreen"
 
-# Go back to project list
+# Go back to project list (testTag — locale-independent, Phase 33.2)
 - tapOn:
-    text: "Back"
+    id: "backButton"
 - assertVisible: "Knit Note"
 
 # --- Navigate to Project Detail and back ---
@@ -55,8 +55,8 @@ tags:
 - assertVisible:
     id: "rowCounter"
 
-# Go back
+# Go back (testTag — locale-independent, Phase 33.2)
 - tapOn:
-    text: "Back"
+    id: "backButton"
 - assertVisible: "Knit Note"
 - assertVisible: "Nav Test"

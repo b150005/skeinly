@@ -261,7 +261,7 @@ fun ProjectDetailScreen(
             TopAppBar(
                 title = { Text(state.project?.title ?: "") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = onBack, modifier = Modifier.testTag("backButton")) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(Res.string.action_back),
@@ -286,7 +286,10 @@ fun ProjectDetailScreen(
                                 contentDescription = stringResource(Res.string.action_share_with_user),
                             )
                         }
-                        IconButton(onClick = { showEditDialog = true }) {
+                        IconButton(
+                            onClick = { showEditDialog = true },
+                            modifier = Modifier.testTag("editProjectButton"),
+                        ) {
                             Icon(
                                 Icons.Default.Edit,
                                 contentDescription = stringResource(Res.string.action_edit_project),
@@ -834,6 +837,7 @@ private fun EditProjectDialog(
     }
 
     AlertDialog(
+        modifier = Modifier.testTag("editProjectDialog"),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(Res.string.dialog_edit_project_title)) },
         text = {
@@ -861,6 +865,7 @@ private fun EditProjectDialog(
                     onConfirm(title, totalRows)
                 },
                 enabled = title.isNotBlank(),
+                modifier = Modifier.testTag("saveButton"),
             ) {
                 Text(stringResource(Res.string.action_save))
             }

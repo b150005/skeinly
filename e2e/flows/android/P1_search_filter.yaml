@@ -34,7 +34,7 @@ tags:
 - tapOn:
     id: "incrementButton"
 - tapOn:
-    text: "Back"
+    id: "backButton"
 
 # Both projects should be visible
 - assertVisible: "Wool Scarf"
@@ -53,23 +53,26 @@ tags:
 - assertVisible: "Wool Scarf"
 - assertNotVisible: "Cotton Hat"
 
-# Clear search via the clear button (matches contentDescription)
+# Clear search via the clear button (testTag — locale-independent, Phase 33.2)
 - tapOn:
-    text: "Clear search"
+    id: "clearSearchButton"
 - assertVisible: "Wool Scarf"
 - assertVisible: "Cotton Hat"
 
-# --- Filter: In Progress ---
-- tapOn: "In Progress"
+# --- Filter: In Progress --- (testTag — locale-independent, Phase 33.2)
+- tapOn:
+    id: "filterInProgressChip"
 - assertVisible: "Wool Scarf"
 - assertNotVisible: "Cotton Hat"
 
 # --- Filter: Not Started ---
-- tapOn: "Not Started"
+- tapOn:
+    id: "filterNotStartedChip"
 - assertNotVisible: "Wool Scarf"
 - assertVisible: "Cotton Hat"
 
 # --- Filter: All ---
-- tapOn: "All"
+- tapOn:
+    id: "filterAllChip"
 - assertVisible: "Wool Scarf"
 - assertVisible: "Cotton Hat"

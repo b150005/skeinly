@@ -35,7 +35,7 @@ tags:
 - scroll
 - scroll
 
-# Back navigation
+# Back navigation (testTag — locale-independent, Phase 33.2)
 - tapOn:
-    text: "Back"
+    id: "backButton"
 - assertVisible: "Knit Note"

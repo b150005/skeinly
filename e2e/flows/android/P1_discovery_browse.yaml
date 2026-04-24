@@ -33,9 +33,9 @@ tags:
     id: "discoverySearchField"
 - inputText: "test"
 
-# Clear search (icon contentDescription; English CI locale assumption)
+# Clear search (testTag — locale-independent, Phase 33.2)
 - tapOn:
-    text: "Clear search"
+    id: "clearSearchButton"
 
 # Interact with difficulty filter via testTag (locale-independent)
 - tapOn:
@@ -45,7 +45,7 @@ tags:
 - tapOn:
     id: "difficultyAllChip"
 
-# Back navigation (nav icon contentDescription; English CI locale assumption)
+# Back navigation (testTag — locale-independent, Phase 33.2)
 - tapOn:
-    text: "Back"
+    id: "backButton"
 - assertVisible: "Knit Note"

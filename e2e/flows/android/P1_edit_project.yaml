@@ -31,9 +31,9 @@ tags:
 - assertVisible:
     id: "rowCounter"
 
-# Tap the edit button (matches contentDescription)
+# Tap the edit button via testTag (locale-independent, Phase 33.2)
 - tapOn:
-    text: "Edit project"
+    id: "editProjectButton"
 
 # Verify the edit dialog opens
 - assertVisible: "Edit Project"
@@ -59,7 +59,7 @@ tags:
 - assertVisible: "Updated Scarf"
 - assertVisible: "of 120 rows"
 
-# Go back and verify the list reflects the change
+# Go back and verify the list reflects the change (testTag — locale-independent)
 - tapOn:
-    text: "Back"
+    id: "backButton"
 - assertVisible: "Updated Scarf"

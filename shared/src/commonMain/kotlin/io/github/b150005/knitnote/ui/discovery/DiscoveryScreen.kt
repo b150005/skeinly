@@ -106,7 +106,7 @@ fun DiscoveryScreen(
             TopAppBar(
                 title = { Text(stringResource(Res.string.title_discover_patterns)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = onBack, modifier = Modifier.testTag("backButton")) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(Res.string.action_back),
@@ -222,7 +222,10 @@ private fun DiscoverySearchField(
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
         trailingIcon = {
             if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) {
+                IconButton(
+                    onClick = { onQueryChange("") },
+                    modifier = Modifier.testTag("clearSearchButton"),
+                ) {
                     Icon(
                         Icons.Default.Clear,
                         contentDescription = stringResource(Res.string.action_clear_search),

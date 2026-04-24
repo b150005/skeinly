@@ -112,7 +112,7 @@ fun PatternLibraryScreen(
             TopAppBar(
                 title = { Text(stringResource(Res.string.title_pattern_library)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = onBack, modifier = Modifier.testTag("backButton")) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(Res.string.action_back),
@@ -255,7 +255,10 @@ private fun SearchField(
         },
         trailingIcon = {
             if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) {
+                IconButton(
+                    onClick = { onQueryChange("") },
+                    modifier = Modifier.testTag("clearSearchButton"),
+                ) {
                     Icon(
                         Icons.Default.Clear,
                         contentDescription = stringResource(Res.string.action_clear_search),
