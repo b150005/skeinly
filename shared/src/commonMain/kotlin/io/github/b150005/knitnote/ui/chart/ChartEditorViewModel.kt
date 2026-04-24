@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import io.github.b150005.knitnote.domain.model.ChartCell
 import io.github.b150005.knitnote.domain.model.ChartExtents
 import io.github.b150005.knitnote.domain.model.ChartLayer
+import io.github.b150005.knitnote.domain.model.CoordinateSystem
 import io.github.b150005.knitnote.domain.model.CraftType
 import io.github.b150005.knitnote.domain.model.ReadingConvention
 import io.github.b150005.knitnote.domain.model.StructuredChart
@@ -84,6 +85,17 @@ sealed interface ChartEditorEvent {
         val readingConvention: ReadingConvention,
     ) : ChartEditorEvent
 
+    /**
+     * Phase 35.2a: switch between rect and polar authoring on a **new** chart.
+     * Rejected (silent no-op) when an original chart is loaded — switching
+     * coordinate systems on an existing chart would leave cells whose `(x, y)`
+     * indices do not map to the new geometry. A proper mid-chart conversion
+     * needs an explicit projection step, deferred to Phase 35.2+.
+     */
+    data class SetExtents(
+        val extents: ChartExtents,
+    ) : ChartEditorEvent
+
     data class PlaceCell(
         val x: Int,
         val y: Int,
@@ -141,6 +153,7 @@ class ChartEditorViewModel(
                 }
             is ChartEditorEvent.SelectCraft -> selectCraft(event.craftType)
             is ChartEditorEvent.SelectReading -> selectReading(event.readingConvention)
+            is ChartEditorEvent.SetExtents -> setExtents(event.extents)
             is ChartEditorEvent.PlaceCell -> placeCell(event.x, event.y)
             is ChartEditorEvent.ConfirmParameterInput -> confirmParameterInput(event.values)
             ChartEditorEvent.CancelParameterInput -> cancelParameterInput()
@@ -183,6 +196,35 @@ class ChartEditorViewModel(
                         draftLayers = it.draftLayers,
                         draftCraftType = it.draftCraftType,
                         draftReadingConvention = reading,
+                    ),
+            )
+        }
+    }
+
+    // Coordinate-system switch on a new chart. Rejected on existing charts —
+    // see ChartEditorEvent.SetExtents kdoc. Records a history snapshot so undo
+    // restores the prior extents + layers; resets draftLayers to a single empty
+    // layer because cell indices are not portable across coordinate systems.
+    private fun setExtents(newExtents: ChartExtents) {
+        val current = _state.value
+        if (current.original != null) return
+        if (current.pendingParameterInput != null) return
+        if (current.draftExtents == newExtents) return
+        recordHistory(current)
+        val resetLayers = listOf(ChartLayer(id = DEFAULT_LAYER_ID, name = DEFAULT_LAYER_NAME))
+        _state.update {
+            it.copy(
+                draftExtents = newExtents,
+                draftLayers = resetLayers,
+                canUndo = history.canUndo,
+                canRedo = history.canRedo,
+                hasUnsavedChanges =
+                    computeUnsavedChanges(
+                        original = it.original,
+                        draftExtents = newExtents,
+                        draftLayers = resetLayers,
+                        draftCraftType = it.draftCraftType,
+                        draftReadingConvention = it.draftReadingConvention,
                     ),
             )
         }
@@ -422,8 +464,14 @@ class ChartEditorViewModel(
             val original = snapshot.original
             val result =
                 if (original == null) {
+                    val coordinateSystem =
+                        when (snapshot.draftExtents) {
+                            is ChartExtents.Rect -> CoordinateSystem.RECT_GRID
+                            is ChartExtents.Polar -> CoordinateSystem.POLAR_ROUND
+                        }
                     createStructuredChart(
                         patternId = patternId,
+                        coordinateSystem = coordinateSystem,
                         extents = snapshot.draftExtents,
                         layers = snapshot.draftLayers,
                         craftType = snapshot.draftCraftType,

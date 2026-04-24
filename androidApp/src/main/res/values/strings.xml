@@ -57,6 +57,13 @@
     <string name="label_reading_knit_flat">Knit flat (RS \u2192, WS \u2190)</string>
     <string name="label_reading_crochet_flat">Crochet flat (L\u2192R)</string>
     <string name="label_reading_round">Round (center out)</string>
+    <!-- Phase 35.2a: polar extents picker (editor new-chart only) -->
+    <string name="label_extents">Grid</string>
+    <string name="label_extents_flat">Flat grid</string>
+    <string name="label_extents_polar">Round (polar)</string>
+    <string name="dialog_polar_extents_title">Round chart</string>
+    <string name="label_polar_rings">Rings</string>
+    <string name="label_polar_stitches_per_ring">Stitches per ring (comma-separated)</string>
 
     <!-- Project list screen -->
     <string name="action_discover_patterns">Discover Patterns</string>
