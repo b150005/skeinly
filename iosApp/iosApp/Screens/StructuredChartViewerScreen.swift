@@ -344,7 +344,10 @@ private struct ChartCanvasView: View {
 
         // Top-most visible layer that has a drawn cell at (cellX, cellY) wins.
         for layer in chart.layers.reversed() {
-            if !layer.visible || hiddenLayerIds.contains(layer.id) { continue }
+            // Phase 35.2f: locked layers are silently skipped from tap routing
+            // per ADR-011 §5 addendum decision 1(c). Overlay still paints (the
+            // separate draw loop iterates `chart.layers` directly).
+            if !layer.visible || hiddenLayerIds.contains(layer.id) || layer.locked { continue }
             if layer.cells.contains(where: { Int($0.x) == cellX && Int($0.y) == cellY }) {
                 return HitResult(layerId: layer.id, x: cellX, y: cellY)
             }
@@ -390,7 +393,9 @@ private struct ChartCanvasView: View {
         let stitch = min(max(stitchRaw, 0), stitchesInRing - 1)
 
         for layer in chart.layers.reversed() {
-            if !layer.visible || hiddenLayerIds.contains(layer.id) { continue }
+            // Phase 35.2f: locked layers are silently skipped from tap routing
+            // per ADR-011 §5 addendum decision 1(c).
+            if !layer.visible || hiddenLayerIds.contains(layer.id) || layer.locked { continue }
             if layer.cells.contains(where: { Int($0.x) == stitch && Int($0.y) == ring }) {
                 return HitResult(layerId: layer.id, x: stitch, y: ring)
             }

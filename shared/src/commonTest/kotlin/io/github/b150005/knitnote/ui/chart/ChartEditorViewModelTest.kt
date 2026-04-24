@@ -1326,7 +1326,7 @@ class ChartEditorViewModelTest {
             val viewModel = newViewModel(patternId = "pat-missing")
             awaitReady(viewModel)
 
-            viewModel.onEvent(ChartEditorEvent.AddLayer)
+            viewModel.onEvent(ChartEditorEvent.AddLayer())
 
             val state = viewModel.state.value
             assertEquals(2, state.draftLayers.size)
@@ -1547,7 +1547,7 @@ class ChartEditorViewModelTest {
 
             // AddLayer auto-selects the new layer; undo must restore the
             // pre-add list and reconcile selection since L3 is gone.
-            viewModel.onEvent(ChartEditorEvent.AddLayer)
+            viewModel.onEvent(ChartEditorEvent.AddLayer())
             assertEquals("L3", viewModel.state.value.selectedLayerId)
 
             viewModel.onEvent(ChartEditorEvent.Undo)
@@ -1571,7 +1571,7 @@ class ChartEditorViewModelTest {
             repo.seed(seeded)
             val viewModel = newViewModel()
             awaitReady(viewModel)
-            viewModel.onEvent(ChartEditorEvent.AddLayer)
+            viewModel.onEvent(ChartEditorEvent.AddLayer())
             assertEquals("L2", viewModel.state.value.selectedLayerId)
             viewModel.onEvent(ChartEditorEvent.Undo)
             assertEquals("L1", viewModel.state.value.selectedLayerId)
@@ -1585,4 +1585,87 @@ class ChartEditorViewModelTest {
             assertEquals(listOf("L1", "L2"), state.draftLayers.map { it.id })
             assertEquals("L1", state.selectedLayerId)
         }
+
+    // 69. Phase 35.2f-ui: AddLayer carries an optional display-name parameter
+    // resolved at the Screen layer from the localized
+    // `label_layer_default_name(n)` resource. When the Screen passes a
+    // non-blank name the ViewModel commits it verbatim; the English-fallback
+    // path is exercised by the AddLayer() (no-arg) tests above.
+    @Test
+    fun `AddLayer with explicit name commits that name to the new layer`() =
+        runTest {
+            val seeded = seededChart(layers = listOf(ChartLayer(id = "L1", name = "Main")))
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+
+            viewModel.onEvent(ChartEditorEvent.AddLayer(name = "レイヤー 2"))
+
+            val afterAdd = viewModel.state.value
+            assertEquals(2, afterAdd.draftLayers.size)
+            assertEquals("L2", afterAdd.draftLayers[1].id)
+            assertEquals("レイヤー 2", afterAdd.draftLayers[1].name)
+            assertEquals("L2", afterAdd.selectedLayerId)
+            // AddLayer writes a history snapshot, so undo restores the
+            // pre-add list and the explicit-name path doesn't bypass the
+            // undo stack.
+            assertTrue(afterAdd.canUndo)
+
+            viewModel.onEvent(ChartEditorEvent.Undo)
+            val afterUndo = viewModel.state.value
+            assertEquals(1, afterUndo.draftLayers.size)
+            assertEquals("L1", afterUndo.draftLayers[0].id)
+        }
+
+    // 70. Phase 35.2f-ui: blank or whitespace-only names fall back to the
+    // English literal so a misconfigured caller never produces a layer with
+    // an empty rendered label.
+    @Test
+    fun `AddLayer with blank name falls back to English Layer N literal`() =
+        runTest {
+            val seeded = seededChart(layers = listOf(ChartLayer(id = "L1", name = "Main")))
+            repo.seed(seeded)
+            val viewModel = newViewModel()
+            awaitReady(viewModel)
+
+            viewModel.onEvent(ChartEditorEvent.AddLayer(name = "   "))
+
+            val state = viewModel.state.value
+            assertEquals("Layer 2", state.draftLayers[1].name)
+        }
+
+    // 71. Phase 35.2f-ui: nextLayerNumber is the shared helper consumed by
+    // both the ViewModel's addLayer and the Screen-side localized-name
+    // resolution. Lock-step regression anchor — drift between the two would
+    // produce a layer whose displayed `Layer N` does not match its `L{n}` id.
+    @Test
+    fun `nextLayerNumber returns one greater than the max L-prefixed numeric id`() {
+        assertEquals(1, nextLayerNumber(emptyList()))
+        assertEquals(
+            2,
+            nextLayerNumber(listOf(ChartLayer(id = "L1", name = "Main"))),
+        )
+        assertEquals(
+            6,
+            nextLayerNumber(
+                listOf(
+                    ChartLayer(id = "L1", name = "a"),
+                    ChartLayer(id = "L5", name = "b"),
+                    ChartLayer(id = "L3", name = "c"),
+                ),
+            ),
+        )
+        // Non-numeric / non-L-prefixed ids are ignored — the next-num falls
+        // back to 1 + max-of-empty = 1, which may collide if such ids ever
+        // enter the editor (flagged in ADR-011 §5 addendum out-of-scope).
+        assertEquals(
+            1,
+            nextLayerNumber(
+                listOf(
+                    ChartLayer(id = "LA", name = "imported"),
+                    ChartLayer(id = "X9", name = "external"),
+                ),
+            ),
+        )
+    }
 }

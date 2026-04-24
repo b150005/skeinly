@@ -34,13 +34,16 @@ import kotlinx.coroutines.launch
  */
 private const val DEFAULT_GRID_SIZE = 8
 private const val DEFAULT_LAYER_ID = "L1"
-private const val DEFAULT_LAYER_NAME = "Main"
 
-// Phase 35.2f: pattern for auto-named layers created via AddLayer. The name is
-// user-visible default copy and intentionally English-only at the ViewModel
-// boundary — the layer panel renders the name as-is (user can rename inline),
-// and i18n of the default literal is tracked under the Phase 35.2f-ui slice.
-private const val DEFAULT_LAYER_NAME_PATTERN = "Layer {n}"
+// Phase 35.2f-ui: the initial layer name is locale-resolved on the UI side
+// (`label_layer_default_name(1)` = "Layer 1" / "レイヤー 1"), but the ViewModel
+// must seed `draftLayers` at construction before any Compose / SwiftUI binding
+// has fired. We seed with the English literal that matches the EN value of
+// `label_layer_default_name(1)` and accept that JA users see "Layer 1" until
+// they rename the initial layer inline. AddLayer dispatched from the Screen
+// passes a localized [ChartEditorEvent.AddLayer.name] so subsequent layers do
+// resolve correctly per locale.
+private const val DEFAULT_LAYER_NAME = "Layer 1"
 
 data class ChartEditorState(
     val patternId: String = "",
@@ -184,11 +187,19 @@ sealed interface ChartEditorEvent {
 
     /**
      * Append a blank layer. Id auto-generated as `L{n}` where n is one greater
-     * than the maximum existing `L`-prefixed numeric id; name auto-generated
-     * as `"Layer {n}"`. Auto-selects the new layer so the next placement
-     * lands on it.
+     * than the maximum existing `L`-prefixed numeric id; auto-selects the new
+     * layer so the next placement lands on it.
+     *
+     * [name] is the user-visible label for the new layer. The Compose / SwiftUI
+     * Screen layer resolves the localized `label_layer_default_name(n)` and
+     * passes it here so the ViewModel stays UI-agnostic. When [name] is null or
+     * blank (e.g. test code that doesn't care about display copy) the
+     * ViewModel falls back to an English literal — the production UI always
+     * supplies a non-blank localized value.
      */
-    data object AddLayer : ChartEditorEvent
+    data class AddLayer(
+        val name: String? = null,
+    ) : ChartEditorEvent
 
     data class RemoveLayer(
         val layerId: String,
@@ -263,7 +274,7 @@ class ChartEditorViewModel(
             ChartEditorEvent.Save -> save()
             ChartEditorEvent.ClearError -> _state.update { it.copy(errorMessage = null) }
             is ChartEditorEvent.SelectLayer -> selectLayer(event.layerId)
-            ChartEditorEvent.AddLayer -> addLayer()
+            is ChartEditorEvent.AddLayer -> addLayer(event.name)
             is ChartEditorEvent.RemoveLayer -> removeLayer(event.layerId)
             is ChartEditorEvent.RenameLayer -> renameLayer(event.layerId, event.newName)
             is ChartEditorEvent.ReorderLayer -> reorderLayer(event.fromIndex, event.toIndex)
@@ -776,28 +787,16 @@ class ChartEditorViewModel(
         _state.update { it.copy(selectedLayerId = layerId) }
     }
 
-    private fun addLayer() {
+    private fun addLayer(displayName: String?) {
         val current = _state.value
         if (current.pendingParameterInput != null) return
-        // Id scheme assumption: every layer was created by this editor and
-        // follows `L{n}`. A future import path that accepts non-numeric ids
-        // (e.g. `"LA"`, `"LB"`) would leave `existingNums` empty here and
-        // generate `"L1"`, which may collide with an already-present literal
-        // `"L1"`. Flagged in ADR-011 §5 addendum out-of-scope list; revisit
-        // when import lands.
-        val existingNums =
-            current.draftLayers.mapNotNull { layer ->
-                layer.id
-                    .takeIf { it.startsWith("L") }
-                    ?.removePrefix("L")
-                    ?.toIntOrNull()
-            }
-        val nextNum = (existingNums.maxOrNull() ?: 0) + 1
-        val newLayer =
-            ChartLayer(
-                id = "L$nextNum",
-                name = DEFAULT_LAYER_NAME_PATTERN.replace("{n}", nextNum.toString()),
-            )
+        val nextNum = nextLayerNumber(current.draftLayers)
+        // Production Compose / SwiftUI dispatch a non-blank localized name
+        // resolved from `label_layer_default_name(n)`. The English literal
+        // here is a safety net for test code and any future call site that
+        // doesn't supply one — keeping the ViewModel UI-framework-agnostic.
+        val resolvedName = displayName?.trim()?.takeIf { it.isNotEmpty() } ?: "Layer $nextNum"
+        val newLayer = ChartLayer(id = "L$nextNum", name = resolvedName)
         val updatedLayers = current.draftLayers + newLayer
         commitLayerOp(current, updatedLayers, newSelection = newLayer.id)
     }
@@ -949,6 +948,29 @@ class ChartEditorViewModel(
 internal fun ChartEditorState.selectedTargetLayer(): ChartLayer? {
     val id = selectedLayerId ?: return null
     return draftLayers.firstOrNull { it.id == id }
+}
+
+/**
+ * Phase 35.2f-ui shared helper: compute the number that the next auto-named
+ * layer will receive. Used by both [ChartEditorViewModel.addLayer] and the
+ * Screen layer's localized-name resolution so the displayed "Layer N" /
+ * "レイヤー N" stays in lock-step with the assigned id.
+ *
+ * Id scheme assumption: every layer was created by this editor and follows
+ * `L{n}`. A future import path that accepts non-numeric ids (e.g. `"LA"`,
+ * `"LB"`) would leave `existingNums` empty and generate `"L1"`, which may
+ * collide with an already-present literal `"L1"`. Flagged in ADR-011 §5
+ * addendum out-of-scope list; revisit when import lands.
+ */
+internal fun nextLayerNumber(layers: List<ChartLayer>): Int {
+    val existingNums =
+        layers.mapNotNull { layer ->
+            layer.id
+                .takeIf { it.startsWith("L") }
+                ?.removePrefix("L")
+                ?.toIntOrNull()
+        }
+    return (existingNums.maxOrNull() ?: 0) + 1
 }
 
 /**

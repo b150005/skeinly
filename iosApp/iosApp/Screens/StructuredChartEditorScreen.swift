@@ -18,6 +18,11 @@ struct StructuredChartEditorScreen: View {
     @State private var isParameterSheetPresented = false
     @State private var activeParameterPending: PendingParameterInput?
     @State private var showPolarPicker = false
+    // Phase 35.2f-ui: right-side layer panel. iOS surfaces it as a
+    // .sheet(isPresented:) per ADR-011 §5 addendum decision 4 — native idiom
+    // matching iOS user expectation.
+    @State private var showLayerSheet = false
+    @State private var pendingDeleteLayer: ChartLayer?
     private let catalog: SymbolCatalog
 
     private var viewModel: ChartEditorViewModel { holder.viewModel }
@@ -118,6 +123,17 @@ struct StructuredChartEditorScreen: View {
                 }
                 .accessibilityIdentifier("editorSaveButton")
                 .disabled(!state.hasUnsavedChanges || state.isSaving)
+
+                // Phase 35.2f-ui: layers panel trigger. Tapping presents the
+                // layer-list sheet; .presentationDetents([.medium, .large])
+                // gives the user the iOS-idiomatic vertical drawer.
+                Button {
+                    showLayerSheet = true
+                } label: {
+                    Image(systemName: "square.3.stack.3d")
+                }
+                .accessibilityLabel(LocalizedStringKey("action_layers"))
+                .accessibilityIdentifier("layersButton")
 
                 Menu {
                     Section("Craft") {
@@ -286,6 +302,91 @@ struct StructuredChartEditorScreen: View {
                 .presentationDetents([.medium])
             }
         }
+        // Phase 35.2f-ui: layer panel sheet. Closes via swipe-down or the
+        // sheet's own Done button. The List-onMove reorder gesture lives on
+        // the Form inside LayerSheetView with `.editMode` toggled on entry.
+        .sheet(isPresented: $showLayerSheet) {
+            LayerSheetView(
+                layers: state.draftLayers,
+                selectedLayerId: state.selectedLayerId,
+                nextAutoLayerName: nextAutoLayerName(layers: state.draftLayers),
+                onSelectLayer: { id in
+                    viewModel.onEvent(event: ChartEditorEventSelectLayer(layerId: id))
+                },
+                onAddLayer: { name in
+                    viewModel.onEvent(event: ChartEditorEventAddLayer(name: name))
+                },
+                onRenameLayer: { id, newName in
+                    viewModel.onEvent(event: ChartEditorEventRenameLayer(layerId: id, newName: newName))
+                },
+                onToggleVisibility: { id in
+                    viewModel.onEvent(event: ChartEditorEventToggleLayerVisibility(layerId: id))
+                },
+                onToggleLock: { id in
+                    viewModel.onEvent(event: ChartEditorEventToggleLayerLock(layerId: id))
+                },
+                onReorder: { from, to in
+                    viewModel.onEvent(
+                        event: ChartEditorEventReorderLayer(fromIndex: Int32(from), toIndex: Int32(to))
+                    )
+                },
+                onRequestDelete: { layer in
+                    if layer.cells.isEmpty {
+                        // Empty-layer delete is silent per ADR-011 §5
+                        // addendum decision 4.
+                        viewModel.onEvent(event: ChartEditorEventRemoveLayer(layerId: layer.id))
+                    } else {
+                        pendingDeleteLayer = layer
+                    }
+                },
+                onClose: { showLayerSheet = false }
+            )
+            .presentationDetents([.medium, .large])
+        }
+        .confirmationDialog(
+            LocalizedStringKey("dialog_delete_layer_title"),
+            isPresented: Binding(
+                get: { pendingDeleteLayer != nil },
+                set: { newValue in if !newValue { pendingDeleteLayer = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: pendingDeleteLayer
+        ) { layer in
+            Button(LocalizedStringKey("action_delete"), role: .destructive) {
+                viewModel.onEvent(event: ChartEditorEventRemoveLayer(layerId: layer.id))
+                pendingDeleteLayer = nil
+            }
+            .accessibilityIdentifier("deleteLayerConfirmButton")
+            Button(LocalizedStringKey("action_cancel"), role: .cancel) {
+                pendingDeleteLayer = nil
+            }
+        } message: { layer in
+            Text(String(
+                format: NSLocalizedString("dialog_delete_layer_body", comment: ""),
+                layer.cells.count
+            ))
+        }
+    }
+
+    /// Resolve the next auto-named layer name using the same id-prefix scan as
+    /// [ChartEditorViewModel.addLayer]. iOS-side mirror so the localized
+    /// `label_layer_default_name(n)` value can be passed up via the AddLayer
+    /// event, keeping the ViewModel UI-framework-agnostic.
+    private func nextAutoLayerName(layers: [ChartLayer]) -> String {
+        let nextNum = computeNextLayerNumber(layers: layers)
+        return String(
+            format: NSLocalizedString("label_layer_default_name", comment: ""),
+            nextNum
+        )
+    }
+
+    private func computeNextLayerNumber(layers: [ChartLayer]) -> Int {
+        let existingNums: [Int] = layers.compactMap { layer in
+            let id = layer.id
+            guard id.hasPrefix("L") else { return nil }
+            return Int(id.dropFirst())
+        }
+        return (existingNums.max() ?? 0) + 1
     }
 
     private func attemptBack(state: ChartEditorState) {
@@ -954,5 +1055,185 @@ private struct PolarExtentsSheet: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Layer panel (Phase 35.2f-ui)
+
+/// SwiftUI mirror of the Compose `LayerDrawerContent`. Renders the layer
+/// list with per-row drag handle (via `List.onMove` + `.editMode`),
+/// visibility eye, lock padlock, name (inline rename via `TextField`),
+/// and a destructive delete button. Toolbar provides Done + Add actions.
+private struct LayerSheetView: View {
+    let layers: [ChartLayer]
+    let selectedLayerId: String?
+    let nextAutoLayerName: String
+    let onSelectLayer: (String) -> Void
+    let onAddLayer: (String) -> Void
+    let onRenameLayer: (String, String) -> Void
+    let onToggleVisibility: (String) -> Void
+    let onToggleLock: (String) -> Void
+    let onReorder: (Int, Int) -> Void
+    let onRequestDelete: (ChartLayer) -> Void
+    let onClose: () -> Void
+
+    @State private var editingLayerId: String?
+    @State private var renameDraft: String = ""
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if layers.isEmpty {
+                    ContentUnavailableView(
+                        LocalizedStringKey("state_no_layers"),
+                        systemImage: "square.3.stack.3d"
+                    )
+                } else {
+                    List {
+                        Section(LocalizedStringKey("label_layers_section")) {
+                            ForEach(layers, id: \.id) { layer in
+                                LayerRowView(
+                                    layer: layer,
+                                    isSelected: layer.id == selectedLayerId,
+                                    isEditing: layer.id == editingLayerId,
+                                    renameDraft: $renameDraft,
+                                    onSelect: {
+                                        if editingLayerId != nil && editingLayerId != layer.id {
+                                            commitOrCancelRename(currentLayers: layers)
+                                        }
+                                        onSelectLayer(layer.id)
+                                    },
+                                    onStartRename: {
+                                        editingLayerId = layer.id
+                                        renameDraft = layer.name
+                                    },
+                                    onCommitRename: {
+                                        let trimmed = renameDraft.trimmingCharacters(
+                                            in: .whitespacesAndNewlines
+                                        )
+                                        if !trimmed.isEmpty {
+                                            onRenameLayer(layer.id, trimmed)
+                                        }
+                                        editingLayerId = nil
+                                    },
+                                    onCancelRename: { editingLayerId = nil },
+                                    onToggleVisibility: { onToggleVisibility(layer.id) },
+                                    onToggleLock: { onToggleLock(layer.id) },
+                                    onDelete: { onRequestDelete(layer) }
+                                )
+                            }
+                            .onMove { source, destination in
+                                guard let from = source.first else { return }
+                                // SwiftUI's onMove `destination` is the index BEFORE removal;
+                                // shift by -1 when moving down past the source so the result
+                                // matches the "insert at toIndex" semantics expected by the
+                                // ViewModel's reorderLayer.
+                                let to = destination > from ? destination - 1 : destination
+                                if to != from { onReorder(from, to) }
+                            }
+                        }
+                    }
+                    .environment(\.editMode, .constant(.active))
+                }
+            }
+            .accessibilityIdentifier("layerDrawer")
+            .navigationTitle(LocalizedStringKey("action_layers"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        onAddLayer(nextAutoLayerName)
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .accessibilityLabel(LocalizedStringKey("action_add_layer"))
+                    .accessibilityIdentifier("addLayerFab")
+                }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(LocalizedStringKey("action_close")) { onClose() }
+                }
+            }
+        }
+    }
+
+    private func commitOrCancelRename(currentLayers: [ChartLayer]) {
+        guard let id = editingLayerId else { return }
+        let trimmed = renameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty,
+           let original = currentLayers.first(where: { $0.id == id }),
+           original.name != trimmed {
+            onRenameLayer(id, trimmed)
+        }
+        editingLayerId = nil
+    }
+}
+
+private struct LayerRowView: View {
+    let layer: ChartLayer
+    let isSelected: Bool
+    let isEditing: Bool
+    @Binding var renameDraft: String
+    let onSelect: () -> Void
+    let onStartRename: () -> Void
+    let onCommitRename: () -> Void
+    let onCancelRename: () -> Void
+    let onToggleVisibility: () -> Void
+    let onToggleLock: () -> Void
+    let onDelete: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            // Visibility eye.
+            Button(action: onToggleVisibility) {
+                Image(systemName: layer.visible ? "eye" : "eye.slash")
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(LocalizedStringKey("action_toggle_layer_visibility"))
+            .accessibilityIdentifier("layerVisibilityButton_\(layer.id)")
+
+            // Lock padlock.
+            Button(action: onToggleLock) {
+                Image(systemName: layer.locked ? "lock" : "lock.open")
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(LocalizedStringKey("action_toggle_layer_lock"))
+            .accessibilityIdentifier("layerLockButton_\(layer.id)")
+
+            // Layer name — inline rename via TextField swap.
+            if isEditing {
+                TextField(LocalizedStringKey("action_rename_layer"), text: $renameDraft)
+                    .textFieldStyle(.roundedBorder)
+                    .submitLabel(.done)
+                    .onSubmit { onCommitRename() }
+                    .accessibilityIdentifier("layerNameField_\(layer.id)")
+                Button(action: onCommitRename) {
+                    Image(systemName: "checkmark")
+                }
+                .buttonStyle(.borderless)
+                .accessibilityIdentifier("layerNameConfirmButton_\(layer.id)")
+            } else {
+                // Selection is signaled by `listRowBackground` below; the row
+                // text uses the default foreground style on both states.
+                Text(verbatim: layer.name)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .onTapGesture { onSelect() }
+                    .onLongPressGesture { onStartRename() }
+            }
+
+            // Delete IconButton.
+            Button(role: .destructive, action: onDelete) {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(LocalizedStringKey("action_delete_layer"))
+            .accessibilityIdentifier("layerDeleteButton_\(layer.id)")
+        }
+        .accessibilityIdentifier("layerRow_\(layer.id)")
+        .listRowBackground(
+            isSelected
+                ? Color.accentColor.opacity(0.12)
+                : Color(.systemBackground)
+        )
     }
 }

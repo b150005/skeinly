@@ -261,9 +261,14 @@ private fun ChartCanvas(
         return
     }
 
-    // Pre-filter layers that actually get drawn so tap hit-testing uses the same set.
+    // Pre-filter layers that actually get drawn so tap hit-testing uses the
+    // same set. Phase 35.2f: tap-route excludes locked layers per ADR-011 §5
+    // addendum decision 1(c) — overlay still paints (drawRectChart /
+    // drawPolarSegmentOverlay iterate over chart.layers directly), but
+    // segment-progress taps on a locked-layer cell are silently dropped.
     val visibleLayers =
         chart.layers.filter { it.visible && it.id !in hiddenLayerIds }
+    val tapTargetLayers = visibleLayers.filter { !it.locked }
 
     Canvas(
         modifier =
@@ -279,20 +284,20 @@ private fun ChartCanvas(
                 // Rekey only on extents + layer visibility — deps that actually
                 // change hit-test geometry. PRD Q-3: co-composing detectTapGestures
                 // with transformable() is the established pattern.
-                .pointerInput(extents, visibleLayers.map { it.id }) {
+                .pointerInput(extents, tapTargetLayers.map { it.id }) {
                     detectTapGestures(
                         onTap = { offset ->
                             val hit =
                                 when (extents) {
                                     is ChartExtents.Rect ->
-                                        resolveHit(offset, size, extents, visibleLayers)
+                                        resolveHit(offset, size, extents, tapTargetLayers)
                                     is ChartExtents.Polar ->
-                                        resolvePolarHit(offset, size, extents, visibleLayers)
+                                        resolvePolarHit(offset, size, extents, tapTargetLayers)
                                 }
                             if (hit != null) {
-                                // Top-most visible layer wins when multiple layers stack.
-                                // PRD AC-2.5 requires a no-op on empty cells; resolveHit*
-                                // returns null unless some visible layer has a drawn cell.
+                                // Top-most visible AND unlocked layer wins. Locked layers
+                                // were filtered out of [tapTargetLayers] above so no
+                                // segment-progress event can dispatch against them.
                                 onTapCell(hit.layerId, hit.x, hit.y)
                             }
                         },
@@ -314,9 +319,9 @@ private fun ChartCanvas(
                             val hit =
                                 when (extents) {
                                     is ChartExtents.Rect ->
-                                        resolveHit(offset, size, extents, visibleLayers)
+                                        resolveHit(offset, size, extents, tapTargetLayers)
                                     is ChartExtents.Polar ->
-                                        resolvePolarHit(offset, size, extents, visibleLayers)
+                                        resolvePolarHit(offset, size, extents, tapTargetLayers)
                                 }
                             if (hit != null) {
                                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)

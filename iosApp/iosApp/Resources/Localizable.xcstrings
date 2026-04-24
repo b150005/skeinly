@@ -1757,6 +1757,90 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Progress reset" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "進捗をリセットしました" } }
       }
+    },
+    "action_layers" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Layers" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイヤー" } }
+      }
+    },
+    "action_add_layer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add layer" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイヤーを追加" } }
+      }
+    },
+    "action_rename_layer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rename layer" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイヤー名を変更" } }
+      }
+    },
+    "action_delete_layer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete layer" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイヤーを削除" } }
+      }
+    },
+    "action_toggle_layer_visibility" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Toggle layer visibility" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイヤーの表示/非表示" } }
+      }
+    },
+    "action_toggle_layer_lock" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Toggle layer lock" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイヤーのロック切り替え" } }
+      }
+    },
+    "action_drag_to_reorder" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Drag to reorder" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ドラッグで並べ替え" } }
+      }
+    },
+    "label_layer_default_name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Layer %1$d" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイヤー %1$d" } }
+      }
+    },
+    "dialog_delete_layer_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete layer?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイヤーを削除しますか？" } }
+      }
+    },
+    "dialog_delete_layer_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This layer has %1$d cell(s). Deleting it can be recovered with Undo from the toolbar." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このレイヤーには %1$d 個のセルがあります。削除しても、ツールバーの「元に戻す」で復元できます。" } }
+      }
+    },
+    "state_no_layers" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No layers" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイヤーがありません" } }
+      }
+    },
+    "label_layers_section" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Layers" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイヤー" } }
+      }
     }
   },
   "version" : "1.0"

@@ -273,6 +273,61 @@ class ChartViewerViewModelTest {
         }
 
     @Test
+    fun `tapCell is a no-op when the layer is locked`() =
+        runTest {
+            // Phase 35.2f-ui regression anchor: locked-layer tap-routing is
+            // dropped per ADR-011 §5 addendum decision 1(c). The viewer Screen
+            // pre-filters locked layers from the tap targets and the ViewModel
+            // double-checks; this test exercises the ViewModel-side guard so a
+            // future Screen-layer regression can't slip through.
+            repo.seed(
+                chart(
+                    "pat-1",
+                    listOf(
+                        ChartLayer(
+                            id = "L1",
+                            name = "Main",
+                            cells = listOf(ChartCell("knit", 1, 2)),
+                            locked = true,
+                        ),
+                    ),
+                ),
+            )
+            val viewModel = makeViewModel("pat-1", projectId = "proj-1")
+            advanceUntilIdle()
+
+            viewModel.onEvent(ChartViewerEvent.TapCell("L1", 1, 2))
+            advanceUntilIdle()
+
+            assertNull(segmentRepo.getById(ProjectSegment.buildId("proj-1", "L1", 1, 2)))
+        }
+
+    @Test
+    fun `longPressCell is a no-op when the layer is locked`() =
+        runTest {
+            repo.seed(
+                chart(
+                    "pat-1",
+                    listOf(
+                        ChartLayer(
+                            id = "L1",
+                            name = "Main",
+                            cells = listOf(ChartCell("knit", 4, 5)),
+                            locked = true,
+                        ),
+                    ),
+                ),
+            )
+            val viewModel = makeViewModel("pat-1", projectId = "proj-1")
+            advanceUntilIdle()
+
+            viewModel.onEvent(ChartViewerEvent.LongPressCell("L1", 4, 5))
+            advanceUntilIdle()
+
+            assertNull(segmentRepo.getById(ProjectSegment.buildId("proj-1", "L1", 4, 5)))
+        }
+
+    @Test
     fun `longPressCell forces segment to done regardless of prior state`() =
         runTest {
             repo.seed(chart("pat-1", listOf(ChartLayer(id = "L1", name = "Main"))))

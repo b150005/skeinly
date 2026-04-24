@@ -160,7 +160,20 @@ class ChartViewerViewModel(
         y: Int,
     ) {
         val pid = projectId ?: return
-        if (layerId in _state.value.hiddenLayerIds) return
+        val current = _state.value
+        if (layerId in current.hiddenLayerIds) return
+        // Phase 35.2f: viewer taps on a cell that belongs to a locked layer
+        // are silently dropped per ADR-011 §5 addendum decision 1(c). The
+        // viewer Screen pre-filters locked layers from the tap-routing set
+        // so this check is defense-in-depth; it also makes the contract
+        // observable from the ViewModel test layer.
+        if (current.chart
+                ?.layers
+                ?.firstOrNull { it.id == layerId }
+                ?.locked == true
+        ) {
+            return
+        }
         viewModelScope.launch {
             when (val result = toggleSegmentState(pid, layerId, x, y)) {
                 is UseCaseResult.Success -> { /* overlay updates via Flow */ }
@@ -176,7 +189,16 @@ class ChartViewerViewModel(
         y: Int,
     ) {
         val pid = projectId ?: return
-        if (layerId in _state.value.hiddenLayerIds) return
+        val current = _state.value
+        if (layerId in current.hiddenLayerIds) return
+        // Phase 35.2f lock guard — see [tapCell] for rationale.
+        if (current.chart
+                ?.layers
+                ?.firstOrNull { it.id == layerId }
+                ?.locked == true
+        ) {
+            return
+        }
         viewModelScope.launch {
             when (val result = markSegmentDone(pid, layerId, x, y)) {
                 is UseCaseResult.Success -> { /* overlay updates via Flow */ }

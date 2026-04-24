@@ -330,4 +330,18 @@
     <string name="action_symmetry_reflect">Reflect</string>
     <!-- Phase 35.2c axis-picker banner (ADR-011 §3) -->
     <string name="banner_pick_reflection_axis">Tap a stitch to set the reflection axis.</string>
+
+    <!-- Phase 35.2f layer ops (ADR-011 §5) — see shared values/strings.xml for full naming convention. -->
+    <string name="action_layers">Layers</string>
+    <string name="action_add_layer">Add layer</string>
+    <string name="action_rename_layer">Rename layer</string>
+    <string name="action_delete_layer">Delete layer</string>
+    <string name="action_toggle_layer_visibility">Toggle layer visibility</string>
+    <string name="action_toggle_layer_lock">Toggle layer lock</string>
+    <string name="action_drag_to_reorder">Drag to reorder</string>
+    <string name="label_layer_default_name">Layer %1$d</string>
+    <string name="dialog_delete_layer_title">Delete layer?</string>
+    <string name="dialog_delete_layer_body">This layer has %1$d cell(s). Deleting it can be recovered with Undo from the toolbar.</string>
+    <string name="state_no_layers">No layers</string>
+    <string name="label_layers_section">Layers</string>
 </resources>

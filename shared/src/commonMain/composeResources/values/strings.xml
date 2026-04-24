@@ -382,4 +382,36 @@
          to set the reflection axis. Pairs with `action_cancel` for the
          in-banner dismiss affordance. -->
     <string name="banner_pick_reflection_axis">Tap a stitch to set the reflection axis.</string>
+
+    <!-- Phase 35.2f layer ops (ADR-011 §5 + addendum). Right-side drawer
+         exposing add / remove / rename / reorder / visibility / lock per
+         §5. `action_layers` is the toolbar trigger contentDescription
+         (also reused as the drawer landmark title). `action_add_layer`
+         is the drawer FAB; row affordances split: `action_rename_layer`
+         labels the inline `OutlinedTextField`, `action_delete_layer`
+         labels the row overflow menu's destructive action,
+         `action_toggle_layer_visibility` / `action_toggle_layer_lock`
+         label the eye + padlock IconButtons, `action_drag_to_reorder`
+         labels the Material 3 DragHandle (reorder gesture is long-press-
+         and-drag on the handle per §3 of the addendum).
+         `label_layer_default_name` is parametric — `AddLayer` dispatches
+         from the Screen layer with the next auto-numbered name so the
+         ViewModel stays UI-agnostic and locale resolution happens on the
+         Compose / SwiftUI side. The initial layer (id `L1`) renders as
+         "Layer 1" in EN / "レイヤー 1" in JA.
+         `dialog_delete_layer_body` is parametric on cell count and
+         visible only when the layer has cells (empty layers delete
+         silently per addendum decision 4). -->
+    <string name="action_layers">Layers</string>
+    <string name="action_add_layer">Add layer</string>
+    <string name="action_rename_layer">Rename layer</string>
+    <string name="action_delete_layer">Delete layer</string>
+    <string name="action_toggle_layer_visibility">Toggle layer visibility</string>
+    <string name="action_toggle_layer_lock">Toggle layer lock</string>
+    <string name="action_drag_to_reorder">Drag to reorder</string>
+    <string name="label_layer_default_name">Layer %1$d</string>
+    <string name="dialog_delete_layer_title">Delete layer?</string>
+    <string name="dialog_delete_layer_body">This layer has %1$d cell(s). Deleting it can be recovered with Undo from the toolbar.</string>
+    <string name="state_no_layers">No layers</string>
+    <string name="label_layers_section">Layers</string>
 </resources>
