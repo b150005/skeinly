@@ -61,6 +61,7 @@ import io.github.b150005.knitnote.generated.resources.action_fork_pattern
 import io.github.b150005.knitnote.generated.resources.action_sort
 import io.github.b150005.knitnote.generated.resources.hint_search_public_patterns
 import io.github.b150005.knitnote.generated.resources.label_difficulty_all
+import io.github.b150005.knitnote.generated.resources.label_filter_charts_only
 import io.github.b150005.knitnote.generated.resources.label_gauge_value
 import io.github.b150005.knitnote.generated.resources.label_needle_value
 import io.github.b150005.knitnote.generated.resources.label_sort_alphabetical
@@ -74,6 +75,7 @@ import io.github.b150005.knitnote.generated.resources.state_no_matching_patterns
 import io.github.b150005.knitnote.generated.resources.state_no_public_patterns
 import io.github.b150005.knitnote.generated.resources.state_no_public_patterns_body
 import io.github.b150005.knitnote.generated.resources.title_discover_patterns
+import io.github.b150005.knitnote.ui.chart.ChartThumbnail
 import io.github.b150005.knitnote.ui.components.EmptyStateView
 import io.github.b150005.knitnote.ui.components.labelKey
 import kotlinx.coroutines.launch
@@ -85,6 +87,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun DiscoveryScreen(
     onBack: () -> Unit,
     onForked: (projectId: String) -> Unit,
+    onChartViewerClick: (patternId: String) -> Unit,
     viewModel: DiscoveryViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -159,18 +162,29 @@ fun DiscoveryScreen(
                 DiscoveryFilterSortRow(
                     difficultyFilter = state.difficultyFilter,
                     sortOrder = state.sortOrder,
+                    chartsOnlyFilter = state.chartsOnlyFilter,
                     onDifficultyFilterChange = {
                         viewModel.onEvent(DiscoveryEvent.UpdateDifficultyFilter(it))
                     },
                     onSortOrderChange = {
                         viewModel.onEvent(DiscoveryEvent.UpdateSortOrder(it))
                     },
+                    onToggleChartsOnly = {
+                        viewModel.onEvent(DiscoveryEvent.ToggleChartsOnly)
+                    },
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                val hasActiveFilter = state.searchQuery.isNotBlank() || state.difficultyFilter != null
+                // Phase 36.4: include chartsOnlyFilter so that "Charts only"
+                // with an empty result set shows the matching-filter empty
+                // state ("No matching patterns / Try adjusting your filters")
+                // rather than the misleading no-public-patterns variant.
+                val hasActiveFilter =
+                    state.searchQuery.isNotBlank() ||
+                        state.difficultyFilter != null ||
+                        state.chartsOnlyFilter
 
                 when {
                     state.isLoading && state.patterns.isEmpty() -> {
@@ -218,7 +232,9 @@ fun DiscoveryScreen(
                                 DiscoveryPatternCard(
                                     pattern = pattern,
                                     isForkInProgress = state.forkingPatternId == pattern.id,
+                                    hasChart = pattern.id in state.patternsWithCharts,
                                     onFork = { viewModel.onEvent(DiscoveryEvent.ForkPattern(pattern.id)) },
+                                    onChartClick = { onChartViewerClick(pattern.id) },
                                 )
                             }
                         }
@@ -265,8 +281,10 @@ private fun DiscoverySearchField(
 private fun DiscoveryFilterSortRow(
     difficultyFilter: Difficulty?,
     sortOrder: SortOrder,
+    chartsOnlyFilter: Boolean,
     onDifficultyFilterChange: (Difficulty?) -> Unit,
     onSortOrderChange: (SortOrder) -> Unit,
+    onToggleChartsOnly: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -277,6 +295,17 @@ private fun DiscoveryFilterSortRow(
             modifier = Modifier.weight(1f),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            // Phase 36.4 (ADR-012 §4): "Charts only" sits between the search
+            // field and the difficulty chip row per the ADR; in the LazyRow
+            // it leads so it is visible without horizontal scrolling.
+            item {
+                FilterChip(
+                    selected = chartsOnlyFilter,
+                    onClick = onToggleChartsOnly,
+                    label = { Text(stringResource(Res.string.label_filter_charts_only)) },
+                    modifier = Modifier.testTag("chartsOnlyChip"),
+                )
+            }
             item {
                 FilterChip(
                     selected = difficultyFilter == null,
@@ -381,72 +410,89 @@ private fun DiscoverySortDropdown(
 private fun DiscoveryPatternCard(
     pattern: Pattern,
     isForkInProgress: Boolean,
+    hasChart: Boolean,
     onFork: () -> Unit,
+    onChartClick: () -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = pattern.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            // Phase 36.4 (ADR-012 §5): chart-preview thumbnail rendered live
+            // when the pattern has a chart_documents row. Off-screen rows do
+            // not fetch (LazyColumn lazy-instantiates).
+            if (hasChart) {
+                ChartThumbnail(
+                    patternId = pattern.id,
+                    onClick = onChartClick,
                 )
-                if (pattern.difficulty != null) {
-                    DiscoveryDifficultyBadge(pattern.difficulty)
-                }
+                Spacer(modifier = Modifier.width(12.dp))
             }
-
-            if (!pattern.description.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = pattern.description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-
-            val details = buildDiscoveryPatternDetails(pattern)
-            if (details.isNotBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = details,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                if (isForkInProgress) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.height(20.dp).width(20.dp),
-                        strokeWidth = 2.dp,
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = pattern.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f),
                     )
-                } else {
-                    IconButton(
-                        onClick = onFork,
-                        modifier = Modifier.testTag("forkButton_${pattern.id}"),
-                    ) {
-                        Icon(
-                            Icons.Default.ContentCopy,
-                            contentDescription = stringResource(Res.string.action_fork_pattern),
-                            tint = MaterialTheme.colorScheme.primary,
+                    if (pattern.difficulty != null) {
+                        DiscoveryDifficultyBadge(pattern.difficulty)
+                    }
+                }
+
+                if (!pattern.description.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = pattern.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+
+                val details = buildDiscoveryPatternDetails(pattern)
+                if (details.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = details,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    if (isForkInProgress) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.height(20.dp).width(20.dp),
+                            strokeWidth = 2.dp,
                         )
+                    } else {
+                        IconButton(
+                            onClick = onFork,
+                            modifier = Modifier.testTag("forkButton_${pattern.id}"),
+                        ) {
+                            Icon(
+                                Icons.Default.ContentCopy,
+                                contentDescription = stringResource(Res.string.action_fork_pattern),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
                     }
                 }
             }

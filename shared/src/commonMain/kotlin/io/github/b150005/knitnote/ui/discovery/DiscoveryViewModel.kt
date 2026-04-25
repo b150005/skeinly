@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 
 data class DiscoveryState(
@@ -30,6 +31,15 @@ data class DiscoveryState(
     val difficultyFilter: Difficulty? = null,
     val sortOrder: SortOrder = SortOrder.RECENT,
     val forkingPatternId: String? = null,
+    /** Phase 36.4 (ADR-012 §4): when true the list is filtered server-side. */
+    val chartsOnlyFilter: Boolean = false,
+    /**
+     * Phase 36.4 (ADR-012 §5): companion set of pattern ids that have a
+     * `chart_documents` row. Always populated regardless of [chartsOnlyFilter];
+     * the PatternCard checks membership to decide whether to render the
+     * chart-preview thumbnail.
+     */
+    val patternsWithCharts: Set<String> = emptySet(),
 )
 
 /**
@@ -72,6 +82,8 @@ sealed interface DiscoveryEvent {
         val patternId: String,
     ) : DiscoveryEvent
 
+    data object ToggleChartsOnly : DiscoveryEvent
+
     data object Refresh : DiscoveryEvent
 
     data object ClearError : DiscoveryEvent
@@ -86,6 +98,7 @@ private data class FilterState(
     val searchQuery: String = "",
     val difficultyFilter: Difficulty? = null,
     val sortOrder: SortOrder = SortOrder.RECENT,
+    val chartsOnlyFilter: Boolean = false,
 )
 
 class DiscoveryViewModel(
@@ -93,6 +106,7 @@ class DiscoveryViewModel(
     private val forkPublicPattern: ForkPublicPatternUseCase,
 ) : ViewModel() {
     private val rawPatterns = MutableStateFlow<List<Pattern>>(emptyList())
+    private val patternsWithCharts = MutableStateFlow<Set<String>>(emptySet())
     private val uiFlags = MutableStateFlow(UiFlags())
     private val filterState = MutableStateFlow(FilterState())
     private val isLoading = MutableStateFlow(true)
@@ -105,10 +119,11 @@ class DiscoveryViewModel(
     val state: StateFlow<DiscoveryState> =
         combine(
             rawPatterns,
+            patternsWithCharts,
             uiFlags,
             filterState,
             isLoading,
-        ) { patterns, flags, filters, loading ->
+        ) { patterns, withCharts, flags, filters, loading ->
             val filtered =
                 patterns
                     .filterBySearch(filters.searchQuery)
@@ -123,6 +138,8 @@ class DiscoveryViewModel(
                 difficultyFilter = filters.difficultyFilter,
                 sortOrder = filters.sortOrder,
                 forkingPatternId = flags.forkingPatternId,
+                chartsOnlyFilter = filters.chartsOnlyFilter,
+                patternsWithCharts = withCharts,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -131,7 +148,7 @@ class DiscoveryViewModel(
         )
 
     init {
-        load("")
+        load("", chartsOnly = false)
     }
 
     fun onEvent(event: DiscoveryEvent) {
@@ -147,7 +164,24 @@ class DiscoveryViewModel(
                 filterState.update { it.copy(sortOrder = event.order) }
             }
             is DiscoveryEvent.ForkPattern -> fork(event.patternId)
-            DiscoveryEvent.Refresh -> load(filterState.value.searchQuery)
+            DiscoveryEvent.ToggleChartsOnly -> {
+                // Phase 36.4 (ADR-012 §4): server-side filter so toggling
+                // re-fetches against the current search query. Difficulty +
+                // sort stay client-side and are reapplied automatically by
+                // the combine block.
+                //
+                // updateAndGet returns the new state atomically; passing it
+                // explicitly into load() avoids a TOCTOU race where a second
+                // toggle dispatched on viewModelScope between these two lines
+                // could flip the chartsOnly value that the launched load
+                // coroutine ultimately reads.
+                val newFilter = filterState.updateAndGet { it.copy(chartsOnlyFilter = !it.chartsOnlyFilter) }
+                load(newFilter.searchQuery, newFilter.chartsOnlyFilter)
+            }
+            DiscoveryEvent.Refresh -> {
+                val current = filterState.value
+                load(current.searchQuery, current.chartsOnlyFilter)
+            }
             DiscoveryEvent.ClearError -> {
                 uiFlags.update { it.copy(error = null) }
             }
@@ -159,16 +193,20 @@ class DiscoveryViewModel(
         searchJob =
             viewModelScope.launch {
                 delay(SEARCH_DEBOUNCE_MS)
-                load(query)
+                load(query, filterState.value.chartsOnlyFilter)
             }
     }
 
-    private fun load(searchQuery: String) {
+    private fun load(
+        searchQuery: String,
+        chartsOnly: Boolean,
+    ) {
         viewModelScope.launch {
             isLoading.value = true
-            when (val result = getPublicPatterns(searchQuery)) {
+            when (val result = getPublicPatterns(searchQuery, chartsOnly)) {
                 is UseCaseResult.Success -> {
-                    rawPatterns.value = result.value
+                    rawPatterns.value = result.value.patterns
+                    patternsWithCharts.value = result.value.patternsWithCharts
                     isLoading.value = false
                 }
                 is UseCaseResult.Failure -> {

@@ -174,6 +174,10 @@
     <string name="label_gauge_value">Gauge: %1$s</string>
     <string name="label_yarn_value">Yarn: %1$s</string>
     <string name="label_needle_value">Needle: %1$s</string>
+    <!-- Phase 36.4 (ADR-012 \u00a74 / \u00a75): "Charts only" filter chip + chart-preview
+         thumbnail tap target. -->
+    <string name="label_filter_charts_only">Charts only</string>
+    <string name="action_view_chart_thumbnail">View chart preview</string>
 
     <!-- Pattern library screen. `action_new_pattern` is the FAB contentDescription
          (full phrase); `action_create_pattern` is the empty-state CTA. Both drive
