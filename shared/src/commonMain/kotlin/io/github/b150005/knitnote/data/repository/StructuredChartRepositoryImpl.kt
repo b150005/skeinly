@@ -9,6 +9,8 @@ import io.github.b150005.knitnote.data.sync.SyncOperation
 import io.github.b150005.knitnote.domain.model.ChartBranch
 import io.github.b150005.knitnote.domain.model.ChartRevision
 import io.github.b150005.knitnote.domain.model.StructuredChart
+import io.github.b150005.knitnote.domain.model.toStructuredChart
+import io.github.b150005.knitnote.domain.repository.ChartBranchRepository
 import io.github.b150005.knitnote.domain.repository.ChartRevisionRepository
 import io.github.b150005.knitnote.domain.repository.StructuredChartRepository
 import kotlinx.coroutines.flow.Flow
@@ -34,6 +36,11 @@ class StructuredChartRepositoryImpl(
     // compile. Production wiring (RepositoryModule) always passes non-null.
     private val chartRevisionRepository: ChartRevisionRepository? = null,
     private val localChartBranch: LocalChartBranchDataSource? = null,
+    // Phase 37.4 (ADR-013 §7): advance the current branch's tip on every save.
+    // Optional with `null` default for the same reason the 37.1 deps are
+    // optional — existing test call-sites that bypass the branch layer stay
+    // green. Production wiring (RepositoryModule) always passes non-null.
+    private val chartBranchRepository: ChartBranchRepository? = null,
 ) : StructuredChartRepository {
     /**
      * Serializes the read-then-write triple in [update] and [forkFor] so two
@@ -98,6 +105,17 @@ class StructuredChartRepositoryImpl(
                 chart.id,
                 SyncOperation.UPDATE,
                 json.encodeToString(chart),
+            )
+            // ADR-013 §7: advance the current branch's tip pointer to the new
+            // revision. "Current branch" = any branch whose `tip_revision_id`
+            // matched the prior tip — defines co-located branches as advancing
+            // together (e.g. immediately after `createBranch` from the same tip).
+            // If no branch row matches, fall back to advancing "main" so initial
+            // bootstrap and pre-37.4 chart_documents stay coherent.
+            advanceCurrentBranchTip(
+                patternId = chart.patternId,
+                previousRevisionId = previousChart?.revisionId,
+                newRevisionId = chart.revisionId,
             )
             chart
         }
@@ -231,5 +249,83 @@ class StructuredChartRepositoryImpl(
             SyncOperation.INSERT,
             json.encodeToString(branch),
         )
+    }
+
+    /**
+     * Phase 37.4 (ADR-013 §7): rewrite the tip pointer for a branch switch
+     * WITHOUT appending history. The revision rows already exist (we are
+     * reading from one); switching branches is pointer movement.
+     *
+     * The mutex serializes the read of the current tip pointer row and the
+     * write that rewrites it from [targetRevision]'s payload. This makes a
+     * concurrent `update()` racing the switch a no-op for the switch's
+     * payload — either the update lands first (its revision becomes the new
+     * tip; the switch then re-reads and rewrites) or the switch lands first
+     * (its payload is the new tip; the update appends on top of it). Without
+     * the read-write atomicity here, a use-case-level read+write would
+     * silently overwrite an in-flight save.
+     */
+    override suspend fun setTip(
+        patternId: String,
+        targetRevision: ChartRevision,
+    ): StructuredChart? =
+        writeMutex.withLock {
+            val current = local.getByPatternId(patternId) ?: return@withLock null
+            val rebuilt =
+                targetRevision.toStructuredChart().copy(
+                    id = current.id,
+                    createdAt = current.createdAt,
+                    updatedAt = Clock.System.now(),
+                )
+            local.update(rebuilt)
+            syncManager.syncOrEnqueue(
+                SyncEntityType.STRUCTURED_CHART,
+                rebuilt.id,
+                SyncOperation.UPDATE,
+                json.encodeToString(rebuilt),
+            )
+            rebuilt
+        }
+
+    /**
+     * Advance the tip of every branch whose `tip_revision_id` matches the
+     * prior chart's revision (typically just one — the user's current branch).
+     *
+     * Why "every" rather than "the": after a `createBranch` from the same tip,
+     * two branches are co-located on the same revision until the next save.
+     * Advancing only one would leave the other dangling at the prior tip,
+     * silently breaking the "I just branched from here" mental model.
+     *
+     * Fallback: when no branch row matches (defensive: pre-37.4 charts that
+     * predate `ensureDefaultBranch` wiring, or test setups that skip the
+     * branch layer entirely), advance "main" via `getByPatternIdAndName` and
+     * silently no-op if "main" itself is absent.
+     */
+    private suspend fun advanceCurrentBranchTip(
+        patternId: String,
+        previousRevisionId: String?,
+        newRevisionId: String,
+    ) {
+        val branchRepo = chartBranchRepository ?: return
+        if (previousRevisionId == null) {
+            // First save into a chart that predates branch wiring (or test
+            // shim). Try advancing "main" if it exists; ensureDefaultBranch
+            // already set the tip on first create so this is mostly defensive.
+            branchRepo.advanceTip(patternId, ChartBranch.DEFAULT_BRANCH_NAME, newRevisionId)
+            return
+        }
+        val branches = branchRepo.getByPatternId(patternId)
+        val matching = branches.filter { it.tipRevisionId == previousRevisionId }
+        if (matching.isEmpty()) {
+            // Defensive fall-through: no branch points at the prior tip. This
+            // shouldn't happen post-37.4 but guards against pre-37.4 data
+            // where chart_documents.revision_id evolved without any branch
+            // row tracking it.
+            branchRepo.advanceTip(patternId, ChartBranch.DEFAULT_BRANCH_NAME, newRevisionId)
+            return
+        }
+        matching.forEach { branch ->
+            branchRepo.advanceTip(patternId, branch.branchName, newRevisionId)
+        }
     }
 }

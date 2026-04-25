@@ -11,6 +11,8 @@ struct StructuredChartViewerScreen: View {
     @Binding var path: NavigationPath
     @StateObject private var holder: ScopedViewModel<ChartViewerViewModel, ChartViewerState>
     private let catalog: SymbolCatalog
+    @State private var showBranchPicker = false
+    @State private var switchedToast: String?
 
     init(patternId: String, projectId: String?, path: Binding<NavigationPath>) {
         self.patternId = patternId
@@ -50,11 +52,44 @@ struct StructuredChartViewerScreen: View {
                         Label(LocalizedStringKey("title_chart_history"), systemImage: "clock.arrow.circlepath")
                     }
                     .accessibilityIdentifier("viewHistoryMenuItem")
+
+                    Button {
+                        showBranchPicker = true
+                    } label: {
+                        Label(LocalizedStringKey("title_branch_picker"), systemImage: "arrow.triangle.branch")
+                    }
+                    .accessibilityIdentifier("openBranchPickerMenuItem")
                 } label: {
                     Image(systemName: "ellipsis.circle")
                         .accessibilityLabel(LocalizedStringKey("action_more_options"))
                 }
                 .accessibilityIdentifier("overflowMenuButton")
+            }
+        }
+        .sheet(isPresented: $showBranchPicker) {
+            ChartBranchPickerSheet(
+                patternId: patternId,
+                onDismiss: { showBranchPicker = false },
+                onBranchSwitched: { branchName in
+                    let template = NSLocalizedString("message_switched_to_branch", comment: "")
+                    switchedToast = String(format: template, branchName)
+                    showBranchPicker = false
+                }
+            )
+        }
+        .overlay(alignment: .bottom) {
+            if let message = switchedToast {
+                Text(verbatim: message)
+                    .font(.callout)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(.thinMaterial, in: Capsule())
+                    .padding(.bottom, 24)
+                    .transition(.opacity)
+                    .task {
+                        try? await Task.sleep(nanoseconds: 2_000_000_000)
+                        switchedToast = nil
+                    }
             }
         }
     }

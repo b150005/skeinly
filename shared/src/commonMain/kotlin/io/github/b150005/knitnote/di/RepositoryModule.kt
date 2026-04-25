@@ -30,6 +30,7 @@ import io.github.b150005.knitnote.data.remote.SupabaseConfig
 import io.github.b150005.knitnote.data.remote.isConfigured
 import io.github.b150005.knitnote.data.repository.ActivityRepositoryImpl
 import io.github.b150005.knitnote.data.repository.AuthRepositoryImpl
+import io.github.b150005.knitnote.data.repository.ChartBranchRepositoryImpl
 import io.github.b150005.knitnote.data.repository.ChartRevisionRepositoryImpl
 import io.github.b150005.knitnote.data.repository.CommentRepositoryImpl
 import io.github.b150005.knitnote.data.repository.OfflineUserRepository
@@ -42,6 +43,7 @@ import io.github.b150005.knitnote.data.repository.StructuredChartRepositoryImpl
 import io.github.b150005.knitnote.data.repository.UserRepositoryImpl
 import io.github.b150005.knitnote.domain.repository.ActivityRepository
 import io.github.b150005.knitnote.domain.repository.AuthRepository
+import io.github.b150005.knitnote.domain.repository.ChartBranchRepository
 import io.github.b150005.knitnote.domain.repository.ChartRevisionRepository
 import io.github.b150005.knitnote.domain.repository.CommentRepository
 import io.github.b150005.knitnote.domain.repository.PatternRepository
@@ -158,6 +160,7 @@ val repositoryModule =
                 json = get(),
                 chartRevisionRepository = get(),
                 localChartBranch = get(),
+                chartBranchRepository = get(),
             )
         }
         single<ChartRevisionRepository> {
@@ -165,6 +168,13 @@ val repositoryModule =
                 local = get(),
                 remote = getOrNull(),
                 isOnline = get<ConnectivityMonitor>().isOnline,
+                syncManager = get(),
+                json = get(),
+            )
+        }
+        single<ChartBranchRepository> {
+            ChartBranchRepositoryImpl(
+                local = get(),
                 syncManager = get(),
                 json = get(),
             )

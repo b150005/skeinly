@@ -93,6 +93,10 @@ enum ViewModelFactory {
         )
     }
 
+    static func chartBranchPickerViewModel(patternId: String) -> ChartBranchPickerViewModel {
+        KoinHelperKt.getChartBranchPickerViewModel(patternId: patternId)
+    }
+
     static func symbolCatalog() -> SymbolCatalog {
         KoinHelperKt.getSymbolCatalog()
     }

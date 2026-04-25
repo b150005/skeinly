@@ -9,6 +9,7 @@ import io.github.b150005.knitnote.domain.symbol.SymbolCatalog
 import io.github.b150005.knitnote.domain.usecase.GetOnboardingCompletedUseCase
 import io.github.b150005.knitnote.ui.activityfeed.ActivityFeedViewModel
 import io.github.b150005.knitnote.ui.auth.AuthViewModel
+import io.github.b150005.knitnote.ui.chart.ChartBranchPickerViewModel
 import io.github.b150005.knitnote.ui.chart.ChartDiffViewModel
 import io.github.b150005.knitnote.ui.chart.ChartEditorViewModel
 import io.github.b150005.knitnote.ui.chart.ChartHistoryViewModel
@@ -91,6 +92,8 @@ fun getChartDiffViewModel(
     baseRevisionId: String?,
     targetRevisionId: String,
 ): ChartDiffViewModel = KoinPlatform.getKoin().get { parametersOf(baseRevisionId, targetRevisionId) }
+
+fun getChartBranchPickerViewModel(patternId: String): ChartBranchPickerViewModel = KoinPlatform.getKoin().get { parametersOf(patternId) }
 
 fun getSymbolCatalog(): SymbolCatalog = KoinPlatform.getKoin().get()
 
@@ -183,6 +186,14 @@ fun wrapChartHistoryRevisionTaps(
 fun wrapChartDiffState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.knitnote.ui.chart.ChartDiffState>,
 ): FlowWrapper<io.github.b150005.knitnote.ui.chart.ChartDiffState> = FlowWrapper(flow)
+
+fun wrapChartBranchPickerState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.knitnote.ui.chart.ChartBranchPickerState>,
+): FlowWrapper<io.github.b150005.knitnote.ui.chart.ChartBranchPickerState> = FlowWrapper(flow)
+
+fun wrapChartBranchSwitchedFlow(
+    flow: kotlinx.coroutines.flow.Flow<io.github.b150005.knitnote.ui.chart.BranchSwitchedEvent>,
+): EventFlowWrapper<io.github.b150005.knitnote.ui.chart.BranchSwitchedEvent> = EventFlowWrapper(flow)
 
 fun getSymbolGalleryViewModel(): SymbolGalleryViewModel = KoinPlatform.getKoin().get()
 

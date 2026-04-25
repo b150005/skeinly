@@ -5,6 +5,7 @@ import io.github.b150005.knitnote.domain.usecase.CloseRealtimeChannelsUseCase
 import io.github.b150005.knitnote.domain.usecase.CompleteOnboardingUseCase
 import io.github.b150005.knitnote.domain.usecase.CompleteProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.CreateActivityUseCase
+import io.github.b150005.knitnote.domain.usecase.CreateBranchUseCase
 import io.github.b150005.knitnote.domain.usecase.CreateCommentUseCase
 import io.github.b150005.knitnote.domain.usecase.CreatePatternUseCase
 import io.github.b150005.knitnote.domain.usecase.CreateProjectUseCase
@@ -21,6 +22,7 @@ import io.github.b150005.knitnote.domain.usecase.DeleteStructuredChartUseCase
 import io.github.b150005.knitnote.domain.usecase.ForkPublicPatternUseCase
 import io.github.b150005.knitnote.domain.usecase.ForkSharedPatternUseCase
 import io.github.b150005.knitnote.domain.usecase.GetActivitiesUseCase
+import io.github.b150005.knitnote.domain.usecase.GetChartBranchesUseCase
 import io.github.b150005.knitnote.domain.usecase.GetChartDiffUseCase
 import io.github.b150005.knitnote.domain.usecase.GetChartHistoryUseCase
 import io.github.b150005.knitnote.domain.usecase.GetChartRevisionUseCase
@@ -43,10 +45,12 @@ import io.github.b150005.knitnote.domain.usecase.ObserveStructuredChartUseCase
 import io.github.b150005.knitnote.domain.usecase.ReopenProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.ResetProjectProgressUseCase
 import io.github.b150005.knitnote.domain.usecase.ResolveShareTokenUseCase
+import io.github.b150005.knitnote.domain.usecase.RestoreRevisionUseCase
 import io.github.b150005.knitnote.domain.usecase.ShareProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.SignInUseCase
 import io.github.b150005.knitnote.domain.usecase.SignOutUseCase
 import io.github.b150005.knitnote.domain.usecase.SignUpUseCase
+import io.github.b150005.knitnote.domain.usecase.SwitchBranchUseCase
 import io.github.b150005.knitnote.domain.usecase.ToggleSegmentStateUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdatePatternUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateProfileUseCase
@@ -135,6 +139,12 @@ val useCaseModule =
 
         // Phase 37.3 chart-diff use case (ADR-013 §5).
         factory { GetChartDiffUseCase(get()) }
+
+        // Phase 37.4 branch + restore use cases (ADR-013 §6, §7).
+        factory { GetChartBranchesUseCase(get()) }
+        factory { CreateBranchUseCase(get(), get()) }
+        factory { SwitchBranchUseCase(get(), get(), get()) }
+        factory { RestoreRevisionUseCase(get(), get()) }
 
         // Per-segment progress use cases (Phase 34)
         factory { ObserveProjectSegmentsUseCase(get()) }

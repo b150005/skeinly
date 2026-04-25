@@ -2,6 +2,7 @@ package io.github.b150005.knitnote.di
 
 import io.github.b150005.knitnote.ui.activityfeed.ActivityFeedViewModel
 import io.github.b150005.knitnote.ui.auth.AuthViewModel
+import io.github.b150005.knitnote.ui.chart.ChartBranchPickerViewModel
 import io.github.b150005.knitnote.ui.chart.ChartDiffViewModel
 import io.github.b150005.knitnote.ui.chart.ChartEditorViewModel
 import io.github.b150005.knitnote.ui.chart.ChartHistoryViewModel
@@ -97,6 +98,17 @@ val viewModelModule =
             ChartHistoryViewModel(
                 patternId = params.get(),
                 getChartHistory = get(),
+                restoreRevision = get(),
+            )
+        }
+        viewModel { params ->
+            ChartBranchPickerViewModel(
+                patternId = params.get(),
+                getBranches = get(),
+                createBranch = get(),
+                switchBranch = get(),
+                chartRepository = get(),
+                authRepository = get(),
             )
         }
         viewModel { params ->

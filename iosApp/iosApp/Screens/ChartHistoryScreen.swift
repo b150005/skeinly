@@ -69,6 +69,33 @@ struct ChartHistoryScreen: View {
                             event: ChartHistoryEventTapRevision(revisionId: revision.revisionId)
                         )
                     }
+                    .onLongPressGesture {
+                        viewModel.onEvent(
+                            event: ChartHistoryEventLongPressRevision(revisionId: revision.revisionId)
+                        )
+                    }
+            }
+            .confirmationDialog(
+                LocalizedStringKey("dialog_restore_revision_title"),
+                isPresented: Binding(
+                    get: { state.pendingRestoreRevision != nil },
+                    set: { newValue in
+                        if !newValue {
+                            viewModel.onEvent(event: ChartHistoryEventDismissRestore.shared)
+                        }
+                    }
+                ),
+                titleVisibility: .visible
+            ) {
+                Button(LocalizedStringKey("action_restore_revision")) {
+                    viewModel.onEvent(event: ChartHistoryEventConfirmRestore.shared)
+                }
+                .accessibilityIdentifier("confirmRestoreRevisionButton")
+                Button(LocalizedStringKey("action_cancel"), role: .cancel) {
+                    viewModel.onEvent(event: ChartHistoryEventDismissRestore.shared)
+                }
+            } message: {
+                Text(LocalizedStringKey("dialog_restore_revision_body"))
             }
         }
     }

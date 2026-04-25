@@ -360,4 +360,14 @@
     <string name="label_layer_added">レイヤーを追加</string>
     <string name="label_layer_removed">レイヤーを削除</string>
     <string name="state_no_changes">これらのリビジョン間に変更はありません</string>
+
+    <!-- Phase 37.4 branch picker + restore (ADR-013 §6 §7) -->
+    <string name="title_branch_picker">ブランチ</string>
+    <string name="action_create_branch">新しいブランチ</string>
+    <string name="dialog_create_branch_title">ブランチを作成</string>
+    <string name="label_branch_name">ブランチ名</string>
+    <string name="label_current_branch">現在</string>
+    <string name="state_no_branches">ブランチがまだありません</string>
+    <string name="action_switch">切り替え</string>
+    <string name="message_switched_to_branch">%1$sに切り替えました</string>
 </resources>
