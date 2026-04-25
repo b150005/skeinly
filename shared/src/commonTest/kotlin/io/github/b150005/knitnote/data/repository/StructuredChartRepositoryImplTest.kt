@@ -1,11 +1,14 @@
 package io.github.b150005.knitnote.data.repository
 
+import io.github.b150005.knitnote.data.local.LocalChartBranchDataSource
+import io.github.b150005.knitnote.data.local.LocalChartRevisionDataSource
 import io.github.b150005.knitnote.data.local.LocalStructuredChartDataSource
 import io.github.b150005.knitnote.data.sync.FakeSyncManager
 import io.github.b150005.knitnote.data.sync.SyncEntityType
 import io.github.b150005.knitnote.data.sync.SyncOperation
 import io.github.b150005.knitnote.db.KnitNoteDatabase
 import io.github.b150005.knitnote.db.createTestDriver
+import io.github.b150005.knitnote.domain.model.ChartBranch
 import io.github.b150005.knitnote.domain.model.ChartCell
 import io.github.b150005.knitnote.domain.model.ChartExtents
 import io.github.b150005.knitnote.domain.model.ChartLayer
@@ -408,5 +411,185 @@ class StructuredChartRepositoryImplTest {
             assertEquals(CoordinateSystem.POLAR_ROUND, retrieved.coordinateSystem)
             assertTrue(retrieved.extents is ChartExtents.Polar)
             assertEquals(listOf(6, 12, 18), (retrieved.extents as ChartExtents.Polar).stitchesPerRing)
+        }
+
+    // ---- Phase 37.1 (ADR-013 §1, §7): commit history + ensureDefaultBranch ----
+    //
+    // The base setUp() configures the repo without revision/branch deps to keep
+    // the existing pre-37.1 expectations intact. These tests build a separate
+    // repo with the new dependencies wired so the append + branch behavior
+    // surfaces in isolation.
+
+    private fun setUpWithHistory(): Triple<StructuredChartRepositoryImpl, LocalChartRevisionDataSource, LocalChartBranchDataSource> {
+        val revisionLocal = LocalChartRevisionDataSource(db, Dispatchers.Unconfined, testJson)
+        val branchLocal = LocalChartBranchDataSource(db, Dispatchers.Unconfined)
+        val revisionRepo =
+            ChartRevisionRepositoryImpl(
+                local = revisionLocal,
+                remote = null,
+                isOnline = isOnline,
+                syncManager = fakeSyncManager,
+                json = testJson,
+            )
+        val repoWithHistory =
+            StructuredChartRepositoryImpl(
+                local = LocalStructuredChartDataSource(db, Dispatchers.Unconfined, testJson),
+                remote = null,
+                isOnline = isOnline,
+                syncManager = fakeSyncManager,
+                json = testJson,
+                chartRevisionRepository = revisionRepo,
+                localChartBranch = branchLocal,
+            )
+        return Triple(repoWithHistory, revisionLocal, branchLocal)
+    }
+
+    @Test
+    fun `create appends initial revision row matching tip`() =
+        runTest {
+            val (repo, revisionLocal, _) = setUpWithHistory()
+            val chart = testChart()
+            repo.create(chart)
+
+            val history = revisionLocal.getHistoryForPattern(chart.patternId, limit = 50, offset = 0)
+            assertEquals(1, history.size)
+            val initial = history.first()
+            assertEquals(chart.revisionId, initial.revisionId)
+            assertEquals(chart.patternId, initial.patternId)
+            assertEquals(chart.contentHash, initial.contentHash)
+            assertEquals(chart.layers, initial.layers)
+            assertNull(initial.parentRevisionId)
+            // Phase 37 always writes ownerId == authorId.
+            assertEquals(chart.ownerId, initial.authorId)
+        }
+
+    @Test
+    fun `create bootstraps a default main branch pointing at the initial revision`() =
+        runTest {
+            val (repo, _, branchLocal) = setUpWithHistory()
+            val chart = testChart()
+            repo.create(chart)
+
+            val branches = branchLocal.getByPatternId(chart.patternId)
+            assertEquals(1, branches.size)
+            val main = branches.first()
+            assertEquals(ChartBranch.DEFAULT_BRANCH_NAME, main.branchName)
+            assertEquals(chart.revisionId, main.tipRevisionId)
+            assertEquals(chart.ownerId, main.ownerId)
+        }
+
+    @Test
+    fun `create enqueues CHART_REVISION INSERT and CHART_BRANCH INSERT alongside the tip INSERT`() =
+        runTest {
+            val (repo, _, _) = setUpWithHistory()
+            val chart = testChart()
+            repo.create(chart)
+
+            val types = fakeSyncManager.calls.map { it.entityType }
+            assertTrue(SyncEntityType.STRUCTURED_CHART in types)
+            assertTrue(SyncEntityType.CHART_REVISION in types)
+            assertTrue(SyncEntityType.CHART_BRANCH in types)
+            assertEquals(
+                SyncOperation.INSERT,
+                fakeSyncManager.calls.first { it.entityType == SyncEntityType.CHART_REVISION }.operation,
+            )
+            assertEquals(
+                SyncOperation.INSERT,
+                fakeSyncManager.calls.first { it.entityType == SyncEntityType.CHART_BRANCH }.operation,
+            )
+        }
+
+    @Test
+    fun `update appends a new revision linking parent to previous tip`() =
+        runTest {
+            val (repo, revisionLocal, _) = setUpWithHistory()
+            val initial = testChart()
+            repo.create(initial)
+            // Edit timestamp must be strictly newer than initial.updatedAt so the
+            // ORDER BY created_at DESC index resolves a deterministic ordering.
+            // Two revisions sharing the same created_at would be a tie that
+            // SQLite resolves by insertion order, but asserting on that is
+            // brittle across SQLite implementations.
+            val edited =
+                initial.copy(
+                    revisionId = "rev-b",
+                    contentHash = "h1-edited",
+                    parentRevisionId = initial.revisionId,
+                    updatedAt = Instant.parse("2026-04-18T10:00:00Z"),
+                )
+            repo.update(edited)
+
+            val history = revisionLocal.getHistoryForPattern(initial.patternId, limit = 50, offset = 0)
+            // Two revisions in append order: rev-b is most recent.
+            assertEquals(2, history.size)
+            assertEquals("rev-b", history[0].revisionId)
+            assertEquals(initial.revisionId, history[0].parentRevisionId)
+            assertEquals(initial.revisionId, history[1].revisionId)
+            assertNull(history[1].parentRevisionId)
+        }
+
+    @Test
+    fun `update enqueues a CHART_REVISION INSERT in addition to the STRUCTURED_CHART UPDATE`() =
+        runTest {
+            val (repo, _, _) = setUpWithHistory()
+            val initial = testChart()
+            repo.create(initial)
+            fakeSyncManager.calls.clear()
+            val edited =
+                initial.copy(
+                    revisionId = "rev-b",
+                    contentHash = "h1-edited",
+                    parentRevisionId = initial.revisionId,
+                    updatedAt = Instant.parse("2026-04-18T10:00:00Z"),
+                )
+            repo.update(edited)
+
+            val revisionInserts =
+                fakeSyncManager.calls.count {
+                    it.entityType == SyncEntityType.CHART_REVISION && it.operation == SyncOperation.INSERT
+                }
+            val tipUpdates =
+                fakeSyncManager.calls.count {
+                    it.entityType == SyncEntityType.STRUCTURED_CHART && it.operation == SyncOperation.UPDATE
+                }
+            assertEquals(1, revisionInserts)
+            assertEquals(1, tipUpdates)
+        }
+
+    @Test
+    fun `forkFor appends a revision and ensures a default branch on the fork`() =
+        runTest {
+            val (repo, revisionLocal, branchLocal) = setUpWithHistory()
+            val source = testChart()
+            repo.create(source)
+            fakeSyncManager.calls.clear()
+
+            val cloned = repo.forkFor(source.patternId, "pat-fork", "user-2")
+
+            assertNotNull(cloned)
+            // Fork's revision row exists and points back at the source's revisionId.
+            val forkHistory = revisionLocal.getHistoryForPattern("pat-fork", limit = 50, offset = 0)
+            assertEquals(1, forkHistory.size)
+            assertEquals(cloned.revisionId, forkHistory.first().revisionId)
+            assertEquals(source.revisionId, forkHistory.first().parentRevisionId)
+
+            // Fork's main branch points at the cloned revision.
+            val forkBranches = branchLocal.getByPatternId("pat-fork")
+            assertEquals(1, forkBranches.size)
+            assertEquals(ChartBranch.DEFAULT_BRANCH_NAME, forkBranches.first().branchName)
+            assertEquals(cloned.revisionId, forkBranches.first().tipRevisionId)
+        }
+
+    @Test
+    fun `forkFor without history dependency wired still creates the fork tip`() =
+        runTest {
+            // Sanity that the existing forkFor data-spine path (no revision repo
+            // or branch DS) is unchanged — confirms the new wiring is additive
+            // and the optional ctor params honor a null default.
+            val source = testChart()
+            repository.create(source)
+            val cloned = repository.forkFor(source.patternId, "pat-fork", "user-2")
+            assertNotNull(cloned)
+            assertEquals("pat-fork", cloned.patternId)
         }
 }

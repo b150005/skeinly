@@ -117,7 +117,7 @@ internal fun StorageVariant.toDbString(): String =
         StorageVariant.CHUNKED -> "chunked"
     }
 
-private fun String.toStorageVariant(): StorageVariant =
+internal fun String.toStorageVariant(): StorageVariant =
     when (this) {
         "inline" -> StorageVariant.INLINE
         "chunked" -> StorageVariant.CHUNKED
@@ -130,7 +130,7 @@ internal fun CoordinateSystem.toDbString(): String =
         CoordinateSystem.POLAR_ROUND -> "polar_round"
     }
 
-private fun String.toCoordinateSystem(): CoordinateSystem =
+internal fun String.toCoordinateSystem(): CoordinateSystem =
     when (this) {
         "rect_grid" -> CoordinateSystem.RECT_GRID
         "polar_round" -> CoordinateSystem.POLAR_ROUND

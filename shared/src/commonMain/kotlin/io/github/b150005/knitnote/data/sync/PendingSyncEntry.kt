@@ -8,6 +8,8 @@ enum class SyncEntityType(
     PATTERN("pattern"),
     STRUCTURED_CHART("structured_chart"),
     PROJECT_SEGMENT("project_segment"),
+    CHART_REVISION("chart_revision"),
+    CHART_BRANCH("chart_branch"),
     ;
 
     companion object {

@@ -1,5 +1,7 @@
 package io.github.b150005.knitnote.di
 
+import io.github.b150005.knitnote.data.local.LocalChartBranchDataSource
+import io.github.b150005.knitnote.data.local.LocalChartRevisionDataSource
 import io.github.b150005.knitnote.data.local.LocalPatternDataSource
 import io.github.b150005.knitnote.data.local.LocalProgressDataSource
 import io.github.b150005.knitnote.data.local.LocalProjectDataSource
@@ -12,6 +14,8 @@ import io.github.b150005.knitnote.data.remote.CommentDataSourceOperations
 import io.github.b150005.knitnote.data.remote.ConnectivityMonitor
 import io.github.b150005.knitnote.data.remote.PublicPatternDataSource
 import io.github.b150005.knitnote.data.remote.RemoteActivityDataSource
+import io.github.b150005.knitnote.data.remote.RemoteChartBranchDataSource
+import io.github.b150005.knitnote.data.remote.RemoteChartRevisionDataSource
 import io.github.b150005.knitnote.data.remote.RemoteCommentDataSource
 import io.github.b150005.knitnote.data.remote.RemotePatternDataSource
 import io.github.b150005.knitnote.data.remote.RemoteProgressDataSource
@@ -26,6 +30,7 @@ import io.github.b150005.knitnote.data.remote.SupabaseConfig
 import io.github.b150005.knitnote.data.remote.isConfigured
 import io.github.b150005.knitnote.data.repository.ActivityRepositoryImpl
 import io.github.b150005.knitnote.data.repository.AuthRepositoryImpl
+import io.github.b150005.knitnote.data.repository.ChartRevisionRepositoryImpl
 import io.github.b150005.knitnote.data.repository.CommentRepositoryImpl
 import io.github.b150005.knitnote.data.repository.OfflineUserRepository
 import io.github.b150005.knitnote.data.repository.PatternRepositoryImpl
@@ -37,6 +42,7 @@ import io.github.b150005.knitnote.data.repository.StructuredChartRepositoryImpl
 import io.github.b150005.knitnote.data.repository.UserRepositoryImpl
 import io.github.b150005.knitnote.domain.repository.ActivityRepository
 import io.github.b150005.knitnote.domain.repository.AuthRepository
+import io.github.b150005.knitnote.domain.repository.ChartRevisionRepository
 import io.github.b150005.knitnote.domain.repository.CommentRepository
 import io.github.b150005.knitnote.domain.repository.PatternRepository
 import io.github.b150005.knitnote.domain.repository.ProgressRepository
@@ -63,6 +69,8 @@ val repositoryModule =
         single { LocalPatternDataSource(get(), get(ioDispatcherQualifier)) }
         single { LocalStructuredChartDataSource(get(), get(ioDispatcherQualifier), get()) }
         single { LocalProjectSegmentDataSource(get(), get(ioDispatcherQualifier)) }
+        single { LocalChartRevisionDataSource(get(), get(ioDispatcherQualifier), get()) }
+        single { LocalChartBranchDataSource(get(), get(ioDispatcherQualifier)) }
 
         // Remote data sources & repositories — only registered when Supabase is configured.
         // Consumers use getOrNull() to handle their absence in local-only mode.
@@ -73,6 +81,8 @@ val repositoryModule =
             single<PublicPatternDataSource> { get<RemotePatternDataSource>() }
             single { RemoteStructuredChartDataSource(get<SupabaseClient>()) }
             single { RemoteProjectSegmentDataSource(get<SupabaseClient>()) }
+            single { RemoteChartRevisionDataSource(get<SupabaseClient>()) }
+            single { RemoteChartBranchDataSource(get<SupabaseClient>()) }
             single<ShareDataSourceOperations> { RemoteShareDataSource(get<SupabaseClient>()) }
             single { RemoteUserDataSource(get<SupabaseClient>()) }
             single<CommentDataSourceOperations> { RemoteCommentDataSource(get<SupabaseClient>()) }
@@ -141,6 +151,17 @@ val repositoryModule =
         }
         single<StructuredChartRepository> {
             StructuredChartRepositoryImpl(
+                local = get(),
+                remote = getOrNull(),
+                isOnline = get<ConnectivityMonitor>().isOnline,
+                syncManager = get(),
+                json = get(),
+                chartRevisionRepository = get(),
+                localChartBranch = get(),
+            )
+        }
+        single<ChartRevisionRepository> {
+            ChartRevisionRepositoryImpl(
                 local = get(),
                 remote = getOrNull(),
                 isOnline = get<ConnectivityMonitor>().isOnline,
