@@ -3,13 +3,18 @@ package io.github.b150005.knitnote.ui.discovery
 import app.cash.turbine.test
 import io.github.b150005.knitnote.data.remote.FakePublicPatternDataSource
 import io.github.b150005.knitnote.domain.model.AuthState
+import io.github.b150005.knitnote.domain.model.ChartExtents
+import io.github.b150005.knitnote.domain.model.CoordinateSystem
 import io.github.b150005.knitnote.domain.model.Difficulty
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.SortOrder
+import io.github.b150005.knitnote.domain.model.StorageVariant
+import io.github.b150005.knitnote.domain.model.StructuredChart
 import io.github.b150005.knitnote.domain.model.Visibility
 import io.github.b150005.knitnote.domain.usecase.FakeAuthRepository
 import io.github.b150005.knitnote.domain.usecase.FakePatternRepository
 import io.github.b150005.knitnote.domain.usecase.FakeProjectRepository
+import io.github.b150005.knitnote.domain.usecase.FakeStructuredChartRepository
 import io.github.b150005.knitnote.domain.usecase.ForkPublicPatternUseCase
 import io.github.b150005.knitnote.domain.usecase.GetPublicPatternsUseCase
 import kotlinx.coroutines.Dispatchers
@@ -81,10 +86,11 @@ class DiscoveryViewModelTest {
         dataSource: FakePublicPatternDataSource = FakePublicPatternDataSource(),
         patternRepo: FakePatternRepository = FakePatternRepository(),
         projectRepo: FakeProjectRepository = FakeProjectRepository(),
+        chartRepo: FakeStructuredChartRepository = FakeStructuredChartRepository(),
         authRepo: FakeAuthRepository = FakeAuthRepository(),
     ): DiscoveryViewModel {
         val getPublicPatterns = GetPublicPatternsUseCase(dataSource)
-        val forkPublicPattern = ForkPublicPatternUseCase(patternRepo, projectRepo, authRepo)
+        val forkPublicPattern = ForkPublicPatternUseCase(patternRepo, projectRepo, chartRepo, authRepo)
         return DiscoveryViewModel(getPublicPatterns, forkPublicPattern)
     }
 
@@ -186,7 +192,7 @@ class DiscoveryViewModelTest {
 
             val viewModel = createViewModel(dataSource = dataSource, patternRepo = patternRepo, authRepo = authRepo)
 
-            viewModel.forkedProjectId.test {
+            viewModel.forkedProject.test {
                 // Subscribe to state to keep combine active
                 val stateJob =
                     backgroundScope.launch {
@@ -195,9 +201,80 @@ class DiscoveryViewModelTest {
                 advanceUntilIdle()
 
                 viewModel.onEvent(DiscoveryEvent.ForkPattern("pub-a"))
-                val forkedId = awaitItem()
-                assertNotNull(forkedId)
-                assertTrue(forkedId.isNotBlank())
+                val forkResult = awaitItem()
+                assertNotNull(forkResult)
+                assertTrue(forkResult.projectId.isNotBlank())
+                // Phase 36.3: source has no structured chart in this fake setup,
+                // so chartCloned is `false` (nothing to clone, NOT a failure)
+                // and chartCloneFailed is `false` — Snackbar must show success
+                // copy, not the failure copy. See DiscoveryForkResult tri-state.
+                assertFalse(forkResult.chartCloned)
+                assertFalse(forkResult.chartCloneFailed)
+            }
+        }
+
+    // Phase 36.3 (ADR-012 §3 / §7) regression anchor: when the source pattern
+    // HAS a structured chart and the chart-clone repo throws, the project + the
+    // pattern still land and the channel emits chartCloned=false +
+    // chartCloneFailed=true so the Snackbar shows the failure copy. Without
+    // this test the Snackbar copy could regress to "success" on every chart-
+    // clone failure since the use-case-layer tests do not cover the
+    // ViewModel → channel-payload → DiscoveryForkResult conversion path.
+    @Test
+    fun `fork emits chartCloneFailed true when chart clone throws`() =
+        runTest {
+            val dataSource = FakePublicPatternDataSource()
+            dataSource.addPattern(patternA)
+
+            val authRepo = FakeAuthRepository()
+            authRepo.setAuthState(AuthState.Authenticated("user-1", "test@test.com"))
+            val patternRepo = FakePatternRepository()
+            patternRepo.create(patternA)
+
+            // Seed the chart so `forkFor` enters the success path normally,
+            // then arm `failNext` so the actual `forkFor` call throws —
+            // exactly the "had a chart, clone hit transient failure" scenario.
+            val chartRepo = FakeStructuredChartRepository()
+            chartRepo.seed(
+                StructuredChart(
+                    id = "chart-pub-a",
+                    patternId = "pub-a",
+                    ownerId = "other-user",
+                    schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+                    storageVariant = StorageVariant.INLINE,
+                    coordinateSystem = CoordinateSystem.RECT_GRID,
+                    extents = ChartExtents.Rect(0, 0, 0, 0),
+                    layers = emptyList(),
+                    revisionId = "rev-source",
+                    parentRevisionId = null,
+                    contentHash = "h1-deadbeef",
+                    createdAt = Instant.fromEpochMilliseconds(500),
+                    updatedAt = Instant.fromEpochMilliseconds(500),
+                ),
+            )
+            chartRepo.failNext = RuntimeException("transient storage error")
+
+            val viewModel =
+                createViewModel(
+                    dataSource = dataSource,
+                    patternRepo = patternRepo,
+                    chartRepo = chartRepo,
+                    authRepo = authRepo,
+                )
+
+            viewModel.forkedProject.test {
+                val stateJob =
+                    backgroundScope.launch {
+                        viewModel.state.collect { }
+                    }
+                advanceUntilIdle()
+
+                viewModel.onEvent(DiscoveryEvent.ForkPattern("pub-a"))
+                val forkResult = awaitItem()
+                assertNotNull(forkResult)
+                assertTrue(forkResult.projectId.isNotBlank(), "project still landed")
+                assertFalse(forkResult.chartCloned, "chart did not land")
+                assertTrue(forkResult.chartCloneFailed, "failure flag set so Snackbar shows fallback copy")
             }
         }
 

@@ -32,6 +32,29 @@ data class DiscoveryState(
     val forkingPatternId: String? = null,
 )
 
+/**
+ * One-shot fork-success event emitted by [DiscoveryViewModel.forkedProject].
+ *
+ * Three distinguishable states (Phase 36.3, ADR-012 §3 + §7):
+ *
+ * | `chartCloned` | `chartCloneFailed` | Meaning |
+ * |---|---|---|
+ * | `true`  | `false` | Source had a chart; clone landed. Show success copy. |
+ * | `false` | `false` | Source had no chart at all. Show success copy — nothing to clone is NOT a failure. |
+ * | `false` | `true`  | Source had a chart; clone threw. Pattern + project still landed (best-effort per ADR-012 §7). Show fallback copy directing user to ProjectDetail's "Create structured chart" CTA. |
+ *
+ * The `chartCloneFailed` slot exists specifically so the Snackbar copy can
+ * distinguish a metadata-only public pattern (no chart, success path) from
+ * a chartful pattern whose clone hit transient storage failure (degraded
+ * path). Without this, every metadata-only fork would surface as an error
+ * message — see Phase 36.3 code review MEDIUM1.
+ */
+data class DiscoveryForkResult(
+    val projectId: String,
+    val chartCloned: Boolean,
+    val chartCloneFailed: Boolean,
+)
+
 sealed interface DiscoveryEvent {
     data class UpdateSearchQuery(
         val query: String,
@@ -74,8 +97,8 @@ class DiscoveryViewModel(
     private val filterState = MutableStateFlow(FilterState())
     private val isLoading = MutableStateFlow(true)
 
-    private val _forkedProjectChannel = Channel<String>(Channel.BUFFERED)
-    val forkedProjectId: Flow<String> = _forkedProjectChannel.receiveAsFlow()
+    private val _forkedProjectChannel = Channel<DiscoveryForkResult>(Channel.BUFFERED)
+    val forkedProject: Flow<DiscoveryForkResult> = _forkedProjectChannel.receiveAsFlow()
 
     private var searchJob: Job? = null
 
@@ -162,7 +185,17 @@ class DiscoveryViewModel(
             when (val result = forkPublicPattern(patternId)) {
                 is UseCaseResult.Success -> {
                     uiFlags.update { it.copy(forkingPatternId = null) }
-                    _forkedProjectChannel.send(result.value.project.id)
+                    _forkedProjectChannel.send(
+                        DiscoveryForkResult(
+                            projectId = result.value.project.id,
+                            chartCloned = result.value.chartCloned,
+                            // Per ADR-012 §3 / §7: a non-null chartCloneError is the
+                            // "had a chart but clone threw" signal. A null
+                            // chartCloneError with chartCloned=false means the source
+                            // had no chart to begin with — that is a success path.
+                            chartCloneFailed = result.value.chartCloneError != null,
+                        ),
+                    )
                 }
                 is UseCaseResult.Failure -> {
                     uiFlags.update { it.copy(forkingPatternId = null, error = result.error.toMessage()) }

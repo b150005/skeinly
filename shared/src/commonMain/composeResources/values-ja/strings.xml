@@ -244,6 +244,8 @@
     <string name="message_link_copied">コピーしました！</string>
     <string name="action_copy_link">リンクをコピー</string>
     <string name="message_shared_successfully">共有しました！</string>
+    <string name="message_forked_successfully">フォークしました！</string>
+    <string name="message_forked_chart_failed">フォークしました（チャートのコピーに失敗しました — プロジェクト詳細から再フォークしてください）</string>
     <string name="action_decrement_row">段数を減らす</string>
     <string name="action_increment_row">段数を増やす</string>
 

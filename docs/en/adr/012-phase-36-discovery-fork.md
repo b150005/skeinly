@@ -208,14 +208,31 @@ class ForkPublicPatternUseCase(
             patternRepository.create(forkedPattern)
 
             // NEW: best-effort chart clone. Failure does not roll back pattern/project.
-            val chartCloneResult = runCatching {
-                structuredChartRepository.forkFor(
-                    sourcePatternId = sourcePattern.id,
-                    newPatternId = forkedPattern.id,
-                    newOwnerId = userId,
-                )
-            }
-            // chartCloneResult.exceptionOrNull() surfaced as soft warning, not failure
+            //
+            // Manual try/catch (NOT stdlib `runCatching`) because `runCatching`
+            // catches `CancellationException` too — coroutine cancellation
+            // during `forkFor` must propagate, otherwise the rest of this use
+            // case keeps writing into a cancelled scope. Mirrors the outer
+            // try/catch's CancellationException-rethrow pattern.
+            //
+            // `forkFor` returns null when the source has no chart — that is
+            // NOT a failure. Both branches map cleanly to `chartCloned`:
+            //   - non-null → chartCloned=true
+            //   - null     → chartCloned=false, chartCloneError=null (no chart)
+            //   - throw    → chartCloned=false, chartCloneError=<error>
+            val chartCloneResult: Result<Boolean> =
+                try {
+                    val cloned = structuredChartRepository.forkFor(
+                        sourcePatternId = sourcePattern.id,
+                        newPatternId = forkedPattern.id,
+                        newOwnerId = userId,
+                    )
+                    Result.success(cloned != null)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Result.failure(e)
+                }
 
             val forkedProject = Project(/* ... */)
             projectRepository.create(forkedProject)
@@ -226,8 +243,8 @@ class ForkPublicPatternUseCase(
                 ForkedProject(
                     pattern = forkedPattern,
                     project = forkedProject,
-                    chartCloned = chartCloneResult.getOrNull() != null,
-                    chartCloneError = chartCloneResult.exceptionOrNull()?.toUseCaseError(),
+                    chartCloned = chartCloneResult.getOrDefault(false),
+                    chartCloneError = (chartCloneResult.exceptionOrNull() as Exception?)?.toUseCaseError(),
                 )
             )
         } catch (e: CancellationException) {
@@ -246,10 +263,20 @@ data class ForkedProject(
 )
 ```
 
-`DiscoveryViewModel` consumes the new fields: success Snackbar reads
-"Forked successfully" if `chartCloned == true`, "Forked (chart copy
-failed — try re-forking from project detail)" otherwise. The latter
-surfaces the issue without blocking navigation.
+`DiscoveryViewModel` consumes the new fields and emits a one-shot
+`DiscoveryForkResult(projectId, chartCloned, chartCloneFailed)` event.
+Snackbar copy branches on `chartCloneFailed`, NOT on `chartCloned`:
+
+| `chartCloned` | `chartCloneFailed` | Snackbar copy |
+|---|---|---|
+| `true`  | `false` | "Forked successfully!" |
+| `false` | `false` | "Forked successfully!" — source had no chart, nothing to clone |
+| `false` | `true`  | "Forked (chart copy failed — try re-forking from project detail)" |
+
+Branching on `chartCloned` alone would surface the failure copy on every
+metadata-only public-pattern fork, which is a UX regression. The latter
+fallback copy directs the user to ProjectDetail's "Create structured
+chart" CTA without blocking navigation (per §7).
 
 ### 4. Discovery extension
 

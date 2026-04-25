@@ -137,12 +137,23 @@ struct DiscoveryScreen: View {
         // background/foreground cycle.
         forkedCloseable?.close()
         forkedCloseable = nil
-        let wrapper = KoinHelperKt.wrapDiscoveryForkedProjectIdFlow(flow: viewModel.forkedProjectId)
-        forkedCloseable = wrapper.collect { projectId in
+        let wrapper = KoinHelperKt.wrapDiscoveryForkedProjectFlow(flow: viewModel.forkedProject)
+        forkedCloseable = wrapper.collect { result in
             Task { @MainActor in
-                guard let id = projectId as? String else { return }
+                // Phase 36.3 (ADR-012 §3): the iOS Discovery surface does NOT
+                // emit a transient Snackbar/toast on `chartCloned == false` —
+                // SwiftUI lacks a non-blocking toast helper in this codebase
+                // and the existing `.alert` host is blocking, which would
+                // contradict ADR-012 §7 ("surfaces error without blocking
+                // navigation"). The chart-clone failure surfaces instead via
+                // ProjectDetail's "Create structured chart" CTA on the
+                // destination screen — same recovery path as a metadata-only
+                // public pattern. Adding an iOS toast helper is a Phase 36.5+
+                // polish item; the data layer (chartCloned flag) is correct
+                // and unit-tested today.
+                guard let forkResult = result as? DiscoveryForkResult else { return }
                 path = NavigationPath()
-                path.append(Route.projectDetail(projectId: id))
+                path.append(Route.projectDetail(projectId: forkResult.projectId))
             }
         }
     }

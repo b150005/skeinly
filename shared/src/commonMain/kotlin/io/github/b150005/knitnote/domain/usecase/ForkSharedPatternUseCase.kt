@@ -16,9 +16,21 @@ import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
+/**
+ * Result of a public-pattern or shared-pattern fork.
+ *
+ * `chartCloned` and `chartCloneError` are populated only by
+ * [ForkPublicPatternUseCase] (Phase 36.3, ADR-012 §3 best-effort chart
+ * clone). [ForkSharedPatternUseCase] does not yet clone charts, so it leaves
+ * both at their safe defaults (`false` / `null`). Phase 36 explicitly scopes
+ * chart fork to Discovery only — direct sharing already exists (Phase 4b)
+ * and could grow a chart-fork affordance later (ADR-012 §8).
+ */
 data class ForkedProject(
     val pattern: Pattern,
     val project: Project,
+    val chartCloned: Boolean = false,
+    val chartCloneError: UseCaseError? = null,
 )
 
 class ForkSharedPatternUseCase(
