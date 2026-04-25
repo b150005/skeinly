@@ -115,7 +115,7 @@ val useCaseModule =
 
         // Discovery use cases (PublicPatternDataSource is nullable — only with Supabase)
         factory { GetPublicPatternsUseCase(getOrNull()) }
-        factory { ForkPublicPatternUseCase(get(), get(), get(), getOrNull()) }
+        factory { ForkPublicPatternUseCase(get(), get(), get(), get(), getOrNull()) }
 
         // Structured chart use cases (Phase 29)
         factory { GetStructuredChartByPatternIdUseCase(get()) }

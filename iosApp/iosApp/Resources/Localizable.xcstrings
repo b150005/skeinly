@@ -1548,6 +1548,20 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有しました！" } }
       }
     },
+    "message_forked_successfully" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Forked successfully!" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フォークしました！" } }
+      }
+    },
+    "message_forked_chart_failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Forked (chart copy failed — try re-forking from project detail)" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フォークしました（チャートのコピーに失敗しました — プロジェクト詳細から再フォークしてください）" } }
+      }
+    },
     "action_decrement_row" : {
       "extractionState" : "manual",
       "localizations" : {

@@ -260,6 +260,12 @@
     <string name="message_link_copied">Copied!</string>
     <string name="action_copy_link">Copy Link</string>
     <string name="message_shared_successfully">Shared successfully!</string>
+    <!-- Phase 36.3 (ADR-012 §3) Discovery fork-success snackbar copy. The
+         _chart_failed variant uses "from project detail" not "from Discovery"
+         because the user has already navigated past Discovery — they're on
+         ProjectDetail by the time the snackbar surfaces. -->
+    <string name="message_forked_successfully">Forked successfully!</string>
+    <string name="message_forked_chart_failed">Forked (chart copy failed — try re-forking from project detail)</string>
     <string name="action_decrement_row">Decrement row</string>
     <string name="action_increment_row">Increment row</string>
 

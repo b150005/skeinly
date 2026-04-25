@@ -129,7 +129,9 @@ fun wrapDiscoveryState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.knitnote.ui.discovery.DiscoveryState>,
 ): FlowWrapper<io.github.b150005.knitnote.ui.discovery.DiscoveryState> = FlowWrapper(flow)
 
-fun wrapDiscoveryForkedProjectIdFlow(flow: kotlinx.coroutines.flow.Flow<String>): EventFlowWrapper<String> = EventFlowWrapper(flow)
+fun wrapDiscoveryForkedProjectFlow(
+    flow: kotlinx.coroutines.flow.Flow<io.github.b150005.knitnote.ui.discovery.DiscoveryForkResult>,
+): EventFlowWrapper<io.github.b150005.knitnote.ui.discovery.DiscoveryForkResult> = EventFlowWrapper(flow)
 
 fun wrapPatternLibraryState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.knitnote.ui.patternlibrary.PatternLibraryState>,

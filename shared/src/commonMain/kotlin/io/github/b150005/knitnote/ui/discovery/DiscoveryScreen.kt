@@ -67,6 +67,8 @@ import io.github.b150005.knitnote.generated.resources.label_sort_alphabetical
 import io.github.b150005.knitnote.generated.resources.label_sort_alphabetical_detail
 import io.github.b150005.knitnote.generated.resources.label_sort_recent
 import io.github.b150005.knitnote.generated.resources.label_yarn_value
+import io.github.b150005.knitnote.generated.resources.message_forked_chart_failed
+import io.github.b150005.knitnote.generated.resources.message_forked_successfully
 import io.github.b150005.knitnote.generated.resources.state_no_matching_patterns
 import io.github.b150005.knitnote.generated.resources.state_no_matching_patterns_body
 import io.github.b150005.knitnote.generated.resources.state_no_public_patterns
@@ -74,6 +76,7 @@ import io.github.b150005.knitnote.generated.resources.state_no_public_patterns_b
 import io.github.b150005.knitnote.generated.resources.title_discover_patterns
 import io.github.b150005.knitnote.ui.components.EmptyStateView
 import io.github.b150005.knitnote.ui.components.labelKey
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -94,9 +97,30 @@ fun DiscoveryScreen(
         }
     }
 
+    val forkSuccessMessage = stringResource(Res.string.message_forked_successfully)
+    val forkChartFailedMessage = stringResource(Res.string.message_forked_chart_failed)
+
     LaunchedEffect(Unit) {
-        viewModel.forkedProjectId.collect { projectId ->
-            onForked(projectId)
+        viewModel.forkedProject.collect { result ->
+            // Phase 36.3 (ADR-012 §3, §7): success Snackbar branches on the
+            // failure flag — NOT on `chartCloned`. A metadata-only public
+            // pattern (no chart at all) lands as `chartCloned=false,
+            // chartCloneFailed=false` and is a success path; surfacing the
+            // failure copy there would be a UX regression. Only the
+            // genuine throw-path (`chartCloneFailed=true`) warrants the
+            // fallback copy directing the user to ProjectDetail's
+            // "Create structured chart" CTA.
+            //
+            // The Snackbar fires before `onForked` triggers navigation;
+            // Compose launches the host coroutine that survives the parent
+            // Composable's unmount briefly enough to render at the next
+            // destination's edge.
+            launch {
+                snackbarHostState.showSnackbar(
+                    if (result.chartCloneFailed) forkChartFailedMessage else forkSuccessMessage,
+                )
+            }
+            onForked(result.projectId)
         }
     }
 
