@@ -173,6 +173,10 @@ struct ProjectDetailScreen: View {
                         // project, not the source.
                         onParentPatternTap: { parentPatternId in
                             path.append(Route.chartViewer(patternId: parentPatternId, projectId: nil))
+                        },
+                        // Phase 37.2 (ADR-013 §6).
+                        onChartHistoryTap: {
+                            path.append(Route.chartHistory(patternId: pattern.id))
                         }
                     )
                 }
@@ -348,7 +352,8 @@ struct ProjectDetailScreen: View {
         parentPatternAuthor: User?,
         onChartViewerTap: @escaping () -> Void,
         onChartEditorTap: @escaping () -> Void,
-        onParentPatternTap: @escaping (String) -> Void
+        onParentPatternTap: @escaping (String) -> Void,
+        onChartHistoryTap: @escaping () -> Void
     ) -> some View {
         LabeledContent(LocalizedStringKey("label_title"), value: pattern.title)
 
@@ -373,6 +378,15 @@ struct ProjectDetailScreen: View {
                     .font(.caption)
             }
             .accessibilityIdentifier("openChartViewerLink")
+
+            // Phase 37.2 (ADR-013 §6) "History" sibling link. Surfaces only
+            // when a structured chart exists so there is at least one revision
+            // to render — avoids a dead-end empty-state for metadata-only patterns.
+            Button(action: onChartHistoryTap) {
+                Label(LocalizedStringKey("title_chart_history"), systemImage: "clock.arrow.circlepath")
+                    .font(.caption)
+            }
+            .accessibilityIdentifier("openChartHistoryLink")
         }
 
         Button(action: onChartEditorTap) {

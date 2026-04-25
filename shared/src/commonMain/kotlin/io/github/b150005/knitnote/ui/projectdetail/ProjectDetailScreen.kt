@@ -126,6 +126,7 @@ import io.github.b150005.knitnote.generated.resources.state_forked_from_deleted
 import io.github.b150005.knitnote.generated.resources.state_no_notes
 import io.github.b150005.knitnote.generated.resources.state_project_not_found
 import io.github.b150005.knitnote.generated.resources.state_uploading_photo
+import io.github.b150005.knitnote.generated.resources.title_chart_history
 import io.github.b150005.knitnote.ui.chartviewer.ChartImageGrid
 import io.github.b150005.knitnote.ui.chartviewer.ChartImageViewer
 import io.github.b150005.knitnote.ui.comments.CommentSection
@@ -152,6 +153,10 @@ fun ProjectDetailScreen(
     // `ChartViewer(patternId = parentPatternId, projectId = null)` — no
     // segment overlay since the user is browsing someone else's pattern.
     onParentPatternClick: (String) -> Unit = {},
+    // Phase 37.2 (ADR-013 §6): "History" link surfaces in the pattern-info
+    // section when the project's pattern has a structured chart (so there is
+    // at least one revision to render). Routes to ChartHistoryScreen.
+    onChartHistoryClick: (String) -> Unit = {},
     viewModel: ProjectDetailViewModel = koinViewModel { parametersOf(projectId) },
 ) {
     val state by viewModel.state.collectAsState()
@@ -447,6 +452,7 @@ fun ProjectDetailScreen(
                                     },
                                     onChartEditorClick = { onChartEditorClick(pattern.id) },
                                     onParentPatternClick = onParentPatternClick,
+                                    onChartHistoryClick = { onChartHistoryClick(pattern.id) },
                                 )
                             }
                         }
@@ -1027,6 +1033,7 @@ private fun PatternInfoSection(
     onChartViewerClick: () -> Unit = {},
     onChartEditorClick: () -> Unit = {},
     onParentPatternClick: (String) -> Unit = {},
+    onChartHistoryClick: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 16.dp),
@@ -1093,8 +1100,20 @@ private fun PatternInfoSection(
                 color = MaterialTheme.colorScheme.primary,
                 modifier =
                     Modifier
-                        .clickable(onClick = onChartViewerClick)
+                        .clickable(role = Role.Button, onClick = onChartViewerClick)
                         .testTag("openChartViewerLink"),
+            )
+            // Phase 37.2 (ADR-013 §6) "History" sibling link. Surfaces only
+            // when a structured chart exists so there is at least one revision
+            // to render — avoids a dead-end empty-state for metadata-only patterns.
+            Text(
+                text = stringResource(Res.string.title_chart_history),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier =
+                    Modifier
+                        .clickable(role = Role.Button, onClick = onChartHistoryClick)
+                        .testTag("openChartHistoryLink"),
             )
         }
         Text(
@@ -1110,7 +1129,7 @@ private fun PatternInfoSection(
             color = MaterialTheme.colorScheme.primary,
             modifier =
                 Modifier
-                    .clickable(onClick = onChartEditorClick)
+                    .clickable(role = Role.Button, onClick = onChartEditorClick)
                     .testTag("openChartEditorLink"),
         )
         pattern.difficulty?.let { difficulty ->

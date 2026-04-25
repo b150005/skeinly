@@ -335,4 +335,14 @@
     <string name="dialog_delete_layer_body">このレイヤーには %1$d 個のセルがあります。削除しても、ツールバーの「元に戻す」で復元できます。</string>
     <string name="state_no_layers">レイヤーがありません</string>
     <string name="label_layers_section">レイヤー</string>
+
+    <!-- Phase 37.2 chart commit history (ADR-013 §6) -->
+    <string name="title_chart_history">チャート履歴</string>
+    <string name="state_no_chart_history">履歴がまだありません</string>
+    <string name="state_no_chart_history_body">保存したチャートのリビジョンがここに表示されます</string>
+    <string name="label_auto_save">自動保存</string>
+    <string name="label_initial_commit">最初のコミット</string>
+    <string name="action_restore_revision">新しいコミットとして復元</string>
+    <string name="dialog_restore_revision_title">このリビジョンを復元しますか？</string>
+    <string name="dialog_restore_revision_body">現在のtipの上にこのリビジョンの内容で新しいコミットを追加します。履歴は上書きされません。</string>
 </resources>

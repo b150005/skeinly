@@ -8,12 +8,14 @@ import Shared
 struct StructuredChartViewerScreen: View {
     let patternId: String
     let projectId: String?
+    @Binding var path: NavigationPath
     @StateObject private var holder: ScopedViewModel<ChartViewerViewModel, ChartViewerState>
     private let catalog: SymbolCatalog
 
-    init(patternId: String, projectId: String?) {
+    init(patternId: String, projectId: String?, path: Binding<NavigationPath>) {
         self.patternId = patternId
         self.projectId = projectId
+        self._path = path
         let vm = ViewModelFactory.chartViewerViewModel(patternId: patternId, projectId: projectId)
         let wrapper = KoinHelperKt.wrapChartViewerState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
@@ -37,6 +39,24 @@ struct StructuredChartViewerScreen: View {
         }
         .navigationTitle(LocalizedStringKey("title_chart_viewer"))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            // Phase 37.2 (ADR-013 §6) overflow → "View history". Mirrors the
+            // Compose ChartViewerScreen TopAppBar `actions` overflow.
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    Button {
+                        path.append(Route.chartHistory(patternId: patternId))
+                    } label: {
+                        Label(LocalizedStringKey("title_chart_history"), systemImage: "clock.arrow.circlepath")
+                    }
+                    .accessibilityIdentifier("viewHistoryMenuItem")
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .accessibilityLabel(LocalizedStringKey("action_more_options"))
+                }
+                .accessibilityIdentifier("overflowMenuButton")
+            }
+        }
     }
 
     @ViewBuilder

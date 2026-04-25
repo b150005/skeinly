@@ -19,6 +19,7 @@ import io.github.b150005.knitnote.ui.activityfeed.ActivityFeedScreen
 import io.github.b150005.knitnote.ui.auth.AuthViewModel
 import io.github.b150005.knitnote.ui.auth.LoginScreen
 import io.github.b150005.knitnote.ui.chart.ChartEditorScreen
+import io.github.b150005.knitnote.ui.chart.ChartHistoryScreen
 import io.github.b150005.knitnote.ui.chart.ChartViewerScreen
 import io.github.b150005.knitnote.ui.discovery.DiscoveryScreen
 import io.github.b150005.knitnote.ui.onboarding.OnboardingScreen
@@ -86,6 +87,16 @@ data class ChartViewer(
 
 @Serializable
 data class ChartEditor(
+    val patternId: String,
+)
+
+/**
+ * Phase 37.2 (ADR-013 §6) — newest-first commit history for a chart.
+ * Reachable from `ChartViewerScreen`'s overflow menu and from
+ * `ProjectDetailScreen`'s pattern-info section.
+ */
+@Serializable
+data class ChartHistory(
     val patternId: String,
 )
 
@@ -294,6 +305,10 @@ fun KnitNoteNavHost(
                         ChartViewer(patternId = parentPatternId, projectId = null),
                     )
                 },
+                // Phase 37.2 (ADR-013 §6).
+                onChartHistoryClick = { patternId ->
+                    navController.navigate(ChartHistory(patternId = patternId))
+                },
             )
         }
         composable<ChartViewer> { backStackEntry ->
@@ -302,6 +317,9 @@ fun KnitNoteNavHost(
                 patternId = route.patternId,
                 projectId = route.projectId,
                 onBack = { navController.popBackStack() },
+                onHistoryClick = {
+                    navController.navigate(ChartHistory(patternId = route.patternId))
+                },
             )
         }
         composable<ChartEditor> { backStackEntry ->
@@ -309,6 +327,19 @@ fun KnitNoteNavHost(
             ChartEditorScreen(
                 patternId = route.patternId,
                 onBack = { navController.popBackStack() },
+            )
+        }
+        composable<ChartHistory> { backStackEntry ->
+            val route = backStackEntry.toRoute<ChartHistory>()
+            ChartHistoryScreen(
+                patternId = route.patternId,
+                onBack = { navController.popBackStack() },
+                // Phase 37.2 placeholder — `ChartDiffScreen` ships in 37.3.
+                // The ViewModel still emits the tapped revisionId on its
+                // one-shot channel (covered by ChartHistoryViewModelTest);
+                // 37.3 swaps this no-op for `navController.navigate(ChartDiff(...))`.
+                // TODO Phase 37.3: route revisionId to navController.navigate(ChartDiff(...)).
+                onRevisionClick = { _ -> },
             )
         }
         composable<SharedContent> { backStackEntry ->

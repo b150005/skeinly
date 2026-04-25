@@ -16,7 +16,11 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -30,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -61,8 +66,10 @@ import io.github.b150005.knitnote.domain.model.StructuredChart
 import io.github.b150005.knitnote.domain.symbol.SymbolCatalog
 import io.github.b150005.knitnote.generated.resources.Res
 import io.github.b150005.knitnote.generated.resources.action_back
+import io.github.b150005.knitnote.generated.resources.action_more_options
 import io.github.b150005.knitnote.generated.resources.state_empty_chart
 import io.github.b150005.knitnote.generated.resources.state_no_structured_chart
+import io.github.b150005.knitnote.generated.resources.title_chart_history
 import io.github.b150005.knitnote.generated.resources.title_chart_viewer
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -96,11 +103,13 @@ fun ChartViewerScreen(
     patternId: String,
     onBack: () -> Unit,
     projectId: String? = null,
+    onHistoryClick: () -> Unit = {},
     viewModel: ChartViewerViewModel =
         koinViewModel { parametersOf(patternId, projectId) },
     catalog: SymbolCatalog = koinInject(),
 ) {
     val state by viewModel.state.collectAsState()
+    var showOverflowMenu by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -111,6 +120,33 @@ fun ChartViewerScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(Res.string.action_back),
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = { showOverflowMenu = true },
+                        modifier = Modifier.testTag("overflowMenuButton"),
+                    ) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = stringResource(Res.string.action_more_options),
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showOverflowMenu,
+                        onDismissRequest = { showOverflowMenu = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.title_chart_history)) },
+                            leadingIcon = {
+                                Icon(Icons.Default.History, contentDescription = null)
+                            },
+                            onClick = {
+                                showOverflowMenu = false
+                                onHistoryClick()
+                            },
+                            modifier = Modifier.testTag("viewHistoryMenuItem"),
                         )
                     }
                 },
