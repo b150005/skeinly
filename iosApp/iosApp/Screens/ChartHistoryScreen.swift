@@ -1,0 +1,120 @@
+import SwiftUI
+import Shared
+
+/// SwiftUI mirror of the shared Compose `ChartHistoryScreen` (Phase 37.2,
+/// ADR-013 §6). Owns a Koin-resolved `ChartHistoryViewModel` via
+/// `ScopedViewModel` so the observed state survives parent re-inits.
+///
+/// `onRevisionClick` is wired by the `AppRouter` and is a no-op for 37.2 —
+/// `ChartDiffScreen` ships in 37.3 and will route the tapped `revisionId`
+/// to that destination via the same callback shape. The ViewModel's
+/// `revisionTaps` channel is collected here so the iOS contract matches the
+/// Compose mirror exactly.
+struct ChartHistoryScreen: View {
+    let patternId: String
+    @StateObject private var holder: ScopedViewModel<ChartHistoryViewModel, ChartHistoryState>
+    @State private var revisionTapCloseable: Closeable?
+    @State private var showError = false
+
+    private var viewModel: ChartHistoryViewModel { holder.viewModel }
+
+    init(patternId: String) {
+        self.patternId = patternId
+        let vm = ViewModelFactory.chartHistoryViewModel(patternId: patternId)
+        let wrapper = KoinHelperKt.wrapChartHistoryState(flow: vm.state)
+        _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
+    }
+
+    var body: some View {
+        contentView
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("chartHistoryScreen")
+            .navigationTitle(LocalizedStringKey("title_chart_history"))
+            .navigationBarTitleDisplayMode(.inline)
+            .onChange(of: holder.state.error) { _, newError in
+                showError = newError != nil
+            }
+            .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
+                Button("action_ok") {
+                    viewModel.onEvent(event: ChartHistoryEventClearError.shared)
+                }
+            } message: {
+                Text(holder.state.error ?? "")
+            }
+            .task { observeRevisionTaps() }
+            .onDisappear {
+                revisionTapCloseable?.close()
+                revisionTapCloseable = nil
+            }
+    }
+
+    @ViewBuilder
+    private var contentView: some View {
+        let state = holder.state
+        if state.isLoading {
+            ProgressView()
+        } else if state.revisions.isEmpty {
+            ContentUnavailableView(
+                LocalizedStringKey("state_no_chart_history"),
+                systemImage: "clock.arrow.circlepath",
+                description: Text(LocalizedStringKey("state_no_chart_history_body"))
+            )
+        } else {
+            List(state.revisions, id: \.revisionId) { revision in
+                RevisionRow(revision: revision)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        viewModel.onEvent(
+                            event: ChartHistoryEventTapRevision(revisionId: revision.revisionId)
+                        )
+                    }
+            }
+        }
+    }
+
+    private func observeRevisionTaps() {
+        // `.task { }` re-fires on every view re-appearance. Close any prior
+        // subscription before replacing it so we do not leak one Closeable per
+        // background/foreground cycle (same idiom as DiscoveryScreen.swift).
+        revisionTapCloseable?.close()
+        revisionTapCloseable = nil
+        let wrapper = KoinHelperKt.wrapChartHistoryRevisionTaps(flow: viewModel.revisionTaps)
+        revisionTapCloseable = wrapper.collect { _ in
+            // Phase 37.2 placeholder — Phase 37.3 will navigate to ChartDiff.
+            // Keeping the subscription wired now (instead of leaving it
+            // unattached) keeps the channel buffer drained so taps issued in
+            // 37.2 do not pile up against the BUFFERED channel capacity.
+        }
+    }
+}
+
+private struct RevisionRow: View {
+    let revision: ChartRevision
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(headline)
+                .font(.body)
+                .accessibilityIdentifier("commitMessageLabel_\(revision.revisionId)")
+            Text(formattedDate)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .accessibilityIdentifier("revisionTimestampLabel_\(revision.revisionId)")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityIdentifier("revisionRow_\(revision.revisionId)")
+    }
+
+    private var headline: String {
+        if let message = revision.commitMessage, !message.isEmpty {
+            return message
+        }
+        let key = revision.parentRevisionId == nil ? "label_initial_commit" : "label_auto_save"
+        return NSLocalizedString(key, comment: "")
+    }
+
+    private var formattedDate: String {
+        let date = Date(timeIntervalSince1970: TimeInterval(revision.createdAt.epochSeconds))
+        return date.formatted(date: .abbreviated, time: .shortened)
+    }
+}

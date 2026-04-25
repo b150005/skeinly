@@ -1925,6 +1925,62 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Layers" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイヤー" } }
       }
+    },
+    "title_chart_history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Chart History" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "チャート履歴" } }
+      }
+    },
+    "state_no_chart_history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No history yet" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "履歴がまだありません" } }
+      }
+    },
+    "state_no_chart_history_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Saved chart revisions will appear here" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "保存したチャートのリビジョンがここに表示されます" } }
+      }
+    },
+    "label_auto_save" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Auto-save" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "自動保存" } }
+      }
+    },
+    "label_initial_commit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Initial commit" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最初のコミット" } }
+      }
+    },
+    "action_restore_revision" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Restore as new commit" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "新しいコミットとして復元" } }
+      }
+    },
+    "dialog_restore_revision_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Restore this revision?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このリビジョンを復元しますか？" } }
+      }
+    },
+    "dialog_restore_revision_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This appends a new commit on top of the current tip with the contents of this revision. Nothing in your history is overwritten." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "現在のtipの上にこのリビジョンの内容で新しいコミットを追加します。履歴は上書きされません。" } }
+      }
     }
   },
   "version" : "1.0"

@@ -79,6 +79,10 @@ enum ViewModelFactory {
         KoinHelperKt.getChartEditorViewModel(patternId: patternId)
     }
 
+    static func chartHistoryViewModel(patternId: String) -> ChartHistoryViewModel {
+        KoinHelperKt.getChartHistoryViewModel(patternId: patternId)
+    }
+
     static func symbolCatalog() -> SymbolCatalog {
         KoinHelperKt.getSymbolCatalog()
     }

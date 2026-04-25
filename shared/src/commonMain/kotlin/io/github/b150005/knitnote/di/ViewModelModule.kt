@@ -3,6 +3,7 @@ package io.github.b150005.knitnote.di
 import io.github.b150005.knitnote.ui.activityfeed.ActivityFeedViewModel
 import io.github.b150005.knitnote.ui.auth.AuthViewModel
 import io.github.b150005.knitnote.ui.chart.ChartEditorViewModel
+import io.github.b150005.knitnote.ui.chart.ChartHistoryViewModel
 import io.github.b150005.knitnote.ui.chart.ChartViewerViewModel
 import io.github.b150005.knitnote.ui.comments.CommentSectionViewModel
 import io.github.b150005.knitnote.ui.discovery.DiscoveryViewModel
@@ -89,6 +90,12 @@ val viewModelModule =
                 toggleSegmentState = get(),
                 markSegmentDone = get(),
                 markRowSegmentsDone = get(),
+            )
+        }
+        viewModel { params ->
+            ChartHistoryViewModel(
+                patternId = params.get(),
+                getChartHistory = get(),
             )
         }
         viewModel { params ->

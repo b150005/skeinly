@@ -444,4 +444,26 @@
     <string name="dialog_delete_layer_body">This layer has %1$d cell(s). Deleting it can be recovered with Undo from the toolbar.</string>
     <string name="state_no_layers">No layers</string>
     <string name="label_layers_section">Layers</string>
+
+    <!-- Phase 37.2 chart commit history (ADR-013 §6). `title_chart_history` is
+         the screen title; `state_no_chart_history` + `state_no_chart_history_body`
+         render the empty state when a pattern has not been saved yet (the only
+         plausible path to an empty list since the very first save appends a
+         revision). `label_auto_save` is the row headline when a revision was
+         persisted without an author-supplied commit message — auto-saves are
+         the common case on every chart edit. `label_initial_commit` annotates
+         the very first revision in the chain (parentRevisionId == null) so
+         readers can spot the lineage root without scrolling. The three
+         `*_restore_*` keys ship now but are NOT wired in 37.2 — they back the
+         long-press → "Restore as new commit" affordance shipping in 37.4 per
+         ADR-013 §6 (the UX shape is consistent end-to-end; only the wiring
+         lands later). -->
+    <string name="title_chart_history">Chart History</string>
+    <string name="state_no_chart_history">No history yet</string>
+    <string name="state_no_chart_history_body">Saved chart revisions will appear here</string>
+    <string name="label_auto_save">Auto-save</string>
+    <string name="label_initial_commit">Initial commit</string>
+    <string name="action_restore_revision">Restore as new commit</string>
+    <string name="dialog_restore_revision_title">Restore this revision?</string>
+    <string name="dialog_restore_revision_body">This appends a new commit on top of the current tip with the contents of this revision. Nothing in your history is overwritten.</string>
 </resources>

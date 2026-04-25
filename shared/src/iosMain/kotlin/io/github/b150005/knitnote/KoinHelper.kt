@@ -10,6 +10,7 @@ import io.github.b150005.knitnote.domain.usecase.GetOnboardingCompletedUseCase
 import io.github.b150005.knitnote.ui.activityfeed.ActivityFeedViewModel
 import io.github.b150005.knitnote.ui.auth.AuthViewModel
 import io.github.b150005.knitnote.ui.chart.ChartEditorViewModel
+import io.github.b150005.knitnote.ui.chart.ChartHistoryViewModel
 import io.github.b150005.knitnote.ui.chart.ChartViewerViewModel
 import io.github.b150005.knitnote.ui.comments.CommentSectionViewModel
 import io.github.b150005.knitnote.ui.onboarding.OnboardingViewModel
@@ -82,6 +83,8 @@ fun getChartViewerViewModel(
 ): ChartViewerViewModel = KoinPlatform.getKoin().get { parametersOf(patternId, projectId) }
 
 fun getChartEditorViewModel(patternId: String): ChartEditorViewModel = KoinPlatform.getKoin().get { parametersOf(patternId) }
+
+fun getChartHistoryViewModel(patternId: String): ChartHistoryViewModel = KoinPlatform.getKoin().get { parametersOf(patternId) }
 
 fun getSymbolCatalog(): SymbolCatalog = KoinPlatform.getKoin().get()
 
@@ -162,6 +165,12 @@ fun wrapChartEditorState(
 ): FlowWrapper<io.github.b150005.knitnote.ui.chart.ChartEditorState> = FlowWrapper(flow)
 
 fun wrapChartEditorSavedFlow(flow: kotlinx.coroutines.flow.Flow<Unit>): EventFlowWrapper<Unit> = EventFlowWrapper(flow)
+
+fun wrapChartHistoryState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.knitnote.ui.chart.ChartHistoryState>,
+): FlowWrapper<io.github.b150005.knitnote.ui.chart.ChartHistoryState> = FlowWrapper(flow)
+
+fun wrapChartHistoryRevisionTaps(flow: kotlinx.coroutines.flow.Flow<String>): EventFlowWrapper<String> = EventFlowWrapper(flow)
 
 fun getSymbolGalleryViewModel(): SymbolGalleryViewModel = KoinPlatform.getKoin().get()
 

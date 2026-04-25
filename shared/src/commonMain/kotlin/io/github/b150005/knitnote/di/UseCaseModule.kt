@@ -21,6 +21,8 @@ import io.github.b150005.knitnote.domain.usecase.DeleteStructuredChartUseCase
 import io.github.b150005.knitnote.domain.usecase.ForkPublicPatternUseCase
 import io.github.b150005.knitnote.domain.usecase.ForkSharedPatternUseCase
 import io.github.b150005.knitnote.domain.usecase.GetActivitiesUseCase
+import io.github.b150005.knitnote.domain.usecase.GetChartHistoryUseCase
+import io.github.b150005.knitnote.domain.usecase.GetChartRevisionUseCase
 import io.github.b150005.knitnote.domain.usecase.GetCommentsUseCase
 import io.github.b150005.knitnote.domain.usecase.GetCurrentUserUseCase
 import io.github.b150005.knitnote.domain.usecase.GetOnboardingCompletedUseCase
@@ -123,6 +125,12 @@ val useCaseModule =
         factory { CreateStructuredChartUseCase(get(), get(), get()) }
         factory { UpdateStructuredChartUseCase(get(), get()) }
         factory { DeleteStructuredChartUseCase(get()) }
+
+        // Phase 37.2 chart-history use cases (ADR-013 §4). Both ship together
+        // so the Phase 37.3 ChartDiffScreen load path can `get(revisionId)`
+        // without further DI churn.
+        factory { GetChartHistoryUseCase(get()) }
+        factory { GetChartRevisionUseCase(get()) }
 
         // Per-segment progress use cases (Phase 34)
         factory { ObserveProjectSegmentsUseCase(get()) }
