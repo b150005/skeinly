@@ -348,4 +348,16 @@
     <string name="action_restore_revision">新しいコミットとして復元</string>
     <string name="dialog_restore_revision_title">このリビジョンを復元しますか？</string>
     <string name="dialog_restore_revision_body">現在のtipの上にこのリビジョンの内容で新しいコミットを追加します。履歴は上書きされません。</string>
+
+    <!-- Phase 37.3 chart diff view (ADR-013 §5 §6) -->
+    <string name="title_chart_diff">チャート差分</string>
+    <string name="label_diff_summary">追加 %1$d ・ 変更 %2$d ・ 削除 %3$d</string>
+    <string name="label_layer_renamed">%1$s → %2$s</string>
+    <string name="label_layer_hidden">レイヤーを非表示</string>
+    <string name="label_layer_shown">レイヤーを表示</string>
+    <string name="label_layer_locked">レイヤーをロック</string>
+    <string name="label_layer_unlocked">レイヤーのロック解除</string>
+    <string name="label_layer_added">レイヤーを追加</string>
+    <string name="label_layer_removed">レイヤーを削除</string>
+    <string name="state_no_changes">これらのリビジョン間に変更はありません</string>
 </resources>

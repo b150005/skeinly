@@ -48,15 +48,14 @@ import org.koin.core.parameter.parametersOf
 /**
  * Phase 37.2 (ADR-013 §6) — newest-first commit history for a chart.
  *
- * `onRevisionClick` is wired to a no-op for 37.2 — Phase 37.3 will route the
- * tapped `revisionId` to `ChartDiff(baseRevisionId = revision.parentRevisionId,
- * targetRevisionId = revision.revisionId)`. The ViewModel's one-shot
- * `revisionTaps` channel forwards through this callback so the Compose layer
- * stays navigation-agnostic and the iOS mirror reuses the same contract.
+ * `onRevisionClick(baseRevisionId, targetRevisionId)` routes to `ChartDiffScreen`.
+ * The ViewModel resolves `baseRevisionId` from the tapped row's
+ * `parentRevisionId` so this callback is forwarded straight through with no
+ * lookup at the screen layer; iOS mirror reuses the identical contract.
  *
  * Long-press → "Restore as new commit" is reserved for Phase 37.4 per ADR-013
  * §6 ("the sub-slice that ships history list (37.2) leaves long-press unwired").
- * The corresponding i18n key `action_restore_revision` ships in this slice for
+ * The corresponding i18n key `action_restore_revision` ships in 37.2 for
  * forward-compat.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,15 +63,15 @@ import org.koin.core.parameter.parametersOf
 fun ChartHistoryScreen(
     patternId: String,
     onBack: () -> Unit,
-    onRevisionClick: (String) -> Unit = {},
+    onRevisionClick: (baseRevisionId: String?, targetRevisionId: String) -> Unit = { _, _ -> },
     viewModel: ChartHistoryViewModel = koinViewModel { parametersOf(patternId) },
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(viewModel) {
-        viewModel.revisionTaps.collect { revisionId ->
-            onRevisionClick(revisionId)
+        viewModel.revisionTaps.collect { target ->
+            onRevisionClick(target.baseRevisionId, target.targetRevisionId)
         }
     }
 

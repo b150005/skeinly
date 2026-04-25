@@ -5,21 +5,22 @@ import Shared
 /// ADR-013 §6). Owns a Koin-resolved `ChartHistoryViewModel` via
 /// `ScopedViewModel` so the observed state survives parent re-inits.
 ///
-/// `onRevisionClick` is wired by the `AppRouter` and is a no-op for 37.2 —
-/// `ChartDiffScreen` ships in 37.3 and will route the tapped `revisionId`
-/// to that destination via the same callback shape. The ViewModel's
-/// `revisionTaps` channel is collected here so the iOS contract matches the
-/// Compose mirror exactly.
+/// Tap a revision row → ViewModel emits a `RevisionTapTarget` carrying
+/// `(targetRevisionId, baseRevisionId)`. The Phase 37.3 path appends a
+/// `Route.chartDiff` to the navigation stack (initial-commit case routes
+/// `baseRevisionId = nil`).
 struct ChartHistoryScreen: View {
     let patternId: String
+    @Binding var path: NavigationPath
     @StateObject private var holder: ScopedViewModel<ChartHistoryViewModel, ChartHistoryState>
     @State private var revisionTapCloseable: Closeable?
     @State private var showError = false
 
     private var viewModel: ChartHistoryViewModel { holder.viewModel }
 
-    init(patternId: String) {
+    init(patternId: String, path: Binding<NavigationPath>) {
         self.patternId = patternId
+        self._path = path
         let vm = ViewModelFactory.chartHistoryViewModel(patternId: patternId)
         let wrapper = KoinHelperKt.wrapChartHistoryState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
@@ -79,11 +80,15 @@ struct ChartHistoryScreen: View {
         revisionTapCloseable?.close()
         revisionTapCloseable = nil
         let wrapper = KoinHelperKt.wrapChartHistoryRevisionTaps(flow: viewModel.revisionTaps)
-        revisionTapCloseable = wrapper.collect { _ in
-            // Phase 37.2 placeholder — Phase 37.3 will navigate to ChartDiff.
-            // Keeping the subscription wired now (instead of leaving it
-            // unattached) keeps the channel buffer drained so taps issued in
-            // 37.2 do not pile up against the BUFFERED channel capacity.
+        revisionTapCloseable = wrapper.collect { target in
+            Task { @MainActor in
+                path.append(
+                    Route.chartDiff(
+                        baseRevisionId: target.baseRevisionId,
+                        targetRevisionId: target.targetRevisionId
+                    )
+                )
+            }
         }
     }
 }

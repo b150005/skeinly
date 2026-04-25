@@ -18,6 +18,7 @@ import io.github.b150005.knitnote.domain.usecase.GetOnboardingCompletedUseCase
 import io.github.b150005.knitnote.ui.activityfeed.ActivityFeedScreen
 import io.github.b150005.knitnote.ui.auth.AuthViewModel
 import io.github.b150005.knitnote.ui.auth.LoginScreen
+import io.github.b150005.knitnote.ui.chart.ChartDiffScreen
 import io.github.b150005.knitnote.ui.chart.ChartEditorScreen
 import io.github.b150005.knitnote.ui.chart.ChartHistoryScreen
 import io.github.b150005.knitnote.ui.chart.ChartViewerScreen
@@ -98,6 +99,17 @@ data class ChartEditor(
 @Serializable
 data class ChartHistory(
     val patternId: String,
+)
+
+/**
+ * Phase 37.3 (ADR-013 §5 §6) — side-by-side diff between two chart revisions.
+ * `baseRevisionId` is nullable so the initial-commit case (no parent) renders
+ * an "Initial commit" view in the base pane. `targetRevisionId` is required.
+ */
+@Serializable
+data class ChartDiff(
+    val baseRevisionId: String?,
+    val targetRevisionId: String,
 )
 
 @Serializable
@@ -334,12 +346,23 @@ fun KnitNoteNavHost(
             ChartHistoryScreen(
                 patternId = route.patternId,
                 onBack = { navController.popBackStack() },
-                // Phase 37.2 placeholder — `ChartDiffScreen` ships in 37.3.
-                // The ViewModel still emits the tapped revisionId on its
-                // one-shot channel (covered by ChartHistoryViewModelTest);
-                // 37.3 swaps this no-op for `navController.navigate(ChartDiff(...))`.
-                // TODO Phase 37.3: route revisionId to navController.navigate(ChartDiff(...)).
-                onRevisionClick = { _ -> },
+                // Phase 37.3 (ADR-013 §6): tap a revision row → diff against its
+                // parent. ViewModel resolves `baseRevisionId` from the tapped
+                // row's `parentRevisionId`; null base routes to the initial-commit
+                // view in `ChartDiffScreen`.
+                onRevisionClick = { baseRevisionId, targetRevisionId ->
+                    navController.navigate(
+                        ChartDiff(baseRevisionId = baseRevisionId, targetRevisionId = targetRevisionId),
+                    )
+                },
+            )
+        }
+        composable<ChartDiff> { backStackEntry ->
+            val route = backStackEntry.toRoute<ChartDiff>()
+            ChartDiffScreen(
+                baseRevisionId = route.baseRevisionId,
+                targetRevisionId = route.targetRevisionId,
+                onBack = { navController.popBackStack() },
             )
         }
         composable<SharedContent> { backStackEntry ->

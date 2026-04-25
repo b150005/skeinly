@@ -212,6 +212,7 @@ kover {
                     "io.github.b150005.knitnote.ui.chart.ChartViewerScreenKt*",
                     "io.github.b150005.knitnote.ui.chart.ChartEditorScreenKt*",
                     "io.github.b150005.knitnote.ui.chart.ChartHistoryScreenKt*",
+                    "io.github.b150005.knitnote.ui.chart.ChartDiffScreenKt*",
                     "io.github.b150005.knitnote.ui.chart.SymbolDrawingKt*",
                     "io.github.b150005.knitnote.ui.chart.PolarDrawingKt*",
                     "io.github.b150005.knitnote.ui.chart.ChartThumbnailKt*",

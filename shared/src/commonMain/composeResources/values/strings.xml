@@ -466,4 +466,26 @@
     <string name="action_restore_revision">Restore as new commit</string>
     <string name="dialog_restore_revision_title">Restore this revision?</string>
     <string name="dialog_restore_revision_body">This appends a new commit on top of the current tip with the contents of this revision. Nothing in your history is overwritten.</string>
+
+    <!-- Phase 37.3 chart diff view (ADR-013 §5 §6). `title_chart_diff` is the
+         screen title. `label_diff_summary` is the parametric chip at the top of
+         the screen ("3 added · 2 modified · 1 removed") — uses the middle dot
+         (U+00B7) per the ADR mock. The `label_layer_*` family annotates the
+         layer-changes banner: `label_layer_renamed` is the only parametric one
+         ("Old → New"); the rest are non-parametric verbs because the layer's
+         current name is rendered separately by the renderer (the verb is the
+         change category, the layer name is a sibling Text). `state_no_changes`
+         is the empty-state body when two revisions are byte-identical (common
+         when comparing a content_hash collision). `label_initial_commit` is
+         reused from 37.2 for the base-pane label when `baseRevisionId == null`. -->
+    <string name="title_chart_diff">Chart Diff</string>
+    <string name="label_diff_summary">%1$d added · %2$d modified · %3$d removed</string>
+    <string name="label_layer_renamed">%1$s → %2$s</string>
+    <string name="label_layer_hidden">Layer hidden</string>
+    <string name="label_layer_shown">Layer shown</string>
+    <string name="label_layer_locked">Layer locked</string>
+    <string name="label_layer_unlocked">Layer unlocked</string>
+    <string name="label_layer_added">Layer added</string>
+    <string name="label_layer_removed">Layer removed</string>
+    <string name="state_no_changes">No changes between these revisions</string>
 </resources>

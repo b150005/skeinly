@@ -32,11 +32,10 @@ data class ChartHistoryState(
 
 sealed interface ChartHistoryEvent {
     /**
-     * Phase 37.2 emits the tapped `revisionId` on a one-shot channel; the
-     * Compose / SwiftUI consumer is wired to a no-op for this slice (no
-     * `ChartDiffScreen` yet — see ADR-013 §9). Phase 37.3 routes the channel
-     * payload to `ChartDiff(baseRevisionId = revision.parentRevisionId,
-     * targetRevisionId = revision.revisionId)`.
+     * Tap a revision row → ViewModel emits a [RevisionTapTarget] on the
+     * navigation channel carrying both the tapped (target) revision id and
+     * its parent revision id (base). Phase 37.3 routes that payload to
+     * `ChartDiff(baseRevisionId = parent, targetRevisionId = tapped)`.
      */
     data class TapRevision(
         val revisionId: String,
@@ -44,6 +43,21 @@ sealed interface ChartHistoryEvent {
 
     data object ClearError : ChartHistoryEvent
 }
+
+/**
+ * Channel payload for a tapped revision: the resolved (target, base) pair the
+ * `ChartDiffScreen` needs. `baseRevisionId` is null when the tap target has no
+ * parent (initial commit) — `ChartDiffScreen` then renders the initial-commit
+ * view per ADR-013 §6 instead of a side-by-side diff.
+ *
+ * The lookup happens in the ViewModel because it owns the revision graph; the
+ * Compose / SwiftUI screen layers stay diff-routing-agnostic and just forward
+ * the payload through `onRevisionClick`.
+ */
+data class RevisionTapTarget(
+    val targetRevisionId: String,
+    val baseRevisionId: String?,
+)
 
 class ChartHistoryViewModel(
     private val patternId: String,
@@ -57,8 +71,8 @@ class ChartHistoryViewModel(
      * `BUFFERED` so taps queued before the consumer attaches still deliver
      * (e.g. SwiftUI's `.task { }` may attach a frame after the view binds).
      */
-    private val _revisionTaps = Channel<String>(Channel.BUFFERED)
-    val revisionTaps: Flow<String> = _revisionTaps.receiveAsFlow()
+    private val _revisionTaps = Channel<RevisionTapTarget>(Channel.BUFFERED)
+    val revisionTaps: Flow<RevisionTapTarget> = _revisionTaps.receiveAsFlow()
 
     init {
         getChartHistory
@@ -76,7 +90,20 @@ class ChartHistoryViewModel(
 
     fun onEvent(event: ChartHistoryEvent) {
         when (event) {
-            is ChartHistoryEvent.TapRevision -> _revisionTaps.trySend(event.revisionId)
+            is ChartHistoryEvent.TapRevision -> {
+                // Look up the tapped revision to derive its parent for the diff
+                // base. Unknown revisionId (race against an in-flight Realtime
+                // delete, or a malformed call) emits null base — `ChartDiffScreen`
+                // then surfaces an "Initial commit" view rather than crashing the
+                // navigation channel.
+                val target = _state.value.revisions.firstOrNull { it.revisionId == event.revisionId }
+                _revisionTaps.trySend(
+                    RevisionTapTarget(
+                        targetRevisionId = event.revisionId,
+                        baseRevisionId = target?.parentRevisionId,
+                    ),
+                )
+            }
             ChartHistoryEvent.ClearError -> _state.update { it.copy(error = null) }
         }
     }

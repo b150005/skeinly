@@ -1981,6 +1981,76 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "This appends a new commit on top of the current tip with the contents of this revision. Nothing in your history is overwritten." } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "現在のtipの上にこのリビジョンの内容で新しいコミットを追加します。履歴は上書きされません。" } }
       }
+    },
+    "title_chart_diff" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Chart Diff" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "チャート差分" } }
+      }
+    },
+    "label_diff_summary" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$d added · %2$d modified · %3$d removed" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "追加 %1$d ・ 変更 %2$d ・ 削除 %3$d" } }
+      }
+    },
+    "label_layer_renamed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ → %2$@" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ → %2$@" } }
+      }
+    },
+    "label_layer_hidden" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Layer hidden" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイヤーを非表示" } }
+      }
+    },
+    "label_layer_shown" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Layer shown" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイヤーを表示" } }
+      }
+    },
+    "label_layer_locked" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Layer locked" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイヤーをロック" } }
+      }
+    },
+    "label_layer_unlocked" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Layer unlocked" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイヤーのロック解除" } }
+      }
+    },
+    "label_layer_added" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Layer added" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイヤーを追加" } }
+      }
+    },
+    "label_layer_removed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Layer removed" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイヤーを削除" } }
+      }
+    },
+    "state_no_changes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No changes between these revisions" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "これらのリビジョン間に変更はありません" } }
+      }
     }
   },
   "version" : "1.0"

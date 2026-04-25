@@ -137,16 +137,56 @@ class ChartHistoryViewModelTest {
         }
 
     @Test
-    fun `tapRevision emits revision id on navigation channel`() =
+    fun `tapRevision emits target with null base when revision is initial commit`() =
         runTest {
-            fakeRepo.setHistory("pat-1", listOf(makeRevision(id = "rev-tap-target")))
+            fakeRepo.setHistory(
+                "pat-1",
+                listOf(makeRevision(id = "rev-tap-target", parentRevisionId = null)),
+            )
             val viewModel = createViewModel()
 
             viewModel.onEvent(ChartHistoryEvent.TapRevision("rev-tap-target"))
 
-            // Channel<String> drained as a Flow — first() suspends until the send lands.
             val emitted = viewModel.revisionTaps.first()
-            assertEquals("rev-tap-target", emitted)
+            assertEquals(RevisionTapTarget(targetRevisionId = "rev-tap-target", baseRevisionId = null), emitted)
+        }
+
+    @Test
+    fun `tapRevision resolves base from parentRevisionId of tapped row`() =
+        runTest {
+            fakeRepo.setHistory(
+                "pat-1",
+                listOf(
+                    makeRevision(id = "rev-newer", parentRevisionId = "rev-older"),
+                    makeRevision(id = "rev-older", parentRevisionId = null),
+                ),
+            )
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(ChartHistoryEvent.TapRevision("rev-newer"))
+
+            val emitted = viewModel.revisionTaps.first()
+            assertEquals(
+                RevisionTapTarget(targetRevisionId = "rev-newer", baseRevisionId = "rev-older"),
+                emitted,
+            )
+        }
+
+    @Test
+    fun `tapRevision with unknown revisionId emits null base instead of crashing`() =
+        runTest {
+            fakeRepo.setHistory("pat-1", listOf(makeRevision(id = "rev-existing")))
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(ChartHistoryEvent.TapRevision("rev-not-in-list"))
+
+            // Race condition guard: the Channel still receives a payload so the
+            // navigation pipeline does not get wedged silently.
+            val emitted = viewModel.revisionTaps.first()
+            assertEquals(
+                RevisionTapTarget(targetRevisionId = "rev-not-in-list", baseRevisionId = null),
+                emitted,
+            )
         }
 
     @Test

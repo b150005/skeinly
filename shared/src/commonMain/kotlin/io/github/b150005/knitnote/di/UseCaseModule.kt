@@ -21,6 +21,7 @@ import io.github.b150005.knitnote.domain.usecase.DeleteStructuredChartUseCase
 import io.github.b150005.knitnote.domain.usecase.ForkPublicPatternUseCase
 import io.github.b150005.knitnote.domain.usecase.ForkSharedPatternUseCase
 import io.github.b150005.knitnote.domain.usecase.GetActivitiesUseCase
+import io.github.b150005.knitnote.domain.usecase.GetChartDiffUseCase
 import io.github.b150005.knitnote.domain.usecase.GetChartHistoryUseCase
 import io.github.b150005.knitnote.domain.usecase.GetChartRevisionUseCase
 import io.github.b150005.knitnote.domain.usecase.GetCommentsUseCase
@@ -131,6 +132,9 @@ val useCaseModule =
         // without further DI churn.
         factory { GetChartHistoryUseCase(get()) }
         factory { GetChartRevisionUseCase(get()) }
+
+        // Phase 37.3 chart-diff use case (ADR-013 §5).
+        factory { GetChartDiffUseCase(get()) }
 
         // Per-segment progress use cases (Phase 34)
         factory { ObserveProjectSegmentsUseCase(get()) }

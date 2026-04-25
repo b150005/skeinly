@@ -15,6 +15,7 @@ enum Route: Hashable {
     case chartViewer(patternId: String, projectId: String?)
     case chartEditor(patternId: String)
     case chartHistory(patternId: String)
+    case chartDiff(baseRevisionId: String?, targetRevisionId: String)
     case symbolGallery
 
     // Hashable conformance for sharedContent with optionals
@@ -52,6 +53,10 @@ enum Route: Hashable {
         case .chartHistory(let patternId):
             hasher.combine("chartHistory")
             hasher.combine(patternId)
+        case .chartDiff(let baseRevisionId, let targetRevisionId):
+            hasher.combine("chartDiff")
+            hasher.combine(baseRevisionId)
+            hasher.combine(targetRevisionId)
         case .symbolGallery:
             hasher.combine("symbolGallery")
         }
@@ -141,7 +146,9 @@ struct AppRootView: View {
         case .chartEditor(let patternId):
             StructuredChartEditorScreen(patternId: patternId, path: $path)
         case .chartHistory(let patternId):
-            ChartHistoryScreen(patternId: patternId)
+            ChartHistoryScreen(patternId: patternId, path: $path)
+        case .chartDiff(let baseRevisionId, let targetRevisionId):
+            ChartDiffScreen(baseRevisionId: baseRevisionId, targetRevisionId: targetRevisionId)
         case .symbolGallery:
             SymbolGalleryScreen()
         }

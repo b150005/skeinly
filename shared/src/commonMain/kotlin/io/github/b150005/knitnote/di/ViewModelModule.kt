@@ -2,6 +2,7 @@ package io.github.b150005.knitnote.di
 
 import io.github.b150005.knitnote.ui.activityfeed.ActivityFeedViewModel
 import io.github.b150005.knitnote.ui.auth.AuthViewModel
+import io.github.b150005.knitnote.ui.chart.ChartDiffViewModel
 import io.github.b150005.knitnote.ui.chart.ChartEditorViewModel
 import io.github.b150005.knitnote.ui.chart.ChartHistoryViewModel
 import io.github.b150005.knitnote.ui.chart.ChartViewerViewModel
@@ -96,6 +97,16 @@ val viewModelModule =
             ChartHistoryViewModel(
                 patternId = params.get(),
                 getChartHistory = get(),
+            )
+        }
+        viewModel { params ->
+            // Positional indices per the ChartViewerViewModel binding above —
+            // `params.getOrNull<String>()` would re-read index 0 (the nullable
+            // baseRevisionId) and silently bind both fields to the same id.
+            ChartDiffViewModel(
+                baseRevisionId = params.get<String?>(0),
+                targetRevisionId = params.get<String>(1),
+                getChartDiff = get(),
             )
         }
         viewModel { params ->
