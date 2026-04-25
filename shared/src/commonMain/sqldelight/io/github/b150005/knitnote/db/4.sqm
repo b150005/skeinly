@@ -1,0 +1,2 @@
+-- Phase 36 spine: Pattern fork attribution (ADR-012 §1)
+ALTER TABLE PatternEntity ADD COLUMN parent_pattern_id TEXT;

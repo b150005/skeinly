@@ -10,7 +10,8 @@ CREATE TABLE PatternEntity (
     chart_image_urls TEXT,
     visibility TEXT NOT NULL DEFAULT 'private',
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    parent_pattern_id TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_pattern_owner_id ON PatternEntity(owner_id);
@@ -22,9 +23,11 @@ getByOwnerId:
 SELECT * FROM PatternEntity WHERE owner_id = ? ORDER BY created_at DESC;
 
 insert:
-INSERT INTO PatternEntity(id, owner_id, title, description, difficulty, gauge, yarn_info, needle_size, chart_image_urls, visibility, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO PatternEntity(id, owner_id, title, description, difficulty, gauge, yarn_info, needle_size, chart_image_urls, visibility, created_at, updated_at, parent_pattern_id)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
+-- Note: `parent_pattern_id` is intentionally not in the UPDATE list. It is
+-- set once at fork time (ADR-012 §1) and never changed afterwards.
 update:
 UPDATE PatternEntity
 SET title = ?, description = ?, difficulty = ?, gauge = ?, yarn_info = ?, needle_size = ?, chart_image_urls = ?, visibility = ?, updated_at = ?

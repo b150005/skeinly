@@ -139,4 +139,55 @@ class LocalPatternDataSourceTest {
             assertNotNull(result)
             assertNull(result.difficulty)
         }
+
+    @Test
+    fun `parentPatternId defaults to null when omitted`() =
+        runTest {
+            dataSource.insert(testPattern)
+            val result = dataSource.getById("pat-1")
+            assertNotNull(result)
+            assertNull(result.parentPatternId)
+        }
+
+    @Test
+    fun `parentPatternId survives insert and getById round-trip`() =
+        runTest {
+            val fork = testPattern.copy(id = "pat-fork", parentPatternId = "pat-source")
+            dataSource.insert(fork)
+            val result = dataSource.getById("pat-fork")
+            assertNotNull(result)
+            assertEquals("pat-source", result.parentPatternId)
+        }
+
+    @Test
+    fun `parentPatternId is preserved across update`() =
+        runTest {
+            val fork = testPattern.copy(id = "pat-fork", parentPatternId = "pat-source")
+            dataSource.insert(fork)
+            dataSource.update(fork.copy(title = "Renamed"))
+            val result = dataSource.getById("pat-fork")
+            assertNotNull(result)
+            assertEquals("Renamed", result.title)
+            assertEquals("pat-source", result.parentPatternId)
+        }
+
+    @Test
+    fun `upsert insert-branch round-trips parentPatternId`() =
+        runTest {
+            val fork = testPattern.copy(id = "pat-fork", parentPatternId = "pat-source")
+            dataSource.upsert(fork)
+            val result = dataSource.getById("pat-fork")
+            assertNotNull(result)
+            assertEquals("pat-source", result.parentPatternId)
+        }
+
+    @Test
+    fun `upsertAll insert-branch round-trips parentPatternId`() =
+        runTest {
+            val fork = testPattern.copy(id = "pat-fork", parentPatternId = "pat-source")
+            dataSource.upsertAll(listOf(fork))
+            val result = dataSource.getById("pat-fork")
+            assertNotNull(result)
+            assertEquals("pat-source", result.parentPatternId)
+        }
 }

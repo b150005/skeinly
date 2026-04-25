@@ -19,6 +19,7 @@ class PatternMapperTest {
         gauge: String? = null,
         yarnInfo: String? = null,
         needleSize: String? = null,
+        parentPatternId: String? = null,
     ) = PatternEntity(
         id = "pat1",
         owner_id = "owner1",
@@ -32,6 +33,7 @@ class PatternMapperTest {
         visibility = visibility,
         created_at = now,
         updated_at = now,
+        parent_pattern_id = parentPatternId,
     )
 
     @Test
@@ -106,6 +108,18 @@ class PatternMapperTest {
         assertNull(pattern.gauge)
         assertNull(pattern.yarnInfo)
         assertNull(pattern.needleSize)
+    }
+
+    @Test
+    fun `toDomain maps null parent_pattern_id to null`() {
+        val pattern = entity(parentPatternId = null).toDomain()
+        assertNull(pattern.parentPatternId)
+    }
+
+    @Test
+    fun `toDomain maps non-null parent_pattern_id`() {
+        val pattern = entity(parentPatternId = "src-pat-42").toDomain()
+        assertEquals("src-pat-42", pattern.parentPatternId)
     }
 
     @Test

@@ -134,9 +134,9 @@ Migration 014 adds `parent_pattern_id`:
 
 ```sql
 ALTER TABLE public.patterns
-    ADD COLUMN parent_pattern_id UUID REFERENCES public.patterns(id) ON DELETE SET NULL;
+    ADD COLUMN IF NOT EXISTS parent_pattern_id UUID REFERENCES public.patterns(id) ON DELETE SET NULL;
 
-CREATE INDEX idx_patterns_parent_pattern_id ON public.patterns(parent_pattern_id)
+CREATE INDEX IF NOT EXISTS idx_patterns_parent_pattern_id ON public.patterns(parent_pattern_id)
     WHERE parent_pattern_id IS NOT NULL;
 ```
 

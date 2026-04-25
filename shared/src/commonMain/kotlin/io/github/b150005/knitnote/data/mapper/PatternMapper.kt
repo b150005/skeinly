@@ -26,6 +26,7 @@ fun PatternEntity.toDomain(): Pattern =
         visibility = visibility.toVisibility(),
         createdAt = Instant.parse(created_at),
         updatedAt = Instant.parse(updated_at),
+        parentPatternId = parent_pattern_id,
     )
 
 fun List<String>.toChartImageUrlsDbString(): String? = if (isEmpty()) null else json.encodeToString(stringListSerializer, this)

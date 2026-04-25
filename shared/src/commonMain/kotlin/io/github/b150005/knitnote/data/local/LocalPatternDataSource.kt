@@ -58,6 +58,7 @@ class LocalPatternDataSource(
                 visibility = pattern.visibility.toDbString(),
                 created_at = pattern.createdAt.toString(),
                 updated_at = pattern.updatedAt.toString(),
+                parent_pattern_id = pattern.parentPatternId,
             )
             pattern
         }
@@ -115,6 +116,7 @@ class LocalPatternDataSource(
                         visibility = pattern.visibility.toDbString(),
                         created_at = pattern.createdAt.toString(),
                         updated_at = pattern.updatedAt.toString(),
+                        parent_pattern_id = pattern.parentPatternId,
                     )
                 }
             }
@@ -152,6 +154,7 @@ class LocalPatternDataSource(
                             visibility = pattern.visibility.toDbString(),
                             created_at = pattern.createdAt.toString(),
                             updated_at = pattern.updatedAt.toString(),
+                            parent_pattern_id = pattern.parentPatternId,
                         )
                     }
                 }

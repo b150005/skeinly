@@ -35,6 +35,10 @@ class ForkPublicPatternUseCase(
 
         val now = Clock.System.now()
 
+        // Phase 36.3 will add `parentPatternId = sourcePattern.id` here once the
+        // chart-clone path lands. The current `.copy(...)` deliberately omits the
+        // override so 36.1 ships pure data-layer plumbing without changing fork
+        // semantics — Phase 36.3 owns the actual attribution write. ADR-012 §3.
         val forkedPattern =
             sourcePattern.copy(
                 id = Uuid.random().toString(),
