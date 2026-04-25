@@ -1,6 +1,8 @@
 package io.github.b150005.knitnote.domain.usecase
 
+import io.github.b150005.knitnote.domain.model.ChartRevision
 import io.github.b150005.knitnote.domain.model.StructuredChart
+import io.github.b150005.knitnote.domain.model.toStructuredChart
 import io.github.b150005.knitnote.domain.repository.StructuredChartRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,6 +64,23 @@ class FakeStructuredChartRepository : StructuredChartRepository {
             )
         charts.value = charts.value + cloned
         return cloned
+    }
+
+    override suspend fun setTip(
+        patternId: String,
+        targetRevision: ChartRevision,
+    ): StructuredChart? {
+        failNext?.let { throw it.also { failNext = null } }
+        val current = charts.value.firstOrNull { it.patternId == patternId } ?: return null
+        // Mirror the production impl: rewrite the existing row in place from
+        // the revision's payload, preserving the row id and createdAt.
+        val rebuilt =
+            targetRevision.toStructuredChart().copy(
+                id = current.id,
+                createdAt = current.createdAt,
+            )
+        charts.value = charts.value.map { if (it.id == current.id) rebuilt else it }
+        return rebuilt
     }
 
     fun seed(chart: StructuredChart) {

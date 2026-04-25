@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AccountTree
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
@@ -28,9 +29,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -67,8 +71,10 @@ import io.github.b150005.knitnote.domain.symbol.SymbolCatalog
 import io.github.b150005.knitnote.generated.resources.Res
 import io.github.b150005.knitnote.generated.resources.action_back
 import io.github.b150005.knitnote.generated.resources.action_more_options
+import io.github.b150005.knitnote.generated.resources.message_switched_to_branch
 import io.github.b150005.knitnote.generated.resources.state_empty_chart
 import io.github.b150005.knitnote.generated.resources.state_no_structured_chart
+import io.github.b150005.knitnote.generated.resources.title_branch_picker
 import io.github.b150005.knitnote.generated.resources.title_chart_history
 import io.github.b150005.knitnote.generated.resources.title_chart_viewer
 import org.jetbrains.compose.resources.stringResource
@@ -110,8 +116,20 @@ fun ChartViewerScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var showOverflowMenu by remember { mutableStateOf(false) }
+    var showBranchPicker by remember { mutableStateOf(false) }
+    var pendingSnackbar by remember { mutableStateOf<String?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val switchedTemplate = stringResource(Res.string.message_switched_to_branch)
+
+    LaunchedEffect(pendingSnackbar) {
+        pendingSnackbar?.let {
+            snackbarHostState.showSnackbar(it)
+            pendingSnackbar = null
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(Res.string.title_chart_viewer)) },
@@ -147,6 +165,17 @@ fun ChartViewerScreen(
                                 onHistoryClick()
                             },
                             modifier = Modifier.testTag("viewHistoryMenuItem"),
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.title_branch_picker)) },
+                            leadingIcon = {
+                                Icon(Icons.Default.AccountTree, contentDescription = null)
+                            },
+                            onClick = {
+                                showOverflowMenu = false
+                                showBranchPicker = true
+                            },
+                            modifier = Modifier.testTag("openBranchPickerMenuItem"),
                         )
                     }
                 },
@@ -212,6 +241,19 @@ fun ChartViewerScreen(
                     }
             }
         }
+    }
+
+    if (showBranchPicker) {
+        ChartBranchPickerSheet(
+            patternId = patternId,
+            onDismiss = { showBranchPicker = false },
+            onBranchSwitched = { branchName ->
+                // Snapshot template + name into a String; the LaunchedEffect
+                // up top consumes it through `pendingSnackbar` so the
+                // suspending `showSnackbar` never blocks this callback.
+                pendingSnackbar = switchedTemplate.replace("%1\$s", branchName)
+            },
+        )
     }
 }
 

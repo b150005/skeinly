@@ -74,4 +74,9 @@ class LocalChartBranchDataSource(
         withContext(ioDispatcher) {
             queries.deleteByPatternId(patternId)
         }
+
+    suspend fun deleteById(id: String): Unit =
+        withContext(ioDispatcher) {
+            queries.deleteById(id)
+        }
 }

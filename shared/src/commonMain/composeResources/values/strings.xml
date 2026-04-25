@@ -488,4 +488,25 @@
     <string name="label_layer_added">Layer added</string>
     <string name="label_layer_removed">Layer removed</string>
     <string name="state_no_changes">No changes between these revisions</string>
+
+    <!-- Phase 37.4 branch picker + restore (ADR-013 §6 §7). The picker is a
+         ModalBottomSheet on Compose / .sheet on SwiftUI listing every branch
+         for the current pattern; the row matching the chart's current tip
+         carries `label_current_branch` as a side annotation. "main" auto-
+         creates so `state_no_branches` is defensive (only fires if the
+         branch row never landed locally — most likely a pre-37.1 chart that
+         predates `ensureDefaultBranch`). `action_create_branch` is the CTA
+         at the bottom of the picker and the confirm button on the new-branch
+         dialog. `label_branch_name` is the OutlinedTextField label.
+         `action_switch` is the per-row switch button. `message_switched_to_branch`
+         is the parametric Snackbar / toast confirmation after a successful
+         switch (`%1$s` resolves to the branch name). -->
+    <string name="title_branch_picker">Branches</string>
+    <string name="action_create_branch">New branch</string>
+    <string name="dialog_create_branch_title">Create branch</string>
+    <string name="label_branch_name">Branch name</string>
+    <string name="label_current_branch">Current</string>
+    <string name="state_no_branches">No branches yet</string>
+    <string name="action_switch">Switch</string>
+    <string name="message_switched_to_branch">Switched to %1$s</string>
 </resources>

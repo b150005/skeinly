@@ -156,6 +156,11 @@ class ChartViewerViewModelTest {
                         newPatternId: String,
                         newOwnerId: String,
                     ) = null
+
+                    override suspend fun setTip(
+                        patternId: String,
+                        targetRevision: io.github.b150005.knitnote.domain.model.ChartRevision,
+                    ) = null
                 }
             val viewModel =
                 ChartViewerViewModel(

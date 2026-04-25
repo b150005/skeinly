@@ -592,4 +592,151 @@ class StructuredChartRepositoryImplTest {
             assertNotNull(cloned)
             assertEquals("pat-fork", cloned.patternId)
         }
+
+    // ---- Phase 37.4 (ADR-013 §7): branch tip advance + setTip ----
+
+    private fun setUpWithBranches(): Triple<StructuredChartRepositoryImpl, LocalChartBranchDataSource, ChartBranchRepositoryImpl> {
+        val revisionLocal = LocalChartRevisionDataSource(db, Dispatchers.Unconfined, testJson)
+        val branchLocal = LocalChartBranchDataSource(db, Dispatchers.Unconfined)
+        val revisionRepo =
+            ChartRevisionRepositoryImpl(
+                local = revisionLocal,
+                remote = null,
+                isOnline = isOnline,
+                syncManager = fakeSyncManager,
+                json = testJson,
+            )
+        val branchRepo =
+            ChartBranchRepositoryImpl(
+                local = branchLocal,
+                syncManager = fakeSyncManager,
+                json = testJson,
+            )
+        val repoWithBranches =
+            StructuredChartRepositoryImpl(
+                local = LocalStructuredChartDataSource(db, Dispatchers.Unconfined, testJson),
+                remote = null,
+                isOnline = isOnline,
+                syncManager = fakeSyncManager,
+                json = testJson,
+                chartRevisionRepository = revisionRepo,
+                localChartBranch = branchLocal,
+                chartBranchRepository = branchRepo,
+            )
+        return Triple(repoWithBranches, branchLocal, branchRepo)
+    }
+
+    @Test
+    fun `update advances the main branch tip to the new revisionId`() =
+        runTest {
+            val (repo, branchLocal, _) = setUpWithBranches()
+            val initial = testChart()
+            repo.create(initial)
+            val edited =
+                initial.copy(
+                    revisionId = "rev-b",
+                    contentHash = "h1-edited",
+                    parentRevisionId = initial.revisionId,
+                    updatedAt = Instant.parse("2026-04-18T10:00:00Z"),
+                )
+            repo.update(edited)
+
+            val main =
+                branchLocal.getByPatternIdAndName(initial.patternId, ChartBranch.DEFAULT_BRANCH_NAME)
+            assertNotNull(main)
+            assertEquals("rev-b", main.tipRevisionId)
+        }
+
+    @Test
+    fun `update advances every branch co-located on the prior tip`() =
+        runTest {
+            val (repo, branchLocal, branchRepo) = setUpWithBranches()
+            val initial = testChart()
+            repo.create(initial)
+            // Branch off main at the same tip.
+            val mintedAt = Instant.parse("2026-04-18T09:00:00Z")
+            val featureBranch =
+                ChartBranch(
+                    id = "branch-feature",
+                    patternId = initial.patternId,
+                    ownerId = initial.ownerId,
+                    branchName = "feature",
+                    tipRevisionId = initial.revisionId,
+                    createdAt = mintedAt,
+                    updatedAt = mintedAt,
+                )
+            branchRepo.createBranch(featureBranch)
+
+            val edited =
+                initial.copy(
+                    revisionId = "rev-b",
+                    contentHash = "h1-edited",
+                    parentRevisionId = initial.revisionId,
+                    updatedAt = Instant.parse("2026-04-18T10:00:00Z"),
+                )
+            repo.update(edited)
+
+            val main =
+                branchLocal.getByPatternIdAndName(initial.patternId, ChartBranch.DEFAULT_BRANCH_NAME)
+            val feature =
+                branchLocal.getByPatternIdAndName(initial.patternId, "feature")
+            assertNotNull(main)
+            assertNotNull(feature)
+            // Both co-located branches advanced together — defines "I just
+            // branched from here, save advances everyone at this tip."
+            assertEquals("rev-b", main.tipRevisionId)
+            assertEquals("rev-b", feature.tipRevisionId)
+        }
+
+    @Test
+    fun `setTip rewrites tip pointer in place without appending history`() =
+        runTest {
+            val (repo, _, _) = setUpWithBranches()
+            val initial = testChart()
+            repo.create(initial)
+            val callsAfterCreate = fakeSyncManager.calls.size
+
+            // Construct a target revision payload representing what a different
+            // branch tip would carry. The repo reads the current row inside
+            // its mutex and rewrites it from this revision, preserving the
+            // current row's `id`.
+            val targetRevision =
+                io.github.b150005.knitnote.domain.model.ChartRevision(
+                    id = "rev-row-other",
+                    patternId = initial.patternId,
+                    ownerId = initial.ownerId,
+                    authorId = initial.ownerId,
+                    schemaVersion = initial.schemaVersion,
+                    storageVariant = initial.storageVariant,
+                    coordinateSystem = initial.coordinateSystem,
+                    extents = initial.extents,
+                    layers = initial.layers,
+                    revisionId = "rev-other",
+                    parentRevisionId = initial.revisionId,
+                    contentHash = "h-other",
+                    commitMessage = null,
+                    createdAt = Instant.parse("2026-04-19T10:00:00Z"),
+                )
+            val rebuilt = repo.setTip(initial.patternId, targetRevision)
+
+            assertNotNull(rebuilt)
+            // Local row reflects the new revisionId.
+            val current = repo.getByPatternId(initial.patternId)
+            assertNotNull(current)
+            assertEquals("rev-other", current.revisionId)
+            // Tip pointer row id preserved (rewritten in place).
+            assertEquals(initial.id, current.id)
+
+            // No new CHART_REVISION INSERT enqueued — setTip is pointer-only.
+            val newCalls = fakeSyncManager.calls.drop(callsAfterCreate)
+            val revisionInserts =
+                newCalls.count { it.entityType == SyncEntityType.CHART_REVISION }
+            assertEquals(0, revisionInserts)
+            // STRUCTURED_CHART UPDATE was enqueued.
+            val tipUpdates =
+                newCalls.count {
+                    it.entityType == SyncEntityType.STRUCTURED_CHART && it.operation == SyncOperation.UPDATE
+                }
+            assertEquals(1, tipUpdates)
+        }
 }

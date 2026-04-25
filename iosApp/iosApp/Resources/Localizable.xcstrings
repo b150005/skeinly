@@ -2051,6 +2051,62 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "No changes between these revisions" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "これらのリビジョン間に変更はありません" } }
       }
+    },
+    "title_branch_picker" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Branches" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ブランチ" } }
+      }
+    },
+    "action_create_branch" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "New branch" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "新しいブランチ" } }
+      }
+    },
+    "dialog_create_branch_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Create branch" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ブランチを作成" } }
+      }
+    },
+    "label_branch_name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Branch name" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ブランチ名" } }
+      }
+    },
+    "label_current_branch" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Current" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "現在" } }
+      }
+    },
+    "state_no_branches" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No branches yet" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ブランチがまだありません" } }
+      }
+    },
+    "action_switch" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Switch" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "切り替え" } }
+      }
+    },
+    "message_switched_to_branch" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Switched to %1$@" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@に切り替えました" } }
+      }
     }
   },
   "version" : "1.0"

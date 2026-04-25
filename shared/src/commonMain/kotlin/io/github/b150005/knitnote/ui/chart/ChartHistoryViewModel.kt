@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.b150005.knitnote.domain.model.ChartRevision
 import io.github.b150005.knitnote.domain.usecase.GetChartHistoryUseCase
+import io.github.b150005.knitnote.domain.usecase.RestoreRevisionUseCase
+import io.github.b150005.knitnote.domain.usecase.UseCaseResult
+import io.github.b150005.knitnote.domain.usecase.toMessage
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +17,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 /**
  * Live revision list rendered by [ChartHistoryScreen] (Phase 37.2, ADR-013 §6).
@@ -28,6 +32,12 @@ data class ChartHistoryState(
     val revisions: List<ChartRevision> = emptyList(),
     val isLoading: Boolean = true,
     val error: String? = null,
+    /**
+     * Phase 37.4 (ADR-013 §6): the revision the user long-pressed and is being
+     * asked to confirm restoration of. Non-null while the confirmation dialog
+     * is visible; cleared on confirm or dismiss.
+     */
+    val pendingRestoreRevision: ChartRevision? = null,
 )
 
 sealed interface ChartHistoryEvent {
@@ -40,6 +50,22 @@ sealed interface ChartHistoryEvent {
     data class TapRevision(
         val revisionId: String,
     ) : ChartHistoryEvent
+
+    /**
+     * Long-press a revision row → opens the restore confirmation dialog
+     * (Phase 37.4, ADR-013 §6). Non-load-bearing if [revisionId] is unknown
+     * — the ViewModel silently no-ops rather than surfacing an error since
+     * the row was rendered from the same in-memory list.
+     */
+    data class LongPressRevision(
+        val revisionId: String,
+    ) : ChartHistoryEvent
+
+    /** Confirm the pending restore — appends a new revision on top of tip. */
+    data object ConfirmRestore : ChartHistoryEvent
+
+    /** Dismiss the pending restore dialog without restoring. */
+    data object DismissRestore : ChartHistoryEvent
 
     data object ClearError : ChartHistoryEvent
 }
@@ -62,6 +88,9 @@ data class RevisionTapTarget(
 class ChartHistoryViewModel(
     private val patternId: String,
     private val getChartHistory: GetChartHistoryUseCase,
+    // Phase 37.4: long-press → restore. Optional with `null` default so 37.2
+    // test call-sites that never reach the restore branch stay green.
+    private val restoreRevision: RestoreRevisionUseCase? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ChartHistoryState())
     val state: StateFlow<ChartHistoryState> = _state.asStateFlow()
@@ -104,6 +133,30 @@ class ChartHistoryViewModel(
                     ),
                 )
             }
+
+            is ChartHistoryEvent.LongPressRevision -> {
+                val target = _state.value.revisions.firstOrNull { it.revisionId == event.revisionId }
+                if (target != null) {
+                    _state.update { it.copy(pendingRestoreRevision = target) }
+                }
+            }
+
+            ChartHistoryEvent.ConfirmRestore -> {
+                val target = _state.value.pendingRestoreRevision ?: return
+                _state.update { it.copy(pendingRestoreRevision = null) }
+                val useCase = restoreRevision ?: return
+                viewModelScope.launch {
+                    when (val result = useCase(patternId, target.revisionId)) {
+                        is UseCaseResult.Success -> Unit
+                        is UseCaseResult.Failure ->
+                            _state.update { it.copy(error = result.error.toMessage()) }
+                    }
+                }
+            }
+
+            ChartHistoryEvent.DismissRestore ->
+                _state.update { it.copy(pendingRestoreRevision = null) }
+
             ChartHistoryEvent.ClearError -> _state.update { it.copy(error = null) }
         }
     }
