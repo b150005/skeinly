@@ -1,0 +1,37 @@
+-- Phase 37.1: Collaboration core — chart_revisions + chart_branches (ADR-013).
+CREATE TABLE ChartRevisionEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    pattern_id TEXT NOT NULL,
+    owner_id TEXT NOT NULL,
+    schema_version INTEGER NOT NULL DEFAULT 1,
+    storage_variant TEXT NOT NULL DEFAULT 'inline',
+    coordinate_system TEXT NOT NULL,
+    document TEXT NOT NULL,
+    revision_id TEXT NOT NULL,
+    parent_revision_id TEXT,
+    content_hash TEXT NOT NULL,
+    commit_message TEXT,
+    author_id TEXT,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (pattern_id) REFERENCES PatternEntity(id) ON DELETE CASCADE,
+    UNIQUE (pattern_id, revision_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_chart_revisions_pattern_id_created_at
+    ON ChartRevisionEntity(pattern_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chart_revisions_revision_id
+    ON ChartRevisionEntity(revision_id);
+
+CREATE TABLE ChartBranchEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    pattern_id TEXT NOT NULL,
+    owner_id TEXT NOT NULL,
+    branch_name TEXT NOT NULL,
+    tip_revision_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (pattern_id) REFERENCES PatternEntity(id) ON DELETE CASCADE,
+    UNIQUE (pattern_id, branch_name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_chart_branches_pattern_id ON ChartBranchEntity(pattern_id);

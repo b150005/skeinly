@@ -1,5 +1,6 @@
 package io.github.b150005.knitnote.data.sync
 
+import io.github.b150005.knitnote.data.local.LocalChartRevisionDataSource
 import io.github.b150005.knitnote.data.local.LocalPatternDataSource
 import io.github.b150005.knitnote.data.local.LocalProgressDataSource
 import io.github.b150005.knitnote.data.local.LocalProjectDataSource
@@ -8,6 +9,7 @@ import io.github.b150005.knitnote.data.realtime.ChangeFilter
 import io.github.b150005.knitnote.data.realtime.ChannelHandle
 import io.github.b150005.knitnote.data.realtime.RealtimeChannelProvider
 import io.github.b150005.knitnote.domain.model.AuthState
+import io.github.b150005.knitnote.domain.model.ChartRevision
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.Progress
 import io.github.b150005.knitnote.domain.model.Project
@@ -42,11 +44,16 @@ class RealtimeSyncManager(
     private val isOnline: StateFlow<Boolean>? = null,
     private val config: RealtimeConfig = RealtimeConfig(),
     private val random: Random = Random.Default,
+    // Phase 37.1 (ADR-013 §8): chart-revisions-<ownerId> 5th channel.
+    // Optional with `null` default so existing test call-sites that don't
+    // exercise revisions continue to construct this manager unchanged.
+    private val localChartRevision: LocalChartRevisionDataSource? = null,
 ) {
     private var projectChannel: ChannelHandle? = null
     private var progressChannel: ChannelHandle? = null
     private var patternChannel: ChannelHandle? = null
     private var projectSegmentChannel: ChannelHandle? = null
+    private var chartRevisionChannel: ChannelHandle? = null
     private var authObserverJob: Job? = null
     private var connectivityJob: Job? = null
     private var retryJob: Job? = null
@@ -108,6 +115,7 @@ class RealtimeSyncManager(
             subscribeToProgress(ownerId)
             subscribeToPatterns(ownerId)
             subscribeToProjectSegments(ownerId)
+            if (localChartRevision != null) subscribeToChartRevisions(ownerId)
         }
 
     internal suspend fun unsubscribe() =
@@ -124,6 +132,8 @@ class RealtimeSyncManager(
         patternChannel = null
         projectSegmentChannel?.unsubscribe()
         projectSegmentChannel = null
+        chartRevisionChannel?.unsubscribe()
+        chartRevisionChannel = null
     }
 
     /**
@@ -237,6 +247,25 @@ class RealtimeSyncManager(
         handle.subscribe()
     }
 
+    private suspend fun subscribeToChartRevisions(ownerId: String) {
+        val handle = channelProvider.createChannel("chart-revisions-$ownerId")
+        chartRevisionChannel = handle
+
+        handle
+            .postgresChangeFlow(
+                table = "chart_revisions",
+                filter = ChangeFilter("owner_id", ownerId),
+            ).onEach { action ->
+                handleChartRevisionAction(action)
+            }.catch { e ->
+                if (e is CancellationException) throw e
+                logger.log(TAG, "Channel flow error on chart_revisions", e)
+                scheduleRetry(ownerId)
+            }.launchIn(scope)
+
+        handle.subscribe()
+    }
+
     private suspend fun handleProjectAction(action: PostgresAction) {
         when (action) {
             is PostgresAction.Insert -> {
@@ -322,6 +351,40 @@ class RealtimeSyncManager(
                 localProjectSegment.delete(old.id)
             }
             is PostgresAction.Select -> { /* no-op */ }
+        }
+    }
+
+    /**
+     * Revisions are append-only at RLS — the policies in migration 015 permit
+     * SELECT + INSERT only. UPDATE events are therefore impossible.
+     *
+     * DELETE events DO occur via `ON DELETE CASCADE` on `chart_revisions.pattern_id`:
+     * when a pattern is deleted, Postgres cascades the delete to every revision
+     * row and emits a Realtime DELETE event for each. We mirror that to local
+     * by clearing the revision rows whose `pattern_id` matches the deleted
+     * pattern. A single CASCADE delete on the pattern fires one DELETE per
+     * revision row — calling `deleteByPatternId` on every event is wasteful
+     * but idempotent (subsequent calls on the same `patternId` are no-ops),
+     * and avoids tracking which row triggered the cascade. The pattern-side
+     * `handlePatternAction` Delete already removes the parent row locally; this
+     * handler is the explicit revision-side cleanup.
+     */
+    private suspend fun handleChartRevisionAction(action: PostgresAction) {
+        val ds = localChartRevision ?: return
+        when (action) {
+            is PostgresAction.Insert -> {
+                val revision = action.decodeRecord<ChartRevision>()
+                ds.upsert(revision)
+            }
+            is PostgresAction.Delete -> {
+                // CASCADE delete from pattern. Decode the old record to recover
+                // pattern_id, then bulk-clear local revisions for that pattern.
+                val old = action.decodeOldRecord<ChartRevision>()
+                ds.deleteByPatternId(old.patternId)
+            }
+            is PostgresAction.Update,
+            is PostgresAction.Select,
+            -> { /* no-op: RLS forbids UPDATE; SELECT is not an event */ }
         }
     }
 

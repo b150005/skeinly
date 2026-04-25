@@ -1,0 +1,95 @@
+-- Phase 37.1: Append-only chart revisions (ADR-013 §1, §2).
+--
+-- One row per save. The drawing payload lives in `document` as JSON;
+-- routing/lineage metadata lives on its own columns to keep RLS / indexing
+-- cheap. revision_id is globally unique per ADR-008 §6.
+--
+-- author_id is nullable to mirror the Postgres ON DELETE SET NULL behavior
+-- (history outlives author account deletion). Local writes always populate
+-- it; null only appears after a remote-side cascade.
+
+CREATE TABLE ChartRevisionEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    pattern_id TEXT NOT NULL,
+    owner_id TEXT NOT NULL,
+    schema_version INTEGER NOT NULL DEFAULT 1,
+    storage_variant TEXT NOT NULL DEFAULT 'inline',
+    coordinate_system TEXT NOT NULL,
+    document TEXT NOT NULL,
+    revision_id TEXT NOT NULL,
+    parent_revision_id TEXT,
+    content_hash TEXT NOT NULL,
+    commit_message TEXT,
+    author_id TEXT,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (pattern_id) REFERENCES PatternEntity(id) ON DELETE CASCADE,
+    UNIQUE (pattern_id, revision_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_chart_revisions_pattern_id_created_at
+    ON ChartRevisionEntity(pattern_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chart_revisions_revision_id
+    ON ChartRevisionEntity(revision_id);
+
+-- No `update` query — revisions are immutable once written.
+
+getById:
+SELECT * FROM ChartRevisionEntity WHERE id = ?;
+
+getByRevisionId:
+SELECT * FROM ChartRevisionEntity WHERE revision_id = ?;
+
+getHistoryForPattern:
+SELECT * FROM ChartRevisionEntity
+WHERE pattern_id = ?
+ORDER BY created_at DESC
+LIMIT ? OFFSET ?;
+
+observeHistoryForPattern:
+SELECT * FROM ChartRevisionEntity
+WHERE pattern_id = ?
+ORDER BY created_at DESC;
+
+countForPattern:
+SELECT COUNT(*) FROM ChartRevisionEntity WHERE pattern_id = ?;
+
+insert:
+INSERT INTO ChartRevisionEntity(
+    id,
+    pattern_id,
+    owner_id,
+    schema_version,
+    storage_variant,
+    coordinate_system,
+    document,
+    revision_id,
+    parent_revision_id,
+    content_hash,
+    commit_message,
+    author_id,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+-- INSERT OR IGNORE for idempotent re-application of a Realtime INSERT event
+-- on a row already inserted locally (e.g. self-authored append echoes back
+-- through chart-revisions-<ownerId>). UNIQUE(pattern_id, revision_id) is
+-- the dedup key.
+upsert:
+INSERT OR IGNORE INTO ChartRevisionEntity(
+    id,
+    pattern_id,
+    owner_id,
+    schema_version,
+    storage_variant,
+    coordinate_system,
+    document,
+    revision_id,
+    parent_revision_id,
+    content_hash,
+    commit_message,
+    author_id,
+    created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+deleteByPatternId:
+DELETE FROM ChartRevisionEntity WHERE pattern_id = ?;

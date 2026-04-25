@@ -1,5 +1,7 @@
 package io.github.b150005.knitnote.data.sync
 
+import io.github.b150005.knitnote.domain.model.ChartBranch
+import io.github.b150005.knitnote.domain.model.ChartRevision
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.Progress
 import io.github.b150005.knitnote.domain.model.Project
@@ -14,6 +16,8 @@ class SyncExecutor(
     private val remoteStructuredChart: RemoteStructuredChartSyncOperations?,
     private val json: Json,
     private val remoteProjectSegment: RemoteProjectSegmentSyncOperations? = null,
+    private val remoteChartRevision: RemoteChartRevisionSyncOperations? = null,
+    private val remoteChartBranch: RemoteChartBranchSyncOperations? = null,
 ) {
     /**
      * Execute a pending sync entry against the remote data source.
@@ -27,6 +31,8 @@ class SyncExecutor(
             SyncEntityType.PATTERN -> executePattern(entry)
             SyncEntityType.STRUCTURED_CHART -> executeStructuredChart(entry)
             SyncEntityType.PROJECT_SEGMENT -> executeProjectSegment(entry)
+            SyncEntityType.CHART_REVISION -> executeChartRevision(entry)
+            SyncEntityType.CHART_BRANCH -> executeChartBranch(entry)
         }
 
     private suspend fun executeProject(entry: PendingSyncEntry): Boolean {
@@ -75,6 +81,41 @@ class SyncExecutor(
             // wip/done transitions both map to UPSERT; reset maps to DELETE. No distinct UPDATE.
             SyncOperation.INSERT -> remote.upsert(json.decodeFromString<ProjectSegment>(entry.payload))
             SyncOperation.UPDATE -> remote.upsert(json.decodeFromString<ProjectSegment>(entry.payload))
+            SyncOperation.DELETE -> remote.delete(entry.entityId)
+        }
+        return true
+    }
+
+    private suspend fun executeChartRevision(entry: PendingSyncEntry): Boolean {
+        val remote = remoteChartRevision ?: return true
+        when (entry.operation) {
+            // Append-only per ADR-013 §1. INSERT is the only write path; UPDATE
+            // and DELETE are structurally forbidden (no RLS policy permits them
+            // and SyncManager never enqueues them). UPDATE/DELETE branches are
+            // silent no-ops with `return true` — matches `executeProgress`'s
+            // unsupported-operation idiom. Throwing here would mark the entry
+            // FAILED and trigger a retry storm on a row that can never succeed;
+            // returning success consumes the impossible entry once and lets the
+            // queue move on. If a non-INSERT ever lands here it indicates a bug
+            // upstream (SyncManager enqueued an op that ChartRevisionRepository
+            // can never produce) — surfaceable via PendingSync log inspection.
+            SyncOperation.INSERT -> remote.append(json.decodeFromString<ChartRevision>(entry.payload))
+            SyncOperation.UPDATE,
+            SyncOperation.DELETE,
+            -> return true
+        }
+        return true
+    }
+
+    private suspend fun executeChartBranch(entry: PendingSyncEntry): Boolean {
+        val remote = remoteChartBranch ?: return true
+        when (entry.operation) {
+            // INSERT and UPDATE both map to upsert: branch creation is idempotent
+            // on (pattern_id, branch_name); tip movement is an idempotent re-write
+            // of `tip_revision_id`. Phase 37.4 will start enqueuing UPDATE on
+            // every save (tip advance) — already wired here.
+            SyncOperation.INSERT -> remote.upsert(json.decodeFromString<ChartBranch>(entry.payload))
+            SyncOperation.UPDATE -> remote.upsert(json.decodeFromString<ChartBranch>(entry.payload))
             SyncOperation.DELETE -> remote.delete(entry.entityId)
         }
         return true
