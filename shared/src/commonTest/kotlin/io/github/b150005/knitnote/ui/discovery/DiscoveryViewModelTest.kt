@@ -352,4 +352,82 @@ class DiscoveryViewModelTest {
                 assertNotNull(errored.error)
             }
         }
+
+    // Phase 36.4 (ADR-012 §5) regression anchor: the companion set on the
+    // initial load must reach state.patternsWithCharts so PatternCard can
+    // decide to render the chart-preview thumbnail.
+    @Test
+    fun `initial load populates patternsWithCharts companion set`() =
+        runTest {
+            val dataSource = FakePublicPatternDataSource()
+            dataSource.addPattern(patternA)
+            dataSource.addPattern(patternB)
+            dataSource.markHasChart("pub-a")
+            val viewModel = createViewModel(dataSource = dataSource)
+
+            viewModel.state.test {
+                skipItems(1) // initial empty
+                val loaded = awaitItem()
+                assertEquals(2, loaded.patterns.size)
+                assertEquals(setOf("pub-a"), loaded.patternsWithCharts)
+            }
+        }
+
+    // Phase 36.4 (ADR-012 §4): toggling the "Charts only" chip flips the
+    // filter flag and re-loads against the data source. The fake's chartsOnly
+    // path filters to only chartful patterns so the visible list shrinks.
+    //
+    // Uses the backgroundScope subscriber pattern (mirrors the fork tests
+    // above): without an active subscriber, SharingStarted.WhileSubscribed
+    // would tear the upstream `combine` down before the launched `load()`
+    // re-fetch coroutine completes, leaving `state.value` at a stale snapshot
+    // when the assertion runs.
+    @Test
+    fun `ToggleChartsOnly flips filter and re-loads with server-side filter`() =
+        runTest {
+            val dataSource = FakePublicPatternDataSource()
+            dataSource.addPattern(patternA)
+            dataSource.addPattern(patternB)
+            dataSource.markHasChart("pub-a")
+            val viewModel = createViewModel(dataSource = dataSource)
+
+            backgroundScope.launch { viewModel.state.collect { } }
+            advanceUntilIdle()
+            assertFalse(viewModel.state.value.chartsOnlyFilter)
+            assertEquals(2, viewModel.state.value.patterns.size)
+
+            viewModel.onEvent(DiscoveryEvent.ToggleChartsOnly)
+            advanceUntilIdle()
+
+            val filtered = viewModel.state.value
+            assertTrue(filtered.chartsOnlyFilter)
+            assertEquals(1, filtered.patterns.size)
+            assertEquals("pub-a", filtered.patterns.first().id)
+            assertEquals(setOf("pub-a"), filtered.patternsWithCharts)
+        }
+
+    // Phase 36.4 (ADR-012 §4): a second toggle flips back, re-broadens the
+    // list, and the companion set still names which patterns have charts.
+    @Test
+    fun `ToggleChartsOnly twice returns to unfiltered list with companion set intact`() =
+        runTest {
+            val dataSource = FakePublicPatternDataSource()
+            dataSource.addPattern(patternA)
+            dataSource.addPattern(patternB)
+            dataSource.markHasChart("pub-a")
+            val viewModel = createViewModel(dataSource = dataSource)
+
+            backgroundScope.launch { viewModel.state.collect { } }
+            advanceUntilIdle()
+
+            viewModel.onEvent(DiscoveryEvent.ToggleChartsOnly)
+            advanceUntilIdle()
+            viewModel.onEvent(DiscoveryEvent.ToggleChartsOnly)
+            advanceUntilIdle()
+
+            val settled = viewModel.state.value
+            assertFalse(settled.chartsOnlyFilter)
+            assertEquals(2, settled.patterns.size)
+            assertEquals(setOf("pub-a"), settled.patternsWithCharts)
+        }
 }

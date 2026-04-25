@@ -55,7 +55,13 @@ struct DiscoveryScreen: View {
     @ViewBuilder
     private var contentView: some View {
         let state = holder.state
-        let hasActiveFilter = !state.searchQuery.isEmpty || state.difficultyFilter != nil
+        // Phase 36.4: include chartsOnlyFilter so the matching-filter empty
+        // state surfaces when "Charts only" filters out every pattern; mirrors
+        // the Compose behavior in DiscoveryScreen.kt.
+        let hasActiveFilter =
+            !state.searchQuery.isEmpty
+            || state.difficultyFilter != nil
+            || state.chartsOnlyFilter
 
         if state.isLoading && state.patterns.isEmpty {
             ProgressView()
@@ -81,13 +87,23 @@ struct DiscoveryScreen: View {
         List {
             DiscoveryFilterSection(
                 difficultyFilter: state.difficultyFilter,
+                chartsOnlyFilter: state.chartsOnlyFilter,
                 onDifficultyFilterChange: { difficulty in
                     viewModel.onEvent(event: DiscoveryEventUpdateDifficultyFilter(difficulty: difficulty))
+                },
+                onToggleChartsOnly: {
+                    viewModel.onEvent(event: DiscoveryEventToggleChartsOnly.shared)
                 }
             )
 
             ForEach(state.patterns, id: \.id) { pattern in
-                DiscoveryPatternRow(pattern: pattern)
+                DiscoveryPatternRow(
+                    pattern: pattern,
+                    hasChart: state.patternsWithCharts.contains(pattern.id),
+                    onChartTap: {
+                        path.append(Route.chartViewer(patternId: pattern.id, projectId: nil))
+                    }
+                )
                     .swipeActions(edge: .leading, allowsFullSwipe: true) {
                         Button {
                             viewModel.onEvent(event: DiscoveryEventForkPattern(patternId: pattern.id))
@@ -163,12 +179,22 @@ struct DiscoveryScreen: View {
 
 private struct DiscoveryFilterSection: View {
     let difficultyFilter: Difficulty?
+    let chartsOnlyFilter: Bool
     let onDifficultyFilterChange: (Difficulty?) -> Void
+    let onToggleChartsOnly: () -> Void
 
     var body: some View {
         Section {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
+                    // Phase 36.4 (ADR-012 §4): "Charts only" filter chip leads
+                    // the row so it is visible without horizontal scrolling.
+                    DiscoveryFilterChip(
+                        labelKey: "label_filter_charts_only",
+                        identifier: "chartsOnlyChip",
+                        isSelected: chartsOnlyFilter,
+                        action: onToggleChartsOnly
+                    )
                     DiscoveryFilterChip(
                         labelKey: "label_difficulty_all",
                         identifier: "difficultyAllChip",
@@ -230,31 +256,58 @@ private struct DiscoveryFilterChip: View {
 
 private struct DiscoveryPatternRow: View {
     let pattern: Pattern
+    let hasChart: Bool
+    let onChartTap: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(pattern.title)
-                    .font(.headline)
-                Spacer()
-                if let difficulty = pattern.difficulty {
-                    DiscoveryDifficultyBadge(difficulty: difficulty)
+        HStack(alignment: .top, spacing: 12) {
+            // Phase 36.4 (ADR-012 §5): on iOS the chart-preview thumbnail is
+            // a static "has chart" indicator that taps through to the
+            // read-only ChartViewer. The Compose surface ships the live mini-
+            // render via ChartThumbnail; mirroring it on iOS requires
+            // factoring StructuredChartViewerScreen.ChartCanvasView out of its
+            // gestural host into a thumbnail-friendly variant — deferred to
+            // Phase 36.4.1 and tracked in CLAUDE.md Tech Debt Backlog. The
+            // companion-set data layer (state.patternsWithCharts) is on parity
+            // with Compose so this only affects rendering fidelity.
+            if hasChart {
+                Button(action: onChartTap) {
+                    Image(systemName: "square.grid.3x3.fill")
+                        .font(.title)
+                        .foregroundStyle(.tint)
+                        .frame(width: 64, height: 64)
+                        .background(Color.gray.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel(LocalizedStringKey("action_view_chart_thumbnail"))
+                .accessibilityIdentifier("chartThumbnail_\(pattern.id)")
             }
 
-            if let description = pattern.description_, !description.isEmpty {
-                Text(description)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(pattern.title)
+                        .font(.headline)
+                    Spacer()
+                    if let difficulty = pattern.difficulty {
+                        DiscoveryDifficultyBadge(difficulty: difficulty)
+                    }
+                }
 
-            let details = buildDetails()
-            if !details.isEmpty {
-                Text(details)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
+                if let description = pattern.description_, !description.isEmpty {
+                    Text(description)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+
+                let details = buildDetails()
+                if !details.isEmpty {
+                    Text(details)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                }
             }
         }
         .padding(.vertical, 4)

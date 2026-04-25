@@ -1562,6 +1562,20 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "フォークしました（チャートのコピーに失敗しました — プロジェクト詳細から再フォークしてください）" } }
       }
     },
+    "label_filter_charts_only" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Charts only" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "チャートのみ" } }
+      }
+    },
+    "action_view_chart_thumbnail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "View chart preview" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "チャートプレビューを表示" } }
+      }
+    },
     "action_decrement_row" : {
       "extractionState" : "manual",
       "localizations" : {

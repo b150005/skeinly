@@ -218,6 +218,11 @@ fun KnitNoteNavHost(
                         popUpTo(ProjectList)
                     }
                 },
+                // Phase 36.4 (ADR-012 §5): chart-preview thumbnail tap opens
+                // the read-only chart viewer with no project context.
+                onChartViewerClick = { patternId ->
+                    navController.navigate(ChartViewer(patternId = patternId, projectId = null))
+                },
             )
         }
         composable<PatternLibrary> {

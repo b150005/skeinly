@@ -161,6 +161,9 @@
     <string name="label_gauge_value">ゲージ: %1$s</string>
     <string name="label_yarn_value">糸: %1$s</string>
     <string name="label_needle_value">針: %1$s</string>
+    <!-- Phase 36.4 (ADR-012 §4 / §5) -->
+    <string name="label_filter_charts_only">チャートのみ</string>
+    <string name="action_view_chart_thumbnail">チャートプレビューを表示</string>
 
     <!-- Pattern library screen -->
     <string name="title_pattern_library">パターンライブラリ</string>

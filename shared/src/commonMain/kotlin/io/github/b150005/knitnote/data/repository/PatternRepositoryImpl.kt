@@ -46,7 +46,10 @@ class PatternRepositoryImpl(
     override suspend fun getByVisibility(visibility: Visibility): List<Pattern> {
         if (visibility != Visibility.PUBLIC || remote == null || !isOnline.value) return emptyList()
         return try {
-            remote.getPublic()
+            // Phase 36.4 (ADR-012 §5): `getPublic` now returns the patterns
+            // plus a chart-presence companion set. Repository callers do not
+            // need the companion set; only Discovery does.
+            remote.getPublic().patterns
         } catch (_: Exception) {
             emptyList()
         }
