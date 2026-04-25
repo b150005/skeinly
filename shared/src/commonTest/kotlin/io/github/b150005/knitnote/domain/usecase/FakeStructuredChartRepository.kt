@@ -38,6 +38,32 @@ class FakeStructuredChartRepository : StructuredChartRepository {
         charts.value = charts.value.filter { it.id != id }
     }
 
+    override suspend fun forkFor(
+        sourcePatternId: String,
+        newPatternId: String,
+        newOwnerId: String,
+    ): StructuredChart? {
+        failNext?.let { throw it.also { failNext = null } }
+        val source = charts.value.firstOrNull { it.patternId == sourcePatternId } ?: return null
+        // Deterministic ids so use-case tests can assert on them. Real impl mints
+        // UUIDs; envelope-id-rewrite correctness is exercised in
+        // StructuredChartRepositoryImplTest, not at the use-case layer.
+        // Note: `createdAt`/`updatedAt` are deliberately NOT updated here even
+        // though the real impl bumps both to `Clock.System.now()`. Phase 36.3+
+        // use-case tests should assert on lineage / id rewrites only, not on
+        // timestamp freshness from this fake.
+        val cloned =
+            source.copy(
+                id = "fork-${charts.value.size}",
+                patternId = newPatternId,
+                ownerId = newOwnerId,
+                revisionId = "fork-rev-${charts.value.size}",
+                parentRevisionId = source.revisionId,
+            )
+        charts.value = charts.value + cloned
+        return cloned
+    }
+
     fun seed(chart: StructuredChart) {
         charts.value = charts.value + chart
     }

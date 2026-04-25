@@ -21,6 +21,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -225,6 +226,158 @@ class StructuredChartRepositoryImplTest {
             val retrieved = repository.getByPatternId("pat-1")
             assertNotNull(retrieved)
             assertEquals("remote-uuid", retrieved.id)
+        }
+
+    // Phase 36.2 (ADR-012 §2): forkFor data-spine.
+
+    @Test
+    fun `forkFor returns null when source pattern has no chart`() =
+        runTest {
+            val result =
+                repository.forkFor(
+                    sourcePatternId = "pat-missing",
+                    newPatternId = "pat-fork",
+                    newOwnerId = "user-2",
+                )
+            assertNull(result)
+            assertEquals(0, fakeSyncManager.calls.size)
+        }
+
+    @Test
+    fun `forkFor mints fresh envelope ids and rewrites pattern_id and owner_id`() =
+        runTest {
+            val source = testChart()
+            repository.create(source)
+            fakeSyncManager.calls.clear()
+
+            val cloned =
+                repository.forkFor(
+                    sourcePatternId = source.patternId,
+                    newPatternId = "pat-fork",
+                    newOwnerId = "user-2",
+                )
+
+            assertNotNull(cloned)
+            assertNotEquals(source.id, cloned.id)
+            assertNotEquals(source.revisionId, cloned.revisionId)
+            assertEquals("pat-fork", cloned.patternId)
+            assertEquals("user-2", cloned.ownerId)
+        }
+
+    @Test
+    fun `forkFor sets parentRevisionId to source revisionId`() =
+        runTest {
+            val source = testChart()
+            repository.create(source)
+
+            val cloned = repository.forkFor(source.patternId, "pat-fork", "user-2")
+            assertNotNull(cloned)
+            assertEquals(source.revisionId, cloned.parentRevisionId)
+        }
+
+    @Test
+    fun `forkFor preserves contentHash from source per ADR-008`() =
+        runTest {
+            val source = testChart()
+            repository.create(source)
+
+            val cloned = repository.forkFor(source.patternId, "pat-fork", "user-2")
+            assertNotNull(cloned)
+            // ADR-008 §7: content_hash describes drawable content, not lineage.
+            // Byte-for-byte clone must round-trip the same hash.
+            assertEquals(source.contentHash, cloned.contentHash)
+        }
+
+    @Test
+    fun `forkFor preserves document body byte-equal across rich layers`() =
+        runTest {
+            val source =
+                testChart(
+                    layers =
+                        listOf(
+                            ChartLayer(
+                                id = "L1",
+                                name = "Main",
+                                visible = false,
+                                locked = true,
+                                cells =
+                                    listOf(
+                                        ChartCell(symbolId = "jis.k1", x = 0, y = 0),
+                                        ChartCell(
+                                            symbolId = "jis.crochet.ch-space",
+                                            x = 1,
+                                            y = 0,
+                                            symbolParameters = mapOf("n" to "5"),
+                                        ),
+                                    ),
+                            ),
+                            ChartLayer(id = "L2", name = "Overlay"),
+                        ),
+                )
+            repository.create(source)
+
+            val cloned = repository.forkFor(source.patternId, "pat-fork", "user-2")
+            assertNotNull(cloned)
+            assertEquals(source.extents, cloned.extents)
+            assertEquals(source.layers, cloned.layers)
+            assertEquals(source.schemaVersion, cloned.schemaVersion)
+            assertEquals(source.storageVariant, cloned.storageVariant)
+            assertEquals(source.coordinateSystem, cloned.coordinateSystem)
+            assertEquals(source.craftType, cloned.craftType)
+            assertEquals(source.readingConvention, cloned.readingConvention)
+        }
+
+    @Test
+    fun `forkFor enqueues INSERT sync for the cloned envelope`() =
+        runTest {
+            val source = testChart()
+            repository.create(source)
+            fakeSyncManager.calls.clear()
+
+            val cloned = repository.forkFor(source.patternId, "pat-fork", "user-2")
+            assertNotNull(cloned)
+
+            assertEquals(1, fakeSyncManager.calls.size)
+            val call = fakeSyncManager.calls.first()
+            assertEquals(SyncEntityType.STRUCTURED_CHART, call.entityType)
+            assertEquals(cloned.id, call.entityId)
+            assertEquals(SyncOperation.INSERT, call.operation)
+            assertTrue(call.payload.isNotEmpty())
+        }
+
+    @Test
+    fun `forkFor cloned chart is retrievable by newPatternId without disturbing source`() =
+        runTest {
+            val source = testChart()
+            repository.create(source)
+            val cloned = repository.forkFor(source.patternId, "pat-fork", "user-2")
+            assertNotNull(cloned)
+
+            // Both equality checks rely on the same SQLite round-trip semantics that
+            // the existing `round-trip through local preserves layers and cells` test
+            // exercises — `Instant.toString()` is round-trip stable for the test
+            // timestamps used here, so equality holds field-by-field.
+            assertEquals(cloned, repository.getByPatternId("pat-fork"))
+            assertEquals(source, repository.getByPatternId(source.patternId))
+        }
+
+    @Test
+    fun `forkFor of an already-forked chart chains parentRevisionId to immediate predecessor`() =
+        runTest {
+            val original = testChart(id = "chart-orig", patternId = "pat-orig")
+            repository.create(original)
+
+            val fork1 = repository.forkFor("pat-orig", "pat-fork-1", "user-2")
+            assertNotNull(fork1)
+            val fork2 = repository.forkFor("pat-fork-1", "pat-fork-2", "user-3")
+            assertNotNull(fork2)
+
+            // Each clone chains to its immediate predecessor — the fork's
+            // own revisionId, not the original source's. Phase 37 collaboration
+            // walks the chain to recover full ancestry.
+            assertEquals(original.revisionId, fork1.parentRevisionId)
+            assertEquals(fork1.revisionId, fork2.parentRevisionId)
+            assertNotEquals(original.revisionId, fork2.parentRevisionId)
         }
 
     @Test
