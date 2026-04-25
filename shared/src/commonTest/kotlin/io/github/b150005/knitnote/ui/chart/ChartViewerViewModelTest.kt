@@ -150,6 +150,12 @@ class ChartViewerViewModelTest {
                     override suspend fun update(chart: StructuredChart) = chart
 
                     override suspend fun delete(id: String) {}
+
+                    override suspend fun forkFor(
+                        sourcePatternId: String,
+                        newPatternId: String,
+                        newOwnerId: String,
+                    ) = null
                 }
             val viewModel =
                 ChartViewerViewModel(

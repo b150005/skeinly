@@ -130,6 +130,24 @@ data class StructuredChart(
     val extents: ChartExtents,
     val layers: List<ChartLayer>,
     @SerialName("revision_id") val revisionId: String,
+    // Phase 36.2 audit (ADR-012 §2): no default value, so kotlinx-serialization
+    // always emits this field on the wire regardless of `encodeDefaults`. That
+    // structurally protects against the silent-overwrite-to-null footgun that
+    // Phase 36.1 fixed on `Pattern.parentPatternId` via `@EncodeDefault(NEVER)`
+    // — `Pattern` had `= null` as a backward-compat default for legacy clients,
+    // `StructuredChart.parentRevisionId` has been a required field since
+    // Phase 29 so legacy clients always carried it. Do NOT add a default here.
+    //
+    // Asymmetry note for the next reader: the neighboring `craftType` /
+    // `readingConvention` fields below DO carry defaults. Those are deliberate
+    // schema-v1 backward-compat anchors — under `encodeDefaults = false` (the
+    // 1.11.0 runtime default used by `SyncModule.kt:34`'s Json instance), a v2
+    // chart whose `craftType == KNIT` serializes WITHOUT the field, and a v1
+    // remote row missing the field deserializes back to `KNIT` via the same
+    // default. The round-trip is symmetric and intentional. Do NOT
+    // `@EncodeDefault(NEVER)`-annotate those — that would change nothing for
+    // them (they're already elided when matching the default) but would
+    // entrench the asymmetry as if it were a footgun fix; it isn't.
     @SerialName("parent_revision_id") val parentRevisionId: String?,
     @SerialName("content_hash") val contentHash: String,
     @SerialName("created_at") val createdAt: Instant,
