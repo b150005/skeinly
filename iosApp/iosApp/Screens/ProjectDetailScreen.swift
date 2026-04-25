@@ -158,11 +158,21 @@ struct ProjectDetailScreen: View {
                     patternInfoSection(
                         pattern,
                         hasStructuredChart: state.hasStructuredChart,
+                        parentPattern: state.parentPattern,
+                        parentPatternAuthor: state.parentPatternAuthor,
                         onChartViewerTap: {
                             path.append(Route.chartViewer(patternId: pattern.id, projectId: projectId))
                         },
                         onChartEditorTap: {
                             path.append(Route.chartEditor(patternId: pattern.id))
+                        },
+                        // Phase 36.5 (ADR-012 §6): tap on the "Forked from" row
+                        // routes to the source pattern's read-only chart viewer.
+                        // `projectId: nil` because the user is browsing someone
+                        // else's pattern — segment overlay belongs to the current
+                        // project, not the source.
+                        onParentPatternTap: { parentPatternId in
+                            path.append(Route.chartViewer(patternId: parentPatternId, projectId: nil))
                         }
                     )
                 }
@@ -334,10 +344,28 @@ struct ProjectDetailScreen: View {
     private func patternInfoSection(
         _ pattern: Pattern,
         hasStructuredChart: Bool,
+        parentPattern: Pattern?,
+        parentPatternAuthor: User?,
         onChartViewerTap: @escaping () -> Void,
-        onChartEditorTap: @escaping () -> Void
+        onChartEditorTap: @escaping () -> Void,
+        onParentPatternTap: @escaping (String) -> Void
     ) -> some View {
         LabeledContent(LocalizedStringKey("label_title"), value: pattern.title)
+
+        // Phase 36.5 (ADR-012 §6) "Forked from" attribution row. Three render
+        // states keyed off `pattern.parentPatternId` + `parentPattern`:
+        //   1. parentPatternId == nil → not forked, render nothing.
+        //   2. parentPatternId != nil && parentPattern == nil → source
+        //      deleted/private/lookup-failed, render plain `state_forked_from_deleted`.
+        //   3. parentPattern != nil → render parametric `label_forked_from`.
+        //      Tappable only when source is still PUBLIC.
+        if pattern.parentPatternId != nil {
+            forkedFromRow(
+                parentPattern: parentPattern,
+                parentPatternAuthor: parentPatternAuthor,
+                onTap: onParentPatternTap
+            )
+        }
 
         if hasStructuredChart {
             Button(action: onChartViewerTap) {
@@ -374,6 +402,54 @@ struct ProjectDetailScreen: View {
 
         if let needleSize = pattern.needleSize, !needleSize.isEmpty {
             LabeledContent(LocalizedStringKey("label_needle_size"), value: needleSize)
+        }
+    }
+
+    // MARK: - Forked-from Row (Phase 36.5)
+
+    @ViewBuilder
+    private func forkedFromRow(
+        parentPattern: Pattern?,
+        parentPatternAuthor: User?,
+        onTap: @escaping (String) -> Void
+    ) -> some View {
+        if let source = parentPattern {
+            // Use NSLocalizedString + String(format:) so both substitutions go
+            // through the parametric `label_forked_from` translation. Same
+            // pattern as `label_activity_*_by` parametric strings (Phase 33.1.7).
+            // `Text(verbatim:)` because the resolved string contains user-
+            // authored title + author name and must not be re-resolved as a
+            // LocalizedStringKey.
+            let authorName = parentPatternAuthor?.displayName
+                ?? NSLocalizedString("label_someone", comment: "")
+            let attribution = String(
+                format: NSLocalizedString("label_forked_from", comment: ""),
+                source.title,
+                authorName
+            )
+            // `Shared.Visibility.PUBLIC` bridges to `.public_` in Swift because
+            // `public` is a Swift reserved word. Same trailing-underscore mapping
+            // as `.private_` / `VisibilityOption.toVisibility()` in PatternEditScreen.
+            if source.visibility == .public_ {
+                Button(action: { onTap(source.id) }) {
+                    Text(verbatim: attribution)
+                        .font(.caption)
+                        .foregroundStyle(Color.accentColor)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("forkedFromLink")
+            } else {
+                Text(verbatim: attribution)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("forkedFromLabel")
+            }
+        } else {
+            Text(LocalizedStringKey("state_forked_from_deleted"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .accessibilityIdentifier("forkedFromDeletedLabel")
         }
     }
 

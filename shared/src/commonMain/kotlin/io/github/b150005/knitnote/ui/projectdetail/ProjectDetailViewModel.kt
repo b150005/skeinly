@@ -9,9 +9,11 @@ import io.github.b150005.knitnote.domain.model.Project
 import io.github.b150005.knitnote.domain.model.SegmentState
 import io.github.b150005.knitnote.domain.model.ShareLink
 import io.github.b150005.knitnote.domain.model.SharePermission
+import io.github.b150005.knitnote.domain.model.User
 import io.github.b150005.knitnote.domain.repository.PatternRepository
 import io.github.b150005.knitnote.domain.repository.ProjectRepository
 import io.github.b150005.knitnote.domain.repository.StorageOperations
+import io.github.b150005.knitnote.domain.repository.UserRepository
 import io.github.b150005.knitnote.domain.usecase.AddProgressNoteUseCase
 import io.github.b150005.knitnote.domain.usecase.CompleteProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.DecrementRowUseCase
@@ -30,6 +32,7 @@ import io.github.b150005.knitnote.domain.usecase.UploadChartImageUseCase
 import io.github.b150005.knitnote.domain.usecase.UploadProgressPhotoUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
 import io.github.b150005.knitnote.domain.usecase.toMessage
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -38,8 +41,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -79,6 +85,21 @@ data class ProjectDetailState(
      * (matches Phase 34 UI AC-1.3 semantics).
      */
     val segmentsTotal: Int? = null,
+    // Phase 36.5 (ADR-012 §6) "Forked from" attribution. The signal that the
+    // current pattern was forked is `pattern?.parentPatternId != null` — the
+    // two fields below carry the resolved source-pattern + author for rendering.
+    //
+    // - parentPattern non-null:  source resolved → render parametric
+    //   `label_forked_from` ("Forked from: <title> by <author>"). Tappable
+    //   only when `parentPattern.visibility == PUBLIC` per ADR-012 §6.
+    // - parentPattern null AND pattern.parentPatternId non-null: source was
+    //   deleted or made private → render `state_forked_from_deleted` plain
+    //   text fallback.
+    // - parentPatternAuthor null: author lookup failed (e.g. legacy fork from
+    //   an account that no longer exists) → UI falls back to `label_someone`
+    //   per the Phase 33.1.7 ActivityFeed precedent.
+    val parentPattern: Pattern? = null,
+    val parentPatternAuthor: User? = null,
 )
 
 sealed interface ProjectDetailEvent {
@@ -143,6 +164,7 @@ class ProjectDetailViewModel(
     private val projectId: String,
     private val projectRepository: ProjectRepository,
     private val patternRepository: PatternRepository,
+    private val userRepository: UserRepository,
     private val incrementRow: IncrementRowUseCase,
     private val decrementRow: DecrementRowUseCase,
     private val addProgressNote: AddProgressNoteUseCase,
@@ -252,6 +274,8 @@ class ProjectDetailViewModel(
                 hasSegmentProgress = segments.isNotEmpty(),
                 segmentsDone = if (structuredChart != null && total > 0) done else null,
                 segmentsTotal = if (structuredChart != null && total > 0) total else null,
+                parentPattern = overlay.parentPattern,
+                parentPatternAuthor = overlay.parentPatternAuthor,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -273,6 +297,64 @@ class ProjectDetailViewModel(
     init {
         loadChartImages()
         loadProgressPhotoUrls()
+        observeParentAttribution()
+    }
+
+    /**
+     * Phase 36.5 (ADR-012 §6): resolve the source pattern + author when this
+     * project's pattern was forked. Keyed off `Pattern.parentPatternId` so a
+     * regular pattern edit (which can change the title/description but not
+     * `parentPatternId` per ADR-012 §1) does not retrigger the fetch. Source
+     * pattern null → "Forked from a deleted pattern" branch. Author null →
+     * UI falls back to `label_someone` per Phase 33.1.7 ActivityFeed precedent.
+     *
+     * `flatMapLatest` is required even though `parentPatternId` is write-once
+     * per ADR-012 §1: a future code path that changes `project.patternId`
+     * (re-linking a project to a different pattern) could emit two distinct
+     * non-null parentPatternIds in sequence, and a plain `collect` would let
+     * the older fetch's result clobber the newer one because `collect` does
+     * not cancel an in-flight body when a new emission arrives.
+     *
+     * Repository-call try/catch explicitly rethrows CancellationException so
+     * coroutine cancellation propagates correctly when the viewModelScope is
+     * torn down mid-fetch. Same pattern as Phase 36.3's
+     * `ForkPublicPatternUseCase` chart-clone wrapper.
+     */
+    private fun observeParentAttribution() {
+        viewModelScope.launch {
+            patternFlow
+                .map { it?.parentPatternId }
+                .distinctUntilChanged()
+                .flatMapLatest { parentId ->
+                    flow {
+                        if (parentId == null) {
+                            emit(null to null)
+                            return@flow
+                        }
+                        val source =
+                            try {
+                                patternRepository.getById(parentId)
+                            } catch (e: Exception) {
+                                if (e is CancellationException) throw e
+                                null
+                            }
+                        val author =
+                            if (source == null) {
+                                null
+                            } else {
+                                try {
+                                    userRepository.getById(source.ownerId)
+                                } catch (e: Exception) {
+                                    if (e is CancellationException) throw e
+                                    null
+                                }
+                            }
+                        emit(source to author)
+                    }
+                }.collect { (source, author) ->
+                    _uiOverlay.update { it.copy(parentPattern = source, parentPatternAuthor = author) }
+                }
+        }
     }
 
     /** Show an error from an external component (e.g., CommentSection) via the shared snackbar. */
@@ -538,4 +620,9 @@ private data class UiOverlay(
     val selectedChartImageIndex: Int? = null,
     val photoSignedUrls: Map<String, String> = emptyMap(),
     val isUploadingPhoto: Boolean = false,
+    // Phase 36.5: resolved source pattern + author for "Forked from" attribution.
+    // Surfaced into ProjectDetailState by the main `combine`. Null on either field
+    // is meaningful — see the doc on ProjectDetailState.parentPattern.
+    val parentPattern: Pattern? = null,
+    val parentPatternAuthor: User? = null,
 )

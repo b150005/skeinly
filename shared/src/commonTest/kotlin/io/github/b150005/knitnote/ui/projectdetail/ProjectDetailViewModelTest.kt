@@ -16,6 +16,7 @@ import io.github.b150005.knitnote.domain.model.SegmentState
 import io.github.b150005.knitnote.domain.model.SharePermission
 import io.github.b150005.knitnote.domain.model.StorageVariant
 import io.github.b150005.knitnote.domain.model.StructuredChart
+import io.github.b150005.knitnote.domain.model.User
 import io.github.b150005.knitnote.domain.model.Visibility
 import io.github.b150005.knitnote.domain.usecase.AddProgressNoteUseCase
 import io.github.b150005.knitnote.domain.usecase.CompleteProjectUseCase
@@ -30,6 +31,7 @@ import io.github.b150005.knitnote.domain.usecase.FakeProjectRepository
 import io.github.b150005.knitnote.domain.usecase.FakeProjectSegmentRepository
 import io.github.b150005.knitnote.domain.usecase.FakeShareRepository
 import io.github.b150005.knitnote.domain.usecase.FakeStructuredChartRepository
+import io.github.b150005.knitnote.domain.usecase.FakeUserRepository
 import io.github.b150005.knitnote.domain.usecase.GetProgressNotesUseCase
 import io.github.b150005.knitnote.domain.usecase.IncrementRowUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveProjectSegmentsUseCase
@@ -91,12 +93,14 @@ class ProjectDetailViewModelTest {
 
     private val patternRepository = FakePatternRepository()
     private val authRepository = FakeAuthRepository()
+    private val userRepository = FakeUserRepository()
 
     private fun createViewModel(): ProjectDetailViewModel =
         ProjectDetailViewModel(
             projectId = "test-project",
             projectRepository = projectRepository,
             patternRepository = patternRepository,
+            userRepository = userRepository,
             incrementRow = IncrementRowUseCase(projectRepository),
             decrementRow = DecrementRowUseCase(projectRepository),
             addProgressNote = AddProgressNoteUseCase(progressRepository, authRepository),
@@ -671,6 +675,7 @@ class ProjectDetailViewModelTest {
             projectId = "test-project",
             projectRepository = projectRepository,
             patternRepository = patternRepository,
+            userRepository = userRepository,
             incrementRow = IncrementRowUseCase(projectRepository),
             decrementRow = DecrementRowUseCase(projectRepository),
             addProgressNote = AddProgressNoteUseCase(progressRepository, authRepository),
@@ -702,6 +707,7 @@ class ProjectDetailViewModelTest {
             projectId = "test-project",
             projectRepository = projectRepository,
             patternRepository = patternRepository,
+            userRepository = userRepository,
             incrementRow = IncrementRowUseCase(projectRepository),
             decrementRow = DecrementRowUseCase(projectRepository),
             addProgressNote = AddProgressNoteUseCase(progressRepository, authRepository),
@@ -742,6 +748,7 @@ class ProjectDetailViewModelTest {
             projectId = "test-project",
             projectRepository = projectRepository,
             patternRepository = patternRepository,
+            userRepository = userRepository,
             incrementRow = IncrementRowUseCase(projectRepository),
             decrementRow = DecrementRowUseCase(projectRepository),
             addProgressNote = AddProgressNoteUseCase(progressRepository, authRepository),
@@ -1069,6 +1076,129 @@ class ProjectDetailViewModelTest {
                 assertTrue(state.hasStructuredChart)
                 assertNull(state.segmentsDone)
                 assertNull(state.segmentsTotal)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    // --- Phase 36.5: parent-pattern attribution ---
+
+    private fun createTestUser(
+        id: String,
+        displayName: String,
+    ): User =
+        User(
+            id = id,
+            displayName = displayName,
+            avatarUrl = null,
+            bio = null,
+            createdAt = Clock.System.now(),
+        )
+
+    // The ViewModel resolves the source pattern + author regardless of the
+    // source's `visibility` value (PUBLIC, SHARED, or PRIVATE) — the
+    // tappability gate `visibility == PUBLIC` lives at the Compose / SwiftUI
+    // layer, NOT in the ViewModel. This test exercises the PUBLIC branch
+    // because it is the most common case; PRIVATE/SHARED resolution behavior
+    // is structurally identical.
+    @Test
+    fun `parent attribution resolves source pattern and author when forked`() =
+        runTest(testDispatcher) {
+            val sourcePattern =
+                createTestPattern().copy(
+                    id = "source-pat",
+                    ownerId = "source-user",
+                    title = "Cable Beanie",
+                    visibility = Visibility.PUBLIC,
+                )
+            val forkedPattern =
+                createTestPattern().copy(
+                    id = "forked-pat",
+                    ownerId = LocalUser.ID,
+                    title = "Cable Beanie",
+                    parentPatternId = "source-pat",
+                )
+            patternRepository.create(sourcePattern)
+            patternRepository.create(forkedPattern)
+            userRepository.addUser(createTestUser("source-user", "Alice"))
+            projectRepository.create(createProjectWithPattern("forked-pat"))
+
+            val viewModel = createViewModel()
+
+            viewModel.state.test {
+                var state = awaitItem()
+                while (state.parentPattern == null) {
+                    state = awaitItem()
+                }
+                assertEquals("source-pat", state.parentPattern?.id)
+                assertEquals("Cable Beanie", state.parentPattern?.title)
+                assertEquals(Visibility.PUBLIC, state.parentPattern?.visibility)
+                assertEquals("Alice", state.parentPatternAuthor?.displayName)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `parent attribution leaves parentPattern null when source was deleted`() =
+        runTest(testDispatcher) {
+            // Forked pattern carries `parentPatternId = "deleted-pat"` but the
+            // source row is absent — UI renders `state_forked_from_deleted`.
+            val forkedPattern =
+                createTestPattern().copy(
+                    id = "forked-pat",
+                    ownerId = LocalUser.ID,
+                    parentPatternId = "deleted-pat",
+                )
+            patternRepository.create(forkedPattern)
+            projectRepository.create(createProjectWithPattern("forked-pat"))
+
+            val viewModel = createViewModel()
+
+            viewModel.state.test {
+                var state = awaitItem()
+                // Wait for the pattern flow to surface the forked pattern, then
+                // confirm parentPattern stays null (source row absent from repo).
+                while (state.pattern?.parentPatternId != "deleted-pat") {
+                    state = awaitItem()
+                }
+                assertEquals("deleted-pat", state.pattern?.parentPatternId)
+                assertNull(state.parentPattern)
+                assertNull(state.parentPatternAuthor)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `parent attribution falls back gracefully when author lookup returns null`() =
+        runTest(testDispatcher) {
+            // Source pattern resolves but author was deleted from users table —
+            // UI renders the parametric template with `label_someone` fallback
+            // per Phase 33.1.7 ActivityFeed precedent.
+            val sourcePattern =
+                createTestPattern().copy(
+                    id = "source-pat",
+                    ownerId = "ghost-user",
+                    visibility = Visibility.PUBLIC,
+                )
+            val forkedPattern =
+                createTestPattern().copy(
+                    id = "forked-pat",
+                    ownerId = LocalUser.ID,
+                    parentPatternId = "source-pat",
+                )
+            patternRepository.create(sourcePattern)
+            patternRepository.create(forkedPattern)
+            // Deliberately NOT adding "ghost-user" to userRepository.
+            projectRepository.create(createProjectWithPattern("forked-pat"))
+
+            val viewModel = createViewModel()
+
+            viewModel.state.test {
+                var state = awaitItem()
+                while (state.parentPattern == null) {
+                    state = awaitItem()
+                }
+                assertEquals("source-pat", state.parentPattern?.id)
+                assertNull(state.parentPatternAuthor)
                 cancelAndIgnoreRemainingEvents()
             }
         }

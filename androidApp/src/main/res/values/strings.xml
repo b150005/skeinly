@@ -251,6 +251,9 @@
     <string name="action_view_structured_chart">View structured chart</string>
     <string name="action_edit_structured_chart">Edit structured chart</string>
     <string name="action_create_structured_chart">Create structured chart</string>
+    <!-- Phase 36.5 (ADR-012 §6) "Forked from" attribution. -->
+    <string name="label_forked_from">Forked from: %1$s by %2$s</string>
+    <string name="state_forked_from_deleted">Forked from a deleted pattern</string>
     <string name="label_yarn">Yarn</string>
     <string name="label_chart_images_section">Chart Images</string>
     <string name="state_no_chart_images">No chart images yet</string>

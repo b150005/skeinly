@@ -234,6 +234,9 @@
     <string name="action_view_structured_chart">構造化チャートを表示</string>
     <string name="action_edit_structured_chart">構造化チャートを編集</string>
     <string name="action_create_structured_chart">構造化チャートを作成</string>
+    <!-- Phase 36.5 (ADR-012 §6) "Forked from" attribution. -->
+    <string name="label_forked_from">%1$s（%2$s）からフォーク</string>
+    <string name="state_forked_from_deleted">削除されたパターンからフォーク</string>
     <string name="label_yarn">糸</string>
     <string name="label_chart_images_section">チャート画像</string>
     <string name="state_no_chart_images">チャート画像はまだありません</string>

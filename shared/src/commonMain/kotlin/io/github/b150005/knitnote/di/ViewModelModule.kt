@@ -43,6 +43,7 @@ val viewModelModule =
                 projectId = params.get(),
                 projectRepository = get(),
                 patternRepository = get(),
+                userRepository = get(),
                 incrementRow = get(),
                 decrementRow = get(),
                 addProgressNote = get(),

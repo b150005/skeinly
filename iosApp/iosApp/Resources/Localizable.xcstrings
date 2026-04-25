@@ -1443,6 +1443,20 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "構造化チャートを作成" } }
       }
     },
+    "label_forked_from" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Forked from: %1$@ by %2$@" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@（%2$@）からフォーク" } }
+      }
+    },
+    "state_forked_from_deleted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Forked from a deleted pattern" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "削除されたパターンからフォーク" } }
+      }
+    },
     "label_yarn" : {
       "extractionState" : "manual",
       "localizations" : {
