@@ -285,6 +285,15 @@ fun KnitNoteNavHost(
                 onChartEditorClick = { patternId ->
                     navController.navigate(ChartEditor(patternId = patternId))
                 },
+                // Phase 36.5 (ADR-012 §6): "Forked from" attribution tap routes
+                // to the source pattern's read-only chart viewer. `projectId =
+                // null` because the user is browsing someone else's pattern —
+                // segment overlay belongs to the current project, not the source.
+                onParentPatternClick = { parentPatternId ->
+                    navController.navigate(
+                        ChartViewer(patternId = parentPatternId, projectId = null),
+                    )
+                },
             )
         }
         composable<ChartViewer> { backStackEntry ->

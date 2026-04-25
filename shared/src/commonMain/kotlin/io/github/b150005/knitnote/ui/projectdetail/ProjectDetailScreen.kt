@@ -60,6 +60,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -68,6 +69,8 @@ import io.github.b150005.knitnote.domain.model.CommentTargetType
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.Progress
 import io.github.b150005.knitnote.domain.model.ProjectStatus
+import io.github.b150005.knitnote.domain.model.User
+import io.github.b150005.knitnote.domain.model.Visibility
 import io.github.b150005.knitnote.domain.repository.AuthRepository
 import io.github.b150005.knitnote.generated.resources.Res
 import io.github.b150005.knitnote.generated.resources.action_add
@@ -98,6 +101,7 @@ import io.github.b150005.knitnote.generated.resources.dialog_remove_chart_image_
 import io.github.b150005.knitnote.generated.resources.dialog_reset_progress_body
 import io.github.b150005.knitnote.generated.resources.dialog_reset_progress_title
 import io.github.b150005.knitnote.generated.resources.hint_note_example
+import io.github.b150005.knitnote.generated.resources.label_forked_from
 import io.github.b150005.knitnote.generated.resources.label_gauge_value
 import io.github.b150005.knitnote.generated.resources.label_needle_value
 import io.github.b150005.knitnote.generated.resources.label_note
@@ -109,6 +113,7 @@ import io.github.b150005.knitnote.generated.resources.label_photo_attached
 import io.github.b150005.knitnote.generated.resources.label_progress_photo
 import io.github.b150005.knitnote.generated.resources.label_rows_only
 import io.github.b150005.knitnote.generated.resources.label_segments_completed
+import io.github.b150005.knitnote.generated.resources.label_someone
 import io.github.b150005.knitnote.generated.resources.label_status_completed
 import io.github.b150005.knitnote.generated.resources.label_status_in_progress
 import io.github.b150005.knitnote.generated.resources.label_status_not_started
@@ -117,6 +122,7 @@ import io.github.b150005.knitnote.generated.resources.label_total_rows_optional
 import io.github.b150005.knitnote.generated.resources.label_yarn_value
 import io.github.b150005.knitnote.generated.resources.message_reset_progress_done
 import io.github.b150005.knitnote.generated.resources.message_shared_successfully
+import io.github.b150005.knitnote.generated.resources.state_forked_from_deleted
 import io.github.b150005.knitnote.generated.resources.state_no_notes
 import io.github.b150005.knitnote.generated.resources.state_project_not_found
 import io.github.b150005.knitnote.generated.resources.state_uploading_photo
@@ -141,6 +147,11 @@ fun ProjectDetailScreen(
     onBack: () -> Unit,
     onChartViewerClick: (String) -> Unit = {},
     onChartEditorClick: (String) -> Unit = {},
+    // Phase 36.5 (ADR-012 §6): tap on the "Forked from" attribution row routes
+    // to the source pattern's read-only chart viewer. Plumbed by NavGraph as
+    // `ChartViewer(patternId = parentPatternId, projectId = null)` — no
+    // segment overlay since the user is browsing someone else's pattern.
+    onParentPatternClick: (String) -> Unit = {},
     viewModel: ProjectDetailViewModel = koinViewModel { parametersOf(projectId) },
 ) {
     val state by viewModel.state.collectAsState()
@@ -427,12 +438,15 @@ fun ProjectDetailScreen(
                                 PatternInfoSection(
                                     pattern = pattern,
                                     hasStructuredChart = state.hasStructuredChart,
+                                    parentPattern = state.parentPattern,
+                                    parentPatternAuthor = state.parentPatternAuthor,
                                     onChartViewerClick = {
                                         if (state.hasStructuredChart) {
                                             onChartViewerClick(pattern.id)
                                         }
                                     },
                                     onChartEditorClick = { onChartEditorClick(pattern.id) },
+                                    onParentPatternClick = onParentPatternClick,
                                 )
                             }
                         }
@@ -1008,8 +1022,11 @@ private fun EditProjectDialog(
 private fun PatternInfoSection(
     pattern: Pattern,
     hasStructuredChart: Boolean,
+    parentPattern: Pattern?,
+    parentPatternAuthor: User?,
     onChartViewerClick: () -> Unit = {},
     onChartEditorClick: () -> Unit = {},
+    onParentPatternClick: (String) -> Unit = {},
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 16.dp),
@@ -1019,6 +1036,56 @@ private fun PatternInfoSection(
             text = stringResource(Res.string.label_pattern_value, pattern.title),
             style = MaterialTheme.typography.titleMedium,
         )
+        // Phase 36.5 (ADR-012 §6) "Forked from" attribution row. Three render
+        // states keyed off `pattern.parentPatternId` + `parentPattern`:
+        //   1. parentPatternId == null → not forked, render nothing.
+        //   2. parentPatternId != null && parentPattern == null → source
+        //      deleted/private/lookup-failed, render plain `state_forked_from_deleted`.
+        //   3. parentPattern != null → render parametric `label_forked_from`.
+        //      Tappable only when the source is still PUBLIC (still discoverable);
+        //      private-source forks (a fork that was made while the source was
+        //      public, then the author flipped to PRIVATE) render as plain text.
+        if (pattern.parentPatternId != null) {
+            if (parentPattern == null) {
+                Text(
+                    text = stringResource(Res.string.state_forked_from_deleted),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.testTag("forkedFromDeletedLabel"),
+                )
+            } else {
+                val authorName =
+                    parentPatternAuthor?.displayName
+                        ?: stringResource(Res.string.label_someone)
+                val text =
+                    stringResource(
+                        Res.string.label_forked_from,
+                        parentPattern.title,
+                        authorName,
+                    )
+                if (parentPattern.visibility == Visibility.PUBLIC) {
+                    // `role = Role.Button` so TalkBack announces the tappable
+                    // text as a button (parity with the iOS `Button(...)` mirror).
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier =
+                            Modifier
+                                .clickable(role = Role.Button) {
+                                    onParentPatternClick(parentPattern.id)
+                                }.testTag("forkedFromLink"),
+                    )
+                } else {
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.testTag("forkedFromLabel"),
+                    )
+                }
+            }
+        }
         if (hasStructuredChart) {
             Text(
                 text = stringResource(Res.string.action_view_structured_chart),
