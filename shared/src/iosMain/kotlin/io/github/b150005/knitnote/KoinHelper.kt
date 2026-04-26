@@ -21,6 +21,7 @@ import io.github.b150005.knitnote.ui.patternlibrary.PatternLibraryViewModel
 import io.github.b150005.knitnote.ui.profile.ProfileViewModel
 import io.github.b150005.knitnote.ui.projectdetail.ProjectDetailViewModel
 import io.github.b150005.knitnote.ui.projectlist.ProjectListViewModel
+import io.github.b150005.knitnote.ui.pullrequest.ChartConflictResolutionViewModel
 import io.github.b150005.knitnote.ui.pullrequest.PullRequestDetailViewModel
 import io.github.b150005.knitnote.ui.pullrequest.PullRequestFilter
 import io.github.b150005.knitnote.ui.pullrequest.PullRequestListViewModel
@@ -102,6 +103,8 @@ fun getPullRequestListViewModel(defaultFilter: PullRequestFilter): PullRequestLi
     KoinPlatform.getKoin().get { parametersOf(defaultFilter) }
 
 fun getPullRequestDetailViewModel(prId: String): PullRequestDetailViewModel = KoinPlatform.getKoin().get { parametersOf(prId) }
+
+fun getChartConflictResolutionViewModel(prId: String): ChartConflictResolutionViewModel = KoinPlatform.getKoin().get { parametersOf(prId) }
 
 fun getSymbolCatalog(): SymbolCatalog = KoinPlatform.getKoin().get()
 
@@ -214,6 +217,14 @@ fun wrapPullRequestDetailState(
 fun wrapPullRequestDetailNavEvents(
     flow: kotlinx.coroutines.flow.Flow<io.github.b150005.knitnote.ui.pullrequest.PullRequestDetailNavEvent>,
 ): EventFlowWrapper<io.github.b150005.knitnote.ui.pullrequest.PullRequestDetailNavEvent> = EventFlowWrapper(flow)
+
+fun wrapChartConflictResolutionState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.knitnote.ui.pullrequest.ChartConflictResolutionState>,
+): FlowWrapper<io.github.b150005.knitnote.ui.pullrequest.ChartConflictResolutionState> = FlowWrapper(flow)
+
+fun wrapChartConflictResolutionNavEvents(
+    flow: kotlinx.coroutines.flow.Flow<io.github.b150005.knitnote.ui.pullrequest.ChartConflictResolutionNavEvent>,
+): EventFlowWrapper<io.github.b150005.knitnote.ui.pullrequest.ChartConflictResolutionNavEvent> = EventFlowWrapper(flow)
 
 fun getSymbolGalleryViewModel(): SymbolGalleryViewModel = KoinPlatform.getKoin().get()
 

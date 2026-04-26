@@ -2,19 +2,25 @@ package io.github.b150005.knitnote.ui.pullrequest
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.b150005.knitnote.domain.chart.ConflictDetector
 import io.github.b150005.knitnote.domain.model.PullRequest
 import io.github.b150005.knitnote.domain.model.PullRequestComment
 import io.github.b150005.knitnote.domain.model.User
+import io.github.b150005.knitnote.domain.model.toStructuredChart
 import io.github.b150005.knitnote.domain.repository.AuthRepository
+import io.github.b150005.knitnote.domain.repository.ChartRevisionRepository
 import io.github.b150005.knitnote.domain.repository.PatternRepository
 import io.github.b150005.knitnote.domain.repository.PullRequestRepository
+import io.github.b150005.knitnote.domain.repository.StructuredChartRepository
 import io.github.b150005.knitnote.domain.repository.UserRepository
 import io.github.b150005.knitnote.domain.usecase.ClosePullRequestUseCase
 import io.github.b150005.knitnote.domain.usecase.GetPullRequestCommentsUseCase
 import io.github.b150005.knitnote.domain.usecase.GetPullRequestUseCase
+import io.github.b150005.knitnote.domain.usecase.MergePullRequestUseCase
 import io.github.b150005.knitnote.domain.usecase.PostPullRequestCommentUseCase
 import io.github.b150005.knitnote.domain.usecase.PullRequestObserveScope
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
+import io.github.b150005.knitnote.domain.usecase.applyResolutions
 import io.github.b150005.knitnote.domain.usecase.toMessage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -62,6 +68,7 @@ data class PullRequestDetailState(
     val isLoading: Boolean = true,
     val isSendingComment: Boolean = false,
     val isClosingPr: Boolean = false,
+    val isMerging: Boolean = false,
     val pendingCloseConfirmation: Boolean = false,
     val pendingMergeConfirmation: Boolean = false,
     val error: String? = null,
@@ -108,6 +115,13 @@ sealed interface PullRequestDetailEvent {
 
     data object RequestMerge : PullRequestDetailEvent
 
+    /**
+     * Phase 38.4 — confirm the merge dialog. Routes through `ConflictDetector`
+     * to decide between (a) auto-clean direct merge and (b) navigate to
+     * `ChartConflictResolutionScreen` for interactive resolution.
+     */
+    data object ConfirmMerge : PullRequestDetailEvent
+
     data object DismissMergeConfirmation : PullRequestDetailEvent
 
     data object ClearError : PullRequestDetailEvent
@@ -119,6 +133,25 @@ sealed interface PullRequestDetailEvent {
  */
 sealed interface PullRequestDetailNavEvent {
     data object PrClosed : PullRequestDetailNavEvent
+
+    /**
+     * Phase 38.4 — auto-clean merge succeeded; surface the success Snackbar
+     * + pop back to the list. The new revision id is included so analytics
+     * or "see new commit in history" links can route to it (no current
+     * caller; reserved for forward-compat).
+     */
+    data class PrMerged(
+        val mergedRevisionId: String,
+    ) : PullRequestDetailNavEvent
+
+    /**
+     * Phase 38.4 — conflicts detected; navigate to the resolution screen
+     * carrying the PR id. The resolution screen reloads the snapshots itself
+     * so we don't ferry envelopes through the navigation graph.
+     */
+    data class NavigateToConflictResolution(
+        val prId: String,
+    ) : PullRequestDetailNavEvent
 }
 
 class PullRequestDetailViewModel(
@@ -131,6 +164,13 @@ class PullRequestDetailViewModel(
     private val patternRepository: PatternRepository,
     private val userRepository: UserRepository,
     private val authRepository: AuthRepository,
+    // Phase 38.4 deps. Nullable defaults so existing tests that don't exercise
+    // the merge path can construct the ViewModel without supplying them; the
+    // RequestMerge path no-ops if any are absent (defense-in-depth — Koin
+    // production wiring always provides non-null).
+    private val mergePullRequest: MergePullRequestUseCase? = null,
+    private val chartRevisionRepository: ChartRevisionRepository? = null,
+    private val structuredChartRepository: StructuredChartRepository? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(PullRequestDetailState())
     val state: StateFlow<PullRequestDetailState> = _state.asStateFlow()
@@ -208,6 +248,11 @@ class PullRequestDetailViewModel(
 
             PullRequestDetailEvent.RequestMerge ->
                 _state.update { it.copy(pendingMergeConfirmation = true) }
+
+            PullRequestDetailEvent.ConfirmMerge -> {
+                _state.update { it.copy(pendingMergeConfirmation = false) }
+                attemptMerge()
+            }
 
             PullRequestDetailEvent.DismissMergeConfirmation ->
                 _state.update { it.copy(pendingMergeConfirmation = false) }
@@ -366,6 +411,108 @@ class PullRequestDetailViewModel(
                     _state.update {
                         it.copy(isSendingComment = false, error = result.error.toMessage())
                     }
+            }
+        }
+    }
+
+    /**
+     * Phase 38.4 (ADR-014 §4 §5 §6) — confirm-merge path. Loads the three
+     * revision snapshots, runs [ConflictDetector], and either:
+     *  - Auto-clean: invokes [MergePullRequestUseCase] with the source-tip
+     *    document directly. The conflict-detector returned `isClean = true`
+     *    so no user resolution is required.
+     *  - Conflicts: emits [PullRequestDetailNavEvent.NavigateToConflictResolution]
+     *    so the screen layer pushes [ChartConflictResolutionScreen] for
+     *    interactive resolution.
+     *
+     * Defense-in-depth: if any of the merge dependencies are null (test
+     * construction without merge wiring, or an unconfigured offline build),
+     * surfaces a Validation error rather than silently no-op'ing.
+     */
+    private fun attemptMerge() {
+        val pr = _state.value.pullRequest ?: return
+        val merge = mergePullRequest
+        val chartRevisionRepo = chartRevisionRepository
+        val chartRepo = structuredChartRepository
+        if (merge == null || chartRevisionRepo == null || chartRepo == null) {
+            _state.update {
+                it.copy(error = "Merge is unavailable in offline-only mode")
+            }
+            return
+        }
+        viewModelScope.launch {
+            _state.update { it.copy(isMerging = true) }
+            val ancestor =
+                try {
+                    chartRevisionRepo.getRevision(pr.commonAncestorRevisionId)?.toStructuredChart()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    null
+                }
+            val theirs =
+                try {
+                    chartRevisionRepo.getRevision(pr.sourceTipRevisionId)?.toStructuredChart()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    null
+                }
+            val mine =
+                try {
+                    chartRepo.getByPatternId(pr.targetPatternId)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    null
+                }
+            if (ancestor == null || theirs == null || mine == null) {
+                _state.update {
+                    it.copy(
+                        isMerging = false,
+                        error = "Could not load chart revisions for this pull request",
+                    )
+                }
+                return@launch
+            }
+            val report = ConflictDetector.detect(ancestor = ancestor, theirs = theirs, mine = mine)
+            if (report.isClean) {
+                // Auto-clean merge: apply autoFromTheirs + autoLayerFromTheirs
+                // on top of `mine` (target tip). Passing `theirs` raw would
+                // silently drop any target-side edits that landed after the
+                // fork point — code review HIGH-1 fix. autoFromMine is the
+                // identity over `mine` (those cells already match), so we
+                // don't need to apply it; the empty conflict-resolution maps
+                // tell `applyResolutions` there are no contested picks.
+                val resolved =
+                    applyResolutions(
+                        mine = mine,
+                        autoFromTheirs = report.autoFromTheirs,
+                        conflictPicks = emptyMap(),
+                        autoLayerFromTheirs = report.autoLayerFromTheirs,
+                        layerConflictPicks = emptyMap(),
+                        theirs = theirs,
+                        ancestor = ancestor,
+                    )
+                when (val result = merge(pullRequest = pr, resolvedChart = resolved)) {
+                    is UseCaseResult.Success -> {
+                        _state.update { it.copy(isMerging = false) }
+                        _navEvents.trySend(
+                            PullRequestDetailNavEvent.PrMerged(
+                                mergedRevisionId = result.value.mergedRevisionId,
+                            ),
+                        )
+                    }
+                    is UseCaseResult.Failure ->
+                        _state.update {
+                            it.copy(isMerging = false, error = result.error.toMessage())
+                        }
+                }
+            } else {
+                _state.update { it.copy(isMerging = false) }
+                _navEvents.trySend(
+                    PullRequestDetailNavEvent.NavigateToConflictResolution(prId = prId),
+                )
             }
         }
     }

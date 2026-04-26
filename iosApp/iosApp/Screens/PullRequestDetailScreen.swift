@@ -18,6 +18,7 @@ struct PullRequestDetailScreen: View {
     @State private var showError = false
     @State private var navEventsCloseable: Closeable?
     @State private var pendingClosedToast: Bool = false
+    @State private var pendingMergedToast: Bool = false
 
     private var viewModel: PullRequestDetailViewModel { holder.viewModel }
 
@@ -54,16 +55,35 @@ struct PullRequestDetailScreen: View {
                         .clipShape(Capsule())
                         .padding(.bottom, 32)
                         .transition(.opacity)
+                } else if pendingMergedToast {
+                    Text(LocalizedStringKey("message_pr_merged_successfully"))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(.regularMaterial)
+                        .clipShape(Capsule())
+                        .padding(.bottom, 32)
+                        .transition(.opacity)
                 }
             }
             .task {
                 navEventsCloseable?.close()
                 let wrapper = KoinHelperKt.wrapPullRequestDetailNavEvents(flow: viewModel.navEvents)
-                navEventsCloseable = wrapper.collect { _ in
+                navEventsCloseable = wrapper.collect { event in
                     Task { @MainActor in
-                        withAnimation { pendingClosedToast = true }
-                        try? await Task.sleep(nanoseconds: 2_000_000_000)
-                        withAnimation { pendingClosedToast = false }
+                        switch event {
+                        case is PullRequestDetailNavEventPrClosed:
+                            withAnimation { pendingClosedToast = true }
+                            try? await Task.sleep(nanoseconds: 2_000_000_000)
+                            withAnimation { pendingClosedToast = false }
+                        case is PullRequestDetailNavEventPrMerged:
+                            withAnimation { pendingMergedToast = true }
+                            try? await Task.sleep(nanoseconds: 2_000_000_000)
+                            withAnimation { pendingMergedToast = false }
+                        case let nav as PullRequestDetailNavEventNavigateToConflictResolution:
+                            path.append(Route.chartConflictResolution(prId: nav.prId))
+                        default:
+                            break
+                        }
                     }
                 }
             }
@@ -90,11 +110,14 @@ struct PullRequestDetailScreen: View {
                 isPresented: mergeDialogBinding,
                 titleVisibility: .visible
             ) {
-                // Merge confirm intentionally inert in 38.3; ships disabled per spec.
+                // Phase 38.4: merge confirm dispatches ConfirmMerge → 3-way
+                // conflict detection → either direct RPC merge (auto-clean)
+                // or push ChartConflictResolutionScreen via the navEvent
+                // collector above.
                 Button(LocalizedStringKey("action_merge_pr")) {
-                    viewModel.onEvent(event: PullRequestDetailEventDismissMergeConfirmation.shared)
+                    viewModel.onEvent(event: PullRequestDetailEventConfirmMerge.shared)
                 }
-                .disabled(true)
+                .disabled(holder.state.isMerging)
                 Button(LocalizedStringKey("action_cancel"), role: .cancel) {
                     viewModel.onEvent(event: PullRequestDetailEventDismissMergeConfirmation.shared)
                 }
@@ -314,7 +337,6 @@ struct PullRequestDetailScreen: View {
                     viewModel.onEvent(event: PullRequestDetailEventRequestMerge.shared)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(true) // 38.3 — ships disabled until 38.4 wires the RPC
                 .accessibilityIdentifier("mergeButton")
             }
         }

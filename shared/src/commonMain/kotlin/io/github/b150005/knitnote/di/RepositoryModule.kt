@@ -91,6 +91,12 @@ val repositoryModule =
             single { RemoteChartRevisionDataSource(get<SupabaseClient>()) }
             single { RemoteChartBranchDataSource(get<SupabaseClient>()) }
             single { RemotePullRequestDataSource(get<SupabaseClient>()) }
+            // Phase 38.4: Expose the merge RPC port as a domain-layer
+            // interface so MergePullRequestUseCase doesn't take a hard
+            // dependency on the Supabase-typed data source.
+            single<io.github.b150005.knitnote.domain.repository.PullRequestMergeOperations> {
+                get<RemotePullRequestDataSource>()
+            }
             single<ShareDataSourceOperations> { RemoteShareDataSource(get<SupabaseClient>()) }
             single { RemoteUserDataSource(get<SupabaseClient>()) }
             single<CommentDataSourceOperations> { RemoteCommentDataSource(get<SupabaseClient>()) }

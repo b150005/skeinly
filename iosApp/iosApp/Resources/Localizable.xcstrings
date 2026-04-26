@@ -2275,6 +2275,76 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Pull request closed" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "プルリクエストをクローズしました" } }
       }
+    },
+    "title_resolve_conflicts" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Resolve conflicts" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コンフリクトの解決" } }
+      }
+    },
+    "label_conflict_summary" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$d conflicts to resolve" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "解決が必要なコンフリクト: %1$d 件" } }
+      }
+    },
+    "label_conflict_layer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Layer" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "レイヤー" } }
+      }
+    },
+    "label_conflict_cell" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cell (%1$d, %2$d)" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "セル (%1$d, %2$d)" } }
+      }
+    },
+    "action_take_theirs" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Take theirs" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "相手側を採用" } }
+      }
+    },
+    "action_keep_mine" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep mine" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "自分側を維持" } }
+      }
+    },
+    "action_skip_conflict" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Skip" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "スキップ" } }
+      }
+    },
+    "action_apply_and_merge" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Apply and merge" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "適用してマージ" } }
+      }
+    },
+    "state_all_conflicts_resolved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "All conflicts resolved" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "すべてのコンフリクトが解決されました" } }
+      }
+    },
+    "message_pr_merged_successfully" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pull request merged" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プルリクエストをマージしました" } }
+      }
     }
   },
   "version" : "1.0"

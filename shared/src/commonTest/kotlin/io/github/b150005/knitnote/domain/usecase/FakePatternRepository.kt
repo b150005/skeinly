@@ -33,4 +33,13 @@ class FakePatternRepository : PatternRepository {
     override suspend fun delete(id: String) {
         patterns.value = patterns.value.filter { it.id != id }
     }
+
+    /**
+     * Phase 38.4 test helper — synchronous arrange-phase seeder. `create` is
+     * suspend so it can't be called from `apply {}` blocks at test
+     * construction time; this provides a non-suspend escape hatch.
+     */
+    fun seed(pattern: Pattern) {
+        patterns.value = patterns.value + pattern
+    }
 }

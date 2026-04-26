@@ -64,6 +64,7 @@ import io.github.b150005.knitnote.generated.resources.label_pr_status_merged
 import io.github.b150005.knitnote.generated.resources.label_pr_status_open
 import io.github.b150005.knitnote.generated.resources.label_someone
 import io.github.b150005.knitnote.generated.resources.message_pr_closed_successfully
+import io.github.b150005.knitnote.generated.resources.message_pr_merged_successfully
 import io.github.b150005.knitnote.generated.resources.state_pr_not_found
 import io.github.b150005.knitnote.generated.resources.title_pull_request_detail
 import io.github.b150005.knitnote.ui.util.formatFull
@@ -95,11 +96,13 @@ fun PullRequestDetailScreen(
     prId: String,
     onBack: () -> Unit,
     onOpenDiff: (baseRevisionId: String, targetRevisionId: String) -> Unit = { _, _ -> },
+    onResolveConflicts: (prId: String) -> Unit = { _ -> },
     viewModel: PullRequestDetailViewModel = koinViewModel { parametersOf(prId) },
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val closedMessage = stringResource(Res.string.message_pr_closed_successfully)
+    val mergedMessage = stringResource(Res.string.message_pr_merged_successfully)
 
     LaunchedEffect(state.error) {
         state.error?.let {
@@ -112,6 +115,9 @@ fun PullRequestDetailScreen(
         viewModel.navEvents.collect { event ->
             when (event) {
                 PullRequestDetailNavEvent.PrClosed -> snackbarHostState.showSnackbar(closedMessage)
+                is PullRequestDetailNavEvent.PrMerged -> snackbarHostState.showSnackbar(mergedMessage)
+                is PullRequestDetailNavEvent.NavigateToConflictResolution ->
+                    onResolveConflicts(event.prId)
             }
         }
     }
@@ -197,18 +203,19 @@ fun PullRequestDetailScreen(
     }
 
     if (state.pendingMergeConfirmation) {
-        // Phase 38.3 ships the merge confirmation dialog UI but the confirm
-        // button is intentionally disabled — Phase 38.4 wires the RPC. The
-        // dialog body explains the deferral; users who tap "Merge" still see
-        // an explanation rather than nothing.
+        // Phase 38.4 (ADR-014 §5 §6): merge confirm is now active — the
+        // button routes through ConfirmMerge, which triggers
+        // ConflictDetector.detect(); auto-clean merges call the RPC
+        // directly, conflicts navigate to ChartConflictResolutionScreen via
+        // the navEvent collector above.
         AlertDialog(
             onDismissRequest = { viewModel.onEvent(PullRequestDetailEvent.DismissMergeConfirmation) },
             title = { Text(stringResource(Res.string.dialog_merge_pr_title)) },
             text = { Text(stringResource(Res.string.dialog_merge_pr_body)) },
             confirmButton = {
                 TextButton(
-                    onClick = { viewModel.onEvent(PullRequestDetailEvent.DismissMergeConfirmation) },
-                    enabled = false,
+                    onClick = { viewModel.onEvent(PullRequestDetailEvent.ConfirmMerge) },
+                    enabled = !state.isMerging,
                     modifier = Modifier.testTag("confirmMergePrButton"),
                 ) { Text(stringResource(Res.string.action_merge_pr)) }
             },
@@ -503,14 +510,11 @@ private fun ActionBar(
             ) { Text(stringResource(Res.string.action_close_pr)) }
         }
         if (canMerge) {
-            // Phase 38.3 ships the merge button visually disabled — the
-            // RPC + ConflictDetector wiring lands in Phase 38.4. Tap still
-            // routes through RequestMerge → confirmation dialog whose
-            // confirm button is also disabled, so the user sees the
-            // "Coming in Phase 38.4" body copy rather than a no-op.
+            // Phase 38.4: merge active. Tap → confirmation dialog → ConfirmMerge
+            // → conflict detection → either direct RPC (auto-clean) or push
+            // ChartConflictResolutionScreen (interactive resolution).
             Button(
                 onClick = onMerge,
-                enabled = false,
                 modifier = Modifier.testTag("mergeButton"),
             ) { Text(stringResource(Res.string.action_merge_pr)) }
         }

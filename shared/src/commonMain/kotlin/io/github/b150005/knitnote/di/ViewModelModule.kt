@@ -15,6 +15,7 @@ import io.github.b150005.knitnote.ui.patternlibrary.PatternLibraryViewModel
 import io.github.b150005.knitnote.ui.profile.ProfileViewModel
 import io.github.b150005.knitnote.ui.projectdetail.ProjectDetailViewModel
 import io.github.b150005.knitnote.ui.projectlist.ProjectListViewModel
+import io.github.b150005.knitnote.ui.pullrequest.ChartConflictResolutionViewModel
 import io.github.b150005.knitnote.ui.pullrequest.PullRequestDetailViewModel
 import io.github.b150005.knitnote.ui.pullrequest.PullRequestFilter
 import io.github.b150005.knitnote.ui.pullrequest.PullRequestListViewModel
@@ -162,6 +163,18 @@ val viewModelModule =
                 patternRepository = get(),
                 userRepository = get(),
                 authRepository = get(),
+                mergePullRequest = get(),
+                chartRevisionRepository = get(),
+                structuredChartRepository = get(),
+            )
+        }
+        viewModel { params ->
+            ChartConflictResolutionViewModel(
+                prId = params.get(),
+                getPullRequest = get(),
+                chartRevisionRepository = get(),
+                structuredChartRepository = get(),
+                mergePullRequest = get(),
             )
         }
     }
