@@ -1,6 +1,7 @@
 package io.github.b150005.knitnote.di
 
 import io.github.b150005.knitnote.domain.usecase.AddProgressNoteUseCase
+import io.github.b150005.knitnote.domain.usecase.ClosePullRequestUseCase
 import io.github.b150005.knitnote.domain.usecase.CloseRealtimeChannelsUseCase
 import io.github.b150005.knitnote.domain.usecase.CompleteOnboardingUseCase
 import io.github.b150005.knitnote.domain.usecase.CompleteProjectUseCase
@@ -36,6 +37,8 @@ import io.github.b150005.knitnote.domain.usecase.GetProgressNotesUseCase
 import io.github.b150005.knitnote.domain.usecase.GetProjectByIdUseCase
 import io.github.b150005.knitnote.domain.usecase.GetProjectsUseCase
 import io.github.b150005.knitnote.domain.usecase.GetPublicPatternsUseCase
+import io.github.b150005.knitnote.domain.usecase.GetPullRequestCommentsUseCase
+import io.github.b150005.knitnote.domain.usecase.GetPullRequestUseCase
 import io.github.b150005.knitnote.domain.usecase.GetReceivedSharesUseCase
 import io.github.b150005.knitnote.domain.usecase.GetStructuredChartByPatternIdUseCase
 import io.github.b150005.knitnote.domain.usecase.IncrementRowUseCase
@@ -44,6 +47,8 @@ import io.github.b150005.knitnote.domain.usecase.MarkSegmentDoneUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveAuthStateUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveProjectSegmentsUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveStructuredChartUseCase
+import io.github.b150005.knitnote.domain.usecase.OpenPullRequestUseCase
+import io.github.b150005.knitnote.domain.usecase.PostPullRequestCommentUseCase
 import io.github.b150005.knitnote.domain.usecase.ReopenProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.ResetProjectProgressUseCase
 import io.github.b150005.knitnote.domain.usecase.ResolveShareTokenUseCase
@@ -153,6 +158,15 @@ val useCaseModule =
         // via `remote = null`), so non-null here matches GetChartHistoryUseCase.
         factory { GetIncomingPullRequestsUseCase(get()) }
         factory { GetOutgoingPullRequestsUseCase(get()) }
+
+        // Phase 38.3 pull-request detail use cases (ADR-014 §6, §8).
+        factory { GetPullRequestUseCase(get()) }
+        factory { GetPullRequestCommentsUseCase(get()) }
+        factory { PostPullRequestCommentUseCase(get(), get()) }
+        factory { ClosePullRequestUseCase(get(), get()) }
+        // OpenPullRequestUseCase needs the chart-revision repo for the
+        // common-ancestor walk per ADR-014 §3.
+        factory { OpenPullRequestUseCase(get(), get(), get()) }
 
         // Per-segment progress use cases (Phase 34)
         factory { ObserveProjectSegmentsUseCase(get()) }

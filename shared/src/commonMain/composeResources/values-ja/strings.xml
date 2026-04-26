@@ -382,4 +382,20 @@
     <string name="label_pr_status_merged">マージ済み</string>
     <string name="label_pr_status_closed">クローズ</string>
     <string name="label_pr_authored_by">%1$sが作成</string>
+
+    <!-- Phase 38.3 pull request detail (ADR-014 §6 §8) -->
+    <string name="title_pull_request_detail">プルリクエスト</string>
+    <string name="label_pr_description">説明</string>
+    <string name="label_pr_diff_preview">提案された変更</string>
+    <string name="label_pr_comments">コメント</string>
+    <string name="hint_add_comment_to_pr">コメントを追加…</string>
+    <string name="action_post_comment">投稿</string>
+    <string name="action_merge_pr">マージ</string>
+    <string name="action_close_pr">クローズ</string>
+    <string name="dialog_merge_pr_title">このプルリクエストをマージしますか？</string>
+    <string name="dialog_merge_pr_body">投稿者の変更が新しいコミットとしてブランチに反映されます。コンフリクト解決はPhase 38.4で対応予定です。</string>
+    <string name="dialog_close_pr_title">このプルリクエストをクローズしますか？</string>
+    <string name="dialog_close_pr_body">クローズしてもコメントは残りますが、変更は上流のチャートには反映されません。投稿者は後で新しいプルリクエストを開くことができます。</string>
+    <string name="state_pr_not_found">プルリクエストが見つかりません</string>
+    <string name="message_pr_closed_successfully">プルリクエストをクローズしました</string>
 </resources>

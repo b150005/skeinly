@@ -421,4 +421,20 @@
     <string name="label_pr_status_merged">Merged</string>
     <string name="label_pr_status_closed">Closed</string>
     <string name="label_pr_authored_by">Authored by %1$s</string>
+
+    <!-- Phase 38.3 pull request detail (ADR-014 §6 §8). See shared/.../values/strings.xml for the design rationale. -->
+    <string name="title_pull_request_detail">Pull request</string>
+    <string name="label_pr_description">Description</string>
+    <string name="label_pr_diff_preview">Proposed changes</string>
+    <string name="label_pr_comments">Comments</string>
+    <string name="hint_add_comment_to_pr">Add a comment…</string>
+    <string name="action_post_comment">Post</string>
+    <string name="action_merge_pr">Merge</string>
+    <string name="action_close_pr">Close</string>
+    <string name="dialog_merge_pr_title">Merge this pull request?</string>
+    <string name="dialog_merge_pr_body">The contributor\'s changes will land on your branch as a new commit. Conflict resolution ships in Phase 38.4.</string>
+    <string name="dialog_close_pr_title">Close this pull request?</string>
+    <string name="dialog_close_pr_body">Closing keeps the comment history but the changes will not land on the upstream chart. The author can open a new pull request later.</string>
+    <string name="state_pr_not_found">Pull request not found</string>
+    <string name="message_pr_closed_successfully">Pull request closed</string>
 </resources>

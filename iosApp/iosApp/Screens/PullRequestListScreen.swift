@@ -9,13 +9,15 @@ import Shared
 /// `PullRequestDetailScreen`.
 struct PullRequestListScreen: View {
     let defaultFilter: PullRequestFilter
+    @Binding var path: NavigationPath
     @StateObject private var holder: ScopedViewModel<PullRequestListViewModel, PullRequestListState>
     @State private var showError = false
 
     private var viewModel: PullRequestListViewModel { holder.viewModel }
 
-    init(defaultFilter: PullRequestFilter) {
+    init(defaultFilter: PullRequestFilter, path: Binding<NavigationPath>) {
         self.defaultFilter = defaultFilter
+        self._path = path
         let vm = ViewModelFactory.pullRequestListViewModel(defaultFilter: defaultFilter)
         let wrapper = KoinHelperKt.wrapPullRequestListState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
@@ -66,7 +68,7 @@ struct PullRequestListScreen: View {
                     )
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        // Phase 38.3 will navigate to PullRequestDetailScreen.
+                        path.append(Route.pullRequestDetail(prId: pr.id))
                     }
                 }
                 .listStyle(.plain)
