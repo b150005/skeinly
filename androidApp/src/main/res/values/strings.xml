@@ -449,4 +449,13 @@
     <string name="action_apply_and_merge">Apply and merge</string>
     <string name="state_all_conflicts_resolved">All conflicts resolved</string>
     <string name="message_pr_merged_successfully">Pull request merged</string>
+
+    <!-- Phase 38.4.1 (ADR-014 §6) — Open pull request entry. See shared/.../values/strings.xml for the design rationale. -->
+    <string name="action_open_pull_request">Open pull request</string>
+    <string name="dialog_open_pull_request_title">Open pull request</string>
+    <string name="label_pr_title">Title</string>
+    <string name="hint_pr_title">Suggest a chart change…</string>
+    <string name="hint_pr_description_optional">Optional notes for the pattern owner…</string>
+    <string name="action_open_pr">Open</string>
+    <string name="message_pr_opened_successfully">Pull request opened</string>
 </resources>

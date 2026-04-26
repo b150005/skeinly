@@ -388,6 +388,9 @@ fun KnitNoteNavHost(
                 onHistoryClick = {
                     navController.navigate(ChartHistory(patternId = route.patternId))
                 },
+                onOpenPullRequestNavigate = { prId ->
+                    navController.navigate(PullRequestDetail(prId = prId))
+                },
             )
         }
         composable<ChartEditor> { backStackEntry ->

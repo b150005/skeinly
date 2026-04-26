@@ -13,6 +13,13 @@ struct StructuredChartViewerScreen: View {
     private let catalog: SymbolCatalog
     @State private var showBranchPicker = false
     @State private var switchedToast: String?
+    /// Phase 38.4.1 — toast for "Pull request opened" feedback. Same 2-second
+    /// auto-dismiss pattern as `switchedToast` since SwiftUI lacks a non-blocking
+    /// Snackbar equivalent in this codebase.
+    @State private var prOpenedToast: String?
+    /// Closeable for the navEvents Flow subscription. Closed in `.onDisappear`
+    /// per the established Phase 32.2 / 36.5 iOS Closeable leak audit pattern.
+    @State private var navEventsCloseable: Closeable?
 
     init(patternId: String, projectId: String?, path: Binding<NavigationPath>) {
         self.patternId = patternId
@@ -59,6 +66,24 @@ struct StructuredChartViewerScreen: View {
                         Label(LocalizedStringKey("title_branch_picker"), systemImage: "arrow.triangle.branch")
                     }
                     .accessibilityIdentifier("openBranchPickerMenuItem")
+
+                    // Phase 38.4.1 — Open PR entry. Visibility gated on the
+                    // ViewModel-side `canOpenPullRequest` derived property so
+                    // forks owned by current user with resolved branches see
+                    // the entry; non-fork or non-owner viewers see no item
+                    // (parallel to the Compose `if (state.canOpenPullRequest)`
+                    // gate above).
+                    if holder.state.canOpenPullRequest {
+                        Button {
+                            viewModel.onEvent(event: ChartViewerEventRequestOpenPullRequest())
+                        } label: {
+                            Label(
+                                LocalizedStringKey("action_open_pull_request"),
+                                systemImage: "bubble.left.and.bubble.right"
+                            )
+                        }
+                        .accessibilityIdentifier("openPullRequestMenuItem")
+                    }
                 } label: {
                     Image(systemName: "ellipsis.circle")
                         .accessibilityLabel(LocalizedStringKey("action_more_options"))
@@ -77,8 +102,54 @@ struct StructuredChartViewerScreen: View {
                 }
             )
         }
+        // Phase 38.4.1 — Open PR form sheet. `Binding<Bool>` derived from the
+        // ViewModel's `pendingOpenPrSheet` flag; dismissal routes through the
+        // ViewModel event so drafts get cleared.
+        .sheet(
+            isPresented: Binding(
+                get: { holder.state.pendingOpenPrSheet },
+                set: { newValue in
+                    if !newValue {
+                        viewModel.onEvent(event: ChartViewerEventDismissOpenPullRequestSheet())
+                    }
+                }
+            )
+        ) {
+            OpenPullRequestSheet(
+                titleDraft: holder.state.openPrTitleDraft,
+                descriptionDraft: holder.state.openPrDescriptionDraft,
+                isSubmitting: holder.state.isOpeningPullRequest,
+                errorMessage: holder.state.openPrError,
+                onTitleChange: { value in
+                    viewModel.onEvent(event: ChartViewerEventOpenPrTitleChanged(value: value))
+                },
+                onDescriptionChange: { value in
+                    viewModel.onEvent(event: ChartViewerEventOpenPrDescriptionChanged(value: value))
+                },
+                onConfirm: {
+                    viewModel.onEvent(event: ChartViewerEventConfirmOpenPullRequest())
+                },
+                onDismiss: {
+                    viewModel.onEvent(event: ChartViewerEventDismissOpenPullRequestSheet())
+                }
+            )
+        }
         .overlay(alignment: .bottom) {
-            if let message = switchedToast {
+            // Two independent toasts; the most recent message wins via
+            // ZStack-style ordering (SwiftUI overlays the last non-nil branch).
+            if let message = prOpenedToast {
+                Text(verbatim: message)
+                    .font(.callout)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(.thinMaterial, in: Capsule())
+                    .padding(.bottom, 24)
+                    .transition(.opacity)
+                    .task {
+                        try? await Task.sleep(nanoseconds: 2_000_000_000)
+                        prOpenedToast = nil
+                    }
+            } else if let message = switchedToast {
                 Text(verbatim: message)
                     .font(.callout)
                     .padding(.horizontal, 16)
@@ -91,6 +162,25 @@ struct StructuredChartViewerScreen: View {
                         switchedToast = nil
                     }
             }
+        }
+        .task {
+            // Subscribe to nav events; close any prior subscription on view
+            // re-appearance per the iOS Closeable leak audit pattern.
+            navEventsCloseable?.close()
+            let wrapper = KoinHelperKt.wrapChartViewerNavEvents(flow: viewModel.navEvents)
+            navEventsCloseable = wrapper.collect { event in
+                Task { @MainActor in
+                    if let created = event as? ChartViewerNavEventPullRequestCreated {
+                        let message = NSLocalizedString("message_pr_opened_successfully", comment: "")
+                        prOpenedToast = message
+                        path.append(Route.pullRequestDetail(prId: created.prId))
+                    }
+                }
+            }
+        }
+        .onDisappear {
+            navEventsCloseable?.close()
+            navEventsCloseable = nil
         }
     }
 
@@ -146,6 +236,75 @@ struct StructuredChartViewerScreen: View {
             )
             .accessibilityIdentifier("segmentOverlay")
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+}
+
+/// Phase 38.4.1 (ADR-014 §6) — SwiftUI mirror of Compose `OpenPullRequestDialog`.
+/// `NavigationStack` + `Form` + Cancel / Open toolbar items, matching the
+/// `ChartBranchPickerSheet` / `Open PR` form pattern. Title is required;
+/// description is optional. Errors render inline so the user stays in the form
+/// for retry.
+private struct OpenPullRequestSheet: View {
+    let titleDraft: String
+    let descriptionDraft: String
+    let isSubmitting: Bool
+    let errorMessage: String?
+    let onTitleChange: (String) -> Void
+    let onDescriptionChange: (String) -> Void
+    let onConfirm: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField(
+                        LocalizedStringKey("hint_pr_title"),
+                        text: Binding(get: { titleDraft }, set: onTitleChange)
+                    )
+                    .accessibilityIdentifier("openPrTitleInput")
+                    .disabled(isSubmitting)
+                } header: {
+                    Text(LocalizedStringKey("label_pr_title"))
+                }
+
+                Section {
+                    TextField(
+                        LocalizedStringKey("hint_pr_description_optional"),
+                        text: Binding(get: { descriptionDraft }, set: onDescriptionChange),
+                        axis: .vertical
+                    )
+                    .lineLimit(3...8)
+                    .accessibilityIdentifier("openPrDescriptionInput")
+                    .disabled(isSubmitting)
+                } header: {
+                    Text(LocalizedStringKey("label_pr_description"))
+                }
+
+                if let errorMessage {
+                    Section {
+                        Text(verbatim: errorMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                            .accessibilityIdentifier("openPrErrorLabel")
+                    }
+                }
+            }
+            .navigationTitle(LocalizedStringKey("dialog_open_pull_request_title"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(LocalizedStringKey("action_cancel"), action: onDismiss)
+                        .disabled(isSubmitting)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(LocalizedStringKey("action_open_pr"), action: onConfirm)
+                        .disabled(isSubmitting || titleDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .accessibilityIdentifier("confirmOpenPullRequestButton")
+                }
+            }
+            .accessibilityIdentifier("openPullRequestSheet")
         }
     }
 }

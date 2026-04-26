@@ -2345,6 +2345,55 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Pull request merged" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "プルリクエストをマージしました" } }
       }
+    },
+    "action_open_pull_request" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open pull request" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プルリクエストを作成" } }
+      }
+    },
+    "dialog_open_pull_request_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open pull request" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プルリクエストを作成" } }
+      }
+    },
+    "label_pr_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Title" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "タイトル" } }
+      }
+    },
+    "hint_pr_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Suggest a chart change…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "チャートへの変更を提案…" } }
+      }
+    },
+    "hint_pr_description_optional" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Optional notes for the pattern owner…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターンオーナーへの補足メモ（任意）…" } }
+      }
+    },
+    "action_open_pr" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "作成" } }
+      }
+    },
+    "message_pr_opened_successfully" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pull request opened" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プルリクエストを作成しました" } }
+      }
     }
   },
   "version" : "1.0"

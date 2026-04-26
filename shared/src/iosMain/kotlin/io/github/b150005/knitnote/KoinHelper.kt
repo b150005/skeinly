@@ -180,6 +180,10 @@ fun wrapChartViewerState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.knitnote.ui.chart.ChartViewerState>,
 ): FlowWrapper<io.github.b150005.knitnote.ui.chart.ChartViewerState> = FlowWrapper(flow)
 
+fun wrapChartViewerNavEvents(
+    flow: kotlinx.coroutines.flow.Flow<io.github.b150005.knitnote.ui.chart.ChartViewerNavEvent>,
+): EventFlowWrapper<io.github.b150005.knitnote.ui.chart.ChartViewerNavEvent> = EventFlowWrapper(flow)
+
 fun wrapChartEditorState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.knitnote.ui.chart.ChartEditorState>,
 ): FlowWrapper<io.github.b150005.knitnote.ui.chart.ChartEditorState> = FlowWrapper(flow)

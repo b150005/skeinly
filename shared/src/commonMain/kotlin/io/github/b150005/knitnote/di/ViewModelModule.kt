@@ -96,6 +96,13 @@ val viewModelModule =
                 toggleSegmentState = get(),
                 markSegmentDone = get(),
                 markRowSegmentsDone = get(),
+                // Phase 38.4.1 — Open PR deps. `getOrNull` so the gate
+                // gracefully degrades to closed in offline-only / mis-wired
+                // setups; production wiring always provides non-null.
+                patternRepository = getOrNull(),
+                chartBranchRepository = getOrNull(),
+                authRepository = getOrNull(),
+                openPullRequest = getOrNull(),
             )
         }
         viewModel { params ->

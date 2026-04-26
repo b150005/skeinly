@@ -2,21 +2,31 @@ package io.github.b150005.knitnote.ui.chart
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.b150005.knitnote.domain.model.ChartBranch
 import io.github.b150005.knitnote.domain.model.CoordinateSystem
+import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.ProjectSegment
 import io.github.b150005.knitnote.domain.model.SegmentState
 import io.github.b150005.knitnote.domain.model.StructuredChart
+import io.github.b150005.knitnote.domain.repository.AuthRepository
+import io.github.b150005.knitnote.domain.repository.ChartBranchRepository
+import io.github.b150005.knitnote.domain.repository.PatternRepository
 import io.github.b150005.knitnote.domain.usecase.MarkRowSegmentsDoneUseCase
 import io.github.b150005.knitnote.domain.usecase.MarkSegmentDoneUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveProjectSegmentsUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveStructuredChartUseCase
+import io.github.b150005.knitnote.domain.usecase.OpenPullRequestUseCase
 import io.github.b150005.knitnote.domain.usecase.ToggleSegmentStateUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
 import io.github.b150005.knitnote.domain.usecase.toMessage
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -47,7 +57,68 @@ data class ChartViewerState(
      * the viewer paints no overlay and shows an inline notice.
      */
     val isPolar: Boolean = false,
-)
+    // Phase 38.4.1 (ADR-014 §6) — Open pull request entry. Resolved best-effort
+    // after the chart loads; absence of any field deactivates the gate without
+    // disrupting the rest of the viewer surface.
+    val pattern: Pattern? = null,
+    /**
+     * Source branch whose tip equals the loaded chart's revision. Resolution
+     * prefers an exact `tipRevisionId` match against `chart.revisionId`; falls
+     * back to the `"main"` branch if no match (covers the case where a user
+     * has switched branches but the local cache hasn't echoed the tip move yet).
+     */
+    val currentBranch: ChartBranch? = null,
+    /**
+     * Target's `"main"` branch on the upstream pattern (`pattern.parentPatternId`).
+     * v1 routes PRs only against upstream/main per ADR-014 §1; if the upstream
+     * lacks a "main" row the gate stays closed.
+     */
+    val targetMainBranch: ChartBranch? = null,
+    val currentUserId: String? = null,
+    val openPrTitleDraft: String = "",
+    val openPrDescriptionDraft: String = "",
+    val pendingOpenPrSheet: Boolean = false,
+    val isOpeningPullRequest: Boolean = false,
+    /**
+     * Inline error surfaced inside the open-PR sheet. Kept distinct from the
+     * top-level [errorMessage] (which displaces the chart with a centered
+     * Text) so a form-submit failure stays in the form for retry.
+     */
+    val openPrError: String? = null,
+) {
+    /**
+     * Derived gate for the "Open pull request" overflow entry.
+     * v1 (ADR-014 §1, §6) requires:
+     * 1. The pattern is a fork (`parentPatternId != null` — only forks can PR
+     *    against an upstream).
+     * 2. The current user owns this pattern (only the owner can open PRs from it;
+     *    a cross-fork browser viewing someone else's pattern cannot).
+     * 3. Source branch resolves on the local cache AND its `tipRevisionId`
+     *    matches the loaded chart's revisionId. The "main" fallback in
+     *    [resolveCurrentBranch] keeps the displayed-branch rendering helpful
+     *    during cache lag, but submitting a PR with a `sourceBranchId` whose
+     *    tip does not match `sourceTipRevisionId` would land an immediately
+     *    unmergeable PR (the `merge_pull_request` RPC raises "Source tip
+     *    drifted" with no recovery path) — see code review MEDIUM-1.
+     * 4. Target pattern's `"main"` branch resolves.
+     * 5. Chart is loaded (we need the revisionId to be the source tip).
+     *
+     * Routed through a derived property (not a top-level extension) so the
+     * Swift bridge reads it as a plain `Bool` getter — same pattern as
+     * `PullRequestDetailState.canMerge` / `canClose`.
+     */
+    val canOpenPullRequest: Boolean
+        get() {
+            val p = pattern ?: return false
+            val owner = currentUserId ?: return false
+            val branch = currentBranch ?: return false
+            val c = chart ?: return false
+            return p.parentPatternId != null &&
+                p.ownerId == owner &&
+                branch.tipRevisionId == c.revisionId &&
+                targetMainBranch != null
+        }
+}
 
 sealed interface ChartViewerEvent {
     data class ToggleLayer(
@@ -77,6 +148,34 @@ sealed interface ChartViewerEvent {
     data class MarkRowDone(
         val row: Int,
     ) : ChartViewerEvent
+
+    // Phase 38.4.1 (ADR-014 §6) — Open pull request flow.
+    data object RequestOpenPullRequest : ChartViewerEvent
+
+    data class OpenPrTitleChanged(
+        val value: String,
+    ) : ChartViewerEvent
+
+    data class OpenPrDescriptionChanged(
+        val value: String,
+    ) : ChartViewerEvent
+
+    data object ConfirmOpenPullRequest : ChartViewerEvent
+
+    data object DismissOpenPullRequestSheet : ChartViewerEvent
+
+    data object ClearOpenPrError : ChartViewerEvent
+}
+
+/**
+ * One-shot navigation events surfaced to the screen layer. Phase 38.4.1
+ * adds [PullRequestCreated] so the screen can navigate to the new PR's
+ * detail surface after a successful open.
+ */
+sealed interface ChartViewerNavEvent {
+    data class PullRequestCreated(
+        val prId: String,
+    ) : ChartViewerNavEvent
 }
 
 class ChartViewerViewModel(
@@ -87,11 +186,33 @@ class ChartViewerViewModel(
     private val toggleSegmentState: ToggleSegmentStateUseCase,
     private val markSegmentDone: MarkSegmentDoneUseCase,
     private val markRowSegmentsDone: MarkRowSegmentsDoneUseCase,
+    // Phase 38.4.1 deps. Nullable defaults so existing test call-sites that
+    // don't exercise the open-PR path can construct the ViewModel without
+    // supplying them; the gate stays false when any required dep is absent
+    // (also covers local-only / offline mode where Supabase isn't configured).
+    private val patternRepository: PatternRepository? = null,
+    private val chartBranchRepository: ChartBranchRepository? = null,
+    private val authRepository: AuthRepository? = null,
+    private val openPullRequest: OpenPullRequestUseCase? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ChartViewerState())
     val state: StateFlow<ChartViewerState> = _state.asStateFlow()
 
+    private val _navEvents = Channel<ChartViewerNavEvent>(Channel.BUFFERED)
+    val navEvents: Flow<ChartViewerNavEvent> = _navEvents.receiveAsFlow()
+
     init {
+        // Resolve currentUserId synchronously (cached locally per AuthRepository
+        // contract). Wrapped with a no-op fallback so a misconfigured DI doesn't
+        // null the entire user surface.
+        _state.update { it.copy(currentUserId = authRepository?.getCurrentUserId()) }
+
+        // Track the last revisionId we resolved Open-PR context for, so
+        // Realtime self-echoes / peer updates that don't actually change the
+        // tip don't re-fetch pattern + branches on every emission. Same
+        // shape as `ProjectDetailViewModel.observeParentAttribution`'s
+        // `distinctUntilChanged` (Phase 36.5).
+        var lastResolvedRevisionId: String? = null
         viewModelScope.launch {
             observeStructuredChart(patternId)
                 .catch { throwable ->
@@ -109,6 +230,10 @@ class ChartViewerViewModel(
                             errorMessage = null,
                             isPolar = chart?.coordinateSystem == CoordinateSystem.POLAR_ROUND,
                         )
+                    }
+                    if (chart != null && chart.revisionId != lastResolvedRevisionId) {
+                        lastResolvedRevisionId = chart.revisionId
+                        resolveOpenPrContext(chart)
                     }
                 }
         }
@@ -130,6 +255,26 @@ class ChartViewerViewModel(
             is ChartViewerEvent.TapCell -> tapCell(event.layerId, event.x, event.y)
             is ChartViewerEvent.LongPressCell -> longPressCell(event.layerId, event.x, event.y)
             is ChartViewerEvent.MarkRowDone -> markRowDone(event.row)
+            is ChartViewerEvent.RequestOpenPullRequest ->
+                _state.update {
+                    it.copy(pendingOpenPrSheet = true, openPrError = null)
+                }
+            is ChartViewerEvent.OpenPrTitleChanged ->
+                _state.update { it.copy(openPrTitleDraft = event.value) }
+            is ChartViewerEvent.OpenPrDescriptionChanged ->
+                _state.update { it.copy(openPrDescriptionDraft = event.value) }
+            is ChartViewerEvent.ConfirmOpenPullRequest -> openPullRequestInternal()
+            is ChartViewerEvent.DismissOpenPullRequestSheet ->
+                _state.update {
+                    it.copy(
+                        pendingOpenPrSheet = false,
+                        openPrTitleDraft = "",
+                        openPrDescriptionDraft = "",
+                        openPrError = null,
+                    )
+                }
+            is ChartViewerEvent.ClearOpenPrError ->
+                _state.update { it.copy(openPrError = null) }
         }
     }
 
@@ -216,6 +361,140 @@ class ChartViewerViewModel(
                 is UseCaseResult.Success -> { /* overlay updates via Flow */ }
                 is UseCaseResult.Failure ->
                     _state.update { it.copy(errorMessage = result.error.toMessage()) }
+            }
+        }
+    }
+
+    /**
+     * Best-effort resolution of the data needed for the "Open pull request"
+     * gate. Each lookup degrades to null on failure — the gate stays closed,
+     * the rest of the viewer surface is unaffected.
+     *
+     * Re-runs only when `chart.revisionId` actually changes (the caller
+     * de-dups via a `lastResolvedRevisionId` local on the chart-collect
+     * path, mirroring `ProjectDetailViewModel.observeParentAttribution`'s
+     * Phase 36.5 distinctUntilChanged pattern). A fresh save advances the
+     * tip and re-anchors `currentBranch` on the next emission; pattern
+     * metadata-only edits do not touch `chart_documents` so they do not
+     * trigger this path (acceptable — `parentPatternId` is write-once per
+     * ADR-012 §1 and `ownerId` cannot change on an existing pattern, so
+     * stale `pattern.title` in state is irrelevant to gate correctness).
+     *
+     * Explicit try/catch with `CancellationException` rethrow per project
+     * convention — `runCatching` would swallow it and silently leave the gate
+     * deactivated for the session.
+     */
+    private suspend fun resolveOpenPrContext(chart: StructuredChart) {
+        val patternRepo = patternRepository ?: return
+        val branchRepo = chartBranchRepository ?: return
+        val pattern =
+            try {
+                patternRepo.getById(patternId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                null
+            }
+        val sourceBranches =
+            try {
+                branchRepo.getByPatternId(patternId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                emptyList()
+            }
+        val currentBranch = resolveCurrentBranch(sourceBranches, chart.revisionId)
+        val targetMain =
+            pattern?.parentPatternId?.let { parentId ->
+                try {
+                    branchRepo.getByPatternIdAndName(parentId, ChartBranch.DEFAULT_BRANCH_NAME)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    null
+                }
+            }
+        _state.update {
+            it.copy(
+                pattern = pattern,
+                currentBranch = currentBranch,
+                targetMainBranch = targetMain,
+            )
+        }
+    }
+
+    /**
+     * Resolve the source branch whose tip equals the loaded chart's revision.
+     * Falls back to the `"main"` branch when no exact match exists; returns
+     * null if "main" itself is missing, which deactivates the gate.
+     */
+    private fun resolveCurrentBranch(
+        branches: List<ChartBranch>,
+        tipRevisionId: String,
+    ): ChartBranch? =
+        branches.firstOrNull { it.tipRevisionId == tipRevisionId }
+            ?: branches.firstOrNull { it.branchName == ChartBranch.DEFAULT_BRANCH_NAME }
+
+    private fun openPullRequestInternal() {
+        val current = _state.value
+        if (!current.canOpenPullRequest || current.isOpeningPullRequest) return
+        val openPr =
+            openPullRequest ?: run {
+                // Hardcoded English fallback — consistent with the
+                // ViewModel-error-localization deferral pattern (see Tech Debt
+                // Backlog) and matches PullRequestDetailViewModel.attemptMerge
+                // which uses the same shape for its own offline-mode guard.
+                _state.update {
+                    it.copy(openPrError = "Pull requests are unavailable in offline-only mode")
+                }
+                return
+            }
+        // The `canOpenPullRequest` gate snapshot above guarantees these are
+        // non-null. Use `requireNotNull` per project Kotlin coding-style rule
+        // (no `!!`) — surfaces a meaningful exception if a future refactor
+        // invalidates the gate.
+        val pattern = requireNotNull(current.pattern) { "canOpenPullRequest gate: pattern is null" }
+        val sourceBranch = requireNotNull(current.currentBranch) { "canOpenPullRequest gate: currentBranch is null" }
+        val targetBranch = requireNotNull(current.targetMainBranch) { "canOpenPullRequest gate: targetMainBranch is null" }
+        val chart = requireNotNull(current.chart) { "canOpenPullRequest gate: chart is null" }
+        val parentPatternId =
+            requireNotNull(pattern.parentPatternId) { "canOpenPullRequest gate: parentPatternId is null" }
+        val title = current.openPrTitleDraft.trim()
+        val description = current.openPrDescriptionDraft.trim().takeIf { it.isNotEmpty() }
+        viewModelScope.launch {
+            _state.update { it.copy(isOpeningPullRequest = true, openPrError = null) }
+            val result =
+                openPr(
+                    sourcePatternId = pattern.id,
+                    sourceBranchId = sourceBranch.id,
+                    sourceTipRevisionId = chart.revisionId,
+                    targetPatternId = parentPatternId,
+                    targetBranchId = targetBranch.id,
+                    title = title,
+                    description = description,
+                )
+            when (result) {
+                is UseCaseResult.Success -> {
+                    _state.update {
+                        it.copy(
+                            isOpeningPullRequest = false,
+                            pendingOpenPrSheet = false,
+                            openPrTitleDraft = "",
+                            openPrDescriptionDraft = "",
+                            openPrError = null,
+                        )
+                    }
+                    _navEvents.trySend(
+                        ChartViewerNavEvent.PullRequestCreated(prId = result.value.id),
+                    )
+                }
+                is UseCaseResult.Failure ->
+                    _state.update {
+                        it.copy(
+                            isOpeningPullRequest = false,
+                            openPrError = result.error.toMessage(),
+                        )
+                    }
             }
         }
     }
