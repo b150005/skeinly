@@ -1,0 +1,109 @@
+name: "Phase 39 Beta Bug Report / フェーズ39ベータバグ報告"
+description: "Report a bug found during Phase 39 closed beta testing / フェーズ39クローズドベータテスト中のバグ報告"
+labels: ["bug", "phase-39-beta"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for testing Knit Note Phase 39 beta. Please fill in the details below.
+        Knit Noteフェーズ39ベータをテストしていただきありがとうございます。以下の詳細を記入してください。
+
+        Before reporting, please check the **known-broken list** in the
+        [Phase 39 beta rubric](../blob/main/docs/en/phase/phase-39-beta-rubric.md#whats-known-broken--testers-should-not-report-these)
+        to avoid duplicating items already tracked as Tech Debt.
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: "Severity / 重要度"
+      description: "Self-tag per the rubric's severity classes / ルーブリックの重要度クラスに従って自己タグ付け"
+      options:
+        - "CRITICAL — Crash, data loss, or incorrect merge result"
+        - "HIGH — UX confusion, unclear copy, missing affordance"
+        - "MEDIUM — Visual polish, typography, spacing"
+        - "LOW — Translation refinement, minor i18n divergence"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: phase-area
+    attributes:
+      label: "Phase / Subsystem / フェーズ・サブシステム"
+      description: "Which Phase rubric section does this fall under? / どのフェーズのセクションに該当しますか？"
+      options:
+        - "Phase 32 — Chart editor"
+        - "Phase 34 — Per-segment progress"
+        - "Phase 36 — Discovery + fork"
+        - "Phase 37 — Collaboration core (history / branch / diff)"
+        - "Phase 38 — Pull request (open / merge / comment / conflict)"
+        - "Other / Cross-cutting"
+    validations:
+      required: true
+
+  - type: input
+    id: device-os
+    attributes:
+      label: "Device + OS / デバイス・OS"
+      description: "e.g. Pixel 8 / Android 14, iPhone 15 Pro / iOS 18.0 / 例: Pixel 8 / Android 14"
+      placeholder: "Pixel 8 / Android 14"
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: "App version + build / アプリバージョン・ビルド"
+      description: "From Settings → About, or the App Store Connect / Play Console build label / 設定 → アプリ情報、またはApp Store Connect / Play Consoleのビルドラベルから"
+      placeholder: "1.0.0-beta1 (build 2)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: locale
+    attributes:
+      label: "Locale / ロケール"
+      options:
+        - "en-US (English)"
+        - "ja-JP (Japanese / 日本語)"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: "Steps to Reproduce / 再現手順"
+      description: "Numbered steps that reliably reproduce the issue / 確実に再現できる番号付きの手順"
+      placeholder: |
+        1. Open Discover screen
+        2. Toggle "Charts only" filter
+        3. Tap a thumbnail
+        4. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Expected behavior / 期待される動作"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: "Actual behavior / 実際の動作"
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: "Screenshots / Screen recording / スクリーンショット・画面録画"
+      description: "Drag and drop images or videos here / 画像や動画をここにドラッグ＆ドロップ"
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: "Additional context / 追加情報"
+      description: "Anything else useful — frequency, last working version, related flows, etc. / 頻度、最後に動作したバージョン、関連フローなど、その他有用な情報"
