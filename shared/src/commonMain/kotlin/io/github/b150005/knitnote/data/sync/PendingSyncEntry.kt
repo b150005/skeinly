@@ -10,6 +10,8 @@ enum class SyncEntityType(
     PROJECT_SEGMENT("project_segment"),
     CHART_REVISION("chart_revision"),
     CHART_BRANCH("chart_branch"),
+    PULL_REQUEST("pull_request"),
+    PULL_REQUEST_COMMENT("pull_request_comment"),
     ;
 
     companion object {

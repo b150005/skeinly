@@ -1,0 +1,132 @@
+-- Phase 38.1: Pull request entity (ADR-014 §1, §2).
+--
+-- One row per PR. Status enum is closed: open, merged, closed.
+-- author_id is nullable to mirror Postgres ON DELETE SET NULL — local writes
+-- always populate it; null only appears when remote-side cascade clears it
+-- after author account deletion.
+--
+-- merged_revision_id, merged_at, closed_at are populated by the merge RPC
+-- (status → merged) or the close UPDATE path (status → closed). NULL on
+-- OPEN PRs.
+--
+-- ON DELETE CASCADE on source_pattern_id and target_pattern_id mirrors the
+-- Postgres FKs in migration 016 — when either pattern is deleted locally,
+-- its PR rows go with it. No FK on revision_id columns at the SQLite layer
+-- (Postgres-side has hard FKs to chart_revisions(revision_id) with
+-- ON DELETE RESTRICT; locally we tolerate the brief append-then-update
+-- window where a revision id may not yet have landed via Realtime).
+
+CREATE TABLE PullRequestEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    source_pattern_id TEXT NOT NULL,
+    source_branch_id TEXT NOT NULL,
+    source_tip_revision_id TEXT NOT NULL,
+    target_pattern_id TEXT NOT NULL,
+    target_branch_id TEXT NOT NULL,
+    common_ancestor_revision_id TEXT NOT NULL,
+    author_id TEXT,
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'open',
+    merged_revision_id TEXT,
+    merged_at TEXT,
+    closed_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (source_pattern_id) REFERENCES PatternEntity(id) ON DELETE CASCADE,
+    FOREIGN KEY (target_pattern_id) REFERENCES PatternEntity(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_pr_target_pattern_status
+    ON PullRequestEntity(target_pattern_id, status, created_at);
+CREATE INDEX IF NOT EXISTS idx_pr_source_pattern_status
+    ON PullRequestEntity(source_pattern_id, status, created_at);
+CREATE INDEX IF NOT EXISTS idx_pr_author_status
+    ON PullRequestEntity(author_id, status);
+
+getById:
+SELECT * FROM PullRequestEntity WHERE id = ?;
+
+getByTargetPattern:
+SELECT * FROM PullRequestEntity
+WHERE target_pattern_id = ?
+ORDER BY created_at DESC;
+
+getBySourcePattern:
+SELECT * FROM PullRequestEntity
+WHERE source_pattern_id = ?
+ORDER BY created_at DESC;
+
+-- Incoming PRs for an owner = PRs targeting any pattern they own. Joined
+-- against PatternEntity to scope by owner_id locally (RLS does the same
+-- server-side). Newest-first.
+getIncomingForOwner:
+SELECT pr.* FROM PullRequestEntity pr
+INNER JOIN PatternEntity p ON p.id = pr.target_pattern_id
+WHERE p.owner_id = ?
+ORDER BY pr.created_at DESC;
+
+-- Outgoing PRs for an owner = PRs they authored.
+getOutgoingForOwner:
+SELECT * FROM PullRequestEntity
+WHERE author_id = ?
+ORDER BY created_at DESC;
+
+observeIncomingForOwner:
+SELECT pr.* FROM PullRequestEntity pr
+INNER JOIN PatternEntity p ON p.id = pr.target_pattern_id
+WHERE p.owner_id = ?
+ORDER BY pr.created_at DESC;
+
+observeOutgoingForOwner:
+SELECT * FROM PullRequestEntity
+WHERE author_id = ?
+ORDER BY created_at DESC;
+
+countOpenIncomingForOwner:
+SELECT COUNT(*) FROM PullRequestEntity pr
+INNER JOIN PatternEntity p ON p.id = pr.target_pattern_id
+WHERE p.owner_id = ? AND pr.status = 'open';
+
+-- INSERT OR REPLACE — sync layer treats both INSERT and UPDATE as an upsert
+-- per ADR-014 §7. Re-applying the same Realtime event is a silent overwrite,
+-- safe because PR rows carry their own (created_at, updated_at) timestamps
+-- and the writer is always the source of truth.
+upsert:
+INSERT OR REPLACE INTO PullRequestEntity(
+    id,
+    source_pattern_id,
+    source_branch_id,
+    source_tip_revision_id,
+    target_pattern_id,
+    target_branch_id,
+    common_ancestor_revision_id,
+    author_id,
+    title,
+    description,
+    status,
+    merged_revision_id,
+    merged_at,
+    closed_at,
+    created_at,
+    updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+-- Used by the close path. The merge RPC drives status → merged server-side
+-- and Realtime echoes the full row through `upsert` above. This local-only
+-- updateStatus is exposed so a "close" action can flip status without
+-- re-sending the whole row through the upsert path; the sync layer still
+-- enqueues a full upsert payload for the remote write per ADR-014 §7.
+updateStatus:
+UPDATE PullRequestEntity
+SET status = ?,
+    closed_at = ?,
+    updated_at = ?
+WHERE id = ?;
+
+deleteById:
+DELETE FROM PullRequestEntity WHERE id = ?;
+
+deleteByPatternId:
+DELETE FROM PullRequestEntity
+WHERE source_pattern_id = ? OR target_pattern_id = ?;
