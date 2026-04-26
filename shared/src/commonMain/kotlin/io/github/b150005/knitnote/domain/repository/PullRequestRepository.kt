@@ -61,4 +61,23 @@ interface PullRequestRepository {
     suspend fun closePullRequest(pullRequest: PullRequest): PullRequest
 
     suspend fun postComment(comment: PullRequestComment): PullRequestComment
+
+    /**
+     * Open the per-PR Realtime channel `pull-request-comments-<prId>` (ADR-014
+     * §7) so INSERTs to `pull_request_comments` for this PR land in the local
+     * SQLDelight cache. Calling [observeCommentsForPullRequest] alone is not
+     * enough — that observer reads from the cache; without the channel, no peer
+     * comment ever reaches the cache. Idempotent on the same `prId`; calling on
+     * a different `prId` swaps the active channel.
+     *
+     * Local-only mode (no `RealtimeChannelProvider`) is a silent no-op so the
+     * Phase 38.3 [PullRequestDetailViewModel] does not need a configuration check.
+     */
+    suspend fun subscribeToCommentsChannel(pullRequestId: String)
+
+    /**
+     * Tear down the channel opened by [subscribeToCommentsChannel]. Called by
+     * the ViewModel in `onCleared()`. Safe to call when no channel is open.
+     */
+    suspend fun closeCommentsChannel()
 }

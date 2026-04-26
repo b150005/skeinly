@@ -29,6 +29,7 @@ import io.github.b150005.knitnote.ui.patternlibrary.PatternLibraryScreen
 import io.github.b150005.knitnote.ui.profile.ProfileScreen
 import io.github.b150005.knitnote.ui.projectdetail.ProjectDetailScreen
 import io.github.b150005.knitnote.ui.projectlist.ProjectListScreen
+import io.github.b150005.knitnote.ui.pullrequest.PullRequestDetailScreen
 import io.github.b150005.knitnote.ui.pullrequest.PullRequestFilter
 import io.github.b150005.knitnote.ui.pullrequest.PullRequestListScreen
 import io.github.b150005.knitnote.ui.settings.SettingsScreen
@@ -129,6 +130,18 @@ data object SymbolGallery
 @Serializable
 data class PullRequestList(
     val defaultFilter: PullRequestFilter = PullRequestFilter.INCOMING,
+)
+
+/**
+ * Phase 38.3 (ADR-014 §6 §8) — single PR detail surface. Reached from
+ * `PullRequestListScreen` row taps. The "Open pull request" entry on
+ * `ChartViewerScreen`'s overflow menu also routes here (after the open-PR
+ * flow lands; 38.3 ships the data layer + use case, the ChartViewer
+ * compose-form-and-submit flow is a follow-up).
+ */
+@Serializable
+data class PullRequestDetail(
+    val prId: String,
 )
 
 @Serializable
@@ -401,9 +414,28 @@ fun KnitNoteNavHost(
             PullRequestListScreen(
                 defaultFilter = route.defaultFilter,
                 onBack = { navController.popBackStack() },
-                // Phase 38.3 will route to PullRequestDetailScreen — 38.2 leaves
-                // tap routing as a no-op so the list-only surface ships first.
-                onPullRequestClick = { _ -> },
+                // Phase 38.3 routes a row tap to the PR detail surface.
+                onPullRequestClick = { prId ->
+                    navController.navigate(PullRequestDetail(prId = prId))
+                },
+            )
+        }
+        composable<PullRequestDetail> { backStackEntry ->
+            val route = backStackEntry.toRoute<PullRequestDetail>()
+            PullRequestDetailScreen(
+                prId = route.prId,
+                onBack = { navController.popBackStack() },
+                // Phase 38.3 (ADR-014 §6): PR diff preview taps route to the
+                // existing Phase 37.3 ChartDiffScreen between the snapshot
+                // ancestor and the source tip captured at PR-open time.
+                onOpenDiff = { baseRevisionId, targetRevisionId ->
+                    navController.navigate(
+                        ChartDiff(
+                            baseRevisionId = baseRevisionId,
+                            targetRevisionId = targetRevisionId,
+                        ),
+                    )
+                },
             )
         }
         composable<SharedContent> { backStackEntry ->

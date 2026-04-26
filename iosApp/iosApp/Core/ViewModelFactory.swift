@@ -101,6 +101,10 @@ enum ViewModelFactory {
         KoinHelperKt.getPullRequestListViewModel(defaultFilter: defaultFilter)
     }
 
+    static func pullRequestDetailViewModel(prId: String) -> PullRequestDetailViewModel {
+        KoinHelperKt.getPullRequestDetailViewModel(prId: prId)
+    }
+
     static func symbolCatalog() -> SymbolCatalog {
         KoinHelperKt.getSymbolCatalog()
     }

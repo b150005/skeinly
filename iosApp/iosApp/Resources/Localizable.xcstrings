@@ -2177,6 +2177,104 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Authored by %1$@" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@が作成" } }
       }
+    },
+    "title_pull_request_detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pull request" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プルリクエスト" } }
+      }
+    },
+    "label_pr_description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Description" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "説明" } }
+      }
+    },
+    "label_pr_diff_preview" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Proposed changes" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "提案された変更" } }
+      }
+    },
+    "label_pr_comments" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Comments" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コメント" } }
+      }
+    },
+    "hint_add_comment_to_pr" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add a comment…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コメントを追加…" } }
+      }
+    },
+    "action_post_comment" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Post" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "投稿" } }
+      }
+    },
+    "action_merge_pr" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Merge" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "マージ" } }
+      }
+    },
+    "action_close_pr" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Close" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "クローズ" } }
+      }
+    },
+    "dialog_merge_pr_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Merge this pull request?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このプルリクエストをマージしますか？" } }
+      }
+    },
+    "dialog_merge_pr_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The contributor's changes will land on your branch as a new commit. Conflict resolution ships in Phase 38.4." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "投稿者の変更が新しいコミットとしてブランチに反映されます。コンフリクト解決はPhase 38.4で対応予定です。" } }
+      }
+    },
+    "dialog_close_pr_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Close this pull request?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このプルリクエストをクローズしますか？" } }
+      }
+    },
+    "dialog_close_pr_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Closing keeps the comment history but the changes will not land on the upstream chart. The author can open a new pull request later." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "クローズしてもコメントは残りますが、変更は上流のチャートには反映されません。投稿者は後で新しいプルリクエストを開くことができます。" } }
+      }
+    },
+    "state_pr_not_found" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pull request not found" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プルリクエストが見つかりません" } }
+      }
+    },
+    "message_pr_closed_successfully" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pull request closed" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プルリクエストをクローズしました" } }
+      }
     }
   },
   "version" : "1.0"

@@ -18,6 +18,7 @@ enum Route: Hashable {
     case chartDiff(baseRevisionId: String?, targetRevisionId: String)
     case symbolGallery
     case pullRequestList(defaultFilter: PullRequestFilter)
+    case pullRequestDetail(prId: String)
 
     // Hashable conformance for sharedContent with optionals
     func hash(into hasher: inout Hasher) {
@@ -63,6 +64,9 @@ enum Route: Hashable {
         case .pullRequestList(let defaultFilter):
             hasher.combine("pullRequestList")
             hasher.combine(defaultFilter)
+        case .pullRequestDetail(let prId):
+            hasher.combine("pullRequestDetail")
+            hasher.combine(prId)
         }
     }
 }
@@ -156,7 +160,9 @@ struct AppRootView: View {
         case .symbolGallery:
             SymbolGalleryScreen()
         case .pullRequestList(let defaultFilter):
-            PullRequestListScreen(defaultFilter: defaultFilter)
+            PullRequestListScreen(defaultFilter: defaultFilter, path: $path)
+        case .pullRequestDetail(let prId):
+            PullRequestDetailScreen(prId: prId, path: $path)
         }
     }
 

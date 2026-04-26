@@ -21,6 +21,7 @@ import io.github.b150005.knitnote.ui.patternlibrary.PatternLibraryViewModel
 import io.github.b150005.knitnote.ui.profile.ProfileViewModel
 import io.github.b150005.knitnote.ui.projectdetail.ProjectDetailViewModel
 import io.github.b150005.knitnote.ui.projectlist.ProjectListViewModel
+import io.github.b150005.knitnote.ui.pullrequest.PullRequestDetailViewModel
 import io.github.b150005.knitnote.ui.pullrequest.PullRequestFilter
 import io.github.b150005.knitnote.ui.pullrequest.PullRequestListViewModel
 import io.github.b150005.knitnote.ui.settings.SettingsViewModel
@@ -99,6 +100,8 @@ fun getChartBranchPickerViewModel(patternId: String): ChartBranchPickerViewModel
 
 fun getPullRequestListViewModel(defaultFilter: PullRequestFilter): PullRequestListViewModel =
     KoinPlatform.getKoin().get { parametersOf(defaultFilter) }
+
+fun getPullRequestDetailViewModel(prId: String): PullRequestDetailViewModel = KoinPlatform.getKoin().get { parametersOf(prId) }
 
 fun getSymbolCatalog(): SymbolCatalog = KoinPlatform.getKoin().get()
 
@@ -203,6 +206,14 @@ fun wrapChartBranchSwitchedFlow(
 fun wrapPullRequestListState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.knitnote.ui.pullrequest.PullRequestListState>,
 ): FlowWrapper<io.github.b150005.knitnote.ui.pullrequest.PullRequestListState> = FlowWrapper(flow)
+
+fun wrapPullRequestDetailState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.knitnote.ui.pullrequest.PullRequestDetailState>,
+): FlowWrapper<io.github.b150005.knitnote.ui.pullrequest.PullRequestDetailState> = FlowWrapper(flow)
+
+fun wrapPullRequestDetailNavEvents(
+    flow: kotlinx.coroutines.flow.Flow<io.github.b150005.knitnote.ui.pullrequest.PullRequestDetailNavEvent>,
+): EventFlowWrapper<io.github.b150005.knitnote.ui.pullrequest.PullRequestDetailNavEvent> = EventFlowWrapper(flow)
 
 fun getSymbolGalleryViewModel(): SymbolGalleryViewModel = KoinPlatform.getKoin().get()
 

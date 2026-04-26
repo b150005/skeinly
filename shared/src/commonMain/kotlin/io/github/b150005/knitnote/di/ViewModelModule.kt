@@ -15,6 +15,7 @@ import io.github.b150005.knitnote.ui.patternlibrary.PatternLibraryViewModel
 import io.github.b150005.knitnote.ui.profile.ProfileViewModel
 import io.github.b150005.knitnote.ui.projectdetail.ProjectDetailViewModel
 import io.github.b150005.knitnote.ui.projectlist.ProjectListViewModel
+import io.github.b150005.knitnote.ui.pullrequest.PullRequestDetailViewModel
 import io.github.b150005.knitnote.ui.pullrequest.PullRequestFilter
 import io.github.b150005.knitnote.ui.pullrequest.PullRequestListViewModel
 import io.github.b150005.knitnote.ui.settings.SettingsViewModel
@@ -148,6 +149,19 @@ val viewModelModule =
                 getOutgoing = get(),
                 authRepository = get(),
                 userRepository = get(),
+            )
+        }
+        viewModel { params ->
+            PullRequestDetailViewModel(
+                prId = params.get(),
+                getPullRequest = get(),
+                getComments = get(),
+                postComment = get(),
+                closePullRequest = get(),
+                pullRequestRepository = get(),
+                patternRepository = get(),
+                userRepository = get(),
+                authRepository = get(),
             )
         }
     }

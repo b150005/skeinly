@@ -192,6 +192,11 @@ val repositoryModule =
                 isOnline = get<ConnectivityMonitor>().isOnline,
                 syncManager = get(),
                 json = get(),
+                // Phase 38.3 (ADR-014 §6 §7): per-PR comments Realtime channel
+                // is optional; null in local-only mode (no Supabase) is the
+                // "channel is a no-op" branch handled inside subscribeToCommentsChannel.
+                channelProvider = getOrNull<RealtimeChannelProvider>(),
+                scope = getOrNull<CoroutineScope>(applicationScopeQualifier),
             )
         }
         single<ProjectSegmentRepository> {
