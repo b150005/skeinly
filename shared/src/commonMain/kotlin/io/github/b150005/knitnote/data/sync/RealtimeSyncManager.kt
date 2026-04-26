@@ -5,6 +5,7 @@ import io.github.b150005.knitnote.data.local.LocalPatternDataSource
 import io.github.b150005.knitnote.data.local.LocalProgressDataSource
 import io.github.b150005.knitnote.data.local.LocalProjectDataSource
 import io.github.b150005.knitnote.data.local.LocalProjectSegmentDataSource
+import io.github.b150005.knitnote.data.local.LocalPullRequestDataSource
 import io.github.b150005.knitnote.data.realtime.ChangeFilter
 import io.github.b150005.knitnote.data.realtime.ChannelHandle
 import io.github.b150005.knitnote.data.realtime.RealtimeChannelProvider
@@ -14,6 +15,7 @@ import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.Progress
 import io.github.b150005.knitnote.domain.model.Project
 import io.github.b150005.knitnote.domain.model.ProjectSegment
+import io.github.b150005.knitnote.domain.model.PullRequest
 import io.github.b150005.knitnote.domain.repository.AuthRepository
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.decodeOldRecord
@@ -48,12 +50,21 @@ class RealtimeSyncManager(
     // Optional with `null` default so existing test call-sites that don't
     // exercise revisions continue to construct this manager unchanged.
     private val localChartRevision: LocalChartRevisionDataSource? = null,
+    // Phase 38.1 (ADR-014 §7): pull-requests-incoming-<ownerId> + outgoing
+    // 6th + 7th channels. Optional with `null` default for backward compat
+    // with existing test call-sites — same pattern as chart_revisions above.
+    // The dynamic per-PR comments channel (pull-request-comments-<prId>)
+    // lands in Phase 38.3 alongside PullRequestDetailScreen and is NOT
+    // managed by RealtimeSyncManager — it's opened/closed on view lifecycle.
+    private val localPullRequest: LocalPullRequestDataSource? = null,
 ) {
     private var projectChannel: ChannelHandle? = null
     private var progressChannel: ChannelHandle? = null
     private var patternChannel: ChannelHandle? = null
     private var projectSegmentChannel: ChannelHandle? = null
     private var chartRevisionChannel: ChannelHandle? = null
+    private var pullRequestIncomingChannel: ChannelHandle? = null
+    private var pullRequestOutgoingChannel: ChannelHandle? = null
     private var authObserverJob: Job? = null
     private var connectivityJob: Job? = null
     private var retryJob: Job? = null
@@ -116,6 +127,10 @@ class RealtimeSyncManager(
             subscribeToPatterns(ownerId)
             subscribeToProjectSegments(ownerId)
             if (localChartRevision != null) subscribeToChartRevisions(ownerId)
+            if (localPullRequest != null) {
+                subscribeToPullRequestsOutgoing(ownerId)
+                subscribeToPullRequestsIncoming(ownerId)
+            }
         }
 
     internal suspend fun unsubscribe() =
@@ -134,6 +149,10 @@ class RealtimeSyncManager(
         projectSegmentChannel = null
         chartRevisionChannel?.unsubscribe()
         chartRevisionChannel = null
+        pullRequestIncomingChannel?.unsubscribe()
+        pullRequestIncomingChannel = null
+        pullRequestOutgoingChannel?.unsubscribe()
+        pullRequestOutgoingChannel = null
     }
 
     /**
@@ -266,6 +285,66 @@ class RealtimeSyncManager(
         handle.subscribe()
     }
 
+    /**
+     * Outgoing PRs the user authored. Server-side filter `author_id eq ownerId`
+     * narrows the broadcast cleanly — RLS would also restrict to participant
+     * visibility, but with the eq filter the server doesn't even broadcast
+     * incoming PRs to this channel (Realtime publishes through the union of
+     * RLS visibility AND any client filter, so the eq filter is the tighter
+     * constraint here).
+     */
+    private suspend fun subscribeToPullRequestsOutgoing(ownerId: String) {
+        val handle = channelProvider.createChannel("pull-requests-outgoing-$ownerId")
+        pullRequestOutgoingChannel = handle
+
+        handle
+            .postgresChangeFlow(
+                table = "pull_requests",
+                filter = ChangeFilter("author_id", ownerId),
+            ).onEach { action ->
+                handlePullRequestAction(action)
+            }.catch { e ->
+                if (e is CancellationException) throw e
+                logger.log(TAG, "Channel flow error on pull_requests outgoing", e)
+                scheduleRetry(ownerId)
+            }.launchIn(scope)
+
+        handle.subscribe()
+    }
+
+    /**
+     * Incoming PRs targeting any of the user's patterns. Cannot use a single-
+     * eq [ChangeFilter] for "target_pattern_id IN (patterns I own)" — the
+     * filter API only supports equality. Subscribed without a client-side
+     * filter; RLS scopes the broadcast to PRs where the user is participant
+     * (author OR target owner) per migration 016 — the same union the
+     * outgoing channel sees, just differently labeled. The local handler
+     * upserts unconditionally; the [PullRequest.id] PRIMARY KEY makes
+     * outgoing-PR events arriving on both channels idempotent. Cost: each
+     * outgoing PR change fires once on each channel (2x bandwidth on
+     * outgoing events only); each incoming PR change fires once. Acceptable
+     * given the v1 channel budget — revisit consolidation in Phase 39 if
+     * connection caps become tight.
+     */
+    private suspend fun subscribeToPullRequestsIncoming(ownerId: String) {
+        val handle = channelProvider.createChannel("pull-requests-incoming-$ownerId")
+        pullRequestIncomingChannel = handle
+
+        handle
+            .postgresChangeFlow(
+                table = "pull_requests",
+                filter = null,
+            ).onEach { action ->
+                handlePullRequestAction(action)
+            }.catch { e ->
+                if (e is CancellationException) throw e
+                logger.log(TAG, "Channel flow error on pull_requests incoming", e)
+                scheduleRetry(ownerId)
+            }.launchIn(scope)
+
+        handle.subscribe()
+    }
+
     private suspend fun handleProjectAction(action: PostgresAction) {
         when (action) {
             is PostgresAction.Insert -> {
@@ -385,6 +464,45 @@ class RealtimeSyncManager(
             is PostgresAction.Update,
             is PostgresAction.Select,
             -> { /* no-op: RLS forbids UPDATE; SELECT is not an event */ }
+        }
+    }
+
+    /**
+     * Pull request Realtime handler (Phase 38.1, ADR-014 §7).
+     *
+     * INSERT and UPDATE both upsert via the same path — the local
+     * [LocalPullRequestDataSource.upsert] uses INSERT OR REPLACE on `id` so
+     * a re-arrived event from the dual-channel subscription (outgoing PR
+     * delivered through both incoming + outgoing channels) is a silent
+     * overwrite with the same row.
+     *
+     * DELETE: there is no DELETE policy in migration 016, so application
+     * code never produces DELETE events directly. The only deletion path is
+     * CASCADE on pattern delete, which Postgres emits as one DELETE event
+     * per cascaded PR row. Each event carries the deleted PR id in the
+     * `old` record, and we clear that single row via [deleteById] — NOT a
+     * bulk-clear by `pattern_id`, because a PR sits at the join of two
+     * patterns (source + target) and each cascade fires its own per-row
+     * event. The chart_revisions handler bulk-clears via `deleteByPatternId`
+     * because a revision's parent is a single pattern; the asymmetry is
+     * deliberate, not an oversight.
+     */
+    private suspend fun handlePullRequestAction(action: PostgresAction) {
+        val ds = localPullRequest ?: return
+        when (action) {
+            is PostgresAction.Insert -> {
+                val pr = action.decodeRecord<PullRequest>()
+                ds.upsert(pr)
+            }
+            is PostgresAction.Update -> {
+                val pr = action.decodeRecord<PullRequest>()
+                ds.upsert(pr)
+            }
+            is PostgresAction.Delete -> {
+                val old = action.decodeOldRecord<PullRequest>()
+                ds.deleteById(old.id)
+            }
+            is PostgresAction.Select -> { /* no-op */ }
         }
     }
 

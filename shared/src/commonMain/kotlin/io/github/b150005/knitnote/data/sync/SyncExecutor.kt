@@ -6,6 +6,8 @@ import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.Progress
 import io.github.b150005.knitnote.domain.model.Project
 import io.github.b150005.knitnote.domain.model.ProjectSegment
+import io.github.b150005.knitnote.domain.model.PullRequest
+import io.github.b150005.knitnote.domain.model.PullRequestComment
 import io.github.b150005.knitnote.domain.model.StructuredChart
 import kotlinx.serialization.json.Json
 
@@ -18,6 +20,8 @@ class SyncExecutor(
     private val remoteProjectSegment: RemoteProjectSegmentSyncOperations? = null,
     private val remoteChartRevision: RemoteChartRevisionSyncOperations? = null,
     private val remoteChartBranch: RemoteChartBranchSyncOperations? = null,
+    private val remotePullRequest: RemotePullRequestSyncOperations? = null,
+    private val remotePullRequestComment: RemotePullRequestCommentSyncOperations? = null,
 ) {
     /**
      * Execute a pending sync entry against the remote data source.
@@ -33,6 +37,8 @@ class SyncExecutor(
             SyncEntityType.PROJECT_SEGMENT -> executeProjectSegment(entry)
             SyncEntityType.CHART_REVISION -> executeChartRevision(entry)
             SyncEntityType.CHART_BRANCH -> executeChartBranch(entry)
+            SyncEntityType.PULL_REQUEST -> executePullRequest(entry)
+            SyncEntityType.PULL_REQUEST_COMMENT -> executePullRequestComment(entry)
         }
 
     private suspend fun executeProject(entry: PendingSyncEntry): Boolean {
@@ -117,6 +123,38 @@ class SyncExecutor(
             SyncOperation.INSERT -> remote.upsert(json.decodeFromString<ChartBranch>(entry.payload))
             SyncOperation.UPDATE -> remote.upsert(json.decodeFromString<ChartBranch>(entry.payload))
             SyncOperation.DELETE -> remote.delete(entry.entityId)
+        }
+        return true
+    }
+
+    private suspend fun executePullRequest(entry: PendingSyncEntry): Boolean {
+        val remote = remotePullRequest ?: return true
+        when (entry.operation) {
+            // INSERT (open PR) and UPDATE (close PR) both map to upsert per
+            // ADR-014 §7. Idempotent on `id`. Status → MERGED is NOT enqueued
+            // here — it transitions via the merge_pull_request RPC and Realtime
+            // echoes the merged row back through the local data source.
+            SyncOperation.INSERT -> remote.upsert(json.decodeFromString<PullRequest>(entry.payload))
+            SyncOperation.UPDATE -> remote.upsert(json.decodeFromString<PullRequest>(entry.payload))
+            // DELETE is structurally forbidden (PRs are kept as audit trail).
+            // SyncManager never enqueues this; defensive silent no-op same as
+            // executeChartRevision's UPDATE/DELETE branches.
+            SyncOperation.DELETE -> return true
+        }
+        return true
+    }
+
+    private suspend fun executePullRequestComment(entry: PendingSyncEntry): Boolean {
+        val remote = remotePullRequestComment ?: return true
+        when (entry.operation) {
+            // Append-only per ADR-014 §1 — INSERT is the only write path.
+            // UPDATE/DELETE are structurally forbidden (no RLS policy permits
+            // them and SyncManager never enqueues them). Silent no-op same
+            // pattern as executeChartRevision (Phase 37.1 precedent).
+            SyncOperation.INSERT -> remote.appendComment(json.decodeFromString<PullRequestComment>(entry.payload))
+            SyncOperation.UPDATE,
+            SyncOperation.DELETE,
+            -> return true
         }
         return true
     }

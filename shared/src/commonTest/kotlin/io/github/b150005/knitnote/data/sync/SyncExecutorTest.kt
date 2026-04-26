@@ -8,6 +8,9 @@ import io.github.b150005.knitnote.domain.model.Progress
 import io.github.b150005.knitnote.domain.model.Project
 import io.github.b150005.knitnote.domain.model.ProjectSegment
 import io.github.b150005.knitnote.domain.model.ProjectStatus
+import io.github.b150005.knitnote.domain.model.PullRequest
+import io.github.b150005.knitnote.domain.model.PullRequestComment
+import io.github.b150005.knitnote.domain.model.PullRequestStatus
 import io.github.b150005.knitnote.domain.model.SegmentState
 import io.github.b150005.knitnote.domain.model.StorageVariant
 import io.github.b150005.knitnote.domain.model.StructuredChart
@@ -558,5 +561,213 @@ class SyncExecutorTest {
                 threw = true
             }
             assertTrue(threw, "remote failure must propagate so SyncManager can retry")
+        }
+
+    // --- Pull request dispatch tests (Phase 38.1, ADR-014 §7) ---
+
+    private val testPr =
+        PullRequest(
+            id = "pr-1",
+            sourcePatternId = "pat-fork",
+            sourceBranchId = "branch-fork",
+            sourceTipRevisionId = "rev-source",
+            targetPatternId = "pat-upstream",
+            targetBranchId = "branch-upstream",
+            commonAncestorRevisionId = "rev-ancestor",
+            authorId = "user-fork",
+            title = "Reworked rows 12-20",
+            description = null,
+            status = PullRequestStatus.OPEN,
+            mergedRevisionId = null,
+            mergedAt = null,
+            closedAt = null,
+            createdAt = Instant.fromEpochMilliseconds(1000),
+            updatedAt = Instant.fromEpochMilliseconds(1000),
+        )
+
+    private val testPrComment =
+        PullRequestComment(
+            id = "cmt-1",
+            pullRequestId = "pr-1",
+            authorId = "user-1",
+            body = "Looks good",
+            createdAt = Instant.fromEpochMilliseconds(2000),
+        )
+
+    @Test
+    fun `null remotePullRequest returns true`() =
+        runTest {
+            val executor =
+                SyncExecutor(
+                    remoteProject = null,
+                    remoteProgress = null,
+                    remotePattern = null,
+                    remoteStructuredChart = null,
+                    json = json,
+                )
+            val result =
+                executor.execute(
+                    entry(SyncEntityType.PULL_REQUEST, "pr-1", SyncOperation.INSERT, json.encodeToString(testPr)),
+                )
+            assertTrue(result)
+        }
+
+    @Test
+    fun `pull request insert dispatches upsert to remote`() =
+        runTest {
+            val fakeRemote = FakeRemotePullRequestDataSource()
+            val executor =
+                SyncExecutor(
+                    remoteProject = null,
+                    remoteProgress = null,
+                    remotePattern = null,
+                    remoteStructuredChart = null,
+                    json = json,
+                    remotePullRequest = fakeRemote,
+                )
+
+            val result =
+                executor.execute(
+                    entry(SyncEntityType.PULL_REQUEST, "pr-1", SyncOperation.INSERT, json.encodeToString(testPr)),
+                )
+
+            assertTrue(result)
+            assertEquals(1, fakeRemote.upsertedPullRequests.size)
+            assertEquals("pr-1", fakeRemote.upsertedPullRequests[0].id)
+        }
+
+    @Test
+    fun `pull request update dispatches upsert to remote`() =
+        runTest {
+            val fakeRemote = FakeRemotePullRequestDataSource()
+            val executor =
+                SyncExecutor(
+                    remoteProject = null,
+                    remoteProgress = null,
+                    remotePattern = null,
+                    remoteStructuredChart = null,
+                    json = json,
+                    remotePullRequest = fakeRemote,
+                )
+
+            val closed = testPr.copy(status = PullRequestStatus.CLOSED, closedAt = Instant.fromEpochMilliseconds(3000))
+            val result =
+                executor.execute(
+                    entry(SyncEntityType.PULL_REQUEST, "pr-1", SyncOperation.UPDATE, json.encodeToString(closed)),
+                )
+
+            assertTrue(result)
+            assertEquals(1, fakeRemote.upsertedPullRequests.size)
+            assertEquals(PullRequestStatus.CLOSED, fakeRemote.upsertedPullRequests[0].status)
+        }
+
+    @Test
+    fun `pull request delete is silent no-op without surfacing to remote`() =
+        runTest {
+            val fakeRemote = FakeRemotePullRequestDataSource()
+            val executor =
+                SyncExecutor(
+                    remoteProject = null,
+                    remoteProgress = null,
+                    remotePattern = null,
+                    remoteStructuredChart = null,
+                    json = json,
+                    remotePullRequest = fakeRemote,
+                )
+
+            val result = executor.execute(entry(SyncEntityType.PULL_REQUEST, "pr-1", SyncOperation.DELETE))
+
+            // ADR-014 §7: PRs are kept as audit trail; SyncManager never enqueues
+            // DELETE. Defensive silent-success consumes a stray entry once and
+            // lets the queue move on (matches executeChartRevision's pattern).
+            assertTrue(result)
+            assertEquals(0, fakeRemote.upsertedPullRequests.size)
+        }
+
+    @Test
+    fun `pull request remote failure propagates for retry`() =
+        runTest {
+            val fakeRemote = FakeRemotePullRequestDataSource().apply { shouldFailUpsert = true }
+            val executor =
+                SyncExecutor(
+                    remoteProject = null,
+                    remoteProgress = null,
+                    remotePattern = null,
+                    remoteStructuredChart = null,
+                    json = json,
+                    remotePullRequest = fakeRemote,
+                )
+            var threw = false
+            try {
+                executor.execute(
+                    entry(SyncEntityType.PULL_REQUEST, "pr-1", SyncOperation.INSERT, json.encodeToString(testPr)),
+                )
+            } catch (_: Exception) {
+                threw = true
+            }
+            assertTrue(threw, "remote failure must propagate so SyncManager can retry")
+        }
+
+    @Test
+    fun `pull request comment insert dispatches append to remote`() =
+        runTest {
+            val fakeRemote = FakeRemotePullRequestDataSource()
+            val executor =
+                SyncExecutor(
+                    remoteProject = null,
+                    remoteProgress = null,
+                    remotePattern = null,
+                    remoteStructuredChart = null,
+                    json = json,
+                    remotePullRequestComment = fakeRemote,
+                )
+
+            val result =
+                executor.execute(
+                    entry(
+                        SyncEntityType.PULL_REQUEST_COMMENT,
+                        "cmt-1",
+                        SyncOperation.INSERT,
+                        json.encodeToString(testPrComment),
+                    ),
+                )
+
+            assertTrue(result)
+            assertEquals(1, fakeRemote.appendedComments.size)
+            assertEquals("cmt-1", fakeRemote.appendedComments[0].id)
+        }
+
+    @Test
+    fun `pull request comment update or delete is silent no-op`() =
+        runTest {
+            // Comments are append-only at RLS — UPDATE/DELETE are structurally
+            // forbidden. SyncManager never enqueues them; defensive silent
+            // success matches executeChartRevision.
+            val fakeRemote = FakeRemotePullRequestDataSource()
+            val executor =
+                SyncExecutor(
+                    remoteProject = null,
+                    remoteProgress = null,
+                    remotePattern = null,
+                    remoteStructuredChart = null,
+                    json = json,
+                    remotePullRequestComment = fakeRemote,
+                )
+
+            val updateResult =
+                executor.execute(
+                    entry(
+                        SyncEntityType.PULL_REQUEST_COMMENT,
+                        "cmt-1",
+                        SyncOperation.UPDATE,
+                        json.encodeToString(testPrComment),
+                    ),
+                )
+            val deleteResult =
+                executor.execute(entry(SyncEntityType.PULL_REQUEST_COMMENT, "cmt-1", SyncOperation.DELETE))
+
+            assertTrue(updateResult)
+            assertTrue(deleteResult)
+            assertTrue(fakeRemote.appendedComments.isEmpty(), "no remote calls for forbidden operations")
         }
 }

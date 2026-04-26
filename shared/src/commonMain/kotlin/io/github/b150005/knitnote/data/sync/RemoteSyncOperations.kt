@@ -6,6 +6,8 @@ import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.Progress
 import io.github.b150005.knitnote.domain.model.Project
 import io.github.b150005.knitnote.domain.model.ProjectSegment
+import io.github.b150005.knitnote.domain.model.PullRequest
+import io.github.b150005.knitnote.domain.model.PullRequestComment
 import io.github.b150005.knitnote.domain.model.StructuredChart
 
 /**
@@ -85,4 +87,31 @@ interface RemoteChartBranchSyncOperations {
     suspend fun upsert(branch: ChartBranch): ChartBranch
 
     suspend fun delete(id: String)
+}
+
+/**
+ * Remote write operations for [PullRequest] (ADR-014 §7).
+ *
+ * INSERT and UPDATE both map to `upsert` — open-PR is the only INSERT path,
+ * close-PR is the only UPDATE path, and both are idempotent on `id`.
+ * Status → MERGED transitions via the `merge_pull_request` SECURITY DEFINER
+ * RPC, NOT through this interface — the RPC is invoked directly by
+ * `MergePullRequestUseCase` (Phase 38.4) and Realtime echoes the resulting
+ * PR row back through the local data source.
+ *
+ * No `delete` — PRs are kept as audit trail. CASCADE on pattern deletion is
+ * the only cleanup path server-side.
+ */
+interface RemotePullRequestSyncOperations {
+    suspend fun upsert(pullRequest: PullRequest): PullRequest
+}
+
+/**
+ * Remote write operations for [PullRequestComment] (ADR-014 §7).
+ *
+ * Append-only per ADR-014 §1 — only `appendComment` (INSERT) is supported.
+ * No UPDATE / DELETE path; comment rows are immutable once written.
+ */
+interface RemotePullRequestCommentSyncOperations {
+    suspend fun appendComment(comment: PullRequestComment): PullRequestComment
 }

@@ -1,0 +1,54 @@
+-- Phase 38.1: Pull request comments (ADR-014 §1, §2).
+--
+-- Append-only flat thread per PR. RLS forbids UPDATE / DELETE server-side
+-- (ADR-014 §1 — comments are immutable once posted, mirroring chart_revisions
+-- and Git's history invariant). Local schema includes ON DELETE CASCADE on
+-- pull_request_id so deleting a PR locally clears its comment chain, even
+-- though no caller exercises PR delete in v1 (CASCADE on pattern delete is
+-- the only cleanup path for PRs themselves).
+
+CREATE TABLE PullRequestCommentEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    pull_request_id TEXT NOT NULL,
+    author_id TEXT,
+    body TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (pull_request_id) REFERENCES PullRequestEntity(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_pr_comments_pr_id_created
+    ON PullRequestCommentEntity(pull_request_id, created_at);
+
+getById:
+SELECT * FROM PullRequestCommentEntity WHERE id = ?;
+
+getByPullRequestId:
+SELECT * FROM PullRequestCommentEntity
+WHERE pull_request_id = ?
+ORDER BY created_at ASC;
+
+observeByPullRequestId:
+SELECT * FROM PullRequestCommentEntity
+WHERE pull_request_id = ?
+ORDER BY created_at ASC;
+
+countByPullRequestId:
+SELECT COUNT(*) FROM PullRequestCommentEntity WHERE pull_request_id = ?;
+
+-- INSERT OR IGNORE for idempotent re-application of a Realtime INSERT echo
+-- on a row already inserted locally (self-authored append echoes back through
+-- the dynamic per-PR comments channel — Phase 38.3). Append-only at RLS, so
+-- an existing row's body never changes; INSERT OR IGNORE is the right shape
+-- (vs INSERT OR REPLACE which would overwrite a slightly-different copy
+-- silently if one ever appeared).
+upsert:
+INSERT OR IGNORE INTO PullRequestCommentEntity(
+    id,
+    pull_request_id,
+    author_id,
+    body,
+    created_at
+) VALUES (?, ?, ?, ?, ?);
+
+deleteByPullRequestId:
+DELETE FROM PullRequestCommentEntity WHERE pull_request_id = ?;

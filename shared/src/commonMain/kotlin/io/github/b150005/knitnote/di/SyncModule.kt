@@ -6,6 +6,7 @@ import io.github.b150005.knitnote.data.local.LocalPendingSyncDataSource
 import io.github.b150005.knitnote.data.local.LocalProgressDataSource
 import io.github.b150005.knitnote.data.local.LocalProjectDataSource
 import io.github.b150005.knitnote.data.local.LocalProjectSegmentDataSource
+import io.github.b150005.knitnote.data.local.LocalPullRequestDataSource
 import io.github.b150005.knitnote.data.realtime.RealtimeChannelProvider
 import io.github.b150005.knitnote.data.remote.ConnectivityMonitor
 import io.github.b150005.knitnote.data.remote.RemoteChartBranchDataSource
@@ -14,6 +15,7 @@ import io.github.b150005.knitnote.data.remote.RemotePatternDataSource
 import io.github.b150005.knitnote.data.remote.RemoteProgressDataSource
 import io.github.b150005.knitnote.data.remote.RemoteProjectDataSource
 import io.github.b150005.knitnote.data.remote.RemoteProjectSegmentDataSource
+import io.github.b150005.knitnote.data.remote.RemotePullRequestDataSource
 import io.github.b150005.knitnote.data.remote.RemoteStructuredChartDataSource
 import io.github.b150005.knitnote.data.remote.SupabaseConfig
 import io.github.b150005.knitnote.data.remote.isConfigured
@@ -25,6 +27,8 @@ import io.github.b150005.knitnote.data.sync.RemotePatternSyncOperations
 import io.github.b150005.knitnote.data.sync.RemoteProgressSyncOperations
 import io.github.b150005.knitnote.data.sync.RemoteProjectSegmentSyncOperations
 import io.github.b150005.knitnote.data.sync.RemoteProjectSyncOperations
+import io.github.b150005.knitnote.data.sync.RemotePullRequestCommentSyncOperations
+import io.github.b150005.knitnote.data.sync.RemotePullRequestSyncOperations
 import io.github.b150005.knitnote.data.sync.RemoteStructuredChartSyncOperations
 import io.github.b150005.knitnote.data.sync.SyncExecutor
 import io.github.b150005.knitnote.data.sync.SyncManager
@@ -50,6 +54,8 @@ val syncModule =
             single<RemoteProjectSegmentSyncOperations> { get<RemoteProjectSegmentDataSource>() }
             single<RemoteChartRevisionSyncOperations> { get<RemoteChartRevisionDataSource>() }
             single<RemoteChartBranchSyncOperations> { get<RemoteChartBranchDataSource>() }
+            single<RemotePullRequestSyncOperations> { get<RemotePullRequestDataSource>() }
+            single<RemotePullRequestCommentSyncOperations> { get<RemotePullRequestDataSource>() }
         }
 
         single {
@@ -62,6 +68,8 @@ val syncModule =
                 remoteProjectSegment = getOrNull(),
                 remoteChartRevision = getOrNull(),
                 remoteChartBranch = getOrNull(),
+                remotePullRequest = getOrNull(),
+                remotePullRequestComment = getOrNull(),
             )
         }
 
@@ -88,6 +96,7 @@ val syncModule =
                     scope = get<CoroutineScope>(applicationScopeQualifier),
                     isOnline = get<ConnectivityMonitor>().isOnline,
                     localChartRevision = get<LocalChartRevisionDataSource>(),
+                    localPullRequest = get<LocalPullRequestDataSource>(),
                 ).also { it.start() }
             }
         }
