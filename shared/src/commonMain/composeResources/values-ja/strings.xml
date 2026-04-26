@@ -410,4 +410,16 @@
     <string name="action_apply_and_merge">適用してマージ</string>
     <string name="state_all_conflicts_resolved">すべてのコンフリクトが解決されました</string>
     <string name="message_pr_merged_successfully">プルリクエストをマージしました</string>
+
+    <!-- Phase 38.4.1 (ADR-014 §6) — Open pull request entry. EN source has the
+         design rationale block. JA: 「プルリクエストを作成」reads more naturally
+         than the literal「プルリクエストを開く」for the action verb (matches the
+         Japanese GitHub UI's standard rendering). -->
+    <string name="action_open_pull_request">プルリクエストを作成</string>
+    <string name="dialog_open_pull_request_title">プルリクエストを作成</string>
+    <string name="label_pr_title">タイトル</string>
+    <string name="hint_pr_title">チャートへの変更を提案…</string>
+    <string name="hint_pr_description_optional">パターンオーナーへの補足メモ（任意）…</string>
+    <string name="action_open_pr">作成</string>
+    <string name="message_pr_opened_successfully">プルリクエストを作成しました</string>
 </resources>

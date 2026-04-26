@@ -17,8 +17,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountTree
+import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -28,10 +30,12 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -70,7 +74,16 @@ import io.github.b150005.knitnote.domain.model.StructuredChart
 import io.github.b150005.knitnote.domain.symbol.SymbolCatalog
 import io.github.b150005.knitnote.generated.resources.Res
 import io.github.b150005.knitnote.generated.resources.action_back
+import io.github.b150005.knitnote.generated.resources.action_cancel
 import io.github.b150005.knitnote.generated.resources.action_more_options
+import io.github.b150005.knitnote.generated.resources.action_open_pr
+import io.github.b150005.knitnote.generated.resources.action_open_pull_request
+import io.github.b150005.knitnote.generated.resources.dialog_open_pull_request_title
+import io.github.b150005.knitnote.generated.resources.hint_pr_description_optional
+import io.github.b150005.knitnote.generated.resources.hint_pr_title
+import io.github.b150005.knitnote.generated.resources.label_pr_description
+import io.github.b150005.knitnote.generated.resources.label_pr_title
+import io.github.b150005.knitnote.generated.resources.message_pr_opened_successfully
 import io.github.b150005.knitnote.generated.resources.message_switched_to_branch
 import io.github.b150005.knitnote.generated.resources.state_empty_chart
 import io.github.b150005.knitnote.generated.resources.state_no_structured_chart
@@ -110,6 +123,7 @@ fun ChartViewerScreen(
     onBack: () -> Unit,
     projectId: String? = null,
     onHistoryClick: () -> Unit = {},
+    onOpenPullRequestNavigate: (prId: String) -> Unit = {},
     viewModel: ChartViewerViewModel =
         koinViewModel { parametersOf(patternId, projectId) },
     catalog: SymbolCatalog = koinInject(),
@@ -120,11 +134,26 @@ fun ChartViewerScreen(
     var pendingSnackbar by remember { mutableStateOf<String?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val switchedTemplate = stringResource(Res.string.message_switched_to_branch)
+    val prOpenedMessage = stringResource(Res.string.message_pr_opened_successfully)
 
     LaunchedEffect(pendingSnackbar) {
         pendingSnackbar?.let {
             snackbarHostState.showSnackbar(it)
             pendingSnackbar = null
+        }
+    }
+
+    // Phase 38.4.1 — one-shot nav events (PR created → snackbar + navigate to
+    // detail). The Snackbar fires from `pendingSnackbar` (host launches a
+    // suspending `showSnackbar` so the navigation callback is never blocked).
+    LaunchedEffect(viewModel) {
+        viewModel.navEvents.collect { event ->
+            when (event) {
+                is ChartViewerNavEvent.PullRequestCreated -> {
+                    pendingSnackbar = prOpenedMessage
+                    onOpenPullRequestNavigate(event.prId)
+                }
+            }
         }
     }
 
@@ -177,6 +206,25 @@ fun ChartViewerScreen(
                             },
                             modifier = Modifier.testTag("openBranchPickerMenuItem"),
                         )
+                        // Phase 38.4.1 — Open PR entry. Visibility gated on the
+                        // ViewModel-side derived `canOpenPullRequest` (fork +
+                        // ownership + branches resolved); the menu item is
+                        // simply not rendered when the gate is false rather
+                        // than rendered-disabled to keep the menu length
+                        // tight on non-fork patterns.
+                        if (state.canOpenPullRequest) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(Res.string.action_open_pull_request)) },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Forum, contentDescription = null)
+                                },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    viewModel.onEvent(ChartViewerEvent.RequestOpenPullRequest)
+                                },
+                                modifier = Modifier.testTag("openPullRequestMenuItem"),
+                            )
+                        }
                     }
                 },
             )
@@ -255,6 +303,100 @@ fun ChartViewerScreen(
             },
         )
     }
+
+    if (state.pendingOpenPrSheet) {
+        OpenPullRequestDialog(
+            titleDraft = state.openPrTitleDraft,
+            descriptionDraft = state.openPrDescriptionDraft,
+            isSubmitting = state.isOpeningPullRequest,
+            errorMessage = state.openPrError,
+            onTitleChange = { viewModel.onEvent(ChartViewerEvent.OpenPrTitleChanged(it)) },
+            onDescriptionChange = {
+                viewModel.onEvent(ChartViewerEvent.OpenPrDescriptionChanged(it))
+            },
+            onConfirm = { viewModel.onEvent(ChartViewerEvent.ConfirmOpenPullRequest) },
+            onDismiss = { viewModel.onEvent(ChartViewerEvent.DismissOpenPullRequestSheet) },
+        )
+    }
+}
+
+/**
+ * Phase 38.4.1 (ADR-014 §6) — Open pull request form. Title is required;
+ * description is optional. Submit is disabled while a request is in flight
+ * or when title is blank. Errors render inline so the user stays in the form
+ * for retry rather than being kicked out by a top-level error displacement.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun OpenPullRequestDialog(
+    titleDraft: String,
+    descriptionDraft: String,
+    isSubmitting: Boolean,
+    errorMessage: String?,
+    onTitleChange: (String) -> Unit,
+    onDescriptionChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        modifier = Modifier.testTag("openPullRequestDialog"),
+        title = { Text(stringResource(Res.string.dialog_open_pull_request_title)) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = titleDraft,
+                    onValueChange = onTitleChange,
+                    label = { Text(stringResource(Res.string.label_pr_title)) },
+                    placeholder = { Text(stringResource(Res.string.hint_pr_title)) },
+                    singleLine = true,
+                    enabled = !isSubmitting,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .testTag("openPrTitleInput"),
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = descriptionDraft,
+                    onValueChange = onDescriptionChange,
+                    label = { Text(stringResource(Res.string.label_pr_description)) },
+                    placeholder = {
+                        Text(stringResource(Res.string.hint_pr_description_optional))
+                    },
+                    enabled = !isSubmitting,
+                    minLines = 3,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .testTag("openPrDescriptionInput"),
+                )
+                if (errorMessage != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.testTag("openPrErrorLabel"),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                enabled = !isSubmitting && titleDraft.isNotBlank(),
+                modifier = Modifier.testTag("confirmOpenPullRequestButton"),
+            ) {
+                Text(stringResource(Res.string.action_open_pr))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isSubmitting) {
+                Text(stringResource(Res.string.action_cancel))
+            }
+        },
+    )
 }
 
 @Composable

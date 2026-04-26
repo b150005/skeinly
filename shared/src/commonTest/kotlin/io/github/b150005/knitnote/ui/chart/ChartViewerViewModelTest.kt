@@ -1,21 +1,30 @@
 package io.github.b150005.knitnote.ui.chart
 
 import app.cash.turbine.test
+import io.github.b150005.knitnote.domain.model.AuthState
+import io.github.b150005.knitnote.domain.model.ChartBranch
 import io.github.b150005.knitnote.domain.model.ChartCell
 import io.github.b150005.knitnote.domain.model.ChartExtents
 import io.github.b150005.knitnote.domain.model.ChartLayer
 import io.github.b150005.knitnote.domain.model.CoordinateSystem
+import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.ProjectSegment
 import io.github.b150005.knitnote.domain.model.SegmentState
 import io.github.b150005.knitnote.domain.model.StorageVariant
 import io.github.b150005.knitnote.domain.model.StructuredChart
+import io.github.b150005.knitnote.domain.model.Visibility
+import io.github.b150005.knitnote.domain.usecase.FakeAuthRepository
+import io.github.b150005.knitnote.domain.usecase.FakeChartBranchRepository
+import io.github.b150005.knitnote.domain.usecase.FakePatternRepository
 import io.github.b150005.knitnote.domain.usecase.FakeProjectSegmentRepository
+import io.github.b150005.knitnote.domain.usecase.FakePullRequestRepository
 import io.github.b150005.knitnote.domain.usecase.FakeStructuredChartRepository
 import io.github.b150005.knitnote.domain.usecase.GetStructuredChartByPatternIdUseCase
 import io.github.b150005.knitnote.domain.usecase.MarkRowSegmentsDoneUseCase
 import io.github.b150005.knitnote.domain.usecase.MarkSegmentDoneUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveProjectSegmentsUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveStructuredChartUseCase
+import io.github.b150005.knitnote.domain.usecase.OpenPullRequestUseCase
 import io.github.b150005.knitnote.domain.usecase.ToggleSegmentStateUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -29,6 +38,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
@@ -551,4 +561,366 @@ class ChartViewerViewModelTest {
 
             assertTrue(viewModel.state.value.errorMessage != null)
         }
+
+    // -------------------------------------------------------------------------
+    // Phase 38.4.1 (ADR-014 §6) — Open pull request entry from ChartViewer
+    // -------------------------------------------------------------------------
+
+    private val testInstant = Instant.parse("2026-04-26T00:00:00Z")
+
+    private fun forkPattern(
+        id: String = "fork-pat",
+        ownerId: String = "test-user-id",
+        parentPatternId: String? = "upstream-pat",
+    ): Pattern =
+        Pattern(
+            id = id,
+            ownerId = ownerId,
+            title = "Forked pattern",
+            description = null,
+            difficulty = null,
+            gauge = null,
+            yarnInfo = null,
+            needleSize = null,
+            chartImageUrls = emptyList(),
+            visibility = Visibility.PRIVATE,
+            createdAt = testInstant,
+            updatedAt = testInstant,
+            parentPatternId = parentPatternId,
+        )
+
+    private fun mainBranch(
+        patternId: String,
+        tipRevisionId: String,
+        id: String = "branch-$patternId-main",
+        ownerId: String = "test-user-id",
+    ): ChartBranch =
+        ChartBranch(
+            id = id,
+            patternId = patternId,
+            ownerId = ownerId,
+            branchName = ChartBranch.DEFAULT_BRANCH_NAME,
+            tipRevisionId = tipRevisionId,
+            createdAt = testInstant,
+            updatedAt = testInstant,
+        )
+
+    private data class OpenPrTestRig(
+        val viewModel: ChartViewerViewModel,
+        val prRepo: FakePullRequestRepository,
+        val patternRepo: FakePatternRepository,
+        val branchRepo: FakeChartBranchRepository,
+        val authRepo: FakeAuthRepository,
+    )
+
+    private fun makeOpenPrViewModel(
+        seedFork: Boolean = true,
+        forkOwnerId: String = "test-user-id",
+        signedInUserId: String? = "test-user-id",
+        seedSourceBranch: Boolean = true,
+        seedTargetMain: Boolean = true,
+        sourceTipMatchesChart: Boolean = true,
+    ): OpenPrTestRig {
+        val patternRepo = FakePatternRepository()
+        val branchRepo = FakeChartBranchRepository()
+        val authRepo = FakeAuthRepository()
+        val prRepo = FakePullRequestRepository()
+        // Source pattern owns chart "fork-pat" with revision "rev-0".
+        val seededChart = chart(patternId = "fork-pat", layers = listOf(ChartLayer(id = "L1", name = "Main")))
+        repo.seed(seededChart)
+        if (seedFork) {
+            patternRepo.seed(forkPattern(id = "fork-pat", ownerId = forkOwnerId))
+        }
+        if (seedSourceBranch) {
+            // Optionally point the branch at a different revision to exercise
+            // the "main" fallback path even when there's no exact match.
+            val tip = if (sourceTipMatchesChart) seededChart.revisionId else "stale-rev"
+            branchRepo.seed(mainBranch(patternId = "fork-pat", tipRevisionId = tip))
+        }
+        if (seedTargetMain) {
+            branchRepo.seed(
+                mainBranch(
+                    patternId = "upstream-pat",
+                    tipRevisionId = "upstream-tip",
+                    id = "branch-upstream-main",
+                ),
+            )
+            // Seed the target's history too so OpenPullRequestUseCase's walk
+            // finds the source tip as the common ancestor on the first hop.
+            // OpenPullRequestUseCase fetches via `getHistoryForPattern`; we
+            // inject a custom ChartRevisionRepository that returns the source
+            // tip as the only entry — sufficient for the happy-path test.
+        }
+        if (signedInUserId != null) {
+            authRepo.setAuthState(AuthState.Authenticated(userId = signedInUserId, email = "u@e"))
+        }
+        // Build the OpenPullRequestUseCase with a minimal in-test ChartRevisionRepository
+        // that always claims the source tip is in target history (1-hop common ancestor).
+        val chartRevRepo = ForkChartRevisionFake(sourceTipRevisionId = seededChart.revisionId)
+        val openPrUseCase = OpenPullRequestUseCase(prRepo, chartRevRepo, authRepo)
+
+        val vm =
+            ChartViewerViewModel(
+                patternId = "fork-pat",
+                projectId = null,
+                observeStructuredChart = ObserveStructuredChartUseCase(repo),
+                observeProjectSegments = ObserveProjectSegmentsUseCase(segmentRepo),
+                toggleSegmentState = ToggleSegmentStateUseCase(segmentRepo, authRepository = null),
+                markSegmentDone = MarkSegmentDoneUseCase(segmentRepo, authRepository = null),
+                markRowSegmentsDone =
+                    MarkRowSegmentsDoneUseCase(
+                        repository = segmentRepo,
+                        getStructuredChart = GetStructuredChartByPatternIdUseCase(repo),
+                        authRepository = null,
+                    ),
+                patternRepository = patternRepo,
+                chartBranchRepository = branchRepo,
+                authRepository = authRepo,
+                openPullRequest = openPrUseCase,
+            )
+        return OpenPrTestRig(vm, prRepo, patternRepo, branchRepo, authRepo)
+    }
+
+    @Test
+    fun `canOpenPullRequest is true on a fork owned by current user with branches resolved`() =
+        runTest {
+            val rig = makeOpenPrViewModel()
+            advanceUntilIdle()
+
+            val state = rig.viewModel.state.value
+            assertTrue(state.canOpenPullRequest)
+            assertNotNull(state.pattern)
+            assertNotNull(state.currentBranch)
+            assertNotNull(state.targetMainBranch)
+        }
+
+    @Test
+    fun `canOpenPullRequest is false on a non-fork pattern`() =
+        runTest {
+            val patternRepo = FakePatternRepository()
+            val branchRepo = FakeChartBranchRepository()
+            val authRepo = FakeAuthRepository()
+            authRepo.setAuthState(AuthState.Authenticated(userId = "test-user-id", email = "u@e"))
+            val seededChart = chart("non-fork", listOf(ChartLayer(id = "L1", name = "Main")))
+            repo.seed(seededChart)
+            patternRepo.seed(forkPattern(id = "non-fork", parentPatternId = null))
+            branchRepo.seed(mainBranch(patternId = "non-fork", tipRevisionId = seededChart.revisionId))
+            val vm =
+                ChartViewerViewModel(
+                    patternId = "non-fork",
+                    projectId = null,
+                    observeStructuredChart = ObserveStructuredChartUseCase(repo),
+                    observeProjectSegments = ObserveProjectSegmentsUseCase(segmentRepo),
+                    toggleSegmentState = ToggleSegmentStateUseCase(segmentRepo, authRepository = null),
+                    markSegmentDone = MarkSegmentDoneUseCase(segmentRepo, authRepository = null),
+                    markRowSegmentsDone =
+                        MarkRowSegmentsDoneUseCase(
+                            repository = segmentRepo,
+                            getStructuredChart = GetStructuredChartByPatternIdUseCase(repo),
+                            authRepository = null,
+                        ),
+                    patternRepository = patternRepo,
+                    chartBranchRepository = branchRepo,
+                    authRepository = authRepo,
+                )
+            advanceUntilIdle()
+
+            assertFalse(vm.state.value.canOpenPullRequest)
+        }
+
+    @Test
+    fun `canOpenPullRequest is false when current user does not own the pattern`() =
+        runTest {
+            val rig = makeOpenPrViewModel(forkOwnerId = "someone-else")
+            advanceUntilIdle()
+            assertFalse(rig.viewModel.state.value.canOpenPullRequest)
+        }
+
+    @Test
+    fun `canOpenPullRequest is false when target main branch is missing`() =
+        runTest {
+            val rig = makeOpenPrViewModel(seedTargetMain = false)
+            advanceUntilIdle()
+            val state = rig.viewModel.state.value
+            assertNull(state.targetMainBranch)
+            assertFalse(state.canOpenPullRequest)
+        }
+
+    @Test
+    fun `currentBranch falls back to main but PR-open gate stays closed when tip does not match chart`() =
+        runTest {
+            val rig = makeOpenPrViewModel(sourceTipMatchesChart = false)
+            advanceUntilIdle()
+            val state = rig.viewModel.state.value
+            // currentBranch resolves to "main" by name (so any rendering of
+            // "current branch" stays helpful during cache lag) — see KDoc on
+            // `resolveCurrentBranch`.
+            val current = state.currentBranch
+            assertNotNull(current)
+            assertEquals(ChartBranch.DEFAULT_BRANCH_NAME, current.branchName)
+            // But the PR-open gate stays CLOSED because the resolved branch's
+            // tipRevisionId does not match the loaded chart's revisionId.
+            // Without this guard a PR would land with a (sourceBranchId,
+            // sourceTipRevisionId) that the merge RPC immediately rejects with
+            // "Source tip drifted" — see code review MEDIUM-1.
+            assertFalse(state.canOpenPullRequest)
+        }
+
+    @Test
+    fun `OpenPrTitleChanged and OpenPrDescriptionChanged update drafts`() =
+        runTest {
+            val rig = makeOpenPrViewModel()
+            advanceUntilIdle()
+
+            rig.viewModel.onEvent(ChartViewerEvent.OpenPrTitleChanged("hello"))
+            rig.viewModel.onEvent(ChartViewerEvent.OpenPrDescriptionChanged("world"))
+
+            val state = rig.viewModel.state.value
+            assertEquals("hello", state.openPrTitleDraft)
+            assertEquals("world", state.openPrDescriptionDraft)
+        }
+
+    @Test
+    fun `RequestOpenPullRequest opens the sheet and clears any prior error`() =
+        runTest {
+            val rig = makeOpenPrViewModel()
+            advanceUntilIdle()
+            // Seed an inline error first.
+            rig.viewModel.onEvent(ChartViewerEvent.OpenPrTitleChanged(""))
+            rig.viewModel.onEvent(ChartViewerEvent.RequestOpenPullRequest)
+
+            val state = rig.viewModel.state.value
+            assertTrue(state.pendingOpenPrSheet)
+            assertNull(state.openPrError)
+        }
+
+    @Test
+    fun `DismissOpenPullRequestSheet clears drafts and pending flag`() =
+        runTest {
+            val rig = makeOpenPrViewModel()
+            advanceUntilIdle()
+            rig.viewModel.onEvent(ChartViewerEvent.RequestOpenPullRequest)
+            rig.viewModel.onEvent(ChartViewerEvent.OpenPrTitleChanged("hi"))
+            rig.viewModel.onEvent(ChartViewerEvent.OpenPrDescriptionChanged("there"))
+            rig.viewModel.onEvent(ChartViewerEvent.DismissOpenPullRequestSheet)
+
+            val state = rig.viewModel.state.value
+            assertFalse(state.pendingOpenPrSheet)
+            assertEquals("", state.openPrTitleDraft)
+            assertEquals("", state.openPrDescriptionDraft)
+        }
+
+    @Test
+    fun `ConfirmOpenPullRequest opens PR through use case and emits PullRequestCreated nav event`() =
+        runTest {
+            val rig = makeOpenPrViewModel()
+            advanceUntilIdle()
+            rig.viewModel.onEvent(ChartViewerEvent.RequestOpenPullRequest)
+            rig.viewModel.onEvent(ChartViewerEvent.OpenPrTitleChanged("Add stitch"))
+            rig.viewModel.onEvent(ChartViewerEvent.OpenPrDescriptionChanged("Suggesting an extra row."))
+
+            rig.viewModel.navEvents.test {
+                rig.viewModel.onEvent(ChartViewerEvent.ConfirmOpenPullRequest)
+                advanceUntilIdle()
+
+                val event = awaitItem()
+                assertTrue(event is ChartViewerNavEvent.PullRequestCreated)
+                assertNotNull(rig.prRepo.lastOpened)
+                assertEquals("Add stitch", rig.prRepo.lastOpened?.title)
+                assertEquals("Suggesting an extra row.", rig.prRepo.lastOpened?.description)
+                assertEquals("test-user-id", rig.prRepo.lastOpened?.authorId)
+                assertEquals("upstream-pat", rig.prRepo.lastOpened?.targetPatternId)
+                assertEquals("branch-upstream-main", rig.prRepo.lastOpened?.targetBranchId)
+                assertEquals("branch-fork-pat-main", rig.prRepo.lastOpened?.sourceBranchId)
+
+                val state = rig.viewModel.state.value
+                assertFalse(state.pendingOpenPrSheet)
+                assertFalse(state.isOpeningPullRequest)
+                assertEquals("", state.openPrTitleDraft)
+                cancelAndConsumeRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `ConfirmOpenPullRequest failure surfaces openPrError and keeps the sheet open`() =
+        runTest {
+            val rig = makeOpenPrViewModel()
+            advanceUntilIdle()
+            rig.viewModel.onEvent(ChartViewerEvent.RequestOpenPullRequest)
+            rig.viewModel.onEvent(ChartViewerEvent.OpenPrTitleChanged("Add stitch"))
+            rig.prRepo.nextOpenError = RuntimeException("network down")
+
+            rig.viewModel.onEvent(ChartViewerEvent.ConfirmOpenPullRequest)
+            advanceUntilIdle()
+
+            val state = rig.viewModel.state.value
+            assertTrue(state.pendingOpenPrSheet)
+            assertFalse(state.isOpeningPullRequest)
+            assertNotNull(state.openPrError)
+            assertNull(rig.prRepo.lastOpened)
+        }
+
+    @Test
+    fun `ConfirmOpenPullRequest is a no-op when canOpenPullRequest gate is closed`() =
+        runTest {
+            // Non-fork pattern → gate closed → submit no-ops without surfacing an
+            // error (defensive guard; UI gates the entry too).
+            val rig = makeOpenPrViewModel(seedFork = false)
+            advanceUntilIdle()
+            rig.viewModel.onEvent(ChartViewerEvent.OpenPrTitleChanged("hi"))
+            rig.viewModel.onEvent(ChartViewerEvent.ConfirmOpenPullRequest)
+            advanceUntilIdle()
+
+            val state = rig.viewModel.state.value
+            assertFalse(state.isOpeningPullRequest)
+            assertNull(state.openPrError)
+            assertNull(rig.prRepo.lastOpened)
+        }
+}
+
+/**
+ * Minimal in-test [io.github.b150005.knitnote.domain.repository.ChartRevisionRepository]
+ * for `OpenPullRequestUseCase`'s parent-chain walk. Returns a single-entry
+ * history for the upstream pattern containing the source tip, so the walk
+ * resolves the source tip itself as the common ancestor on the first hop.
+ * The full walk algorithm is exercised in `OpenPullRequestUseCaseTest`; this
+ * fake covers only what the ViewModel-side happy path needs.
+ */
+private class ForkChartRevisionFake(
+    private val sourceTipRevisionId: String,
+) : io.github.b150005.knitnote.domain.repository.ChartRevisionRepository {
+    override suspend fun getRevision(revisionId: String) =
+        if (revisionId == sourceTipRevisionId) {
+            io.github.b150005.knitnote.domain.model.ChartRevision(
+                id = "rev-row-id",
+                patternId = "upstream-pat",
+                ownerId = "upstream-owner",
+                schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+                storageVariant = StorageVariant.INLINE,
+                coordinateSystem = CoordinateSystem.RECT_GRID,
+                extents = ChartExtents.Rect(0, 0, 0, 0),
+                layers = emptyList(),
+                revisionId = sourceTipRevisionId,
+                parentRevisionId = null,
+                authorId = "upstream-owner",
+                commitMessage = null,
+                contentHash = "h",
+                createdAt = Instant.parse("2026-04-26T00:00:00Z"),
+            )
+        } else {
+            null
+        }
+
+    override suspend fun getHistoryForPattern(
+        patternId: String,
+        limit: Int,
+        offset: Int,
+    ): List<io.github.b150005.knitnote.domain.model.ChartRevision> = listOf(getRevision(sourceTipRevisionId)!!)
+
+    override fun observeHistoryForPattern(
+        patternId: String,
+    ): kotlinx.coroutines.flow.Flow<List<io.github.b150005.knitnote.domain.model.ChartRevision>> =
+        kotlinx.coroutines.flow.flowOf(emptyList())
+
+    override suspend fun append(revision: io.github.b150005.knitnote.domain.model.ChartRevision) = revision
 }
