@@ -2107,6 +2107,76 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Switched to %1$@" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@に切り替えました" } }
       }
+    },
+    "title_pull_requests" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pull Requests" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プルリクエスト" } }
+      }
+    },
+    "action_pull_requests" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pull requests" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プルリクエストを開く" } }
+      }
+    },
+    "label_filter_incoming" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Incoming" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "受信" } }
+      }
+    },
+    "label_filter_outgoing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Outgoing" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "送信" } }
+      }
+    },
+    "state_no_pull_requests" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No pull requests yet" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プルリクエストがまだありません" } }
+      }
+    },
+    "state_no_pull_requests_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Suggestions from forks and to upstream patterns will appear here" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フォークからの提案や上流パターンへの提案がここに表示されます" } }
+      }
+    },
+    "label_pr_status_open" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オープン" } }
+      }
+    },
+    "label_pr_status_merged" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Merged" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "マージ済み" } }
+      }
+    },
+    "label_pr_status_closed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Closed" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "クローズ" } }
+      }
+    },
+    "label_pr_authored_by" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Authored by %1$@" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@が作成" } }
+      }
     }
   },
   "version" : "1.0"

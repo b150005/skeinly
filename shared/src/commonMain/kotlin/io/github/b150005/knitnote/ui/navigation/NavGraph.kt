@@ -29,6 +29,8 @@ import io.github.b150005.knitnote.ui.patternlibrary.PatternLibraryScreen
 import io.github.b150005.knitnote.ui.profile.ProfileScreen
 import io.github.b150005.knitnote.ui.projectdetail.ProjectDetailScreen
 import io.github.b150005.knitnote.ui.projectlist.ProjectListScreen
+import io.github.b150005.knitnote.ui.pullrequest.PullRequestFilter
+import io.github.b150005.knitnote.ui.pullrequest.PullRequestListScreen
 import io.github.b150005.knitnote.ui.settings.SettingsScreen
 import io.github.b150005.knitnote.ui.sharedcontent.SharedContentScreen
 import io.github.b150005.knitnote.ui.sharedwithme.SharedWithMeScreen
@@ -114,6 +116,20 @@ data class ChartDiff(
 
 @Serializable
 data object SymbolGallery
+
+/**
+ * Phase 38.2 (ADR-014 §6 §8) — read-only pull-request list. The chip row in
+ * the screen toggles between Incoming / Outgoing without re-navigating, but
+ * the entry point picks the *initial* filter:
+ * - From `ProjectListScreen` overflow → INCOMING (current user receives
+ *   suggestions targeting any pattern they own).
+ * - From `ProjectDetailScreen` PatternInfoSection on a non-fork pattern →
+ *   INCOMING; on a fork pattern → OUTGOING (per ADR-014 §6).
+ */
+@Serializable
+data class PullRequestList(
+    val defaultFilter: PullRequestFilter = PullRequestFilter.INCOMING,
+)
 
 @Serializable
 data class SharedContent(
@@ -226,6 +242,9 @@ fun KnitNoteNavHost(
                 onSymbolGalleryClick = {
                     navController.navigate(SymbolGallery)
                 },
+                onSuggestionsClick = {
+                    navController.navigate(PullRequestList(defaultFilter = PullRequestFilter.INCOMING))
+                },
             )
         }
         composable<SymbolGallery> {
@@ -321,6 +340,18 @@ fun KnitNoteNavHost(
                 onChartHistoryClick = { patternId ->
                     navController.navigate(ChartHistory(patternId = patternId))
                 },
+                // Phase 38.2 (ADR-014 §6) — default filter Incoming when the
+                // current pattern is the upstream, Outgoing when it is itself
+                // a fork (the user authored PRs against the upstream).
+                onSuggestionsClick = { isFork ->
+                    val filter =
+                        if (isFork) {
+                            PullRequestFilter.OUTGOING
+                        } else {
+                            PullRequestFilter.INCOMING
+                        }
+                    navController.navigate(PullRequestList(defaultFilter = filter))
+                },
             )
         }
         composable<ChartViewer> { backStackEntry ->
@@ -363,6 +394,16 @@ fun KnitNoteNavHost(
                 baseRevisionId = route.baseRevisionId,
                 targetRevisionId = route.targetRevisionId,
                 onBack = { navController.popBackStack() },
+            )
+        }
+        composable<PullRequestList> { backStackEntry ->
+            val route = backStackEntry.toRoute<PullRequestList>()
+            PullRequestListScreen(
+                defaultFilter = route.defaultFilter,
+                onBack = { navController.popBackStack() },
+                // Phase 38.3 will route to PullRequestDetailScreen — 38.2 leaves
+                // tap routing as a no-op so the list-only surface ships first.
+                onPullRequestClick = { _ -> },
             )
         }
         composable<SharedContent> { backStackEntry ->

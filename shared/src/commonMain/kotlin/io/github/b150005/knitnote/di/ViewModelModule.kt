@@ -15,6 +15,8 @@ import io.github.b150005.knitnote.ui.patternlibrary.PatternLibraryViewModel
 import io.github.b150005.knitnote.ui.profile.ProfileViewModel
 import io.github.b150005.knitnote.ui.projectdetail.ProjectDetailViewModel
 import io.github.b150005.knitnote.ui.projectlist.ProjectListViewModel
+import io.github.b150005.knitnote.ui.pullrequest.PullRequestFilter
+import io.github.b150005.knitnote.ui.pullrequest.PullRequestListViewModel
 import io.github.b150005.knitnote.ui.settings.SettingsViewModel
 import io.github.b150005.knitnote.ui.sharedcontent.SharedContentViewModel
 import io.github.b150005.knitnote.ui.sharedwithme.SharedWithMeViewModel
@@ -137,6 +139,15 @@ val viewModelModule =
                 shareId = params.get<String?>(1),
                 resolveShareToken = get(),
                 forkSharedPattern = get(),
+            )
+        }
+        viewModel { params ->
+            PullRequestListViewModel(
+                defaultFilter = params.get<PullRequestFilter>(),
+                getIncoming = get(),
+                getOutgoing = get(),
+                authRepository = get(),
+                userRepository = get(),
             )
         }
     }

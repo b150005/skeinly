@@ -28,7 +28,9 @@ import io.github.b150005.knitnote.domain.usecase.GetChartHistoryUseCase
 import io.github.b150005.knitnote.domain.usecase.GetChartRevisionUseCase
 import io.github.b150005.knitnote.domain.usecase.GetCommentsUseCase
 import io.github.b150005.knitnote.domain.usecase.GetCurrentUserUseCase
+import io.github.b150005.knitnote.domain.usecase.GetIncomingPullRequestsUseCase
 import io.github.b150005.knitnote.domain.usecase.GetOnboardingCompletedUseCase
+import io.github.b150005.knitnote.domain.usecase.GetOutgoingPullRequestsUseCase
 import io.github.b150005.knitnote.domain.usecase.GetPatternsUseCase
 import io.github.b150005.knitnote.domain.usecase.GetProgressNotesUseCase
 import io.github.b150005.knitnote.domain.usecase.GetProjectByIdUseCase
@@ -145,6 +147,12 @@ val useCaseModule =
         factory { CreateBranchUseCase(get(), get()) }
         factory { SwitchBranchUseCase(get(), get(), get()) }
         factory { RestoreRevisionUseCase(get(), get()) }
+
+        // Phase 38.2 pull-request list (ADR-014 §6, §8). PullRequestRepository
+        // is unconditionally registered (handles local-only mode internally
+        // via `remote = null`), so non-null here matches GetChartHistoryUseCase.
+        factory { GetIncomingPullRequestsUseCase(get()) }
+        factory { GetOutgoingPullRequestsUseCase(get()) }
 
         // Per-segment progress use cases (Phase 34)
         factory { ObserveProjectSegmentsUseCase(get()) }

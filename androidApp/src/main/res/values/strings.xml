@@ -398,4 +398,27 @@
     <string name="state_no_branches">No branches yet</string>
     <string name="action_switch">Switch</string>
     <string name="message_switched_to_branch">Switched to %1$s</string>
+
+    <!-- Phase 38.2 pull request list (ADR-014 §6 §8). `title_pull_requests` is
+         the screen title. `label_filter_incoming` / `label_filter_outgoing` are
+         the chip-row labels — same data model, two perspectives. The four
+         `state_no_pull_requests*` + `label_pr_status_*` keys cover the empty
+         state and the per-row status chip. `label_pr_authored_by` is parametric
+         (`%1$s` resolves to the author's display name) and renders alongside
+         the row's title + timestamp; JA reads `<name>が作成` for natural grammar
+         (the verb suffix carries the subject role rather than EN-spaced layout). -->
+    <string name="title_pull_requests">Pull Requests</string>
+    <!-- Distinct from `title_pull_requests` per role-prefix discipline:
+         the screen title and the toolbar IconButton contentDescription /
+         a11y label are different roles and can diverge in JA (verb suffix
+         for action announcement vs. noun for the screen header). -->
+    <string name="action_pull_requests">Pull requests</string>
+    <string name="label_filter_incoming">Incoming</string>
+    <string name="label_filter_outgoing">Outgoing</string>
+    <string name="state_no_pull_requests">No pull requests yet</string>
+    <string name="state_no_pull_requests_body">Suggestions from forks and to upstream patterns will appear here</string>
+    <string name="label_pr_status_open">Open</string>
+    <string name="label_pr_status_merged">Merged</string>
+    <string name="label_pr_status_closed">Closed</string>
+    <string name="label_pr_authored_by">Authored by %1$s</string>
 </resources>

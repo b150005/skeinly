@@ -143,6 +143,12 @@ struct ProjectListScreen: View {
                         Label(LocalizedStringKey("action_activity_feed"), systemImage: "bell")
                     }
                     .accessibilityIdentifier("activityFeedButton")
+                    Button {
+                        path.append(Route.pullRequestList(defaultFilter: .incoming))
+                    } label: {
+                        Label(LocalizedStringKey("action_pull_requests"), systemImage: "bubble.left.and.bubble.right")
+                    }
+                    .accessibilityIdentifier("pullRequestsButton")
                     Button { path.append(Route.sharedWithMe) } label: {
                         Label(LocalizedStringKey("action_shared_with_me"), systemImage: "shared.with.you")
                     }

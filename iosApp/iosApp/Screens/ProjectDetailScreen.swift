@@ -177,6 +177,15 @@ struct ProjectDetailScreen: View {
                         // Phase 37.2 (ADR-013 §6).
                         onChartHistoryTap: {
                             path.append(Route.chartHistory(patternId: pattern.id))
+                        },
+                        // Phase 38.2 (ADR-014 §6) — default filter is Outgoing
+                        // when the project's pattern is itself a fork (the
+                        // user authored PRs targeting the upstream); Incoming
+                        // when the pattern IS the upstream.
+                        onSuggestionsTap: {
+                            let filter: PullRequestFilter =
+                                pattern.parentPatternId != nil ? .outgoing : .incoming
+                            path.append(Route.pullRequestList(defaultFilter: filter))
                         }
                     )
                 }
@@ -353,7 +362,8 @@ struct ProjectDetailScreen: View {
         onChartViewerTap: @escaping () -> Void,
         onChartEditorTap: @escaping () -> Void,
         onParentPatternTap: @escaping (String) -> Void,
-        onChartHistoryTap: @escaping () -> Void
+        onChartHistoryTap: @escaping () -> Void,
+        onSuggestionsTap: @escaping () -> Void
     ) -> some View {
         LabeledContent(LocalizedStringKey("label_title"), value: pattern.title)
 
@@ -399,6 +409,16 @@ struct ProjectDetailScreen: View {
             .font(.caption)
         }
         .accessibilityIdentifier("openChartEditorLink")
+
+        // Phase 38.2 (ADR-014 §6) — read-only PR list entry point.
+        // Surfaces unconditionally; the outer screen passes the right default
+        // filter via `pattern.parentPatternId` so upstream owners default to
+        // Incoming and forkers default to Outgoing.
+        Button(action: onSuggestionsTap) {
+            Label(LocalizedStringKey("title_pull_requests"), systemImage: "bubble.left.and.bubble.right")
+                .font(.caption)
+        }
+        .accessibilityIdentifier("openPullRequestsLink")
 
         if let difficulty = pattern.difficulty {
             LabeledContent(LocalizedStringKey("label_difficulty")) {

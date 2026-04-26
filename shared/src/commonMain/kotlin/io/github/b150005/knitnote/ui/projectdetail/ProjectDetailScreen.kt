@@ -127,6 +127,7 @@ import io.github.b150005.knitnote.generated.resources.state_no_notes
 import io.github.b150005.knitnote.generated.resources.state_project_not_found
 import io.github.b150005.knitnote.generated.resources.state_uploading_photo
 import io.github.b150005.knitnote.generated.resources.title_chart_history
+import io.github.b150005.knitnote.generated.resources.title_pull_requests
 import io.github.b150005.knitnote.ui.chartviewer.ChartImageGrid
 import io.github.b150005.knitnote.ui.chartviewer.ChartImageViewer
 import io.github.b150005.knitnote.ui.comments.CommentSection
@@ -157,6 +158,12 @@ fun ProjectDetailScreen(
     // section when the project's pattern has a structured chart (so there is
     // at least one revision to render). Routes to ChartHistoryScreen.
     onChartHistoryClick: (String) -> Unit = {},
+    // Phase 38.2 (ADR-014 §6): "Suggestions" link in the pattern-info section.
+    // Default filter is Incoming when the project's pattern is the upstream
+    // (`parentPatternId == null`), Outgoing when the pattern is itself a fork
+    // (`parentPatternId != null`). Plumbed via the boolean param so NavGraph
+    // routes with the right initial filter.
+    onSuggestionsClick: (isFork: Boolean) -> Unit = { _ -> },
     viewModel: ProjectDetailViewModel = koinViewModel { parametersOf(projectId) },
 ) {
     val state by viewModel.state.collectAsState()
@@ -453,6 +460,9 @@ fun ProjectDetailScreen(
                                     onChartEditorClick = { onChartEditorClick(pattern.id) },
                                     onParentPatternClick = onParentPatternClick,
                                     onChartHistoryClick = { onChartHistoryClick(pattern.id) },
+                                    onSuggestionsClick = {
+                                        onSuggestionsClick(pattern.parentPatternId != null)
+                                    },
                                 )
                             }
                         }
@@ -1034,6 +1044,7 @@ private fun PatternInfoSection(
     onChartEditorClick: () -> Unit = {},
     onParentPatternClick: (String) -> Unit = {},
     onChartHistoryClick: () -> Unit = {},
+    onSuggestionsClick: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 16.dp),
@@ -1116,6 +1127,20 @@ private fun PatternInfoSection(
                         .testTag("openChartHistoryLink"),
             )
         }
+        // Phase 38.2 (ADR-014 §6) "Pull Requests" sibling link. Surfaces
+        // unconditionally so both upstream owners (default = Incoming) and
+        // forkers (default = Outgoing) can reach the PR list from
+        // ProjectDetail. The default-filter selection is decided at the
+        // outer screen level via `pattern.parentPatternId`.
+        Text(
+            text = stringResource(Res.string.title_pull_requests),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier =
+                Modifier
+                    .clickable(role = Role.Button, onClick = onSuggestionsClick)
+                    .testTag("openPullRequestsLink"),
+        )
         Text(
             text =
                 stringResource(

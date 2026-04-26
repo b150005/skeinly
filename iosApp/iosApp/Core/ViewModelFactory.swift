@@ -97,6 +97,10 @@ enum ViewModelFactory {
         KoinHelperKt.getChartBranchPickerViewModel(patternId: patternId)
     }
 
+    static func pullRequestListViewModel(defaultFilter: PullRequestFilter) -> PullRequestListViewModel {
+        KoinHelperKt.getPullRequestListViewModel(defaultFilter: defaultFilter)
+    }
+
     static func symbolCatalog() -> SymbolCatalog {
         KoinHelperKt.getSymbolCatalog()
     }

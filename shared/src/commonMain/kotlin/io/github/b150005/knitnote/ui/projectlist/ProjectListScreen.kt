@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
@@ -77,6 +78,7 @@ import io.github.b150005.knitnote.generated.resources.action_discover_patterns
 import io.github.b150005.knitnote.generated.resources.action_new_project
 import io.github.b150005.knitnote.generated.resources.action_pattern_library
 import io.github.b150005.knitnote.generated.resources.action_profile
+import io.github.b150005.knitnote.generated.resources.action_pull_requests
 import io.github.b150005.knitnote.generated.resources.action_settings
 import io.github.b150005.knitnote.generated.resources.action_shared_with_me
 import io.github.b150005.knitnote.generated.resources.action_sort
@@ -116,6 +118,7 @@ fun ProjectListScreen(
     onSettingsClick: () -> Unit = {},
     onDiscoverClick: () -> Unit = {},
     onSymbolGalleryClick: () -> Unit = {},
+    onSuggestionsClick: () -> Unit = {},
     viewModel: ProjectListViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -170,6 +173,19 @@ fun ProjectListScreen(
                         Icon(
                             Icons.Default.Notifications,
                             contentDescription = stringResource(Res.string.action_activity_feed),
+                        )
+                    }
+                    // Phase 38.2 (ADR-014 §6) — entry point to the read-only PR
+                    // list. Defaults to the Incoming filter (the user's own
+                    // patterns receive PRs from forkers); the chip row in the
+                    // list lets them toggle to Outgoing without re-navigating.
+                    IconButton(
+                        onClick = onSuggestionsClick,
+                        modifier = Modifier.testTag("pullRequestsButton"),
+                    ) {
+                        Icon(
+                            Icons.Default.Forum,
+                            contentDescription = stringResource(Res.string.action_pull_requests),
                         )
                     }
                     IconButton(

@@ -367,4 +367,16 @@
     <string name="state_no_branches">ブランチがまだありません</string>
     <string name="action_switch">切り替え</string>
     <string name="message_switched_to_branch">%1$sに切り替えました</string>
+
+    <!-- Phase 38.2 pull request list (ADR-014 §6 §8) -->
+    <string name="title_pull_requests">プルリクエスト</string>
+    <string name="action_pull_requests">プルリクエストを開く</string>
+    <string name="label_filter_incoming">受信</string>
+    <string name="label_filter_outgoing">送信</string>
+    <string name="state_no_pull_requests">プルリクエストがまだありません</string>
+    <string name="state_no_pull_requests_body">フォークからの提案や上流パターンへの提案がここに表示されます</string>
+    <string name="label_pr_status_open">オープン</string>
+    <string name="label_pr_status_merged">マージ済み</string>
+    <string name="label_pr_status_closed">クローズ</string>
+    <string name="label_pr_authored_by">%1$sが作成</string>
 </resources>

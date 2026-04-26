@@ -217,6 +217,7 @@ kover {
                     "io.github.b150005.knitnote.ui.chart.SymbolDrawingKt*",
                     "io.github.b150005.knitnote.ui.chart.PolarDrawingKt*",
                     "io.github.b150005.knitnote.ui.chart.ChartThumbnailKt*",
+                    "io.github.b150005.knitnote.ui.pullrequest.PullRequestListScreenKt*",
                     "io.github.b150005.knitnote.ui.platform.*",
                 )
             }
