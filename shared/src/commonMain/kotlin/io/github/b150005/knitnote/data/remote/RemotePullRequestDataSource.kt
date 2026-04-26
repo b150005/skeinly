@@ -4,9 +4,14 @@ import io.github.b150005.knitnote.data.sync.RemotePullRequestCommentSyncOperatio
 import io.github.b150005.knitnote.data.sync.RemotePullRequestSyncOperations
 import io.github.b150005.knitnote.domain.model.PullRequest
 import io.github.b150005.knitnote.domain.model.PullRequestComment
+import io.github.b150005.knitnote.domain.repository.PullRequestMergeOperations
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 
 /**
  * Remote data source for [PullRequest] + [PullRequestComment] (ADR-014 §1).
@@ -20,7 +25,8 @@ import io.github.jan.supabase.postgrest.query.Order
 class RemotePullRequestDataSource(
     private val supabaseClient: SupabaseClient,
 ) : RemotePullRequestSyncOperations,
-    RemotePullRequestCommentSyncOperations {
+    RemotePullRequestCommentSyncOperations,
+    PullRequestMergeOperations {
     private val prTable get() = supabaseClient.postgrest["pull_requests"]
     private val commentTable get() = supabaseClient.postgrest["pull_request_comments"]
 
@@ -88,6 +94,47 @@ class RemotePullRequestDataSource(
                 ignoreDuplicates = true
                 select()
             }.decodeSingleOrNull() ?: comment
+
+    /**
+     * Phase 38.4 (ADR-014 §5) — invoke the SECURITY DEFINER `merge_pull_request`
+     * RPC. Returns the new revision id minted by the RPC. Throws on RPC errors
+     * which the caller (`MergePullRequestUseCase`) translates to
+     * [io.github.b150005.knitnote.domain.usecase.UseCaseError] subtypes.
+     *
+     * The RPC accepts the resolved JSONB document directly per migration 016 —
+     * the client already has the catalog and renderers, so the resolver builds
+     * the merged document and hands it through ("thin server, rich client" per
+     * ADR-001). Server validates structural preconditions (PR open, caller is
+     * target owner, source tip unchanged) but not the merge content.
+     *
+     * Argument names match the SQL function signature exactly
+     * (`p_pull_request_id`, `p_strategy`, `p_merged_document`,
+     * `p_merged_content_hash`, `p_resolved_revision_id`) — supabase-kt's
+     * `rpc(name, parameters)` overload sends these as JSON keys.
+     */
+    override suspend fun merge(
+        pullRequestId: String,
+        strategy: String,
+        mergedDocument: JsonElement,
+        mergedContentHash: String,
+        resolvedRevisionId: String,
+    ): String {
+        val params: JsonObject =
+            buildJsonObject {
+                put("p_pull_request_id", JsonPrimitive(pullRequestId))
+                put("p_strategy", JsonPrimitive(strategy))
+                put("p_merged_document", mergedDocument)
+                put("p_merged_content_hash", JsonPrimitive(mergedContentHash))
+                put("p_resolved_revision_id", JsonPrimitive(resolvedRevisionId))
+            }
+        val result = supabaseClient.postgrest.rpc("merge_pull_request", params)
+        // The RPC's RETURNS UUID surfaces as a JSON-encoded string in the
+        // response body (e.g. `"550e8400-..."`). decodeAs<String> unwraps the
+        // wrapping quotes via kotlinx.serialization. The RPC's atomic write
+        // means a successful return implies all 4 mutations (revision INSERT,
+        // branch tip UPDATE, chart_documents UPDATE, PR row UPDATE) committed.
+        return result.decodeAs<String>()
+    }
 
     @kotlinx.serialization.Serializable
     private data class PatternIdRow(

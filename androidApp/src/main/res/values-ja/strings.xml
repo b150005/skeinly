@@ -395,4 +395,16 @@
     <string name="dialog_close_pr_body">クローズしてもコメントは残りますが、変更は上流のチャートには反映されません。投稿者は後で新しいプルリクエストを開くことができます。</string>
     <string name="state_pr_not_found">プルリクエストが見つかりません</string>
     <string name="message_pr_closed_successfully">プルリクエストをクローズしました</string>
+
+    <!-- Phase 38.4 conflict resolution + merge (ADR-014 §4 §5 §6 §8). -->
+    <string name="title_resolve_conflicts">コンフリクトの解決</string>
+    <string name="label_conflict_summary">解決が必要なコンフリクト: %1$d 件</string>
+    <string name="label_conflict_layer">レイヤー</string>
+    <string name="label_conflict_cell">セル (%1$d, %2$d)</string>
+    <string name="action_take_theirs">相手側を採用</string>
+    <string name="action_keep_mine">自分側を維持</string>
+    <string name="action_skip_conflict">スキップ</string>
+    <string name="action_apply_and_merge">適用してマージ</string>
+    <string name="state_all_conflicts_resolved">すべてのコンフリクトが解決されました</string>
+    <string name="message_pr_merged_successfully">プルリクエストをマージしました</string>
 </resources>

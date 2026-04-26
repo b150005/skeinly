@@ -437,4 +437,16 @@
     <string name="dialog_close_pr_body">Closing keeps the comment history but the changes will not land on the upstream chart. The author can open a new pull request later.</string>
     <string name="state_pr_not_found">Pull request not found</string>
     <string name="message_pr_closed_successfully">Pull request closed</string>
+
+    <!-- Phase 38.4 conflict resolution + merge (ADR-014 §4 §5 §6 §8). -->
+    <string name="title_resolve_conflicts">Resolve conflicts</string>
+    <string name="label_conflict_summary">%1$d conflicts to resolve</string>
+    <string name="label_conflict_layer">Layer</string>
+    <string name="label_conflict_cell">Cell (%1$d, %2$d)</string>
+    <string name="action_take_theirs">Take theirs</string>
+    <string name="action_keep_mine">Keep mine</string>
+    <string name="action_skip_conflict">Skip</string>
+    <string name="action_apply_and_merge">Apply and merge</string>
+    <string name="state_all_conflicts_resolved">All conflicts resolved</string>
+    <string name="message_pr_merged_successfully">Pull request merged</string>
 </resources>

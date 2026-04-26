@@ -105,6 +105,10 @@ enum ViewModelFactory {
         KoinHelperKt.getPullRequestDetailViewModel(prId: prId)
     }
 
+    static func chartConflictResolutionViewModel(prId: String) -> ChartConflictResolutionViewModel {
+        KoinHelperKt.getChartConflictResolutionViewModel(prId: prId)
+    }
+
     static func symbolCatalog() -> SymbolCatalog {
         KoinHelperKt.getSymbolCatalog()
     }

@@ -29,6 +29,7 @@ import io.github.b150005.knitnote.ui.patternlibrary.PatternLibraryScreen
 import io.github.b150005.knitnote.ui.profile.ProfileScreen
 import io.github.b150005.knitnote.ui.projectdetail.ProjectDetailScreen
 import io.github.b150005.knitnote.ui.projectlist.ProjectListScreen
+import io.github.b150005.knitnote.ui.pullrequest.ChartConflictResolutionScreen
 import io.github.b150005.knitnote.ui.pullrequest.PullRequestDetailScreen
 import io.github.b150005.knitnote.ui.pullrequest.PullRequestFilter
 import io.github.b150005.knitnote.ui.pullrequest.PullRequestListScreen
@@ -141,6 +142,17 @@ data class PullRequestList(
  */
 @Serializable
 data class PullRequestDetail(
+    val prId: String,
+)
+
+/**
+ * Phase 38.4 (ADR-014 §6) — interactive conflict resolution surface.
+ * Reached from `PullRequestDetailScreen` when the user confirms merge AND
+ * `ConflictDetector.detect(...)` returns at least one conflict. Auto-clean
+ * merges bypass this route and invoke `MergePullRequestUseCase` directly.
+ */
+@Serializable
+data class ChartConflictResolution(
     val prId: String,
 )
 
@@ -436,6 +448,25 @@ fun KnitNoteNavHost(
                         ),
                     )
                 },
+                // Phase 38.4: ConflictDetector found conflicts on confirm-merge;
+                // push the resolution screen. Auto-clean merges land directly
+                // via the RPC and surface the success Snackbar in-place
+                // (PrMerged nav event handled by the screen's own collector).
+                onResolveConflicts = { prId ->
+                    navController.navigate(ChartConflictResolution(prId = prId))
+                },
+            )
+        }
+        composable<ChartConflictResolution> { backStackEntry ->
+            val route = backStackEntry.toRoute<ChartConflictResolution>()
+            ChartConflictResolutionScreen(
+                prId = route.prId,
+                onBack = { navController.popBackStack() },
+                // On successful merge, pop back to the PR detail screen so
+                // the user lands on the now-merged PR (status flips through
+                // Realtime). The success Snackbar shows on the resolution
+                // screen briefly before the pop.
+                onMerged = { navController.popBackStack() },
             )
         }
         composable<SharedContent> { backStackEntry ->

@@ -44,6 +44,7 @@ import io.github.b150005.knitnote.domain.usecase.GetStructuredChartByPatternIdUs
 import io.github.b150005.knitnote.domain.usecase.IncrementRowUseCase
 import io.github.b150005.knitnote.domain.usecase.MarkRowSegmentsDoneUseCase
 import io.github.b150005.knitnote.domain.usecase.MarkSegmentDoneUseCase
+import io.github.b150005.knitnote.domain.usecase.MergePullRequestUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveAuthStateUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveProjectSegmentsUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveStructuredChartUseCase
@@ -167,6 +168,22 @@ val useCaseModule =
         // OpenPullRequestUseCase needs the chart-revision repo for the
         // common-ancestor walk per ADR-014 §3.
         factory { OpenPullRequestUseCase(get(), get(), get()) }
+
+        // Phase 38.4 merge use case (ADR-014 §5). Routes through the
+        // SECURITY DEFINER `merge_pull_request` RPC; bypasses the standard
+        // local-then-sync orchestration since the RPC is the only writer
+        // permitted to produce author_id != owner_id rows.
+        // `getOrNull<PullRequestMergeOperations>()` so local-only mode (no
+        // Supabase) surfaces a Validation error rather than a NPE on first
+        // tap — see MergePullRequestUseCase.invoke for the offline branch.
+        factory {
+            MergePullRequestUseCase(
+                mergeOperations = getOrNull<io.github.b150005.knitnote.domain.repository.PullRequestMergeOperations>(),
+                patternRepository = get(),
+                authRepository = get(),
+                json = get(),
+            )
+        }
 
         // Per-segment progress use cases (Phase 34)
         factory { ObserveProjectSegmentsUseCase(get()) }
