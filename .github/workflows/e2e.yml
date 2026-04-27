@@ -62,6 +62,10 @@ jobs:
             sleep 2
             adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
             sleep 2
+            # Uninstall any pre-existing copy (host AVD may carry dev-signed
+            # install from prior local development — INSTALL_FAILED_UPDATE_INCOMPATIBLE
+            # otherwise. Idempotent: silent if package not present).
+            adb uninstall io.github.b150005.knitnote.android || true
             adb install -r androidApp/build/outputs/apk/debug/androidApp-debug.apk
             sleep 5
             adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
