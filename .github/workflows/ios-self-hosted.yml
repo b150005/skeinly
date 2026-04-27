@@ -31,6 +31,9 @@ jobs:
     timeout-minutes: 30
     env:
       JAVA_HOME: /opt/homebrew/opt/openjdk@17
+      # Self-hosted runner shell does not source ~/.zprofile, so Homebrew's
+      # /opt/homebrew/bin (xcodegen, gh) is not on PATH by default.
+      PATH: /opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
     steps:
       - uses: actions/checkout@v6
 
