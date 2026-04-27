@@ -154,8 +154,64 @@ gh api -X PUT repos/b150005/knit-note/rulesets/15581036 -f enforcement=active
 gh api -X DELETE repos/b150005/knit-note/rulesets/15581036
 ```
 
+## Security posture (self-hosted CI runner)
+
+CI for this repository runs on a self-hosted GitHub Actions runner installed at `/Users/b150005/Development/Tools/actions-runner-knitnote/` on the maintainer's macOS host. The runner is registered as `b150005mac-host` with labels `[self-hosted, macos, apple-silicon, host]`. This section documents the threat model, applied mitigations, and deferred items.
+
+### Threat model
+
+The repository is **public**. The self-hosted runner executes as user `b150005` (admin-group member) on the maintainer's primary development Mac, with access to:
+
+- The maintainer's home directory, including SSH keys, gh CLI tokens, browser data, and the macOS login keychain
+- The maintainer's other Development repositories
+- The local network and unrestricted internet egress
+
+The most dangerous attack vectors against this configuration are:
+
+1. **Arbitrary code execution via fork PR** — by default GitHub allows fork PRs to trigger `pull_request` workflow events, executing PR-branch code on the runner.
+2. **Third-party action supply chain compromise** — actions referenced by mutable tag (`@v2`, `@v6`) can be re-pointed to malicious commits if the upstream maintainer account is compromised.
+3. **Cross-run workspace poisoning** — the runner is non-ephemeral; an attacker who achieves one code-execution event can plant payloads in `_work/` or `~/.gradle/caches/` that execute in subsequent runs.
+4. **Unscoped GITHUB_TOKEN** — workflows without an explicit `permissions:` block inherit the repository default; if that default is later widened, all workflows silently gain write capabilities.
+
+### Applied mitigations
+
+| Threat | Mitigation | Where |
+|---|---|---|
+| Fork PR arbitrary code execution | Repository Settings → Actions → "Fork pull request workflows from outside collaborators" set to **"Require approval for all outside collaborators"**. The maintainer must explicitly approve the first workflow run from any contributor before it dispatches to the runner. | GitHub UI |
+| Branch direct push by non-Owner | `update` rule + Repository Admin-only bypass (this `main-strict` ruleset). | Ruleset id 15581036 |
+| Third-party action supply chain | All non-GitHub-owned actions pinned to commit SHA: `reactivecircus/android-emulator-runner@e89f39f`, `gradle/actions/setup-gradle@50e97c2`, `softprops/action-gh-release@b430933`. Dependabot tracks updates. | `.github/workflows/*.yml` |
+| GITHUB_TOKEN scope creep | Top-level `permissions: contents: read` in every workflow that can be triggered by external events (`ci.yml`, `e2e.yml`, `security.yml`). | Workflow YAML |
+| OIDC token in host process space | `pages.yml` (which holds `id-token: write` for GitHub Pages OIDC federation) runs on `ubuntu-latest` rather than the self-hosted runner. | `.github/workflows/pages.yml` |
+| Shell injection via step output interpolation | `${{ steps.sim.outputs.dest }}` (and similar step-output references in shell `run:` blocks) assigned to `env:` block first, then referenced as `$XCODE_DEST` in shell. Pattern applied in `ci.yml` and `security.yml`. | Workflow YAML |
+| Secrets in committed source | Repository Settings → Secret scanning + Push protection both **ENABLED**. | GitHub UI |
+| Action version skew | All `actions/checkout` references unified at `@v6`. | Workflow YAML |
+
+### Deferred items (post-launch)
+
+These have been audited and accepted as residual risk for the closed-beta window. They will be revisited if the runner is ever observed to be compromised, or as part of a future hardening sprint.
+
+| ID | Risk | Why deferred |
+|---|---|---|
+| H1 | Persistent workspace allows cross-run payload persistence | Closing it requires runner isolation (Lume VM revival or equivalent) — significant work; mitigated for now by fork-PR-approval gating who can run jobs |
+| H2 | Runner runs as admin-group user with full Keychain access | Same root cause as H1 — requires runner isolation |
+| M2 | `~/.gradle/caches/` shared between CI and local development; poisoned cache could affect local builds | Splitting `GRADLE_USER_HOME` to a CI-dedicated path is straightforward but adds first-run cache miss; mitigated for now by SHA-pinning third-party actions |
+| L2 | No network egress restriction on the runner process | Requires third-party macOS firewall (Little Snitch / LuLu); deferred until first observed need |
+
+### User responsibilities (one-time setup)
+
+- **SSH keys without passphrase** (`~/.ssh/id_ed25519`, `~/.ssh/b150005-GitHub`): silent exfiltration risk if runner is ever compromised. Set passphrases via `ssh-keygen -p -f <key>` when convenient.
+- **Dependabot security updates**: enable at Repository Settings → Code security & analysis. Pairs naturally with the SHA-pinned actions to surface upstream vulnerabilities promptly.
+- **Apple ID app-specific passwords used during VM provisioning**: revoke at `account.apple.com → Sign-In and Security → App-Specific Passwords` if no longer needed (the host runner does not require them).
+
+### Known runner-specific behaviors
+
+- **Android E2E install conflict**: the host's Android AVD persists across CI runs and across local development sessions. A prior dev install of the app signed with the local debug keystore conflicts with the CI-built APK signed with the default Android debug keystore (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`). Workaround: `adb uninstall io.github.b150005.knitnote.android || true` runs before `adb install -r` in `e2e.yml`.
+- **iOS Simulator destination**: the `Resolve iOS Simulator destination` step parses `xcrun simctl list devices available -j` and picks the first available iPhone simulator. This selection depends on the host's installed simulator runtimes; if the host's Xcode is updated and simulator runtimes change, the destination resolution may pick a different device.
+- **Single runner sequential execution**: with one registered runner, all workflows triggered by a single push queue sequentially. Total CI cycle time is ~80 minutes (vs ~25 minutes when previously parallel on GitHub-hosted runners). Multi-runner expansion is a documented option if cycle time becomes painful.
+
 ## Update history
 
 | Date | Change | By |
 |---|---|---|
 | 2026-04-27 | Initial `main-strict` ruleset created (id `15581036`) | b150005 |
+| 2026-04-27 | Self-hosted runner activated; security audit + hardening landed (Fork PR approval, third-party SHA pin, ci.yml permissions block, pages.yml reverted to ubuntu-latest, env-var step output pattern). See commits `1a119e1` + `8d6c6ae`. | b150005 |
