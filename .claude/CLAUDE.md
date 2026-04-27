@@ -93,6 +93,8 @@ Agents detect this project as **Kotlin Multiplatform** by finding:
 
 ## Development Workflow
 
+> Branch protection, PR requirements, status check gates, and bypass mechanics are documented in [docs/en/repo-policy.md](../docs/en/repo-policy.md) (JA: [docs/ja/repo-policy.md](../docs/ja/repo-policy.md)). The active ruleset is `main-strict` (id `15581036`). The Owner has Admin-role bypass for emergency direct push; everyone else must go through PR.
+
 1. **Issue Analysis**: Feed issues to the orchestrator via GitHub MCP or copy-paste
 2. **Product Planning**: The product-manager creates PRD, user stories, and acceptance criteria
 3. **Research & Reuse**: Search GitHub, package registries, and docs before writing new code
