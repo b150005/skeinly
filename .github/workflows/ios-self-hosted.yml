@@ -1,0 +1,87 @@
+name: iOS Self-Hosted (Lume)
+
+# Runs on the always-on Lume VM registered as a self-hosted runner with labels
+# self-hosted/macos/apple-silicon/lume. Provides faster iOS test signal alongside
+# the canonical macos-latest job in ci.yml. If the runner is offline (VM stopped),
+# this workflow fails — but the required status check `iOS (Build + Test)` from
+# ci.yml continues to run on GitHub-hosted, so PR merges are not blocked.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'shared/**'
+      - 'iosApp/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - 'gradle/libs.versions.toml'
+      - '.github/workflows/ios-self-hosted.yml'
+
+concurrency:
+  group: ios-self-hosted-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios-self-hosted:
+    name: iOS (Build + Test, Self-Hosted Lume)
+    runs-on: [self-hosted, macos, apple-silicon, lume]
+    timeout-minutes: 30
+    env:
+      JAVA_HOME: /opt/homebrew/opt/openjdk@17
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Verify pre-installed toolchain
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME"
+          "$JAVA_HOME/bin/java" --version
+          xcodebuild -version
+          xcodegen --version
+          which gh
+
+      - name: Build iOS shared framework
+        run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
+
+      - name: Create local.xcconfig
+        run: echo 'DEVELOPMENT_TEAM =' > iosApp/local.xcconfig
+
+      - name: Generate Xcode project
+        run: cd iosApp && xcodegen generate
+
+      - name: Resolve iOS Simulator destination
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j \
+            | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          for rt, devs in data['devices'].items():
+            if 'iOS' in rt:
+              for d in devs:
+                if 'iPhone' in d['name'] and d['isAvailable']:
+                  print(d['udid']); sys.exit(0)
+          sys.exit(1)
+          ")
+          echo "dest=id=$UDID" >> "$GITHUB_OUTPUT"
+          echo "Resolved simulator: $UDID"
+
+      - name: Build and test iOS app
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -destination '${{ steps.sim.outputs.dest }}' \
+            -resultBundlePath TestResults \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-self-hosted-results
+          path: TestResults
+          retention-days: 14
