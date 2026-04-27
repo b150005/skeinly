@@ -21,9 +21,12 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: [self-hosted, macos, apple-silicon, host]
+    # Per security audit H4: id-token: write should NOT live in a self-hosted
+    # runner's process space. Pages deploy is a static-file upload that has no
+    # macOS-specific dependency — keep on GitHub-hosted Linux.
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Pages
         uses: actions/configure-pages@v6
