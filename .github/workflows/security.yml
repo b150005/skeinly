@@ -8,10 +8,8 @@ on:
   schedule:
     - cron: "17 6 * * 1" # Weekly Monday 6:17 AM UTC
 
-# Prevent queue piling on the single self-hosted runner: rapid back-to-back
-# pushes will cancel the older run instead of letting both queue. Same
-# pattern as ci.yml + e2e.yml. Scheduled runs (cron) get their own group
-# via github.ref so they never cancel push-triggered runs and vice versa.
+# Same concurrency posture as ci.yml + e2e.yml — prevent rapid back-to-back
+# pushes from queuing multiple Security runs.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -28,27 +26,43 @@ jobs:
       matrix:
         include:
           - language: java-kotlin
+            runner: ubuntu-latest
             build-mode: manual
           - language: swift
+            runner: macos-latest
             build-mode: manual
-    runs-on: [self-hosted, macos, apple-silicon, host]
-    env:
-      JAVA_HOME: /opt/homebrew/opt/openjdk@17
-      PATH: /opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
-      ANDROID_HOME: /Users/b150005/Library/Android/sdk
-      ANDROID_SDK_ROOT: /Users/b150005/Library/Android/sdk
-    # java-kotlin: CodeQL Kotlin extractor failed to capture in-process Gradle
-    # build under self-hosted runner (issue under investigation, see CLAUDE.md
-    # CI Known Limitations). The job is marked continue-on-error so it does not
-    # block the workflow run; required status checks excludes this matrix entry.
+    runs-on: ${{ matrix.runner }}
+    # java-kotlin: CodeQL Kotlin extractor fails to capture in-process Gradle
+    # build despite the standard --no-daemon + kotlin.daemon.enabled=false +
+    # kotlin.compiler.execution.strategy=in-process flags. The error surfaces
+    # as "CodeQL detected code written in Java/Kotlin but this run didn't
+    # build any of it" — root cause not yet diagnosed (under investigation
+    # since 2026-04-27, see CLAUDE.md "CI Known Limitations"). The job is
+    # marked continue-on-error so it does not block the workflow run; the
+    # required status checks intentionally exclude this matrix entry. The
+    # overlay-base database warning ("build-mode is set to manual instead
+    # of none") is benign — CodeQL falls back to full (non-incremental)
+    # analysis.
     continue-on-error: ${{ matrix.language == 'java-kotlin' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
+      # --- Pre-CodeQL setup (before tracing starts) ---
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: Setup Gradle
         # Pin to SHA per security audit C2.
         uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6
+
+      # Swift: install XcodeGen before CodeQL init to avoid Rosetta conflicts
+      - name: Install XcodeGen
+        if: matrix.language == 'swift'
+        run: brew install xcodegen
 
       - name: Build shared framework (swift prerequisite)
         if: matrix.language == 'swift'
@@ -114,15 +128,3 @@ jobs:
         uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{ matrix.language }}"
-
-      - name: Cleanup workspace + DerivedData + CodeQL temp (post-job)
-        if: always()
-        run: |
-          set +e
-          rm -rf "$GITHUB_WORKSPACE/build" "$GITHUB_WORKSPACE/shared/build" \
-                 "$GITHUB_WORKSPACE/iosApp/build" "$GITHUB_WORKSPACE/androidApp/build" \
-                 "$GITHUB_WORKSPACE/iosApp/iosApp.xcodeproj" 2>/dev/null
-          rm -rf ~/Library/Developer/Xcode/DerivedData/iosApp-* 2>/dev/null
-          # CodeQL temp databases
-          rm -rf "$RUNNER_TEMP/codeql_databases" 2>/dev/null
-          exit 0

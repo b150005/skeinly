@@ -160,60 +160,43 @@ gh api -X PUT repos/b150005/knit-note/rulesets/15581036 -f enforcement=active
 gh api -X DELETE repos/b150005/knit-note/rulesets/15581036
 ```
 
-## セキュリティ姿勢 (self-hosted CI runner)
+## セキュリティ姿勢 (CI runners)
 
-このリポジトリの CI は、メンテナの macOS ホスト上 (`/Users/b150005/Development/Tools/actions-runner-knitnote/`) に install された self-hosted GitHub Actions runner で実行されます。Runner 名: `b150005mac-host`、labels: `[self-hosted, macos, apple-silicon, host]`。本セクションは脅威モデル、適用済み緩和策、deferred 項目を記述します。
+このリポジトリの CI は **GitHub-hosted runners** (`ubuntu-latest`、`macos-latest`) で実行されます。2026-04-27 に self-hosted runner experiment を試行しましたが同日 revert — 詳細は下の「Historical: self-hosted runner experiment」を参照。
 
-### 脅威モデル
-
-リポジトリは **public**。Self-hosted runner は user `b150005` (admin group) として動作し、以下にアクセス可能:
-
-- メンテナの home directory (SSH 鍵、gh CLI tokens、ブラウザデータ、macOS Login Keychain)
-- メンテナの他の Development リポジトリ
-- ローカルネットワーク + 制限なしの internet egress
-
-最も危険な攻撃ベクトル:
-
-1. **Fork PR からの任意コード実行** — GitHub のデフォルトでは fork PR が `pull_request` workflow event を trigger 可能、PR ブランチのコードが runner で実行される
-2. **Third-party action supply chain の侵害** — mutable tag (`@v2`, `@v6`) で参照される action は、上流メンテナアカウント乗っ取り時に悪意 commit に re-point 可能
-3. **Cross-run workspace 汚染** — runner は non-ephemeral、1 度コード実行に成功した攻撃者が `_work/` または `~/.gradle/caches/` に payload を植え、後続 run で実行され得る
-4. **GITHUB_TOKEN scope unbounded** — `permissions:` block を持たない workflow はリポジトリデフォルトを継承、デフォルトが拡大されると全 workflow が黙って write 権限を獲得
+Self-hosted experiment 中に適用した security hardening は GitHub-hosted でも有効なので維持しています。
 
 ### 適用済み緩和策
 
 | 脅威 | 緩和策 | 場所 |
 |---|---|---|
-| Fork PR 任意コード実行 | Repository Settings → Actions → "Fork pull request workflows from outside collaborators" を **"Require approval for all outside collaborators"** に設定。任意 contributor からの初回 workflow run はメンテナの明示承認が必要 | GitHub UI |
 | Owner 以外による branch 直 push | `update` rule + Repository Admin-only bypass (この `main-strict` ruleset) | Ruleset id 15581036 |
-| Third-party action supply chain | GitHub 公式以外の全 action を commit SHA pin: `reactivecircus/android-emulator-runner@e89f39f`, `gradle/actions/setup-gradle@50e97c2`, `softprops/action-gh-release@b430933`。Dependabot が更新追跡 | `.github/workflows/*.yml` |
+| Third-party action supply chain compromise (mutable tag re-pointing) | GitHub 公式以外の全 action を commit SHA pin: `reactivecircus/android-emulator-runner@e89f39f`, `gradle/actions/setup-gradle@50e97c2`, `softprops/action-gh-release@b430933`。Dependabot が `.github/dependabot.yml` `github-actions` ecosystem 経由で追跡 | `.github/workflows/*.yml` |
+| 任意 GitHub user による fork PR 任意コード実行 | Repository Settings → Actions → "Fork pull request workflows from outside collaborators" を **"Require approval for all outside collaborators"** に設定 | GitHub UI |
 | GITHUB_TOKEN scope creep | 外部 trigger 可能な全 workflow (`ci.yml`, `e2e.yml`, `security.yml`) に top-level `permissions: contents: read` を明示 | Workflow YAML |
-| OIDC token を host process 空間に | `pages.yml` (GitHub Pages OIDC federation 用 `id-token: write` を保持) を self-hosted ではなく `ubuntu-latest` で実行 | `.github/workflows/pages.yml` |
-| Step output interpolation 経由の shell injection | `${{ steps.sim.outputs.dest }}` 等の step output 参照を、shell `run:` 内の `${{ }}` 直挿入ではなく `env:` block 経由 (`$XCODE_DEST`) で参照 | Workflow YAML |
-| Commit 済 source 内の secret | Repository Settings → Secret scanning + Push protection 両方 **ENABLED** | GitHub UI |
+| Step output interpolation 経由の shell injection | `${{ steps.sim.outputs.dest }}` 等の step output 参照を、shell `run:` 内の `${{ }}` 直挿入ではなく `env:` block 経由 (`$XCODE_DEST`) で参照。`ci.yml` + `security.yml` に適用 | Workflow YAML |
+| OIDC token の広範露出 | `pages.yml` (GitHub Pages OIDC `id-token: write` を保持) は `ubuntu-latest` で動作、trigger も `docs/public/**` path-filtered で minimal | `.github/workflows/pages.yml` |
+| 同一 ref への workflow queue piling | trigger-on-push 全 workflow (`ci.yml`, `e2e.yml`, `security.yml`) に `concurrency: cancel-in-progress: true` を設定、連続 push で古い run を cancel | Workflow YAML |
 | Action version 不揃い | `actions/checkout` の参照を `@v6` で統一 | Workflow YAML |
+| Commit 済 source 内の secret | Repository Settings → Secret scanning + Push protection 両方 **ENABLED** | GitHub UI |
+| 脆弱性ある依存の更新ラグ | Dependabot security updates 有効化 | GitHub UI |
 
-### Deferred 項目 (post-launch)
+### Historical: self-hosted runner experiment (2026-04-27)
 
-監査の結果、closed beta 期間中の残余リスクとして受容。Runner 侵害観測時または将来の hardening sprint で再検討。
+Phase 39.0.1 prep 中の約6時間、self-hosted runner (`/Users/b150005/Development/Tools/actions-runner-knitnote/` にメンテナの Mac で install) で CI を運用しました。同日中に revert。理由は2つ:
 
-| ID | リスク | Deferred 理由 |
-|---|---|---|
-| H1 | Persistent workspace に payload 残存 | Runner isolation (Lume VM 復活等) 必要 — 大工数。fork PR 承認 gate で実行可能ユーザを限定して当面緩和 |
-| H2 | Runner が admin group user として動作、Keychain 全アクセス | H1 と同根 — runner isolation 必要 |
-| M2 | `~/.gradle/caches/` を CI と local dev で共有、汚染 cache が local build にも波及 | `GRADLE_USER_HOME` 分離は容易だが初回 cache miss コスト追加。SHA-pin で当面緩和 |
-| L2 | Runner プロセスの network egress 無制限 | 3rd-party macOS firewall (Little Snitch / LuLu) 必要、初回観測ニーズまで deferred |
+1. **Public repo 上の inherent 残余セキュリティリスク**。Critical findings (fork PR 承認 gate、third-party action SHA pin) を closeした後も、HIGH 残余 — persistent workspace cross-run poisoning、admin group user として keychain 全アクセス、CI と local dev で共有される Gradle cache — は runner isolation (Lume VM、container、専用機) なしには close 不可能。Closed beta tester 招待を出すにあたって受容できる残余リスクではなかった。
 
-### ユーザ作業 (一度きりの設定)
+2. **Host PC オペレーション overhead**。Host-runner 運用は GitHub-hosted ephemeral runners が構造的に持たない state-persistence 問題を続発:
+   - Android E2E が `INSTALL_FAILED_UPDATE_INCOMPATIBLE` で fail (host AVD にメンテナの local debug keystore で署名された dev 版アプリが残存)。Commit `7a9101b` で `adb install` 前に `adb uninstall` 追加で patch
+   - iOS E2E `xcrun simctl install` が 42 分 hang してから 45 分 job timeout で kill (host の iPhone 17 Pro Simulator にメンテナの dev 版 install 残存)
+   - CI `:shared:build` が `Gradle build daemon stopped: JVM GC thrashing` で fail (`GRADLE_OPTS=-Xmx6g` 設定後も。Commit `24194b9`)
 
-- **Passphrase なしの SSH 鍵** (`~/.ssh/id_ed25519`, `~/.ssh/b150005-GitHub`): runner 侵害時に silent 漏洩リスク。`ssh-keygen -p -f <key>` で都合の良い時に passphrase 設定推奨
-- **Dependabot security updates**: Repository Settings → Code security & analysis で有効化推奨。SHA-pin した actions と相性最良
-- **VM provisioning 時に作成した Apple ID app-specific password**: もう不要なら `account.apple.com → Sign-In and Security → App-Specific Passwords` で revoke (host runner では不要)
+   各 fix が workflow YAML を複雑化、failure mode はすべて「local 開発と resource 共有する non-ephemeral runner」固有の問題。
 
-### Runner 特有の既知挙動
+iOS jobs で観測された 4× 高速化 (6m18s self-hosted vs 25min on `macos-latest`) は本物だが、single-maintainer public repo の security-and-maintenance trade-off を正当化するには不十分。教訓: **public リポジトリの self-hosted runner は isolation (VM or container) 必須**、real hardware で動かす speed メリットは maintenance burden + ephemeral GitHub-hosted runners が構造的に避けている security exposure に相殺される。
 
-- **Android E2E install conflict**: host の Android AVD は CI run 間 + local 開発セッション間で persist。Local 開発時 install したアプリ (local debug keystore で署名) と CI build APK (default Android debug keystore で署名) で署名不一致 → `INSTALL_FAILED_UPDATE_INCOMPATIBLE`。回避: `e2e.yml` の `adb install -r` 前に `adb uninstall io.github.b150005.knitnote.android || true` 実行
-- **iOS Simulator destination**: `Resolve iOS Simulator destination` step は `xcrun simctl list devices available -j` を parse して最初の利用可能 iPhone simulator を選択。Host の install 済 simulator runtime に依存、Xcode 更新で runtime 変わると選択 device 変動可能性
-- **Single runner sequential 実行**: 1 個の runner 登録のため、1 push で trigger された全 workflow は順次 queue。CI 1 cycle ~80 分 (前 parallel GitHub-hosted の ~25 分から増加)。Multi-runner 拡張は cycle time が痛くなれば検討
+将来再検討 (例: 月次 GHA minutes コストが閾値超え、beta が高頻度 push phase に移行) する場合は、Lume VM runner + `--ephemeral` JIT registration で各 job fresh isolated 環境にする shape が正解 — ここで試した host-direct setup ではない。
 
 ## 更新履歴
 
@@ -221,3 +204,4 @@ gh api -X DELETE repos/b150005/knit-note/rulesets/15581036
 |---|---|---|
 | 2026-04-27 | 初回 `main-strict` ruleset 作成 (id `15581036`) | b150005 |
 | 2026-04-27 | Self-hosted runner 稼働開始、security audit + hardening 完了 (Fork PR approval、third-party SHA pin、ci.yml permissions block、pages.yml の ubuntu-latest 復帰、env-var step output pattern)。Commits `1a119e1` + `8d6c6ae` 参照 | b150005 |
+| 2026-04-27 | Self-hosted runner を GitHub-hosted に revert (security + maintenance trade-off — 「Historical: self-hosted runner experiment」section 参照)。Hardening は全て維持。Runner deregister + LaunchAgent 削除 + ディレクトリ削除 | b150005 |

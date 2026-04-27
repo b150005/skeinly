@@ -16,16 +16,16 @@ permissions:
 jobs:
   android-e2e:
     name: Android E2E (Maestro)
-    runs-on: [self-hosted, macos, apple-silicon, host]
+    runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      JAVA_HOME: /opt/homebrew/opt/openjdk@17
-      PATH: /opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
-      ANDROID_HOME: /Users/b150005/Library/Android/sdk
-      ANDROID_SDK_ROOT: /Users/b150005/Library/Android/sdk
-      GRADLE_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=1g"
     steps:
       - uses: actions/checkout@v6
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
 
       - name: Setup Gradle
         # Pin to SHA per security audit C2.
@@ -34,20 +34,31 @@ jobs:
       - name: Build debug APK (local-only mode)
         run: SUPABASE_URL="" SUPABASE_ANON_KEY="" ./gradlew :androidApp:assembleDebug
 
-      # Maestro is pre-installed on host via brew (~/.maestro/bin already on PATH).
-      # No re-install needed.
+      - name: Install Maestro CLI
+        env:
+          MAESTRO_VERSION: "2.4.0"
+          MAESTRO_CLI_NO_ANALYTICS: "1"
+        run: |
+          set -o pipefail
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.maestro/bin:$PATH"
+          maestro --version
+
+      - name: Enable KVM for hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
 
       - name: Run Android E2E tests
-        # reactivecircus/android-emulator-runner supports macOS via Apple's HVF
-        # (no KVM required — the Linux-specific 'enable-kvm' step has been removed).
-        # On Apple Silicon use arm64-v8a system image for native-speed emulation.
         # Pin to SHA per security audit C2 (third-party action, executes shell
         # via 'script:' input — high-impact supply chain target).
         uses: reactivecircus/android-emulator-runner@e89f39f1abbbd05b1113a29cf4db69e7540cae5a # v2
         with:
           api-level: 34
           target: google_apis
-          arch: arm64-v8a
+          arch: x86_64
           profile: pixel_6
           ram-size: 4096
           heap-size: 1024
@@ -66,10 +77,6 @@ jobs:
             sleep 2
             adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
             sleep 2
-            # Uninstall any pre-existing copy (host AVD may carry dev-signed
-            # install from prior local development — INSTALL_FAILED_UPDATE_INCOMPATIBLE
-            # otherwise. Idempotent: silent if package not present).
-            adb uninstall io.github.b150005.knitnote.android || true
             adb install -r androidApp/build/outputs/apk/debug/androidApp-debug.apk
             sleep 5
             adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
@@ -84,35 +91,27 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
-      - name: Cleanup workspace + Maestro test results (post-job)
-        if: always()
-        run: |
-          set +e
-          rm -rf "$GITHUB_WORKSPACE/build" "$GITHUB_WORKSPACE/shared/build" \
-                 "$GITHUB_WORKSPACE/iosApp/build" "$GITHUB_WORKSPACE/androidApp/build" 2>/dev/null
-          # After upload-artifact step, local Maestro results can be discarded.
-          rm -rf ~/.maestro/tests/* 2>/dev/null
-          exit 0
-
   ios-e2e:
     name: iOS E2E (Maestro)
-    runs-on: [self-hosted, macos, apple-silicon, host]
+    runs-on: macos-latest
     timeout-minutes: 45
-    env:
-      JAVA_HOME: /opt/homebrew/opt/openjdk@17
-      PATH: /opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
-      GRADLE_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=1g"
     steps:
       - uses: actions/checkout@v6
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: Setup Gradle
-        # Pin to SHA per security audit C2.
         uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6
 
       - name: Build shared framework
         run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
 
-      # xcodegen pre-installed on host (no brew install needed).
+      - name: Install XcodeGen
+        run: brew install xcodegen
 
       - name: Create local.xcconfig for CI
         run: echo 'DEVELOPMENT_TEAM =' > iosApp/local.xcconfig
@@ -133,7 +132,8 @@ jobs:
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build/ios-e2e \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty; exit ${PIPESTATUS[0]}
 
       - name: Boot iOS simulator
         id: sim
@@ -162,14 +162,18 @@ jobs:
             echo "::error::Built app not found under build/ios-e2e"
             exit 1
           fi
-          # Uninstall any pre-existing copy. Host simulator may carry a dev install
-          # of knit-note from local development that hangs simctl install for >40min
-          # (observed 2026-04-27 — job timed out at 45m). Idempotent: silent if app
-          # not present. Same root cause class as the Android adb uninstall fix.
-          xcrun simctl uninstall "$SIM_UDID" io.github.b150005.knitnote 2>/dev/null || true
           xcrun simctl install "$SIM_UDID" "$APP_PATH"
 
-      # Maestro pre-installed on host.
+      - name: Install Maestro CLI
+        env:
+          MAESTRO_VERSION: "2.4.0"
+          MAESTRO_CLI_NO_ANALYTICS: "1"
+        run: |
+          set -o pipefail
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.maestro/bin:$PATH"
+          maestro --version
 
       - name: Run iOS E2E tests
         env:
@@ -187,20 +191,3 @@ jobs:
           path: ~/.maestro/tests/
           retention-days: 7
           if-no-files-found: ignore
-
-      - name: Cleanup workspace + DerivedData + Maestro results + simulator (post-job)
-        if: always()
-        env:
-          SIM_UDID: ${{ steps.sim.outputs.udid }}
-        run: |
-          set +e
-          # Shut down (don't erase — preserves user's other simulator state)
-          xcrun simctl shutdown "$SIM_UDID" 2>/dev/null
-          # Workspace + DerivedData
-          rm -rf "$GITHUB_WORKSPACE/build" "$GITHUB_WORKSPACE/shared/build" \
-                 "$GITHUB_WORKSPACE/iosApp/build" "$GITHUB_WORKSPACE/androidApp/build" \
-                 "$GITHUB_WORKSPACE/iosApp/iosApp.xcodeproj" 2>/dev/null
-          rm -rf ~/Library/Developer/Xcode/DerivedData/iosApp-* 2>/dev/null
-          # Maestro results uploaded already
-          rm -rf ~/.maestro/tests/* 2>/dev/null
-          exit 0

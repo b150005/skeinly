@@ -154,60 +154,43 @@ gh api -X PUT repos/b150005/knit-note/rulesets/15581036 -f enforcement=active
 gh api -X DELETE repos/b150005/knit-note/rulesets/15581036
 ```
 
-## Security posture (self-hosted CI runner)
+## Security posture (CI runners)
 
-CI for this repository runs on a self-hosted GitHub Actions runner installed at `/Users/b150005/Development/Tools/actions-runner-knitnote/` on the maintainer's macOS host. The runner is registered as `b150005mac-host` with labels `[self-hosted, macos, apple-silicon, host]`. This section documents the threat model, applied mitigations, and deferred items.
+CI for this repository runs on **GitHub-hosted runners** (`ubuntu-latest` and `macos-latest`). A self-hosted runner experiment (2026-04-27) was attempted and reverted — see "Historical: self-hosted runner experiment" below for the rationale.
 
-### Threat model
-
-The repository is **public**. The self-hosted runner executes as user `b150005` (admin-group member) on the maintainer's primary development Mac, with access to:
-
-- The maintainer's home directory, including SSH keys, gh CLI tokens, browser data, and the macOS login keychain
-- The maintainer's other Development repositories
-- The local network and unrestricted internet egress
-
-The most dangerous attack vectors against this configuration are:
-
-1. **Arbitrary code execution via fork PR** — by default GitHub allows fork PRs to trigger `pull_request` workflow events, executing PR-branch code on the runner.
-2. **Third-party action supply chain compromise** — actions referenced by mutable tag (`@v2`, `@v6`) can be re-pointed to malicious commits if the upstream maintainer account is compromised.
-3. **Cross-run workspace poisoning** — the runner is non-ephemeral; an attacker who achieves one code-execution event can plant payloads in `_work/` or `~/.gradle/caches/` that execute in subsequent runs.
-4. **Unscoped GITHUB_TOKEN** — workflows without an explicit `permissions:` block inherit the repository default; if that default is later widened, all workflows silently gain write capabilities.
+The security hardening applied during the self-hosted experiment is retained because it is still valuable on GitHub-hosted runners.
 
 ### Applied mitigations
 
 | Threat | Mitigation | Where |
 |---|---|---|
-| Fork PR arbitrary code execution | Repository Settings → Actions → "Fork pull request workflows from outside collaborators" set to **"Require approval for all outside collaborators"**. The maintainer must explicitly approve the first workflow run from any contributor before it dispatches to the runner. | GitHub UI |
-| Branch direct push by non-Owner | `update` rule + Repository Admin-only bypass (this `main-strict` ruleset). | Ruleset id 15581036 |
-| Third-party action supply chain | All non-GitHub-owned actions pinned to commit SHA: `reactivecircus/android-emulator-runner@e89f39f`, `gradle/actions/setup-gradle@50e97c2`, `softprops/action-gh-release@b430933`. Dependabot tracks updates. | `.github/workflows/*.yml` |
-| GITHUB_TOKEN scope creep | Top-level `permissions: contents: read` in every workflow that can be triggered by external events (`ci.yml`, `e2e.yml`, `security.yml`). | Workflow YAML |
-| OIDC token in host process space | `pages.yml` (which holds `id-token: write` for GitHub Pages OIDC federation) runs on `ubuntu-latest` rather than the self-hosted runner. | `.github/workflows/pages.yml` |
-| Shell injection via step output interpolation | `${{ steps.sim.outputs.dest }}` (and similar step-output references in shell `run:` blocks) assigned to `env:` block first, then referenced as `$XCODE_DEST` in shell. Pattern applied in `ci.yml` and `security.yml`. | Workflow YAML |
-| Secrets in committed source | Repository Settings → Secret scanning + Push protection both **ENABLED**. | GitHub UI |
-| Action version skew | All `actions/checkout` references unified at `@v6`. | Workflow YAML |
+| Branch direct push by non-Owner | `update` rule + Repository Admin-only bypass (this `main-strict` ruleset) | Ruleset id 15581036 |
+| Third-party action supply chain compromise (mutable tag re-pointing) | All non-GitHub-owned actions pinned to commit SHA: `reactivecircus/android-emulator-runner@e89f39f`, `gradle/actions/setup-gradle@50e97c2`, `softprops/action-gh-release@b430933`. Dependabot tracks updates via `.github/dependabot.yml` `github-actions` ecosystem. | `.github/workflows/*.yml` |
+| Fork PR arbitrary code execution from any GitHub user | Repository Settings → Actions → "Fork pull request workflows from outside collaborators" set to **"Require approval for all outside collaborators"** | GitHub UI |
+| GITHUB_TOKEN scope creep | Top-level `permissions: contents: read` in every workflow that can be triggered by external events (`ci.yml`, `e2e.yml`, `security.yml`) | Workflow YAML |
+| Shell injection via step output interpolation | `${{ steps.sim.outputs.dest }}` (and similar step-output references in shell `run:` blocks) assigned to `env:` block first, then referenced as `$XCODE_DEST` in shell. Applied in `ci.yml` + `security.yml`. | Workflow YAML |
+| OIDC token broad exposure | `pages.yml` (which holds `id-token: write` for GitHub Pages OIDC) runs on `ubuntu-latest` and is gated to `docs/public/**` path changes — minimal trigger surface | `.github/workflows/pages.yml` |
+| Workflow queue piling on the same ref | All three trigger-on-push workflows (`ci.yml`, `e2e.yml`, `security.yml`) carry `concurrency: cancel-in-progress: true` so rapid back-to-back pushes cancel older runs | Workflow YAML |
+| Action version skew | All `actions/checkout` references unified at `@v6` | Workflow YAML |
+| Secrets in committed source | Repository Settings → Secret scanning + Push protection both **ENABLED** | GitHub UI |
+| Vulnerable dependency upgrade lag | Dependabot security updates enabled | GitHub UI |
 
-### Deferred items (post-launch)
+### Historical: self-hosted runner experiment (2026-04-27)
 
-These have been audited and accepted as residual risk for the closed-beta window. They will be revisited if the runner is ever observed to be compromised, or as part of a future hardening sprint.
+For ~6 hours during Phase 39.0.1 prep, this repository ran CI on a self-hosted runner installed at `/Users/b150005/Development/Tools/actions-runner-knitnote/` on the maintainer's Mac. The experiment was reverted the same day. Two reasons:
 
-| ID | Risk | Why deferred |
-|---|---|---|
-| H1 | Persistent workspace allows cross-run payload persistence | Closing it requires runner isolation (Lume VM revival or equivalent) — significant work; mitigated for now by fork-PR-approval gating who can run jobs |
-| H2 | Runner runs as admin-group user with full Keychain access | Same root cause as H1 — requires runner isolation |
-| M2 | `~/.gradle/caches/` shared between CI and local development; poisoned cache could affect local builds | Splitting `GRADLE_USER_HOME` to a CI-dedicated path is straightforward but adds first-run cache miss; mitigated for now by SHA-pinning third-party actions |
-| L2 | No network egress restriction on the runner process | Requires third-party macOS firewall (Little Snitch / LuLu); deferred until first observed need |
+1. **Inherent residual security risk on a public repo**. Even after closing CRITICAL findings (fork PR approval gate, third-party action SHA pinning), the residual HIGH findings — persistent workspace cross-run poisoning, runner runs as admin-group user with full Keychain access, shared Gradle cache between CI and local development — could not be closed without runner isolation (Lume VM, container, or dedicated machine). Shipping closed-beta tester invites with that residual risk was not comfortable.
 
-### User responsibilities (one-time setup)
+2. **Host-PC operational overhead**. The host-runner setup kept surfacing new state-persistence problems that GitHub-hosted ephemeral runners structurally do not have:
+   - Android E2E hit `INSTALL_FAILED_UPDATE_INCOMPATIBLE` because the host AVD carried a dev install of the app signed with the maintainer's local debug keystore (commit `7a9101b` patched with `adb uninstall` before `adb install`).
+   - iOS E2E `xcrun simctl install` hung for 42 minutes before the 45-min job timeout killed it, because the host's iPhone 17 Pro Simulator carried a dev install of knit-note.
+   - CI `:shared:build` step hit `Gradle build daemon stopped: JVM GC thrashing` even with `GRADLE_OPTS=-Xmx6g` (commit `24194b9`).
 
-- **SSH keys without passphrase** (`~/.ssh/id_ed25519`, `~/.ssh/b150005-GitHub`): silent exfiltration risk if runner is ever compromised. Set passphrases via `ssh-keygen -p -f <key>` when convenient.
-- **Dependabot security updates**: enable at Repository Settings → Code security & analysis. Pairs naturally with the SHA-pinned actions to surface upstream vulnerabilities promptly.
-- **Apple ID app-specific passwords used during VM provisioning**: revoke at `account.apple.com → Sign-In and Security → App-Specific Passwords` if no longer needed (the host runner does not require them).
+   Each fix accreted workflow-YAML complexity, and the failure modes were inherent to having a non-ephemeral runner that shared resources with ongoing local development.
 
-### Known runner-specific behaviors
+The 4× speedup observed on iOS jobs (6m18s self-hosted vs 25min on `macos-latest`) was real but did not justify the security-and-maintenance trade-off for a single-maintainer public repo. The relevant lesson: **self-hosted runners on public repositories demand isolation (VM or container)**, and the apparent gain from running on real hardware is offset by the maintenance burden and the security exposure that ephemeral GitHub-hosted runners structurally avoid.
 
-- **Android E2E install conflict**: the host's Android AVD persists across CI runs and across local development sessions. A prior dev install of the app signed with the local debug keystore conflicts with the CI-built APK signed with the default Android debug keystore (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`). Workaround: `adb uninstall io.github.b150005.knitnote.android || true` runs before `adb install -r` in `e2e.yml`.
-- **iOS Simulator destination**: the `Resolve iOS Simulator destination` step parses `xcrun simctl list devices available -j` and picks the first available iPhone simulator. This selection depends on the host's installed simulator runtimes; if the host's Xcode is updated and simulator runtimes change, the destination resolution may pick a different device.
-- **Single runner sequential execution**: with one registered runner, all workflows triggered by a single push queue sequentially. Total CI cycle time is ~80 minutes (vs ~25 minutes when previously parallel on GitHub-hosted runners). Multi-runner expansion is a documented option if cycle time becomes painful.
+If a future revisit is warranted (e.g., monthly GHA minutes spend exceeds a threshold, or beta moves to a high-frequency-push phase), the right shape is a Lume VM runner with `--ephemeral` JIT registration so each job gets a fresh isolated environment — not the host-direct setup tried here.
 
 ## Update history
 
@@ -215,3 +198,4 @@ These have been audited and accepted as residual risk for the closed-beta window
 |---|---|---|
 | 2026-04-27 | Initial `main-strict` ruleset created (id `15581036`) | b150005 |
 | 2026-04-27 | Self-hosted runner activated; security audit + hardening landed (Fork PR approval, third-party SHA pin, ci.yml permissions block, pages.yml reverted to ubuntu-latest, env-var step output pattern). See commits `1a119e1` + `8d6c6ae`. | b150005 |
+| 2026-04-27 | Self-hosted runner reverted back to GitHub-hosted (security + maintenance trade-off — see "Historical: self-hosted runner experiment" section). All hardening retained. Runner deregistered + LaunchAgent removed + directory deleted. | b150005 |
