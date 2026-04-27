@@ -24,6 +24,12 @@ jobs:
       PATH: /opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
       ANDROID_HOME: /Users/b150005/Library/Android/sdk
       ANDROID_SDK_ROOT: /Users/b150005/Library/Android/sdk
+      # KMP shared module (Kotlin compile + Kover + iOS framework link) accumulates
+      # state in the Gradle daemon across multiple invocations within one job.
+      # Default Xmx is too small — observed "Gradle build daemon stopped: JVM GC
+      # thrashing" on :shared:build after :shared:allTests + koverVerify. Host
+      # has 32GB so 6g is safe.
+      GRADLE_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=1g"
     steps:
       - uses: actions/checkout@v6
         with:
@@ -76,6 +82,7 @@ jobs:
       PATH: /opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
       ANDROID_HOME: /Users/b150005/Library/Android/sdk
       ANDROID_SDK_ROOT: /Users/b150005/Library/Android/sdk
+      GRADLE_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=1g"
     steps:
       - uses: actions/checkout@v6
 
@@ -117,6 +124,7 @@ jobs:
     env:
       JAVA_HOME: /opt/homebrew/opt/openjdk@17
       PATH: /opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+      GRADLE_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=1g"
     steps:
       - uses: actions/checkout@v6
 

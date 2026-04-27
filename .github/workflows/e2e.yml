@@ -23,6 +23,7 @@ jobs:
       PATH: /opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
       ANDROID_HOME: /Users/b150005/Library/Android/sdk
       ANDROID_SDK_ROOT: /Users/b150005/Library/Android/sdk
+      GRADLE_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=1g"
     steps:
       - uses: actions/checkout@v6
 
@@ -100,6 +101,7 @@ jobs:
     env:
       JAVA_HOME: /opt/homebrew/opt/openjdk@17
       PATH: /opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+      GRADLE_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=1g"
     steps:
       - uses: actions/checkout@v6
 
@@ -160,6 +162,11 @@ jobs:
             echo "::error::Built app not found under build/ios-e2e"
             exit 1
           fi
+          # Uninstall any pre-existing copy. Host simulator may carry a dev install
+          # of knit-note from local development that hangs simctl install for >40min
+          # (observed 2026-04-27 — job timed out at 45m). Idempotent: silent if app
+          # not present. Same root cause class as the Android adb uninstall fix.
+          xcrun simctl uninstall "$SIM_UDID" io.github.b150005.knitnote 2>/dev/null || true
           xcrun simctl install "$SIM_UDID" "$APP_PATH"
 
       # Maestro pre-installed on host.
