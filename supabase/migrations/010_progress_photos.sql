@@ -39,14 +39,17 @@ CREATE POLICY "Users can delete own progress photos"
         AND auth.uid()::text = (storage.foldername(name))[1]
     );
 
--- Users can read progress photos for shared projects
+-- Users can read progress photos for shared projects.
+-- Note: shares.pattern_id is UUID (FK to patterns.id) while projects.pattern_id is TEXT
+-- (legacy free-text identifier from Phase 1, default 'no-pattern'). Cast UUID->TEXT
+-- since projects.pattern_id can hold non-UUID values that would fail TEXT->UUID coercion.
 CREATE POLICY "Users can read shared project progress photos"
     ON storage.objects FOR SELECT
     USING (
         bucket_id = 'progress-photos'
         AND EXISTS (
             SELECT 1 FROM public.progress pr
-            JOIN public.shares s ON s.pattern_id = (
+            JOIN public.shares s ON s.pattern_id::text = (
                 SELECT p.pattern_id FROM public.projects p WHERE p.id = pr.project_id
             )
             WHERE pr.owner_id::text = (storage.foldername(name))[1]
