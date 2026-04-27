@@ -8,6 +8,14 @@ on:
   schedule:
     - cron: "17 6 * * 1" # Weekly Monday 6:17 AM UTC
 
+# Prevent queue piling on the single self-hosted runner: rapid back-to-back
+# pushes will cancel the older run instead of letting both queue. Same
+# pattern as ci.yml + e2e.yml. Scheduled runs (cron) get their own group
+# via github.ref so they never cancel push-triggered runs and vice versa.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   codeql:
     name: CodeQL Analysis
