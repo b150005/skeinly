@@ -1,10 +1,17 @@
-name: iOS Self-Hosted (Lume)
+name: iOS Self-Hosted (Host)
 
-# Runs on the always-on Lume VM registered as a self-hosted runner with labels
-# self-hosted/macos/apple-silicon/lume. Provides faster iOS test signal alongside
-# the canonical macos-latest job in ci.yml. If the runner is offline (VM stopped),
-# this workflow fails — but the required status check `iOS (Build + Test)` from
-# ci.yml continues to run on GitHub-hosted, so PR merges are not blocked.
+# Runs on the always-on host Mac registered as a self-hosted runner with labels
+# self-hosted/macos/apple-silicon/host. Provides faster iOS test signal alongside
+# the canonical macos-latest job in ci.yml. If the runner is offline (host shut
+# down or runner crashed), this workflow fails — but the required status check
+# `iOS (Build + Test)` from ci.yml continues to run on GitHub-hosted, so PR
+# merges are not blocked.
+#
+# History note: originally targeted a Lume macOS VM (label `lume`) but pivoted
+# to host-direct on 2026-04-27 — VM isolation provided minimal security benefit
+# for a solo public repo where strict branch protection ensures only Owner-
+# authored code reaches main, and the ~70GB VM disk + Setup Assistant pain
+# outweighed the negligible isolation gain.
 
 on:
   workflow_dispatch:
@@ -26,8 +33,8 @@ concurrency:
 
 jobs:
   ios-self-hosted:
-    name: iOS (Build + Test, Self-Hosted Lume)
-    runs-on: [self-hosted, macos, apple-silicon, lume]
+    name: iOS (Build + Test, Self-Hosted Host)
+    runs-on: [self-hosted, macos, apple-silicon, host]
     timeout-minutes: 30
     env:
       JAVA_HOME: /opt/homebrew/opt/openjdk@17
