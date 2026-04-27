@@ -16,16 +16,15 @@ permissions:
 jobs:
   android-e2e:
     name: Android E2E (Maestro)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macos, apple-silicon, host]
     timeout-minutes: 30
+    env:
+      JAVA_HOME: /opt/homebrew/opt/openjdk@17
+      PATH: /opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+      ANDROID_HOME: /Users/b150005/Library/Android/sdk
+      ANDROID_SDK_ROOT: /Users/b150005/Library/Android/sdk
     steps:
       - uses: actions/checkout@v6
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 17
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
@@ -33,29 +32,18 @@ jobs:
       - name: Build debug APK (local-only mode)
         run: SUPABASE_URL="" SUPABASE_ANON_KEY="" ./gradlew :androidApp:assembleDebug
 
-      - name: Install Maestro CLI
-        env:
-          MAESTRO_VERSION: "2.4.0"
-          MAESTRO_CLI_NO_ANALYTICS: "1"
-        run: |
-          set -o pipefail
-          curl -fsSL "https://get.maestro.mobile.dev" | bash
-          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
-          export PATH="$HOME/.maestro/bin:$PATH"
-          maestro --version
-
-      - name: Enable KVM for hardware acceleration
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
+      # Maestro is pre-installed on host via brew (~/.maestro/bin already on PATH).
+      # No re-install needed.
 
       - name: Run Android E2E tests
+        # reactivecircus/android-emulator-runner@v2 supports macOS via Apple's HVF
+        # (no KVM required — the Linux-specific 'enable-kvm' step has been removed).
+        # On Apple Silicon use arm64-v8a system image for native-speed emulation.
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
           target: google_apis
-          arch: x86_64
+          arch: arm64-v8a
           profile: pixel_6
           ram-size: 4096
           heap-size: 1024
@@ -88,18 +76,25 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+      - name: Cleanup workspace + Maestro test results (post-job)
+        if: always()
+        run: |
+          set +e
+          rm -rf "$GITHUB_WORKSPACE/build" "$GITHUB_WORKSPACE/shared/build" \
+                 "$GITHUB_WORKSPACE/iosApp/build" "$GITHUB_WORKSPACE/androidApp/build" 2>/dev/null
+          # After upload-artifact step, local Maestro results can be discarded.
+          rm -rf ~/.maestro/tests/* 2>/dev/null
+          exit 0
+
   ios-e2e:
     name: iOS E2E (Maestro)
-    runs-on: macos-latest
+    runs-on: [self-hosted, macos, apple-silicon, host]
     timeout-minutes: 45
+    env:
+      JAVA_HOME: /opt/homebrew/opt/openjdk@17
+      PATH: /opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
     steps:
       - uses: actions/checkout@v6
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 17
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
@@ -107,8 +102,7 @@ jobs:
       - name: Build shared framework
         run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
+      # xcodegen pre-installed on host (no brew install needed).
 
       - name: Create local.xcconfig for CI
         run: echo 'DEVELOPMENT_TEAM =' > iosApp/local.xcconfig
@@ -129,8 +123,7 @@ jobs:
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build/ios-e2e \
-            CODE_SIGNING_ALLOWED=NO \
-            | xcpretty; exit ${PIPESTATUS[0]}
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Boot iOS simulator
         id: sim
@@ -161,16 +154,7 @@ jobs:
           fi
           xcrun simctl install "$SIM_UDID" "$APP_PATH"
 
-      - name: Install Maestro CLI
-        env:
-          MAESTRO_VERSION: "2.4.0"
-          MAESTRO_CLI_NO_ANALYTICS: "1"
-        run: |
-          set -o pipefail
-          curl -fsSL "https://get.maestro.mobile.dev" | bash
-          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
-          export PATH="$HOME/.maestro/bin:$PATH"
-          maestro --version
+      # Maestro pre-installed on host.
 
       - name: Run iOS E2E tests
         env:
@@ -188,3 +172,20 @@ jobs:
           path: ~/.maestro/tests/
           retention-days: 7
           if-no-files-found: ignore
+
+      - name: Cleanup workspace + DerivedData + Maestro results + simulator (post-job)
+        if: always()
+        env:
+          SIM_UDID: ${{ steps.sim.outputs.udid }}
+        run: |
+          set +e
+          # Shut down (don't erase — preserves user's other simulator state)
+          xcrun simctl shutdown "$SIM_UDID" 2>/dev/null
+          # Workspace + DerivedData
+          rm -rf "$GITHUB_WORKSPACE/build" "$GITHUB_WORKSPACE/shared/build" \
+                 "$GITHUB_WORKSPACE/iosApp/build" "$GITHUB_WORKSPACE/androidApp/build" \
+                 "$GITHUB_WORKSPACE/iosApp/iosApp.xcodeproj" 2>/dev/null
+          rm -rf ~/Library/Developer/Xcode/DerivedData/iosApp-* 2>/dev/null
+          # Maestro results uploaded already
+          rm -rf ~/.maestro/tests/* 2>/dev/null
+          exit 0

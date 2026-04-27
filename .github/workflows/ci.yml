@@ -13,17 +13,16 @@ concurrency:
 jobs:
   shared-checks:
     name: Shared Module (Lint + Test + Coverage + Build)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macos, apple-silicon, host]
+    env:
+      JAVA_HOME: /opt/homebrew/opt/openjdk@17
+      PATH: /opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+      ANDROID_HOME: /Users/b150005/Library/Android/sdk
+      ANDROID_SDK_ROOT: /Users/b150005/Library/Android/sdk
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 17
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
@@ -51,18 +50,26 @@ jobs:
       - name: Build shared module
         run: ./gradlew :shared:build
 
+      - name: Cleanup workspace + DerivedData (post-job)
+        if: always()
+        run: |
+          set +e
+          rm -rf "$GITHUB_WORKSPACE/build" "$GITHUB_WORKSPACE/shared/build" \
+                 "$GITHUB_WORKSPACE/iosApp/build" "$GITHUB_WORKSPACE/androidApp/build" 2>/dev/null
+          rm -rf ~/Library/Developer/Xcode/DerivedData/iosApp-* 2>/dev/null
+          exit 0
+
   android:
     name: Android (Build + Test)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macos, apple-silicon, host]
     needs: shared-checks
+    env:
+      JAVA_HOME: /opt/homebrew/opt/openjdk@17
+      PATH: /opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+      ANDROID_HOME: /Users/b150005/Library/Android/sdk
+      ANDROID_SDK_ROOT: /Users/b150005/Library/Android/sdk
     steps:
       - uses: actions/checkout@v6
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 17
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
@@ -83,27 +90,30 @@ jobs:
           path: androidApp/build/outputs/apk/debug/*.apk
           retention-days: 7
 
+      - name: Cleanup workspace + DerivedData (post-job)
+        if: always()
+        run: |
+          set +e
+          rm -rf "$GITHUB_WORKSPACE/build" "$GITHUB_WORKSPACE/shared/build" \
+                 "$GITHUB_WORKSPACE/iosApp/build" "$GITHUB_WORKSPACE/androidApp/build" 2>/dev/null
+          rm -rf ~/Library/Developer/Xcode/DerivedData/iosApp-* 2>/dev/null
+          exit 0
+
   ios:
     name: iOS (Build + Test)
-    runs-on: macos-latest
+    runs-on: [self-hosted, macos, apple-silicon, host]
     needs: shared-checks
+    env:
+      JAVA_HOME: /opt/homebrew/opt/openjdk@17
+      PATH: /opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
     steps:
       - uses: actions/checkout@v6
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 17
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
       - name: Build iOS shared framework
         run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
-
-      - name: Install XcodeGen
-        run: brew install xcodegen
 
       - name: Create local.xcconfig for CI
         run: echo 'DEVELOPMENT_TEAM =' > iosApp/local.xcconfig
@@ -114,7 +124,6 @@ jobs:
       - name: Resolve iOS Simulator destination
         id: sim
         run: |
-          # Pick the first available iPhone simulator by UDID
           UDID=$(xcrun simctl list devices available -j \
             | python3 -c "
           import json, sys
@@ -137,5 +146,23 @@ jobs:
             -scheme iosApp \
             -destination '${{ steps.sim.outputs.dest }}' \
             -resultBundlePath TestResults \
-            CODE_SIGNING_ALLOWED=NO \
-            | xcpretty; exit ${PIPESTATUS[0]}
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-test-results
+          path: TestResults
+          retention-days: 14
+
+      - name: Cleanup workspace + DerivedData (post-job)
+        if: always()
+        run: |
+          set +e
+          rm -rf "$GITHUB_WORKSPACE/build" "$GITHUB_WORKSPACE/shared/build" \
+                 "$GITHUB_WORKSPACE/iosApp/build" "$GITHUB_WORKSPACE/androidApp/build" \
+                 "$GITHUB_WORKSPACE/iosApp/iosApp.xcodeproj" \
+                 "$GITHUB_WORKSPACE/TestResults" 2>/dev/null
+          rm -rf ~/Library/Developer/Xcode/DerivedData/iosApp-* 2>/dev/null
+          exit 0
