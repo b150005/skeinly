@@ -148,6 +148,14 @@ tasks.configureEach {
     }
 }
 
+// Wire root-defined verifyI18nKeys task into :shared:check so the pre-push
+// invariant chain (./gradlew :shared:check) automatically covers i18n key
+// parity. Path-based reference (":verifyI18nKeys") is configuration-cache
+// safe — equivalent to the rootProject.tasks lookup but evaluated lazily.
+tasks.named("check") {
+    dependsOn(":verifyI18nKeys")
+}
+
 sqldelight {
     databases {
         create("KnitNoteDatabase") {
