@@ -154,11 +154,13 @@ Required GitHub Secrets (7):
 
 Code-signing strategy is **manual** (not `match`). See ADR-007 for rationale.
 
+For step-by-step instructions on **obtaining, verifying, and registering** every secret (`gh secret set` commands, verification with `openssl` / `security` / `keytool`, rotation procedures), see [docs/en/release-secrets.md](./docs/en/release-secrets.md).
+
 #### Release pipeline (Android)
 
 Android releases produce a signed APK as a GitHub Actions artifact. Upload to Google Play Console → Internal Testing is **manual** (no auto-upload via API in v1).
 
-Required signing secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Plus `SUPABASE_URL` and `SUPABASE_ANON_KEY` for live-backend builds.
+Required signing secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Plus `SUPABASE_URL` and `SUPABASE_ANON_KEY` for live-backend builds. See [docs/en/release-secrets.md](./docs/en/release-secrets.md) for full setup and verification.
 
 `VERSION_CODE` in [`version.properties`](./version.properties) MUST be incremented before each Play Console upload (Play rejects duplicate codes).
 
@@ -178,6 +180,7 @@ Required signing secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `
 | Document | Description |
 |----------|-------------|
 | [Repo Policy](./docs/en/repo-policy.md) | Branch protection, ruleset, security posture |
+| [Release Secrets Setup](./docs/en/release-secrets.md) | Step-by-step guide for all 13 GitHub Secrets |
 | [i18n Convention](./docs/en/i18n-convention.md) | Key-naming rules across the 5 i18n sources |
 | [ADR Index](./docs/en/adr/) | Architecture Decision Records |
 | [Phase 39 Beta Rubric](./docs/en/phase/phase-39-beta-rubric.md) | Tester acceptance criteria |
@@ -336,11 +339,13 @@ git push origin v1.0.0-alpha1
 
 コード署名方針は **manual**（`match` 不採用）。理由は ADR-007 を参照。
 
+各シークレットの**取得・検証・登録手順**（`gh secret set` コマンド、`openssl` / `security` / `keytool` での検証、ローテーション手順）は [docs/ja/release-secrets.md](./docs/ja/release-secrets.md) を参照してください。
+
 #### リリースパイプライン (Android)
 
 Android リリースは署名済み APK を GitHub Actions のアーティファクトとして出力します。Google Play Console の Internal Testing へのアップロードは **手動**（v1 では API 経由の自動化なし）。
 
-必要な署名シークレット: `KEYSTORE_BASE64`、`KEYSTORE_PASSWORD`、`KEY_ALIAS`、`KEY_PASSWORD`。ライブバックエンドビルドには `SUPABASE_URL` と `SUPABASE_ANON_KEY` も必要。
+必要な署名シークレット: `KEYSTORE_BASE64`、`KEYSTORE_PASSWORD`、`KEY_ALIAS`、`KEY_PASSWORD`。ライブバックエンドビルドには `SUPABASE_URL` と `SUPABASE_ANON_KEY` も必要。詳細なセットアップと検証手順は [docs/ja/release-secrets.md](./docs/ja/release-secrets.md) を参照。
 
 [`version.properties`](./version.properties) の `VERSION_CODE` は Play Console アップロードのたびに必ず増加させてください（Play は重複コードを拒否します）。
 
@@ -360,6 +365,7 @@ Android リリースは署名済み APK を GitHub Actions のアーティファ
 | ドキュメント | 説明 |
 |-------------|------|
 | [リポジトリポリシー](./docs/ja/repo-policy.md) | ブランチ保護、ルールセット、セキュリティ姿勢 |
+| [リリースシークレットセットアップ](./docs/ja/release-secrets.md) | 13 GitHub Secrets の段階的取得・検証・登録手順 |
 | [i18n 規約](./docs/ja/i18n-convention.md) | 5 つの i18n ソース間のキー命名規則 |
 | [ADR 索引](./docs/ja/adr/) | アーキテクチャ決定レコード |
 
