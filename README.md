@@ -144,9 +144,9 @@ Required GitHub Secrets (7):
 
 | Secret | Source |
 |---|---|
-| `IOS_DISTRIBUTION_CERT_BASE64` | Apple Distribution `.p12` (base64-encoded) |
-| `IOS_DISTRIBUTION_CERT_PASSWORD` | `.p12` export password |
-| `IOS_PROVISIONING_PROFILE_BASE64` | App Store provisioning profile (base64-encoded) |
+| `APPLE_DISTRIBUTION_CERT_BASE64` | Apple Distribution `.p12` (base64-encoded) |
+| `APPLE_DISTRIBUTION_CERT_PASSWORD` | `.p12` export password |
+| `APPLE_PROVISIONING_PROFILE_BASE64` | App Store provisioning profile (base64-encoded) |
 | `APPLE_TEAM_ID` | 10-char Team ID from Apple Developer |
 | `APP_STORE_CONNECT_API_KEY_BASE64` | `.p8` private key (base64-encoded) |
 | `APP_STORE_CONNECT_API_KEY_ID` | 10-char Key ID |
@@ -329,9 +329,9 @@ git push origin v1.0.0-alpha1
 
 | シークレット | 取得元 |
 |---|---|
-| `IOS_DISTRIBUTION_CERT_BASE64` | Apple Distribution `.p12`（base64 エンコード） |
-| `IOS_DISTRIBUTION_CERT_PASSWORD` | `.p12` エクスポート時のパスワード |
-| `IOS_PROVISIONING_PROFILE_BASE64` | App Store プロビジョニングプロファイル（base64 エンコード） |
+| `APPLE_DISTRIBUTION_CERT_BASE64` | Apple Distribution `.p12`（base64 エンコード） |
+| `APPLE_DISTRIBUTION_CERT_PASSWORD` | `.p12` エクスポート時のパスワード |
+| `APPLE_PROVISIONING_PROFILE_BASE64` | App Store プロビジョニングプロファイル（base64 エンコード） |
 | `APPLE_TEAM_ID` | Apple Developer の 10 文字 Team ID |
 | `APP_STORE_CONNECT_API_KEY_BASE64` | `.p8` 秘密鍵（base64 エンコード） |
 | `APP_STORE_CONNECT_API_KEY_ID` | 10 文字の Key ID |

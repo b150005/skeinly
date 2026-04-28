@@ -13,9 +13,9 @@
 #   - Local invocation: developer's own keychain + manually-installed profile.
 #
 # Required env vars (CI):
-#   IOS_DISTRIBUTION_CERT_BASE64       — base64 of Apple Distribution .p12
-#   IOS_DISTRIBUTION_CERT_PASSWORD     — password used when exporting .p12
-#   IOS_PROVISIONING_PROFILE_BASE64    — base64 of .mobileprovision
+#   APPLE_DISTRIBUTION_CERT_BASE64       — base64 of Apple Distribution .p12
+#   APPLE_DISTRIBUTION_CERT_PASSWORD     — password used when exporting .p12
+#   APPLE_PROVISIONING_PROFILE_BASE64    — base64 of .mobileprovision
 #   APPLE_TEAM_ID                      — 10-char Team ID
 #   APP_STORE_CONNECT_API_KEY_BASE64   — base64 of .p8 private key
 #   APP_STORE_CONNECT_API_KEY_ID       — 10-char Key ID
@@ -85,20 +85,20 @@ def install_signing_assets
   runner_temp = ENV["RUNNER_TEMP"] || Dir.mktmpdir
 
   cert_path = File.join(runner_temp, "distribution.p12")
-  cert_b64 = ENV["IOS_DISTRIBUTION_CERT_BASE64"]
-  UI.user_error!("IOS_DISTRIBUTION_CERT_BASE64 is required in CI") if cert_b64.to_s.empty?
+  cert_b64 = ENV["APPLE_DISTRIBUTION_CERT_BASE64"]
+  UI.user_error!("APPLE_DISTRIBUTION_CERT_BASE64 is required in CI") if cert_b64.to_s.empty?
   File.binwrite(cert_path, Base64.decode64(cert_b64))
 
   import_certificate(
     certificate_path: cert_path,
-    certificate_password: ENV["IOS_DISTRIBUTION_CERT_PASSWORD"],
+    certificate_password: ENV["APPLE_DISTRIBUTION_CERT_PASSWORD"],
     keychain_name: ENV["MATCH_KEYCHAIN_NAME"] || "fastlane_tmp_keychain",
     keychain_password: ENV["MATCH_KEYCHAIN_PASSWORD"] || "",
   )
 
   profile_path = File.join(runner_temp, "distribution.mobileprovision")
-  profile_b64 = ENV["IOS_PROVISIONING_PROFILE_BASE64"]
-  UI.user_error!("IOS_PROVISIONING_PROFILE_BASE64 is required in CI") if profile_b64.to_s.empty?
+  profile_b64 = ENV["APPLE_PROVISIONING_PROFILE_BASE64"]
+  UI.user_error!("APPLE_PROVISIONING_PROFILE_BASE64 is required in CI") if profile_b64.to_s.empty?
   File.binwrite(profile_path, Base64.decode64(profile_b64))
   install_provisioning_profile(path: profile_path)
 end
