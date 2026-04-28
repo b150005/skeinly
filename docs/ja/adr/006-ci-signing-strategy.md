@@ -31,8 +31,8 @@ TestFlight（および最終的に App Store）に到達するには、CI パイ
 
 **ネイティブ xcodebuild + 手動コード署名**を使用。Fastlane やサードパーティ署名ツールは不使用。
 
-- **証明書**: Apple Distribution `.p12` を `IOS_DISTRIBUTION_CERT_BASE64` GitHub Secret として保存
-- **プロビジョニングプロファイル**: App Store 配布用 `.mobileprovision` を `IOS_PROVISIONING_PROFILE_BASE64` として保存
+- **証明書**: Apple Distribution `.p12` を `APPLE_DISTRIBUTION_CERT_BASE64` GitHub Secret として保存
+- **プロビジョニングプロファイル**: App Store 配布用 `.mobileprovision` を `APPLE_PROVISIONING_PROFILE_BASE64` として保存
 - **一時キーチェーン**: CI 実行ごとに `$RUNNER_TEMP/app-signing.keychain-db` にランダムパスワードで作成。`if: always()` クリーンアップステップで破棄
 - **ExportOptions.plist**: CI 実行時に生成（リポジトリにコミットしない）。リポジトリを特定の Apple Developer アカウントに依存させないため。プロビジョニングプロファイル名はインストール済み `.mobileprovision` から実行時に抽出
 
@@ -46,7 +46,7 @@ TestFlight（および最終的に App Store）に到達するには、CI パイ
 
 すべての iOS 署名・アップロードステップはシークレットの存在チェックでゲート：
 
-- **署名シークレット** (`IOS_DISTRIBUTION_CERT_BASE64`, `IOS_DISTRIBUTION_CERT_PASSWORD`, `IOS_PROVISIONING_PROFILE_BASE64`, `APPLE_TEAM_ID`): アーカイブと IPA エクスポートに必要
+- **署名シークレット** (`APPLE_DISTRIBUTION_CERT_BASE64`, `APPLE_DISTRIBUTION_CERT_PASSWORD`, `APPLE_PROVISIONING_PROFILE_BASE64`, `APPLE_TEAM_ID`): アーカイブと IPA エクスポートに必要
 - **TestFlight シークレット** (`APP_STORE_CONNECT_API_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_API_KEY_BASE64`): アップロードのみに必要
 
 シークレット未設定時は共有フレームワークアーティファクトのビルドのみ実行し、警告アノテーションを出力 — 失敗にはならない。
@@ -60,9 +60,9 @@ TestFlight（および最終的に App Store）に到達するには、CI パイ
 
 | シークレット | 用途 |
 |-------------|------|
-| `IOS_DISTRIBUTION_CERT_BASE64` | Base64 エンコードされた .p12 配布証明書 |
-| `IOS_DISTRIBUTION_CERT_PASSWORD` | .p12 ファイルのパスワード |
-| `IOS_PROVISIONING_PROFILE_BASE64` | Base64 エンコードされた .mobileprovision |
+| `APPLE_DISTRIBUTION_CERT_BASE64` | Base64 エンコードされた .p12 配布証明書 |
+| `APPLE_DISTRIBUTION_CERT_PASSWORD` | .p12 ファイルのパスワード |
+| `APPLE_PROVISIONING_PROFILE_BASE64` | Base64 エンコードされた .mobileprovision |
 | `APPLE_TEAM_ID` | Apple Developer Team ID（10文字） |
 | `APP_STORE_CONNECT_API_KEY_ID` | App Store Connect API キー ID |
 | `APP_STORE_CONNECT_ISSUER_ID` | App Store Connect 発行者 ID |

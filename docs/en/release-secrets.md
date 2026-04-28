@@ -48,7 +48,7 @@ Two methods. Prefer `gh secret set` because the value never enters your shell hi
 **Method A — `gh secret set` from a file:**
 
 ```bash
-gh secret set IOS_DISTRIBUTION_CERT_BASE64 < distribution.p12.base64
+gh secret set APPLE_DISTRIBUTION_CERT_BASE64 < distribution.p12.base64
 # verify it landed (shows name + last-updated, never the value)
 gh secret list
 ```
@@ -76,7 +76,7 @@ gh secret delete <SECRET_NAME>
 
 These four cryptographic assets allow CI to sign the iOS app as your Apple Developer team. They have nothing to do with App Store Connect API authentication — that comes next.
 
-### 1. `IOS_DISTRIBUTION_CERT_BASE64`
+### 1. `APPLE_DISTRIBUTION_CERT_BASE64`
 
 **WHAT**: Base64-encoded `.p12` file containing your **Apple Distribution** certificate AND its private key.
 
@@ -87,7 +87,7 @@ These four cryptographic assets allow CI to sign the iOS app as your Apple Devel
 3. Find a certificate named like `Apple Distribution: Your Name (TEAMID)`.
    - If it does not exist: open Xcode → **Settings** → **Accounts** → select your Apple ID → **Manage Certificates** → click `+` → **Apple Distribution**. The new cert appears in Keychain Access.
 4. Right-click the cert → **Export "Apple Distribution: …"** → save as `distribution.p12`.
-5. **Set a password** when prompted (any string, e.g. an `openssl rand -hex 16` value). Save this password — it becomes `IOS_DISTRIBUTION_CERT_PASSWORD`.
+5. **Set a password** when prompted (any string, e.g. an `openssl rand -hex 16` value). Save this password — it becomes `APPLE_DISTRIBUTION_CERT_PASSWORD`.
 6. Base64-encode:
 
    ```bash
@@ -112,12 +112,12 @@ subject=/UID=.../CN=Apple Distribution: Your Name (TEAMID)/...
 **REGISTER:**
 
 ```bash
-gh secret set IOS_DISTRIBUTION_CERT_BASE64 < distribution.p12.base64
+gh secret set APPLE_DISTRIBUTION_CERT_BASE64 < distribution.p12.base64
 ```
 
 **ROTATE**: Apple Developer → **Certificates, Identifiers & Profiles** → **Certificates** → revoke the old one, then repeat from step 3.
 
-### 2. `IOS_DISTRIBUTION_CERT_PASSWORD`
+### 2. `APPLE_DISTRIBUTION_CERT_PASSWORD`
 
 **WHAT**: The password you set during `.p12` export in step 5 above.
 
@@ -134,11 +134,11 @@ Use that string at `.p12` export time. Re-export the cert if you forgot the pass
 **REGISTER:**
 
 ```bash
-gh secret set IOS_DISTRIBUTION_CERT_PASSWORD
+gh secret set APPLE_DISTRIBUTION_CERT_PASSWORD
 # paste password, Ctrl+D
 ```
 
-### 3. `IOS_PROVISIONING_PROFILE_BASE64`
+### 3. `APPLE_PROVISIONING_PROFILE_BASE64`
 
 **WHAT**: Base64-encoded `.mobileprovision` App Store provisioning profile.
 
@@ -170,7 +170,7 @@ Confirm:
 **REGISTER:**
 
 ```bash
-gh secret set IOS_PROVISIONING_PROFILE_BASE64 < profile.base64
+gh secret set APPLE_PROVISIONING_PROFILE_BASE64 < profile.base64
 ```
 
 **ROTATE**: Profiles expire 1 year after creation. Mark your calendar 11 months out. Renewal procedure is identical to step 2.
@@ -434,9 +434,9 @@ APPLE_TEAM_ID                      Updated YYYY-MM-DD
 APP_STORE_CONNECT_API_KEY_BASE64   Updated YYYY-MM-DD
 APP_STORE_CONNECT_API_KEY_ID       Updated YYYY-MM-DD
 APP_STORE_CONNECT_ISSUER_ID        Updated YYYY-MM-DD
-IOS_DISTRIBUTION_CERT_BASE64       Updated YYYY-MM-DD
-IOS_DISTRIBUTION_CERT_PASSWORD     Updated YYYY-MM-DD
-IOS_PROVISIONING_PROFILE_BASE64    Updated YYYY-MM-DD
+APPLE_DISTRIBUTION_CERT_BASE64       Updated YYYY-MM-DD
+APPLE_DISTRIBUTION_CERT_PASSWORD     Updated YYYY-MM-DD
+APPLE_PROVISIONING_PROFILE_BASE64    Updated YYYY-MM-DD
 KEYSTORE_BASE64                    Updated YYYY-MM-DD
 KEYSTORE_PASSWORD                  Updated YYYY-MM-DD
 KEY_ALIAS                          Updated YYYY-MM-DD
@@ -464,8 +464,8 @@ Specifically:
 
 | Secret | Rotation procedure | Frequency |
 |---|---|---|
-| `IOS_DISTRIBUTION_CERT_BASE64` + password | Apple Developer → Certificates → revoke + create new + re-export `.p12` | Annual or on incident |
-| `IOS_PROVISIONING_PROFILE_BASE64` | Apple Developer → Profiles → regenerate (same cert) | Forced annually by Apple |
+| `APPLE_DISTRIBUTION_CERT_BASE64` + password | Apple Developer → Certificates → revoke + create new + re-export `.p12` | Annual or on incident |
+| `APPLE_PROVISIONING_PROFILE_BASE64` | Apple Developer → Profiles → regenerate (same cert) | Forced annually by Apple |
 | `APPLE_TEAM_ID` | Cannot change without changing teams | N/A |
 | `APP_STORE_CONNECT_API_KEY_*` | App Store Connect → Team Keys → revoke + generate new | Recommended every 12 months |
 | `KEYSTORE_*` | **Do NOT rotate**. Losing the keystore breaks Play Store updates. Use Google Play's "App Signing by Google Play" key reset only as a last resort. | Never (under normal conditions) |

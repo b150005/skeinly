@@ -29,8 +29,8 @@ Key constraints:
 
 Use **native xcodebuild with manual code signing**. No Fastlane or third-party signing tools.
 
-- **Certificate**: Apple Distribution `.p12` stored as `IOS_DISTRIBUTION_CERT_BASE64` GitHub Secret.
-- **Provisioning Profile**: App Store distribution `.mobileprovision` stored as `IOS_PROVISIONING_PROFILE_BASE64`.
+- **Certificate**: Apple Distribution `.p12` stored as `APPLE_DISTRIBUTION_CERT_BASE64` GitHub Secret.
+- **Provisioning Profile**: App Store distribution `.mobileprovision` stored as `APPLE_PROVISIONING_PROFILE_BASE64`.
 - **Temporary Keychain**: Created per CI run at `$RUNNER_TEMP/app-signing.keychain-db` with a random password. Destroyed in an `if: always()` cleanup step.
 - **ExportOptions.plist**: Generated at CI time (not committed) to keep the repository account-agnostic. The provisioning profile name is extracted from the installed `.mobileprovision` at runtime.
 
@@ -44,7 +44,7 @@ This avoids `xcrun altool --upload-app`, which was deprecated in Xcode 14 and ma
 
 All iOS signing and upload steps are gated by secret availability checks:
 
-- **Signing secrets** (`IOS_DISTRIBUTION_CERT_BASE64`, `IOS_DISTRIBUTION_CERT_PASSWORD`, `IOS_PROVISIONING_PROFILE_BASE64`, `APPLE_TEAM_ID`): required for archive and IPA export.
+- **Signing secrets** (`APPLE_DISTRIBUTION_CERT_BASE64`, `APPLE_DISTRIBUTION_CERT_PASSWORD`, `APPLE_PROVISIONING_PROFILE_BASE64`, `APPLE_TEAM_ID`): required for archive and IPA export.
 - **TestFlight secrets** (`APP_STORE_CONNECT_API_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_API_KEY_BASE64`): required for upload only.
 
 When secrets are absent, the job still builds the shared framework artifact and emits a warning annotation — no failure.
@@ -58,9 +58,9 @@ When secrets are absent, the job still builds the shared framework artifact and 
 
 | Secret | Purpose |
 |--------|---------|
-| `IOS_DISTRIBUTION_CERT_BASE64` | Base64-encoded .p12 distribution certificate |
-| `IOS_DISTRIBUTION_CERT_PASSWORD` | Password for the .p12 file |
-| `IOS_PROVISIONING_PROFILE_BASE64` | Base64-encoded .mobileprovision |
+| `APPLE_DISTRIBUTION_CERT_BASE64` | Base64-encoded .p12 distribution certificate |
+| `APPLE_DISTRIBUTION_CERT_PASSWORD` | Password for the .p12 file |
+| `APPLE_PROVISIONING_PROFILE_BASE64` | Base64-encoded .mobileprovision |
 | `APPLE_TEAM_ID` | Apple Developer Team ID (10-char) |
 | `APP_STORE_CONNECT_API_KEY_ID` | App Store Connect API key ID |
 | `APP_STORE_CONNECT_ISSUER_ID` | App Store Connect issuer ID |
