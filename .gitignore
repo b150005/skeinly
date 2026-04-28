@@ -73,6 +73,17 @@ xcuserdata/
 supabase/.branches
 supabase/.temp
 
+# fastlane (iOS release pipeline)
+## Fastfile + Appfile + Gemfile + Gemfile.lock are committed; everything
+## below is generated at runtime and must not be tracked.
+iosApp/.bundle/
+iosApp/vendor/
+iosApp/fastlane/report.xml
+iosApp/fastlane/Preview.html
+iosApp/fastlane/screenshots/
+iosApp/fastlane/test_output/
+iosApp/fastlane/README.md
+
 # Environment
 .env
 .env.keys

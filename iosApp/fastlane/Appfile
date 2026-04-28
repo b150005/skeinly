@@ -1,0 +1,8 @@
+# Bundle identifier used by the Apple Distribution provisioning profile.
+# Must match `PRODUCT_BUNDLE_IDENTIFIER` in iosApp/project.yml.
+app_identifier "io.github.b150005.knitnote.ios"
+
+# Apple Developer Team ID. Sourced from CI secret `APPLE_TEAM_ID` so this
+# file can be committed without leaking team membership. Locally, set
+# APPLE_TEAM_ID in your shell or rely on Xcode's signing inference.
+team_id ENV["APPLE_TEAM_ID"]

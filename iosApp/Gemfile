@@ -1,0 +1,8 @@
+source "https://rubygems.org"
+
+# fastlane drives the iOS release pipeline (archive + TestFlight upload).
+# Pin to the 2.x major line; minor/patch updates are auto-allowed via the
+# `~>` constraint to pick up security patches without breaking changes.
+# Update via `bundle update fastlane` after the new version is released
+# notes are reviewed at https://github.com/fastlane/fastlane/releases.
+gem "fastlane", "~> 2.227"
