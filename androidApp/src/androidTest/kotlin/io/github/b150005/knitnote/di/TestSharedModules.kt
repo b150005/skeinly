@@ -1,10 +1,5 @@
-package io.github.b150005.knitnote.android.di
+package io.github.b150005.knitnote.di
 
-import io.github.b150005.knitnote.android.test.FakeAuthRepository
-import io.github.b150005.knitnote.android.test.FakePatternRepository
-import io.github.b150005.knitnote.android.test.FakeProgressRepository
-import io.github.b150005.knitnote.android.test.FakeProjectRepository
-import io.github.b150005.knitnote.android.test.FakeSyncManager
 import io.github.b150005.knitnote.data.repository.OfflineUserRepository
 import io.github.b150005.knitnote.data.sync.SyncManagerOperations
 import io.github.b150005.knitnote.domain.repository.AuthRepository
@@ -39,6 +34,11 @@ import io.github.b150005.knitnote.domain.usecase.SignUpUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateProfileUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateShareStatusUseCase
+import io.github.b150005.knitnote.test.FakeAuthRepository
+import io.github.b150005.knitnote.test.FakePatternRepository
+import io.github.b150005.knitnote.test.FakeProgressRepository
+import io.github.b150005.knitnote.test.FakeProjectRepository
+import io.github.b150005.knitnote.test.FakeSyncManager
 import io.github.b150005.knitnote.ui.activityfeed.ActivityFeedViewModel
 import io.github.b150005.knitnote.ui.auth.AuthViewModel
 import io.github.b150005.knitnote.ui.comments.CommentSectionViewModel
@@ -56,7 +56,7 @@ import org.koin.dsl.module
  * Designed for local-only mode (no Supabase) to test UI interactions.
  *
  * All fake repositories use `single` scoped to the Koin container lifetime.
- * [io.github.b150005.knitnote.android.test.KoinTestRule] restarts Koin before each test,
+ * [io.github.b150005.knitnote.test.KoinTestRule] restarts Koin before each test,
  * ensuring fresh fakes per test.
  */
 val testRepositoryModule =

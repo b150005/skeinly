@@ -1,4 +1,4 @@
-package io.github.b150005.knitnote.android
+package io.github.b150005.knitnote
 
 import android.app.Application
 import android.util.Log

@@ -169,7 +169,7 @@ Required signing secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `Daemon stopped: JVM GC thrashing` | Gradle daemon out of memory | `export GRADLE_OPTS="-Xmx6g"` then retry |
-| `INSTALL_FAILED_UPDATE_INCOMPATIBLE` (Android) | Local debug keystore mismatch with prior install | `adb uninstall io.github.b150005.knitnote.android` then re-install |
+| `INSTALL_FAILED_UPDATE_INCOMPATIBLE` (Android) | Local debug keystore mismatch with prior install | `adb uninstall io.github.b150005.knitnote` then re-install |
 | `No provisioning profile found` (fastlane local) | Cert/profile not installed in macOS keychain | Install via Xcode → Settings → Accounts, or run on CI |
 | Maestro tap doesn't fire on iOS sim | Known SwiftUI `Button` bug on iOS 26 | Affected flows are tagged `skip-ios26` and excluded from `make e2e-ios` |
 | Coverage below 80% | New code without tests | `make coverage` produces a per-class report under `shared/build/reports/kover/` |
@@ -354,7 +354,7 @@ Android リリースは署名済み APK を GitHub Actions のアーティファ
 | 症状 | 原因 | 対処 |
 |---|---|---|
 | `Daemon stopped: JVM GC thrashing` | Gradle daemon のメモリ不足 | `export GRADLE_OPTS="-Xmx6g"` してから再実行 |
-| `INSTALL_FAILED_UPDATE_INCOMPATIBLE`（Android） | 既存インストールとローカル debug keystore の不一致 | `adb uninstall io.github.b150005.knitnote.android` してから再インストール |
+| `INSTALL_FAILED_UPDATE_INCOMPATIBLE`（Android） | 既存インストールとローカル debug keystore の不一致 | `adb uninstall io.github.b150005.knitnote` してから再インストール |
 | `No provisioning profile found`（fastlane ローカル） | macOS keychain に証明書/プロファイルが未インストール | Xcode → Settings → Accounts でインストール、または CI で実行 |
 | Maestro のタップが iOS Sim で発火しない | iOS 26 の SwiftUI `Button` 既知バグ | 該当フローは `skip-ios26` タグ付きで `make e2e-ios` から除外済み |
 | カバレッジが 80% 未満 | テストなしのコード追加 | `make coverage` がクラスごとのレポートを `shared/build/reports/kover/` に出力 |

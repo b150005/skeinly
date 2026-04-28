@@ -95,7 +95,7 @@ platform code that cannot see the shared module's `Res`:
 
 ```kotlin
 import androidx.compose.ui.res.stringResource
-import io.github.b150005.knitnote.android.R
+import io.github.b150005.knitnote.R
 
 Text(stringResource(R.string.action_save))
 ```

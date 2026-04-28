@@ -1,4 +1,4 @@
-package io.github.b150005.knitnote.android
+package io.github.b150005.knitnote
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme

@@ -1,4 +1,4 @@
-package io.github.b150005.knitnote.android.test
+package io.github.b150005.knitnote.test
 
 import io.github.b150005.knitnote.domain.model.AuthState
 import io.github.b150005.knitnote.domain.repository.AuthRepository

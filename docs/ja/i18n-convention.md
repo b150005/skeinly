@@ -91,7 +91,7 @@ Text(stringResource(Res.string.action_save))
 
 ```kotlin
 import androidx.compose.ui.res.stringResource
-import io.github.b150005.knitnote.android.R
+import io.github.b150005.knitnote.R
 
 Text(stringResource(R.string.action_save))
 ```

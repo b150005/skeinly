@@ -146,8 +146,8 @@ gh secret set APPLE_DISTRIBUTION_CERT_PASSWORD
 
 1. [Apple Developer](https://developer.apple.com/account) にサインイン → **Certificates, Identifiers & Profiles** → **Profiles**。
 2. 以下のいずれか:
-   - 既存のプロファイルが `io.github.b150005.knitnote.ios` の App Store 配布用にあれば、それをクリック → **Download**。
-   - なければ `+` → Distribution の **App Store** → bundle ID `io.github.b150005.knitnote.ios` を選択 → 手順 1 の Apple Distribution cert を選択 → 名前（例: `Knit Note App Store`）→ **Generate** → **Download**。
+   - 既存のプロファイルが `io.github.b150005.knitnote` の App Store 配布用にあれば、それをクリック → **Download**。
+   - なければ `+` → Distribution の **App Store** → bundle ID `io.github.b150005.knitnote` を選択 → 手順 1 の Apple Distribution cert を選択 → 名前（例: `Knit Note App Store`）→ **Generate** → **Download**。
 3. base64 エンコード:
 
    ```bash
@@ -163,7 +163,7 @@ security cms -D -i Knit_Note_App_Store.mobileprovision | head -40
 
 確認項目:
 - `<key>Name</key>` の値がプロファイル名と一致すること
-- `<key>application-identifier</key>` が `io.github.b150005.knitnote.ios` で終わること
+- `<key>application-identifier</key>` が `io.github.b150005.knitnote` で終わること
 - `<key>ExpirationDate</key>` が未来の日付であること（通常 1 年後）
 - `<key>TeamIdentifier</key>` が次のシークレットの Team ID と一致すること
 

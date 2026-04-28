@@ -146,8 +146,8 @@ gh secret set APPLE_DISTRIBUTION_CERT_PASSWORD
 
 1. Sign in to [Apple Developer](https://developer.apple.com/account) → **Certificates, Identifiers & Profiles** → **Profiles**.
 2. Either:
-   - Use an existing profile if one already covers `io.github.b150005.knitnote.ios` for App Store distribution. Click it → **Download**.
-   - Or click `+` → **App Store** under Distribution → select bundle ID `io.github.b150005.knitnote.ios` → select the Apple Distribution cert from step 1 → name it (e.g. `Knit Note App Store`) → **Generate** → **Download**.
+   - Use an existing profile if one already covers `io.github.b150005.knitnote` for App Store distribution. Click it → **Download**.
+   - Or click `+` → **App Store** under Distribution → select bundle ID `io.github.b150005.knitnote` → select the Apple Distribution cert from step 1 → name it (e.g. `Knit Note App Store`) → **Generate** → **Download**.
 3. Base64-encode:
 
    ```bash
@@ -163,7 +163,7 @@ security cms -D -i Knit_Note_App_Store.mobileprovision | head -40
 
 Confirm:
 - `<key>Name</key>` value matches what you named the profile
-- `<key>application-identifier</key>` ends with `io.github.b150005.knitnote.ios`
+- `<key>application-identifier</key>` ends with `io.github.b150005.knitnote`
 - `<key>ExpirationDate</key>` is in the future (typically 1 year out)
 - `<key>TeamIdentifier</key>` matches your Team ID (next secret)
 

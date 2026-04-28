@@ -1,4 +1,4 @@
-appId: io.github.b150005.knitnote.android
+appId: io.github.b150005.knitnote
 name: "P1 - Per-Segment Progress (Phase 34)"
 tags:
   - p1
@@ -18,9 +18,9 @@ tags:
 # "PhaseThirtyFourFixture" must already exist and be linked to a pattern
 # whose StructuredChart has RECT_GRID extents covering (0,0)..(2,2).
 
-- clearState: io.github.b150005.knitnote.android
+- clearState: io.github.b150005.knitnote
 - launchApp:
-    appId: io.github.b150005.knitnote.android
+    appId: io.github.b150005.knitnote
 
 - runFlow: ../../helpers/complete_onboarding_android.yaml
 

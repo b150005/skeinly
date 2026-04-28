@@ -1,4 +1,4 @@
-appId: io.github.b150005.knitnote.ios
+appId: io.github.b150005.knitnote
 name: "P1 - Onboarding Button Navigation"
 tags:
   - p1
@@ -13,10 +13,10 @@ tags:
 # skip-ios26 because Maestro 2.4.0 cannot reliably tap SwiftUI Buttons on iOS 26;
 # the XCTest suite covers this path deterministically on local runs.
 
-- clearState: io.github.b150005.knitnote.ios
+- clearState: io.github.b150005.knitnote
 
 - launchApp:
-    appId: io.github.b150005.knitnote.ios
+    appId: io.github.b150005.knitnote
 
 - assertVisible:
     id: "onboardingPage1"

@@ -1,6 +1,6 @@
-package io.github.b150005.knitnote.android.test
+package io.github.b150005.knitnote.test
 
-import io.github.b150005.knitnote.android.di.testSharedModules
+import io.github.b150005.knitnote.di.testSharedModules
 import org.junit.rules.ExternalResource
 import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin

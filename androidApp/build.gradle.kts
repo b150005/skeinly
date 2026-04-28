@@ -22,11 +22,11 @@ val localProps =
     }
 
 android {
-    namespace = "io.github.b150005.knitnote.android"
+    namespace = "io.github.b150005.knitnote"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "io.github.b150005.knitnote.android"
+        applicationId = "io.github.b150005.knitnote"
         minSdk = 26
         targetSdk = 36
         versionCode = versionProps.getProperty("VERSION_CODE", "1").toInt()

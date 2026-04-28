@@ -1,13 +1,13 @@
-appId: io.github.b150005.knitnote.ios
+appId: io.github.b150005.knitnote
 name: "P0 - Create Project"
 tags:
   - p0
   - ios
 ---
 # Pre-condition: clean state
-- clearState: io.github.b150005.knitnote.ios
+- clearState: io.github.b150005.knitnote
 - launchApp:
-    appId: io.github.b150005.knitnote.ios
+    appId: io.github.b150005.knitnote
 
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_ios.yaml

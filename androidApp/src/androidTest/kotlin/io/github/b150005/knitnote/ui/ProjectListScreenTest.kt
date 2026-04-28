@@ -1,4 +1,4 @@
-package io.github.b150005.knitnote.android.ui
+package io.github.b150005.knitnote.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
@@ -8,13 +8,13 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.runComposeUiTest
-import io.github.b150005.knitnote.android.KnitNoteTheme
-import io.github.b150005.knitnote.android.test.FakeProjectRepository
-import io.github.b150005.knitnote.android.test.KoinTestRule
+import io.github.b150005.knitnote.KnitNoteTheme
 import io.github.b150005.knitnote.domain.LocalUser
 import io.github.b150005.knitnote.domain.model.Project
 import io.github.b150005.knitnote.domain.model.ProjectStatus
 import io.github.b150005.knitnote.domain.repository.ProjectRepository
+import io.github.b150005.knitnote.test.FakeProjectRepository
+import io.github.b150005.knitnote.test.KoinTestRule
 import io.github.b150005.knitnote.ui.projectlist.ProjectListScreen
 import org.junit.Assert.assertEquals
 import org.junit.Rule
