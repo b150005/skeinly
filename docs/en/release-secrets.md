@@ -2,13 +2,24 @@
 
 > Japanese translation: [docs/ja/release-secrets.md](../ja/release-secrets.md)
 
-This document is a step-by-step guide for obtaining, verifying, and registering every GitHub Secret consumed by the release pipeline. It covers 13 secrets in 3 categories:
+This document is a step-by-step guide for obtaining, verifying, and registering every secret consumed by the release pipeline and the Supabase Edge Functions. It covers **19 GitHub Secrets** in 6 categories plus **4 Supabase Edge Function runtime secrets** in a 7th category:
 
-- **iOS** (7) — code signing + App Store Connect API authentication
-- **Android** (4) — keystore signing
-- **Runtime** (2) — Supabase backend credentials
+**GitHub Secrets** (registered via `gh secret set`):
+- **iOS code signing** (4) — Distribution cert + provisioning profile + Team ID
+- **App Store Connect API** (3) — `.p8` API key + Key ID + Issuer ID
+- **Android signing** (4) — keystore + passwords + alias
+- **Supabase runtime** (2) — backend URL + anon key
+- **Android FCM client** (1) — `google-services.json` for Push client SDK
+- **Crash + error reporting** (3) — Sentry DSNs (iOS + Android) + Auth Token
+- **Analytics** (2) — PostHog project API keys (prod + dev)
 
-The release workflow ([`.github/workflows/release.yml`](../../.github/workflows/release.yml)) reads these as `${{ secrets.* }}`. Missing or incorrect values fail the release silently for some (build still succeeds, just no upload) or loudly for others (signing fails). This guide includes verification steps so you can confirm a value is correct **before** registering it.
+**Supabase Edge Function Secrets** (registered via `supabase secrets set`):
+- **iOS Push** (2) — APNs `.p8` + Key ID
+- **Android Push** (1) — Firebase Service Account JSON for FCM HTTP v1
+- **Android IAP** (1) — Google Play Service Account JSON for receipt validation
+- (App Store Connect API key is reused from GitHub Secrets — same `.p8` file, registered in both contexts.)
+
+The release workflow ([`.github/workflows/release.yml`](../../.github/workflows/release.yml)) reads GitHub Secrets as `${{ secrets.* }}`. Missing or incorrect values fail the release silently for some (build still succeeds, just no upload) or loudly for others (signing fails). The Supabase Edge Function reads its own secrets via `Deno.env.get(...)`. This guide includes verification steps so you can confirm a value is correct **before** registering it.
 
 ## Table of contents
 
@@ -18,6 +29,10 @@ The release workflow ([`.github/workflows/release.yml`](../../.github/workflows/
 - [App Store Connect API (3 secrets)](#app-store-connect-api-3-secrets)
 - [Android signing (4 secrets)](#android-signing-4-secrets)
 - [Supabase runtime (2 secrets)](#supabase-runtime-2-secrets)
+- [Android FCM client (1 secret)](#android-fcm-client-1-secret)
+- [Crash + error reporting — Sentry (3 secrets)](#crash--error-reporting--sentry-3-secrets)
+- [Analytics — PostHog (2 secrets)](#analytics--posthog-2-secrets)
+- [Supabase Edge Function Secrets (4 secrets)](#supabase-edge-function-secrets-4-secrets)
 - [Bulk verification](#bulk-verification)
 - [Rotation and revocation](#rotation-and-revocation)
 - [Security notes](#security-notes)
@@ -419,9 +434,266 @@ gh secret set SUPABASE_ANON_KEY
 
 **Do NOT register the `service_role` key as a GitHub Secret for client builds**. The service-role key bypasses RLS and would be a critical leak if shipped in an APK.
 
+## Android FCM client (1 secret)
+
+This secret is the Firebase project's client-side configuration for the Android app. It is read at build time and embedded in the APK so the FCM SDK can register with Firebase. The value is restricted to the app's package name + signing certificate SHA-1 in Firebase, so leaking it is low-blast-radius — but we still keep it git-ignored to avoid clutter and to support per-environment swaps later.
+
+### 14. `FIREBASE_GOOGLE_SERVICES_JSON_BASE64`
+
+**WHAT**: Base64-encoded `google-services.json` file from the Firebase Console for the Android app.
+
+**OBTAIN:**
+
+1. Sign in to [Firebase Console](https://console.firebase.google.com).
+2. If no Firebase project exists for Knit Note: **Add project** → Name `knit-note` → **Disable Google Analytics** (we use PostHog) → Create.
+3. Inside the project: **Project Overview** → **Add app** → Android icon.
+4. Android package name: `io.github.b150005.knitnote`.
+5. App nickname: `Knit Note Android`.
+6. Signing certificate SHA-1: run `keytool -list -v -keystore upload-keystore.jks` and copy the **SHA-1** fingerprint (release keystore — debug builds use a separate auto-generated keystore that does not need registration here for alpha; add the debug SHA-1 later if FCM debug testing is needed).
+7. Continue → Continue → **Download `google-services.json`** → Continue → skip the SDK setup step (we wire SDKs via Gradle separately).
+8. Base64-encode:
+
+   ```bash
+   base64 -i google-services.json -o google-services.base64
+   ```
+
+**VERIFY:**
+
+```bash
+# Should print a JSON object with "project_info" and "client" keys.
+cat google-services.json | python3 -m json.tool | head -10
+```
+
+Confirm:
+- `project_info.project_id` matches your Firebase project name (`knit-note`)
+- `client[0].client_info.android_client_info.package_name` is `io.github.b150005.knitnote`
+- `client[0].api_key[0].current_key` is a long alphanumeric string (the Android API key, restricted to the package + SHA-1)
+
+**REGISTER:**
+
+```bash
+gh secret set FIREBASE_GOOGLE_SERVICES_JSON_BASE64 < google-services.base64
+```
+
+The Android Gradle build decodes this at build time into `androidApp/google-services.json` (git-ignored).
+
+**ROTATE**: Re-download from the Firebase Console only if you change the package name (Phase 28 already settled this) or the signing SHA-1 (which means losing the upload keystore — see [§8 Backup](#8-keystore_base64) for why this is unrecoverable). Day-to-day no rotation is needed.
+
+## Crash + error reporting — Sentry (3 secrets)
+
+These secrets wire the Sentry SDK on iOS + Android and authorize CI to upload debug symbols (dSYM for iOS, mapping files for Android) so stack traces are symbolicated automatically in the Sentry dashboard.
+
+### 15. `SENTRY_DSN_IOS`
+
+**WHAT**: The Data Source Name (DSN) for the iOS Sentry project. A URL-shaped string identifying the Sentry project + auth.
+
+**OBTAIN:**
+
+1. Sign in to [Sentry](https://sentry.io). Create an organization for Knit Note if not already.
+2. **Projects** → **Create Project** → Platform: **Apple iOS** → Project Name: `knit-note-ios` → Create.
+3. After creation: **Settings** → **Projects** → `knit-note-ios` → **Client Keys (DSN)** → copy the DSN.
+4. Format: `https://<32-char-public-key>@<org>.ingest.sentry.io/<project-id>`.
+
+**VERIFY**: URL parses as HTTPS, contains `@`, contains `.ingest.sentry.io`, ends with a numeric project ID.
+
+**REGISTER:**
+
+```bash
+gh secret set SENTRY_DSN_IOS
+# paste DSN, Ctrl+D
+```
+
+**ROTATE**: Sentry → Settings → Projects → `knit-note-ios` → Client Keys → revoke old key + create new. Update GitHub Secret.
+
+### 16. `SENTRY_DSN_ANDROID`
+
+**WHAT**: DSN for the Android Sentry project. Same shape as `SENTRY_DSN_IOS` but a separate Sentry project so iOS and Android crashes filter independently.
+
+**OBTAIN**: Repeat the procedure for #15, but choose Platform: **Android** and name the project `knit-note-android`.
+
+**REGISTER:**
+
+```bash
+gh secret set SENTRY_DSN_ANDROID
+# paste DSN, Ctrl+D
+```
+
+### 17. `SENTRY_AUTH_TOKEN`
+
+**WHAT**: A user auth token that lets CI upload dSYMs (iOS) and mapping files (Android) to Sentry after each release build, so stack traces are symbolicated automatically.
+
+**OBTAIN:**
+
+1. Sentry → click your avatar (top-left) → **User Settings** → **Auth Tokens**.
+2. **Create New Token**.
+3. Name: `knit-note CI`.
+4. Scopes (minimum):
+   - `project:releases` — create releases + upload artifacts
+   - `org:read` — list orgs/projects (required by sentry-cli to resolve the project from a slug)
+5. Create → copy the token immediately (one-time view).
+
+**VERIFY:**
+
+```bash
+# Token shape: 64-char hex; sentry-cli can verify connectivity.
+brew install getsentry/tools/sentry-cli  # if not installed
+sentry-cli --auth-token <token> info
+# Should show your org name + project list.
+```
+
+**REGISTER:**
+
+```bash
+gh secret set SENTRY_AUTH_TOKEN
+# paste token, Ctrl+D
+```
+
+**ROTATE**: User Settings → Auth Tokens → revoke + recreate. Update GitHub Secret.
+
+## Analytics — PostHog (2 secrets)
+
+These secrets wire the PostHog SDK on iOS + Android. Unlike Sentry, we use the **same project key** for both platforms but separate **production / development** PostHog projects so dev events don't pollute the prod dataset. Both keys are configured with `auto_capture: false` and gated behind an opt-in toggle (Settings → Allow usage analytics, default OFF) per Phase 27a privacy policy.
+
+### 18. `POSTHOG_PROJECT_API_KEY_PROD`
+
+**WHAT**: The Project API Key for the production PostHog project. Embedded in release builds. Format: `phc_<43-char-base62>`.
+
+**OBTAIN:**
+
+1. Sign in to [PostHog](https://eu.posthog.com) (use the **EU cloud** for GDPR data residency).
+2. If no organization exists: create one named `knit-note`.
+3. **Settings** → **Projects** → **Create Project** → Name: `knitnote-prod`.
+4. Inside the project: **Settings** → **Project** → **General** → **Project API Key** → copy the value (starts with `phc_`).
+
+**VERIFY**: Starts with `phc_`, exactly 47 chars total (`phc_` + 43-char base62), case-sensitive.
+
+**REGISTER:**
+
+```bash
+gh secret set POSTHOG_PROJECT_API_KEY_PROD
+# paste, Ctrl+D
+```
+
+**ROTATE**: PostHog → Settings → Project → reset the Project API Key. Update GitHub Secret. Old events stay attributed to the project; only new ingestion shifts.
+
+### 19. `POSTHOG_PROJECT_API_KEY_DEV`
+
+**WHAT**: Project API Key for the development PostHog project. Embedded in debug builds so developer churn doesn't show up in the prod dataset.
+
+**OBTAIN**: Repeat #18 but create a **separate** project named `knitnote-dev` and copy that project's API key.
+
+**REGISTER:**
+
+```bash
+gh secret set POSTHOG_PROJECT_API_KEY_DEV
+# paste, Ctrl+D
+```
+
+## Supabase Edge Function Secrets (4 secrets)
+
+These secrets are consumed by Supabase Edge Functions (`notify-on-write` for Push, `verify-receipt` for IAP receipt validation). They are **not** GitHub Secrets — they are registered against the Supabase project via the Supabase CLI:
+
+```bash
+supabase login                                # one-time
+supabase link --project-ref <your-project-ref>
+supabase secrets list                         # verify what is currently registered
+```
+
+Edge Functions read these as `Deno.env.get("APPLE_APNS_KEY_P8")` etc. at runtime.
+
+### EF-1. `APPLE_APNS_KEY_P8`
+
+**WHAT**: Raw text content of the APNs `.p8` Auth Key file generated in [vendor-setup.md A0a-2](vendor-setup.md#a0a-2-generate-the-apns-auth-key-p8). NOT base64-encoded — Supabase secrets accept the raw multi-line PEM body.
+
+**OBTAIN**: See [vendor-setup.md A0a-2](vendor-setup.md#a0a-2-generate-the-apns-auth-key-p8). The downloaded file `AuthKey_<KEY_ID>.p8` is what you register, raw.
+
+**REGISTER:**
+
+```bash
+supabase secrets set APPLE_APNS_KEY_P8="$(cat AuthKey_XYZ1234567.p8)"
+supabase secrets list | grep APPLE_APNS
+```
+
+### EF-2. `APPLE_APNS_KEY_ID`
+
+**WHAT**: 10-char Key ID from the Apple Developer Keys page. Same value embedded in the `.p8` filename.
+
+**REGISTER:**
+
+```bash
+supabase secrets set APPLE_APNS_KEY_ID=XYZ1234567
+```
+
+The Edge Function also needs `APPLE_TEAM_ID` (same 10-char value as the GitHub Secret) so it can construct JWT tokens for APNs:
+
+```bash
+supabase secrets set APPLE_TEAM_ID=ABCDE12345
+```
+
+(The Bundle ID `io.github.b150005.knitnote` is hard-coded in the Edge Function source, not in secrets.)
+
+### EF-3. `FIREBASE_SERVICE_ACCOUNT_JSON`
+
+**WHAT**: Service Account JSON for sending pushes via FCM HTTP v1 API. The Edge Function uses this to mint short-lived OAuth 2.0 access tokens for FCM.
+
+**OBTAIN:**
+
+1. [Firebase Console](https://console.firebase.google.com) → your project (`knit-note`) → **Project Settings** → **Service Accounts**.
+2. **Firebase Admin SDK** tab → **Generate new private key** → confirm → JSON downloads.
+3. Default-shipped role is **Firebase Admin SDK Administrator Service Agent** which includes Cloud Messaging — no extra IAM tweaking needed.
+
+**VERIFY**: JSON contains `"type": "service_account"`, `project_id` matches your Firebase project, and `client_email` ends with `@<project-id>.iam.gserviceaccount.com`.
+
+**REGISTER:**
+
+```bash
+supabase secrets set FIREBASE_SERVICE_ACCOUNT_JSON="$(cat firebase-admin-sdk.json)"
+```
+
+**ROTATE**: Firebase Console → Project Settings → Service Accounts → Manage all service accounts → click the SA → Keys tab → revoke old + add new JSON.
+
+### EF-4. `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`
+
+**WHAT**: Service Account JSON for the Google Play Developer API, used to validate Android IAP receipts server-side and observe subscription state changes (renewal, cancellation, refund).
+
+**OBTAIN:**
+
+1. [Google Play Console](https://play.google.com/console) → **Setup** → **API access**.
+2. If not already linked: **Choose a project to link** → use the same Google Cloud project as Firebase (or a separate one — both are fine; reuse keeps billing simpler).
+3. **Service accounts** section → **Create new service account** → opens Google Cloud Console.
+4. Service Account Name: `knit-note-play-publisher`.
+5. Skip role grants in Cloud Console (Play Console handles role grants in its own UI).
+6. Done → back in Cloud Console: click the SA → **Keys** → **Add Key** → **Create new key** → JSON → Download.
+7. Back in Play Console **API access** → click the new SA → **Grant access**.
+8. Permissions: **View financial data**, **Manage orders**, **Manage store presence** at minimum (covers receipt validation).
+9. Apply.
+
+**VERIFY**: JSON has `"type": "service_account"`. The Play Console **API access** page shows the SA listed under **Service accounts** with green checkmarks on the granted permissions.
+
+**REGISTER:**
+
+```bash
+supabase secrets set GOOGLE_PLAY_SERVICE_ACCOUNT_JSON="$(cat play-developer-api.json)"
+```
+
+**ROTATE**: Cloud Console → IAM → Service Accounts → click SA → Keys → revoke old + create new JSON. Update Supabase Edge Function secret.
+
+### Reused: App Store Connect API key
+
+The Edge Function `verify-receipt` (iOS branch) calls the App Store Server API and needs the same App Store Connect API key already registered as GitHub Secrets §5–§7. Register it with Supabase too (single source of truth, two registration places):
+
+```bash
+# Same .p8 file as APP_STORE_CONNECT_API_KEY_BASE64 GitHub Secret, but raw not base64.
+supabase secrets set APP_STORE_CONNECT_API_KEY="$(cat AuthKey_XYZ1234567.p8)"
+supabase secrets set APP_STORE_CONNECT_KEY_ID=XYZ1234567
+supabase secrets set APP_STORE_CONNECT_ISSUER_ID=69a6de70-03db-47e3-e053-5b8c7c11a4d1
+```
+
+When you rotate the GitHub Secret per [§5 ROTATE](#5-app_store_connect_api_key_base64), also re-register the Supabase Edge Function secret with the new key.
+
 ## Bulk verification
 
-After registering all 13 secrets, confirm with `gh`:
+After registering all 19 GitHub Secrets, confirm with `gh`:
 
 ```bash
 gh secret list
@@ -430,22 +702,47 @@ gh secret list
 Expected output (names + last-updated timestamps; values are never shown):
 
 ```
-APPLE_TEAM_ID                      Updated YYYY-MM-DD
-APP_STORE_CONNECT_API_KEY_BASE64   Updated YYYY-MM-DD
-APP_STORE_CONNECT_API_KEY_ID       Updated YYYY-MM-DD
-APP_STORE_CONNECT_ISSUER_ID        Updated YYYY-MM-DD
-APPLE_DISTRIBUTION_CERT_BASE64       Updated YYYY-MM-DD
-APPLE_DISTRIBUTION_CERT_PASSWORD     Updated YYYY-MM-DD
-APPLE_PROVISIONING_PROFILE_BASE64    Updated YYYY-MM-DD
-KEYSTORE_BASE64                    Updated YYYY-MM-DD
-KEYSTORE_PASSWORD                  Updated YYYY-MM-DD
-KEY_ALIAS                          Updated YYYY-MM-DD
-KEY_PASSWORD                       Updated YYYY-MM-DD
-SUPABASE_ANON_KEY                  Updated YYYY-MM-DD
-SUPABASE_URL                       Updated YYYY-MM-DD
+APPLE_DISTRIBUTION_CERT_BASE64        Updated YYYY-MM-DD
+APPLE_DISTRIBUTION_CERT_PASSWORD      Updated YYYY-MM-DD
+APPLE_PROVISIONING_PROFILE_BASE64     Updated YYYY-MM-DD
+APPLE_TEAM_ID                         Updated YYYY-MM-DD
+APP_STORE_CONNECT_API_KEY_BASE64      Updated YYYY-MM-DD
+APP_STORE_CONNECT_API_KEY_ID          Updated YYYY-MM-DD
+APP_STORE_CONNECT_ISSUER_ID           Updated YYYY-MM-DD
+FIREBASE_GOOGLE_SERVICES_JSON_BASE64  Updated YYYY-MM-DD
+KEY_ALIAS                             Updated YYYY-MM-DD
+KEY_PASSWORD                          Updated YYYY-MM-DD
+KEYSTORE_BASE64                       Updated YYYY-MM-DD
+KEYSTORE_PASSWORD                     Updated YYYY-MM-DD
+POSTHOG_PROJECT_API_KEY_DEV           Updated YYYY-MM-DD
+POSTHOG_PROJECT_API_KEY_PROD          Updated YYYY-MM-DD
+SENTRY_AUTH_TOKEN                     Updated YYYY-MM-DD
+SENTRY_DSN_ANDROID                    Updated YYYY-MM-DD
+SENTRY_DSN_IOS                        Updated YYYY-MM-DD
+SUPABASE_ANON_KEY                     Updated YYYY-MM-DD
+SUPABASE_URL                          Updated YYYY-MM-DD
 ```
 
-13 entries. Anything missing or with a stale timestamp is suspect.
+19 entries. Anything missing or with a stale timestamp is suspect.
+
+For Supabase Edge Function secrets (registered via `supabase secrets set`):
+
+```bash
+supabase secrets list
+```
+
+Expected (8 entries — 4 unique to Edge Function + 4 reused values from App Store Connect API):
+
+```
+APP_STORE_CONNECT_API_KEY
+APP_STORE_CONNECT_ISSUER_ID
+APP_STORE_CONNECT_KEY_ID
+APPLE_APNS_KEY_ID
+APPLE_APNS_KEY_P8
+APPLE_TEAM_ID
+FIREBASE_SERVICE_ACCOUNT_JSON
+GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
+```
 
 The first end-to-end verification of the iOS pipeline only happens at tag push — the iOS release job is gated on tag triggers, not regular pushes. Before the first alpha/beta tag push, you can:
 
@@ -467,9 +764,16 @@ Specifically:
 | `APPLE_DISTRIBUTION_CERT_BASE64` + password | Apple Developer → Certificates → revoke + create new + re-export `.p12` | Annual or on incident |
 | `APPLE_PROVISIONING_PROFILE_BASE64` | Apple Developer → Profiles → regenerate (same cert) | Forced annually by Apple |
 | `APPLE_TEAM_ID` | Cannot change without changing teams | N/A |
-| `APP_STORE_CONNECT_API_KEY_*` | App Store Connect → Team Keys → revoke + generate new | Recommended every 12 months |
+| `APP_STORE_CONNECT_API_KEY_*` | App Store Connect → Team Keys → revoke + generate new (also re-register Supabase Edge Function secret) | Recommended every 12 months |
 | `KEYSTORE_*` | **Do NOT rotate**. Losing the keystore breaks Play Store updates. Use Google Play's "App Signing by Google Play" key reset only as a last resort. | Never (under normal conditions) |
 | `SUPABASE_*` | Supabase Dashboard → Project Settings → API Keys → reset anon key | On suspected leak |
+| `FIREBASE_GOOGLE_SERVICES_JSON_BASE64` | Re-download from Firebase Console only on package or signing SHA-1 change | Effectively never |
+| `SENTRY_DSN_*` | Sentry → Settings → Project → Client Keys → revoke + create new | On suspected leak |
+| `SENTRY_AUTH_TOKEN` | User Settings → Auth Tokens → revoke + recreate | Annual or on incident |
+| `POSTHOG_PROJECT_API_KEY_*` | PostHog → Settings → Project → reset Project API Key | On suspected leak |
+| Edge Function `APPLE_APNS_KEY_*` | Apple Developer → Keys → revoke + generate new + re-register Supabase secret | Annual or on incident |
+| Edge Function `FIREBASE_SERVICE_ACCOUNT_JSON` | Firebase Console → Service Accounts → revoke + new key | Annual or on incident |
+| Edge Function `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | Cloud Console → IAM → Service Accounts → revoke + new key | Annual or on incident |
 
 After rotating, re-run `gh secret set` for each affected secret. The next CI run picks up the new value automatically.
 

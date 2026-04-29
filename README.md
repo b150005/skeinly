@@ -140,7 +140,7 @@ Tag push triggers [`.github/workflows/release.yml`](./.github/workflows/release.
 3. Runs `build_app` (= `xcodebuild archive` + `xcodebuild -exportArchive`)
 4. Runs `upload_to_testflight` to push the IPA to App Store Connect
 
-Required GitHub Secrets (7):
+Required GitHub Secrets for the iOS release pipeline (7 of 19 total):
 
 | Secret | Source |
 |---|---|
@@ -154,7 +154,7 @@ Required GitHub Secrets (7):
 
 Code-signing strategy is **manual** (not `match`). See ADR-007 for rationale.
 
-For step-by-step instructions on **obtaining, verifying, and registering** every secret (`gh secret set` commands, verification with `openssl` / `security` / `keytool`, rotation procedures), see [docs/en/release-secrets.md](./docs/en/release-secrets.md).
+The full set covers 19 GitHub Secrets across 7 categories (iOS code signing + ASC API + Android signing + Android FCM client + Sentry + PostHog + Supabase) plus 4 Supabase Edge Function runtime secrets for Push and IAP server-side. For step-by-step instructions on **obtaining, verifying, and registering** every secret (`gh secret set` / `supabase secrets set` commands, verification with `openssl` / `security` / `keytool`, rotation procedures), see [docs/en/release-secrets.md](./docs/en/release-secrets.md). For the Apple-side vendor setup procedure (App ID + Capabilities + APNs key + App Store Connect IAP + Universal Links), see [docs/en/vendor-setup.md](./docs/en/vendor-setup.md).
 
 #### Release pipeline (Android)
 
@@ -179,8 +179,9 @@ Required signing secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `
 
 | Document | Description |
 |----------|-------------|
-| [Repo Policy](./docs/en/repo-policy.md) | Branch protection, ruleset, security posture |
-| [Release Secrets Setup](./docs/en/release-secrets.md) | Step-by-step guide for all 13 GitHub Secrets |
+| [Repo Policy](./docs/en/repo-policy.md) | Branch protection, ruleset, security posture, Apple SDK requirements |
+| [Vendor Setup](./docs/en/vendor-setup.md) | Apple Developer / App Store Connect / Universal Links Phase A0 procedure |
+| [Release Secrets Setup](./docs/en/release-secrets.md) | Step-by-step guide for 19 GitHub Secrets + 4 Supabase Edge Function secrets |
 | [i18n Convention](./docs/en/i18n-convention.md) | Key-naming rules across the 5 i18n sources |
 | [ADR Index](./docs/en/adr/) | Architecture Decision Records |
 | [Phase 39 Beta Rubric](./docs/en/phase/phase-39-beta-rubric.md) | Tester acceptance criteria |
@@ -325,7 +326,7 @@ git push origin v1.0.0-alpha1
 3. `build_app`（= `xcodebuild archive` + `xcodebuild -exportArchive`）を実行
 4. `upload_to_testflight` で IPA を App Store Connect にアップロード
 
-必要な GitHub Secrets（7 つ）:
+iOS リリースパイプライン用 GitHub Secrets（19 個中の 7 個）:
 
 | シークレット | 取得元 |
 |---|---|
@@ -339,7 +340,7 @@ git push origin v1.0.0-alpha1
 
 コード署名方針は **manual**（`match` 不採用）。理由は ADR-007 を参照。
 
-各シークレットの**取得・検証・登録手順**（`gh secret set` コマンド、`openssl` / `security` / `keytool` での検証、ローテーション手順）は [docs/ja/release-secrets.md](./docs/ja/release-secrets.md) を参照してください。
+全体は GitHub Secrets 19 個を 7 カテゴリ（iOS コード署名 + ASC API + Android 署名 + Android FCM クライアント + Sentry + PostHog + Supabase）+ Push / IAP サーバー側用 Supabase Edge Function ランタイムシークレット 4 個でカバーします。各シークレットの**取得・検証・登録手順**（`gh secret set` / `supabase secrets set` コマンド、`openssl` / `security` / `keytool` での検証、ローテーション手順）は [docs/ja/release-secrets.md](./docs/ja/release-secrets.md) を参照。Apple 側ベンダーセットアップ手順（App ID + Capabilities + APNs key + App Store Connect IAP + Universal Links）は [docs/ja/vendor-setup.md](./docs/ja/vendor-setup.md) を参照。
 
 #### リリースパイプライン (Android)
 
@@ -364,8 +365,9 @@ Android リリースは署名済み APK を GitHub Actions のアーティファ
 
 | ドキュメント | 説明 |
 |-------------|------|
-| [リポジトリポリシー](./docs/ja/repo-policy.md) | ブランチ保護、ルールセット、セキュリティ姿勢 |
-| [リリースシークレットセットアップ](./docs/ja/release-secrets.md) | 13 GitHub Secrets の段階的取得・検証・登録手順 |
+| [リポジトリポリシー](./docs/ja/repo-policy.md) | ブランチ保護、ルールセット、セキュリティ姿勢、Apple SDK 要件 |
+| [ベンダーセットアップ](./docs/ja/vendor-setup.md) | Apple Developer / App Store Connect / Universal Links Phase A0 手順 |
+| [リリースシークレットセットアップ](./docs/ja/release-secrets.md) | 19 GitHub Secrets + 4 Supabase Edge Function secrets の段階的取得・検証・登録手順 |
 | [i18n 規約](./docs/ja/i18n-convention.md) | 5 つの i18n ソース間のキー命名規則 |
 | [ADR 索引](./docs/ja/adr/) | アーキテクチャ決定レコード |
 
