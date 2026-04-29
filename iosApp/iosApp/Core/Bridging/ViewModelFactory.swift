@@ -117,6 +117,13 @@ enum ViewModelFactory {
         KoinHelperKt.getSymbolCatalog()
     }
 
+    /// Phase 36.4.1b: chart repository accessor for ad-hoc reads (currently
+    /// only consumed by `ChartThumbnailView` for one-shot fetches; everything
+    /// else routes through ViewModels).
+    static func structuredChartRepository() -> StructuredChartRepository {
+        KoinHelperKt.getStructuredChartRepository()
+    }
+
     static func symbolGalleryViewModel() -> SymbolGalleryViewModel {
         KoinHelperKt.getSymbolGalleryViewModel()
     }

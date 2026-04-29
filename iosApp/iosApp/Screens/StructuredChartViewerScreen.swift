@@ -621,22 +621,17 @@ private struct ChartCanvasView: View {
         let originX = rectRowLabelGutter + (availableW - drawW) / 2
         let originY = (size.height - drawH) / 2
 
-        // Grid background
+        // Grid background — Phase 36.4.1b shared helper.
         let gridColor = GraphicsContext.Shading.color(.gray.opacity(0.25))
-        for gx in 0...gridWidth {
-            let x = originX + CGFloat(gx) * cellSize
-            var path = Path()
-            path.move(to: CGPoint(x: x, y: originY))
-            path.addLine(to: CGPoint(x: x, y: originY + drawH))
-            context.stroke(path, with: gridColor, lineWidth: 1)
-        }
-        for gy in 0...gridHeight {
-            let y = originY + CGFloat(gy) * cellSize
-            var path = Path()
-            path.move(to: CGPoint(x: originX, y: y))
-            path.addLine(to: CGPoint(x: originX + drawW, y: y))
-            context.stroke(path, with: gridColor, lineWidth: 1)
-        }
+        drawRectGrid(
+            into: &context,
+            gridWidth: gridWidth,
+            gridHeight: gridHeight,
+            cellSize: cellSize,
+            originX: originX,
+            originY: originY,
+            color: gridColor
+        )
 
         let strokeWidth = max(1, cellSize * 0.06)
         let symbolColor = GraphicsContext.Shading.color(.primary)
@@ -838,30 +833,24 @@ private struct ChartCanvasView: View {
                 let stitchesInRing = stitchesPerRing[ring]
                 if stitch < 0 || stitch >= stitchesInRing { continue }
 
-                let sweep = 2.0 * Double.pi / Double(stitchesInRing)
-                let rCenter = layout.innerRadius + (CGFloat(ring) + 0.5) * layout.ringThickness
-                let chord = 2.0 * Double(rCenter) * sin(sweep / 2.0)
-                let side = max(1.0, min(Double(layout.ringThickness), chord))
+                // Polar cell geometry — Phase 36.4.1b lifted these into
+                // ChartRenderingKit so the three consumers (Viewer, Diff,
+                // Thumbnail) share the lock-step formulas with Kotlin
+                // `PolarCellLayout.cellCenter` / `cellRadialUpRotation`.
+                let side = polarCellInscribedSide(ring: ring, stitchesInRing: stitchesInRing, layout: layout)
                 let half = CGFloat(side) / 2
-
-                // Center of the wedge at r_center — mirrors Kotlin
-                // PolarCellLayout.cellCenter (12-o'clock-CW, screen-angle = θ − π/2).
-                // `thetaCenter` mirrors `PolarCellLayout.cellRadialUpRotation` — update in
-                // lock-step when that formula changes (e.g. Phase 35.x widthUnits > 1).
-                let thetaCenter = Double(stitch) * sweep + sweep / 2
-                let screenAngle = thetaCenter - Double.pi / 2
-                let px = layout.cx + rCenter * CGFloat(cos(screenAngle))
-                let py = layout.cy + rCenter * CGFloat(sin(screenAngle))
-                let bounds = CGRect(x: px - half, y: py - half, width: half * 2, height: half * 2)
+                let center = polarCellCenter(stitch: stitch, ring: ring, stitchesInRing: stitchesInRing, layout: layout)
+                let rotation = polarCellRotation(stitch: stitch, stitchesInRing: stitchesInRing)
+                let bounds = CGRect(x: center.x - half, y: center.y - half, width: half * 2, height: half * 2)
                 let strokeWidth = max(1, CGFloat(side) * 0.06)
 
                 // Rotate a subcontext around the cell center so the glyph's local
                 // "up" aligns with the radial direction. Positive radians rotate
                 // CW on SwiftUI's y-down screen — matches our 12-o'clock-CW convention.
                 var subcontext = context
-                subcontext.translateBy(x: px, y: py)
-                subcontext.rotate(by: .radians(thetaCenter))
-                subcontext.translateBy(x: -px, y: -py)
+                subcontext.translateBy(x: center.x, y: center.y)
+                subcontext.rotate(by: .radians(rotation))
+                subcontext.translateBy(x: -center.x, y: -center.y)
 
                 guard let def = catalog.get(id: cell.symbolId) else {
                     drawUnknownGlyph(into: &subcontext, bounds: bounds, fill: unknownBg)

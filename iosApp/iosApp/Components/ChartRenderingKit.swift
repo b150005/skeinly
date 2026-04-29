@@ -86,6 +86,82 @@ func polarLayout(canvasSize: CGSize, ringsCount: Int) -> PolarLayout {
     )
 }
 
+/// Screen-space center point of a (stitch, ring) cell at the wedge mid-radius.
+/// Mirrors Kotlin `PolarCellLayout.cellCenter` — the inscribed-square geometry
+/// in `drawPolarCells` reads from this. 12-o'clock-CW convention.
+func polarCellCenter(
+    stitch: Int,
+    ring: Int,
+    stitchesInRing: Int,
+    layout: PolarLayout
+) -> CGPoint {
+    let sweep = 2.0 * Double.pi / Double(stitchesInRing)
+    let rCenter = layout.innerRadius + (CGFloat(ring) + 0.5) * layout.ringThickness
+    let thetaCenter = Double(stitch) * sweep + sweep / 2
+    let screenAngle = thetaCenter - Double.pi / 2
+    return CGPoint(
+        x: layout.cx + rCenter * CGFloat(cos(screenAngle)),
+        y: layout.cy + rCenter * CGFloat(sin(screenAngle))
+    )
+}
+
+/// Radial-up rotation (in radians) for a polar cell, suitable for
+/// `GraphicsContext.rotate(by: .radians(...))` so a cell's local "up"
+/// points outward from center. Mirrors Kotlin
+/// `PolarCellLayout.cellRadialUpRotation`. Update both sides in lock-step
+/// when widthUnits > 1 polar cells land (Phase 35.x).
+func polarCellRotation(stitch: Int, stitchesInRing: Int) -> Double {
+    let sweep = 2.0 * Double.pi / Double(stitchesInRing)
+    return Double(stitch) * sweep + sweep / 2
+}
+
+/// Inscribed-square side length for a polar cell — the largest axis-aligned
+/// square that fits inside the wedge at its mid-radius. Returns at least 1.0
+/// to keep degenerate inner rings renderable.
+func polarCellInscribedSide(
+    ring: Int,
+    stitchesInRing: Int,
+    layout: PolarLayout
+) -> Double {
+    let sweep = 2.0 * Double.pi / Double(stitchesInRing)
+    let rCenter = layout.innerRadius + (CGFloat(ring) + 0.5) * layout.ringThickness
+    let chord = 2.0 * Double(rCenter) * sin(sweep / 2.0)
+    return max(1.0, min(Double(layout.ringThickness), chord))
+}
+
+/// Paints the rectangular grid (`gridWidth + 1` vertical + `gridHeight + 1`
+/// horizontal lines) inside the bounds anchored at `(originX, originY)`.
+/// Used by both the full chart viewer and the thumbnail consumers; the diff
+/// consumer paints its own grid because of its inline-helper style.
+@MainActor
+func drawRectGrid(
+    into context: inout GraphicsContext,
+    gridWidth: Int,
+    gridHeight: Int,
+    cellSize: CGFloat,
+    originX: CGFloat,
+    originY: CGFloat,
+    color: GraphicsContext.Shading,
+    lineWidth: CGFloat = 1
+) {
+    let drawW = cellSize * CGFloat(gridWidth)
+    let drawH = cellSize * CGFloat(gridHeight)
+    for gx in 0...gridWidth {
+        let x = originX + CGFloat(gx) * cellSize
+        var path = Path()
+        path.move(to: CGPoint(x: x, y: originY))
+        path.addLine(to: CGPoint(x: x, y: originY + drawH))
+        context.stroke(path, with: color, lineWidth: lineWidth)
+    }
+    for gy in 0...gridHeight {
+        let y = originY + CGFloat(gy) * cellSize
+        var path = Path()
+        path.move(to: CGPoint(x: originX, y: y))
+        path.addLine(to: CGPoint(x: originX + drawW, y: y))
+        context.stroke(path, with: color, lineWidth: lineWidth)
+    }
+}
+
 /// Annular-wedge `Path` for the (stitch, ring) wedge in our 12-o'clock-CW
 /// convention. Outer arc traces CW from start to end angle, inner arc traces
 /// CCW back — produces a closed annular region.

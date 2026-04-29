@@ -321,27 +321,13 @@ private struct DiscoveryPatternRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            // Phase 36.4 (ADR-012 §5): on iOS the chart-preview thumbnail is
-            // a static "has chart" indicator that taps through to the
-            // read-only ChartViewer. The Compose surface ships the live mini-
-            // render via ChartThumbnail; mirroring it on iOS requires
-            // factoring StructuredChartViewerScreen.ChartCanvasView out of its
-            // gestural host into a thumbnail-friendly variant — deferred to
-            // Phase 36.4.1 and tracked in CLAUDE.md Tech Debt Backlog. The
-            // companion-set data layer (state.patternsWithCharts) is on parity
-            // with Compose so this only affects rendering fidelity.
+            // Phase 36.4.1b (ADR-012 §5): live mini-render of the structured
+            // chart via `ChartThumbnailView` (Components/ChartThumbnailView.swift).
+            // Closes the Phase 36.4 deferral — iOS now renders the same
+            // grid + symbol-glyphs thumbnail as the Compose `ChartThumbnail`,
+            // sharing rendering primitives via Components/ChartRenderingKit.swift.
             if hasChart {
-                Button(action: onChartTap) {
-                    Image(systemName: "square.grid.3x3.fill")
-                        .font(.title)
-                        .foregroundStyle(.tint)
-                        .frame(width: 64, height: 64)
-                        .background(Color.gray.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(LocalizedStringKey("action_view_chart_thumbnail"))
-                .accessibilityIdentifier("chartThumbnail_\(pattern.id)")
+                ChartThumbnailView(patternId: pattern.id, onTap: onChartTap)
             }
 
             VStack(alignment: .leading, spacing: 4) {

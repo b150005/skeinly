@@ -129,6 +129,12 @@ fun getChartConflictResolutionViewModel(prId: String): ChartConflictResolutionVi
 
 fun getSymbolCatalog(): SymbolCatalog = KoinPlatform.getKoin().get()
 
+// Phase 36.4.1b: exposes the chart repository directly so the iOS Discovery
+// thumbnail can fetch a chart on demand without a dedicated ViewModel layer
+// (the fetch is a one-shot read with no observable state — wrapping it in a
+// Kotlin ViewModel would be ceremony).
+fun getStructuredChartRepository(): io.github.b150005.knitnote.domain.repository.StructuredChartRepository = KoinPlatform.getKoin().get()
+
 // Type-safe FlowWrapper factories for Swift (eliminates as! force-casts)
 
 fun wrapOnboardingState(
