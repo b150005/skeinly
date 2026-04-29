@@ -4,9 +4,6 @@ import Shared
 /// Resolver mirroring the Compose `ErrorMessage.localized()` composable —
 /// turns a Kotlin `ErrorMessage` sealed value into a localized Swift `String`
 /// using `NSLocalizedString` over the iOS String Catalog.
-///
-/// For `ErrorMessage.Raw` (use-case-emitted text), passes through verbatim.
-/// Phase G+ should migrate use cases to typed error keys.
 extension ErrorMessage {
     var localizedString: String {
         if self is ErrorMessageNetworkUnavailable {
@@ -45,15 +42,39 @@ extension ErrorMessage {
         if self is ErrorMessageLoadFailed {
             return NSLocalizedString("error_load", comment: "")
         }
-        if let raw = self as? ErrorMessageRaw {
-            return raw.text
+        if self is ErrorMessageResourceNotFound {
+            return NSLocalizedString("error_resource_not_found", comment: "")
+        }
+        if self is ErrorMessageFieldRequired {
+            return NSLocalizedString("error_field_required", comment: "")
+        }
+        if self is ErrorMessageFieldTooLong {
+            return NSLocalizedString("error_field_too_long", comment: "")
+        }
+        if self is ErrorMessagePasswordTooShort {
+            return NSLocalizedString("error_password_too_short", comment: "")
+        }
+        if self is ErrorMessageImageInvalid {
+            return NSLocalizedString("error_image_invalid", comment: "")
+        }
+        if self is ErrorMessageImageTooLarge {
+            return NSLocalizedString("error_image_too_large", comment: "")
+        }
+        if self is ErrorMessageOperationNotAllowed {
+            return NSLocalizedString("error_operation_not_allowed", comment: "")
+        }
+        if self is ErrorMessagePermissionDenied {
+            return NSLocalizedString("error_permission_denied", comment: "")
+        }
+        if self is ErrorMessageNotReady {
+            return NSLocalizedString("error_not_ready", comment: "")
         }
         // IMPORTANT: when adding a new variant to ErrorMessage.kt, add a
         // matching `if self is ErrorMessageX` branch above this line.
-        // Currently 12 data-object branches + 1 Raw cast = 13 total. The
-        // Compose resolver (ErrorMessageRendering.kt) is exhaustive by type
-        // system enforcement and will fail to compile on missing branches;
-        // this Swift extension will silently fall through to "error_generic".
+        // Currently 21 variant branches. The Compose resolver
+        // (ErrorMessageRendering.kt) is exhaustive by type system enforcement
+        // and will fail to compile on missing branches; this Swift extension
+        // will silently fall through to "error_generic".
         return NSLocalizedString("error_generic", comment: "")
     }
 }

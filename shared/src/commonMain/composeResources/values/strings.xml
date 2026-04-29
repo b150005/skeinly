@@ -42,6 +42,15 @@
     <string name="error_network">Network unavailable</string>
     <string name="error_sign_in_required">Sign in required</string>
     <string name="error_requires_connectivity">Internet connection required</string>
+    <string name="error_resource_not_found">Not found</string>
+    <string name="error_field_required">Required field is missing</string>
+    <string name="error_field_too_long">Input is too long</string>
+    <string name="error_password_too_short">Password is too short</string>
+    <string name="error_image_invalid">Invalid image</string>
+    <string name="error_image_too_large">Image is too large</string>
+    <string name="error_operation_not_allowed">This operation is not allowed in the current state</string>
+    <string name="error_permission_denied">Permission denied</string>
+    <string name="error_not_ready">Not ready, please try again</string>
     <!-- Settings — About / Legal section -->
     <string name="label_about_section">About</string>
     <string name="action_privacy_policy">Privacy Policy</string>

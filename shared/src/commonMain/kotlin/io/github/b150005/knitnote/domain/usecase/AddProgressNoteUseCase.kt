@@ -20,7 +20,7 @@ class AddProgressNoteUseCase(
         photoUrl: String? = null,
     ): UseCaseResult<Progress> {
         if (note.isBlank()) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Note must not be blank"))
+            return UseCaseResult.Failure(UseCaseError.FieldRequired)
         }
         val ownerId = authRepository.getCurrentUserId() ?: LocalUser.ID
         val progress =

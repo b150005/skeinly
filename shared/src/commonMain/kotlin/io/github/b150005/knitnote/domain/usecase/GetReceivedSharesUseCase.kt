@@ -10,12 +10,12 @@ class GetReceivedSharesUseCase(
 ) {
     suspend operator fun invoke(): UseCaseResult<List<Share>> {
         if (shareRepository == null) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Sharing requires cloud connectivity"))
+            return UseCaseResult.Failure(UseCaseError.RequiresConnectivity)
         }
 
         val userId =
             authRepository.getCurrentUserId()
-                ?: return UseCaseResult.Failure(UseCaseError.Validation("Must be signed in to view shares"))
+                ?: return UseCaseResult.Failure(UseCaseError.SignInRequired)
 
         return UseCaseResult.Success(shareRepository.getReceivedByUserId(userId))
     }

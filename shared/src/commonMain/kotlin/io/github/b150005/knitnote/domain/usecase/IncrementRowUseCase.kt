@@ -11,7 +11,7 @@ class IncrementRowUseCase(
     suspend operator fun invoke(projectId: String): UseCaseResult<Project> {
         val project =
             repository.getById(projectId)
-                ?: return UseCaseResult.Failure(UseCaseError.NotFound("Project not found: $projectId"))
+                ?: return UseCaseResult.Failure(UseCaseError.ResourceNotFound)
 
         val now = Clock.System.now()
         val incremented =

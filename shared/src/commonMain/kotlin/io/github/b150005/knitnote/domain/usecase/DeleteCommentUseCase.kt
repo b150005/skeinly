@@ -10,14 +10,14 @@ class DeleteCommentUseCase(
     suspend operator fun invoke(commentId: String): UseCaseResult<Unit> {
         if (commentRepository == null) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("Comments require cloud connectivity"),
+                UseCaseError.RequiresConnectivity,
             )
         }
 
         val userId =
             authRepository.getCurrentUserId()
                 ?: return UseCaseResult.Failure(
-                    UseCaseError.Validation("Must be signed in to delete comments"),
+                    UseCaseError.SignInRequired,
                 )
 
         val comment = commentRepository.getById(commentId)
@@ -25,7 +25,7 @@ class DeleteCommentUseCase(
         // Use same error message for "not found" and "not owner" to prevent ID enumeration
         if (comment == null || comment.authorId != userId) {
             return UseCaseResult.Failure(
-                UseCaseError.NotFound("Comment not found"),
+                UseCaseError.ResourceNotFound,
             )
         }
 

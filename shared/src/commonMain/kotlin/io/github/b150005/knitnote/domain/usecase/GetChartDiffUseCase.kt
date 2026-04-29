@@ -31,7 +31,7 @@ class GetChartDiffUseCase(
             val target =
                 repository.getRevision(targetRevisionId)
                     ?: return UseCaseResult.Failure(
-                        UseCaseError.NotFound("Revision $targetRevisionId not found"),
+                        UseCaseError.ResourceNotFound,
                     )
             val base =
                 if (baseRevisionId == null) {
@@ -39,7 +39,7 @@ class GetChartDiffUseCase(
                 } else {
                     repository.getRevision(baseRevisionId)
                         ?: return UseCaseResult.Failure(
-                            UseCaseError.NotFound("Revision $baseRevisionId not found"),
+                            UseCaseError.ResourceNotFound,
                         )
                 }
             UseCaseResult.Success(

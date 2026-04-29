@@ -40,7 +40,7 @@ class PostPullRequestCommentUseCaseTest {
             val result = useCase("pr-1", "   ")
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldRequired, result.error)
         }
 
     @Test
@@ -51,7 +51,7 @@ class PostPullRequestCommentUseCaseTest {
             val result = useCase("pr-1", tooLong)
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldTooLong, result.error)
         }
 
     @Test

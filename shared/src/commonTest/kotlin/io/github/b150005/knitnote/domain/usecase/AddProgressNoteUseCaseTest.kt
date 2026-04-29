@@ -100,7 +100,7 @@ class AddProgressNoteUseCaseTest {
             val result = useCase(projectId = "proj-1", rowNumber = 1, note = "  ")
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldRequired, result.error)
         }
 
     @Test
@@ -109,7 +109,7 @@ class AddProgressNoteUseCaseTest {
             val result = useCase(projectId = "proj-1", rowNumber = 1, note = "")
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldRequired, result.error)
         }
 
     @Test

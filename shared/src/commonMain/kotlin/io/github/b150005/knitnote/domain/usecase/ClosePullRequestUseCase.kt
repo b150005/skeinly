@@ -41,7 +41,7 @@ class ClosePullRequestUseCase(
     suspend operator fun invoke(pullRequest: PullRequest): UseCaseResult<PullRequest> {
         if (pullRequest.status != PullRequestStatus.OPEN) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("Only open pull requests can be closed"),
+                UseCaseError.OperationNotAllowed,
             )
         }
         if (authRepository.getCurrentUserId() == null) {

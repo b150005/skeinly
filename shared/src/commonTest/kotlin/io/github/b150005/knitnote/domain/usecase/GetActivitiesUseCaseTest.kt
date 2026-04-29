@@ -36,7 +36,7 @@ class GetActivitiesUseCaseTest {
             val useCase = GetActivitiesUseCase(null)
             val result = useCase("user-1")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.RequiresConnectivity, result.error)
         }
 
     @Test

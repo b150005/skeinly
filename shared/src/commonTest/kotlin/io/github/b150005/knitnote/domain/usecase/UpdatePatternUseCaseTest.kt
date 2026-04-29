@@ -69,7 +69,7 @@ class UpdatePatternUseCaseTest {
 
             val result = useCase(patternId = "p1", title = "  ")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldRequired, result.error)
         }
 
     @Test
@@ -77,7 +77,7 @@ class UpdatePatternUseCaseTest {
         runTest {
             val result = useCase(patternId = "non-existent", title = "Title")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(result.error)
+            assertIs<UseCaseError.ResourceNotFound>(result.error)
         }
 
     @Test

@@ -73,7 +73,7 @@ class UpdateProjectUseCaseTest {
             val result = useCase(projectId = "non-existent", title = "Title", totalRows = 100)
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(result.error)
+            assertIs<UseCaseError.ResourceNotFound>(result.error)
         }
 
     @Test
@@ -84,7 +84,7 @@ class UpdateProjectUseCaseTest {
             val result = useCase(projectId = "test-project", title = "  ", totalRows = 100)
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldRequired, result.error)
         }
 
     @Test
@@ -95,7 +95,7 @@ class UpdateProjectUseCaseTest {
             val result = useCase(projectId = "test-project", title = "", totalRows = 100)
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldRequired, result.error)
         }
 
     @Test

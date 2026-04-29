@@ -12,10 +12,10 @@ class SignUpUseCase(
     ): UseCaseResult<Unit> =
         try {
             if (email.isBlank()) {
-                return UseCaseResult.Failure(UseCaseError.Validation("Email is required"))
+                return UseCaseResult.Failure(UseCaseError.FieldRequired)
             }
             if (password.length < 6) {
-                return UseCaseResult.Failure(UseCaseError.Validation("Password must be at least 6 characters"))
+                return UseCaseResult.Failure(UseCaseError.PasswordTooShort)
             }
             authRepository.signUpWithEmail(email, password)
             UseCaseResult.Success(Unit)

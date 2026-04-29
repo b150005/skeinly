@@ -117,7 +117,7 @@ class OpenPullRequestUseCaseTest {
         }
 
     @Test
-    fun `invoke fails Validation when no ancestor is found`() =
+    fun `invoke fails OperationNotAllowed when no ancestor is found`() =
         runTest {
             // Target history has only t-other; source chain has f1 → f0
             // — no overlap.
@@ -140,11 +140,11 @@ class OpenPullRequestUseCaseTest {
                 )
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.OperationNotAllowed, result.error)
         }
 
     @Test
-    fun `invoke fails Validation when target pattern has empty history`() =
+    fun `invoke fails OperationNotAllowed when target pattern has empty history`() =
         runTest {
             // Target has no rows at all — can't even compute an ancestor set.
             revRepo.put(makeRevision("f1", "pat-fork", null))
@@ -161,7 +161,7 @@ class OpenPullRequestUseCaseTest {
                 )
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.OperationNotAllowed, result.error)
         }
 
     @Test
@@ -179,7 +179,7 @@ class OpenPullRequestUseCaseTest {
                 )
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldRequired, result.error)
         }
 
     @Test
@@ -199,11 +199,11 @@ class OpenPullRequestUseCaseTest {
                 )
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldTooLong, result.error)
         }
 
     @Test
-    fun `invoke fails Authentication when no user is signed in`() =
+    fun `invoke fails SignInRequired when no user is signed in`() =
         runTest {
             authRepo.setAuthState(AuthState.Unauthenticated)
             revRepo.setHistory(
@@ -224,7 +224,7 @@ class OpenPullRequestUseCaseTest {
                 )
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Authentication>(result.error)
+            assertEquals(UseCaseError.SignInRequired, result.error)
         }
 
     @Test

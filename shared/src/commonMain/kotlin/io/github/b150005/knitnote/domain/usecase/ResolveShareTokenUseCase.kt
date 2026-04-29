@@ -27,27 +27,27 @@ class ResolveShareTokenUseCase(
         shareId: String? = null,
     ): UseCaseResult<SharedContent> {
         if (shareRepository == null) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Sharing requires cloud connectivity"))
+            return UseCaseResult.Failure(UseCaseError.RequiresConnectivity)
         }
 
         val share =
             when {
                 token != null && token.isNotBlank() -> {
                     shareRepository.getByToken(token)
-                        ?: return UseCaseResult.Failure(UseCaseError.NotFound("Share not found or expired"))
+                        ?: return UseCaseResult.Failure(UseCaseError.ResourceNotFound)
                 }
                 shareId != null && shareId.isNotBlank() -> {
                     shareRepository.getById(shareId)
-                        ?: return UseCaseResult.Failure(UseCaseError.NotFound("Share not found"))
+                        ?: return UseCaseResult.Failure(UseCaseError.ResourceNotFound)
                 }
                 else -> {
-                    return UseCaseResult.Failure(UseCaseError.Validation("Either token or shareId must be provided"))
+                    return UseCaseResult.Failure(UseCaseError.FieldRequired)
                 }
             }
 
         val pattern =
             patternRepository.getById(share.patternId)
-                ?: return UseCaseResult.Failure(UseCaseError.NotFound("Shared pattern not found"))
+                ?: return UseCaseResult.Failure(UseCaseError.ResourceNotFound)
 
         val projects = projectRepository.getByPatternId(share.patternId)
 

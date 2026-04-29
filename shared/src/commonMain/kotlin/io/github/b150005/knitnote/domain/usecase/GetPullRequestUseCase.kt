@@ -28,7 +28,7 @@ class GetPullRequestUseCase(
         try {
             val pr = repository.getById(prId)
             if (pr == null) {
-                UseCaseResult.Failure(UseCaseError.NotFound("Pull request not found"))
+                UseCaseResult.Failure(UseCaseError.ResourceNotFound)
             } else {
                 UseCaseResult.Success(pr)
             }

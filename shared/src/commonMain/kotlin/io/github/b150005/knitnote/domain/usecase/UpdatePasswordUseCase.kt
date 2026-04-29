@@ -26,12 +26,12 @@ class UpdatePasswordUseCase(
         }
         if (newPassword.length < MIN_PASSWORD_LENGTH) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("Password must be at least $MIN_PASSWORD_LENGTH characters"),
+                UseCaseError.PasswordTooShort,
             )
         }
         if (newPassword.length > MAX_PASSWORD_LENGTH) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("Password too long (max $MAX_PASSWORD_LENGTH characters)"),
+                UseCaseError.FieldTooLong,
             )
         }
 

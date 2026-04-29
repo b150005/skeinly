@@ -10,23 +10,62 @@ sealed interface UseCaseResult<out T> {
     ) : UseCaseResult<Nothing>
 }
 
+/**
+ * Typed error categories produced by use cases. Phase G.1 stage b/c migration
+ * eliminated the legacy `NotFound(message: String)` / `Validation(message: String)`
+ * pair in favor of semantic typed variants that map 1:1 to localized
+ * [ErrorMessage] values via [toErrorMessage]. The hardcoded English strings
+ * the legacy variants carried now surface localized to ja-JP testers.
+ */
 sealed interface UseCaseError {
-    data class NotFound(
-        val message: String,
-    ) : UseCaseError
+    /** Resource (project, pattern, profile, share, branch, revision, ...) not found. */
+    data object ResourceNotFound : UseCaseError
 
-    data class Validation(
-        val message: String,
-    ) : UseCaseError
+    /** Caller is not signed in. */
+    data object SignInRequired : UseCaseError
 
+    /** Action requires a connected Supabase / cloud service (offline-only mode). */
+    data object RequiresConnectivity : UseCaseError
+
+    /** Required form field is blank or empty. */
+    data object FieldRequired : UseCaseError
+
+    /** Form field exceeds the maximum character length. */
+    data object FieldTooLong : UseCaseError
+
+    /** Email address fails client-side validation. */
+    data object EmailInvalid : UseCaseError
+
+    /** Password is shorter than the minimum required length. */
+    data object PasswordTooShort : UseCaseError
+
+    /** Image data is empty or fails image-format validation. */
+    data object ImageInvalid : UseCaseError
+
+    /** Image exceeds the maximum upload size. */
+    data object ImageTooLarge : UseCaseError
+
+    /**
+     * Operation is not allowed given the current entity state — e.g. closing a
+     * non-open PR, accepting a non-pending share, forking a non-public pattern,
+     * source tip drift during merge, duplicate branch creation.
+     */
+    data object OperationNotAllowed : UseCaseError
+
+    /** Caller does not own / is not the recipient of the resource being mutated. */
+    data object PermissionDenied : UseCaseError
+
+    /** Authentication failed at the auth layer. Carries the underlying cause for known-error mapping. */
     data class Authentication(
         val cause: Throwable,
     ) : UseCaseError
 
+    /** Network operation failed. */
     data class Network(
         val cause: Throwable,
     ) : UseCaseError
 
+    /** Unclassified failure. Carries the underlying cause for known-error mapping. */
     data class Unknown(
         val cause: Throwable,
     ) : UseCaseError

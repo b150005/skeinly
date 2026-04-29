@@ -23,7 +23,7 @@ class CreateProjectUseCase(
         patternId: String? = null,
     ): UseCaseResult<Project> {
         if (title.isBlank()) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Title must not be blank"))
+            return UseCaseResult.Failure(UseCaseError.FieldRequired)
         }
         val now = Clock.System.now()
         val ownerId = authRepository.getCurrentUserId() ?: LocalUser.ID

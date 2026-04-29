@@ -32,7 +32,7 @@ class GetCommentsUseCaseTest {
             val useCase = GetCommentsUseCase(null)
             val result = useCase(CommentTargetType.PROJECT, "proj-1")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.RequiresConnectivity, result.error)
         }
 
     @Test

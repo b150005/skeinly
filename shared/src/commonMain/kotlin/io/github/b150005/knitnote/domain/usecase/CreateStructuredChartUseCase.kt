@@ -36,20 +36,16 @@ class CreateStructuredChartUseCase(
         readingConvention: ReadingConvention = ReadingConvention.KNIT_FLAT,
     ): UseCaseResult<StructuredChart> {
         if (patternId.isBlank()) {
-            return UseCaseResult.Failure(UseCaseError.Validation("patternId must not be blank"))
+            return UseCaseResult.Failure(UseCaseError.FieldRequired)
         }
         if (!extentsMatchCoordinateSystem(coordinateSystem, extents)) {
-            return UseCaseResult.Failure(
-                UseCaseError.Validation(
-                    "extents ${extents::class.simpleName} does not match coordinate system $coordinateSystem",
-                ),
-            )
+            return UseCaseResult.Failure(UseCaseError.OperationNotAllowed)
         }
         return try {
             val existing = repository.getByPatternId(patternId)
             if (existing != null) {
                 return UseCaseResult.Failure(
-                    UseCaseError.Validation("A structured chart already exists for pattern $patternId"),
+                    UseCaseError.OperationNotAllowed,
                 )
             }
             val ownerId = authRepository.getCurrentUserId() ?: LocalUser.ID

@@ -55,7 +55,7 @@ class UpdateProfileUseCaseTest {
             val result = useCase("Name", null, null)
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.SignInRequired, result.error)
         }
 
     @Test
@@ -68,7 +68,7 @@ class UpdateProfileUseCaseTest {
             val result = useCase("Name", null, null)
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(result.error)
+            assertIs<UseCaseError.ResourceNotFound>(result.error)
         }
 
     @Test
@@ -80,7 +80,7 @@ class UpdateProfileUseCaseTest {
             val result = useCase("   ", null, null)
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldRequired, result.error)
         }
 
     @Test
@@ -92,7 +92,7 @@ class UpdateProfileUseCaseTest {
             val result = useCase("A".repeat(51), null, null)
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldTooLong, result.error)
         }
 
     @Test
@@ -104,7 +104,7 @@ class UpdateProfileUseCaseTest {
             val result = useCase("Name", "B".repeat(501), null)
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldTooLong, result.error)
         }
 
     @Test
@@ -142,6 +142,6 @@ class UpdateProfileUseCaseTest {
             val result = useCase("Name", null, null)
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(result.error)
+            assertIs<UseCaseError.ResourceNotFound>(result.error)
         }
 }

@@ -162,6 +162,69 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "インターネット接続が必要です" } }
       }
     },
+    "error_resource_not_found" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Not found" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "見つかりません" } }
+      }
+    },
+    "error_field_required" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Required field is missing" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "必須項目が入力されていません" } }
+      }
+    },
+    "error_field_too_long" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Input is too long" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "入力が長すぎます" } }
+      }
+    },
+    "error_password_too_short" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Password is too short" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パスワードが短すぎます" } }
+      }
+    },
+    "error_image_invalid" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Invalid image" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "画像が無効です" } }
+      }
+    },
+    "error_image_too_large" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Image is too large" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "画像のサイズが大きすぎます" } }
+      }
+    },
+    "error_operation_not_allowed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This operation is not allowed in the current state" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "現在の状態ではこの操作は実行できません" } }
+      }
+    },
+    "error_permission_denied" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Permission denied" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "権限がありません" } }
+      }
+    },
+    "error_not_ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Not ready, please try again" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "準備中です。もう一度お試しください" } }
+      }
+    },
     "error_authentication_failed" : {
       "extractionState" : "manual",
       "localizations" : {

@@ -31,11 +31,11 @@ class PostPullRequestCommentUseCase(
     ): UseCaseResult<PullRequestComment> {
         val trimmed = body.trim()
         if (trimmed.isEmpty()) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Comment body cannot be empty"))
+            return UseCaseResult.Failure(UseCaseError.FieldRequired)
         }
         if (trimmed.length > MAX_BODY_LENGTH) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("Comment body cannot exceed $MAX_BODY_LENGTH characters"),
+                UseCaseError.FieldTooLong,
             )
         }
         val authorId =

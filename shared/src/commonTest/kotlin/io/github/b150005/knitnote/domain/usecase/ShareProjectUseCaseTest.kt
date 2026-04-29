@@ -44,7 +44,7 @@ class ShareProjectUseCaseTest {
             val useCase = createUseCase(shareRepo = null)
             val result = useCase("p-1")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.RequiresConnectivity, result.error)
         }
 
     @Test
@@ -53,7 +53,7 @@ class ShareProjectUseCaseTest {
             val useCase = createUseCase()
             val result = useCase("p-1")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.SignInRequired, result.error)
         }
 
     @Test
@@ -65,7 +65,7 @@ class ShareProjectUseCaseTest {
 
             val result = useCase("non-existent")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(result.error)
+            assertIs<UseCaseError.ResourceNotFound>(result.error)
         }
 
     @Test
@@ -79,7 +79,7 @@ class ShareProjectUseCaseTest {
 
             val result = useCase("p-1")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.PermissionDenied, result.error)
         }
 
     @Test
@@ -155,7 +155,7 @@ class ShareProjectUseCaseTest {
 
             val result = useCase("p-1", toUserId = "test-user-id")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.OperationNotAllowed, result.error)
         }
 
     @Test

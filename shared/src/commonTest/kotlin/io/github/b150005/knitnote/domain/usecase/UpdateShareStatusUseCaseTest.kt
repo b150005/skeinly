@@ -34,7 +34,7 @@ class UpdateShareStatusUseCaseTest {
             val useCase = createUseCase(shareRepo = null)
             val result = useCase("share-1", ShareStatus.ACCEPTED)
             assertIs<UseCaseResult.Failure>(result)
-            assertEquals(UseCaseError.Validation::class, result.error::class)
+            assertEquals(UseCaseError.RequiresConnectivity, result.error)
         }
 
     @Test
@@ -55,7 +55,7 @@ class UpdateShareStatusUseCaseTest {
             val useCase = createUseCase(authRepo = authRepo)
             val result = useCase("nonexistent", ShareStatus.ACCEPTED)
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(result.error)
+            assertIs<UseCaseError.ResourceNotFound>(result.error)
         }
 
     @Test
@@ -70,7 +70,7 @@ class UpdateShareStatusUseCaseTest {
 
             val result = useCase("share-1", ShareStatus.ACCEPTED)
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.PermissionDenied, result.error)
         }
 
     @Test
@@ -86,7 +86,7 @@ class UpdateShareStatusUseCaseTest {
 
             val result = useCase("share-1", ShareStatus.DECLINED)
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.OperationNotAllowed, result.error)
         }
 
     @Test
@@ -101,7 +101,7 @@ class UpdateShareStatusUseCaseTest {
 
             val result = useCase("share-1", ShareStatus.PENDING)
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.OperationNotAllowed, result.error)
         }
 
     @Test

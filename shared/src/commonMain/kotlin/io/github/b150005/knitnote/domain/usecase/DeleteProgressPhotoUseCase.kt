@@ -17,12 +17,12 @@ class DeleteProgressPhotoUseCase(
         val userId =
             authRepository.getCurrentUserId()
                 ?: return UseCaseResult.Failure(
-                    UseCaseError.Validation("Must be signed in to delete photos"),
+                    UseCaseError.SignInRequired,
                 )
 
         val pathSegments = photoPath.split("/")
         if (pathSegments.isEmpty() || pathSegments[0] != userId) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Cannot delete photo belonging to another user"))
+            return UseCaseResult.Failure(UseCaseError.PermissionDenied)
         }
 
         return try {

@@ -42,7 +42,7 @@ class GetReceivedSharesUseCaseTest {
             val useCase = GetReceivedSharesUseCase(FakeShareRepository(), FakeAuthRepository())
             val result = useCase()
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.SignInRequired, result.error)
         }
 
     @Test

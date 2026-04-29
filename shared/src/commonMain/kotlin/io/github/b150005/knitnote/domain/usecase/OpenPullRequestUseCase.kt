@@ -54,26 +54,20 @@ class OpenPullRequestUseCase(
     ): UseCaseResult<PullRequest> {
         val trimmedTitle = title.trim()
         if (trimmedTitle.isEmpty()) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Pull request title cannot be empty"))
+            return UseCaseResult.Failure(UseCaseError.FieldRequired)
         }
         if (trimmedTitle.length > MAX_TITLE_LENGTH) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("Pull request title cannot exceed $MAX_TITLE_LENGTH characters"),
+                UseCaseError.FieldTooLong,
             )
         }
         val cleanedDescription = description?.trim()?.takeIf { it.isNotEmpty() }
         if (cleanedDescription != null && cleanedDescription.length > MAX_DESCRIPTION_LENGTH) {
-            return UseCaseResult.Failure(
-                UseCaseError.Validation(
-                    "Pull request description cannot exceed $MAX_DESCRIPTION_LENGTH characters",
-                ),
-            )
+            return UseCaseResult.Failure(UseCaseError.FieldTooLong)
         }
         val authorId =
             authRepository.getCurrentUserId()
-                ?: return UseCaseResult.Failure(
-                    UseCaseError.Authentication(IllegalStateException("Must be signed in to open a pull request")),
-                )
+                ?: return UseCaseResult.Failure(UseCaseError.SignInRequired)
 
         return try {
             val targetHistoryIds =
@@ -86,14 +80,14 @@ class OpenPullRequestUseCase(
                     .toSet()
             if (targetHistoryIds.isEmpty()) {
                 return UseCaseResult.Failure(
-                    UseCaseError.Validation("Target pattern has no chart history; cannot open pull request"),
+                    UseCaseError.OperationNotAllowed,
                 )
             }
 
             val ancestorId =
                 walkParentChainForCommonAncestor(sourceTipRevisionId, targetHistoryIds)
                     ?: return UseCaseResult.Failure(
-                        UseCaseError.Validation("No common ancestor found between source and target histories"),
+                        UseCaseError.OperationNotAllowed,
                     )
 
             val now = Clock.System.now()

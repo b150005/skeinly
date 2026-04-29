@@ -26,31 +26,31 @@ class CreateCommentUseCase(
     ): UseCaseResult<Comment> {
         if (commentRepository == null) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("Comments require cloud connectivity"),
+                UseCaseError.RequiresConnectivity,
             )
         }
 
         val userId =
             authRepository.getCurrentUserId()
                 ?: return UseCaseResult.Failure(
-                    UseCaseError.Validation("Must be signed in to comment"),
+                    UseCaseError.SignInRequired,
                 )
 
         if (!UUID_REGEX.matches(targetId)) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("Invalid target ID"),
+                UseCaseError.FieldRequired,
             )
         }
 
         val trimmedBody = body.trim()
         if (trimmedBody.isEmpty()) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("Comment body cannot be empty"),
+                UseCaseError.FieldRequired,
             )
         }
         if (trimmedBody.length > MAX_COMMENT_LENGTH) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("Comment cannot exceed $MAX_COMMENT_LENGTH characters"),
+                UseCaseError.FieldTooLong,
             )
         }
 

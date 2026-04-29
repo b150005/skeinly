@@ -20,11 +20,11 @@ class UpdatePatternUseCase(
         visibility: Visibility = Visibility.PRIVATE,
     ): UseCaseResult<Pattern> {
         if (title.isBlank()) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Title must not be blank"))
+            return UseCaseResult.Failure(UseCaseError.FieldRequired)
         }
         val existing =
             repository.getById(patternId)
-                ?: return UseCaseResult.Failure(UseCaseError.NotFound("Pattern not found: $patternId"))
+                ?: return UseCaseResult.Failure(UseCaseError.ResourceNotFound)
 
         val updated =
             existing.copy(

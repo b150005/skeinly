@@ -45,15 +45,15 @@ class SwitchBranchUseCase(
         try {
             val branch = branchRepository.getByPatternIdAndName(patternId, branchName)
             if (branch == null) {
-                UseCaseResult.Failure(UseCaseError.NotFound("Branch not found"))
+                UseCaseResult.Failure(UseCaseError.ResourceNotFound)
             } else {
                 val revision = revisionRepository.getRevision(branch.tipRevisionId)
                 if (revision == null) {
-                    UseCaseResult.Failure(UseCaseError.NotFound("Branch tip revision not found"))
+                    UseCaseResult.Failure(UseCaseError.ResourceNotFound)
                 } else {
                     val rebuilt = chartRepository.setTip(patternId, revision)
                     if (rebuilt == null) {
-                        UseCaseResult.Failure(UseCaseError.NotFound("Chart not found"))
+                        UseCaseResult.Failure(UseCaseError.ResourceNotFound)
                     } else {
                         UseCaseResult.Success(rebuilt)
                     }

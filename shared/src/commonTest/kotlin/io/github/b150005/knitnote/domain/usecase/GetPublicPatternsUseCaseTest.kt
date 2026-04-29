@@ -37,7 +37,7 @@ class GetPublicPatternsUseCaseTest {
             val result = useCase()
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.RequiresConnectivity, result.error)
         }
 
     @Test

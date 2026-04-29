@@ -26,15 +26,15 @@ import kotlin.time.Instant
  *  2. invoke returns success on a populated repo
  *
  * CreateBranchUseCase:
- *  3. blank or whitespace branch name returns Validation
- *  4. reserved "main" name returns Validation case-insensitively
- *  5. duplicate branch name returns Validation
- *  6. missing chart returns NotFound
+ *  3. blank or whitespace branch name returns FieldRequired
+ *  4. reserved "main" name returns OperationNotAllowed case-insensitively
+ *  5. duplicate branch name returns OperationNotAllowed
+ *  6. missing chart returns ResourceNotFound
  *  7. happy path mints new branch with tip at current chart revision
  *
  * SwitchBranchUseCase:
- *  8. unknown branch returns NotFound
- *  9. branch tip revision missing returns NotFound
+ *  8. unknown branch returns ResourceNotFound
+ *  9. branch tip revision missing returns ResourceNotFound
  * 10. happy path materializes target revision payload preserving tip row id
  *
  * RestoreRevisionUseCase:
@@ -133,7 +133,7 @@ class ChartBranchUseCasesTest {
             val result = useCase("pat-1", "   ", ownerId = "user-1")
 
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.Validation)
+            assertEquals(UseCaseError.FieldRequired, result.error)
         }
 
     @Test
@@ -146,7 +146,7 @@ class ChartBranchUseCasesTest {
             val result = useCase("pat-1", "MAIN", ownerId = "user-1")
 
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.Validation)
+            assertEquals(UseCaseError.OperationNotAllowed, result.error)
         }
 
     @Test
@@ -162,7 +162,7 @@ class ChartBranchUseCasesTest {
             val result = useCase("pat-1", "feature", ownerId = "user-1")
 
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.Validation)
+            assertEquals(UseCaseError.OperationNotAllowed, result.error)
         }
 
     @Test
@@ -175,7 +175,7 @@ class ChartBranchUseCasesTest {
             val result = useCase("pat-1", "feature", ownerId = "user-1")
 
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.NotFound)
+            assertTrue(result.error is UseCaseError.ResourceNotFound)
         }
 
     @Test
@@ -208,7 +208,7 @@ class ChartBranchUseCasesTest {
             val result = useCase("pat-1", "feature")
 
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.NotFound)
+            assertTrue(result.error is UseCaseError.ResourceNotFound)
         }
 
     @Test
@@ -225,7 +225,7 @@ class ChartBranchUseCasesTest {
             val result = useCase("pat-1", "feature")
 
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.NotFound)
+            assertTrue(result.error is UseCaseError.ResourceNotFound)
         }
 
     @Test
@@ -278,7 +278,7 @@ class ChartBranchUseCasesTest {
             val result = useCase("pat-1", "feature")
 
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.NotFound)
+            assertTrue(result.error is UseCaseError.ResourceNotFound)
         }
 
     // ---- RestoreRevisionUseCase ----
@@ -293,7 +293,7 @@ class ChartBranchUseCasesTest {
             val result = useCase("pat-1", "rev-ghost")
 
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.NotFound)
+            assertTrue(result.error is UseCaseError.ResourceNotFound)
         }
 
     @Test

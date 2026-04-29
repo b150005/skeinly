@@ -78,14 +78,12 @@ class MergePullRequestUseCase(
         // cost.
         if (pullRequest.status != PullRequestStatus.OPEN) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("Only open pull requests can be merged"),
+                UseCaseError.OperationNotAllowed,
             )
         }
         val callerId =
             authRepository.getCurrentUserId()
-                ?: return UseCaseResult.Failure(
-                    UseCaseError.Authentication(IllegalStateException("Must be signed in to merge")),
-                )
+                ?: return UseCaseResult.Failure(UseCaseError.SignInRequired)
         // Defense-in-depth: surface the "not target owner" branch with a
         // clear message client-side rather than letting the RPC's RAISE
         // EXCEPTION bubble up as a generic Unknown. The RPC's
@@ -101,13 +99,13 @@ class MergePullRequestUseCase(
             }
         if (targetPattern == null || targetPattern.ownerId != callerId) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("Only the target owner can merge this pull request"),
+                UseCaseError.PermissionDenied,
             )
         }
 
         val merge =
             mergeOperations ?: return UseCaseResult.Failure(
-                UseCaseError.Validation("Merge is unavailable in offline-only mode"),
+                UseCaseError.RequiresConnectivity,
             )
 
         val newRevisionId = Uuid.random().toString()
@@ -144,24 +142,26 @@ class MergePullRequestUseCase(
     }
 
     /**
-     * Map specific RPC RAISE EXCEPTION messages onto distinct
-     * [UseCaseError.Validation] surfaces so the UI can phrase the error
-     * appropriately. Anything not recognised falls back to the generic
-     * [Exception.toUseCaseError] mapping.
+     * Map specific RPC RAISE EXCEPTION messages onto typed [UseCaseError]
+     * variants so the UI can phrase the error appropriately. The "Caller is
+     * not target owner" branch maps to [UseCaseError.PermissionDenied] for
+     * consistency with the client-side defense-in-depth check earlier in this
+     * use case (which guards on the same logical condition). Anything not
+     * recognised falls back to the generic [Exception.toUseCaseError] mapping.
      */
     private fun mapMergeError(e: Exception): UseCaseError {
         val msg = e.message.orEmpty()
         return when {
             msg.contains("Source tip drifted", ignoreCase = true) ->
-                UseCaseError.Validation("Source tip drifted; please re-resolve and try again")
+                UseCaseError.OperationNotAllowed
             msg.contains("PR not open", ignoreCase = true) ->
-                UseCaseError.Validation("This pull request is no longer open")
+                UseCaseError.OperationNotAllowed
             msg.contains("Caller is not target owner", ignoreCase = true) ->
-                UseCaseError.Authentication(e)
+                UseCaseError.PermissionDenied
             msg.contains("PR not found", ignoreCase = true) ->
-                UseCaseError.NotFound("Pull request not found")
+                UseCaseError.ResourceNotFound
             msg.contains("Target branch has no tip", ignoreCase = true) ->
-                UseCaseError.Validation("Target branch is missing its tip; cannot merge")
+                UseCaseError.OperationNotAllowed
             else -> e.toUseCaseError()
         }
     }

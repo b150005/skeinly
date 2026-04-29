@@ -511,7 +511,7 @@ class ProjectDetailViewModel(
             _uiOverlay.update { it.copy(isUploadingImage = true) }
             val project = state.value.project
             if (project == null) {
-                _uiOverlay.update { it.copy(isUploadingImage = false, error = ErrorMessage.Raw("Project not loaded")) }
+                _uiOverlay.update { it.copy(isUploadingImage = false, error = ErrorMessage.NotReady) }
                 return@launch
             }
             when (val result = uploadChartImage(project.patternId, event.data, event.fileName)) {

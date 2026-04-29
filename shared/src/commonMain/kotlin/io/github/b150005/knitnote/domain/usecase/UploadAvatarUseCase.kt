@@ -26,14 +26,10 @@ class UploadAvatarUseCase(
         fileName: String,
     ): UseCaseResult<String> {
         if (imageData.isEmpty()) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Image data is empty"))
+            return UseCaseResult.Failure(UseCaseError.ImageInvalid)
         }
         if (imageData.size > MAX_AVATAR_SIZE) {
-            return UseCaseResult.Failure(
-                UseCaseError.Validation(
-                    "Avatar exceeds maximum size of ${MAX_AVATAR_SIZE / 1024 / 1024}MB",
-                ),
-            )
+            return UseCaseResult.Failure(UseCaseError.ImageTooLarge)
         }
 
         val storage =
@@ -53,7 +49,7 @@ class UploadAvatarUseCase(
 
             if (!UploadChartImageUseCase.isValidJpeg(imageData)) {
                 return UseCaseResult.Failure(
-                    UseCaseError.Validation("File is not a valid JPEG image"),
+                    UseCaseError.ImageInvalid,
                 )
             }
 

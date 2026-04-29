@@ -37,6 +37,15 @@
     <string name="error_network">ネットワークに接続できません</string>
     <string name="error_sign_in_required">サインインが必要です</string>
     <string name="error_requires_connectivity">インターネット接続が必要です</string>
+    <string name="error_resource_not_found">見つかりません</string>
+    <string name="error_field_required">必須項目が入力されていません</string>
+    <string name="error_field_too_long">入力が長すぎます</string>
+    <string name="error_password_too_short">パスワードが短すぎます</string>
+    <string name="error_image_invalid">画像が無効です</string>
+    <string name="error_image_too_large">画像のサイズが大きすぎます</string>
+    <string name="error_operation_not_allowed">現在の状態ではこの操作は実行できません</string>
+    <string name="error_permission_denied">権限がありません</string>
+    <string name="error_not_ready">準備中です。もう一度お試しください</string>
     <!-- Settings — About / Legal section -->
     <string name="label_about_section">アプリについて</string>
     <string name="action_privacy_policy">プライバシーポリシー</string>

@@ -14,27 +14,27 @@ class UpdateShareStatusUseCase(
         status: ShareStatus,
     ): UseCaseResult<Share> {
         if (shareRepository == null) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Sharing requires cloud connectivity"))
+            return UseCaseResult.Failure(UseCaseError.RequiresConnectivity)
         }
 
         val userId =
             authRepository.getCurrentUserId()
-                ?: return UseCaseResult.Failure(UseCaseError.Validation("Must be signed in"))
+                ?: return UseCaseResult.Failure(UseCaseError.SignInRequired)
 
         val share =
             shareRepository.getById(shareId)
-                ?: return UseCaseResult.Failure(UseCaseError.NotFound("Share not found"))
+                ?: return UseCaseResult.Failure(UseCaseError.ResourceNotFound)
 
         if (share.toUserId != userId) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Only the recipient can update share status"))
+            return UseCaseResult.Failure(UseCaseError.PermissionDenied)
         }
 
         if (share.status != ShareStatus.PENDING) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Only pending shares can be accepted or declined"))
+            return UseCaseResult.Failure(UseCaseError.OperationNotAllowed)
         }
 
         if (status != ShareStatus.ACCEPTED && status != ShareStatus.DECLINED) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Invalid target status"))
+            return UseCaseResult.Failure(UseCaseError.OperationNotAllowed)
         }
 
         val updated = shareRepository.updateStatus(shareId, status)

@@ -65,7 +65,7 @@ class DeleteChartImageUseCaseTest {
             val result = useCase("pattern-1", "nonexistent/path.jpg")
 
             val failure = assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(failure.error)
+            assertIs<UseCaseError.ResourceNotFound>(failure.error)
         }
 
     @Test
@@ -74,7 +74,7 @@ class DeleteChartImageUseCaseTest {
             val result = useCase("nonexistent", "some/path.jpg")
 
             val failure = assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(failure.error)
+            assertIs<UseCaseError.ResourceNotFound>(failure.error)
         }
 
     @Test

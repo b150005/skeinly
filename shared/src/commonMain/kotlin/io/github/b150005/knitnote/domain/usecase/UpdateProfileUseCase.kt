@@ -19,32 +19,32 @@ class UpdateProfileUseCase(
         val userId =
             authRepository.getCurrentUserId()
                 ?: return UseCaseResult.Failure(
-                    UseCaseError.Validation("Must be signed in to update profile"),
+                    UseCaseError.SignInRequired,
                 )
 
         val trimmedName = displayName.trim()
         if (trimmedName.isEmpty()) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("Display name cannot be empty"),
+                UseCaseError.FieldRequired,
             )
         }
         if (trimmedName.length > MAX_DISPLAY_NAME_LENGTH) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("Display name cannot exceed $MAX_DISPLAY_NAME_LENGTH characters"),
+                UseCaseError.FieldTooLong,
             )
         }
 
         val trimmedBio = bio?.trim()?.takeIf { it.isNotEmpty() }
         if (trimmedBio != null && trimmedBio.length > MAX_BIO_LENGTH) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("Bio cannot exceed $MAX_BIO_LENGTH characters"),
+                UseCaseError.FieldTooLong,
             )
         }
 
         val currentUser =
             userRepository.getById(userId)
                 ?: return UseCaseResult.Failure(
-                    UseCaseError.NotFound("Profile not found"),
+                    UseCaseError.ResourceNotFound,
                 )
 
         val updatedUser =
