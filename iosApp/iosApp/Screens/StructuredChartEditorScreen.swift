@@ -247,13 +247,13 @@ struct StructuredChartEditorScreen: View {
             savedCloseable?.close()
             savedCloseable = nil
         }
-        .onChange(of: state.errorMessage) { _, newValue in
+        .onChange(of: state.errorMessage != nil) { _, newValue in
             showError = newValue != nil
         }
         .alert("Error", isPresented: $showError) {
             Button("OK") { viewModel.onEvent(event: ChartEditorEventClearError.shared) }
         } message: {
-            Text(state.errorMessage ?? "")
+            Text(state.errorMessage?.localizedString ?? "")
         }
         .confirmationDialog(
             "Unsaved changes",

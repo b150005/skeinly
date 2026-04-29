@@ -81,8 +81,8 @@ struct LoginScreen: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("loginScreen")
-        .onChange(of: state.error) { _, newError in
-            showError = newError != nil
+        .onChange(of: state.error != nil) { _, hasError in
+            showError = hasError
         }
         .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
             Button("action_ok") {

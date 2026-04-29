@@ -12,6 +12,7 @@ import io.github.b150005.knitnote.generated.resources.error_network
 import io.github.b150005.knitnote.generated.resources.error_rate_limit_exceeded
 import io.github.b150005.knitnote.generated.resources.error_user_already_exists
 import io.github.b150005.knitnote.generated.resources.error_user_not_found
+import io.github.b150005.knitnote.ui.components.localized
 import org.jetbrains.compose.resources.stringResource
 
 /**

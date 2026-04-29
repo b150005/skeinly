@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import io.github.b150005.knitnote.domain.model.Comment
 import io.github.b150005.knitnote.domain.model.CommentTargetType
 import io.github.b150005.knitnote.domain.model.User
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.generated.resources.Res
 import io.github.b150005.knitnote.generated.resources.action_cancel
 import io.github.b150005.knitnote.generated.resources.action_delete
@@ -57,7 +58,7 @@ fun CommentSection(
     targetType: CommentTargetType,
     targetId: String,
     currentUserId: String?,
-    onError: (String) -> Unit,
+    onError: (ErrorMessage) -> Unit,
     viewModel: CommentSectionViewModel =
         koinViewModel(
             key = "$targetType:$targetId",

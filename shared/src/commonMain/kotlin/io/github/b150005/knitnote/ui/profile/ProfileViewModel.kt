@@ -3,10 +3,11 @@ package io.github.b150005.knitnote.ui.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.b150005.knitnote.domain.model.User
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.GetCurrentUserUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateProfileUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
-import io.github.b150005.knitnote.domain.usecase.toMessage
+import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +24,7 @@ data class ProfileState(
     val isSaving: Boolean = false,
     val editDisplayName: String = "",
     val editBio: String = "",
-    val error: String? = null,
+    val error: ErrorMessage? = null,
 )
 
 sealed interface ProfileEvent {
@@ -82,7 +83,7 @@ class ProfileViewModel(
                     }
                 is UseCaseResult.Failure ->
                     _state.update {
-                        it.copy(isLoading = false, error = result.error.toMessage())
+                        it.copy(isLoading = false, error = result.error.toErrorMessage())
                     }
             }
         }
@@ -127,7 +128,7 @@ class ProfileViewModel(
                 }
                 is UseCaseResult.Failure ->
                     _state.update {
-                        it.copy(isSaving = false, error = result.error.toMessage())
+                        it.copy(isSaving = false, error = result.error.toErrorMessage())
                     }
             }
         }

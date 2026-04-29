@@ -56,6 +56,7 @@ import io.github.b150005.knitnote.generated.resources.label_yarn_info
 import io.github.b150005.knitnote.generated.resources.title_edit_pattern
 import io.github.b150005.knitnote.generated.resources.title_new_pattern
 import io.github.b150005.knitnote.ui.components.labelKey
+import io.github.b150005.knitnote.ui.components.localized
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -76,11 +77,10 @@ fun PatternEditScreen(
         viewModel.saveSuccess.collect { onSaved() }
     }
 
-    LaunchedEffect(state.error) {
-        state.error?.let {
-            // ViewModel error messages (e.g. "Pattern not found", UseCaseError.toMessage)
-            // are still raw strings — see Tech Debt Backlog "ViewModel error-message
-            // localization".
+    val errorText = state.error?.localized()
+
+    LaunchedEffect(errorText) {
+        errorText?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(PatternEditEvent.ClearError)
         }

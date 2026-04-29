@@ -37,7 +37,7 @@ struct SharedContentScreen: View {
                 ContentUnavailableView(
                     LocalizedStringKey("state_could_not_load"),
                     systemImage: "exclamationmark.triangle",
-                    description: Text(error)
+                    description: Text(error.localizedString)
                 )
             } else {
                 Text(LocalizedStringKey("state_pattern_not_found"))
@@ -47,15 +47,15 @@ struct SharedContentScreen: View {
         .accessibilityIdentifier("sharedContentScreen")
         .navigationTitle(LocalizedStringKey("title_shared_pattern"))
         .navigationBarTitleDisplayMode(.inline)
-        .onChange(of: state.error) { _, newError in
-            showError = newError != nil
+        .onChange(of: state.error != nil) { _, hasError in
+            showError = hasError
         }
         .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
             Button(LocalizedStringKey("action_ok")) {
                 viewModel.onEvent(event: SharedContentEventClearError.shared)
             }
         } message: {
-            Text(state.error ?? "")
+            Text(state.error?.localizedString ?? "")
         }
         .task {
             // `.task { }` re-fires on every view re-appearance. Close any prior

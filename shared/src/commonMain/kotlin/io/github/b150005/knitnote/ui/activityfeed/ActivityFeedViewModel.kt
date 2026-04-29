@@ -6,6 +6,7 @@ import io.github.b150005.knitnote.domain.model.Activity
 import io.github.b150005.knitnote.domain.model.User
 import io.github.b150005.knitnote.domain.repository.AuthRepository
 import io.github.b150005.knitnote.domain.repository.UserRepository
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.GetActivitiesUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +20,7 @@ data class ActivityFeedState(
     val activities: List<Activity> = emptyList(),
     val users: Map<String, User> = emptyMap(),
     val isLoading: Boolean = true,
-    val error: String? = null,
+    val error: ErrorMessage? = null,
 )
 
 sealed interface ActivityFeedEvent {
@@ -48,7 +49,7 @@ class ActivityFeedViewModel(
         val userId = authRepository.getCurrentUserId()
         if (userId == null) {
             _state.update {
-                it.copy(isLoading = false, error = "Must be signed in to view activity feed")
+                it.copy(isLoading = false, error = ErrorMessage.Raw("Must be signed in to view activity feed"))
             }
             return
         }
@@ -62,7 +63,7 @@ class ActivityFeedViewModel(
                 resolveUsers(activities)
             }.catch { e ->
                 _state.update {
-                    it.copy(isLoading = false, error = e.message ?: "Failed to load activities")
+                    it.copy(isLoading = false, error = ErrorMessage.Raw(e.message ?: "Failed to load activities"))
                 }
             }.launchIn(viewModelScope)
     }

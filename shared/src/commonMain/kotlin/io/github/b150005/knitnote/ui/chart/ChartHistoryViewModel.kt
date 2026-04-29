@@ -3,10 +3,11 @@ package io.github.b150005.knitnote.ui.chart
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.b150005.knitnote.domain.model.ChartRevision
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.GetChartHistoryUseCase
 import io.github.b150005.knitnote.domain.usecase.RestoreRevisionUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
-import io.github.b150005.knitnote.domain.usecase.toMessage
+import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,7 +32,7 @@ import kotlinx.coroutines.launch
 data class ChartHistoryState(
     val revisions: List<ChartRevision> = emptyList(),
     val isLoading: Boolean = true,
-    val error: String? = null,
+    val error: ErrorMessage? = null,
     /**
      * Phase 37.4 (ADR-013 §6): the revision the user long-pressed and is being
      * asked to confirm restoration of. Non-null while the confirmation dialog
@@ -112,7 +113,7 @@ class ChartHistoryViewModel(
                 }
             }.catch { throwable ->
                 _state.update {
-                    it.copy(isLoading = false, error = throwable.message ?: "Failed to load chart history")
+                    it.copy(isLoading = false, error = ErrorMessage.Raw(throwable.message ?: "Failed to load chart history"))
                 }
             }.launchIn(viewModelScope)
     }
@@ -149,7 +150,7 @@ class ChartHistoryViewModel(
                     when (val result = useCase(patternId, target.revisionId)) {
                         is UseCaseResult.Success -> Unit
                         is UseCaseResult.Failure ->
-                            _state.update { it.copy(error = result.error.toMessage()) }
+                            _state.update { it.copy(error = result.error.toErrorMessage()) }
                     }
                 }
             }

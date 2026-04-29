@@ -46,8 +46,8 @@ struct ProfileScreen: View {
                 }
             }
         }
-        .onChange(of: state.error) { _, newError in
-            showError = newError != nil
+        .onChange(of: state.error != nil) { _, hasError in
+            showError = hasError
         }
         // `.alert(_:isPresented:...)` has overloads for `String` and
         // `LocalizedStringKey`; overload resolution on a bare literal can
@@ -56,7 +56,7 @@ struct ProfileScreen: View {
         .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
             Button("action_ok") { viewModel.onEvent(event: ProfileEventClearError.shared) }
         } message: {
-            Text(state.error ?? "")
+            Text(state.error?.localizedString ?? "")
         }
     }
 

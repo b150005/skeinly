@@ -8,9 +8,10 @@ import io.github.b150005.knitnote.domain.model.User
 import io.github.b150005.knitnote.domain.repository.UserRepository
 import io.github.b150005.knitnote.domain.usecase.CreateCommentUseCase
 import io.github.b150005.knitnote.domain.usecase.DeleteCommentUseCase
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.GetCommentsUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
-import io.github.b150005.knitnote.domain.usecase.toMessage
+import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +25,7 @@ data class CommentSectionState(
     val comments: List<Comment> = emptyList(),
     val authors: Map<String, User> = emptyMap(),
     val isLoading: Boolean = true,
-    val error: String? = null,
+    val error: ErrorMessage? = null,
     val isSending: Boolean = false,
 )
 
@@ -78,7 +79,7 @@ class CommentSectionViewModel(
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: "Failed to load comments",
+                        error = ErrorMessage.Raw(e.message ?: "Failed to load comments"),
                     )
                 }
             }.launchIn(viewModelScope)
@@ -93,7 +94,7 @@ class CommentSectionViewModel(
                 }
                 is UseCaseResult.Failure -> {
                     _state.update {
-                        it.copy(isSending = false, error = result.error.toMessage())
+                        it.copy(isSending = false, error = result.error.toErrorMessage())
                     }
                 }
             }
@@ -105,7 +106,7 @@ class CommentSectionViewModel(
             when (val result = deleteCommentUseCase(commentId)) {
                 is UseCaseResult.Success -> { /* Realtime will update the list */ }
                 is UseCaseResult.Failure -> {
-                    _state.update { it.copy(error = result.error.toMessage()) }
+                    _state.update { it.copy(error = result.error.toErrorMessage()) }
                 }
             }
         }

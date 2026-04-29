@@ -49,6 +49,7 @@ import io.github.b150005.knitnote.generated.resources.label_someone
 import io.github.b150005.knitnote.generated.resources.state_no_pull_requests
 import io.github.b150005.knitnote.generated.resources.state_no_pull_requests_body
 import io.github.b150005.knitnote.generated.resources.title_pull_requests
+import io.github.b150005.knitnote.ui.components.localized
 import io.github.b150005.knitnote.ui.util.formatFull
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -75,8 +76,10 @@ fun PullRequestListScreen(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(state.error) {
-        state.error?.let {
+    val errorText = state.error?.localized()
+
+    LaunchedEffect(errorText) {
+        errorText?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(PullRequestListEvent.ClearError)
         }

@@ -3,9 +3,10 @@ package io.github.b150005.knitnote.ui.chart
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.b150005.knitnote.domain.model.ChartDiff
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.GetChartDiffUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
-import io.github.b150005.knitnote.domain.usecase.toMessage
+import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,7 +29,7 @@ import kotlinx.coroutines.launch
 data class ChartDiffState(
     val diff: ChartDiff? = null,
     val isLoading: Boolean = true,
-    val error: String? = null,
+    val error: ErrorMessage? = null,
 )
 
 sealed interface ChartDiffEvent {
@@ -60,7 +61,7 @@ class ChartDiffViewModel(
                 is UseCaseResult.Success ->
                     _state.update { it.copy(diff = result.value, isLoading = false, error = null) }
                 is UseCaseResult.Failure ->
-                    _state.update { it.copy(diff = null, isLoading = false, error = result.error.toMessage()) }
+                    _state.update { it.copy(diff = null, isLoading = false, error = result.error.toErrorMessage()) }
             }
         }
     }

@@ -187,15 +187,15 @@ struct ProjectListScreen: View {
                 )
             )
         }
-        .onChange(of: state.error) { _, newError in
-            showError = newError != nil
+        .onChange(of: state.error != nil) { _, hasError in
+            showError = hasError
         }
         .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
             Button(LocalizedStringKey("action_ok")) { viewModel.onEvent(event: ProjectListEventClearError.shared) }
         } message: {
             // ViewModel error strings are still raw — typed error-channel
             // localization is tracked in the Tech Debt Backlog.
-            Text(verbatim: state.error ?? "")
+            Text(state.error?.localizedString ?? "")
         }
     }
 

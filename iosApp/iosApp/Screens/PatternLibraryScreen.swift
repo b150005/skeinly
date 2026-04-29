@@ -118,8 +118,8 @@ struct PatternLibraryScreen: View {
                 pendingDeleteName
             ))
         }
-        .onChange(of: state.error) { _, newError in
-            showError = newError != nil
+        .onChange(of: state.error != nil) { _, hasError in
+            showError = hasError
         }
         .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
             Button(LocalizedStringKey("action_ok")) {
@@ -129,7 +129,7 @@ struct PatternLibraryScreen: View {
             // Raw ViewModel error string — localization of these messages is
             // tracked in the Tech Debt Backlog "ViewModel error-message
             // localization" item.
-            Text(state.error ?? "")
+            Text(state.error?.localizedString ?? "")
         }
     }
 

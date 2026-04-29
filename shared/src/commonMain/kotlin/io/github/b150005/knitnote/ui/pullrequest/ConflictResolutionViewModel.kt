@@ -13,11 +13,12 @@ import io.github.b150005.knitnote.domain.model.toStructuredChart
 import io.github.b150005.knitnote.domain.repository.ChartRevisionRepository
 import io.github.b150005.knitnote.domain.repository.StructuredChartRepository
 import io.github.b150005.knitnote.domain.usecase.ConflictResolution
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.GetPullRequestUseCase
 import io.github.b150005.knitnote.domain.usecase.MergePullRequestUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
 import io.github.b150005.knitnote.domain.usecase.applyResolutions
-import io.github.b150005.knitnote.domain.usecase.toMessage
+import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -50,7 +51,7 @@ data class ChartConflictResolutionState(
     val layerResolutions: Map<String, ConflictResolution> = emptyMap(),
     val isLoading: Boolean = true,
     val isMerging: Boolean = false,
-    val error: String? = null,
+    val error: ErrorMessage? = null,
 ) {
     val canApplyAndMerge: Boolean
         get() {
@@ -128,7 +129,7 @@ class ChartConflictResolutionViewModel(
     private suspend fun loadInitial() {
         when (val prResult = getPullRequest(prId)) {
             is UseCaseResult.Failure -> {
-                _state.update { it.copy(isLoading = false, error = prResult.error.toMessage()) }
+                _state.update { it.copy(isLoading = false, error = prResult.error.toErrorMessage()) }
                 return
             }
             is UseCaseResult.Success -> {
@@ -157,7 +158,7 @@ class ChartConflictResolutionViewModel(
                         it.copy(
                             isLoading = false,
                             pullRequest = pr,
-                            error = "Could not load chart revisions for this pull request",
+                            error = ErrorMessage.Raw("Could not load chart revisions for this pull request"),
                         )
                     }
                     return
@@ -225,7 +226,7 @@ class ChartConflictResolutionViewModel(
                 }
                 is UseCaseResult.Failure ->
                     _state.update {
-                        it.copy(isMerging = false, error = result.error.toMessage())
+                        it.copy(isMerging = false, error = result.error.toErrorMessage())
                     }
             }
         }

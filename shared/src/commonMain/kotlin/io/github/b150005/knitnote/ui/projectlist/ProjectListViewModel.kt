@@ -8,11 +8,12 @@ import io.github.b150005.knitnote.domain.model.ProjectStatus
 import io.github.b150005.knitnote.domain.model.SortOrder
 import io.github.b150005.knitnote.domain.usecase.CreateProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.DeleteProjectUseCase
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.GetPatternsUseCase
 import io.github.b150005.knitnote.domain.usecase.GetProjectsUseCase
 import io.github.b150005.knitnote.domain.usecase.SignOutUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
-import io.github.b150005.knitnote.domain.usecase.toMessage
+import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -27,7 +28,7 @@ data class ProjectListState(
     val projects: List<Project> = emptyList(),
     val patternsForCreate: List<Pattern> = emptyList(),
     val isLoading: Boolean = true,
-    val error: String? = null,
+    val error: ErrorMessage? = null,
     val showCreateDialog: Boolean = false,
     val searchQuery: String = "",
     val statusFilter: ProjectStatus? = null,
@@ -67,7 +68,7 @@ sealed interface ProjectListEvent {
 }
 
 private data class UiFlags(
-    val error: String? = null,
+    val error: ErrorMessage? = null,
     val showCreateDialog: Boolean = false,
 )
 
@@ -139,7 +140,7 @@ class ProjectListViewModel(
                             uiFlags.update { it.copy(showCreateDialog = false) }
                         }
                         is UseCaseResult.Failure -> {
-                            uiFlags.update { it.copy(error = result.error.toMessage()) }
+                            uiFlags.update { it.copy(error = result.error.toErrorMessage()) }
                         }
                     }
                 }
@@ -149,7 +150,7 @@ class ProjectListViewModel(
                     when (val result = deleteProject(event.id)) {
                         is UseCaseResult.Success -> { /* list updates via Flow */ }
                         is UseCaseResult.Failure -> {
-                            uiFlags.update { it.copy(error = result.error.toMessage()) }
+                            uiFlags.update { it.copy(error = result.error.toErrorMessage()) }
                         }
                     }
                 }
@@ -168,7 +169,7 @@ class ProjectListViewModel(
                     when (val result = signOut()) {
                         is UseCaseResult.Success -> { /* NavGraph observes AuthState.Unauthenticated */ }
                         is UseCaseResult.Failure -> {
-                            uiFlags.update { it.copy(error = result.error.toMessage()) }
+                            uiFlags.update { it.copy(error = result.error.toErrorMessage()) }
                         }
                     }
                 }

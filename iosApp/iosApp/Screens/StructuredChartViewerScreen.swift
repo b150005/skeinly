@@ -249,7 +249,7 @@ private struct OpenPullRequestSheet: View {
     let titleDraft: String
     let descriptionDraft: String
     let isSubmitting: Bool
-    let errorMessage: String?
+    let errorMessage: ErrorMessage?
     let onTitleChange: (String) -> Void
     let onDescriptionChange: (String) -> Void
     let onConfirm: () -> Void
@@ -284,7 +284,7 @@ private struct OpenPullRequestSheet: View {
 
                 if let errorMessage {
                     Section {
-                        Text(verbatim: errorMessage)
+                        Text(errorMessage.localizedString)
                             .font(.footnote)
                             .foregroundStyle(.red)
                             .accessibilityIdentifier("openPrErrorLabel")

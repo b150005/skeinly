@@ -6,10 +6,11 @@ import io.github.b150005.knitnote.domain.model.PullRequest
 import io.github.b150005.knitnote.domain.model.User
 import io.github.b150005.knitnote.domain.repository.AuthRepository
 import io.github.b150005.knitnote.domain.repository.UserRepository
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.GetIncomingPullRequestsUseCase
 import io.github.b150005.knitnote.domain.usecase.GetOutgoingPullRequestsUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
-import io.github.b150005.knitnote.domain.usecase.toMessage
+import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,7 +45,7 @@ data class PullRequestListState(
     val pullRequests: List<PullRequest> = emptyList(),
     val users: Map<String, User> = emptyMap(),
     val isLoading: Boolean = true,
-    val error: String? = null,
+    val error: ErrorMessage? = null,
 )
 
 sealed interface PullRequestListEvent {
@@ -124,7 +125,7 @@ class PullRequestListViewModel(
         val ownerId = authRepository.getCurrentUserId()
         if (ownerId == null) {
             _state.update {
-                it.copy(isLoading = false, error = "Must be signed in to view pull requests")
+                it.copy(isLoading = false, error = ErrorMessage.Raw("Must be signed in to view pull requests"))
             }
             return
         }
@@ -146,7 +147,7 @@ class PullRequestListViewModel(
                             PullRequestFilter.OUTGOING -> getOutgoing(ownerId)
                         }
                     if (seed is UseCaseResult.Failure) {
-                        _state.update { it.copy(error = seed.error.toMessage()) }
+                        _state.update { it.copy(error = seed.error.toErrorMessage()) }
                     }
                     emitAll(
                         when (filter) {
@@ -160,7 +161,7 @@ class PullRequestListViewModel(
                 resolveUsers(prs)
             }.catch { e ->
                 _state.update {
-                    it.copy(isLoading = false, error = e.message ?: "Failed to load pull requests")
+                    it.copy(isLoading = false, error = ErrorMessage.Raw(e.message ?: "Failed to load pull requests"))
                 }
             }.launchIn(viewModelScope)
     }

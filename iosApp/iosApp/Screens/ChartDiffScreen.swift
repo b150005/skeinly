@@ -43,15 +43,15 @@ struct ChartDiffScreen: View {
             .accessibilityIdentifier("chartDiffScreen")
             .navigationTitle(LocalizedStringKey("title_chart_diff"))
             .navigationBarTitleDisplayMode(.inline)
-            .onChange(of: holder.state.error) { _, newError in
-                showError = newError != nil
-            }
+            .onChange(of: holder.state.error != nil) { _, hasError in
+            showError = hasError
+        }
             .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
                 Button("action_ok") {
                     viewModel.onEvent(event: ChartDiffEventClearError.shared)
                 }
             } message: {
-                Text(holder.state.error ?? "")
+                Text(holder.state.error?.localizedString ?? "")
             }
     }
 

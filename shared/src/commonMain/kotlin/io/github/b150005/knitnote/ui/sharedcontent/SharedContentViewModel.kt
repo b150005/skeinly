@@ -5,10 +5,11 @@ import androidx.lifecycle.viewModelScope
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.Share
 import io.github.b150005.knitnote.domain.model.SharePermission
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.ForkSharedPatternUseCase
 import io.github.b150005.knitnote.domain.usecase.ResolveShareTokenUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
-import io.github.b150005.knitnote.domain.usecase.toMessage
+import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +24,7 @@ data class SharedContentState(
     val share: Share? = null,
     val projectCount: Int = 0,
     val isLoading: Boolean = true,
-    val error: String? = null,
+    val error: ErrorMessage? = null,
     val isForkInProgress: Boolean = false,
 )
 
@@ -73,7 +74,7 @@ class SharedContentViewModel(
                 }
                 is UseCaseResult.Failure -> {
                     _state.update {
-                        it.copy(isLoading = false, error = result.error.toMessage())
+                        it.copy(isLoading = false, error = result.error.toErrorMessage())
                     }
                 }
             }
@@ -96,7 +97,7 @@ class SharedContentViewModel(
                     _state.update {
                         it.copy(
                             isForkInProgress = false,
-                            error = result.error.toMessage(),
+                            error = result.error.toErrorMessage(),
                         )
                     }
                 }

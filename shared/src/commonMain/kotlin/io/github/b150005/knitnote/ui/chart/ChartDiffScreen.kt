@@ -66,6 +66,7 @@ import io.github.b150005.knitnote.generated.resources.label_layer_shown
 import io.github.b150005.knitnote.generated.resources.label_layer_unlocked
 import io.github.b150005.knitnote.generated.resources.state_no_changes
 import io.github.b150005.knitnote.generated.resources.title_chart_diff
+import io.github.b150005.knitnote.ui.components.localized
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -107,8 +108,10 @@ fun ChartDiffScreen(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(state.error) {
-        state.error?.let {
+    val errorText = state.error?.localized()
+
+    LaunchedEffect(errorText) {
+        errorText?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(ChartDiffEvent.ClearError)
         }

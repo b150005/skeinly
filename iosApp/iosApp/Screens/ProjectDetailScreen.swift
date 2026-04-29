@@ -73,8 +73,8 @@ struct ProjectDetailScreen: View {
         } message: {
             Text(LocalizedStringKey("dialog_reset_progress_body"))
         }
-        .onChange(of: state.error) { _, newError in
-            showError = newError != nil
+        .onChange(of: state.error != nil) { _, hasError in
+            showError = hasError
         }
         .onChange(of: state.shareLink) { _, newLink in
             showShareLink = newLink != nil
@@ -82,7 +82,7 @@ struct ProjectDetailScreen: View {
         .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
             Button(LocalizedStringKey("action_ok")) { viewModel.onEvent(event: ProjectDetailEventClearError.shared) }
         } message: {
-            Text(state.error ?? "")
+            Text(state.error?.localizedString ?? "")
         }
     }
 

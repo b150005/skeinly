@@ -132,6 +132,7 @@ import io.github.b150005.knitnote.generated.resources.label_symmetry_section
 import io.github.b150005.knitnote.generated.resources.state_empty_chart
 import io.github.b150005.knitnote.generated.resources.state_no_layers
 import io.github.b150005.knitnote.generated.resources.title_edit_chart
+import io.github.b150005.knitnote.ui.components.localized
 import io.github.b150005.knitnote.ui.platform.SystemBackHandler
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
@@ -524,7 +525,7 @@ private fun EditorBody(
 
                 state.errorMessage != null ->
                     Text(
-                        text = state.errorMessage.orEmpty(),
+                        text = state.errorMessage.localized(),
                         modifier = Modifier.align(Alignment.Center),
                         color = MaterialTheme.colorScheme.error,
                     )

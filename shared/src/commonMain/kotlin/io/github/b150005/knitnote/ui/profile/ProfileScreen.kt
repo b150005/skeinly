@@ -51,6 +51,7 @@ import io.github.b150005.knitnote.generated.resources.label_display_name
 import io.github.b150005.knitnote.generated.resources.message_profile_updated
 import io.github.b150005.knitnote.generated.resources.state_profile_load_failed
 import io.github.b150005.knitnote.generated.resources.title_profile
+import io.github.b150005.knitnote.ui.components.localized
 import kotlinx.coroutines.flow.collect
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -65,11 +66,10 @@ fun ProfileScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val profileUpdatedMessage = stringResource(Res.string.message_profile_updated)
 
-    // `state.error` surfaces raw here per the Tech Debt Backlog
-    // "ViewModel error-message localization" deferral — typed error
-    // → StringResource mapping is scheduled after the screen sweep.
-    LaunchedEffect(state.error) {
-        state.error?.let {
+    val errorText = state.error?.localized()
+
+    LaunchedEffect(errorText) {
+        errorText?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(ProfileEvent.ClearError)
         }

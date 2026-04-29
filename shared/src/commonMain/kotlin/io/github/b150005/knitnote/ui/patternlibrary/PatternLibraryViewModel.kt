@@ -6,9 +6,10 @@ import io.github.b150005.knitnote.domain.model.Difficulty
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.SortOrder
 import io.github.b150005.knitnote.domain.usecase.DeletePatternUseCase
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.GetPatternsUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
-import io.github.b150005.knitnote.domain.usecase.toMessage
+import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +23,7 @@ import kotlinx.coroutines.launch
 data class PatternLibraryState(
     val patterns: List<Pattern> = emptyList(),
     val isLoading: Boolean = true,
-    val error: String? = null,
+    val error: ErrorMessage? = null,
     val searchQuery: String = "",
     val difficultyFilter: Difficulty? = null,
     val sortOrder: SortOrder = SortOrder.RECENT,
@@ -49,7 +50,7 @@ sealed interface PatternLibraryEvent {
 }
 
 private data class UiFlags(
-    val error: String? = null,
+    val error: ErrorMessage? = null,
 )
 
 private data class FilterState(
@@ -114,7 +115,7 @@ class PatternLibraryViewModel(
                     when (val result = deletePattern(event.id)) {
                         is UseCaseResult.Success -> { /* list updates via Flow */ }
                         is UseCaseResult.Failure -> {
-                            uiFlags.update { it.copy(error = result.error.toMessage()) }
+                            uiFlags.update { it.copy(error = result.error.toErrorMessage()) }
                         }
                     }
                 }

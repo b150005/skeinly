@@ -55,8 +55,8 @@ struct SharedWithMeScreen: View {
         .accessibilityIdentifier("sharedWithMeScreen")
         .navigationTitle(LocalizedStringKey("title_shared_with_me"))
         .navigationBarTitleDisplayMode(.inline)
-        .onChange(of: state.error) { _, newError in
-            showError = newError != nil
+        .onChange(of: state.error != nil) { _, hasError in
+            showError = hasError
         }
         .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
             Button(LocalizedStringKey("action_ok")) {
@@ -65,7 +65,7 @@ struct SharedWithMeScreen: View {
         } message: {
             // `state.error` is a raw ViewModel message — ViewModel-error-message
             // localization is tracked in the Tech Debt Backlog.
-            Text(verbatim: state.error ?? "")
+            Text(state.error?.localizedString ?? "")
         }
     }
 }

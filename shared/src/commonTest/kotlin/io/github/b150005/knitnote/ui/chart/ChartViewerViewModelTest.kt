@@ -13,6 +13,7 @@ import io.github.b150005.knitnote.domain.model.SegmentState
 import io.github.b150005.knitnote.domain.model.StorageVariant
 import io.github.b150005.knitnote.domain.model.StructuredChart
 import io.github.b150005.knitnote.domain.model.Visibility
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.FakeAuthRepository
 import io.github.b150005.knitnote.domain.usecase.FakeChartBranchRepository
 import io.github.b150005.knitnote.domain.usecase.FakePatternRepository
@@ -193,7 +194,7 @@ class ChartViewerViewModelTest {
                 while (seenError.errorMessage == null) {
                     seenError = awaitItem()
                 }
-                assertEquals("boom", seenError.errorMessage)
+                assertEquals(ErrorMessage.Raw("boom"), seenError.errorMessage)
                 assertFalse(seenError.isLoading)
                 cancelAndConsumeRemainingEvents()
             }

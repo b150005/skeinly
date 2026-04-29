@@ -6,11 +6,11 @@ import io.github.b150005.knitnote.domain.model.ChartBranch
 import io.github.b150005.knitnote.domain.repository.AuthRepository
 import io.github.b150005.knitnote.domain.repository.StructuredChartRepository
 import io.github.b150005.knitnote.domain.usecase.CreateBranchUseCase
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.GetChartBranchesUseCase
 import io.github.b150005.knitnote.domain.usecase.SwitchBranchUseCase
-import io.github.b150005.knitnote.domain.usecase.UseCaseError
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
-import io.github.b150005.knitnote.domain.usecase.toMessage
+import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,7 +40,7 @@ data class ChartBranchPickerState(
     val branches: List<ChartBranch> = emptyList(),
     val currentRevisionId: String? = null,
     val isLoading: Boolean = true,
-    val error: String? = null,
+    val error: ErrorMessage? = null,
 )
 
 sealed interface ChartBranchPickerEvent {
@@ -103,7 +103,7 @@ class ChartBranchPickerViewModel(
             _state.update { newState }
         }.catch { throwable ->
             _state.update {
-                it.copy(isLoading = false, error = throwable.message ?: "Failed to load branches")
+                it.copy(isLoading = false, error = ErrorMessage.Raw(throwable.message ?: "Failed to load branches"))
             }
         }.launchIn(viewModelScope)
     }
@@ -120,13 +120,13 @@ class ChartBranchPickerViewModel(
         viewModelScope.launch {
             val ownerId = authRepository.getCurrentUserId()
             if (ownerId == null) {
-                _state.update { it.copy(error = "Sign-in required") }
+                _state.update { it.copy(error = ErrorMessage.Raw("Sign-in required")) }
                 return@launch
             }
             when (val result = createBranch(patternId, branchName, ownerId)) {
                 is UseCaseResult.Success -> Unit
                 is UseCaseResult.Failure ->
-                    _state.update { it.copy(error = result.error.toMessage()) }
+                    _state.update { it.copy(error = result.error.toErrorMessage()) }
             }
         }
     }
@@ -139,12 +139,7 @@ class ChartBranchPickerViewModel(
                 }
 
                 is UseCaseResult.Failure -> {
-                    val message =
-                        when (val err = result.error) {
-                            is UseCaseError.NotFound -> err.message
-                            else -> err.toMessage()
-                        }
-                    _state.update { it.copy(error = message) }
+                    _state.update { it.copy(error = result.error.toErrorMessage()) }
                 }
             }
         }

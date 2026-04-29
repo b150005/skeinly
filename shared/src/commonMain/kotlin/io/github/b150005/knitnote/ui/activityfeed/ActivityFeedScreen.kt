@@ -50,6 +50,7 @@ import io.github.b150005.knitnote.generated.resources.label_activity_started_by
 import io.github.b150005.knitnote.generated.resources.label_someone
 import io.github.b150005.knitnote.generated.resources.state_no_activity
 import io.github.b150005.knitnote.generated.resources.title_activity_feed
+import io.github.b150005.knitnote.ui.components.localized
 import io.github.b150005.knitnote.ui.util.formatFull
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -64,11 +65,10 @@ fun ActivityFeedScreen(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // `state.error` surfaces raw here per the Tech Debt Backlog
-    // "ViewModel error-message localization" deferral — typed error
-    // → StringResource mapping is scheduled after the screen sweep.
-    LaunchedEffect(state.error) {
-        state.error?.let {
+    val errorText = state.error?.localized()
+
+    LaunchedEffect(errorText) {
+        errorText?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(ActivityFeedEvent.ClearError)
         }

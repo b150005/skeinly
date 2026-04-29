@@ -132,6 +132,7 @@ import io.github.b150005.knitnote.ui.chartviewer.ChartImageGrid
 import io.github.b150005.knitnote.ui.chartviewer.ChartImageViewer
 import io.github.b150005.knitnote.ui.comments.CommentSection
 import io.github.b150005.knitnote.ui.components.labelKey
+import io.github.b150005.knitnote.ui.components.localized
 import io.github.b150005.knitnote.ui.imagepicker.ImagePickerResult
 import io.github.b150005.knitnote.ui.imagepicker.rememberImagePickerLauncher
 import io.github.b150005.knitnote.ui.platform.dialogTestTagsAsResourceId
@@ -184,8 +185,10 @@ fun ProjectDetailScreen(
             }
         }
 
-    LaunchedEffect(state.error) {
-        state.error?.let {
+    val errorText = state.error?.localized()
+
+    LaunchedEffect(errorText) {
+        errorText?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(ProjectDetailEvent.ClearError)
         }

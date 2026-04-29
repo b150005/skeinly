@@ -11,6 +11,7 @@ import io.github.b150005.knitnote.domain.model.StructuredChart
 import io.github.b150005.knitnote.domain.repository.AuthRepository
 import io.github.b150005.knitnote.domain.repository.ChartBranchRepository
 import io.github.b150005.knitnote.domain.repository.PatternRepository
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.MarkRowSegmentsDoneUseCase
 import io.github.b150005.knitnote.domain.usecase.MarkSegmentDoneUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveProjectSegmentsUseCase
@@ -18,7 +19,7 @@ import io.github.b150005.knitnote.domain.usecase.ObserveStructuredChartUseCase
 import io.github.b150005.knitnote.domain.usecase.OpenPullRequestUseCase
 import io.github.b150005.knitnote.domain.usecase.ToggleSegmentStateUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
-import io.github.b150005.knitnote.domain.usecase.toMessage
+import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -44,7 +45,7 @@ data class ChartViewerState(
     val chart: StructuredChart? = null,
     val isLoading: Boolean = true,
     val hiddenLayerIds: Set<String> = emptySet(),
-    val errorMessage: String? = null,
+    val errorMessage: ErrorMessage? = null,
     /**
      * Per-segment progress overlay. Map-based truth model — absence ⇒ `todo`.
      * Populated only when [projectId] is non-null (viewer opened from a project
@@ -84,7 +85,7 @@ data class ChartViewerState(
      * top-level [errorMessage] (which displaces the chart with a centered
      * Text) so a form-submit failure stays in the form for retry.
      */
-    val openPrError: String? = null,
+    val openPrError: ErrorMessage? = null,
 ) {
     /**
      * Derived gate for the "Open pull request" overflow entry.
@@ -219,7 +220,7 @@ class ChartViewerViewModel(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = throwable.message ?: "Failed to load chart",
+                            errorMessage = ErrorMessage.Raw(throwable.message ?: "Failed to load chart"),
                         )
                     }
                 }.collect { chart ->
@@ -323,7 +324,7 @@ class ChartViewerViewModel(
             when (val result = toggleSegmentState(pid, layerId, x, y)) {
                 is UseCaseResult.Success -> { /* overlay updates via Flow */ }
                 is UseCaseResult.Failure ->
-                    _state.update { it.copy(errorMessage = result.error.toMessage()) }
+                    _state.update { it.copy(errorMessage = result.error.toErrorMessage()) }
             }
         }
     }
@@ -348,7 +349,7 @@ class ChartViewerViewModel(
             when (val result = markSegmentDone(pid, layerId, x, y)) {
                 is UseCaseResult.Success -> { /* overlay updates via Flow */ }
                 is UseCaseResult.Failure ->
-                    _state.update { it.copy(errorMessage = result.error.toMessage()) }
+                    _state.update { it.copy(errorMessage = result.error.toErrorMessage()) }
             }
         }
     }
@@ -360,7 +361,7 @@ class ChartViewerViewModel(
             when (val result = markRowSegmentsDone(patternId, pid, row, hiddenLayerIds)) {
                 is UseCaseResult.Success -> { /* overlay updates via Flow */ }
                 is UseCaseResult.Failure ->
-                    _state.update { it.copy(errorMessage = result.error.toMessage()) }
+                    _state.update { it.copy(errorMessage = result.error.toErrorMessage()) }
             }
         }
     }
@@ -445,7 +446,7 @@ class ChartViewerViewModel(
                 // Backlog) and matches PullRequestDetailViewModel.attemptMerge
                 // which uses the same shape for its own offline-mode guard.
                 _state.update {
-                    it.copy(openPrError = "Pull requests are unavailable in offline-only mode")
+                    it.copy(openPrError = ErrorMessage.Raw("Pull requests are unavailable in offline-only mode"))
                 }
                 return
             }
@@ -492,7 +493,7 @@ class ChartViewerViewModel(
                     _state.update {
                         it.copy(
                             isOpeningPullRequest = false,
-                            openPrError = result.error.toMessage(),
+                            openPrError = result.error.toErrorMessage(),
                         )
                     }
             }

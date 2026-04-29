@@ -20,6 +20,7 @@ import io.github.b150005.knitnote.domain.usecase.DecrementRowUseCase
 import io.github.b150005.knitnote.domain.usecase.DeleteChartImageUseCase
 import io.github.b150005.knitnote.domain.usecase.DeleteProgressNoteUseCase
 import io.github.b150005.knitnote.domain.usecase.DeleteProgressPhotoUseCase
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.GetProgressNotesUseCase
 import io.github.b150005.knitnote.domain.usecase.IncrementRowUseCase
 import io.github.b150005.knitnote.domain.usecase.ObserveProjectSegmentsUseCase
@@ -31,7 +32,7 @@ import io.github.b150005.knitnote.domain.usecase.UpdateProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.UploadChartImageUseCase
 import io.github.b150005.knitnote.domain.usecase.UploadProgressPhotoUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
-import io.github.b150005.knitnote.domain.usecase.toMessage
+import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -57,7 +58,7 @@ data class ProjectDetailState(
     val project: Project? = null,
     val pattern: Pattern? = null,
     val isLoading: Boolean = true,
-    val error: String? = null,
+    val error: ErrorMessage? = null,
     val shareLink: ShareLink? = null,
     val chartImagePaths: List<String> = emptyList(),
     val chartImageSignedUrls: List<String> = emptyList(),
@@ -201,7 +202,7 @@ class ProjectDetailViewModel(
         projectRepository
             .observeById(projectId)
             .catch { e ->
-                _uiOverlay.update { it.copy(error = e.message ?: "Failed to load project") }
+                _uiOverlay.update { it.copy(error = ErrorMessage.Raw(e.message ?: "Failed to load project")) }
                 emit(null)
             }
 
@@ -286,7 +287,7 @@ class ProjectDetailViewModel(
     val progressNotes: StateFlow<List<Progress>> =
         getProgressNotes(projectId)
             .catch { e ->
-                _uiOverlay.update { it.copy(error = e.message ?: "Failed to load notes") }
+                _uiOverlay.update { it.copy(error = ErrorMessage.Raw(e.message ?: "Failed to load notes")) }
                 emit(emptyList())
             }.stateIn(
                 scope = viewModelScope,
@@ -358,7 +359,7 @@ class ProjectDetailViewModel(
     }
 
     /** Show an error from an external component (e.g., CommentSection) via the shared snackbar. */
-    fun showExternalError(message: String) {
+    fun showExternalError(message: ErrorMessage) {
         _uiOverlay.update { it.copy(error = message) }
     }
 
@@ -369,7 +370,7 @@ class ProjectDetailViewModel(
                     counterMutex.withLock {
                         when (val result = incrementRow(projectId)) {
                             is UseCaseResult.Success -> { /* state updates via Flow */ }
-                            is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
+                            is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toErrorMessage()) }
                         }
                     }
                 }
@@ -379,7 +380,7 @@ class ProjectDetailViewModel(
                     counterMutex.withLock {
                         when (val result = decrementRow(projectId)) {
                             is UseCaseResult.Success -> { /* state updates via Flow */ }
-                            is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
+                            is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toErrorMessage()) }
                         }
                     }
                 }
@@ -392,7 +393,7 @@ class ProjectDetailViewModel(
                 viewModelScope.launch {
                     when (val result = addProgressNote(projectId, currentRow, event.note)) {
                         is UseCaseResult.Success -> { /* notes update via Flow */ }
-                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
+                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toErrorMessage()) }
                     }
                 }
             }
@@ -407,13 +408,13 @@ class ProjectDetailViewModel(
                                 when (val photoResult = deleteProgressPhoto(notePhoto)) {
                                     is UseCaseResult.Success -> { /* blob cleaned up */ }
                                     is UseCaseResult.Failure -> {
-                                        val msg = photoResult.error.toMessage()
+                                        val msg = photoResult.error.toErrorMessage()
                                         println("[ProjectDetailVM] Orphan blob: photo delete failed for note ${event.progressId}: $msg")
                                     }
                                 }
                             }
                         }
-                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
+                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toErrorMessage()) }
                     }
                 }
             }
@@ -421,7 +422,7 @@ class ProjectDetailViewModel(
                 viewModelScope.launch {
                     when (val result = updateProject(projectId, event.title, event.totalRows)) {
                         is UseCaseResult.Success -> { /* state updates via Flow */ }
-                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
+                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toErrorMessage()) }
                     }
                 }
             }
@@ -429,7 +430,7 @@ class ProjectDetailViewModel(
                 viewModelScope.launch {
                     when (val result = completeProject(projectId)) {
                         is UseCaseResult.Success -> { /* state updates via Flow */ }
-                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
+                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toErrorMessage()) }
                     }
                 }
             }
@@ -437,7 +438,7 @@ class ProjectDetailViewModel(
                 viewModelScope.launch {
                     when (val result = reopenProject(projectId)) {
                         is UseCaseResult.Success -> { /* state updates via Flow */ }
-                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
+                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toErrorMessage()) }
                     }
                 }
             }
@@ -445,7 +446,7 @@ class ProjectDetailViewModel(
                 viewModelScope.launch {
                     when (val result = shareProject(projectId)) {
                         is UseCaseResult.Success -> _uiOverlay.update { it.copy(shareLink = result.value) }
-                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
+                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toErrorMessage()) }
                     }
                 }
             }
@@ -463,7 +464,7 @@ class ProjectDetailViewModel(
                             )
                     ) {
                         is UseCaseResult.Success -> _directShareSuccessChannel.send(Unit)
-                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
+                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toErrorMessage()) }
                     }
                 }
             }
@@ -480,7 +481,7 @@ class ProjectDetailViewModel(
                 viewModelScope.launch {
                     when (val result = resetProjectProgress(projectId)) {
                         is UseCaseResult.Success -> _resetProgressDoneChannel.send(Unit)
-                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
+                        is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toErrorMessage()) }
                     }
                 }
             }
@@ -504,7 +505,7 @@ class ProjectDetailViewModel(
             _uiOverlay.update { it.copy(isUploadingImage = true) }
             val project = state.value.project
             if (project == null) {
-                _uiOverlay.update { it.copy(isUploadingImage = false, error = "Project not loaded") }
+                _uiOverlay.update { it.copy(isUploadingImage = false, error = ErrorMessage.Raw("Project not loaded")) }
                 return@launch
             }
             when (val result = uploadChartImage(project.patternId, event.data, event.fileName)) {
@@ -520,7 +521,7 @@ class ProjectDetailViewModel(
                     }
                 }
                 is UseCaseResult.Failure -> {
-                    _uiOverlay.update { it.copy(isUploadingImage = false, error = result.error.toMessage()) }
+                    _uiOverlay.update { it.copy(isUploadingImage = false, error = result.error.toErrorMessage()) }
                 }
             }
         }
@@ -542,7 +543,7 @@ class ProjectDetailViewModel(
                     }
                 }
                 is UseCaseResult.Failure -> {
-                    _uiOverlay.update { it.copy(error = result.error.toMessage()) }
+                    _uiOverlay.update { it.copy(error = result.error.toErrorMessage()) }
                 }
             }
         }
@@ -560,17 +561,17 @@ class ProjectDetailViewModel(
                         _uiOverlay.update { it.copy(isUploadingPhoto = false) }
                         when (val result = addProgressNote(projectId, currentRow, event.note, uploadResult.value)) {
                             is UseCaseResult.Success -> { /* notes update via Flow */ }
-                            is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
+                            is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toErrorMessage()) }
                         }
                     }
                     is UseCaseResult.Failure -> {
-                        _uiOverlay.update { it.copy(isUploadingPhoto = false, error = uploadResult.error.toMessage()) }
+                        _uiOverlay.update { it.copy(isUploadingPhoto = false, error = uploadResult.error.toErrorMessage()) }
                     }
                 }
             } else {
                 when (val result = addProgressNote(projectId, currentRow, event.note)) {
                     is UseCaseResult.Success -> { /* notes update via Flow */ }
-                    is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toMessage()) }
+                    is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toErrorMessage()) }
                 }
             }
         }
@@ -594,7 +595,7 @@ class ProjectDetailViewModel(
                     val urlMap = notesWithPhotos.zip(signedUrls).associate { (note, url) -> note.id to url }
                     _uiOverlay.update { it.copy(photoSignedUrls = urlMap) }
                 } catch (_: Exception) {
-                    _uiOverlay.update { it.copy(error = "Failed to load progress photos") }
+                    _uiOverlay.update { it.copy(error = ErrorMessage.Raw("Failed to load progress photos")) }
                 }
             }
         }
@@ -605,14 +606,14 @@ class ProjectDetailViewModel(
         return try {
             storage.createSignedUrls(paths)
         } catch (_: Exception) {
-            _uiOverlay.update { it.copy(error = "Failed to load chart images") }
+            _uiOverlay.update { it.copy(error = ErrorMessage.Raw("Failed to load chart images")) }
             emptyList()
         }
     }
 }
 
 private data class UiOverlay(
-    val error: String? = null,
+    val error: ErrorMessage? = null,
     val shareLink: ShareLink? = null,
     val chartImagePaths: List<String> = emptyList(),
     val chartImageSignedUrls: List<String> = emptyList(),

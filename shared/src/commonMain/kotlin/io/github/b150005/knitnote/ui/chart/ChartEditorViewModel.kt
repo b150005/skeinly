@@ -15,10 +15,11 @@ import io.github.b150005.knitnote.domain.symbol.SymbolCatalog
 import io.github.b150005.knitnote.domain.symbol.SymbolCategory
 import io.github.b150005.knitnote.domain.symbol.SymbolDefinition
 import io.github.b150005.knitnote.domain.usecase.CreateStructuredChartUseCase
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.GetStructuredChartByPatternIdUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateStructuredChartUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
-import io.github.b150005.knitnote.domain.usecase.toMessage
+import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -68,7 +69,7 @@ data class ChartEditorState(
     val canUndo: Boolean = false,
     val canRedo: Boolean = false,
     val isSaving: Boolean = false,
-    val errorMessage: String? = null,
+    val errorMessage: ErrorMessage? = null,
     val hasUnsavedChanges: Boolean = false,
     val pendingParameterInput: PendingParameterInput? = null,
     /**
@@ -404,7 +405,7 @@ class ChartEditorViewModel(
             }
             is UseCaseResult.Failure ->
                 _state.update {
-                    it.copy(isLoading = false, errorMessage = result.error.toMessage())
+                    it.copy(isLoading = false, errorMessage = result.error.toErrorMessage())
                 }
         }
     }
@@ -764,7 +765,7 @@ class ChartEditorViewModel(
                 }
                 is UseCaseResult.Failure -> {
                     _state.update {
-                        it.copy(isSaving = false, errorMessage = result.error.toMessage())
+                        it.copy(isSaving = false, errorMessage = result.error.toErrorMessage())
                     }
                 }
             }

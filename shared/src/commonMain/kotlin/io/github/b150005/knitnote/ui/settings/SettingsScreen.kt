@@ -49,6 +49,7 @@ import io.github.b150005.knitnote.generated.resources.label_account_section
 import io.github.b150005.knitnote.generated.resources.label_danger_zone
 import io.github.b150005.knitnote.generated.resources.state_deleting_account
 import io.github.b150005.knitnote.generated.resources.title_settings
+import io.github.b150005.knitnote.ui.components.localized
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -65,8 +66,10 @@ fun SettingsScreen(
 
     // state.error is still rendered raw here — ViewModel error-message
     // localization is deferred per Tech Debt Backlog.
-    LaunchedEffect(state.error) {
-        state.error?.let {
+    val errorText = state.error?.localized()
+
+    LaunchedEffect(errorText) {
+        errorText?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(SettingsEvent.ClearError)
         }

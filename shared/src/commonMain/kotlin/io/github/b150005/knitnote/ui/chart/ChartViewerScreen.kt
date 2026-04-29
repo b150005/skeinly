@@ -72,6 +72,7 @@ import io.github.b150005.knitnote.domain.model.ChartLayer
 import io.github.b150005.knitnote.domain.model.SegmentState
 import io.github.b150005.knitnote.domain.model.StructuredChart
 import io.github.b150005.knitnote.domain.symbol.SymbolCatalog
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.generated.resources.Res
 import io.github.b150005.knitnote.generated.resources.action_back
 import io.github.b150005.knitnote.generated.resources.action_cancel
@@ -90,6 +91,7 @@ import io.github.b150005.knitnote.generated.resources.state_no_structured_chart
 import io.github.b150005.knitnote.generated.resources.title_branch_picker
 import io.github.b150005.knitnote.generated.resources.title_chart_history
 import io.github.b150005.knitnote.generated.resources.title_chart_viewer
+import io.github.b150005.knitnote.ui.components.localized
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -245,7 +247,7 @@ fun ChartViewerScreen(
 
                 errorMessage != null ->
                     Text(
-                        text = errorMessage,
+                        text = errorMessage.localized(),
                         modifier = Modifier.align(Alignment.Center),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
@@ -332,7 +334,7 @@ private fun OpenPullRequestDialog(
     titleDraft: String,
     descriptionDraft: String,
     isSubmitting: Boolean,
-    errorMessage: String?,
+    errorMessage: ErrorMessage?,
     onTitleChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
     onConfirm: () -> Unit,
@@ -374,7 +376,7 @@ private fun OpenPullRequestDialog(
                 if (errorMessage != null) {
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        text = errorMessage,
+                        text = errorMessage.localized(),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.testTag("openPrErrorLabel"),

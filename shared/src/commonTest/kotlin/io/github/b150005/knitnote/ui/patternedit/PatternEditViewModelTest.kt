@@ -5,6 +5,7 @@ import io.github.b150005.knitnote.domain.model.Difficulty
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.Visibility
 import io.github.b150005.knitnote.domain.usecase.CreatePatternUseCase
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.FakeAuthRepository
 import io.github.b150005.knitnote.domain.usecase.FakePatternRepository
 import io.github.b150005.knitnote.domain.usecase.UpdatePatternUseCase
@@ -80,7 +81,7 @@ class PatternEditViewModelTest {
             advanceUntilIdle()
 
             assertNotNull(viewModel.state.value.error)
-            assertEquals("Title must not be blank", viewModel.state.value.error)
+            assertEquals(ErrorMessage.Raw("Title must not be blank"), viewModel.state.value.error)
         }
 
     @Test

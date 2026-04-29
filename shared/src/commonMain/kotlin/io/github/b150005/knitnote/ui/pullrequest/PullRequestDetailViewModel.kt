@@ -14,6 +14,7 @@ import io.github.b150005.knitnote.domain.repository.PullRequestRepository
 import io.github.b150005.knitnote.domain.repository.StructuredChartRepository
 import io.github.b150005.knitnote.domain.repository.UserRepository
 import io.github.b150005.knitnote.domain.usecase.ClosePullRequestUseCase
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.GetPullRequestCommentsUseCase
 import io.github.b150005.knitnote.domain.usecase.GetPullRequestUseCase
 import io.github.b150005.knitnote.domain.usecase.MergePullRequestUseCase
@@ -21,7 +22,7 @@ import io.github.b150005.knitnote.domain.usecase.PostPullRequestCommentUseCase
 import io.github.b150005.knitnote.domain.usecase.PullRequestObserveScope
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
 import io.github.b150005.knitnote.domain.usecase.applyResolutions
-import io.github.b150005.knitnote.domain.usecase.toMessage
+import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -71,7 +72,7 @@ data class PullRequestDetailState(
     val isMerging: Boolean = false,
     val pendingCloseConfirmation: Boolean = false,
     val pendingMergeConfirmation: Boolean = false,
-    val error: String? = null,
+    val error: ErrorMessage? = null,
 ) {
     /**
      * Derived gate for the merge button. Phase 38.3 keeps it inert (the
@@ -268,7 +269,7 @@ class PullRequestDetailViewModel(
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        error = result.error.toMessage(),
+                        error = result.error.toErrorMessage(),
                     )
                 }
                 return
@@ -334,7 +335,7 @@ class PullRequestDetailViewModel(
             }.catch { e ->
                 if (e is CancellationException) throw e
                 _state.update {
-                    it.copy(error = e.message ?: "Failed to observe pull request")
+                    it.copy(error = ErrorMessage.Raw(e.message ?: "Failed to observe pull request"))
                 }
             }.launchIn(viewModelScope)
     }
@@ -348,7 +349,7 @@ class PullRequestDetailViewModel(
             }.catch { e ->
                 if (e is CancellationException) throw e
                 _state.update {
-                    it.copy(error = e.message ?: "Failed to load comments")
+                    it.copy(error = ErrorMessage.Raw(e.message ?: "Failed to load comments"))
                 }
             }.launchIn(viewModelScope)
     }
@@ -409,7 +410,7 @@ class PullRequestDetailViewModel(
                 }
                 is UseCaseResult.Failure ->
                     _state.update {
-                        it.copy(isSendingComment = false, error = result.error.toMessage())
+                        it.copy(isSendingComment = false, error = result.error.toErrorMessage())
                     }
             }
         }
@@ -436,7 +437,7 @@ class PullRequestDetailViewModel(
         val chartRepo = structuredChartRepository
         if (merge == null || chartRevisionRepo == null || chartRepo == null) {
             _state.update {
-                it.copy(error = "Merge is unavailable in offline-only mode")
+                it.copy(error = ErrorMessage.Raw("Merge is unavailable in offline-only mode"))
             }
             return
         }
@@ -470,7 +471,7 @@ class PullRequestDetailViewModel(
                 _state.update {
                     it.copy(
                         isMerging = false,
-                        error = "Could not load chart revisions for this pull request",
+                        error = ErrorMessage.Raw("Could not load chart revisions for this pull request"),
                     )
                 }
                 return@launch
@@ -505,7 +506,7 @@ class PullRequestDetailViewModel(
                     }
                     is UseCaseResult.Failure ->
                         _state.update {
-                            it.copy(isMerging = false, error = result.error.toMessage())
+                            it.copy(isMerging = false, error = result.error.toErrorMessage())
                         }
                 }
             } else {
@@ -534,7 +535,7 @@ class PullRequestDetailViewModel(
                 }
                 is UseCaseResult.Failure ->
                     _state.update {
-                        it.copy(isClosingPr = false, error = result.error.toMessage())
+                        it.copy(isClosingPr = false, error = result.error.toErrorMessage())
                     }
             }
         }

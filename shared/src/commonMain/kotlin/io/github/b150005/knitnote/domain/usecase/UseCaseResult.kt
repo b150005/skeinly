@@ -32,15 +32,6 @@ sealed interface UseCaseError {
     ) : UseCaseError
 }
 
-fun UseCaseError.toMessage(): String =
-    when (this) {
-        is UseCaseError.NotFound -> message
-        is UseCaseError.Validation -> message
-        is UseCaseError.Authentication -> cause.message?.toUserFriendlyMessage() ?: "Authentication failed"
-        is UseCaseError.Network -> "Network error. Please check your connection and try again."
-        is UseCaseError.Unknown -> cause.message?.toUserFriendlyMessage() ?: "Unknown error"
-    }
-
 /**
  * Maps a caught [Exception] to the most specific [UseCaseError] subtype.
  *
@@ -53,7 +44,7 @@ fun Exception.toUseCaseError(): UseCaseError {
     val msg = message.orEmpty()
 
     // Auth errors — matched by known Supabase error message strings
-    if (knownAuthErrors.keys.any { key -> msg.contains(key) }) {
+    if (knownAuthErrors.any { key -> msg.contains(key) }) {
         return UseCaseError.Authentication(this)
     }
 
@@ -66,24 +57,14 @@ fun Exception.toUseCaseError(): UseCaseError {
     return UseCaseError.Unknown(this)
 }
 
-private fun String.toUserFriendlyMessage(): String {
-    val description =
-        lines()
-            .firstOrNull { it.isNotBlank() }
-            ?.trim()
-            ?: return "Unknown error"
-
-    return knownAuthErrors[description] ?: description
-}
-
 private val knownAuthErrors =
-    mapOf(
-        "email_address_invalid" to "Invalid email address",
-        "user_already_exists" to "An account with this email already exists",
-        "invalid_credentials" to "Invalid email or password",
-        "over_email_send_rate_limit" to "Too many attempts. Please try again later",
-        "user_not_found" to "No account found with this email",
-        "email_not_confirmed" to "Please confirm your email address first",
+    setOf(
+        "email_address_invalid",
+        "user_already_exists",
+        "invalid_credentials",
+        "over_email_send_rate_limit",
+        "user_not_found",
+        "email_not_confirmed",
     )
 
 private val networkExceptionPatterns =

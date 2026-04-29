@@ -49,15 +49,12 @@ struct SettingsScreen: View {
             // overloads in some Swift toolchains.
             Text(LocalizedStringKey("dialog_delete_account_body"))
         }
-        .onChange(of: state.error) { _, newError in
-            showError = newError != nil
+        .onChange(of: state.error != nil) { _, hasError in
+            showError = hasError
         }
         .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
             Button("action_ok") { viewModel.onEvent(event: SettingsEventClearError.shared) }
-        } message: {
-            // state.error is rendered raw — ViewModel error-message
-            // localization is deferred per Tech Debt Backlog.
-            Text(state.error ?? "")
+        } message: {            Text(state.error?.localizedString ?? "")
         }
         // Account deletion triggers signOut internally, which sets AuthState
         // to Unauthenticated. AppRootView observes this and navigates to login.

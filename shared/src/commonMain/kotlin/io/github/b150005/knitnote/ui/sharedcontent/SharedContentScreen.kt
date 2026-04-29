@@ -46,6 +46,7 @@ import io.github.b150005.knitnote.generated.resources.state_pattern_not_found
 import io.github.b150005.knitnote.generated.resources.state_view_only_share
 import io.github.b150005.knitnote.generated.resources.title_shared_pattern
 import io.github.b150005.knitnote.ui.components.labelKey
+import io.github.b150005.knitnote.ui.components.localized
 import kotlinx.coroutines.flow.collect
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -64,10 +65,10 @@ fun SharedContentScreen(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(state.error) {
-        // Snackbar surfaces the raw ViewModel error string — ViewModel error-message
-        // localization is deferred per the Tech Debt Backlog.
-        state.error?.let {
+    val errorText = state.error?.localized()
+
+    LaunchedEffect(errorText) {
+        errorText?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(SharedContentEvent.ClearError)
         }
@@ -115,7 +116,7 @@ fun SharedContentScreen(
                 }
                 else -> {
                     Text(
-                        text = state.error ?: stringResource(Res.string.state_pattern_not_found),
+                        text = state.error?.localized() ?: stringResource(Res.string.state_pattern_not_found),
                         modifier = Modifier.align(Alignment.Center),
                         style = MaterialTheme.typography.bodyLarge,
                     )

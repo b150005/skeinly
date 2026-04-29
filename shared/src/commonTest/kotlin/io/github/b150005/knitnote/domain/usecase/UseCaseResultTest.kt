@@ -67,17 +67,17 @@ class UseCaseResultTest {
         assertIs<UseCaseError.Unknown>(exception.toUseCaseError())
     }
 
-    // --- toMessage() tests for new error types ---
+    // --- toErrorMessage() tests for typed error mapping (Phase G) ---
 
     @Test
-    fun `Authentication error toMessage returns friendly text`() {
+    fun `Authentication error toErrorMessage returns InvalidCredentials for known key`() {
         val error = UseCaseError.Authentication(RuntimeException("invalid_credentials"))
-        assertEquals("Invalid email or password", error.toMessage())
+        assertEquals(ErrorMessage.InvalidCredentials, error.toErrorMessage())
     }
 
     @Test
-    fun `Network error toMessage returns connectivity message`() {
+    fun `Network error toErrorMessage returns NetworkUnavailable`() {
         val error = UseCaseError.Network(RuntimeException("timeout"))
-        assertEquals("Network error. Please check your connection and try again.", error.toMessage())
+        assertEquals(ErrorMessage.NetworkUnavailable, error.toErrorMessage())
     }
 }

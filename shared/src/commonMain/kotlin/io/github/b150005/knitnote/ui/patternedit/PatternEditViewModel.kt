@@ -6,9 +6,10 @@ import io.github.b150005.knitnote.domain.model.Difficulty
 import io.github.b150005.knitnote.domain.model.Visibility
 import io.github.b150005.knitnote.domain.repository.PatternRepository
 import io.github.b150005.knitnote.domain.usecase.CreatePatternUseCase
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.UpdatePatternUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
-import io.github.b150005.knitnote.domain.usecase.toMessage
+import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +30,7 @@ data class PatternEditState(
     val visibility: Visibility = Visibility.PRIVATE,
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
-    val error: String? = null,
+    val error: ErrorMessage? = null,
 )
 
 sealed interface PatternEditEvent {
@@ -103,7 +104,7 @@ class PatternEditViewModel(
                 }
             } else {
                 _state.update {
-                    it.copy(isLoading = false, error = "Pattern not found")
+                    it.copy(isLoading = false, error = ErrorMessage.Raw("Pattern not found"))
                 }
             }
         }
@@ -157,7 +158,7 @@ class PatternEditViewModel(
                     _saveSuccessChannel.send(Unit)
                 }
                 is UseCaseResult.Failure -> {
-                    _state.update { it.copy(isSaving = false, error = result.error.toMessage()) }
+                    _state.update { it.copy(isSaving = false, error = result.error.toErrorMessage()) }
                 }
             }
         }

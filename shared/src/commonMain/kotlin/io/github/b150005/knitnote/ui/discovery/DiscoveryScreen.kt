@@ -78,6 +78,7 @@ import io.github.b150005.knitnote.generated.resources.title_discover_patterns
 import io.github.b150005.knitnote.ui.chart.ChartThumbnail
 import io.github.b150005.knitnote.ui.components.EmptyStateView
 import io.github.b150005.knitnote.ui.components.labelKey
+import io.github.b150005.knitnote.ui.components.localized
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -93,8 +94,10 @@ fun DiscoveryScreen(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(state.error) {
-        state.error?.let {
+    val errorText = state.error?.localized()
+
+    LaunchedEffect(errorText) {
+        errorText?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(DiscoveryEvent.ClearError)
         }

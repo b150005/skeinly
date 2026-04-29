@@ -103,6 +103,7 @@ import io.github.b150005.knitnote.generated.resources.state_no_matching_projects
 import io.github.b150005.knitnote.generated.resources.state_no_projects
 import io.github.b150005.knitnote.generated.resources.state_no_projects_body
 import io.github.b150005.knitnote.ui.components.EmptyStateView
+import io.github.b150005.knitnote.ui.components.localized
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -124,8 +125,10 @@ fun ProjectListScreen(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(state.error) {
-        state.error?.let {
+    val errorText = state.error?.localized()
+
+    LaunchedEffect(errorText) {
+        errorText?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(ProjectListEvent.ClearError)
         }

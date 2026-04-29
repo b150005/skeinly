@@ -4,10 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.b150005.knitnote.domain.model.AuthState
 import io.github.b150005.knitnote.domain.usecase.DeleteAccountUseCase
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.ObserveAuthStateUseCase
 import io.github.b150005.knitnote.domain.usecase.SignOutUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
-import io.github.b150005.knitnote.domain.usecase.toMessage
+import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +22,7 @@ data class SettingsState(
     val email: String? = null,
     val isLoading: Boolean = true,
     val isDeletingAccount: Boolean = false,
-    val error: String? = null,
+    val error: ErrorMessage? = null,
 )
 
 sealed interface SettingsEvent {
@@ -76,7 +77,7 @@ class SettingsViewModel(
             when (val result = signOut()) {
                 is UseCaseResult.Success -> { /* Auth state observer handles navigation */ }
                 is UseCaseResult.Failure ->
-                    _state.update { it.copy(error = result.error.toMessage()) }
+                    _state.update { it.copy(error = result.error.toErrorMessage()) }
             }
         }
     }
@@ -91,7 +92,7 @@ class SettingsViewModel(
                 }
                 is UseCaseResult.Failure ->
                     _state.update {
-                        it.copy(isDeletingAccount = false, error = result.error.toMessage())
+                        it.copy(isDeletingAccount = false, error = result.error.toErrorMessage())
                     }
             }
         }

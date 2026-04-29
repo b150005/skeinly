@@ -7,10 +7,11 @@ import io.github.b150005.knitnote.domain.model.ShareStatus
 import io.github.b150005.knitnote.domain.model.User
 import io.github.b150005.knitnote.domain.repository.PatternRepository
 import io.github.b150005.knitnote.domain.repository.UserRepository
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.GetReceivedSharesUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateShareStatusUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
-import io.github.b150005.knitnote.domain.usecase.toMessage
+import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,7 +23,7 @@ data class SharedWithMeState(
     val patternTitles: Map<String, String> = emptyMap(),
     val sharers: Map<String, User> = emptyMap(),
     val isLoading: Boolean = true,
-    val error: String? = null,
+    val error: ErrorMessage? = null,
 )
 
 sealed interface SharedWithMeEvent {
@@ -72,7 +73,7 @@ class SharedWithMeViewModel(
                         }
                         is UseCaseResult.Failure -> {
                             _state.update {
-                                it.copy(isLoading = false, error = result.error.toMessage())
+                                it.copy(isLoading = false, error = result.error.toErrorMessage())
                             }
                         }
                     }
@@ -106,7 +107,7 @@ class SharedWithMeViewModel(
                 }
             }
             is UseCaseResult.Failure -> {
-                _state.update { it.copy(error = result.error.toMessage()) }
+                _state.update { it.copy(error = result.error.toErrorMessage()) }
             }
         }
     }

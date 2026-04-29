@@ -36,15 +36,15 @@ struct PullRequestDetailScreen: View {
             .accessibilityIdentifier("pullRequestDetailScreen")
             .navigationTitle(LocalizedStringKey("title_pull_request_detail"))
             .navigationBarTitleDisplayMode(.inline)
-            .onChange(of: holder.state.error) { _, newError in
-                showError = newError != nil
-            }
+            .onChange(of: holder.state.error != nil) { _, hasError in
+            showError = hasError
+        }
             .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
                 Button("action_ok") {
                     viewModel.onEvent(event: PullRequestDetailEventClearError.shared)
                 }
             } message: {
-                Text(holder.state.error ?? "")
+                Text(holder.state.error?.localizedString ?? "")
             }
             .overlay(alignment: .bottom) {
                 if pendingClosedToast {

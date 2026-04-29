@@ -8,6 +8,7 @@ import io.github.b150005.knitnote.domain.model.SortOrder
 import io.github.b150005.knitnote.domain.usecase.CloseRealtimeChannelsUseCase
 import io.github.b150005.knitnote.domain.usecase.CreateProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.DeleteProjectUseCase
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.FakeAuthRepository
 import io.github.b150005.knitnote.domain.usecase.FakePatternRepository
 import io.github.b150005.knitnote.domain.usecase.FakeProjectRepository
@@ -152,7 +153,7 @@ class ProjectListViewModelTest {
                 viewModel.onEvent(ProjectListEvent.SignOut)
 
                 val state = awaitItem()
-                assertEquals("Network error", state.error)
+                assertEquals(ErrorMessage.Generic, state.error)
                 cancelAndIgnoreRemainingEvents()
             }
         }

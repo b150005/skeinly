@@ -5,10 +5,11 @@ import androidx.lifecycle.viewModelScope
 import io.github.b150005.knitnote.domain.model.Difficulty
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.SortOrder
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.ForkPublicPatternUseCase
 import io.github.b150005.knitnote.domain.usecase.GetPublicPatternsUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
-import io.github.b150005.knitnote.domain.usecase.toMessage
+import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -26,7 +27,7 @@ import kotlinx.coroutines.launch
 data class DiscoveryState(
     val patterns: List<Pattern> = emptyList(),
     val isLoading: Boolean = true,
-    val error: String? = null,
+    val error: ErrorMessage? = null,
     val searchQuery: String = "",
     val difficultyFilter: Difficulty? = null,
     val sortOrder: SortOrder = SortOrder.RECENT,
@@ -90,7 +91,7 @@ sealed interface DiscoveryEvent {
 }
 
 private data class UiFlags(
-    val error: String? = null,
+    val error: ErrorMessage? = null,
     val forkingPatternId: String? = null,
 )
 
@@ -210,7 +211,7 @@ class DiscoveryViewModel(
                     isLoading.value = false
                 }
                 is UseCaseResult.Failure -> {
-                    uiFlags.update { it.copy(error = result.error.toMessage()) }
+                    uiFlags.update { it.copy(error = result.error.toErrorMessage()) }
                     isLoading.value = false
                 }
             }
@@ -236,7 +237,7 @@ class DiscoveryViewModel(
                     )
                 }
                 is UseCaseResult.Failure -> {
-                    uiFlags.update { it.copy(forkingPatternId = null, error = result.error.toMessage()) }
+                    uiFlags.update { it.copy(forkingPatternId = null, error = result.error.toErrorMessage()) }
                 }
             }
         }

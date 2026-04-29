@@ -54,6 +54,7 @@ import io.github.b150005.knitnote.generated.resources.label_conflict_summary
 import io.github.b150005.knitnote.generated.resources.message_pr_merged_successfully
 import io.github.b150005.knitnote.generated.resources.state_all_conflicts_resolved
 import io.github.b150005.knitnote.generated.resources.title_resolve_conflicts
+import io.github.b150005.knitnote.ui.components.localized
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -93,8 +94,10 @@ fun ChartConflictResolutionScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val mergedMessage = stringResource(Res.string.message_pr_merged_successfully)
 
-    LaunchedEffect(state.error) {
-        state.error?.let {
+    val errorText = state.error?.localized()
+
+    LaunchedEffect(errorText) {
+        errorText?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(ChartConflictResolutionEvent.ClearError)
         }
@@ -173,7 +176,7 @@ fun ChartConflictResolutionScreen(
 
                 state.report == null ->
                     Text(
-                        text = state.error ?: "",
+                        text = state.error?.localized() ?: "",
                         modifier = Modifier.align(Alignment.Center),
                     )
 

@@ -86,6 +86,7 @@ import io.github.b150005.knitnote.generated.resources.state_no_patterns_body
 import io.github.b150005.knitnote.generated.resources.title_pattern_library
 import io.github.b150005.knitnote.ui.components.EmptyStateView
 import io.github.b150005.knitnote.ui.components.labelKey
+import io.github.b150005.knitnote.ui.components.localized
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -100,8 +101,10 @@ fun PatternLibraryScreen(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(state.error) {
-        state.error?.let {
+    val errorText = state.error?.localized()
+
+    LaunchedEffect(errorText) {
+        errorText?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(PatternLibraryEvent.ClearError)
         }

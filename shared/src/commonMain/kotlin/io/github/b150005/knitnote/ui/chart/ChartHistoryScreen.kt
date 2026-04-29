@@ -47,6 +47,7 @@ import io.github.b150005.knitnote.generated.resources.label_initial_commit
 import io.github.b150005.knitnote.generated.resources.state_no_chart_history
 import io.github.b150005.knitnote.generated.resources.state_no_chart_history_body
 import io.github.b150005.knitnote.generated.resources.title_chart_history
+import io.github.b150005.knitnote.ui.components.localized
 import io.github.b150005.knitnote.ui.util.formatFull
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -82,8 +83,10 @@ fun ChartHistoryScreen(
         }
     }
 
-    LaunchedEffect(state.error) {
-        state.error?.let {
+    val errorText = state.error?.localized()
+
+    LaunchedEffect(errorText) {
+        errorText?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(ChartHistoryEvent.ClearError)
         }

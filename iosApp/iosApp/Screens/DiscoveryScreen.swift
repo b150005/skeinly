@@ -29,9 +29,9 @@ struct DiscoveryScreen: View {
             .onChange(of: holder.state.searchQuery) { _, newQuery in
                 if searchText != newQuery { searchText = newQuery }
             }
-            .onChange(of: holder.state.error) { _, newError in
-                showError = newError != nil
-            }
+            .onChange(of: holder.state.error != nil) { _, hasError in
+            showError = hasError
+        }
             // `.alert` is in the "needs explicit LocalizedStringKey wrap" column of
             // the SwiftUI literal-promotion table (see docs/en/i18n-convention.md) —
             // overload resolution on a bare literal can silently select the
@@ -39,7 +39,7 @@ struct DiscoveryScreen: View {
             .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
                 Button("action_ok") { viewModel.onEvent(event: DiscoveryEventClearError.shared) }
             } message: {
-                Text(holder.state.error ?? "")
+                Text(holder.state.error?.localizedString ?? "")
             }
             .navigationTitle(LocalizedStringKey("title_discover_patterns"))
             .navigationBarTitleDisplayMode(.inline)
