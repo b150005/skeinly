@@ -114,6 +114,7 @@ targets:
           - "ViewModelObserver.swift"
           - "ViewModelFactory.swift"
           - "ScopedViewModel.swift"
+          - "ErrorMessage+Localized.swift"
     settings:
       base:
         SWIFT_VERSION: "5.0"
