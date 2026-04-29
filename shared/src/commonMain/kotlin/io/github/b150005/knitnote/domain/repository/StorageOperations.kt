@@ -22,4 +22,12 @@ interface StorageOperations {
     ): List<String>
 
     suspend fun delete(paths: List<String>)
+
+    /**
+     * Returns the persistent public URL for a path in a public bucket.
+     * Throws / returns empty for private buckets — use [createSignedUrl]
+     * instead. Used by the `avatars` bucket (Phase C) to surface a stable
+     * URL into User.avatarUrl that does not need re-signing per request.
+     */
+    fun publicUrl(path: String): String
 }

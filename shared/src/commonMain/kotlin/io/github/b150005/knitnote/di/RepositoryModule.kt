@@ -107,6 +107,9 @@ val repositoryModule =
             single<StorageOperations>(progressPhotosStorageQualifier) {
                 RemoteStorageDataSource(get<SupabaseClient>(), "progress-photos")
             }
+            single<StorageOperations>(avatarsStorageQualifier) {
+                RemoteStorageDataSource(get<SupabaseClient>(), "avatars")
+            }
             single<RealtimeChannelProvider> { SupabaseRealtimeChannelProvider(get<SupabaseClient>()) }
 
             // Comment — remote-only with Realtime

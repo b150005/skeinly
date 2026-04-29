@@ -267,6 +267,13 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "新しいメールアドレスに確認メールを送信しました。リンクをクリックして変更を確定してください。" } }
       }
     },
+    "action_change_avatar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Change Avatar" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アバターを変更" } }
+      }
+    },
     "error_email_invalid" : {
       "extractionState" : "manual",
       "localizations" : {

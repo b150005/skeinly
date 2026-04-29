@@ -1,5 +1,6 @@
 package io.github.b150005.knitnote.ui.profile
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,12 +38,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import io.github.b150005.knitnote.domain.model.User
 import io.github.b150005.knitnote.generated.resources.Res
 import io.github.b150005.knitnote.generated.resources.action_back
 import io.github.b150005.knitnote.generated.resources.action_cancel
+import io.github.b150005.knitnote.generated.resources.action_change_avatar
 import io.github.b150005.knitnote.generated.resources.action_edit
 import io.github.b150005.knitnote.generated.resources.action_save
 import io.github.b150005.knitnote.generated.resources.label_avatar
@@ -52,6 +58,7 @@ import io.github.b150005.knitnote.generated.resources.message_profile_updated
 import io.github.b150005.knitnote.generated.resources.state_profile_load_failed
 import io.github.b150005.knitnote.generated.resources.title_profile
 import io.github.b150005.knitnote.ui.components.localized
+import io.github.b150005.knitnote.ui.imagepicker.rememberImagePickerLauncher
 import kotlinx.coroutines.flow.collect
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -138,7 +145,13 @@ fun ProfileScreen(
                     )
                 }
                 else -> {
-                    ViewProfileContent(user = user)
+                    ViewProfileContent(
+                        user = user,
+                        isUploadingAvatar = state.isUploadingAvatar,
+                        onUploadAvatar = { data, fileName ->
+                            viewModel.onEvent(ProfileEvent.UploadAvatar(data, fileName))
+                        },
+                    )
                 }
             }
         }
@@ -146,23 +159,66 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun ProfileAvatar() {
-    Surface(
-        modifier = Modifier.size(96.dp),
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.primaryContainer,
-    ) {
-        Icon(
-            imageVector = Icons.Default.Person,
-            contentDescription = stringResource(Res.string.label_avatar),
-            modifier = Modifier.padding(24.dp),
-            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-        )
+private fun ProfileAvatar(
+    avatarUrl: String?,
+    isUploading: Boolean,
+    onClick: (() -> Unit)? = null,
+) {
+    val baseModifier = Modifier.size(96.dp)
+    val tappableModifier =
+        if (onClick != null) {
+            baseModifier
+                .clip(CircleShape)
+                .clickable(role = Role.Button, onClick = onClick)
+                .testTag("avatarPickerButton")
+        } else {
+            baseModifier
+        }
+
+    Box(modifier = tappableModifier, contentAlignment = Alignment.Center) {
+        Surface(
+            modifier = Modifier.size(96.dp),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+        ) {
+            if (avatarUrl != null) {
+                AsyncImage(
+                    model = avatarUrl,
+                    contentDescription = stringResource(Res.string.label_avatar),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(96.dp),
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = stringResource(Res.string.label_avatar),
+                    modifier = Modifier.padding(24.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+        }
+
+        if (isUploading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(48.dp),
+                strokeWidth = 4.dp,
+            )
+        }
     }
 }
 
 @Composable
-private fun ViewProfileContent(user: User) {
+private fun ViewProfileContent(
+    user: User,
+    isUploadingAvatar: Boolean,
+    onUploadAvatar: (ByteArray, String) -> Unit,
+) {
+    val avatarPickerLauncher =
+        rememberImagePickerLauncher { result ->
+            if (result != null) {
+                onUploadAvatar(result.data, result.fileName)
+            }
+        }
     Column(
         modifier =
             Modifier
@@ -171,7 +227,20 @@ private fun ViewProfileContent(user: User) {
                 .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        ProfileAvatar()
+        ProfileAvatar(
+            avatarUrl = user.avatarUrl,
+            isUploading = isUploadingAvatar,
+            onClick = { avatarPickerLauncher.launch() },
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        TextButton(
+            onClick = { avatarPickerLauncher.launch() },
+            enabled = !isUploadingAvatar,
+        ) {
+            Text(stringResource(Res.string.action_change_avatar))
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -204,7 +273,10 @@ private fun EditProfileContent(
                 .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        ProfileAvatar()
+        ProfileAvatar(
+            avatarUrl = state.user?.avatarUrl,
+            isUploading = false,
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 

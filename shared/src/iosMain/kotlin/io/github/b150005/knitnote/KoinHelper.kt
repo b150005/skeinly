@@ -123,7 +123,9 @@ fun wrapForgotPasswordState(
 ): FlowWrapper<io.github.b150005.knitnote.ui.auth.ForgotPasswordState> = FlowWrapper(flow)
 
 fun getForgotPasswordViewModel(): io.github.b150005.knitnote.ui.auth.ForgotPasswordViewModel =
-    org.koin.mp.KoinPlatform.getKoin().get()
+    org.koin.mp.KoinPlatform
+        .getKoin()
+        .get()
 
 fun wrapSettingsToastEvents(
     flow: kotlinx.coroutines.flow.Flow<io.github.b150005.knitnote.ui.settings.SettingsToastEvent>,

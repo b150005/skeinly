@@ -68,6 +68,7 @@ import io.github.b150005.knitnote.domain.usecase.UpdateProfileUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateShareStatusUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateStructuredChartUseCase
+import io.github.b150005.knitnote.domain.usecase.UploadAvatarUseCase
 import io.github.b150005.knitnote.domain.usecase.UploadChartImageUseCase
 import io.github.b150005.knitnote.domain.usecase.UploadProgressPhotoUseCase
 import org.koin.dsl.module
@@ -113,6 +114,9 @@ val useCaseModule =
         // Progress photo use cases
         factory { UploadProgressPhotoUseCase(getOrNull(progressPhotosStorageQualifier), get()) }
         factory { DeleteProgressPhotoUseCase(getOrNull(progressPhotosStorageQualifier), get()) }
+
+        // Avatar use case (Phase C)
+        factory { UploadAvatarUseCase(getOrNull(avatarsStorageQualifier), get()) }
 
         // Profile use cases (UserRepository with offline fallback)
         factory { GetCurrentUserUseCase(get(), get()) }

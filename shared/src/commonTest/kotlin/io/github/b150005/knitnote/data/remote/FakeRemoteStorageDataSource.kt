@@ -35,6 +35,8 @@ class FakeRemoteStorageDataSource : StorageOperations {
         paths.forEach { uploadedFiles.remove(it) }
     }
 
+    override fun publicUrl(path: String): String = "https://storage.example.com/public/$path"
+
     fun getUploadedFile(path: String): ByteArray? = uploadedFiles[path]
 
     fun getUploadedFileCount(): Int = uploadedFiles.size

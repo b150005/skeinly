@@ -1,9 +1,11 @@
 import SwiftUI
+import PhotosUI
 import Shared
 
 struct ProfileScreen: View {
     @StateObject private var holder: ScopedViewModel<ProfileViewModel, ProfileState>
     @State private var showError = false
+    @State private var selectedPhoto: PhotosPickerItem?
 
     private var viewModel: ProfileViewModel { holder.viewModel }
 
@@ -67,10 +69,37 @@ struct ProfileScreen: View {
         VStack(spacing: 16) {
             Spacer().frame(height: 20)
 
-            Image(systemName: "person.circle.fill")
-                .font(.system(size: DesignTokens.avatarSizeLarge))
-                .foregroundStyle(.secondary)
-                .accessibilityLabel(LocalizedStringKey("label_avatar"))
+            avatarView(state)
+
+            // Phase C — change-avatar entry
+            PhotosPicker(
+                selection: $selectedPhoto,
+                matching: .images,
+                photoLibrary: .shared()
+            ) {
+                Text(LocalizedStringKey("action_change_avatar"))
+                    .font(.footnote)
+            }
+            .accessibilityIdentifier("changeAvatarButton")
+            .disabled(state.isUploadingAvatar)
+            .onChange(of: selectedPhoto) { _, item in
+                guard let item else { return }
+                Task {
+                    if let data = try? await item.loadTransferable(type: Data.self) {
+                        let bytes = KotlinByteArray(size: Int32(data.count))
+                        for (i, byte) in data.enumerated() {
+                            bytes.set(index: Int32(i), value: Int8(bitPattern: byte))
+                        }
+                        viewModel.onEvent(
+                            event: ProfileEventUploadAvatar(
+                                imageData: bytes,
+                                fileName: "avatar.jpg"
+                            )
+                        )
+                    }
+                    selectedPhoto = nil
+                }
+            }
 
             if let user = state.user {
                 Text(user.displayName)
@@ -93,6 +122,39 @@ struct ProfileScreen: View {
             }
 
             Spacer()
+        }
+    }
+
+    @ViewBuilder
+    private func avatarView(_ state: ProfileState) -> some View {
+        ZStack {
+            if let url = state.user?.avatarUrl, let urlObj = URL(string: url) {
+                AsyncImage(url: urlObj) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    default:
+                        Image(systemName: "person.circle.fill")
+                            .font(.system(size: DesignTokens.avatarSizeLarge))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(width: DesignTokens.avatarSizeLarge, height: DesignTokens.avatarSizeLarge)
+                .clipShape(Circle())
+                .accessibilityLabel(LocalizedStringKey("label_avatar"))
+            } else {
+                Image(systemName: "person.circle.fill")
+                    .font(.system(size: DesignTokens.avatarSizeLarge))
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(LocalizedStringKey("label_avatar"))
+            }
+
+            if state.isUploadingAvatar {
+                ProgressView()
+                    .scaleEffect(1.5)
+            }
         }
     }
 

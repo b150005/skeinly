@@ -46,4 +46,6 @@ class RemoteStorageDataSource(
             bucket.delete(paths)
         }
     }
+
+    override fun publicUrl(path: String): String = bucket.publicUrl(path)
 }

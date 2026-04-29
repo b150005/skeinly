@@ -52,6 +52,9 @@
     <string name="message_password_changed">パスワードを変更しました</string>
     <string name="message_email_change_pending">新しいメールアドレスに確認メールを送信しました。リンクをクリックして変更を確定してください。</string>
 
+    <!-- Profile — Avatar (Phase C) -->
+    <string name="action_change_avatar">アバターを変更</string>
+
     <string name="error_authentication_failed">認証に失敗しました</string>
     <string name="error_email_invalid">無効なメールアドレスです</string>
     <string name="error_email_not_confirmed">メールアドレスを先に確認してください</string>

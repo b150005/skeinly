@@ -7,6 +7,7 @@ import io.github.b150005.knitnote.domain.usecase.FakeAuthRepository
 import io.github.b150005.knitnote.domain.usecase.FakeUserRepository
 import io.github.b150005.knitnote.domain.usecase.GetCurrentUserUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateProfileUseCase
+import io.github.b150005.knitnote.domain.usecase.UploadAvatarUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -53,7 +54,8 @@ class ProfileViewModelTest {
     private fun createViewModel(): ProfileViewModel {
         val getCurrentUser = GetCurrentUserUseCase(authRepo, userRepo)
         val updateProfile = UpdateProfileUseCase(authRepo, userRepo)
-        return ProfileViewModel(getCurrentUser, updateProfile)
+        val uploadAvatar = UploadAvatarUseCase(remoteStorage = null, authRepository = authRepo)
+        return ProfileViewModel(getCurrentUser, updateProfile, uploadAvatar)
     }
 
     @Test

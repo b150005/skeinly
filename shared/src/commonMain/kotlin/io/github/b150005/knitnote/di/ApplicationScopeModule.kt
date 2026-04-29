@@ -14,6 +14,7 @@ val applicationScopeQualifier = named("applicationScope")
 val ioDispatcherQualifier = named("ioDispatcher")
 val chartImagesStorageQualifier = named("chartImagesStorage")
 val progressPhotosStorageQualifier = named("progressPhotosStorage")
+val avatarsStorageQualifier = named("avatarsStorage")
 
 val applicationScopeModule =
     module {

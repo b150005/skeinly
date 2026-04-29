@@ -6,6 +6,7 @@ import io.github.b150005.knitnote.domain.model.User
 import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.GetCurrentUserUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateProfileUseCase
+import io.github.b150005.knitnote.domain.usecase.UploadAvatarUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
 import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.channels.Channel
@@ -22,6 +23,7 @@ data class ProfileState(
     val isLoading: Boolean = true,
     val isEditing: Boolean = false,
     val isSaving: Boolean = false,
+    val isUploadingAvatar: Boolean = false,
     val editDisplayName: String = "",
     val editBio: String = "",
     val error: ErrorMessage? = null,
@@ -44,12 +46,24 @@ sealed interface ProfileEvent {
         val value: String,
     ) : ProfileEvent
 
+    data class UploadAvatar(
+        val imageData: ByteArray,
+        val fileName: String,
+    ) : ProfileEvent {
+        override fun equals(other: Any?): Boolean =
+            this === other ||
+                (other is UploadAvatar && imageData.contentEquals(other.imageData) && fileName == other.fileName)
+
+        override fun hashCode(): Int = 31 * imageData.contentHashCode() + fileName.hashCode()
+    }
+
     data object ClearError : ProfileEvent
 }
 
 class ProfileViewModel(
     private val getCurrentUser: GetCurrentUserUseCase,
     private val updateProfile: UpdateProfileUseCase,
+    private val uploadAvatar: UploadAvatarUseCase,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProfileState())
     val state: StateFlow<ProfileState> = _state.asStateFlow()
@@ -69,7 +83,50 @@ class ProfileViewModel(
             ProfileEvent.SaveProfile -> saveProfile()
             is ProfileEvent.UpdateDisplayName -> _state.update { it.copy(editDisplayName = event.value) }
             is ProfileEvent.UpdateBio -> _state.update { it.copy(editBio = event.value) }
+            is ProfileEvent.UploadAvatar -> performUploadAvatar(event.imageData, event.fileName)
             ProfileEvent.ClearError -> _state.update { it.copy(error = null) }
+        }
+    }
+
+    private fun performUploadAvatar(
+        imageData: ByteArray,
+        fileName: String,
+    ) {
+        val currentUser = _state.value.user ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(isUploadingAvatar = true) }
+            when (val uploadResult = uploadAvatar(imageData, fileName)) {
+                is UseCaseResult.Failure ->
+                    _state.update {
+                        it.copy(isUploadingAvatar = false, error = uploadResult.error.toErrorMessage())
+                    }
+                is UseCaseResult.Success -> {
+                    // Patch the new avatar URL into the User row, preserving
+                    // displayName + bio. UpdateProfileUseCase requires all-or-
+                    // nothing because it routes through a single Supabase
+                    // update — see UserRepository.updateProfile.
+                    when (
+                        val patchResult =
+                            updateProfile(
+                                displayName = currentUser.displayName,
+                                bio = currentUser.bio,
+                                avatarUrl = uploadResult.value,
+                            )
+                    ) {
+                        is UseCaseResult.Success ->
+                            _state.update {
+                                it.copy(user = patchResult.value, isUploadingAvatar = false)
+                            }
+                        is UseCaseResult.Failure ->
+                            _state.update {
+                                it.copy(
+                                    isUploadingAvatar = false,
+                                    error = patchResult.error.toErrorMessage(),
+                                )
+                            }
+                    }
+                }
+            }
         }
     }
 
