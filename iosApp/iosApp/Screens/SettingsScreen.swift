@@ -5,6 +5,10 @@ struct SettingsScreen: View {
     @StateObject private var holder: ScopedViewModel<SettingsViewModel, SettingsState>
     @State private var showDeleteConfirmation = false
     @State private var showError = false
+    @State private var newPassword = ""
+    @State private var newEmail = ""
+    @State private var toastMessage: String?
+    @State private var toastCloseable: Closeable?
 
     private var viewModel: SettingsViewModel { holder.viewModel }
 
@@ -56,6 +60,50 @@ struct SettingsScreen: View {
             Button("action_ok") { viewModel.onEvent(event: SettingsEventClearError.shared) }
         } message: {            Text(state.error?.localizedString ?? "")
         }
+        .sheet(isPresented: Binding(
+            get: { state.pendingChangePasswordDialog },
+            set: { if !$0 { viewModel.onEvent(event: SettingsEventDismissChangePassword.shared) } }
+        )) {
+            changePasswordSheet(state: state)
+        }
+        .sheet(isPresented: Binding(
+            get: { state.pendingChangeEmailDialog },
+            set: { if !$0 { viewModel.onEvent(event: SettingsEventDismissChangeEmail.shared) } }
+        )) {
+            changeEmailSheet(state: state)
+        }
+        .overlay(alignment: .bottom) {
+            if let toastMessage {
+                Text(toastMessage)
+                    .padding()
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                    .padding(.bottom, 24)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .task {
+            toastCloseable?.close()
+            let flow = KoinHelperKt.wrapSettingsToastEvents(flow: holder.viewModel.toastEvents)
+            toastCloseable = flow.collect { event in
+                Task { @MainActor in
+                    let key: String =
+                        if event is SettingsToastEventPasswordChanged {
+                            "message_password_changed"
+                        } else if event is SettingsToastEventEmailChangePending {
+                            "message_email_change_pending"
+                        } else {
+                            ""
+                        }
+                    toastMessage = NSLocalizedString(key, comment: "")
+                    try? await Task.sleep(nanoseconds: 2_500_000_000)
+                    toastMessage = nil
+                }
+            }
+        }
+        .onDisappear {
+            toastCloseable?.close()
+            toastCloseable = nil
+        }
         // Account deletion triggers signOut internally, which sets AuthState
         // to Unauthenticated. AppRootView observes this and navigates to login.
     }
@@ -82,6 +130,23 @@ struct SettingsScreen: View {
                     Label("action_sign_out", systemImage: "rectangle.portrait.and.arrow.right")
                 }
                 .accessibilityIdentifier("signOutButton")
+
+                // Phase B3: change password / change email
+                Button {
+                    newPassword = ""
+                    viewModel.onEvent(event: SettingsEventRequestChangePassword.shared)
+                } label: {
+                    Label("action_change_password", systemImage: "key.fill")
+                }
+                .accessibilityIdentifier("changePasswordButton")
+
+                Button {
+                    newEmail = ""
+                    viewModel.onEvent(event: SettingsEventRequestChangeEmail.shared)
+                } label: {
+                    Label("action_change_email", systemImage: "envelope")
+                }
+                .accessibilityIdentifier("changeEmailButton")
             }
 
             // About / Legal section — Phase E2
@@ -98,6 +163,7 @@ struct SettingsScreen: View {
             }
 
             // Danger zone section
+            // (continues below)
             Section {
                 Button(role: .destructive) {
                     showDeleteConfirmation = true
@@ -118,6 +184,78 @@ struct SettingsScreen: View {
                 Text("label_danger_zone")
             } footer: {
                 Text("body_delete_account_warning")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func changePasswordSheet(state: SettingsState) -> some View {
+        NavigationStack {
+            Form {
+                Section {
+                    SecureField(
+                        LocalizedStringKey("label_new_password"),
+                        text: $newPassword
+                    )
+                    .textContentType(.newPassword)
+                    .accessibilityIdentifier("newPasswordField")
+                }
+            }
+            .navigationTitle(LocalizedStringKey("dialog_change_password_title"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(LocalizedStringKey("action_cancel")) {
+                        viewModel.onEvent(event: SettingsEventDismissChangePassword.shared)
+                    }
+                    .disabled(state.isChangingPassword)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(LocalizedStringKey("action_save")) {
+                        viewModel.onEvent(
+                            event: SettingsEventConfirmChangePassword(newPassword: newPassword)
+                        )
+                    }
+                    .disabled(state.isChangingPassword || newPassword.isEmpty)
+                    .accessibilityIdentifier("confirmChangePasswordButton")
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func changeEmailSheet(state: SettingsState) -> some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField(
+                        LocalizedStringKey("label_new_email"),
+                        text: $newEmail
+                    )
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .autocapitalization(.none)
+                    .accessibilityIdentifier("newEmailField")
+                }
+            }
+            .navigationTitle(LocalizedStringKey("dialog_change_email_title"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(LocalizedStringKey("action_cancel")) {
+                        viewModel.onEvent(event: SettingsEventDismissChangeEmail.shared)
+                    }
+                    .disabled(state.isChangingEmail)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(LocalizedStringKey("action_save")) {
+                        viewModel.onEvent(
+                            event: SettingsEventConfirmChangeEmail(newEmail: newEmail)
+                        )
+                    }
+                    .disabled(state.isChangingEmail || newEmail.isEmpty)
+                    .accessibilityIdentifier("confirmChangeEmailButton")
+                }
             }
         }
     }

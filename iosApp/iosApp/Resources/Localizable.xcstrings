@@ -176,6 +176,97 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "利用規約" } }
       }
     },
+    "title_forgot_password" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reset Password" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パスワードをリセット" } }
+      }
+    },
+    "action_forgot_password" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Forgot password?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パスワードを忘れた場合" } }
+      }
+    },
+    "label_email_for_reset" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter your email and we'll send you a reset link." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メールアドレスを入力すると、リセット用のリンクをお送りします。" } }
+      }
+    },
+    "action_send_reset_link" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Send Reset Link" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "リセットリンクを送信" } }
+      }
+    },
+    "message_reset_email_sent" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "If an account exists for this email, you'll receive a reset link shortly." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このメールアドレスのアカウントが存在する場合、まもなくリセットリンクが届きます。" } }
+      }
+    },
+    "action_change_password" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Change Password" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パスワードを変更" } }
+      }
+    },
+    "action_change_email" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Change Email" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メールアドレスを変更" } }
+      }
+    },
+    "dialog_change_password_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Change Password" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パスワードを変更" } }
+      }
+    },
+    "dialog_change_email_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Change Email" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メールアドレスを変更" } }
+      }
+    },
+    "label_new_password" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "New Password" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "新しいパスワード" } }
+      }
+    },
+    "label_new_email" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "New Email" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "新しいメールアドレス" } }
+      }
+    },
+    "message_password_changed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Password updated" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パスワードを変更しました" } }
+      }
+    },
+    "message_email_change_pending" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Verification email sent to your new address. Click the link to confirm the change." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "新しいメールアドレスに確認メールを送信しました。リンクをクリックして変更を確定してください。" } }
+      }
+    },
     "error_email_invalid" : {
       "extractionState" : "manual",
       "localizations" : {

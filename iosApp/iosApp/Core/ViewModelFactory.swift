@@ -12,6 +12,10 @@ enum ViewModelFactory {
         KoinHelperKt.getAuthViewModel()
     }
 
+    static func forgotPasswordViewModel() -> ForgotPasswordViewModel {
+        KoinHelperKt.getForgotPasswordViewModel()
+    }
+
     static func projectListViewModel() -> ProjectListViewModel {
         KoinHelperKt.getProjectListViewModel()
     }

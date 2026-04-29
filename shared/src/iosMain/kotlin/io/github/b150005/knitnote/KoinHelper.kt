@@ -118,6 +118,17 @@ fun wrapAuthState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.knitnote.ui.auth.AuthUiState>,
 ): FlowWrapper<io.github.b150005.knitnote.ui.auth.AuthUiState> = FlowWrapper(flow)
 
+fun wrapForgotPasswordState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.knitnote.ui.auth.ForgotPasswordState>,
+): FlowWrapper<io.github.b150005.knitnote.ui.auth.ForgotPasswordState> = FlowWrapper(flow)
+
+fun getForgotPasswordViewModel(): io.github.b150005.knitnote.ui.auth.ForgotPasswordViewModel =
+    org.koin.mp.KoinPlatform.getKoin().get()
+
+fun wrapSettingsToastEvents(
+    flow: kotlinx.coroutines.flow.Flow<io.github.b150005.knitnote.ui.settings.SettingsToastEvent>,
+): EventFlowWrapper<io.github.b150005.knitnote.ui.settings.SettingsToastEvent> = EventFlowWrapper(flow)
+
 fun wrapProjectListState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.knitnote.ui.projectlist.ProjectListState>,
 ): FlowWrapper<io.github.b150005.knitnote.ui.projectlist.ProjectListState> = FlowWrapper(flow)

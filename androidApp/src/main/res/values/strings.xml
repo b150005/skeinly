@@ -40,6 +40,21 @@
     <string name="action_privacy_policy">Privacy Policy</string>
     <string name="action_terms_of_service">Terms of Service</string>
 
+    <!-- Auth — Forgot password + change credentials (Phase B3) -->
+    <string name="title_forgot_password">Reset Password</string>
+    <string name="action_forgot_password">Forgot password?</string>
+    <string name="label_email_for_reset">Enter your email and we\'ll send you a reset link.</string>
+    <string name="action_send_reset_link">Send Reset Link</string>
+    <string name="message_reset_email_sent">If an account exists for this email, you\'ll receive a reset link shortly.</string>
+    <string name="action_change_password">Change Password</string>
+    <string name="action_change_email">Change Email</string>
+    <string name="dialog_change_password_title">Change Password</string>
+    <string name="dialog_change_email_title">Change Email</string>
+    <string name="label_new_password">New Password</string>
+    <string name="label_new_email">New Email</string>
+    <string name="message_password_changed">Password updated</string>
+    <string name="message_email_change_pending">Verification email sent to your new address. Click the link to confirm the change.</string>
+
     <string name="error_authentication_failed">Authentication failed</string>
     <string name="error_email_invalid">Invalid email address</string>
     <string name="error_email_not_confirmed">Please confirm your email address first</string>

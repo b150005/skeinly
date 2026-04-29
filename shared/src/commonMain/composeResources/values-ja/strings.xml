@@ -37,6 +37,21 @@
     <string name="action_privacy_policy">プライバシーポリシー</string>
     <string name="action_terms_of_service">利用規約</string>
 
+    <!-- Auth — Forgot password + change credentials (Phase B3) -->
+    <string name="title_forgot_password">パスワードをリセット</string>
+    <string name="action_forgot_password">パスワードを忘れた場合</string>
+    <string name="label_email_for_reset">メールアドレスを入力すると、リセット用のリンクをお送りします。</string>
+    <string name="action_send_reset_link">リセットリンクを送信</string>
+    <string name="message_reset_email_sent">このメールアドレスのアカウントが存在する場合、まもなくリセットリンクが届きます。</string>
+    <string name="action_change_password">パスワードを変更</string>
+    <string name="action_change_email">メールアドレスを変更</string>
+    <string name="dialog_change_password_title">パスワードを変更</string>
+    <string name="dialog_change_email_title">メールアドレスを変更</string>
+    <string name="label_new_password">新しいパスワード</string>
+    <string name="label_new_email">新しいメールアドレス</string>
+    <string name="message_password_changed">パスワードを変更しました</string>
+    <string name="message_email_change_pending">新しいメールアドレスに確認メールを送信しました。リンクをクリックして変更を確定してください。</string>
+
     <string name="error_authentication_failed">認証に失敗しました</string>
     <string name="error_email_invalid">無効なメールアドレスです</string>
     <string name="error_email_not_confirmed">メールアドレスを先に確認してください</string>

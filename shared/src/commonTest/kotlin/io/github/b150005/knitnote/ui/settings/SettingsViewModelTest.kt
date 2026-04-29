@@ -7,6 +7,8 @@ import io.github.b150005.knitnote.domain.usecase.DeleteAccountUseCase
 import io.github.b150005.knitnote.domain.usecase.FakeAuthRepository
 import io.github.b150005.knitnote.domain.usecase.ObserveAuthStateUseCase
 import io.github.b150005.knitnote.domain.usecase.SignOutUseCase
+import io.github.b150005.knitnote.domain.usecase.UpdateEmailUseCase
+import io.github.b150005.knitnote.domain.usecase.UpdatePasswordUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -42,6 +44,8 @@ class SettingsViewModelTest {
             observeAuthState = ObserveAuthStateUseCase(authRepo),
             signOut = SignOutUseCase(authRepo, CloseRealtimeChannelsUseCase(null, null, null)),
             deleteAccount = DeleteAccountUseCase(authRepo, CloseRealtimeChannelsUseCase(null, null, null)),
+            updatePassword = UpdatePasswordUseCase(authRepo),
+            updateEmail = UpdateEmailUseCase(authRepo),
         )
 
     @Test
