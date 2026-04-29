@@ -183,7 +183,7 @@ class PatternEditViewModelTest {
             viewModel.onEvent(PatternEditEvent.UpdateTitle("Created via test"))
             viewModel.onEvent(PatternEditEvent.Save)
             advanceUntilIdle()
-            assertEquals(listOf("pattern_created"), tracker.captured)
+            assertEquals(listOf("pattern_created"), tracker.capturedNames)
         }
 
     @Test
@@ -216,7 +216,7 @@ class PatternEditViewModelTest {
             viewModel.onEvent(PatternEditEvent.Save)
             advanceUntilIdle()
             assertTrue(
-                tracker.captured.isEmpty(),
+                tracker.capturedNames.isEmpty(),
                 "edit-existing path is reserved for Phase F.4 pattern_edited event",
             )
         }

@@ -640,7 +640,7 @@ class ProjectListViewModelTest {
                 awaitItem() // dialog dismiss
                 cancelAndIgnoreRemainingEvents()
             }
-            assertEquals(listOf("project_created"), analyticsTracker.captured)
+            assertEquals(listOf("project_created"), analyticsTracker.capturedNames)
         }
 
     @Test
@@ -653,7 +653,7 @@ class ProjectListViewModelTest {
                 cancelAndIgnoreRemainingEvents()
             }
             assertTrue(
-                analyticsTracker.captured.isEmpty(),
+                analyticsTracker.capturedNames.isEmpty(),
                 "validation failure should NOT emit project_created",
             )
         }

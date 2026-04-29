@@ -2,6 +2,7 @@ package io.github.b150005.knitnote.ui.chart
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvents
 import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.domain.chart.PolarSymmetry
 import io.github.b150005.knitnote.domain.model.ChartCell
@@ -764,9 +765,21 @@ class ChartEditorViewModel(
                             hasUnsavedChanges = false,
                         )
                     }
-                    // Phase F.3 — single event for both create + update; Phase
-                    // F.4 may split via a properties bag (e.g. is_new: true).
-                    analyticsTracker?.capture("chart_editor_save")
+                    // Phase F.4 — split create vs update + chart format via
+                    // properties so PostHog dashboards can segment editor
+                    // usage by `is_new` and `chart_format`.
+                    analyticsTracker?.capture(
+                        eventName = AnalyticsEvents.CHART_EDITOR_SAVE,
+                        properties =
+                            mapOf(
+                                AnalyticsEvents.Props.IS_NEW to (snapshot.original == null),
+                                AnalyticsEvents.Props.CHART_FORMAT to
+                                    when (snapshot.draftExtents) {
+                                        is ChartExtents.Rect -> AnalyticsEvents.Props.CHART_FORMAT_RECT
+                                        is ChartExtents.Polar -> AnalyticsEvents.Props.CHART_FORMAT_POLAR
+                                    },
+                            ),
+                    )
                     _saved.send(Unit)
                 }
                 is UseCaseResult.Failure -> {

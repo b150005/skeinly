@@ -45,7 +45,9 @@ val viewModelModule =
         viewModel { ActivityFeedViewModel(get(), get(), get()) }
         viewModel { ProjectListViewModel(get(), get(), get(), get(), get(), get()) }
         viewModelOf(::PatternLibraryViewModel)
-        viewModelOf(::DiscoveryViewModel)
+        // Phase F.4 — explicit form for analyticsTracker visibility. See
+        // the Phase F.3 comment block above for rationale.
+        viewModel { DiscoveryViewModel(get(), get(), get()) }
         viewModel { params ->
             PatternEditViewModel(
                 patternId = params.getOrNull(),
@@ -114,6 +116,7 @@ val viewModelModule =
                 chartBranchRepository = getOrNull(),
                 authRepository = getOrNull(),
                 openPullRequest = getOrNull(),
+                analyticsTracker = get(),
             )
         }
         viewModel { params ->
@@ -185,6 +188,7 @@ val viewModelModule =
                 mergePullRequest = get(),
                 chartRevisionRepository = get(),
                 structuredChartRepository = get(),
+                analyticsTracker = get(),
             )
         }
         viewModel { params ->

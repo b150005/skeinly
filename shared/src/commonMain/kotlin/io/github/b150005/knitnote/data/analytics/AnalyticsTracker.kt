@@ -21,8 +21,17 @@ import kotlinx.coroutines.flow.asSharedFlow
  * no-op — no event is emitted, so callers never need to check opt-in
  * state at the call site. This shifts the gate to one well-tested place.
  *
- * Phase F.4 will extend [AnalyticsEvent] with a `properties` map; v1
- * intentionally ships event-name-only to avoid PII / cardinality risk.
+ * Phase F.4 added the optional `properties` map. Property values may be
+ * Bool / Int / Double / String — the Application layer passes the map
+ * through to PostHog SDKs which decode the underlying primitive type.
+ * Callers should use [AnalyticsEvents] constants for both event names
+ * and property keys to prevent typos.
+ *
+ * **Cardinality warning (devops invariant)**: NEVER include high-
+ * cardinality values (pattern.id, project.id, user-authored titles,
+ * email addresses, etc.) in properties — both for PII protection and
+ * PostHog cost control. Only enum-like discrete values (`"rect"` /
+ * `"polar"`), booleans, and small integers (e.g. ring count) are safe.
  */
 interface AnalyticsTracker {
     /**
@@ -37,17 +46,26 @@ interface AnalyticsTracker {
      * out. Safe to call from any thread; emission is non-suspending and
      * uses a buffered SharedFlow so emit-faster-than-collect cases drop
      * to the buffer rather than blocking the caller.
+     *
+     * @param eventName prefer constants from [AnalyticsEvents].
+     * @param properties optional Bool / Int / Double / String values.
+     *   See cardinality warning in [AnalyticsTracker] KDoc.
      */
-    fun capture(eventName: String)
+    fun capture(
+        eventName: String,
+        properties: Map<String, Any>? = null,
+    )
 }
 
 /**
- * Phase F.4 will add `val properties: Map<String, String>? = null`. Kept
- * as a `data class` so adding fields is non-breaking for any consumer
- * that destructures or uses generated `equals` / `hashCode`.
+ * Phase F.4 added `properties` for parametric events. Phase F.5+ may
+ * promote this to a sealed-class hierarchy enforcing per-event property
+ * shape at compile time, but v1 keeps `Map<String, Any>` for the smaller
+ * diff while [AnalyticsEvents] const keys provide a typo guard.
  */
 data class AnalyticsEvent(
     val name: String,
+    val properties: Map<String, Any>? = null,
 )
 
 internal class AnalyticsTrackerImpl(
@@ -60,8 +78,11 @@ internal class AnalyticsTrackerImpl(
     private val _events = MutableSharedFlow<AnalyticsEvent>(extraBufferCapacity = 64)
     override val events: SharedFlow<AnalyticsEvent> = _events.asSharedFlow()
 
-    override fun capture(eventName: String) {
+    override fun capture(
+        eventName: String,
+        properties: Map<String, Any>?,
+    ) {
         if (!analyticsPrefs.analyticsOptIn.value) return
-        _events.tryEmit(AnalyticsEvent(eventName))
+        _events.tryEmit(AnalyticsEvent(eventName, properties))
     }
 }

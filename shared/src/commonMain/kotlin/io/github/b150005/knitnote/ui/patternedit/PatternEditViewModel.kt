@@ -2,6 +2,7 @@ package io.github.b150005.knitnote.ui.patternedit
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvents
 import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.domain.model.Difficulty
 import io.github.b150005.knitnote.domain.model.Visibility
@@ -161,7 +162,7 @@ class PatternEditViewModel(
                     // Phase F.3 — capture only the create-new branch.
                     // Phase F.4 will add `pattern_edited` for updates.
                     if (patternId == null) {
-                        analyticsTracker?.capture("pattern_created")
+                        analyticsTracker?.capture(AnalyticsEvents.PATTERN_CREATED)
                     }
                     _saveSuccessChannel.send(Unit)
                 }

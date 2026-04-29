@@ -119,11 +119,17 @@ class KnitNoteApplication : Application() {
             // between opt-in flipping ON and the SDK setup() landing — any
             // event that lands in that gap is silently dropped (PostHog SDK
             // would emit a "not initialized" warning otherwise).
+            //
+            // Phase F.4 — `event.properties` is `Map<String, Any>?` matching
+            // PostHog Android's expected `properties: Map<String, Any>?`
+            // shape. Bool / Int / Double / String values pass through to
+            // PostHog's typed event-property storage; cardinality discipline
+            // is enforced at the call site (see AnalyticsEvents.Props KDoc).
             val analyticsTracker: AnalyticsTracker = get()
             applicationScope.launch {
                 analyticsTracker.events.collect { event ->
                     if (posthogInitialized.get()) {
-                        PostHog.capture(event.name)
+                        PostHog.capture(event = event.name, properties = event.properties)
                     }
                 }
             }

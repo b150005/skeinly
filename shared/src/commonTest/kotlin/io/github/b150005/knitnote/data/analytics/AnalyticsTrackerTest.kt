@@ -108,4 +108,40 @@ class AnalyticsTrackerTest {
             assertEquals("chart_editor_save", collected[0].name)
             job.cancel()
         }
+
+    @Test
+    fun `properties round-trip through the events flow`() =
+        runUnconfined {
+            val prefs = FakeAnalyticsPreferences(initial = true)
+            val tracker = AnalyticsTrackerImpl(prefs)
+            val collected = mutableListOf<AnalyticsEvent>()
+            val job = launch { tracker.events.collect { collected.add(it) } }
+
+            tracker.capture(
+                eventName = "chart_editor_save",
+                properties = mapOf("is_new" to true, "chart_format" to "rect"),
+            )
+
+            assertEquals(1, collected.size)
+            assertEquals("chart_editor_save", collected[0].name)
+            assertEquals(
+                mapOf("is_new" to true, "chart_format" to "rect"),
+                collected[0].properties,
+            )
+            job.cancel()
+        }
+
+    @Test
+    fun `null properties are preserved as null in the emitted event`() =
+        runUnconfined {
+            val prefs = FakeAnalyticsPreferences(initial = true)
+            val tracker = AnalyticsTrackerImpl(prefs)
+            val collected = mutableListOf<AnalyticsEvent>()
+            val job = launch { tracker.events.collect { collected.add(it) } }
+
+            tracker.capture("project_created")
+
+            assertEquals(AnalyticsEvent(name = "project_created", properties = null), collected[0])
+            job.cancel()
+        }
 }

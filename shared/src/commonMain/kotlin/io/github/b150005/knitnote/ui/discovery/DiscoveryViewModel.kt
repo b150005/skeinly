@@ -2,6 +2,8 @@ package io.github.b150005.knitnote.ui.discovery
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvents
+import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.domain.model.Difficulty
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.SortOrder
@@ -105,6 +107,8 @@ private data class FilterState(
 class DiscoveryViewModel(
     private val getPublicPatterns: GetPublicPatternsUseCase,
     private val forkPublicPattern: ForkPublicPatternUseCase,
+    // Phase F.4 — nullable + default null preserves existing test compat.
+    private val analyticsTracker: AnalyticsTracker? = null,
 ) : ViewModel() {
     private val rawPatterns = MutableStateFlow<List<Pattern>>(emptyList())
     private val patternsWithCharts = MutableStateFlow<Set<String>>(emptySet())
@@ -224,6 +228,16 @@ class DiscoveryViewModel(
             when (val result = forkPublicPattern(patternId)) {
                 is UseCaseResult.Success -> {
                     uiFlags.update { it.copy(forkingPatternId = null) }
+                    // Phase F.4 — `had_chart=true` only when the chart was
+                    // actually cloned (source had a chart AND clone succeeded).
+                    // A `chartCloneError` non-null AND `chartCloned=false`
+                    // shape is "had chart but clone threw" — surfaces here
+                    // as had_chart=false because the user observable end
+                    // state is "no chart on the fork".
+                    analyticsTracker?.capture(
+                        eventName = AnalyticsEvents.PATTERN_FORKED,
+                        properties = mapOf(AnalyticsEvents.Props.HAD_CHART to result.value.chartCloned),
+                    )
                     _forkedProjectChannel.send(
                         DiscoveryForkResult(
                             projectId = result.value.project.id,
