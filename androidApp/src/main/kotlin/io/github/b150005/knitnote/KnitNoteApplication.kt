@@ -16,10 +16,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicBoolean
 import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
+import java.util.concurrent.atomic.AtomicBoolean
 
 class KnitNoteApplication : Application() {
     // Application-lifetime scope for cross-cutting observers (analytics opt-in
