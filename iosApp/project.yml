@@ -109,12 +109,13 @@ targets:
       - path: iosAppTests
       # Include Core utilities for unit tests. Files that import Shared framework
       # must be excluded since iosAppTests does not link Shared.framework.
+      # Core/ holds Foundation-only utilities testable without Shared.framework.
+      # Files that import Shared live under Core/Bridging/ and are deliberately
+      # excluded — iosAppTests does not link Shared.framework. See
+      # docs/en/repo-policy.md (or this commit) for the convention rationale.
       - path: iosApp/Core
         excludes:
-          - "ViewModelObserver.swift"
-          - "ViewModelFactory.swift"
-          - "ScopedViewModel.swift"
-          - "ErrorMessage+Localized.swift"
+          - "Bridging"
     settings:
       base:
         SWIFT_VERSION: "5.0"
