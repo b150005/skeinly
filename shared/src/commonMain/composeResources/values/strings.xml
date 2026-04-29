@@ -40,6 +40,13 @@
     <string name="error_load">Couldn\'t load</string>
     <string name="error_save">Couldn\'t save</string>
     <string name="error_network">Network unavailable</string>
+    <string name="error_authentication_failed">Authentication failed</string>
+    <string name="error_email_invalid">Invalid email address</string>
+    <string name="error_email_not_confirmed">Please confirm your email address first</string>
+    <string name="error_invalid_credentials">Invalid email or password</string>
+    <string name="error_rate_limit_exceeded">Too many attempts. Please try again later</string>
+    <string name="error_user_already_exists">An account with this email already exists</string>
+    <string name="error_user_not_found">No account found with this email</string>
 
     <!-- Unsaved-changes confirmation dialog (used by editor flows) -->
     <string name="dialog_unsaved_changes_title">Unsaved changes</string>

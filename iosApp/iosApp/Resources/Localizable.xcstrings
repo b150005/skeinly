@@ -148,6 +148,55 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "ネットワークに接続できません" } }
       }
     },
+    "error_authentication_failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Authentication failed" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "認証に失敗しました" } }
+      }
+    },
+    "error_email_invalid" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Invalid email address" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "無効なメールアドレスです" } }
+      }
+    },
+    "error_email_not_confirmed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Please confirm your email address first" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メールアドレスを先に確認してください" } }
+      }
+    },
+    "error_invalid_credentials" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Invalid email or password" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メールアドレスまたはパスワードが正しくありません" } }
+      }
+    },
+    "error_rate_limit_exceeded" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Too many attempts. Please try again later" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "試行回数が多すぎます。しばらくしてから再試行してください" } }
+      }
+    },
+    "error_user_already_exists" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "An account with this email already exists" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このメールアドレスのアカウントは既に存在します" } }
+      }
+    },
+    "error_user_not_found" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No account found with this email" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このメールアドレスのアカウントが見つかりません" } }
+      }
+    },
     "error_save" : {
       "extractionState" : "manual",
       "localizations" : {
