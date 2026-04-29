@@ -161,7 +161,7 @@ class ChartConflictResolutionViewModel(
                         it.copy(
                             isLoading = false,
                             pullRequest = pr,
-                            error = ErrorMessage.Raw("Could not load chart revisions for this pull request"),
+                            error = ErrorMessage.LoadFailed,
                         )
                     }
                     return

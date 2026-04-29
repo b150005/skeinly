@@ -103,7 +103,7 @@ class ChartBranchPickerViewModel(
             _state.update { newState }
         }.catch { throwable ->
             _state.update {
-                it.copy(isLoading = false, error = ErrorMessage.Raw(throwable.message ?: "Failed to load branches"))
+                it.copy(isLoading = false, error = ErrorMessage.LoadFailed)
             }
         }.launchIn(viewModelScope)
     }
@@ -120,7 +120,7 @@ class ChartBranchPickerViewModel(
         viewModelScope.launch {
             val ownerId = authRepository.getCurrentUserId()
             if (ownerId == null) {
-                _state.update { it.copy(error = ErrorMessage.Raw("Sign-in required")) }
+                _state.update { it.copy(error = ErrorMessage.SignInRequired) }
                 return@launch
             }
             when (val result = createBranch(patternId, branchName, ownerId)) {

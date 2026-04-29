@@ -8,8 +8,11 @@ import io.github.b150005.knitnote.generated.resources.error_email_invalid
 import io.github.b150005.knitnote.generated.resources.error_email_not_confirmed
 import io.github.b150005.knitnote.generated.resources.error_generic
 import io.github.b150005.knitnote.generated.resources.error_invalid_credentials
+import io.github.b150005.knitnote.generated.resources.error_load
 import io.github.b150005.knitnote.generated.resources.error_network
 import io.github.b150005.knitnote.generated.resources.error_rate_limit_exceeded
+import io.github.b150005.knitnote.generated.resources.error_requires_connectivity
+import io.github.b150005.knitnote.generated.resources.error_sign_in_required
 import io.github.b150005.knitnote.generated.resources.error_user_already_exists
 import io.github.b150005.knitnote.generated.resources.error_user_not_found
 import io.github.b150005.knitnote.ui.components.localized
@@ -36,5 +39,8 @@ fun ErrorMessage.localized(): String =
         ErrorMessage.UserNotFound -> stringResource(Res.string.error_user_not_found)
         ErrorMessage.EmailNotConfirmed -> stringResource(Res.string.error_email_not_confirmed)
         ErrorMessage.Generic -> stringResource(Res.string.error_generic)
+        ErrorMessage.SignInRequired -> stringResource(Res.string.error_sign_in_required)
+        ErrorMessage.RequiresConnectivity -> stringResource(Res.string.error_requires_connectivity)
+        ErrorMessage.LoadFailed -> stringResource(Res.string.error_load)
         is ErrorMessage.Raw -> text
     }

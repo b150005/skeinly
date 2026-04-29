@@ -125,7 +125,7 @@ class PullRequestListViewModel(
         val ownerId = authRepository.getCurrentUserId()
         if (ownerId == null) {
             _state.update {
-                it.copy(isLoading = false, error = ErrorMessage.Raw("Must be signed in to view pull requests"))
+                it.copy(isLoading = false, error = ErrorMessage.SignInRequired)
             }
             return
         }
@@ -161,7 +161,7 @@ class PullRequestListViewModel(
                 resolveUsers(prs)
             }.catch { e ->
                 _state.update {
-                    it.copy(isLoading = false, error = ErrorMessage.Raw(e.message ?: "Failed to load pull requests"))
+                    it.copy(isLoading = false, error = ErrorMessage.LoadFailed)
                 }
             }.launchIn(viewModelScope)
     }

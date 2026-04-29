@@ -339,7 +339,7 @@ class PullRequestDetailViewModel(
             }.catch { e ->
                 if (e is CancellationException) throw e
                 _state.update {
-                    it.copy(error = ErrorMessage.Raw(e.message ?: "Failed to observe pull request"))
+                    it.copy(error = ErrorMessage.LoadFailed)
                 }
             }.launchIn(viewModelScope)
     }
@@ -353,7 +353,7 @@ class PullRequestDetailViewModel(
             }.catch { e ->
                 if (e is CancellationException) throw e
                 _state.update {
-                    it.copy(error = ErrorMessage.Raw(e.message ?: "Failed to load comments"))
+                    it.copy(error = ErrorMessage.LoadFailed)
                 }
             }.launchIn(viewModelScope)
     }
@@ -443,7 +443,7 @@ class PullRequestDetailViewModel(
         val chartRepo = structuredChartRepository
         if (merge == null || chartRevisionRepo == null || chartRepo == null) {
             _state.update {
-                it.copy(error = ErrorMessage.Raw("Merge is unavailable in offline-only mode"))
+                it.copy(error = ErrorMessage.RequiresConnectivity)
             }
             return
         }
@@ -477,7 +477,7 @@ class PullRequestDetailViewModel(
                 _state.update {
                     it.copy(
                         isMerging = false,
-                        error = ErrorMessage.Raw("Could not load chart revisions for this pull request"),
+                        error = ErrorMessage.LoadFailed,
                     )
                 }
                 return@launch

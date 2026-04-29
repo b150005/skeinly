@@ -148,6 +148,20 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "ネットワークに接続できません" } }
       }
     },
+    "error_sign_in_required" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign in required" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "サインインが必要です" } }
+      }
+    },
+    "error_requires_connectivity" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Internet connection required" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "インターネット接続が必要です" } }
+      }
+    },
     "error_authentication_failed" : {
       "extractionState" : "manual",
       "localizations" : {

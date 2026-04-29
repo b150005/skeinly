@@ -206,7 +206,7 @@ class ProjectDetailViewModel(
         projectRepository
             .observeById(projectId)
             .catch { e ->
-                _uiOverlay.update { it.copy(error = ErrorMessage.Raw(e.message ?: "Failed to load project")) }
+                _uiOverlay.update { it.copy(error = ErrorMessage.LoadFailed) }
                 emit(null)
             }
 
@@ -291,7 +291,7 @@ class ProjectDetailViewModel(
     val progressNotes: StateFlow<List<Progress>> =
         getProgressNotes(projectId)
             .catch { e ->
-                _uiOverlay.update { it.copy(error = ErrorMessage.Raw(e.message ?: "Failed to load notes")) }
+                _uiOverlay.update { it.copy(error = ErrorMessage.LoadFailed) }
                 emit(emptyList())
             }.stateIn(
                 scope = viewModelScope,
@@ -601,7 +601,7 @@ class ProjectDetailViewModel(
                     val urlMap = notesWithPhotos.zip(signedUrls).associate { (note, url) -> note.id to url }
                     _uiOverlay.update { it.copy(photoSignedUrls = urlMap) }
                 } catch (_: Exception) {
-                    _uiOverlay.update { it.copy(error = ErrorMessage.Raw("Failed to load progress photos")) }
+                    _uiOverlay.update { it.copy(error = ErrorMessage.LoadFailed) }
                 }
             }
         }
@@ -612,7 +612,7 @@ class ProjectDetailViewModel(
         return try {
             storage.createSignedUrls(paths)
         } catch (_: Exception) {
-            _uiOverlay.update { it.copy(error = ErrorMessage.Raw("Failed to load chart images")) }
+            _uiOverlay.update { it.copy(error = ErrorMessage.LoadFailed) }
             emptyList()
         }
     }

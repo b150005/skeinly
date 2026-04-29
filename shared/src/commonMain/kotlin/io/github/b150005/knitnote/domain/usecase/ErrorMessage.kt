@@ -33,6 +33,15 @@ sealed interface ErrorMessage {
 
     data object Generic : ErrorMessage
 
+    /** User must be signed in to perform the action. Phase G.1 typed variant. */
+    data object SignInRequired : ErrorMessage
+
+    /** Action requires internet connectivity (offline-only mode). Phase G.1 typed variant. */
+    data object RequiresConnectivity : ErrorMessage
+
+    /** Generic load failure (replaces "Failed to load X" Raw strings). Phase G.1 typed variant. */
+    data object LoadFailed : ErrorMessage
+
     data class Raw(
         val text: String,
     ) : ErrorMessage

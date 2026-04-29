@@ -40,6 +40,8 @@
     <string name="error_load">Couldn\'t load</string>
     <string name="error_save">Couldn\'t save</string>
     <string name="error_network">Network unavailable</string>
+    <string name="error_sign_in_required">Sign in required</string>
+    <string name="error_requires_connectivity">Internet connection required</string>
     <!-- Settings — About / Legal section -->
     <string name="label_about_section">About</string>
     <string name="action_privacy_policy">Privacy Policy</string>

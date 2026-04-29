@@ -113,7 +113,7 @@ class ChartHistoryViewModel(
                 }
             }.catch { throwable ->
                 _state.update {
-                    it.copy(isLoading = false, error = ErrorMessage.Raw(throwable.message ?: "Failed to load chart history"))
+                    it.copy(isLoading = false, error = ErrorMessage.LoadFailed)
                 }
             }.launchIn(viewModelScope)
     }

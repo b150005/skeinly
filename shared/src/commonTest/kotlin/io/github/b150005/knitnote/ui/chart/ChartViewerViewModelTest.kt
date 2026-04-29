@@ -198,7 +198,7 @@ class ChartViewerViewModelTest {
                 while (seenError.errorMessage == null) {
                     seenError = awaitItem()
                 }
-                assertEquals(ErrorMessage.Raw("boom"), seenError.errorMessage)
+                assertEquals(ErrorMessage.LoadFailed, seenError.errorMessage)
                 assertFalse(seenError.isLoading)
                 cancelAndConsumeRemainingEvents()
             }

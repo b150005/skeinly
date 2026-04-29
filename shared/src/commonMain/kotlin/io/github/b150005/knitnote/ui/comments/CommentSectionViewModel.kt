@@ -79,7 +79,7 @@ class CommentSectionViewModel(
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        error = ErrorMessage.Raw(e.message ?: "Failed to load comments"),
+                        error = ErrorMessage.LoadFailed,
                     )
                 }
             }.launchIn(viewModelScope)

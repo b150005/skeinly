@@ -49,7 +49,7 @@ class ActivityFeedViewModel(
         val userId = authRepository.getCurrentUserId()
         if (userId == null) {
             _state.update {
-                it.copy(isLoading = false, error = ErrorMessage.Raw("Must be signed in to view activity feed"))
+                it.copy(isLoading = false, error = ErrorMessage.SignInRequired)
             }
             return
         }
@@ -63,7 +63,7 @@ class ActivityFeedViewModel(
                 resolveUsers(activities)
             }.catch { e ->
                 _state.update {
-                    it.copy(isLoading = false, error = ErrorMessage.Raw(e.message ?: "Failed to load activities"))
+                    it.copy(isLoading = false, error = ErrorMessage.LoadFailed)
                 }
             }.launchIn(viewModelScope)
     }

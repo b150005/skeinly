@@ -224,7 +224,7 @@ class ChartViewerViewModel(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = ErrorMessage.Raw(throwable.message ?: "Failed to load chart"),
+                            errorMessage = ErrorMessage.LoadFailed,
                         )
                     }
                 }.collect { chart ->
@@ -479,12 +479,8 @@ class ChartViewerViewModel(
         if (!current.canOpenPullRequest || current.isOpeningPullRequest) return
         val openPr =
             openPullRequest ?: run {
-                // Hardcoded English fallback — consistent with the
-                // ViewModel-error-localization deferral pattern (see Tech Debt
-                // Backlog) and matches PullRequestDetailViewModel.attemptMerge
-                // which uses the same shape for its own offline-mode guard.
                 _state.update {
-                    it.copy(openPrError = ErrorMessage.Raw("Pull requests are unavailable in offline-only mode"))
+                    it.copy(openPrError = ErrorMessage.RequiresConnectivity)
                 }
                 return
             }

@@ -35,6 +35,8 @@
     <string name="error_load">読み込みに失敗しました</string>
     <string name="error_save">保存に失敗しました</string>
     <string name="error_network">ネットワークに接続できません</string>
+    <string name="error_sign_in_required">サインインが必要です</string>
+    <string name="error_requires_connectivity">インターネット接続が必要です</string>
     <!-- Settings — About / Legal section -->
     <string name="label_about_section">アプリについて</string>
     <string name="action_privacy_policy">プライバシーポリシー</string>
