@@ -6,3 +6,13 @@
 // Find via: security find-identity -v -p codesigning | grep "Developer"
 // Or Apple Developer portal > Membership > Team ID
 DEVELOPMENT_TEAM = YOUR_TEAM_ID_HERE
+
+// Phase F1 — Sentry DSN for the iOS Sentry project. Get this from:
+// Sentry > Settings > Projects > knit-note-ios > Client Keys (DSN).
+// Leave empty to disable Sentry init (local-only / dev mode).
+// CI injects via the SENTRY_DSN_IOS GitHub Secret per docs/{en,ja}/release-secrets.md §15.
+//
+// xcconfig // characters in values must be escaped — use a slash trick:
+// SENTRY_DSN_IOS = https:/$()/<rest-of-dsn>  (NOTE the $() to break // sequence)
+// See https://pewpewthespells.com/blog/xcconfig_guide.html for details.
+SENTRY_DSN_IOS =

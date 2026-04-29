@@ -32,10 +32,19 @@ android {
         versionCode = versionProps.getProperty("VERSION_CODE", "1").toInt()
         versionName = versionProps.getProperty("VERSION_NAME", "0.1.0")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Sentry DSN (Phase F1) — read from local.properties, fall back to
+        // env var (CI). Empty string means no Sentry init (local-only mode).
+        val sentryDsn =
+            localProps.getProperty("SENTRY_DSN_ANDROID")
+                ?: System.getenv("SENTRY_DSN_ANDROID")
+                ?: ""
+        buildConfigField("String", "SENTRY_DSN_ANDROID", "\"$sentryDsn\"")
     }
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     // Opt into AGP's per-app locale support: AGP scans `values-*/` resource
@@ -178,6 +187,7 @@ dependencies {
     implementation(libs.koin.compose)
     implementation(libs.koin.compose.viewmodel)
     implementation(libs.navigation.compose)
+    implementation(libs.sentry.android)
     implementation(projects.shared)
     debugImplementation(compose.uiTooling)
 

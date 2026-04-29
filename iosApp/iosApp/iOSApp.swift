@@ -1,5 +1,6 @@
 import SwiftUI
 import Shared
+import Sentry
 import os.log
 
 @main
@@ -9,6 +10,25 @@ struct iOSApp: App {
         if ProcessInfo.processInfo.arguments.contains("--reset-database") {
             Self.resetDatabase()
         }
+
+        // Phase F1: init Sentry crash + error reporting BEFORE Koin so any
+        // Koin init failure is captured. Empty DSN means local dev — skip.
+        if let dsn = Bundle.main.object(forInfoDictionaryKey: "SENTRY_DSN_IOS") as? String,
+           !dsn.isEmpty {
+            SentrySDK.start { options in
+                options.dsn = dsn
+                options.releaseName =
+                    Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+                // Phase F1 ships with conservative perf sampling; tune via
+                // Sentry dashboard once telemetry arrives.
+                options.tracesSampleRate = 0.2
+                // Privacy: avoid attaching screenshots / view hierarchies that
+                // could leak user-authored content into crash reports.
+                options.attachScreenshot = false
+                options.attachViewHierarchy = false
+            }
+        }
+
         KoinHelperKt.doInitKoin()
     }
 
