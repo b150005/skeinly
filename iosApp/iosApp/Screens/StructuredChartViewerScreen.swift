@@ -310,17 +310,6 @@ private struct OpenPullRequestSheet: View {
 }
 
 /// Mutable cache for parsed SVG path commands keyed by symbol id.
-private final class PathCommandCache: ObservableObject {
-    private var entries: [String: [PathCommand]] = [:]
-
-    func get(id: String, parser: () -> [PathCommand]) -> [PathCommand] {
-        if let cached = entries[id] { return cached }
-        let parsed = parser()
-        entries[id] = parsed
-        return parsed
-    }
-}
-
 /// Canvas with overlay + tap/long-press support. Canvas geometry is recomputed
 /// on every draw so hit-test math stays in lockstep. The gesture layer sits in
 /// parallel via `.simultaneousGesture` so pinch-to-zoom keeps working.
@@ -503,7 +492,7 @@ private struct ChartCanvasView: View {
     private func resolvePolarRingLabelHit(location: CGPoint, size: CGSize, polar: ChartExtentsPolar) -> Int? {
         let ringsCount = Int(polar.rings)
         if ringsCount <= 0 { return nil }
-        let layout = polarLayout(for: polar, canvasSize: size, ringsCount: ringsCount)
+        let layout = polarLayout(canvasSize: size, ringsCount: ringsCount)
         if location.x < layout.cx - polarRingLabelHalfW { return nil }
         if location.x >= layout.cx + polarRingLabelHalfW { return nil }
         if location.y >= layout.cy { return nil }
@@ -579,7 +568,7 @@ private struct ChartCanvasView: View {
         let perRing = polar.stitchesPerRing.map { Int(truncating: $0) }
         if perRing.count < ringsCount || perRing.contains(where: { $0 <= 0 }) { return nil }
 
-        let layout = polarLayout(for: polar, canvasSize: size, ringsCount: ringsCount)
+        let layout = polarLayout(canvasSize: size, ringsCount: ringsCount)
         if layout.ringThickness <= 0 || layout.innerRadius < 0 { return nil }
 
         let dx = Double(location.x - layout.cx)
@@ -682,7 +671,7 @@ private struct ChartCanvasView: View {
                 _ = segmentsVersion // capture to drive re-evaluation when map mutates
 
                 guard let def = catalog.get(id: cell.symbolId) else {
-                    drawUnknown(into: &context, bounds: bounds, fill: unknownBg)
+                    drawUnknownGlyph(into: &context, bounds: bounds, fill: unknownBg)
                     continue
                 }
 
@@ -692,7 +681,8 @@ private struct ChartCanvasView: View {
                     bounds: bounds,
                     rotation: Int(cell.rotation),
                     color: symbolColor,
-                    lineWidth: strokeWidth
+                    lineWidth: strokeWidth,
+                    cache: pathCache
                 )
                 drawParameterSlots(
                     into: &context,
@@ -715,91 +705,6 @@ private struct ChartCanvasView: View {
                 .font(.system(size: labelFontPx))
                 .foregroundColor(.secondary)
             context.draw(label, at: CGPoint(x: gutterCenterX, y: rowCenterY), anchor: .center)
-        }
-    }
-
-    private func cellRect(
-        cell: ChartCell,
-        rect: ChartExtentsRect,
-        gridHeight: Int,
-        cellSize: CGFloat,
-        originX: CGFloat,
-        originY: CGFloat
-    ) -> CGRect {
-        let gx = Int(cell.x - rect.minX)
-        let gy = Int(cell.y - rect.minY)
-        let left = originX + CGFloat(gx) * cellSize
-        let bottom = originY + CGFloat(gridHeight - gy) * cellSize
-        let top = bottom - CGFloat(cell.height) * cellSize
-        let right = left + CGFloat(cell.width) * cellSize
-        return CGRect(x: left, y: top, width: right - left, height: bottom - top)
-    }
-
-    private func drawUnknown(
-        into context: inout GraphicsContext,
-        bounds: CGRect,
-        fill: GraphicsContext.Shading
-    ) {
-        context.fill(Path(bounds), with: fill)
-        let glyphSize = max(8, bounds.height * 0.5)
-        let text = Text("?").font(.system(size: glyphSize)).foregroundColor(.red)
-        context.draw(text, at: CGPoint(x: bounds.midX, y: bounds.midY), anchor: .center)
-    }
-
-    private func drawSymbolPath(
-        into context: inout GraphicsContext,
-        def: SymbolDefinition,
-        bounds: CGRect,
-        rotation: Int,
-        color: GraphicsContext.Shading,
-        lineWidth: CGFloat
-    ) {
-        let cellBounds = CellBounds(
-            left: Double(bounds.minX),
-            top: Double(bounds.minY),
-            right: Double(bounds.maxX),
-            bottom: Double(bounds.maxY)
-        )
-        let commands = pathCache.get(id: def.id) {
-            SvgPathParser.shared.parse(pathData: def.pathData)
-        }
-        var path = Path()
-        for raw in commands {
-            let mapped = SymbolRenderTransform.shared.mapCommand(
-                command: raw,
-                bounds: cellBounds,
-                rotation: Int32(rotation)
-            )
-            switch mapped {
-            case let move as PathCommandMoveTo:
-                path.move(to: CGPoint(x: move.x, y: move.y))
-            case let line as PathCommandLineTo:
-                path.addLine(to: CGPoint(x: line.x, y: line.y))
-            case let curve as PathCommandCurveTo:
-                path.addCurve(
-                    to: CGPoint(x: curve.x, y: curve.y),
-                    control1: CGPoint(x: curve.c1x, y: curve.c1y),
-                    control2: CGPoint(x: curve.c2x, y: curve.c2y)
-                )
-            case let quad as PathCommandQuadTo:
-                path.addQuadCurve(
-                    to: CGPoint(x: quad.x, y: quad.y),
-                    control: CGPoint(x: quad.c1x, y: quad.c1y)
-                )
-            case is PathCommandClosePath:
-                path.closeSubpath()
-            default:
-                break
-            }
-        }
-        if def.fill {
-            context.fill(path, with: color)
-        } else {
-            context.stroke(
-                path,
-                with: color,
-                style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round)
-            )
         }
     }
 
@@ -840,72 +745,6 @@ private struct ChartCanvasView: View {
 
     // MARK: - Polar rendering (ADR-011 §2)
 
-    /// Screen-space layout for a polar chart, parallel to the Kotlin
-    /// `PolarCellLayout.Layout` — kept inlined in Swift to avoid bridging the
-    /// `PolarCellLayout` object + its `Layout`/`Wedge` data classes through
-    /// the Shared framework.
-    private struct PolarLayout {
-        let cx: CGFloat
-        let cy: CGFloat
-        let innerRadius: CGFloat
-        let ringThickness: CGFloat
-    }
-
-    private func polarLayout(for polar: ChartExtentsPolar, canvasSize: CGSize, ringsCount: Int) -> PolarLayout {
-        // 0.47 ≈ 94% of the half-extent — leaves a visible margin on the canvas edge.
-        let maxRadius = min(canvasSize.width, canvasSize.height) * 0.47
-        let innerRadius = maxRadius * 0.15
-        let rings = max(1, ringsCount)
-        let ringThickness = (maxRadius - innerRadius) / CGFloat(rings)
-        return PolarLayout(
-            cx: canvasSize.width / 2,
-            cy: canvasSize.height / 2,
-            innerRadius: innerRadius,
-            ringThickness: ringThickness
-        )
-    }
-
-    /// Build an annular-wedge `Path` for the (stitch, ring) wedge in our
-    /// 12-o'clock-CW-positive convention.
-    /// Outer arc traces CW on screen from startAngle to endAngle, inner arc
-    /// traces CCW back — produces a closed annular region.
-    private func polarWedgePath(
-        stitch: Int,
-        ring: Int,
-        stitchesInRing: Int,
-        layout: PolarLayout
-    ) -> Path {
-        let sweep = 2.0 * Double.pi / Double(stitchesInRing)
-        let startTheta = Double(stitch) * sweep
-        let endTheta = startTheta + sweep
-        // Shift from 12-o'clock origin to SwiftUI's 3-o'clock origin.
-        let startAngleScreen = startTheta - Double.pi / 2
-        let endAngleScreen = endTheta - Double.pi / 2
-        let innerR = layout.innerRadius + CGFloat(ring) * layout.ringThickness
-        let outerR = layout.innerRadius + CGFloat(ring + 1) * layout.ringThickness
-        let center = CGPoint(x: layout.cx, y: layout.cy)
-        var path = Path()
-        // SwiftUI Path.addArc clockwise parameter is defined in the math (y-up)
-        // coordinate system. Under SwiftUI's y-down screen coords, clockwise:false
-        // renders visually clockwise — matching our CW-positive convention.
-        path.addArc(
-            center: center,
-            radius: outerR,
-            startAngle: .radians(startAngleScreen),
-            endAngle: .radians(endAngleScreen),
-            clockwise: false
-        )
-        path.addArc(
-            center: center,
-            radius: innerR,
-            startAngle: .radians(endAngleScreen),
-            endAngle: .radians(startAngleScreen),
-            clockwise: true
-        )
-        path.closeSubpath()
-        return path
-    }
-
     private func drawPolar(
         into context: inout GraphicsContext,
         size: CGSize,
@@ -913,7 +752,7 @@ private struct ChartCanvasView: View {
         ringsCount: Int,
         stitchesPerRing: [Int]
     ) {
-        let layout = polarLayout(for: polar, canvasSize: size, ringsCount: ringsCount)
+        let layout = polarLayout(canvasSize: size, ringsCount: ringsCount)
         let gridColor = GraphicsContext.Shading.color(.gray.opacity(0.3))
         let segmentDoneShading = GraphicsContext.Shading.color(.primary.opacity(0.2))
         let segmentWipShading = GraphicsContext.Shading.color(.accentColor)
@@ -1025,7 +864,7 @@ private struct ChartCanvasView: View {
                 subcontext.translateBy(x: -px, y: -py)
 
                 guard let def = catalog.get(id: cell.symbolId) else {
-                    drawUnknown(into: &subcontext, bounds: bounds, fill: unknownBg)
+                    drawUnknownGlyph(into: &subcontext, bounds: bounds, fill: unknownBg)
                     continue
                 }
                 drawSymbolPath(
@@ -1034,7 +873,8 @@ private struct ChartCanvasView: View {
                     bounds: bounds,
                     rotation: Int(cell.rotation),
                     color: symbolColor,
-                    lineWidth: strokeWidth
+                    lineWidth: strokeWidth,
+                    cache: pathCache
                 )
             }
         }

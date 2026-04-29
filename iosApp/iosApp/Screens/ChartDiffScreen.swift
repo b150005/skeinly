@@ -407,7 +407,8 @@ private struct DiffCanvas: View {
                     bounds: bounds,
                     rotation: Int(cell.rotation),
                     color: symbolColor,
-                    lineWidth: strokeWidth
+                    lineWidth: strokeWidth,
+                    cache: pathCache
                 )
             }
         }
@@ -422,7 +423,7 @@ private struct DiffCanvas: View {
         let ringsCount = Int(polar.rings)
         let stitchesPerRing = polar.stitchesPerRing.map { Int(truncating: $0) }
         guard ringsCount > 0, stitchesPerRing.count >= ringsCount else { return }
-        let layout = polarLayout(polar: polar, canvasSize: size, ringsCount: ringsCount)
+        let layout = polarLayout(canvasSize: size, ringsCount: ringsCount)
         let gridColor = GraphicsContext.Shading.color(.gray.opacity(0.3))
 
         for i in 0...ringsCount {
@@ -461,152 +462,10 @@ private struct DiffCanvas: View {
         }
     }
 
-    // MARK: - Helpers (mirror StructuredChartViewerScreen primitives, inlined
-    // here to avoid a refactor of the gestural ChartCanvasView struct in 37.3.
-    // Refactor to a shared helper if a third consumer surfaces — not needed
-    // for 37.3 alone.)
+    // Geometry / path-render primitives (cellRect, drawSymbolPath, polarLayout,
+    // polarWedgePath, PathCommandCache) extracted to Components/ChartRenderingKit.swift
+    // in Phase 36.4.1 when the third consumer (ChartThumbnailView) surfaced —
+    // closes the "if a third consumer surfaces" comment that previously lived
+    // here from Phase 37.3.
 
-    private func cellRect(
-        cell: ChartCell,
-        rect: ChartExtentsRect,
-        gridHeight: Int,
-        cellSize: CGFloat,
-        originX: CGFloat,
-        originY: CGFloat
-    ) -> CGRect {
-        let gx = Int(cell.x - rect.minX)
-        let gy = Int(cell.y - rect.minY)
-        let left = originX + CGFloat(gx) * cellSize
-        let bottom = originY + CGFloat(gridHeight - gy) * cellSize
-        let top = bottom - CGFloat(cell.height) * cellSize
-        let right = left + CGFloat(cell.width) * cellSize
-        return CGRect(x: left, y: top, width: right - left, height: bottom - top)
-    }
-
-    private struct PolarLayout {
-        let cx: CGFloat
-        let cy: CGFloat
-        let innerRadius: CGFloat
-        let ringThickness: CGFloat
-    }
-
-    private func polarLayout(polar: ChartExtentsPolar, canvasSize: CGSize, ringsCount: Int) -> PolarLayout {
-        let maxRadius = min(canvasSize.width, canvasSize.height) * 0.47
-        let innerRadius = maxRadius * 0.15
-        let rings = max(1, ringsCount)
-        let ringThickness = (maxRadius - innerRadius) / CGFloat(rings)
-        return PolarLayout(
-            cx: canvasSize.width / 2,
-            cy: canvasSize.height / 2,
-            innerRadius: innerRadius,
-            ringThickness: ringThickness
-        )
-    }
-
-    private func polarWedgePath(
-        stitch: Int,
-        ring: Int,
-        stitchesInRing: Int,
-        layout: PolarLayout
-    ) -> Path {
-        let sweep = 2.0 * Double.pi / Double(stitchesInRing)
-        let startTheta = Double(stitch) * sweep
-        let endTheta = startTheta + sweep
-        let startAngleScreen = startTheta - Double.pi / 2
-        let endAngleScreen = endTheta - Double.pi / 2
-        let innerR = layout.innerRadius + CGFloat(ring) * layout.ringThickness
-        let outerR = layout.innerRadius + CGFloat(ring + 1) * layout.ringThickness
-        let center = CGPoint(x: layout.cx, y: layout.cy)
-        var path = Path()
-        path.addArc(
-            center: center,
-            radius: outerR,
-            startAngle: .radians(startAngleScreen),
-            endAngle: .radians(endAngleScreen),
-            clockwise: false
-        )
-        path.addArc(
-            center: center,
-            radius: innerR,
-            startAngle: .radians(endAngleScreen),
-            endAngle: .radians(startAngleScreen),
-            clockwise: true
-        )
-        path.closeSubpath()
-        return path
-    }
-
-    private func drawSymbolPath(
-        into context: inout GraphicsContext,
-        def: SymbolDefinition,
-        bounds: CGRect,
-        rotation: Int,
-        color: GraphicsContext.Shading,
-        lineWidth: CGFloat
-    ) {
-        let cellBounds = CellBounds(
-            left: Double(bounds.minX),
-            top: Double(bounds.minY),
-            right: Double(bounds.maxX),
-            bottom: Double(bounds.maxY)
-        )
-        let commands = pathCache.get(id: def.id) {
-            SvgPathParser.shared.parse(pathData: def.pathData)
-        }
-        var path = Path()
-        for raw in commands {
-            let mapped = SymbolRenderTransform.shared.mapCommand(
-                command: raw,
-                bounds: cellBounds,
-                rotation: Int32(rotation)
-            )
-            switch mapped {
-            case let move as PathCommandMoveTo:
-                path.move(to: CGPoint(x: move.x, y: move.y))
-            case let line as PathCommandLineTo:
-                path.addLine(to: CGPoint(x: line.x, y: line.y))
-            case let curve as PathCommandCurveTo:
-                path.addCurve(
-                    to: CGPoint(x: curve.x, y: curve.y),
-                    control1: CGPoint(x: curve.c1x, y: curve.c1y),
-                    control2: CGPoint(x: curve.c2x, y: curve.c2y)
-                )
-            case let quad as PathCommandQuadTo:
-                path.addQuadCurve(
-                    to: CGPoint(x: quad.x, y: quad.y),
-                    control: CGPoint(x: quad.c1x, y: quad.c1y)
-                )
-            case is PathCommandClosePath:
-                path.closeSubpath()
-            default:
-                break
-            }
-        }
-        if def.fill {
-            context.fill(path, with: color)
-        } else {
-            context.stroke(
-                path,
-                with: color,
-                style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round)
-            )
-        }
-    }
-}
-
-/// Tiny SVG-path parse cache, parallel to the Compose `parsedPathCache` map.
-/// Conforms to `ObservableObject` so the owning view can hold it via
-/// `@StateObject` — that keeps the cache instance alive across the many view
-/// re-evaluations triggered by pan / zoom gestures. A struct stored property
-/// would NOT survive those re-evaluations and the cache would be useless
-/// (every gesture frame would re-parse all symbol SVG paths).
-private final class PathCommandCache: ObservableObject {
-    private var storage: [String: [PathCommand]] = [:]
-
-    func get(id: String, compute: () -> [PathCommand]) -> [PathCommand] {
-        if let cached = storage[id] { return cached }
-        let result = compute()
-        storage[id] = result
-        return result
-    }
 }
