@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import io.github.b150005.knitnote.generated.resources.Res
 import io.github.b150005.knitnote.generated.resources.action_continue_with_apple
 import io.github.b150005.knitnote.generated.resources.action_continue_with_google
+import io.github.b150005.knitnote.generated.resources.action_forgot_password
 import io.github.b150005.knitnote.generated.resources.action_sign_in
 import io.github.b150005.knitnote.generated.resources.action_sign_up
 import io.github.b150005.knitnote.generated.resources.action_toggle_to_sign_in
@@ -47,7 +48,10 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun LoginScreen(viewModel: AuthViewModel = koinViewModel()) {
+fun LoginScreen(
+    onForgotPassword: () -> Unit = {},
+    viewModel: AuthViewModel = koinViewModel(),
+) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val errorText = state.error?.localized()
@@ -159,6 +163,16 @@ fun LoginScreen(viewModel: AuthViewModel = koinViewModel()) {
                         if (state.isSignUp) Res.string.action_toggle_to_sign_in else Res.string.action_toggle_to_sign_up,
                     ),
                 )
+            }
+
+            // Forgot password link — only shown in sign-in mode (not sign-up).
+            if (!state.isSignUp) {
+                TextButton(
+                    onClick = onForgotPassword,
+                    modifier = Modifier.testTag("forgotPasswordButton"),
+                ) {
+                    Text(stringResource(Res.string.action_forgot_password))
+                }
             }
 
             Spacer(Modifier.height(24.dp))

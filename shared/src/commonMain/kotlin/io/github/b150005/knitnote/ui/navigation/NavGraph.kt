@@ -17,6 +17,7 @@ import io.github.b150005.knitnote.domain.model.AuthState
 import io.github.b150005.knitnote.domain.usecase.GetOnboardingCompletedUseCase
 import io.github.b150005.knitnote.ui.activityfeed.ActivityFeedScreen
 import io.github.b150005.knitnote.ui.auth.AuthViewModel
+import io.github.b150005.knitnote.ui.auth.ForgotPasswordScreen
 import io.github.b150005.knitnote.ui.auth.LoginScreen
 import io.github.b150005.knitnote.ui.chart.ChartDiffScreen
 import io.github.b150005.knitnote.ui.chart.ChartEditorScreen
@@ -46,6 +47,9 @@ data object Onboarding
 
 @Serializable
 data object Login
+
+@Serializable
+data object ForgotPassword
 
 @Serializable
 data object ProjectList
@@ -239,7 +243,14 @@ fun KnitNoteNavHost(
             )
         }
         composable<Login> {
-            LoginScreen()
+            LoginScreen(
+                onForgotPassword = { navController.navigate(ForgotPassword) },
+            )
+        }
+        composable<ForgotPassword> {
+            ForgotPasswordScreen(
+                onBack = { navController.popBackStack() },
+            )
         }
         composable<ProjectList> {
             ProjectListScreen(

@@ -54,12 +54,15 @@ import io.github.b150005.knitnote.domain.usecase.ReopenProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.ResetProjectProgressUseCase
 import io.github.b150005.knitnote.domain.usecase.ResolveShareTokenUseCase
 import io.github.b150005.knitnote.domain.usecase.RestoreRevisionUseCase
+import io.github.b150005.knitnote.domain.usecase.SendPasswordResetUseCase
 import io.github.b150005.knitnote.domain.usecase.ShareProjectUseCase
 import io.github.b150005.knitnote.domain.usecase.SignInUseCase
 import io.github.b150005.knitnote.domain.usecase.SignOutUseCase
 import io.github.b150005.knitnote.domain.usecase.SignUpUseCase
 import io.github.b150005.knitnote.domain.usecase.SwitchBranchUseCase
 import io.github.b150005.knitnote.domain.usecase.ToggleSegmentStateUseCase
+import io.github.b150005.knitnote.domain.usecase.UpdateEmailUseCase
+import io.github.b150005.knitnote.domain.usecase.UpdatePasswordUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdatePatternUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateProfileUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdateProjectUseCase
@@ -81,6 +84,9 @@ val useCaseModule =
         factory { CloseRealtimeChannelsUseCase(getOrNull(), getOrNull(), getOrNull()) }
         factory { SignOutUseCase(get(), get()) }
         factory { DeleteAccountUseCase(get(), get()) }
+        factory { SendPasswordResetUseCase(get()) }
+        factory { UpdatePasswordUseCase(get()) }
+        factory { UpdateEmailUseCase(get()) }
         factory { GetProjectsUseCase(get(), get()) }
         factory { CreateProjectUseCase(get(), get(), getOrNull()) }
         factory { IncrementRowUseCase(get()) }

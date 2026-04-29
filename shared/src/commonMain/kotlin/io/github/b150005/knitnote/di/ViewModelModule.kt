@@ -2,6 +2,7 @@ package io.github.b150005.knitnote.di
 
 import io.github.b150005.knitnote.ui.activityfeed.ActivityFeedViewModel
 import io.github.b150005.knitnote.ui.auth.AuthViewModel
+import io.github.b150005.knitnote.ui.auth.ForgotPasswordViewModel
 import io.github.b150005.knitnote.ui.chart.ChartBranchPickerViewModel
 import io.github.b150005.knitnote.ui.chart.ChartDiffViewModel
 import io.github.b150005.knitnote.ui.chart.ChartEditorViewModel
@@ -31,6 +32,7 @@ val viewModelModule =
     module {
         viewModelOf(::OnboardingViewModel)
         viewModelOf(::AuthViewModel)
+        viewModelOf(::ForgotPasswordViewModel)
         viewModelOf(::ProfileViewModel)
         viewModelOf(::SettingsViewModel)
         viewModel { ActivityFeedViewModel(get(), get(), get()) }

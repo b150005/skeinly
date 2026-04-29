@@ -4,6 +4,7 @@ import Shared
 struct LoginScreen: View {
     @StateObject private var holder: ScopedViewModel<AuthViewModel, AuthUiState>
     @State private var showError = false
+    @State private var showForgotPassword = false
 
     init(viewModel: AuthViewModel) {
         let wrapper = KoinHelperKt.wrapAuthState(flow: viewModel.state)
@@ -77,6 +78,17 @@ struct LoginScreen: View {
                     .font(.footnote)
             }
 
+            // Forgot password — only in sign-in mode (not sign-up).
+            if !state.isSignUp {
+                Button {
+                    showForgotPassword = true
+                } label: {
+                    Text(LocalizedStringKey("action_forgot_password"))
+                        .font(.footnote)
+                }
+                .accessibilityIdentifier("forgotPasswordButton")
+            }
+
             Spacer()
         }
         .accessibilityElement(children: .contain)
@@ -90,6 +102,11 @@ struct LoginScreen: View {
             }
         } message: {
             Text(state.error?.localizedString ?? "")
+        }
+        .sheet(isPresented: $showForgotPassword) {
+            NavigationStack {
+                ForgotPasswordScreen(onDone: { showForgotPassword = false })
+            }
         }
     }
 }

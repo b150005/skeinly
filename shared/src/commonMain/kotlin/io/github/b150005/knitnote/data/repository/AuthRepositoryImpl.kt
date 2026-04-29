@@ -81,4 +81,28 @@ class AuthRepositoryImpl(
     }
 
     override fun getCurrentUserId(): String? = supabaseClient?.auth?.currentUserOrNull()?.id
+
+    override suspend fun sendPasswordResetEmail(email: String) {
+        val client =
+            supabaseClient
+                ?: throw IllegalStateException("Supabase is not configured")
+
+        client.auth.resetPasswordForEmail(email)
+    }
+
+    override suspend fun updatePassword(newPassword: String) {
+        val client =
+            supabaseClient
+                ?: throw IllegalStateException("Supabase is not configured")
+
+        client.auth.updateUser { password = newPassword }
+    }
+
+    override suspend fun updateEmail(newEmail: String) {
+        val client =
+            supabaseClient
+                ?: throw IllegalStateException("Supabase is not configured")
+
+        client.auth.updateUser { email = newEmail }
+    }
 }

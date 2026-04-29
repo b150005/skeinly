@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
@@ -24,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -42,21 +44,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import io.github.b150005.knitnote.generated.resources.Res
 import io.github.b150005.knitnote.generated.resources.action_back
 import io.github.b150005.knitnote.generated.resources.action_cancel
+import io.github.b150005.knitnote.generated.resources.action_change_email
+import io.github.b150005.knitnote.generated.resources.action_change_password
 import io.github.b150005.knitnote.generated.resources.action_delete
 import io.github.b150005.knitnote.generated.resources.action_delete_account
 import io.github.b150005.knitnote.generated.resources.action_privacy_policy
+import io.github.b150005.knitnote.generated.resources.action_save
 import io.github.b150005.knitnote.generated.resources.action_sign_out
 import io.github.b150005.knitnote.generated.resources.action_terms_of_service
 import io.github.b150005.knitnote.generated.resources.body_delete_account_warning
+import io.github.b150005.knitnote.generated.resources.dialog_change_email_title
+import io.github.b150005.knitnote.generated.resources.dialog_change_password_title
 import io.github.b150005.knitnote.generated.resources.dialog_delete_account_body
 import io.github.b150005.knitnote.generated.resources.dialog_delete_account_title
 import io.github.b150005.knitnote.generated.resources.label_about_section
 import io.github.b150005.knitnote.generated.resources.label_account_section
 import io.github.b150005.knitnote.generated.resources.label_danger_zone
+import io.github.b150005.knitnote.generated.resources.label_new_email
+import io.github.b150005.knitnote.generated.resources.label_new_password
+import io.github.b150005.knitnote.generated.resources.message_email_change_pending
+import io.github.b150005.knitnote.generated.resources.message_password_changed
 import io.github.b150005.knitnote.generated.resources.state_deleting_account
 import io.github.b150005.knitnote.generated.resources.title_settings
 import io.github.b150005.knitnote.ui.components.localized
@@ -91,6 +105,19 @@ fun SettingsScreen(
     LaunchedEffect(Unit) {
         viewModel.accountDeleted.collect {
             onAccountDeleted()
+        }
+    }
+
+    val passwordChangedMessage = stringResource(Res.string.message_password_changed)
+    val emailChangePendingMessage = stringResource(Res.string.message_email_change_pending)
+    LaunchedEffect(Unit) {
+        viewModel.toastEvents.collect { event ->
+            val message =
+                when (event) {
+                    SettingsToastEvent.PasswordChanged -> passwordChangedMessage
+                    SettingsToastEvent.EmailChangePending -> emailChangePendingMessage
+                }
+            snackbarHostState.showSnackbar(message)
         }
     }
 
@@ -153,6 +180,29 @@ fun SettingsScreen(
                     )
                     Text(stringResource(Res.string.action_sign_out))
                 }
+
+                Spacer(Modifier.height(8.dp))
+
+                // Phase B3: Change password / change email
+                ListItem(
+                    headlineContent = { Text(stringResource(Res.string.action_change_password)) },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable(role = Role.Button) {
+                                viewModel.onEvent(SettingsEvent.RequestChangePassword)
+                            }.testTag("changePasswordButton"),
+                )
+
+                ListItem(
+                    headlineContent = { Text(stringResource(Res.string.action_change_email)) },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable(role = Role.Button) {
+                                viewModel.onEvent(SettingsEvent.RequestChangeEmail)
+                            }.testTag("changeEmailButton"),
+                )
 
                 Spacer(Modifier.height(24.dp))
                 HorizontalDivider()
@@ -242,6 +292,26 @@ fun SettingsScreen(
         }
     }
 
+    if (state.pendingChangePasswordDialog) {
+        ChangePasswordDialog(
+            isSubmitting = state.isChangingPassword,
+            onConfirm = { newPassword ->
+                viewModel.onEvent(SettingsEvent.ConfirmChangePassword(newPassword))
+            },
+            onDismiss = { viewModel.onEvent(SettingsEvent.DismissChangePassword) },
+        )
+    }
+
+    if (state.pendingChangeEmailDialog) {
+        ChangeEmailDialog(
+            isSubmitting = state.isChangingEmail,
+            onConfirm = { newEmail ->
+                viewModel.onEvent(SettingsEvent.ConfirmChangeEmail(newEmail))
+            },
+            onDismiss = { viewModel.onEvent(SettingsEvent.DismissChangeEmail) },
+        )
+    }
+
     if (showDeleteConfirmation) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmation = false },
@@ -268,4 +338,99 @@ fun SettingsScreen(
             },
         )
     }
+}
+
+@Composable
+private fun ChangePasswordDialog(
+    isSubmitting: Boolean,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var newPassword by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        modifier = Modifier.testTag("changePasswordDialog"),
+        title = { Text(stringResource(Res.string.dialog_change_password_title)) },
+        text = {
+            OutlinedTextField(
+                value = newPassword,
+                onValueChange = { newPassword = it },
+                label = { Text(stringResource(Res.string.label_new_password)) },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions =
+                    KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                    ),
+                enabled = !isSubmitting,
+                modifier = Modifier.fillMaxWidth().testTag("newPasswordField"),
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(newPassword) },
+                enabled = !isSubmitting && newPassword.isNotBlank(),
+                modifier = Modifier.testTag("confirmChangePasswordButton"),
+            ) {
+                if (isSubmitting) {
+                    CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.height(20.dp))
+                } else {
+                    Text(stringResource(Res.string.action_save))
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isSubmitting) {
+                Text(stringResource(Res.string.action_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun ChangeEmailDialog(
+    isSubmitting: Boolean,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var newEmail by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        modifier = Modifier.testTag("changeEmailDialog"),
+        title = { Text(stringResource(Res.string.dialog_change_email_title)) },
+        text = {
+            OutlinedTextField(
+                value = newEmail,
+                onValueChange = { newEmail = it },
+                label = { Text(stringResource(Res.string.label_new_email)) },
+                singleLine = true,
+                keyboardOptions =
+                    KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Done,
+                    ),
+                enabled = !isSubmitting,
+                modifier = Modifier.fillMaxWidth().testTag("newEmailField"),
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(newEmail) },
+                enabled = !isSubmitting && newEmail.isNotBlank(),
+                modifier = Modifier.testTag("confirmChangeEmailButton"),
+            ) {
+                if (isSubmitting) {
+                    CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.height(20.dp))
+                } else {
+                    Text(stringResource(Res.string.action_save))
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isSubmitting) {
+                Text(stringResource(Res.string.action_cancel))
+            }
+        },
+    )
 }

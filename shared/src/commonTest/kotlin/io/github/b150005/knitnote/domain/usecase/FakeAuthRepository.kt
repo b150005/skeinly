@@ -11,6 +11,12 @@ class FakeAuthRepository : AuthRepository {
     var signUpError: Throwable? = null
     var signOutError: Throwable? = null
     var deleteAccountError: Throwable? = null
+    var sendPasswordResetError: Throwable? = null
+    var updatePasswordError: Throwable? = null
+    var updateEmailError: Throwable? = null
+    var lastPasswordResetEmail: String? = null
+    var lastUpdatedPassword: String? = null
+    var lastUpdatedEmail: String? = null
     private var currentUserId: String? = null
 
     override fun observeAuthState(): Flow<AuthState> = authStateFlow
@@ -46,6 +52,21 @@ class FakeAuthRepository : AuthRepository {
     }
 
     override fun getCurrentUserId(): String? = currentUserId
+
+    override suspend fun sendPasswordResetEmail(email: String) {
+        sendPasswordResetError?.let { throw it }
+        lastPasswordResetEmail = email
+    }
+
+    override suspend fun updatePassword(newPassword: String) {
+        updatePasswordError?.let { throw it }
+        lastUpdatedPassword = newPassword
+    }
+
+    override suspend fun updateEmail(newEmail: String) {
+        updateEmailError?.let { throw it }
+        lastUpdatedEmail = newEmail
+    }
 
     fun setAuthState(state: AuthState) {
         authStateFlow.value = state
