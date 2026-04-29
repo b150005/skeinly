@@ -9,10 +9,16 @@ options:
 # Phase F1 — Sentry-Cocoa via SwiftPM. The DSN itself is injected into
 # Info.plist via local.xcconfig (SENTRY_DSN_IOS) and read at runtime by
 # iOSApp.swift; empty DSN means Sentry init is skipped (local-only mode).
+# Phase F2 — PostHog-iOS via SwiftPM. API key + host injected into
+# Info.plist via local.xcconfig (POSTHOG_API_KEY / POSTHOG_HOST). Init
+# also gated on the user's analytics opt-in toggle (Settings).
 packages:
   Sentry:
     url: https://github.com/getsentry/sentry-cocoa
     from: "8.40.0"
+  PostHog:
+    url: https://github.com/PostHog/posthog-ios
+    from: "3.30.0"
 
 configFiles:
   Debug: local.xcconfig
@@ -46,6 +52,12 @@ targets:
         # Phase F1 — Sentry DSN injected from xcconfig via build setting.
         # Empty value means no Sentry init (local-only mode).
         SENTRY_DSN_IOS: "$(SENTRY_DSN_IOS)"
+        # Phase F2 — PostHog API key + host. Empty key means no PostHog
+        # init. Even with a key configured, init is also gated on the
+        # user's analytics opt-in toggle (Settings). Default host is the
+        # public US cloud; override via xcconfig for self-hosted.
+        POSTHOG_API_KEY: "$(POSTHOG_API_KEY)"
+        POSTHOG_HOST: "$(POSTHOG_HOST)"
         UILaunchScreen:
           UIColorName: SystemBackground
         CFBundleURLTypes:
@@ -81,6 +93,8 @@ targets:
       - sdk: libsqlite3.tbd
       - package: Sentry
         product: Sentry
+      - package: PostHog
+        product: PostHog
     preBuildScripts:
       - name: "Compile Shared Framework"
         script: |

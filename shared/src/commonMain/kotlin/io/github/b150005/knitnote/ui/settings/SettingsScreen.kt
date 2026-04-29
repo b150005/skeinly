@@ -29,6 +29,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -59,6 +60,7 @@ import io.github.b150005.knitnote.generated.resources.action_privacy_policy
 import io.github.b150005.knitnote.generated.resources.action_save
 import io.github.b150005.knitnote.generated.resources.action_sign_out
 import io.github.b150005.knitnote.generated.resources.action_terms_of_service
+import io.github.b150005.knitnote.generated.resources.body_analytics_explanation
 import io.github.b150005.knitnote.generated.resources.body_delete_account_warning
 import io.github.b150005.knitnote.generated.resources.dialog_change_email_title
 import io.github.b150005.knitnote.generated.resources.dialog_change_password_title
@@ -66,9 +68,11 @@ import io.github.b150005.knitnote.generated.resources.dialog_delete_account_body
 import io.github.b150005.knitnote.generated.resources.dialog_delete_account_title
 import io.github.b150005.knitnote.generated.resources.label_about_section
 import io.github.b150005.knitnote.generated.resources.label_account_section
+import io.github.b150005.knitnote.generated.resources.label_allow_analytics
 import io.github.b150005.knitnote.generated.resources.label_danger_zone
 import io.github.b150005.knitnote.generated.resources.label_new_email
 import io.github.b150005.knitnote.generated.resources.label_new_password
+import io.github.b150005.knitnote.generated.resources.label_privacy_section
 import io.github.b150005.knitnote.generated.resources.message_email_change_pending
 import io.github.b150005.knitnote.generated.resources.message_password_changed
 import io.github.b150005.knitnote.generated.resources.state_deleting_account
@@ -243,6 +247,50 @@ fun SettingsScreen(
                             .clickable(role = Role.Button) {
                                 uriHandler.openUri(URL_TERMS_OF_SERVICE)
                             }.testTag("termsOfServiceButton"),
+                )
+
+                Spacer(Modifier.height(24.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(24.dp))
+
+                // Privacy section — Phase F2 analytics opt-in. Default OFF;
+                // PostHog SDK init (KnitNoteApplication / iOSApp) is gated on
+                // this flag. The whole row is clickable so tapping anywhere
+                // (not just the Switch thumb) flips the value.
+                Text(
+                    text = stringResource(Res.string.label_privacy_section),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+
+                ListItem(
+                    headlineContent = { Text(stringResource(Res.string.label_allow_analytics)) },
+                    trailingContent = {
+                        // `onCheckedChange = null` so the Switch is purely visual —
+                        // the row's `clickable` is the single dispatch site. With
+                        // both wired, a tap on the Switch thumb fires onCheckedChange
+                        // (with the new value) AND the row's clickable (toggling the
+                        // already-flipped value), cancelling the user's intent.
+                        Switch(
+                            checked = state.analyticsOptIn,
+                            onCheckedChange = null,
+                            modifier = Modifier.testTag("analyticsOptInSwitch"),
+                        )
+                    },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable(role = Role.Switch) {
+                                viewModel.onEvent(
+                                    SettingsEvent.SetAnalyticsOptIn(!state.analyticsOptIn),
+                                )
+                            },
+                )
+                Text(
+                    text = stringResource(Res.string.body_analytics_explanation),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
                 )
 
                 Spacer(Modifier.height(24.dp))

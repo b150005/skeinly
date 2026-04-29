@@ -58,6 +58,11 @@
     <!-- Profile — Avatar (Phase C) -->
     <string name="action_change_avatar">アバターを変更</string>
 
+    <!-- Settings — Privacy / Analytics (Phase F2) -->
+    <string name="label_privacy_section">プライバシー</string>
+    <string name="label_allow_analytics">使用状況の収集を許可</string>
+    <string name="body_analytics_explanation">どの機能が使われているかを匿名のイベント数で把握するために使います。個人情報や広告 ID は収集しません。いつでも変更できます。</string>
+
     <string name="error_authentication_failed">認証に失敗しました</string>
     <string name="error_email_invalid">無効なメールアドレスです</string>
     <string name="error_email_not_confirmed">メールアドレスを先に確認してください</string>

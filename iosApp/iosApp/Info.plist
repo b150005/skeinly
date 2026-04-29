@@ -40,6 +40,10 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>POSTHOG_API_KEY</key>
+	<string>$(POSTHOG_API_KEY)</string>
+	<key>POSTHOG_HOST</key>
+	<string>$(POSTHOG_HOST)</string>
 	<key>SENTRY_DSN_IOS</key>
 	<string>$(SENTRY_DSN_IOS)</string>
 	<key>UIApplicationSceneManifest</key>

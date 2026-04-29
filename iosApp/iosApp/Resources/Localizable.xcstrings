@@ -274,6 +274,27 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "アバターを変更" } }
       }
     },
+    "label_privacy_section" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Privacy" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プライバシー" } }
+      }
+    },
+    "label_allow_analytics" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Allow usage analytics" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "使用状況の収集を許可" } }
+      }
+    },
+    "body_analytics_explanation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Anonymous event counts help us understand which features you use. No personal data, no advertising IDs. You can change this any time." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "どの機能が使われているかを匿名のイベント数で把握するために使います。個人情報や広告 ID は収集しません。いつでも変更できます。" } }
+      }
+    },
     "error_email_invalid" : {
       "extractionState" : "manual",
       "localizations" : {

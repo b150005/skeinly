@@ -63,6 +63,11 @@
     <!-- Profile — Avatar (Phase C) -->
     <string name="action_change_avatar">Change Avatar</string>
 
+    <!-- Settings — Privacy / Analytics (Phase F2) -->
+    <string name="label_privacy_section">Privacy</string>
+    <string name="label_allow_analytics">Allow usage analytics</string>
+    <string name="body_analytics_explanation">Anonymous event counts help us understand which features you use. No personal data, no advertising IDs. You can change this any time.</string>
+
     <string name="error_authentication_failed">Authentication failed</string>
     <string name="error_email_invalid">Invalid email address</string>
     <string name="error_email_not_confirmed">Please confirm your email address first</string>

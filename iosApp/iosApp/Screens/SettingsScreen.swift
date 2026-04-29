@@ -162,6 +162,29 @@ struct SettingsScreen: View {
                 .accessibilityIdentifier("termsOfServiceButton")
             }
 
+            // Privacy section — Phase F2 analytics opt-in. Default OFF; the
+            // PostHog SDK init in iOSApp.swift is gated on this flag. Toggle
+            // dispatches SetAnalyticsOptIn; the StateFlow flip is the single
+            // source of truth, so SwiftUI re-renders from `state.analyticsOptIn`
+            // rather than a local @State binding.
+            Section {
+                Toggle(isOn: Binding(
+                    get: { state.analyticsOptIn },
+                    set: { newValue in
+                        viewModel.onEvent(
+                            event: SettingsEventSetAnalyticsOptIn(value: newValue)
+                        )
+                    }
+                )) {
+                    Text("label_allow_analytics")
+                }
+                .accessibilityIdentifier("analyticsOptInSwitch")
+            } header: {
+                Text("label_privacy_section")
+            } footer: {
+                Text("body_analytics_explanation")
+            }
+
             // Danger zone section
             // (continues below)
             Section {

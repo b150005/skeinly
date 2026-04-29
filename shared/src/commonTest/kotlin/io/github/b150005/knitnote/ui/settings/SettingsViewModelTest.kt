@@ -1,6 +1,7 @@
 package io.github.b150005.knitnote.ui.settings
 
 import app.cash.turbine.test
+import io.github.b150005.knitnote.data.preferences.AnalyticsPreferences
 import io.github.b150005.knitnote.domain.model.AuthState
 import io.github.b150005.knitnote.domain.usecase.CloseRealtimeChannelsUseCase
 import io.github.b150005.knitnote.domain.usecase.DeleteAccountUseCase
@@ -11,6 +12,9 @@ import io.github.b150005.knitnote.domain.usecase.UpdateEmailUseCase
 import io.github.b150005.knitnote.domain.usecase.UpdatePasswordUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -22,16 +26,19 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var authRepo: FakeAuthRepository
+    private lateinit var analyticsPrefs: FakeAnalyticsPreferences
 
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         authRepo = FakeAuthRepository()
+        analyticsPrefs = FakeAnalyticsPreferences()
     }
 
     @AfterTest
@@ -46,6 +53,7 @@ class SettingsViewModelTest {
             deleteAccount = DeleteAccountUseCase(authRepo, CloseRealtimeChannelsUseCase(null, null, null)),
             updatePassword = UpdatePasswordUseCase(authRepo),
             updateEmail = UpdateEmailUseCase(authRepo),
+            analyticsPreferences = analyticsPrefs,
         )
 
     @Test
@@ -146,4 +154,52 @@ class SettingsViewModelTest {
                 assertNull(awaitItem().error)
             }
         }
+
+    @Test
+    fun `analytics opt-in defaults to false and reflects preference`() =
+        runTest {
+            val viewModel = createViewModel()
+            viewModel.state.test {
+                // Initial collection: default OFF (Phase 27a no-tracking stance).
+                assertFalse(awaitItem().analyticsOptIn)
+            }
+        }
+
+    @Test
+    fun `analytics opt-in mirrors persisted true preference at init`() =
+        runTest {
+            // Persisted ON (returning user who consented previously). The
+            // ViewModel must observe the StateFlow eagerly so the Settings
+            // toggle paints in its correct ON position before first frame.
+            analyticsPrefs.setAnalyticsOptIn(true)
+            val viewModel = createViewModel()
+            viewModel.state.test {
+                assertTrue(awaitItem().analyticsOptIn)
+            }
+        }
+
+    @Test
+    fun `SetAnalyticsOptIn writes preference and updates state`() =
+        runTest {
+            val viewModel = createViewModel()
+            viewModel.onEvent(SettingsEvent.SetAnalyticsOptIn(true))
+            assertTrue(analyticsPrefs.analyticsOptIn.value)
+            viewModel.state.test {
+                assertTrue(awaitItem().analyticsOptIn)
+            }
+            viewModel.onEvent(SettingsEvent.SetAnalyticsOptIn(false))
+            assertFalse(analyticsPrefs.analyticsOptIn.value)
+            viewModel.state.test {
+                assertFalse(awaitItem().analyticsOptIn)
+            }
+        }
+}
+
+private class FakeAnalyticsPreferences : AnalyticsPreferences {
+    private val _flow = MutableStateFlow(false)
+    override val analyticsOptIn: StateFlow<Boolean> = _flow.asStateFlow()
+
+    override fun setAnalyticsOptIn(value: Boolean) {
+        _flow.value = value
+    }
 }

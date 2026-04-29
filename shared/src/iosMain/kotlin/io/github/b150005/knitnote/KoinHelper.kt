@@ -1,5 +1,6 @@
 package io.github.b150005.knitnote
 
+import io.github.b150005.knitnote.data.preferences.AnalyticsPreferences
 import io.github.b150005.knitnote.data.remote.SupabaseConfig
 import io.github.b150005.knitnote.data.remote.isConfigured
 import io.github.b150005.knitnote.di.platformModule
@@ -62,6 +63,14 @@ fun getProjectDetailViewModel(projectId: String): ProjectDetailViewModel = KoinP
 fun getProfileViewModel(): ProfileViewModel = KoinPlatform.getKoin().get()
 
 fun getSettingsViewModel(): SettingsViewModel = KoinPlatform.getKoin().get()
+
+// Phase F2 — analytics preference accessor for the iOS PostHog init path.
+// iOSApp.swift reads `analyticsOptIn.value` synchronously at startup and
+// observes the StateFlow via `wrapAnalyticsOptInFlow` to react to runtime
+// toggles.
+fun getAnalyticsPreferences(): AnalyticsPreferences = KoinPlatform.getKoin().get()
+
+fun wrapAnalyticsOptInFlow(flow: kotlinx.coroutines.flow.StateFlow<Boolean>): FlowWrapper<kotlin.Boolean> = FlowWrapper(flow)
 
 fun getActivityFeedViewModel(): ActivityFeedViewModel = KoinPlatform.getKoin().get()
 

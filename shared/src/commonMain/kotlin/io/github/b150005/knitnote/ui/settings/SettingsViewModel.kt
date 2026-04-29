@@ -2,6 +2,7 @@ package io.github.b150005.knitnote.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.b150005.knitnote.data.preferences.AnalyticsPreferences
 import io.github.b150005.knitnote.domain.model.AuthState
 import io.github.b150005.knitnote.domain.usecase.DeleteAccountUseCase
 import io.github.b150005.knitnote.domain.usecase.ErrorMessage
@@ -28,6 +29,7 @@ data class SettingsState(
     val isChangingEmail: Boolean = false,
     val pendingChangePasswordDialog: Boolean = false,
     val pendingChangeEmailDialog: Boolean = false,
+    val analyticsOptIn: Boolean = false,
     val error: ErrorMessage? = null,
 )
 
@@ -52,6 +54,10 @@ sealed interface SettingsEvent {
         val newEmail: String,
     ) : SettingsEvent
 
+    data class SetAnalyticsOptIn(
+        val value: Boolean,
+    ) : SettingsEvent
+
     data object ClearError : SettingsEvent
 }
 
@@ -72,6 +78,7 @@ class SettingsViewModel(
     private val deleteAccount: DeleteAccountUseCase,
     private val updatePassword: UpdatePasswordUseCase,
     private val updateEmail: UpdateEmailUseCase,
+    private val analyticsPreferences: AnalyticsPreferences,
 ) : ViewModel() {
     private val _state = MutableStateFlow(SettingsState())
     val state: StateFlow<SettingsState> = _state.asStateFlow()
@@ -84,6 +91,15 @@ class SettingsViewModel(
 
     init {
         loadSettings()
+        observeAnalyticsOptIn()
+    }
+
+    private fun observeAnalyticsOptIn() {
+        viewModelScope.launch {
+            analyticsPreferences.analyticsOptIn.collect { value ->
+                _state.update { it.copy(analyticsOptIn = value) }
+            }
+        }
     }
 
     fun onEvent(event: SettingsEvent) {
@@ -100,6 +116,8 @@ class SettingsViewModel(
             SettingsEvent.DismissChangeEmail ->
                 _state.update { it.copy(pendingChangeEmailDialog = false) }
             is SettingsEvent.ConfirmChangeEmail -> performChangeEmail(event.newEmail)
+            is SettingsEvent.SetAnalyticsOptIn ->
+                analyticsPreferences.setAnalyticsOptIn(event.value)
             SettingsEvent.ClearError -> _state.update { it.copy(error = null) }
         }
     }

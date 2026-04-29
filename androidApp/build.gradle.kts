@@ -40,6 +40,20 @@ android {
                 ?: System.getenv("SENTRY_DSN_ANDROID")
                 ?: ""
         buildConfigField("String", "SENTRY_DSN_ANDROID", "\"$sentryDsn\"")
+
+        // PostHog API key + host (Phase F2) — same precedence as Sentry. Empty
+        // string means no PostHog init (local-only mode). Init also requires
+        // the user to have toggled analytics ON in Settings.
+        val posthogApiKey =
+            localProps.getProperty("POSTHOG_API_KEY")
+                ?: System.getenv("POSTHOG_API_KEY")
+                ?: ""
+        val posthogHost =
+            localProps.getProperty("POSTHOG_HOST")
+                ?: System.getenv("POSTHOG_HOST")
+                ?: "https://us.i.posthog.com"
+        buildConfigField("String", "POSTHOG_API_KEY", "\"$posthogApiKey\"")
+        buildConfigField("String", "POSTHOG_HOST", "\"$posthogHost\"")
     }
 
     buildFeatures {
@@ -188,6 +202,7 @@ dependencies {
     implementation(libs.koin.compose.viewmodel)
     implementation(libs.navigation.compose)
     implementation(libs.sentry.android)
+    implementation(libs.posthog.android)
     implementation(projects.shared)
     debugImplementation(compose.uiTooling)
 
