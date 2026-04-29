@@ -52,9 +52,9 @@ A Kotlin Multiplatform knitting app for managing patterns, tracking progress, an
 
 | Tool | Version | Notes |
 |---|---|---|
-| macOS | 14+ | iOS builds require macOS |
+| macOS | 26.0+ (Tahoe) | iOS builds require macOS; Xcode 26.4+ requires macOS Tahoe 26.2+ |
 | JDK | 17+ | Temurin recommended; set via `JAVA_HOME` |
-| Xcode | 16+ | iOS build + Swift toolchain |
+| Xcode | 26.0+ | iOS 26 SDK; required for App Store Connect submissions since 2026-04-28 (see [Repo Policy](./docs/en/repo-policy.md#apple-app-store-sdk-requirements)) |
 | Ruby | 3.3+ | Drives fastlane for iOS releases (`brew install ruby`) |
 | Bundler | 2.x+ | `gem install bundler` if not present |
 | Android SDK | API 36+ | platform-tools (`adb`) required for installs |
@@ -237,9 +237,9 @@ Required signing secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `
 
 | ツール | バージョン | 備考 |
 |---|---|---|
-| macOS | 14 以上 | iOS ビルドには macOS が必要 |
+| macOS | 26.0 以上 (Tahoe) | iOS ビルドには macOS が必要。Xcode 26.4+ は macOS Tahoe 26.2+ を要求 |
 | JDK | 17 以上 | Temurin 推奨。`JAVA_HOME` を設定 |
-| Xcode | 16 以上 | iOS ビルドと Swift ツールチェイン |
+| Xcode | 26.0 以上 | iOS 26 SDK。2026-04-28 以降 App Store Connect への申請に必須（[Repo Policy](./docs/ja/repo-policy.md#apple-app-store-sdk-要件)参照） |
 | Ruby | 3.3 以上 | iOS リリースの fastlane 駆動用（`brew install ruby`） |
 | Bundler | 2.x 以上 | 未インストールなら `gem install bundler` |
 | Android SDK | API 36 以上 | platform-tools (`adb`) がインストール時に必要 |

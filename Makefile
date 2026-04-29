@@ -16,6 +16,7 @@ IOS_SIM_DEST ?= platform=iOS Simulator,name=iPhone 16
         e2e-android e2e-ios \
         lint format coverage i18n-verify \
         ci-local \
+        verify-xcode \
         release-ipa-local \
         clean
 
@@ -33,7 +34,8 @@ setup:  ## Install fastlane gems + remind about other tooling.
 	@echo "Other tools to install (if not already present):"
 	@echo "  brew install xcodegen maestro"
 	@echo "  Android SDK + platform-tools (adb) via Android Studio"
-	@echo "  Xcode 16+ from the App Store"
+	@echo "  Xcode 26+ from the App Store (required by Apple App Store Connect since 2026-04-28)"
+	@echo "  macOS 26.0+ (Tahoe) on the host"
 
 ##@ Build & Test — Shared (KMP)
 
@@ -53,7 +55,7 @@ android-install:  ## Install debug APK on the connected device or emulator.
 
 ##@ Build & Test — iOS
 
-ios-build:  ## Build iOS app (debug, simulator). Requires Xcode 16+ and xcodegen.
+ios-build:  ## Build iOS app (debug, simulator). Requires Xcode 26+ and xcodegen.
 	cd iosApp && xcodegen generate
 	xcodebuild build \
 		-project iosApp/iosApp.xcodeproj \
@@ -103,7 +105,13 @@ ci-local:  ## Reproduce the CI pre-push invariant chain locally.
 
 ##@ Release
 
-release-ipa-local:  ## Build a Release IPA locally via fastlane (no TestFlight upload). For pre-tag verification.
+verify-xcode:  ## Verify Xcode 26+ is installed (Apple App Store Connect requirement since 2026-04-28).
+	@xcodebuild -version 2>/dev/null | head -n 1 | \
+		awk '{ split($$2, v, "."); if (v[1]+0 < 26) { \
+			printf "ERROR: Xcode 26+ required (Apple App Store requirement since 2026-04-28); found: %s\n", $$0; \
+			exit 1 } else { printf "OK: %s\n", $$0 } }'
+
+release-ipa-local: verify-xcode  ## Build a Release IPA locally via fastlane (no TestFlight upload). For pre-tag verification.
 	cd iosApp && bundle exec fastlane build_ipa
 
 ##@ Maintenance
