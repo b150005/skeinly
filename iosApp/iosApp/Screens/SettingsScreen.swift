@@ -84,6 +84,19 @@ struct SettingsScreen: View {
                 .accessibilityIdentifier("signOutButton")
             }
 
+            // About / Legal section — Phase E2
+            Section("label_about_section") {
+                Link(destination: URL(string: "https://b150005.github.io/knit-note/privacy-policy/")!) {
+                    Label("action_privacy_policy", systemImage: "lock.shield")
+                }
+                .accessibilityIdentifier("privacyPolicyButton")
+
+                Link(destination: URL(string: "https://b150005.github.io/knit-note/terms-of-service/")!) {
+                    Label("action_terms_of_service", systemImage: "doc.text")
+                }
+                .accessibilityIdentifier("termsOfServiceButton")
+            }
+
             // Danger zone section
             Section {
                 Button(role: .destructive) {

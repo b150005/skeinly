@@ -35,6 +35,11 @@
     <string name="error_load">Couldn\'t load</string>
     <string name="error_save">Couldn\'t save</string>
     <string name="error_network">Network unavailable</string>
+    <!-- Settings — About / Legal section -->
+    <string name="label_about_section">About</string>
+    <string name="action_privacy_policy">Privacy Policy</string>
+    <string name="action_terms_of_service">Terms of Service</string>
+
     <string name="error_authentication_failed">Authentication failed</string>
     <string name="error_email_invalid">Invalid email address</string>
     <string name="error_email_not_confirmed">Please confirm your email address first</string>

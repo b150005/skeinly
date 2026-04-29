@@ -32,6 +32,11 @@
     <string name="error_load">読み込みに失敗しました</string>
     <string name="error_save">保存に失敗しました</string>
     <string name="error_network">ネットワークに接続できません</string>
+    <!-- Settings — About / Legal section -->
+    <string name="label_about_section">アプリについて</string>
+    <string name="action_privacy_policy">プライバシーポリシー</string>
+    <string name="action_terms_of_service">利用規約</string>
+
     <string name="error_authentication_failed">認証に失敗しました</string>
     <string name="error_email_invalid">無効なメールアドレスです</string>
     <string name="error_email_not_confirmed">メールアドレスを先に確認してください</string>
