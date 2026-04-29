@@ -18,6 +18,32 @@
 
 有効な ruleset 名は `main-strict` (id `15581036`)。設定: <https://github.com/b150005/knit-note/rules/15581036>
 
+## Apple App Store SDK 要件
+
+**2026-04-28** 以降、App Store Connect への申請（新規アプリおよびアップデート）はすべて **Xcode 26 以降**を使用し、**iOS 26 SDK**、**iPadOS 26 SDK**、**tvOS 26 SDK**、**visionOS 26 SDK**、または **watchOS 26 SDK** でビルドされている必要があります。これは App Store Connect のアップロード時に強制され、古いツールチェインで作成されたアーティファクトは拒否されます。
+
+### ビルド環境の固定値
+
+| コンポーネント | 最小バージョン | 備考 |
+|---|---|---|
+| macOS | 26.0 (Tahoe) | Xcode 26.4+ は macOS Tahoe 26.2+ を要求 |
+| Xcode | 26.0 | iOS 26 SDK 同梱 |
+| iOS deployment target | 17.0 | ビルド SDK ≠ deployment target — `iosApp/project.yml` の `deploymentTarget.iOS` はランタイム互換範囲を広げるための選択であり、ビルド時 SDK 要件とは別 |
+| Liquid Glass UI | 暗黙 | iOS 26 SDK でビルドすると、ネイティブ UIKit/SwiftUI コントロールに Liquid Glass スタイルがデフォルト適用される。Phase 18 で既に採用済み、opt-out 不要 |
+
+### 強制ポイント
+
+- **ローカル**: `make release-ipa-local` が `make verify-xcode` を最初に呼び出し、Xcode が 26 未満の場合は明確なメッセージとともに即時失敗
+- **CI**: GitHub-hosted の `macos-latest` runner は 2026-04-28 強制日以降 Xcode 26+ を出荷。`release.yml` workflow は自動継承
+- **App Store Connect**: アップロード時にサーバ側で古いツールチェインを拒否
+
+### 参考資料
+
+- [Apple Developer — Upcoming SDK minimum requirements (April 28, 2026)](https://developer.apple.com/news/?id=ueeok6yw)
+- [Apple Developer — Upcoming Requirements](https://developer.apple.com/news/upcoming-requirements/)
+- [Apple Developer — Xcode SDK and system requirements](https://developer.apple.com/xcode/system-requirements/)
+- [Apple Developer — Xcode 26 Release Notes](https://developer.apple.com/documentation/xcode-release-notes/xcode-26-release-notes)
+
 ## ルール設定の理由
 
 このリポジトリは **public** で、TestFlight および Google Play でエンドユーザに配信されます。Phase 39 から外部テスターを含むclosed beta が開始されます。以下の脅威モデルを想定しています:

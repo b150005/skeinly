@@ -53,6 +53,24 @@ knit-note/
 | Image Loading | Coil (Android), platform-native (iOS) |
 | Build System | Gradle (KMP), Xcode via XcodeGen (iOS) |
 
+## Development Environment
+
+### Required versions
+
+| Component | Minimum | Source of truth |
+|---|---|---|
+| macOS | 26.0 (Tahoe) | [README.md](../README.md) Prerequisites |
+| Xcode | 26.0 | [README.md](../README.md) Prerequisites; verified by `make verify-xcode` |
+| JDK | 17 | Temurin recommended |
+| Android SDK | API 36 | platform-tools (`adb`) required |
+| iOS deployment target | 17.0 | [iosApp/project.yml](../iosApp/project.yml) `deploymentTarget.iOS` |
+
+**Why Xcode 26 / macOS 26 / iOS 26 SDK?** Apple App Store Connect submissions since **2026-04-28** require apps built with Xcode 26+ using the iOS 26 SDK or later (also iPadOS 26 / tvOS 26 / visionOS 26 / watchOS 26 SDK as applicable). CI runners (`macos-latest` on GitHub-hosted) ship with Xcode 26+ since the enforcement date. Local builds must match. See [docs/en/repo-policy.md](../docs/en/repo-policy.md#apple-app-store-sdk-requirements) for the full requirement and references.
+
+**Build SDK vs deployment target**: We build with the iOS 26 SDK (latest), but the runtime deployment target stays at iOS 17 — these are independent. iOS 26-only APIs must be gated with `if #available(iOS 26.0, *)` on Swift / `Build.VERSION.SDK_INT` checks on Android-side equivalents. The iOS 26 SDK applies Liquid Glass styling to native UIKit/SwiftUI controls by default; Phase 18 already adopted Liquid Glass design tokens, so no opt-out is required.
+
+**Verification before release**: `make release-ipa-local` invokes `make verify-xcode` first to fail fast if Xcode is older than 26. Skip the check at your own risk; Apple's upload-time enforcement will reject the artifact downstream.
+
 ## Domain Model (Core Concepts)
 
 - **Pattern**: A knitting chart/pattern with metadata (name, difficulty, gauge, yarn info, chart image/data)

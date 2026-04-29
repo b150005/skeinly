@@ -18,6 +18,32 @@ This document describes the branch protection rules and contribution policy for 
 
 The active ruleset is `main-strict` (id `15581036`). Configuration: <https://github.com/b150005/knit-note/rules/15581036>.
 
+## Apple App Store SDK requirements
+
+Since **2026-04-28**, all App Store Connect submissions (new apps and updates) must be built with **Xcode 26 or later** using the **iOS 26 SDK**, **iPadOS 26 SDK**, **tvOS 26 SDK**, **visionOS 26 SDK**, or **watchOS 26 SDK**. This is enforced at upload time by App Store Connect — older toolchains will reject.
+
+### Build environment locked to
+
+| Component | Minimum | Notes |
+|---|---|---|
+| macOS | 26.0 (Tahoe) | Xcode 26.4+ requires macOS Tahoe 26.2+ |
+| Xcode | 26.0 | Brings iOS 26 SDK |
+| iOS deployment target | 17.0 | Build SDK ≠ deployment target — `iosApp/project.yml` `deploymentTarget.iOS` is chosen for runtime-compat breadth, separate from the build-time SDK requirement |
+| Liquid Glass UI | Implicit | iOS 26 SDK applies Liquid Glass styling to native UIKit/SwiftUI controls by default. Already adopted in Phase 18; no opt-out required. |
+
+### Enforcement points
+
+- **Local**: `make release-ipa-local` invokes `make verify-xcode` first; fails fast with a clear message if Xcode is older than 26.
+- **CI**: `macos-latest` GitHub-hosted runner ships Xcode 26+ since the 2026-04-28 enforcement date. The `release.yml` workflow inherits this automatically.
+- **App Store Connect**: server-side rejection of older toolchains at upload time.
+
+### References
+
+- [Apple Developer — Upcoming SDK minimum requirements (April 28, 2026)](https://developer.apple.com/news/?id=ueeok6yw)
+- [Apple Developer — Upcoming Requirements](https://developer.apple.com/news/upcoming-requirements/)
+- [Apple Developer — Xcode SDK and system requirements](https://developer.apple.com/xcode/system-requirements/)
+- [Apple Developer — Xcode 26 Release Notes](https://developer.apple.com/documentation/xcode-release-notes/xcode-26-release-notes)
+
 ## Why these rules exist
 
 The repository is **public** and the project ships to end-users via TestFlight and Google Play. The closed beta starts in Phase 39 with external testers. The rules are designed for these threat models:
