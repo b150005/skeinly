@@ -2,6 +2,7 @@ package io.github.b150005.knitnote.ui.chart
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.domain.chart.PolarSymmetry
 import io.github.b150005.knitnote.domain.model.ChartCell
 import io.github.b150005.knitnote.domain.model.ChartExtents
@@ -248,6 +249,8 @@ class ChartEditorViewModel(
     private val createStructuredChart: CreateStructuredChartUseCase,
     private val updateStructuredChart: UpdateStructuredChartUseCase,
     private val symbolCatalog: SymbolCatalog,
+    // Phase F.3 — nullable + default null preserves existing test compat.
+    private val analyticsTracker: AnalyticsTracker? = null,
 ) : ViewModel() {
     private val history = EditHistory()
 
@@ -761,6 +764,9 @@ class ChartEditorViewModel(
                             hasUnsavedChanges = false,
                         )
                     }
+                    // Phase F.3 — single event for both create + update; Phase
+                    // F.4 may split via a properties bag (e.g. is_new: true).
+                    analyticsTracker?.capture("chart_editor_save")
                     _saved.send(Unit)
                 }
                 is UseCaseResult.Failure -> {

@@ -1,6 +1,7 @@
 package io.github.b150005.knitnote.ui.onboarding
 
 import app.cash.turbine.test
+import io.github.b150005.knitnote.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.knitnote.data.preferences.FakeOnboardingPreferences
 import io.github.b150005.knitnote.domain.usecase.CompleteOnboardingUseCase
 import io.github.b150005.knitnote.domain.usecase.GetOnboardingCompletedUseCase
@@ -34,7 +35,8 @@ class OnboardingViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() = OnboardingViewModel(getOnboardingCompleted, completeOnboarding)
+    private fun createViewModel(analyticsTracker: RecordingAnalyticsTracker? = null) =
+        OnboardingViewModel(getOnboardingCompleted, completeOnboarding, analyticsTracker)
 
     @Test
     fun `initial state has currentPage 0 and isCompleted false`() =
@@ -179,5 +181,36 @@ class OnboardingViewModelTest {
                 viewModel.onEvent(OnboardingEvent.PageChanged(99))
                 assertEquals(2, awaitItem().currentPage) // clamped to lastIndex
             }
+        }
+
+    @Test
+    fun `Skip captures onboarding_completed analytics event`() =
+        runTest {
+            val tracker = RecordingAnalyticsTracker()
+            val viewModel = createViewModel(tracker)
+            viewModel.onEvent(OnboardingEvent.Skip)
+            assertEquals(listOf("onboarding_completed"), tracker.captured)
+        }
+
+    @Test
+    fun `Complete captures onboarding_completed analytics event`() =
+        runTest {
+            val tracker = RecordingAnalyticsTracker()
+            val viewModel = createViewModel(tracker)
+            viewModel.onEvent(OnboardingEvent.Complete)
+            assertEquals(listOf("onboarding_completed"), tracker.captured)
+        }
+
+    @Test
+    fun `Complete does not double-capture when already completed`() =
+        runTest {
+            preferences.markOnboardingComplete()
+            val tracker = RecordingAnalyticsTracker()
+            val viewModel = createViewModel(tracker)
+            viewModel.onEvent(OnboardingEvent.Complete)
+            assertTrue(
+                tracker.captured.isEmpty(),
+                "no event should fire when transitioning from completed to completed",
+            )
         }
 }

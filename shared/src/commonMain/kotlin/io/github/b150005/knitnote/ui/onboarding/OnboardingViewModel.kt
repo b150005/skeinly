@@ -1,6 +1,7 @@
 package io.github.b150005.knitnote.ui.onboarding
 
 import androidx.lifecycle.ViewModel
+import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.domain.usecase.CompleteOnboardingUseCase
 import io.github.b150005.knitnote.domain.usecase.GetOnboardingCompletedUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,6 +32,10 @@ sealed interface OnboardingEvent {
 class OnboardingViewModel(
     private val getOnboardingCompleted: GetOnboardingCompletedUseCase,
     private val completeOnboarding: CompleteOnboardingUseCase,
+    // Phase F.3 — nullable + default null preserves existing test
+    // call-site compat (no test currently asserts capture, so the
+    // default keeps every prior `OnboardingViewModel(...)` valid).
+    private val analyticsTracker: AnalyticsTracker? = null,
 ) : ViewModel() {
     private val _state =
         MutableStateFlow(
@@ -74,8 +79,15 @@ class OnboardingViewModel(
     }
 
     private fun markComplete() {
+        // Capture only on the first transition to `isCompleted = true` so
+        // a stray re-tap does not produce duplicate analytics rows. The
+        // underlying preference write itself is idempotent.
+        val wasCompleted = _state.value.isCompleted
         completeOnboarding()
         _state.update { it.copy(isCompleted = true) }
+        if (!wasCompleted) {
+            analyticsTracker?.capture("onboarding_completed")
+        }
     }
 
     companion object {

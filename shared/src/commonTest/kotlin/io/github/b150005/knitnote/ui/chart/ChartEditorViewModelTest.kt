@@ -1,6 +1,8 @@
 package io.github.b150005.knitnote.ui.chart
 
 import app.cash.turbine.test
+import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
+import io.github.b150005.knitnote.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.knitnote.domain.model.AuthState
 import io.github.b150005.knitnote.domain.model.ChartCell
 import io.github.b150005.knitnote.domain.model.ChartExtents
@@ -84,13 +86,17 @@ class ChartEditorViewModelTest {
             readingConvention = readingConvention,
         )
 
-    private fun newViewModel(patternId: String = "pat-1"): ChartEditorViewModel =
+    private fun newViewModel(
+        patternId: String = "pat-1",
+        analyticsTracker: AnalyticsTracker? = null,
+    ): ChartEditorViewModel =
         ChartEditorViewModel(
             patternId = patternId,
             getStructuredChart = GetStructuredChartByPatternIdUseCase(repo),
             createStructuredChart = CreateStructuredChartUseCase(repo, auth, testJson),
             updateStructuredChart = UpdateStructuredChartUseCase(repo, testJson),
             symbolCatalog = catalog,
+            analyticsTracker = analyticsTracker,
         )
 
     private suspend fun awaitReady(viewModel: ChartEditorViewModel): ChartEditorState {
@@ -2133,4 +2139,38 @@ class ChartEditorViewModelTest {
             ),
         )
     }
+
+    @Test
+    fun `Save captures chart_editor_save analytics event on create branch`() =
+        runTest {
+            val tracker = RecordingAnalyticsTracker()
+            val viewModel = newViewModel(patternId = "pat-new", analyticsTracker = tracker)
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+            viewModel.saved.test {
+                viewModel.onEvent(ChartEditorEvent.Save)
+                awaitItem()
+                cancelAndConsumeRemainingEvents()
+            }
+            assertEquals(listOf("chart_editor_save"), tracker.captured)
+        }
+
+    @Test
+    fun `Save captures chart_editor_save analytics event on update branch`() =
+        runTest {
+            val seeded = seededChart()
+            repo.seed(seeded)
+            val tracker = RecordingAnalyticsTracker()
+            val viewModel = newViewModel(analyticsTracker = tracker)
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            viewModel.onEvent(ChartEditorEvent.PlaceCell(x = 0, y = 0))
+            viewModel.saved.test {
+                viewModel.onEvent(ChartEditorEvent.Save)
+                awaitItem()
+                cancelAndConsumeRemainingEvents()
+            }
+            assertEquals(listOf("chart_editor_save"), tracker.captured)
+        }
 }

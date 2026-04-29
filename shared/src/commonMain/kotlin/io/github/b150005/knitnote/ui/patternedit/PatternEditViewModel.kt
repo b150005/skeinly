@@ -2,6 +2,7 @@ package io.github.b150005.knitnote.ui.patternedit
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.domain.model.Difficulty
 import io.github.b150005.knitnote.domain.model.Visibility
 import io.github.b150005.knitnote.domain.repository.PatternRepository
@@ -72,6 +73,8 @@ class PatternEditViewModel(
     private val patternRepository: PatternRepository,
     private val createPattern: CreatePatternUseCase,
     private val updatePattern: UpdatePatternUseCase,
+    // Phase F.3 — nullable + default null preserves existing test compat.
+    private val analyticsTracker: AnalyticsTracker? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(PatternEditState(patternId = patternId))
     val state: StateFlow<PatternEditState> = _state.asStateFlow()
@@ -155,6 +158,11 @@ class PatternEditViewModel(
             when (result) {
                 is UseCaseResult.Success -> {
                     _state.update { it.copy(isSaving = false) }
+                    // Phase F.3 — capture only the create-new branch.
+                    // Phase F.4 will add `pattern_edited` for updates.
+                    if (patternId == null) {
+                        analyticsTracker?.capture("pattern_created")
+                    }
                     _saveSuccessChannel.send(Unit)
                 }
                 is UseCaseResult.Failure -> {
