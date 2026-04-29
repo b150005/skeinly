@@ -1,6 +1,8 @@
 package io.github.b150005.knitnote.ui.discovery
 
 import app.cash.turbine.test
+import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
+import io.github.b150005.knitnote.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.knitnote.data.remote.FakePublicPatternDataSource
 import io.github.b150005.knitnote.domain.model.AuthState
 import io.github.b150005.knitnote.domain.model.ChartExtents
@@ -88,10 +90,11 @@ class DiscoveryViewModelTest {
         projectRepo: FakeProjectRepository = FakeProjectRepository(),
         chartRepo: FakeStructuredChartRepository = FakeStructuredChartRepository(),
         authRepo: FakeAuthRepository = FakeAuthRepository(),
+        analyticsTracker: AnalyticsTracker? = null,
     ): DiscoveryViewModel {
         val getPublicPatterns = GetPublicPatternsUseCase(dataSource)
         val forkPublicPattern = ForkPublicPatternUseCase(patternRepo, projectRepo, chartRepo, authRepo)
-        return DiscoveryViewModel(getPublicPatterns, forkPublicPattern)
+        return DiscoveryViewModel(getPublicPatterns, forkPublicPattern, analyticsTracker)
     }
 
     @Test
@@ -429,5 +432,40 @@ class DiscoveryViewModelTest {
             assertFalse(settled.chartsOnlyFilter)
             assertEquals(2, settled.patterns.size)
             assertEquals(setOf("pub-a"), settled.patternsWithCharts)
+        }
+
+    @Test
+    fun `successful fork captures pattern_forked with had_chart=false when source has no chart`() =
+        runTest {
+            val dataSource = FakePublicPatternDataSource()
+            dataSource.addPattern(patternA)
+            val authRepo = FakeAuthRepository()
+            authRepo.setAuthState(AuthState.Authenticated("user-1", "test@test.com"))
+            val patternRepo = FakePatternRepository()
+            patternRepo.create(patternA)
+            val tracker = RecordingAnalyticsTracker()
+
+            val viewModel =
+                createViewModel(
+                    dataSource = dataSource,
+                    patternRepo = patternRepo,
+                    authRepo = authRepo,
+                    analyticsTracker = tracker,
+                )
+
+            // Subscribe to state to keep combine active and drain forkedProject
+            // so the fork() coroutine completes (suspending send to channel).
+            val stateJob = backgroundScope.launch { viewModel.state.collect { } }
+            val forkJob = backgroundScope.launch { viewModel.forkedProject.collect { } }
+            advanceUntilIdle()
+
+            viewModel.onEvent(DiscoveryEvent.ForkPattern("pub-a"))
+            advanceUntilIdle()
+
+            assertEquals(1, tracker.captured.size)
+            assertEquals("pattern_forked", tracker.captured[0].name)
+            assertEquals(mapOf("had_chart" to false), tracker.captured[0].properties)
+            stateJob.cancel()
+            forkJob.cancel()
         }
 }

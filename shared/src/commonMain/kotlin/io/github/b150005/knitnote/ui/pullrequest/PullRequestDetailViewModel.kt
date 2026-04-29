@@ -2,6 +2,8 @@ package io.github.b150005.knitnote.ui.pullrequest
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvents
+import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.domain.chart.ConflictDetector
 import io.github.b150005.knitnote.domain.model.PullRequest
 import io.github.b150005.knitnote.domain.model.PullRequestComment
@@ -172,6 +174,8 @@ class PullRequestDetailViewModel(
     private val mergePullRequest: MergePullRequestUseCase? = null,
     private val chartRevisionRepository: ChartRevisionRepository? = null,
     private val structuredChartRepository: StructuredChartRepository? = null,
+    // Phase F.4 — nullable + default null preserves existing test compat.
+    private val analyticsTracker: AnalyticsTracker? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(PullRequestDetailState())
     val state: StateFlow<PullRequestDetailState> = _state.asStateFlow()
@@ -407,6 +411,8 @@ class PullRequestDetailViewModel(
                         }
                     }
                     resolveUsersForComments(listOf(result.value))
+                    // Phase F.4 — engagement signal; no properties (cardinality safe).
+                    analyticsTracker?.capture(AnalyticsEvents.PULL_REQUEST_COMMENTED)
                 }
                 is UseCaseResult.Failure ->
                     _state.update {
@@ -498,6 +504,16 @@ class PullRequestDetailViewModel(
                 when (val result = merge(pullRequest = pr, resolvedChart = resolved)) {
                     is UseCaseResult.Success -> {
                         _state.update { it.copy(isMerging = false) }
+                        // Phase F.4 — auto-clean path always reports
+                        // had_conflicts=false. The conflict path lives in
+                        // ChartConflictResolutionViewModel; wiring capture
+                        // there is deferred to Phase F.5+ (would require
+                        // injecting AnalyticsTracker into a second ViewModel
+                        // outside the F.4 scope of "PR detail screen").
+                        analyticsTracker?.capture(
+                            eventName = AnalyticsEvents.PULL_REQUEST_MERGED,
+                            properties = mapOf(AnalyticsEvents.Props.HAD_CONFLICTS to false),
+                        )
                         _navEvents.trySend(
                             PullRequestDetailNavEvent.PrMerged(
                                 mergedRevisionId = result.value.mergedRevisionId,
@@ -531,6 +547,9 @@ class PullRequestDetailViewModel(
                             pullRequest = result.value,
                         )
                     }
+                    // Phase F.4 — alpha1 cares about close-vs-merge ratio
+                    // (collab loop completion vs abandonment). No properties.
+                    analyticsTracker?.capture(AnalyticsEvents.PULL_REQUEST_CLOSED)
                     _navEvents.trySend(PullRequestDetailNavEvent.PrClosed)
                 }
                 is UseCaseResult.Failure ->

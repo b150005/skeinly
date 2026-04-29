@@ -123,7 +123,14 @@ struct iOSApp: App {
         analyticsEventsCloseable = wrapper.collect { value in
             guard let event = value as? AnalyticsEvent else { return }
             if posthogInitialized {
-                PostHogSDK.shared.capture(event.name)
+                // Phase F.4 — Kotlin `Map<String, Any>?` bridges to Swift
+                // `[String : Any]?`. PostHog-iOS's `capture(_:properties:)`
+                // accepts `[String : Any]?` and decodes Bool / Int / Double
+                // / String at the SDK boundary; cardinality discipline is
+                // enforced at the call site (see AnalyticsEvents.Props
+                // KDoc).
+                let props = event.properties as? [String: Any]
+                PostHogSDK.shared.capture(event.name, properties: props)
             }
         }
     }

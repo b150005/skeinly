@@ -2,6 +2,8 @@ package io.github.b150005.knitnote.ui.chart
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvents
+import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.domain.model.ChartBranch
 import io.github.b150005.knitnote.domain.model.CoordinateSystem
 import io.github.b150005.knitnote.domain.model.Pattern
@@ -195,6 +197,8 @@ class ChartViewerViewModel(
     private val chartBranchRepository: ChartBranchRepository? = null,
     private val authRepository: AuthRepository? = null,
     private val openPullRequest: OpenPullRequestUseCase? = null,
+    // Phase F.4 — nullable + default null preserves existing test compat.
+    private val analyticsTracker: AnalyticsTracker? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ChartViewerState())
     val state: StateFlow<ChartViewerState> = _state.asStateFlow()
@@ -320,9 +324,22 @@ class ChartViewerViewModel(
         ) {
             return
         }
+        // Phase F.4 — capture only the WIP→DONE transition (tap cycles
+        // todo→wip→done→todo, so a "tap" reaches DONE iff the prior
+        // segment state was WIP). The segments map is the same Flow the
+        // overlay reads from, so this read is consistent with what the
+        // user just saw before tapping.
+        val priorState = current.segments[SegmentKey(layerId, x, y)]
         viewModelScope.launch {
             when (val result = toggleSegmentState(pid, layerId, x, y)) {
-                is UseCaseResult.Success -> { /* overlay updates via Flow */ }
+                is UseCaseResult.Success -> {
+                    if (priorState == SegmentState.WIP) {
+                        analyticsTracker?.capture(
+                            eventName = AnalyticsEvents.SEGMENT_MARKED_DONE,
+                            properties = mapOf(AnalyticsEvents.Props.SEGMENT_VIA to AnalyticsEvents.Props.SEGMENT_VIA_TAP),
+                        )
+                    }
+                }
                 is UseCaseResult.Failure ->
                     _state.update { it.copy(errorMessage = result.error.toErrorMessage()) }
             }
@@ -345,9 +362,21 @@ class ChartViewerViewModel(
         ) {
             return
         }
+        // Phase F.4 — long-press is idempotent on already-DONE segments,
+        // so capture only when the prior state was not DONE (avoids
+        // duplicate analytics rows when a user long-presses the same
+        // cell multiple times).
+        val priorState = current.segments[SegmentKey(layerId, x, y)]
         viewModelScope.launch {
             when (val result = markSegmentDone(pid, layerId, x, y)) {
-                is UseCaseResult.Success -> { /* overlay updates via Flow */ }
+                is UseCaseResult.Success -> {
+                    if (priorState != SegmentState.DONE) {
+                        analyticsTracker?.capture(
+                            eventName = AnalyticsEvents.SEGMENT_MARKED_DONE,
+                            properties = mapOf(AnalyticsEvents.Props.SEGMENT_VIA to AnalyticsEvents.Props.SEGMENT_VIA_LONG_PRESS),
+                        )
+                    }
+                }
                 is UseCaseResult.Failure ->
                     _state.update { it.copy(errorMessage = result.error.toErrorMessage()) }
             }
@@ -359,7 +388,16 @@ class ChartViewerViewModel(
         viewModelScope.launch {
             val hiddenLayerIds = _state.value.hiddenLayerIds
             when (val result = markRowSegmentsDone(patternId, pid, row, hiddenLayerIds)) {
-                is UseCaseResult.Success -> { /* overlay updates via Flow */ }
+                is UseCaseResult.Success -> {
+                    // Phase F.4 — one event per row-batch action regardless
+                    // of how many segments transitioned. The user did one
+                    // intentional gesture; the analytics row should reflect
+                    // that, not the cardinality of segments touched.
+                    analyticsTracker?.capture(
+                        eventName = AnalyticsEvents.SEGMENT_MARKED_DONE,
+                        properties = mapOf(AnalyticsEvents.Props.SEGMENT_VIA to AnalyticsEvents.Props.SEGMENT_VIA_ROW_BATCH),
+                    )
+                }
                 is UseCaseResult.Failure ->
                     _state.update { it.copy(errorMessage = result.error.toErrorMessage()) }
             }
@@ -485,6 +523,20 @@ class ChartViewerViewModel(
                             openPrError = null,
                         )
                     }
+                    // Phase F.4 — chart format reflects the source pattern's
+                    // grid (rect / polar) so PostHog can segment PR-open
+                    // adoption by chart type.
+                    analyticsTracker?.capture(
+                        eventName = AnalyticsEvents.PULL_REQUEST_OPENED,
+                        properties =
+                            mapOf(
+                                AnalyticsEvents.Props.CHART_FORMAT to
+                                    when (chart.coordinateSystem) {
+                                        CoordinateSystem.RECT_GRID -> AnalyticsEvents.Props.CHART_FORMAT_RECT
+                                        CoordinateSystem.POLAR_ROUND -> AnalyticsEvents.Props.CHART_FORMAT_POLAR
+                                    },
+                            ),
+                    )
                     _navEvents.trySend(
                         ChartViewerNavEvent.PullRequestCreated(prId = result.value.id),
                     )

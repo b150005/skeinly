@@ -1218,7 +1218,7 @@ class ProjectDetailViewModelTest {
                 awaitItem() // row incremented
                 cancelAndIgnoreRemainingEvents()
             }
-            assertEquals(listOf("row_incremented"), tracker.captured)
+            assertEquals(listOf("row_incremented"), tracker.capturedNames)
         }
 
     @Test
@@ -1234,6 +1234,6 @@ class ProjectDetailViewModelTest {
                 awaitItem() // row decremented
                 cancelAndIgnoreRemainingEvents()
             }
-            assertTrue(tracker.captured.isEmpty(), "decrement should not capture in Phase F.3")
+            assertTrue(tracker.capturedNames.isEmpty(), "decrement should not capture in Phase F.3")
         }
 }

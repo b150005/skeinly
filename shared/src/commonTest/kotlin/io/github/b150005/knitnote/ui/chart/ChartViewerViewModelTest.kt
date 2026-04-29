@@ -1,6 +1,8 @@
 package io.github.b150005.knitnote.ui.chart
 
 import app.cash.turbine.test
+import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
+import io.github.b150005.knitnote.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.knitnote.domain.model.AuthState
 import io.github.b150005.knitnote.domain.model.ChartBranch
 import io.github.b150005.knitnote.domain.model.ChartCell
@@ -86,6 +88,7 @@ class ChartViewerViewModelTest {
     private fun makeViewModel(
         patternId: String,
         projectId: String? = null,
+        analyticsTracker: AnalyticsTracker? = null,
     ): ChartViewerViewModel =
         ChartViewerViewModel(
             patternId = patternId,
@@ -100,6 +103,7 @@ class ChartViewerViewModelTest {
                     getStructuredChart = GetStructuredChartByPatternIdUseCase(repo),
                     authRepository = null,
                 ),
+            analyticsTracker = analyticsTracker,
         )
 
     @Test
@@ -621,6 +625,7 @@ class ChartViewerViewModelTest {
         seedSourceBranch: Boolean = true,
         seedTargetMain: Boolean = true,
         sourceTipMatchesChart: Boolean = true,
+        analyticsTracker: AnalyticsTracker? = null,
     ): OpenPrTestRig {
         val patternRepo = FakePatternRepository()
         val branchRepo = FakeChartBranchRepository()
@@ -678,6 +683,7 @@ class ChartViewerViewModelTest {
                 chartBranchRepository = branchRepo,
                 authRepository = authRepo,
                 openPullRequest = openPrUseCase,
+                analyticsTracker = analyticsTracker,
             )
         return OpenPrTestRig(vm, prRepo, patternRepo, branchRepo, authRepo)
     }
@@ -877,6 +883,136 @@ class ChartViewerViewModelTest {
             assertNull(state.openPrError)
             assertNull(rig.prRepo.lastOpened)
         }
+
+    // region Phase F.4 — analytics
+
+    @Test
+    fun `tapCell on WIP captures segment_marked_done with via=tap`() =
+        runTest {
+            repo.seed(chart("pat-1", listOf(ChartLayer(id = "L1", name = "Main"))))
+            // Pre-seed segment as WIP so the next tap cycles WIP→DONE.
+            segmentRepo.upsert(
+                ProjectSegment(
+                    id = ProjectSegment.buildId("proj-1", "L1", 1, 2),
+                    projectId = "proj-1",
+                    layerId = "L1",
+                    cellX = 1,
+                    cellY = 2,
+                    state = SegmentState.WIP,
+                    ownerId = "test-user",
+                    updatedAt = Instant.parse("2026-04-30T00:00:00Z"),
+                ),
+            )
+            val tracker = RecordingAnalyticsTracker()
+            val viewModel = makeViewModel("pat-1", projectId = "proj-1", analyticsTracker = tracker)
+
+            viewModel.onEvent(ChartViewerEvent.TapCell("L1", 1, 2))
+            advanceUntilIdle()
+
+            assertEquals(1, tracker.captured.size)
+            assertEquals("segment_marked_done", tracker.captured[0].name)
+            assertEquals(mapOf("via" to "tap"), tracker.captured[0].properties)
+        }
+
+    @Test
+    fun `tapCell on TODO does not capture segment_marked_done`() =
+        runTest {
+            repo.seed(chart("pat-1", listOf(ChartLayer(id = "L1", name = "Main"))))
+            val tracker = RecordingAnalyticsTracker()
+            val viewModel = makeViewModel("pat-1", projectId = "proj-1", analyticsTracker = tracker)
+
+            viewModel.onEvent(ChartViewerEvent.TapCell("L1", 1, 2))
+            advanceUntilIdle()
+
+            assertTrue(tracker.captured.isEmpty(), "tap on TODO transitions to WIP not DONE")
+        }
+
+    @Test
+    fun `longPressCell captures segment_marked_done with via=long_press on first transition`() =
+        runTest {
+            repo.seed(chart("pat-1", listOf(ChartLayer(id = "L1", name = "Main"))))
+            val tracker = RecordingAnalyticsTracker()
+            val viewModel = makeViewModel("pat-1", projectId = "proj-1", analyticsTracker = tracker)
+
+            viewModel.onEvent(ChartViewerEvent.LongPressCell("L1", 4, 5))
+            advanceUntilIdle()
+
+            assertEquals(1, tracker.captured.size)
+            assertEquals("segment_marked_done", tracker.captured[0].name)
+            assertEquals(mapOf("via" to "long_press"), tracker.captured[0].properties)
+        }
+
+    @Test
+    fun `longPressCell on already-DONE segment does not capture`() =
+        runTest {
+            repo.seed(chart("pat-1", listOf(ChartLayer(id = "L1", name = "Main"))))
+            segmentRepo.upsert(
+                ProjectSegment(
+                    id = ProjectSegment.buildId("proj-1", "L1", 4, 5),
+                    projectId = "proj-1",
+                    layerId = "L1",
+                    cellX = 4,
+                    cellY = 5,
+                    state = SegmentState.DONE,
+                    ownerId = "test-user",
+                    updatedAt = Instant.parse("2026-04-30T00:00:00Z"),
+                ),
+            )
+            val tracker = RecordingAnalyticsTracker()
+            val viewModel = makeViewModel("pat-1", projectId = "proj-1", analyticsTracker = tracker)
+
+            viewModel.onEvent(ChartViewerEvent.LongPressCell("L1", 4, 5))
+            advanceUntilIdle()
+
+            assertTrue(
+                tracker.captured.isEmpty(),
+                "long-press on already-DONE is idempotent at the use case but must not fire analytics",
+            )
+        }
+
+    @Test
+    fun `markRowDone captures segment_marked_done with via=row_batch`() =
+        runTest {
+            repo.seed(
+                chart(
+                    "pat-1",
+                    listOf(
+                        ChartLayer(
+                            id = "L1",
+                            name = "Main",
+                            cells = listOf(ChartCell("knit", 0, 2), ChartCell("knit", 1, 2)),
+                        ),
+                    ),
+                ),
+            )
+            val tracker = RecordingAnalyticsTracker()
+            val viewModel = makeViewModel("pat-1", projectId = "proj-1", analyticsTracker = tracker)
+
+            viewModel.onEvent(ChartViewerEvent.MarkRowDone(row = 2))
+            advanceUntilIdle()
+
+            assertEquals(1, tracker.captured.size, "row-batch fires once regardless of segment count")
+            assertEquals("segment_marked_done", tracker.captured[0].name)
+            assertEquals(mapOf("via" to "row_batch"), tracker.captured[0].properties)
+        }
+
+    @Test
+    fun `successful ConfirmOpenPullRequest captures pull_request_opened with chart_format`() =
+        runTest {
+            val tracker = RecordingAnalyticsTracker()
+            val rig = makeOpenPrViewModel(analyticsTracker = tracker)
+            rig.viewModel.onEvent(ChartViewerEvent.OpenPrTitleChanged("PR title"))
+            rig.viewModel.onEvent(ChartViewerEvent.ConfirmOpenPullRequest)
+            advanceUntilIdle()
+
+            assertNotNull(rig.prRepo.lastOpened, "test fixture sanity: PR should land")
+            assertEquals(1, tracker.captured.size)
+            assertEquals("pull_request_opened", tracker.captured[0].name)
+            // The seeded chart uses RECT_GRID by default in [chart].
+            assertEquals(mapOf("chart_format" to "rect"), tracker.captured[0].properties)
+        }
+
+    // endregion
 }
 
 /**

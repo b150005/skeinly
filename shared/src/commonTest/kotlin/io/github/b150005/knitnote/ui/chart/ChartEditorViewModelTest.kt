@@ -2153,7 +2153,14 @@ class ChartEditorViewModelTest {
                 awaitItem()
                 cancelAndConsumeRemainingEvents()
             }
-            assertEquals(listOf("chart_editor_save"), tracker.captured)
+            assertEquals(listOf("chart_editor_save"), tracker.capturedNames)
+            // Phase F.4 — create branch must report is_new = true so PostHog
+            // can segment editor adoption by first-save vs subsequent edits.
+            assertEquals(true, tracker.captured[0].properties?.get("is_new"))
+            assertEquals(
+                "rect",
+                tracker.captured[0].properties?.get("chart_format"),
+            )
         }
 
     @Test
@@ -2171,6 +2178,14 @@ class ChartEditorViewModelTest {
                 awaitItem()
                 cancelAndConsumeRemainingEvents()
             }
-            assertEquals(listOf("chart_editor_save"), tracker.captured)
+            assertEquals(listOf("chart_editor_save"), tracker.capturedNames)
+            // Phase F.4 — update branch must report is_new = false (regression
+            // anchor; Phase F.3 originally captured both branches as a single
+            // event, F.4 split via this property).
+            assertEquals(false, tracker.captured[0].properties?.get("is_new"))
+            assertEquals(
+                "rect",
+                tracker.captured[0].properties?.get("chart_format"),
+            )
         }
 }
