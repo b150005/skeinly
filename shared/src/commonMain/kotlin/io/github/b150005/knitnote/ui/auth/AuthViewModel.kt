@@ -3,11 +3,12 @@ package io.github.b150005.knitnote.ui.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.b150005.knitnote.domain.model.AuthState
+import io.github.b150005.knitnote.domain.usecase.ErrorMessage
 import io.github.b150005.knitnote.domain.usecase.ObserveAuthStateUseCase
 import io.github.b150005.knitnote.domain.usecase.SignInUseCase
 import io.github.b150005.knitnote.domain.usecase.SignUpUseCase
 import io.github.b150005.knitnote.domain.usecase.UseCaseResult
-import io.github.b150005.knitnote.domain.usecase.toMessage
+import io.github.b150005.knitnote.domain.usecase.toErrorMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +23,7 @@ data class AuthUiState(
     val password: String = "",
     val isSignUp: Boolean = false,
     val isSubmitting: Boolean = false,
-    val error: String? = null,
+    val error: ErrorMessage? = null,
 )
 
 sealed interface AuthEvent {
@@ -46,7 +47,7 @@ private data class FormState(
     val password: String = "",
     val isSignUp: Boolean = false,
     val isSubmitting: Boolean = false,
-    val error: String? = null,
+    val error: ErrorMessage? = null,
 )
 
 class AuthViewModel(
@@ -101,7 +102,7 @@ class AuthViewModel(
                     form.update { it.copy(isSubmitting = false) }
                 }
                 is UseCaseResult.Failure -> {
-                    form.update { it.copy(isSubmitting = false, error = result.error.toMessage()) }
+                    form.update { it.copy(isSubmitting = false, error = result.error.toErrorMessage()) }
                 }
             }
         }

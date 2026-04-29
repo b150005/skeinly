@@ -89,7 +89,7 @@ struct LoginScreen: View {
                 viewModel.onEvent(event: AuthEventClearError.shared)
             }
         } message: {
-            Text(state.error ?? "")
+            Text(state.error?.localizedString ?? "")
         }
     }
 }
