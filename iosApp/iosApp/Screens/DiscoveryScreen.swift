@@ -7,6 +7,21 @@ struct DiscoveryScreen: View {
     @State private var showError = false
     @State private var searchText = ""
     @State private var forkedCloseable: Closeable?
+    /// Phase 36.5+: transient post-fork feedback. Mirrors the Compose
+    /// Snackbar surfaced via `launch { showSnackbar(...) }` in
+    /// DiscoveryScreen.kt — the message visibility window is 2s on the
+    /// Discovery screen before `path = NavigationPath()` unmounts the view
+    /// and pushes ProjectDetail, since SwiftUI overlays are scoped to the
+    /// host view's lifetime (unlike StructuredChartViewerScreen's
+    /// `prOpenedToast` which survives because the source stays in the
+    /// navigation stack — Discovery resets the stack instead of pushing).
+    @State private var forkResultToast: String?
+    /// Holds the unstructured `Task` spawned from the Kotlin Flow callback
+    /// in `observeForkedProjectId` so `.onDisappear` can cancel it. Without
+    /// this, the task would keep running through its 2s sleep + path
+    /// mutations even after the view unmounts — latent hazard if the
+    /// navigation stack composition ever changes.
+    @State private var forkTask: Task<Void, Never>?
 
     private var viewModel: DiscoveryViewModel { holder.viewModel }
 
@@ -45,10 +60,13 @@ struct DiscoveryScreen: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { sortToolbarItem }
             .overlay { forkingOverlay }
+            .overlay(alignment: .bottom) { forkResultToastOverlay }
             .task { observeForkedProjectId() }
             .onDisappear {
                 forkedCloseable?.close()
                 forkedCloseable = nil
+                forkTask?.cancel()
+                forkTask = nil
             }
     }
 
@@ -147,6 +165,34 @@ struct DiscoveryScreen: View {
         }
     }
 
+    /// Phase 36.5+: transient toast for post-fork feedback. Pattern mirrors
+    /// `prOpenedToast` / `switchedToast` in StructuredChartViewerScreen.swift
+    /// (Capsule + thinMaterial + callout font + 24pt bottom inset), but the
+    /// visibility window is governed by an explicit pre-navigation delay in
+    /// `observeForkedProjectId` rather than a `.task` auto-dismiss timer
+    /// because Discovery resets the navigation path (which unmounts this
+    /// view) instead of pushing on top of it.
+    @ViewBuilder
+    private var forkResultToastOverlay: some View {
+        if let message = forkResultToast {
+            Text(verbatim: message)
+                .font(.callout)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(.thinMaterial, in: Capsule())
+                .padding(.horizontal, 16)
+                .padding(.bottom, 24)
+                .transition(.opacity)
+                // Surface the message text to accessibility/automation trees
+                // (XCUITest, Maestro) that statically inspect the hierarchy
+                // even though the 2s visibility window is too short for
+                // VoiceOver to reliably announce in normal use.
+                .accessibilityLabel(Text(verbatim: message))
+                .accessibilityIdentifier("forkResultToast")
+        }
+    }
+
     private func observeForkedProjectId() {
         // `.task { }` re-fires on every view re-appearance. Close any prior
         // subscription before replacing it so we do not leak one Closeable per
@@ -155,19 +201,33 @@ struct DiscoveryScreen: View {
         forkedCloseable = nil
         let wrapper = KoinHelperKt.wrapDiscoveryForkedProjectFlow(flow: viewModel.forkedProject)
         forkedCloseable = wrapper.collect { result in
-            Task { @MainActor in
-                // Phase 36.3 (ADR-012 §3): the iOS Discovery surface does NOT
-                // emit a transient Snackbar/toast on `chartCloned == false` —
-                // SwiftUI lacks a non-blocking toast helper in this codebase
-                // and the existing `.alert` host is blocking, which would
-                // contradict ADR-012 §7 ("surfaces error without blocking
-                // navigation"). The chart-clone failure surfaces instead via
-                // ProjectDetail's "Create structured chart" CTA on the
-                // destination screen — same recovery path as a metadata-only
-                // public pattern. Adding an iOS toast helper is a Phase 36.5+
-                // polish item; the data layer (chartCloned flag) is correct
-                // and unit-tested today.
+            // Phase 36.5+ closes the Phase 36.3 ADR-012 §7 deferral.
+            // Compose surfaces both success and failure paths via the
+            // host-launched (non-awaited) Snackbar; iOS now mirrors that
+            // by setting a 2s-visible bottom toast BEFORE resetting the
+            // navigation path. The chart-clone failure copy explicitly
+            // names the recovery action ("try re-forking from project
+            // detail") consistent with `message_forked_chart_failed`.
+            //
+            // The unstructured `Task` is captured into `forkTask` so
+            // `.onDisappear` can cancel it — without that, the 2s sleep +
+            // path mutations would keep running after the view unmounts.
+            // `try await` (no `?`) allows `CancellationError` to short-
+            // circuit the function, leaving `path` untouched on cancel.
+            forkTask?.cancel()
+            forkTask = Task { @MainActor in
                 guard let forkResult = result as? DiscoveryForkResult else { return }
+                let key = forkResult.chartCloneFailed
+                    ? "message_forked_chart_failed"
+                    : "message_forked_successfully"
+                forkResultToast = NSLocalizedString(key, comment: "")
+                do {
+                    try await Task.sleep(nanoseconds: 2_000_000_000)
+                } catch {
+                    // Cancelled by `.onDisappear` — leave navigation alone.
+                    return
+                }
+                forkResultToast = nil
                 path = NavigationPath()
                 path.append(Route.projectDetail(projectId: forkResult.projectId))
             }
