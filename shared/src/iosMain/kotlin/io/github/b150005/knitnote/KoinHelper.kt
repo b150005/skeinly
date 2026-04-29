@@ -1,5 +1,7 @@
 package io.github.b150005.knitnote
 
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvent
+import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.data.preferences.AnalyticsPreferences
 import io.github.b150005.knitnote.data.remote.SupabaseConfig
 import io.github.b150005.knitnote.data.remote.isConfigured
@@ -71,6 +73,16 @@ fun getSettingsViewModel(): SettingsViewModel = KoinPlatform.getKoin().get()
 fun getAnalyticsPreferences(): AnalyticsPreferences = KoinPlatform.getKoin().get()
 
 fun wrapAnalyticsOptInFlow(flow: kotlinx.coroutines.flow.StateFlow<Boolean>): FlowWrapper<kotlin.Boolean> = FlowWrapper(flow)
+
+// Phase F.3 — analytics event bridge. Application layer (iOSApp.swift)
+// collects this Flow and forwards each AnalyticsEvent to
+// PostHogSDK.shared.capture(...). The tracker itself gates emissions on
+// the opt-in preference; this wrapper just adapts the Kotlin SharedFlow
+// to a Swift-consumable EventFlowWrapper.
+fun getAnalyticsTracker(): AnalyticsTracker = KoinPlatform.getKoin().get()
+
+fun wrapAnalyticsEventsFlow(flow: kotlinx.coroutines.flow.SharedFlow<AnalyticsEvent>): EventFlowWrapper<AnalyticsEvent> =
+    EventFlowWrapper(flow)
 
 fun getActivityFeedViewModel(): ActivityFeedViewModel = KoinPlatform.getKoin().get()
 

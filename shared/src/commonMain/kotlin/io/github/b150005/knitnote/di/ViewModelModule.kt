@@ -30,13 +30,20 @@ import org.koin.dsl.module
 
 val viewModelModule =
     module {
-        viewModelOf(::OnboardingViewModel)
+        // Phase F.3 — `OnboardingViewModel` and `ProjectListViewModel` are
+        // pivoted from `viewModelOf(::ClassName)` to explicit `viewModel { }`
+        // blocks so the optional `analyticsTracker` ctor param is visible at
+        // the DI site. `viewModelOf` would also resolve the default-null
+        // param via reflection, but the explicit form makes the analytics
+        // wiring greppable. The `ActivityFeedViewModel` line just below is
+        // unrelated to Phase F.3 (it was already explicit pre-Phase F.3).
+        viewModel { OnboardingViewModel(get(), get(), get()) }
         viewModelOf(::AuthViewModel)
         viewModelOf(::ForgotPasswordViewModel)
         viewModelOf(::ProfileViewModel)
         viewModelOf(::SettingsViewModel)
         viewModel { ActivityFeedViewModel(get(), get(), get()) }
-        viewModelOf(::ProjectListViewModel)
+        viewModel { ProjectListViewModel(get(), get(), get(), get(), get(), get()) }
         viewModelOf(::PatternLibraryViewModel)
         viewModelOf(::DiscoveryViewModel)
         viewModel { params ->
@@ -45,6 +52,7 @@ val viewModelModule =
                 patternRepository = get(),
                 createPattern = get(),
                 updatePattern = get(),
+                analyticsTracker = get(),
             )
         }
         viewModel { params ->
@@ -71,6 +79,7 @@ val viewModelModule =
                 observeStructuredChart = get(),
                 observeProjectSegments = get(),
                 resetProjectProgress = get(),
+                analyticsTracker = get(),
             )
         }
         viewModel { SharedWithMeViewModel(get(), get(), get(), get()) }
@@ -141,6 +150,7 @@ val viewModelModule =
                 createStructuredChart = get(),
                 updateStructuredChart = get(),
                 symbolCatalog = get(),
+                analyticsTracker = get(),
             )
         }
         viewModelOf(::SymbolGalleryViewModel)

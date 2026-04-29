@@ -2,6 +2,7 @@ package io.github.b150005.knitnote.ui.projectlist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.Project
 import io.github.b150005.knitnote.domain.model.ProjectStatus
@@ -84,6 +85,8 @@ class ProjectListViewModel(
     private val createProject: CreateProjectUseCase,
     private val deleteProject: DeleteProjectUseCase,
     private val signOut: SignOutUseCase,
+    // Phase F.3 — nullable + default null preserves existing test compat.
+    private val analyticsTracker: AnalyticsTracker? = null,
 ) : ViewModel() {
     private val uiFlags = MutableStateFlow(UiFlags())
     private val filterState = MutableStateFlow(FilterState())
@@ -138,6 +141,7 @@ class ProjectListViewModel(
                     when (val result = createProject(event.title, event.totalRows, event.patternId)) {
                         is UseCaseResult.Success -> {
                             uiFlags.update { it.copy(showCreateDialog = false) }
+                            analyticsTracker?.capture("project_created")
                         }
                         is UseCaseResult.Failure -> {
                             uiFlags.update { it.copy(error = result.error.toErrorMessage()) }

@@ -1,6 +1,8 @@
 package io.github.b150005.knitnote.ui.patternedit
 
 import app.cash.turbine.test
+import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
+import io.github.b150005.knitnote.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.knitnote.domain.model.Difficulty
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.Visibility
@@ -23,6 +25,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.time.Clock
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -31,10 +34,19 @@ class PatternEditViewModelTest {
     private val patternRepository = FakePatternRepository()
     private val authRepository = FakeAuthRepository()
 
-    private fun createViewModel(patternId: String? = null): PatternEditViewModel {
+    private fun createViewModel(
+        patternId: String? = null,
+        analyticsTracker: AnalyticsTracker? = null,
+    ): PatternEditViewModel {
         val createPattern = CreatePatternUseCase(patternRepository, authRepository)
         val updatePattern = UpdatePatternUseCase(patternRepository)
-        return PatternEditViewModel(patternId, patternRepository, createPattern, updatePattern)
+        return PatternEditViewModel(
+            patternId,
+            patternRepository,
+            createPattern,
+            updatePattern,
+            analyticsTracker,
+        )
     }
 
     @BeforeTest
@@ -161,5 +173,51 @@ class PatternEditViewModelTest {
                 awaitItem() // Unit emitted on success
                 assertFalse(viewModel.state.value.isSaving)
             }
+        }
+
+    @Test
+    fun `Save on new pattern captures pattern_created analytics event`() =
+        runTest {
+            val tracker = RecordingAnalyticsTracker()
+            val viewModel = createViewModel(patternId = null, analyticsTracker = tracker)
+            viewModel.onEvent(PatternEditEvent.UpdateTitle("Created via test"))
+            viewModel.onEvent(PatternEditEvent.Save)
+            advanceUntilIdle()
+            assertEquals(listOf("pattern_created"), tracker.captured)
+        }
+
+    @Test
+    fun `Save on existing pattern does not capture pattern_created`() =
+        runTest {
+            val pattern =
+                Pattern(
+                    id = "p1",
+                    ownerId = "user-1",
+                    title = "Existing",
+                    description = null,
+                    difficulty = null,
+                    gauge = null,
+                    yarnInfo = null,
+                    needleSize = null,
+                    chartImageUrls = emptyList(),
+                    visibility = Visibility.PRIVATE,
+                    createdAt =
+                        kotlin.time.Clock.System
+                            .now(),
+                    updatedAt =
+                        kotlin.time.Clock.System
+                            .now(),
+                )
+            patternRepository.create(pattern)
+            val tracker = RecordingAnalyticsTracker()
+            val viewModel = createViewModel(patternId = "p1", analyticsTracker = tracker)
+            advanceUntilIdle()
+            viewModel.onEvent(PatternEditEvent.UpdateTitle("Renamed"))
+            viewModel.onEvent(PatternEditEvent.Save)
+            advanceUntilIdle()
+            assertTrue(
+                tracker.captured.isEmpty(),
+                "edit-existing path is reserved for Phase F.4 pattern_edited event",
+            )
         }
 }

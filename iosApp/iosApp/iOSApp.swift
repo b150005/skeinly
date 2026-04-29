@@ -37,12 +37,26 @@ struct iOSApp: App {
         // OFF mid-session calls optOut() to suspend further capture; toggling
         // ON again calls optIn(). Mirrors KnitNoteApplication.kt's lifecycle.
         Self.observeAnalyticsOptIn()
+        // Phase F.3 — bridge shared AnalyticsTracker events to PostHog.
+        Self.observeAnalyticsEvents()
     }
 
     /// Holds the `Closeable` for the analytics opt-in observer. Static so
     /// SwiftUI's struct re-init does not drop the subscription. The observer
     /// lives for the entire app process lifetime — no `close()` needed.
     private static var analyticsOptInCloseable: Closeable?
+
+    /// Phase F.3 — events stream subscription. Same lifetime + ownership
+    /// rationale as `analyticsOptInCloseable`.
+    private static var analyticsEventsCloseable: Closeable?
+
+    /// Phase F.3 — promoted to a class-level static so both the opt-in
+    /// observer and the events collector can read/write it. Both closures
+    /// are dispatched via `FlowWrapper`'s Dispatchers.Main, so accesses
+    /// are serialized on the iOS main thread by construction. Do NOT
+    /// refactor FlowWrapper to a different dispatcher without promoting
+    /// this to a thread-safe primitive — the invariant is fragile.
+    private static var posthogInitialized = false
 
     private static func observeAnalyticsOptIn() {
         guard
@@ -63,12 +77,6 @@ struct iOSApp: App {
 
         let prefs = KoinHelperKt.getAnalyticsPreferences()
         let wrapper = KoinHelperKt.wrapAnalyticsOptInFlow(flow: prefs.analyticsOptIn)
-        // `posthogInitialized` is captured by a single FlowWrapper.collect
-        // closure, which dispatches on Dispatchers.Main per FlowWrapper.kt —
-        // accesses are serialized on the main thread. Do NOT refactor
-        // FlowWrapper to a different dispatcher without promoting this to a
-        // thread-safe wrapper; the invariant is concurrency-fragile.
-        var posthogInitialized = false
         analyticsOptInCloseable = wrapper.collect { value in
             // Generic FlowWrapper<Boolean> bridges to KotlinBoolean on Swift
             // side — unwrap explicitly. False on accidental nil to keep
@@ -95,6 +103,27 @@ struct iOSApp: App {
                 PostHogSDK.shared.optIn()
             default:
                 break
+            }
+        }
+    }
+
+    /// Phase F.3 — collects shared `AnalyticsTracker.events` and forwards
+    /// each emission to `PostHogSDK.shared.capture(...)`. The tracker
+    /// silently no-ops captures while opt-in is OFF, so this collector
+    /// only sees events the user has consented to. The
+    /// `posthogInitialized` guard handles the brief window between
+    /// opt-in flipping ON and the SDK setup() landing — any event that
+    /// lands in that gap is silently dropped to avoid a "not initialized"
+    /// SDK warning.
+    private static func observeAnalyticsEvents() {
+        // Idempotency guard mirrors observeAnalyticsOptIn().
+        analyticsEventsCloseable?.close()
+        let tracker = KoinHelperKt.getAnalyticsTracker()
+        let wrapper = KoinHelperKt.wrapAnalyticsEventsFlow(flow: tracker.events)
+        analyticsEventsCloseable = wrapper.collect { value in
+            guard let event = value as? AnalyticsEvent else { return }
+            if posthogInitialized {
+                PostHogSDK.shared.capture(event.name)
             }
         }
     }

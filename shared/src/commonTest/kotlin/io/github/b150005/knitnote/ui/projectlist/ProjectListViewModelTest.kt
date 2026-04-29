@@ -1,6 +1,7 @@
 package io.github.b150005.knitnote.ui.projectlist
 
 import app.cash.turbine.test
+import io.github.b150005.knitnote.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.knitnote.domain.model.AuthState
 import io.github.b150005.knitnote.domain.model.Project
 import io.github.b150005.knitnote.domain.model.ProjectStatus
@@ -39,12 +40,14 @@ class ProjectListViewModelTest {
     private lateinit var viewModel: ProjectListViewModel
     private val fakeAuth = FakeAuthRepository()
     private val ownerId = "user-1"
+    private lateinit var analyticsTracker: RecordingAnalyticsTracker
 
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         repository = FakeProjectRepository()
         fakeAuth.setAuthState(AuthState.Authenticated(ownerId, "test@example.com"))
+        analyticsTracker = RecordingAnalyticsTracker()
         viewModel =
             ProjectListViewModel(
                 getProjects = GetProjectsUseCase(repository, fakeAuth),
@@ -52,6 +55,7 @@ class ProjectListViewModelTest {
                 createProject = CreateProjectUseCase(repository, fakeAuth),
                 deleteProject = DeleteProjectUseCase(repository),
                 signOut = SignOutUseCase(fakeAuth, CloseRealtimeChannelsUseCase(null, null, null)),
+                analyticsTracker = analyticsTracker,
             )
     }
 
@@ -621,6 +625,37 @@ class ProjectListViewModelTest {
                 assertEquals(listOf("Wool Scarf", "Wool Blanket"), state.projects.map { it.title })
                 cancelAndIgnoreRemainingEvents()
             }
+        }
+
+    // endregion
+
+    // region Phase F.3 — analytics
+
+    @Test
+    fun `successful CreateProject captures project_created analytics event`() =
+        runTest {
+            viewModel.state.test {
+                awaitItem() // initial
+                viewModel.onEvent(ProjectListEvent.CreateProject("Analytics Project", 30))
+                awaitItem() // dialog dismiss
+                cancelAndIgnoreRemainingEvents()
+            }
+            assertEquals(listOf("project_created"), analyticsTracker.captured)
+        }
+
+    @Test
+    fun `failed CreateProject does not capture analytics event`() =
+        runTest {
+            viewModel.state.test {
+                awaitItem() // initial
+                viewModel.onEvent(ProjectListEvent.CreateProject("", null))
+                awaitItem() // error surfaced
+                cancelAndIgnoreRemainingEvents()
+            }
+            assertTrue(
+                analyticsTracker.captured.isEmpty(),
+                "validation failure should NOT emit project_created",
+            )
         }
 
     // endregion

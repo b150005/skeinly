@@ -1,6 +1,8 @@
 package io.github.b150005.knitnote.ui.projectdetail
 
 import app.cash.turbine.test
+import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
+import io.github.b150005.knitnote.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.knitnote.data.remote.FakeRemoteStorageDataSource
 import io.github.b150005.knitnote.domain.LocalUser
 import io.github.b150005.knitnote.domain.model.AuthState
@@ -95,7 +97,7 @@ class ProjectDetailViewModelTest {
     private val authRepository = FakeAuthRepository()
     private val userRepository = FakeUserRepository()
 
-    private fun createViewModel(): ProjectDetailViewModel =
+    private fun createViewModel(analyticsTracker: AnalyticsTracker? = null): ProjectDetailViewModel =
         ProjectDetailViewModel(
             projectId = "test-project",
             projectRepository = projectRepository,
@@ -125,6 +127,7 @@ class ProjectDetailViewModelTest {
             observeStructuredChart = ObserveStructuredChartUseCase(FakeStructuredChartRepository()),
             observeProjectSegments = ObserveProjectSegmentsUseCase(FakeProjectSegmentRepository()),
             resetProjectProgress = ResetProjectProgressUseCase(FakeProjectSegmentRepository()),
+            analyticsTracker = analyticsTracker,
         )
 
     @Test
@@ -1201,5 +1204,36 @@ class ProjectDetailViewModelTest {
                 assertNull(state.parentPatternAuthor)
                 cancelAndIgnoreRemainingEvents()
             }
+        }
+
+    @Test
+    fun `IncrementRow captures row_incremented analytics event on success`() =
+        runTest(testDispatcher) {
+            projectRepository.create(createTestProject())
+            val tracker = RecordingAnalyticsTracker()
+            val viewModel = createViewModel(tracker)
+            viewModel.state.test {
+                awaitItem() // initial loaded state
+                viewModel.onEvent(ProjectDetailEvent.IncrementRow)
+                awaitItem() // row incremented
+                cancelAndIgnoreRemainingEvents()
+            }
+            assertEquals(listOf("row_incremented"), tracker.captured)
+        }
+
+    @Test
+    fun `DecrementRow does not capture analytics event in Phase F-3`() =
+        runTest(testDispatcher) {
+            // Phase F.3 ships row_incremented only; decrement is Phase F.4+ if at all.
+            projectRepository.create(createTestProject().copy(currentRow = 5))
+            val tracker = RecordingAnalyticsTracker()
+            val viewModel = createViewModel(tracker)
+            viewModel.state.test {
+                awaitItem() // initial loaded state
+                viewModel.onEvent(ProjectDetailEvent.DecrementRow)
+                awaitItem() // row decremented
+                cancelAndIgnoreRemainingEvents()
+            }
+            assertTrue(tracker.captured.isEmpty(), "decrement should not capture in Phase F.3")
         }
 }

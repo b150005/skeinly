@@ -5,6 +5,7 @@ import android.util.Log
 import com.posthog.PostHog
 import com.posthog.android.PostHogAndroid
 import com.posthog.android.PostHogAndroidConfig
+import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.data.preferences.AnalyticsPreferences
 import io.github.b150005.knitnote.data.remote.SupabaseConfig
 import io.github.b150005.knitnote.data.remote.isConfigured
@@ -15,6 +16,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
@@ -65,16 +67,15 @@ class KnitNoteApplication : Application() {
         val posthogApiKey = BuildConfig.POSTHOG_API_KEY
         if (posthogApiKey.isNotEmpty()) {
             val analyticsPrefs: AnalyticsPreferences = get()
-            // `posthogInitialized` is captured by exactly one coroutine collecting
-            // a single StateFlow — `StateFlow.collect` is sequential per collector,
-            // so this is single-threaded by construction and needs no atomic. Do
-            // NOT refactor to a separate scope or `launchIn` without promoting
-            // this to AtomicBoolean — the invariant is concurrency-fragile.
-            var posthogInitialized = false
+            // Phase F.3 promoted `posthogInitialized` from a captured `var` to
+            // an AtomicBoolean because the analytics-events collector below
+            // reads it from a separate coroutine. AtomicBoolean is the JVM
+            // visibility guarantee the cross-coroutine read needs.
+            val posthogInitialized = AtomicBoolean(false)
             applicationScope.launch {
                 analyticsPrefs.analyticsOptIn.collect { optIn ->
                     when {
-                        optIn && !posthogInitialized -> {
+                        optIn && !posthogInitialized.get() -> {
                             val config =
                                 PostHogAndroidConfig(
                                     apiKey = posthogApiKey,
@@ -93,20 +94,36 @@ class KnitNoteApplication : Application() {
                                     sendFeatureFlagEvent = false
                                 }
                             PostHogAndroid.setup(this@KnitNoteApplication, config)
-                            posthogInitialized = true
+                            posthogInitialized.set(true)
                             Log.i("KnitNote", "PostHog initialized (analytics opt-in)")
                         }
-                        !optIn && posthogInitialized -> {
+                        !optIn && posthogInitialized.get() -> {
                             PostHog.optOut()
                             Log.i("KnitNote", "PostHog opt-out (toggled off)")
                         }
-                        optIn && posthogInitialized -> {
+                        optIn && posthogInitialized.get() -> {
                             // Re-enable after toggling off then on in the same
                             // session — the SDK's optIn() flips a flag without
                             // re-initializing.
                             PostHog.optIn()
                             Log.i("KnitNote", "PostHog opt-in (re-enabled)")
                         }
+                    }
+                }
+            }
+
+            // Phase F.3 — bridge shared AnalyticsTracker events to PostHog.
+            // The tracker itself silently no-ops when opt-in is OFF, so this
+            // collector only sees events that the user has consented to.
+            // The `posthogInitialized.get()` guard handles the brief window
+            // between opt-in flipping ON and the SDK setup() landing — any
+            // event that lands in that gap is silently dropped (PostHog SDK
+            // would emit a "not initialized" warning otherwise).
+            val analyticsTracker: AnalyticsTracker = get()
+            applicationScope.launch {
+                analyticsTracker.events.collect { event ->
+                    if (posthogInitialized.get()) {
+                        PostHog.capture(event.name)
                     }
                 }
             }
