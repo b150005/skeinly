@@ -42,6 +42,7 @@ import io.github.b150005.knitnote.generated.resources.label_email
 import io.github.b150005.knitnote.generated.resources.label_password
 import io.github.b150005.knitnote.generated.resources.title_create_account
 import io.github.b150005.knitnote.generated.resources.title_sign_in
+import io.github.b150005.knitnote.ui.components.localized
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -49,9 +50,10 @@ import org.koin.compose.viewmodel.koinViewModel
 fun LoginScreen(viewModel: AuthViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val errorText = state.error?.localized()
 
-    LaunchedEffect(state.error) {
-        state.error?.let {
+    LaunchedEffect(errorText) {
+        errorText?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(AuthEvent.ClearError)
         }
