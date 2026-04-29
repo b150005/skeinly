@@ -32,6 +32,13 @@
     <string name="error_load">読み込みに失敗しました</string>
     <string name="error_save">保存に失敗しました</string>
     <string name="error_network">ネットワークに接続できません</string>
+    <string name="error_authentication_failed">認証に失敗しました</string>
+    <string name="error_email_invalid">無効なメールアドレスです</string>
+    <string name="error_email_not_confirmed">メールアドレスを先に確認してください</string>
+    <string name="error_invalid_credentials">メールアドレスまたはパスワードが正しくありません</string>
+    <string name="error_rate_limit_exceeded">試行回数が多すぎます。しばらくしてから再試行してください</string>
+    <string name="error_user_already_exists">このメールアドレスのアカウントは既に存在します</string>
+    <string name="error_user_not_found">このメールアドレスのアカウントが見つかりません</string>
 
     <!-- Unsaved-changes confirmation dialog -->
     <string name="dialog_unsaved_changes_title">未保存の変更があります</string>
