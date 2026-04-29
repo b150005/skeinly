@@ -2,6 +2,8 @@ package io.github.b150005.knitnote.ui.pullrequest
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvents
+import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.domain.chart.CellConflict
 import io.github.b150005.knitnote.domain.chart.CellCoordinate
 import io.github.b150005.knitnote.domain.chart.ConflictDetector
@@ -99,6 +101,7 @@ class ChartConflictResolutionViewModel(
     private val chartRevisionRepository: ChartRevisionRepository,
     private val structuredChartRepository: StructuredChartRepository,
     private val mergePullRequest: MergePullRequestUseCase,
+    private val analyticsTracker: AnalyticsTracker? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ChartConflictResolutionState())
     val state: StateFlow<ChartConflictResolutionState> = _state.asStateFlow()
@@ -218,6 +221,15 @@ class ChartConflictResolutionViewModel(
             when (val result = mergePullRequest(pr, resolved)) {
                 is UseCaseResult.Success -> {
                     _state.update { it.copy(isMerging = false) }
+                    // Phase F.5 — closes the F.4 deferral. Conflict-resolution
+                    // path always reports had_conflicts=true; the auto-clean
+                    // counterpart in PullRequestDetailViewModel reports
+                    // had_conflicts=false. Together the two ViewModels cover
+                    // every successful merge transition.
+                    analyticsTracker?.capture(
+                        eventName = AnalyticsEvents.PULL_REQUEST_MERGED,
+                        properties = mapOf(AnalyticsEvents.Props.HAD_CONFLICTS to true),
+                    )
                     _navEvents.trySend(
                         ChartConflictResolutionNavEvent.MergeApplied(
                             mergedRevisionId = result.value.mergedRevisionId,

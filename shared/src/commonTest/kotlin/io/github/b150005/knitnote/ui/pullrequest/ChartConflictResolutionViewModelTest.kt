@@ -1,5 +1,8 @@
 package io.github.b150005.knitnote.ui.pullrequest
 
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvents
+import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
+import io.github.b150005.knitnote.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.knitnote.domain.chart.CellCoordinate
 import io.github.b150005.knitnote.domain.model.AuthState
 import io.github.b150005.knitnote.domain.model.ChartCell
@@ -45,7 +48,8 @@ import kotlin.test.assertTrue
 import kotlin.time.Instant
 
 /**
- * Phase 38.4 (ADR-014 §6) coverage matrix for [ChartConflictResolutionViewModel]:
+ * Phase 38.4 (ADR-014 §6) coverage matrix for [ChartConflictResolutionViewModel],
+ * extended in Phase F.5 with the analytics-capture regression anchors:
  *
  *  1. loadInitial resolves ancestor / theirs / mine and runs ConflictDetector
  *  2. canApplyAndMerge starts false when conflicts exist
@@ -57,6 +61,8 @@ import kotlin.time.Instant
  *  8. ApplyAndMerge surfaces UseCase failure as state error
  *  9. revision lookup miss surfaces error and leaves report null
  * 10. ClearError nulls the error message
+ * 11. successful ApplyAndMerge captures pull_request_merged with had_conflicts=true
+ * 12. failed ApplyAndMerge does NOT capture pull_request_merged
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChartConflictResolutionViewModelTest {
@@ -158,6 +164,7 @@ class ChartConflictResolutionViewModelTest {
         mineLayers: List<ChartLayer>,
         signedInAs: String = "owner-id",
         mergeOps: PullRequestMergeOperations? = NoOpMergeOps(),
+        analyticsTracker: AnalyticsTracker? = null,
     ): Harness {
         val prRepo =
             FakePullRequestRepository().apply {
@@ -190,6 +197,7 @@ class ChartConflictResolutionViewModelTest {
                 chartRevisionRepository = revisionRepo,
                 structuredChartRepository = chartRepo,
                 mergePullRequest = merge,
+                analyticsTracker = analyticsTracker,
             )
         return Harness(viewModel = viewModel, mergeOps = mergeOps)
     }
@@ -365,6 +373,69 @@ class ChartConflictResolutionViewModelTest {
             val state = viewModel.state.value
             assertNull(state.report)
             assertNotNull(state.error)
+        }
+
+    @Test
+    fun `successful ApplyAndMerge captures pull_request_merged with had_conflicts true`() =
+        runTest {
+            val tracker = RecordingAnalyticsTracker()
+            val harness =
+                setupHarness(
+                    ancestorLayers = listOf(ChartLayer(id = "L1", name = "Main", cells = listOf(ChartCell("jis.k1", 0, 0)))),
+                    theirsLayers = listOf(ChartLayer(id = "L1", name = "Main", cells = listOf(ChartCell("jis.p1", 0, 0)))),
+                    mineLayers = listOf(ChartLayer(id = "L1", name = "Main", cells = listOf(ChartCell("jis.yo", 0, 0)))),
+                    analyticsTracker = tracker,
+                )
+            advanceUntilIdle()
+
+            harness.viewModel.onEvent(
+                ChartConflictResolutionEvent.PickCell(
+                    coordinate = CellCoordinate("L1", 0, 0),
+                    resolution = ConflictResolution.TAKE_THEIRS,
+                ),
+            )
+            harness.viewModel.onEvent(ChartConflictResolutionEvent.ApplyAndMerge)
+            advanceUntilIdle()
+
+            assertEquals(1, tracker.captured.size)
+            val event = tracker.captured.single()
+            assertEquals(AnalyticsEvents.PULL_REQUEST_MERGED, event.name)
+            assertEquals(mapOf(AnalyticsEvents.Props.HAD_CONFLICTS to true), event.properties)
+            // Anchor the "capture BEFORE _navEvents.trySend" invariant: if the
+            // ordering ever flips silently in applyAndMerge(), the nav event
+            // would still emit but the analytics-test contract would still
+            // pass. Asserting the nav event here makes the merge happy-path
+            // observable end-to-end from this test.
+            val navEvent = harness.viewModel.navEvents.first()
+            assertTrue(navEvent is ChartConflictResolutionNavEvent.MergeApplied)
+        }
+
+    @Test
+    fun `failed ApplyAndMerge does not capture pull_request_merged event`() =
+        runTest {
+            val tracker = RecordingAnalyticsTracker()
+            val ops = RecordingMergeOps(throwOnNext = RuntimeException("Source tip drifted"))
+            val harness =
+                setupHarness(
+                    ancestorLayers = listOf(ChartLayer(id = "L1", name = "Main", cells = listOf(ChartCell("jis.k1", 0, 0)))),
+                    theirsLayers = listOf(ChartLayer(id = "L1", name = "Main", cells = listOf(ChartCell("jis.p1", 0, 0)))),
+                    mineLayers = listOf(ChartLayer(id = "L1", name = "Main", cells = listOf(ChartCell("jis.yo", 0, 0)))),
+                    mergeOps = ops,
+                    analyticsTracker = tracker,
+                )
+            advanceUntilIdle()
+
+            harness.viewModel.onEvent(
+                ChartConflictResolutionEvent.PickCell(
+                    coordinate = CellCoordinate("L1", 0, 0),
+                    resolution = ConflictResolution.TAKE_THEIRS,
+                ),
+            )
+            harness.viewModel.onEvent(ChartConflictResolutionEvent.ApplyAndMerge)
+            advanceUntilIdle()
+
+            assertTrue(tracker.captured.isEmpty())
+            assertNotNull(harness.viewModel.state.value.error)
         }
 
     @Test

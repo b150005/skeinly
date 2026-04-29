@@ -198,6 +198,13 @@ val viewModelModule =
                 chartRevisionRepository = get(),
                 structuredChartRepository = get(),
                 mergePullRequest = get(),
+                // Phase F.5 — AnalyticsTracker is registered as a single in
+                // PreferencesModule and always present in production. The
+                // ctor param is nullable-with-default so test sites can
+                // construct the ViewModel without loading the analytics
+                // module; production wiring uses get() not getOrNull()
+                // (matches the F.3/F.4 pattern across the other ViewModels).
+                analyticsTracker = get(),
             )
         }
     }

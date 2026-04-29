@@ -504,12 +504,16 @@ class PullRequestDetailViewModel(
                 when (val result = merge(pullRequest = pr, resolvedChart = resolved)) {
                     is UseCaseResult.Success -> {
                         _state.update { it.copy(isMerging = false) }
-                        // Phase F.4 — auto-clean path always reports
-                        // had_conflicts=false. The conflict path lives in
-                        // ChartConflictResolutionViewModel; wiring capture
-                        // there is deferred to Phase F.5+ (would require
-                        // injecting AnalyticsTracker into a second ViewModel
-                        // outside the F.4 scope of "PR detail screen").
+                        // Phase F.4 / F.5 — this branch is only reachable when
+                        // ConflictDetector found ZERO conflicts; the merge
+                        // landed without a user resolution step (auto-clean /
+                        // fast-forward path). The mutually-exclusive
+                        // counterpart with had_conflicts=true lives in
+                        // ChartConflictResolutionViewModel.applyAndMerge,
+                        // which is the navigation target of `attemptMerge`'s
+                        // conflicting branch above. Together the two
+                        // ViewModels cover every successful merge transition
+                        // exactly once.
                         analyticsTracker?.capture(
                             eventName = AnalyticsEvents.PULL_REQUEST_MERGED,
                             properties = mapOf(AnalyticsEvents.Props.HAD_CONFLICTS to false),
