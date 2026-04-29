@@ -43,34 +43,34 @@ class ForkSharedPatternUseCase(
     @OptIn(ExperimentalUuidApi::class)
     suspend operator fun invoke(shareId: String): UseCaseResult<ForkedProject> {
         if (shareRepository == null) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Sharing requires cloud connectivity"))
+            return UseCaseResult.Failure(UseCaseError.RequiresConnectivity)
         }
 
         val userId =
             authRepository.getCurrentUserId()
-                ?: return UseCaseResult.Failure(UseCaseError.Validation("Must be signed in to fork"))
+                ?: return UseCaseResult.Failure(UseCaseError.SignInRequired)
 
         val share =
             shareRepository.getById(shareId)
-                ?: return UseCaseResult.Failure(UseCaseError.NotFound("Share not found"))
+                ?: return UseCaseResult.Failure(UseCaseError.ResourceNotFound)
 
         // Verify ownership: only the intended recipient can fork
         if (share.toUserId != null && share.toUserId != userId) {
-            return UseCaseResult.Failure(UseCaseError.Validation("This share does not belong to you"))
+            return UseCaseResult.Failure(UseCaseError.PermissionDenied)
         }
 
         // Verify status: declined shares cannot be forked
         if (share.status == ShareStatus.DECLINED) {
-            return UseCaseResult.Failure(UseCaseError.Validation("This share has been declined"))
+            return UseCaseResult.Failure(UseCaseError.OperationNotAllowed)
         }
 
         if (share.permission != SharePermission.FORK) {
-            return UseCaseResult.Failure(UseCaseError.Validation("This share does not allow forking"))
+            return UseCaseResult.Failure(UseCaseError.OperationNotAllowed)
         }
 
         val sourcePattern =
             patternRepository.getById(share.patternId)
-                ?: return UseCaseResult.Failure(UseCaseError.NotFound("Shared pattern not found"))
+                ?: return UseCaseResult.Failure(UseCaseError.ResourceNotFound)
 
         val now = Clock.System.now()
 

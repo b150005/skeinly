@@ -14,10 +14,10 @@ class SendPasswordResetUseCase(
     suspend operator fun invoke(email: String): UseCaseResult<Unit> {
         val trimmed = email.trim()
         if (trimmed.isEmpty()) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Email is required"))
+            return UseCaseResult.Failure(UseCaseError.FieldRequired)
         }
         if (!trimmed.contains("@") || !trimmed.contains(".")) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Invalid email address"))
+            return UseCaseResult.Failure(UseCaseError.EmailInvalid)
         }
 
         return try {

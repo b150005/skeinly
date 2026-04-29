@@ -63,7 +63,7 @@ class ClosePullRequestUseCaseTest {
             val result = useCase(merged)
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.OperationNotAllowed, result.error)
         }
 
     @Test
@@ -74,7 +74,7 @@ class ClosePullRequestUseCaseTest {
             val result = useCase(closed)
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.OperationNotAllowed, result.error)
         }
 
     @Test

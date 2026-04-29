@@ -31,23 +31,23 @@ class ShareProjectUseCase(
         permission: SharePermission = SharePermission.VIEW,
     ): UseCaseResult<ShareLink> {
         if (shareRepository == null) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Sharing requires cloud connectivity"))
+            return UseCaseResult.Failure(UseCaseError.RequiresConnectivity)
         }
 
         val userId =
             authRepository.getCurrentUserId()
-                ?: return UseCaseResult.Failure(UseCaseError.Validation("Must be signed in to share"))
+                ?: return UseCaseResult.Failure(UseCaseError.SignInRequired)
 
         val project =
             projectRepository.getById(projectId)
-                ?: return UseCaseResult.Failure(UseCaseError.NotFound("Project not found"))
+                ?: return UseCaseResult.Failure(UseCaseError.ResourceNotFound)
 
         if (project.ownerId != userId) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Can only share your own projects"))
+            return UseCaseResult.Failure(UseCaseError.PermissionDenied)
         }
 
         if (toUserId == userId) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Cannot share with yourself"))
+            return UseCaseResult.Failure(UseCaseError.OperationNotAllowed)
         }
 
         val now = Clock.System.now()

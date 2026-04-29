@@ -33,7 +33,7 @@ class DeleteCommentUseCaseTest {
 
             val result = useCase("c-1")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.RequiresConnectivity, result.error)
         }
 
     @Test
@@ -43,7 +43,7 @@ class DeleteCommentUseCaseTest {
 
             val result = useCase("c-1")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.SignInRequired, result.error)
         }
 
     @Test
@@ -55,7 +55,7 @@ class DeleteCommentUseCaseTest {
 
             val result = useCase("non-existent")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(result.error)
+            assertIs<UseCaseError.ResourceNotFound>(result.error)
         }
 
     @Test
@@ -70,7 +70,7 @@ class DeleteCommentUseCaseTest {
             val result = useCase("c-1")
             assertIs<UseCaseResult.Failure>(result)
             // Returns NotFound (not Validation) to prevent ID enumeration
-            assertIs<UseCaseError.NotFound>(result.error)
+            assertIs<UseCaseError.ResourceNotFound>(result.error)
         }
 
     @Test

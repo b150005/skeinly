@@ -2,6 +2,7 @@ package io.github.b150005.knitnote.domain.usecase
 
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class SignUpUseCaseTest {
@@ -16,19 +17,19 @@ class SignUpUseCaseTest {
         }
 
     @Test
-    fun `sign up with blank email returns Validation error`() =
+    fun `sign up with blank email returns FieldRequired`() =
         runTest {
             val result = signUp("", "password123")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldRequired, result.error)
         }
 
     @Test
-    fun `sign up with short password returns Validation error`() =
+    fun `sign up with short password returns PasswordTooShort`() =
         runTest {
             val result = signUp("user@example.com", "12345")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.PasswordTooShort, result.error)
         }
 
     @Test

@@ -14,11 +14,11 @@ class UpdateProjectUseCase(
         totalRows: Int?,
     ): UseCaseResult<Project> {
         if (title.isBlank()) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Title must not be blank"))
+            return UseCaseResult.Failure(UseCaseError.FieldRequired)
         }
         val project =
             repository.getById(projectId)
-                ?: return UseCaseResult.Failure(UseCaseError.NotFound("Project not found: $projectId"))
+                ?: return UseCaseResult.Failure(UseCaseError.ResourceNotFound)
 
         val newStatus = resolveStatus(project, totalRows)
         val updated =

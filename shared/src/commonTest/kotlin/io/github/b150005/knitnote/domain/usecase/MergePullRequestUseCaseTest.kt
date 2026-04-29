@@ -129,7 +129,7 @@ class MergePullRequestUseCaseTest {
     }
 
     @Test
-    fun `merging a non open pull request returns Validation`() =
+    fun `merging a non open pull request returns OperationNotAllowed`() =
         runTest {
             val auth =
                 FakeAuthRepository().apply {
@@ -146,12 +146,12 @@ class MergePullRequestUseCaseTest {
             val result = useCase(merged, resolvedChart())
 
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.Validation)
+            assertEquals(UseCaseError.OperationNotAllowed, result.error)
             assertEquals(0, ops.callCount)
         }
 
     @Test
-    fun `merging while signed out returns Authentication`() =
+    fun `merging while signed out returns SignInRequired`() =
         runTest {
             val auth = FakeAuthRepository() // unauthenticated by default
             val patterns = FakePatternRepository().apply { seed(targetPattern("owner-id")) }
@@ -161,12 +161,12 @@ class MergePullRequestUseCaseTest {
             val result = useCase(openPr(), resolvedChart())
 
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.Authentication)
+            assertEquals(UseCaseError.SignInRequired, result.error)
             assertEquals(0, ops.callCount)
         }
 
     @Test
-    fun `caller not the target owner returns Validation before calling RPC`() =
+    fun `caller not the target owner returns PermissionDenied before calling RPC`() =
         runTest {
             val auth =
                 FakeAuthRepository().apply {
@@ -182,12 +182,12 @@ class MergePullRequestUseCaseTest {
             val result = useCase(openPr(), resolvedChart())
 
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.Validation)
+            assertEquals(UseCaseError.PermissionDenied, result.error)
             assertEquals(0, ops.callCount)
         }
 
     @Test
-    fun `offline only mode with null mergeOperations returns Validation`() =
+    fun `offline only mode with null mergeOperations returns RequiresConnectivity`() =
         runTest {
             val auth =
                 FakeAuthRepository().apply {
@@ -202,7 +202,7 @@ class MergePullRequestUseCaseTest {
             val result = useCase(openPr(), resolvedChart())
 
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.Validation)
+            assertEquals(UseCaseError.RequiresConnectivity, result.error)
         }
 
     @Test
@@ -229,7 +229,7 @@ class MergePullRequestUseCaseTest {
         }
 
     @Test
-    fun `Source tip drifted RPC error maps to Validation`() =
+    fun `Source tip drifted RPC error maps to OperationNotAllowed`() =
         runTest {
             val auth =
                 FakeAuthRepository().apply {
@@ -245,11 +245,11 @@ class MergePullRequestUseCaseTest {
             val result = useCase(openPr(), resolvedChart())
 
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.Validation)
+            assertEquals(UseCaseError.OperationNotAllowed, result.error)
         }
 
     @Test
-    fun `PR not open RPC error maps to Validation`() =
+    fun `PR not open RPC error maps to OperationNotAllowed`() =
         runTest {
             val auth =
                 FakeAuthRepository().apply {
@@ -265,11 +265,11 @@ class MergePullRequestUseCaseTest {
             val result = useCase(openPr(), resolvedChart())
 
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.Validation)
+            assertEquals(UseCaseError.OperationNotAllowed, result.error)
         }
 
     @Test
-    fun `Caller is not target owner RPC error maps to Authentication`() =
+    fun `Caller is not target owner RPC error maps to PermissionDenied`() =
         runTest {
             val auth =
                 FakeAuthRepository().apply {
@@ -285,7 +285,7 @@ class MergePullRequestUseCaseTest {
             val result = useCase(openPr(), resolvedChart())
 
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.Authentication)
+            assertEquals(UseCaseError.PermissionDenied, result.error)
         }
 
     @Test
@@ -305,7 +305,7 @@ class MergePullRequestUseCaseTest {
             val result = useCase(openPr(), resolvedChart())
 
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.NotFound)
+            assertTrue(result.error is UseCaseError.ResourceNotFound)
         }
 
     @Test

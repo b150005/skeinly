@@ -93,7 +93,7 @@ class PatternEditViewModelTest {
             advanceUntilIdle()
 
             assertNotNull(viewModel.state.value.error)
-            assertEquals(ErrorMessage.Raw("Title must not be blank"), viewModel.state.value.error)
+            assertEquals(ErrorMessage.FieldRequired, viewModel.state.value.error)
         }
 
     @Test

@@ -23,10 +23,10 @@ class UpdateEmailUseCase(
 
         val trimmed = newEmail.trim()
         if (trimmed.isEmpty()) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Email is required"))
+            return UseCaseResult.Failure(UseCaseError.FieldRequired)
         }
         if (!trimmed.contains("@") || !trimmed.contains(".")) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Invalid email address"))
+            return UseCaseResult.Failure(UseCaseError.EmailInvalid)
         }
 
         return try {

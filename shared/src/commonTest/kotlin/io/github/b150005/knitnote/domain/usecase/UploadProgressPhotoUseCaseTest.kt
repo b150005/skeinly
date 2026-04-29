@@ -37,32 +37,32 @@ class UploadProgressPhotoUseCaseTest {
         }
 
     @Test
-    fun `empty image data returns validation error`() =
+    fun `empty image data returns ImageInvalid`() =
         kotlinx.coroutines.test.runTest {
             val result = useCase("project-1", byteArrayOf(), "photo.jpg")
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.ImageInvalid, result.error)
         }
 
     @Test
-    fun `oversized image returns validation error`() =
+    fun `oversized image returns ImageTooLarge`() =
         kotlinx.coroutines.test.runTest {
             val oversized = ByteArray(3 * 1024 * 1024)
             val result = useCase("project-1", oversized, "big.jpg")
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.ImageTooLarge, result.error)
         }
 
     @Test
-    fun `non-JPEG image returns validation error`() =
+    fun `non-JPEG image returns ImageInvalid`() =
         kotlinx.coroutines.test.runTest {
             val pngData = byteArrayOf(0x89.toByte(), 0x50, 0x4E) + ByteArray(100)
             val result = useCase("project-1", pngData, "photo.png")
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.ImageInvalid, result.error)
         }
 
     @Test
@@ -76,13 +76,13 @@ class UploadProgressPhotoUseCaseTest {
         }
 
     @Test
-    fun `no auth returns validation error`() =
+    fun `no auth returns SignInRequired`() =
         kotlinx.coroutines.test.runTest {
             authRepository.setAuthState(AuthState.Unauthenticated)
             val result = useCase("project-1", validJpegData, "photo.jpg")
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.SignInRequired, result.error)
         }
 
     @Test

@@ -25,14 +25,14 @@ class ForkPublicPatternUseCase(
     suspend operator fun invoke(patternId: String): UseCaseResult<ForkedProject> {
         val userId =
             authRepository.getCurrentUserId()
-                ?: return UseCaseResult.Failure(UseCaseError.Validation("Must be signed in to fork"))
+                ?: return UseCaseResult.Failure(UseCaseError.SignInRequired)
 
         val sourcePattern =
             patternRepository.getById(patternId)
-                ?: return UseCaseResult.Failure(UseCaseError.NotFound("Pattern not found"))
+                ?: return UseCaseResult.Failure(UseCaseError.ResourceNotFound)
 
         if (sourcePattern.visibility != Visibility.PUBLIC) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Only public patterns can be forked"))
+            return UseCaseResult.Failure(UseCaseError.OperationNotAllowed)
         }
 
         val now = Clock.System.now()

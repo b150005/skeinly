@@ -4,6 +4,7 @@ import io.github.b150005.knitnote.data.remote.FakeRemoteStorageDataSource
 import io.github.b150005.knitnote.domain.model.AuthState
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class DeleteProgressPhotoUseCaseTest {
@@ -31,7 +32,7 @@ class DeleteProgressPhotoUseCaseTest {
         kotlinx.coroutines.test.runTest {
             val result = useCase("other-user/project-1/photo.jpg")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.PermissionDenied, result.error)
         }
 
     @Test
@@ -49,7 +50,7 @@ class DeleteProgressPhotoUseCaseTest {
             authRepository.setAuthState(AuthState.Unauthenticated)
             val result = useCase("user-1/project-1/photo.jpg")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.SignInRequired, result.error)
         }
 
     @Test

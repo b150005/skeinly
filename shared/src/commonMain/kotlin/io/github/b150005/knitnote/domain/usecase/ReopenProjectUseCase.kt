@@ -11,7 +11,7 @@ class ReopenProjectUseCase(
     suspend operator fun invoke(projectId: String): UseCaseResult<Project> {
         val project =
             repository.getById(projectId)
-                ?: return UseCaseResult.Failure(UseCaseError.NotFound("Project not found: $projectId"))
+                ?: return UseCaseResult.Failure(UseCaseError.ResourceNotFound)
 
         if (project.status != ProjectStatus.COMPLETED) {
             return UseCaseResult.Success(project)

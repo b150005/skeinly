@@ -45,7 +45,7 @@ class GetCurrentUserUseCaseTest {
             val result = useCase()
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.SignInRequired, result.error)
         }
 
     @Test
@@ -58,7 +58,7 @@ class GetCurrentUserUseCaseTest {
             val result = useCase()
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(result.error)
+            assertIs<UseCaseError.ResourceNotFound>(result.error)
         }
 
     @Test
@@ -73,6 +73,6 @@ class GetCurrentUserUseCaseTest {
             val result = useCase()
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(result.error)
+            assertIs<UseCaseError.ResourceNotFound>(result.error)
         }
 }

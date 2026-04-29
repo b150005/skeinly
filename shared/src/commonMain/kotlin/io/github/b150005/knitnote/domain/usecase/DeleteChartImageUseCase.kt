@@ -15,10 +15,10 @@ class DeleteChartImageUseCase(
     ): UseCaseResult<Pattern> {
         val pattern =
             patternRepository.getById(patternId)
-                ?: return UseCaseResult.Failure(UseCaseError.NotFound("Pattern not found"))
+                ?: return UseCaseResult.Failure(UseCaseError.ResourceNotFound)
 
         if (imagePath !in pattern.chartImageUrls) {
-            return UseCaseResult.Failure(UseCaseError.NotFound("Image not found in pattern"))
+            return UseCaseResult.Failure(UseCaseError.ResourceNotFound)
         }
 
         return try {

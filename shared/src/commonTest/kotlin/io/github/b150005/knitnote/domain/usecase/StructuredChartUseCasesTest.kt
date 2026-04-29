@@ -75,7 +75,7 @@ class StructuredChartUseCasesTest {
             val result = useCase(patternId = "pat-1")
 
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.Validation)
+            assertEquals(UseCaseError.OperationNotAllowed, result.error)
         }
 
     @Test
@@ -84,7 +84,7 @@ class StructuredChartUseCasesTest {
             val useCase = CreateStructuredChartUseCase(repo, auth, testJson)
             val result = useCase(patternId = "   ")
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.Validation)
+            assertEquals(UseCaseError.FieldRequired, result.error)
         }
 
     @Test

@@ -83,7 +83,7 @@ class ResolveShareTokenUseCaseTest {
             val useCase = ResolveShareTokenUseCase(FakeShareRepository(), FakePatternRepository(), FakeProjectRepository())
             val result = useCase()
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldRequired, result.error)
         }
 
     @Test
@@ -92,7 +92,7 @@ class ResolveShareTokenUseCaseTest {
             val useCase = ResolveShareTokenUseCase(FakeShareRepository(), FakePatternRepository(), FakeProjectRepository())
             val result = useCase(token = "  ")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldRequired, result.error)
         }
 
     @Test
@@ -101,7 +101,7 @@ class ResolveShareTokenUseCaseTest {
             val useCase = ResolveShareTokenUseCase(FakeShareRepository(), FakePatternRepository(), FakeProjectRepository())
             val result = useCase(token = "non-existent-token")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(result.error)
+            assertIs<UseCaseError.ResourceNotFound>(result.error)
         }
 
     @Test
@@ -113,7 +113,7 @@ class ResolveShareTokenUseCaseTest {
 
             val result = useCase(token = "token-abc")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(result.error)
+            assertIs<UseCaseError.ResourceNotFound>(result.error)
         }
 
     @Test
@@ -176,6 +176,6 @@ class ResolveShareTokenUseCaseTest {
             val useCase = ResolveShareTokenUseCase(FakeShareRepository(), FakePatternRepository(), FakeProjectRepository())
             val result = useCase(shareId = "non-existent")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(result.error)
+            assertIs<UseCaseError.ResourceNotFound>(result.error)
         }
 }

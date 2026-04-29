@@ -18,7 +18,7 @@ class CreateCommentUseCaseTest {
 
             val result = useCase(CommentTargetType.PROJECT, "proj-1", "Hello")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.RequiresConnectivity, result.error)
         }
 
     @Test
@@ -28,7 +28,7 @@ class CreateCommentUseCaseTest {
 
             val result = useCase(CommentTargetType.PROJECT, "12345678-1234-1234-1234-123456789012", "Hello")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.SignInRequired, result.error)
         }
 
     @Test
@@ -40,7 +40,7 @@ class CreateCommentUseCaseTest {
 
             val result = useCase(CommentTargetType.PROJECT, "12345678-1234-1234-1234-123456789012", "   ")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldRequired, result.error)
         }
 
     @Test
@@ -83,7 +83,7 @@ class CreateCommentUseCaseTest {
             val longBody = "a".repeat(2001)
             val result = useCase(CommentTargetType.PROJECT, "12345678-1234-1234-1234-123456789012", longBody)
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldTooLong, result.error)
         }
 
     @Test
@@ -95,7 +95,7 @@ class CreateCommentUseCaseTest {
 
             val result = useCase(CommentTargetType.PROJECT, "not-a-uuid", "Hello")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldRequired, result.error)
         }
 
     @Test

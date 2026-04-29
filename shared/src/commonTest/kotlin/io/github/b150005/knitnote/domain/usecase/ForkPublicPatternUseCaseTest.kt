@@ -69,14 +69,14 @@ class ForkPublicPatternUseCaseTest {
     ) = ForkPublicPatternUseCase(patternRepo, projectRepo, chartRepo, authRepo)
 
     @Test
-    fun `returns Validation failure when not authenticated`() =
+    fun `returns SignInRequired failure when not authenticated`() =
         runTest {
             val useCase = createUseCase()
 
             val result = useCase("pub-1")
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.SignInRequired, result.error)
         }
 
     @Test
@@ -89,11 +89,11 @@ class ForkPublicPatternUseCaseTest {
             val result = useCase("nonexistent")
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(result.error)
+            assertIs<UseCaseError.ResourceNotFound>(result.error)
         }
 
     @Test
-    fun `returns Validation failure when pattern is not public`() =
+    fun `returns OperationNotAllowed failure when pattern is not public`() =
         runTest {
             val authRepo = FakeAuthRepository()
             authRepo.setAuthState(AuthState.Authenticated("user-1", "test@test.com"))
@@ -104,7 +104,7 @@ class ForkPublicPatternUseCaseTest {
             val result = useCase("priv-1")
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.OperationNotAllowed, result.error)
         }
 
     @Test

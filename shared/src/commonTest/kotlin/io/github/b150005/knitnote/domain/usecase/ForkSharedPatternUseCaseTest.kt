@@ -63,7 +63,7 @@ class ForkSharedPatternUseCaseTest {
             val useCase = createUseCase(shareRepo = null)
             val result = useCase("share-1")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.RequiresConnectivity, result.error)
         }
 
     @Test
@@ -72,7 +72,7 @@ class ForkSharedPatternUseCaseTest {
             val useCase = createUseCase()
             val result = useCase("share-1")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.SignInRequired, result.error)
         }
 
     @Test
@@ -84,7 +84,7 @@ class ForkSharedPatternUseCaseTest {
 
             val result = useCase("non-existent")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(result.error)
+            assertIs<UseCaseError.ResourceNotFound>(result.error)
         }
 
     @Test
@@ -98,7 +98,7 @@ class ForkSharedPatternUseCaseTest {
 
             val result = useCase("share-view")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.OperationNotAllowed, result.error)
         }
 
     @Test
@@ -112,7 +112,7 @@ class ForkSharedPatternUseCaseTest {
 
             val result = useCase("share-1")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.PermissionDenied, result.error)
         }
 
     @Test
@@ -126,7 +126,7 @@ class ForkSharedPatternUseCaseTest {
 
             val result = useCase("share-1")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.OperationNotAllowed, result.error)
         }
 
     @Test
@@ -162,7 +162,7 @@ class ForkSharedPatternUseCaseTest {
 
             val result = useCase("share-1")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(result.error)
+            assertIs<UseCaseError.ResourceNotFound>(result.error)
         }
 
     @Test

@@ -37,11 +37,11 @@ class CreateBranchUseCase(
     ): UseCaseResult<ChartBranch> {
         val trimmed = branchName.trim()
         if (trimmed.isEmpty()) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Branch name is required"))
+            return UseCaseResult.Failure(UseCaseError.FieldRequired)
         }
         if (trimmed.equals(ChartBranch.DEFAULT_BRANCH_NAME, ignoreCase = true)) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("'${ChartBranch.DEFAULT_BRANCH_NAME}' is reserved"),
+                UseCaseError.OperationNotAllowed,
             )
         }
         return try {
@@ -54,11 +54,11 @@ class CreateBranchUseCase(
             // exactly as the user named them.
             val existingBranches = branchRepository.getByPatternId(patternId)
             if (existingBranches.any { it.branchName.equals(trimmed, ignoreCase = true) }) {
-                return UseCaseResult.Failure(UseCaseError.Validation("Branch already exists"))
+                return UseCaseResult.Failure(UseCaseError.OperationNotAllowed)
             }
             val chart =
                 chartRepository.getByPatternId(patternId)
-                    ?: return UseCaseResult.Failure(UseCaseError.NotFound("Chart not found"))
+                    ?: return UseCaseResult.Failure(UseCaseError.ResourceNotFound)
             val now = Clock.System.now()
             val branch =
                 ChartBranch(

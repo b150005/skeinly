@@ -17,11 +17,11 @@ class UploadChartImageUseCase(
         fileName: String,
     ): UseCaseResult<Pattern> {
         if (imageData.isEmpty()) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Image data is empty"))
+            return UseCaseResult.Failure(UseCaseError.ImageInvalid)
         }
         if (imageData.size > MAX_IMAGE_SIZE) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("Image exceeds maximum size of ${MAX_IMAGE_SIZE / 1024 / 1024}MB"),
+                UseCaseError.ImageTooLarge,
             )
         }
 
@@ -33,18 +33,18 @@ class UploadChartImageUseCase(
 
         val pattern =
             patternRepository.getById(patternId)
-                ?: return UseCaseResult.Failure(UseCaseError.NotFound("Pattern not found"))
+                ?: return UseCaseResult.Failure(UseCaseError.ResourceNotFound)
 
         return try {
             val userId =
                 authRepository.getCurrentUserId()
                     ?: return UseCaseResult.Failure(
-                        UseCaseError.Validation("Must be signed in to upload images"),
+                        UseCaseError.SignInRequired,
                     )
 
             if (!isValidJpeg(imageData)) {
                 return UseCaseResult.Failure(
-                    UseCaseError.Validation("File is not a valid JPEG image"),
+                    UseCaseError.ImageInvalid,
                 )
             }
 

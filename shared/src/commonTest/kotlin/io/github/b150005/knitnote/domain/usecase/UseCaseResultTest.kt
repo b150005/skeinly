@@ -14,21 +14,19 @@ class UseCaseResultTest {
     }
 
     @Test
-    fun `Failure wraps NotFound error`() {
-        val result: UseCaseResult<String> = UseCaseResult.Failure(UseCaseError.NotFound("not found"))
+    fun `Failure wraps ResourceNotFound error`() {
+        val result: UseCaseResult<String> = UseCaseResult.Failure(UseCaseError.ResourceNotFound)
 
         assertIs<UseCaseResult.Failure>(result)
-        assertIs<UseCaseError.NotFound>(result.error)
-        assertEquals("not found", (result.error as UseCaseError.NotFound).message)
+        assertEquals(UseCaseError.ResourceNotFound, result.error)
     }
 
     @Test
-    fun `Failure wraps Validation error`() {
-        val result: UseCaseResult<String> = UseCaseResult.Failure(UseCaseError.Validation("invalid"))
+    fun `Failure wraps FieldRequired error`() {
+        val result: UseCaseResult<String> = UseCaseResult.Failure(UseCaseError.FieldRequired)
 
         assertIs<UseCaseResult.Failure>(result)
-        assertIs<UseCaseError.Validation>(result.error)
-        assertEquals("invalid", (result.error as UseCaseError.Validation).message)
+        assertEquals(UseCaseError.FieldRequired, result.error)
     }
 
     @Test

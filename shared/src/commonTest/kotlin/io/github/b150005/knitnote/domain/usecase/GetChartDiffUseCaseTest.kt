@@ -80,7 +80,7 @@ class GetChartDiffUseCaseTest {
             val result = GetChartDiffUseCase(repo).invoke(baseRevisionId = null, targetRevisionId = "missing")
 
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.NotFound)
+            assertTrue(result.error is UseCaseError.ResourceNotFound)
         }
 
     @Test
@@ -93,7 +93,7 @@ class GetChartDiffUseCaseTest {
 
             // Distinct from baseRevisionId == null case which would succeed with isInitialCommit.
             assertTrue(result is UseCaseResult.Failure)
-            assertTrue(result.error is UseCaseError.NotFound)
+            assertTrue(result.error is UseCaseError.ResourceNotFound)
         }
 
     @Test

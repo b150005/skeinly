@@ -35,11 +35,11 @@ class RestoreRevisionUseCase(
         try {
             val toRestore = revisionRepository.getRevision(revisionIdToRestore)
             if (toRestore == null) {
-                UseCaseResult.Failure(UseCaseError.NotFound("Revision not found"))
+                UseCaseResult.Failure(UseCaseError.ResourceNotFound)
             } else {
                 val current = chartRepository.getByPatternId(patternId)
                 if (current == null) {
-                    UseCaseResult.Failure(UseCaseError.NotFound("Chart not found"))
+                    UseCaseResult.Failure(UseCaseError.ResourceNotFound)
                 } else {
                     val now = Clock.System.now()
                     val restored =

@@ -85,18 +85,18 @@ class UploadChartImageUseCaseTest {
         }
 
     @Test
-    fun `upload with empty data returns validation error`() =
+    fun `upload with empty data returns ImageInvalid`() =
         runTest {
             patternRepo.create(createTestPattern())
 
             val result = useCase("pattern-1", ByteArray(0), "empty.jpg")
 
             val failure = assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(failure.error)
+            assertEquals(UseCaseError.ImageInvalid, failure.error)
         }
 
     @Test
-    fun `upload exceeding 2MB returns validation error`() =
+    fun `upload exceeding 2MB returns ImageTooLarge`() =
         runTest {
             patternRepo.create(createTestPattern())
             val oversized = ByteArray(3 * 1024 * 1024) // 3MB
@@ -104,7 +104,7 @@ class UploadChartImageUseCaseTest {
             val result = useCase("pattern-1", oversized, "big.jpg")
 
             val failure = assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(failure.error)
+            assertEquals(UseCaseError.ImageTooLarge, failure.error)
         }
 
     @Test
@@ -113,7 +113,7 @@ class UploadChartImageUseCaseTest {
             val result = useCase("nonexistent", ByteArray(100), "chart.jpg")
 
             val failure = assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(failure.error)
+            assertIs<UseCaseError.ResourceNotFound>(failure.error)
         }
 
     @Test
@@ -129,7 +129,7 @@ class UploadChartImageUseCaseTest {
         }
 
     @Test
-    fun `upload with non-jpeg data returns validation error`() =
+    fun `upload with non-jpeg data returns ImageInvalid`() =
         runTest {
             patternRepo.create(createTestPattern())
             val pngBytes = ByteArray(100) // No JPEG magic bytes
@@ -137,11 +137,11 @@ class UploadChartImageUseCaseTest {
             val result = useCase("pattern-1", pngBytes, "chart.jpg")
 
             val failure = assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(failure.error)
+            assertEquals(UseCaseError.ImageInvalid, failure.error)
         }
 
     @Test
-    fun `upload without authentication returns validation error`() =
+    fun `upload without authentication returns SignInRequired`() =
         runTest {
             authRepo.setAuthState(AuthState.Unauthenticated)
             patternRepo.create(createTestPattern())
@@ -149,7 +149,7 @@ class UploadChartImageUseCaseTest {
             val result = useCase("pattern-1", validJpegBytes(), "chart.jpg")
 
             val failure = assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(failure.error)
+            assertEquals(UseCaseError.SignInRequired, failure.error)
         }
 
     @Test

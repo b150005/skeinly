@@ -23,7 +23,7 @@ class GetCommentsUseCase(
     ): UseCaseResult<List<Comment>> {
         if (commentRepository == null) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("Comments require cloud connectivity"),
+                UseCaseError.RequiresConnectivity,
             )
         }
         return UseCaseResult.Success(

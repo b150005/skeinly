@@ -49,6 +49,6 @@ class GetProjectByIdUseCaseTest {
     fun `returns NotFound when project does not exist`() =
         runTest {
             val result = assertIs<UseCaseResult.Failure>(useCase("nonexistent"))
-            assertIs<UseCaseError.NotFound>(result.error)
+            assertIs<UseCaseError.ResourceNotFound>(result.error)
         }
 }

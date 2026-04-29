@@ -108,7 +108,7 @@ class PatternEditViewModel(
                 }
             } else {
                 _state.update {
-                    it.copy(isLoading = false, error = ErrorMessage.Raw("Pattern not found"))
+                    it.copy(isLoading = false, error = ErrorMessage.ResourceNotFound)
                 }
             }
         }

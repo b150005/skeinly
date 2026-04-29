@@ -13,11 +13,11 @@ class UploadProgressPhotoUseCase(
         fileName: String,
     ): UseCaseResult<String> {
         if (imageData.isEmpty()) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Image data is empty"))
+            return UseCaseResult.Failure(UseCaseError.ImageInvalid)
         }
         if (imageData.size > MAX_IMAGE_SIZE) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("Image exceeds maximum size of ${MAX_IMAGE_SIZE / 1024 / 1024}MB"),
+                UseCaseError.ImageTooLarge,
             )
         }
 
@@ -31,12 +31,12 @@ class UploadProgressPhotoUseCase(
             val userId =
                 authRepository.getCurrentUserId()
                     ?: return UseCaseResult.Failure(
-                        UseCaseError.Validation("Must be signed in to upload photos"),
+                        UseCaseError.SignInRequired,
                     )
 
             if (!UploadChartImageUseCase.isValidJpeg(imageData)) {
                 return UseCaseResult.Failure(
-                    UseCaseError.Validation("File is not a valid JPEG image"),
+                    UseCaseError.ImageInvalid,
                 )
             }
 

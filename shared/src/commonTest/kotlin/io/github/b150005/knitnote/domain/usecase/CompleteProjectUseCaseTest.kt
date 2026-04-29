@@ -104,6 +104,6 @@ class CompleteProjectUseCaseTest {
             val result = useCase("non-existent")
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(result.error)
+            assertIs<UseCaseError.ResourceNotFound>(result.error)
         }
 }

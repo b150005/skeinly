@@ -17,7 +17,7 @@ class GetPublicPatternsUseCase(
         chartsOnly: Boolean = false,
     ): UseCaseResult<PublicPatternsResult> {
         if (publicPatternDataSource == null) {
-            return UseCaseResult.Failure(UseCaseError.Validation("Discovery requires cloud connectivity"))
+            return UseCaseResult.Failure(UseCaseError.RequiresConnectivity)
         }
 
         val sanitized = searchQuery.trim().take(MAX_SEARCH_LENGTH)

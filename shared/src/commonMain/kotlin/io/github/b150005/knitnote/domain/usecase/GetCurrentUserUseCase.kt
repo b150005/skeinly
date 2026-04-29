@@ -12,13 +12,13 @@ class GetCurrentUserUseCase(
         val userId =
             authRepository.getCurrentUserId()
                 ?: return UseCaseResult.Failure(
-                    UseCaseError.Validation("Must be signed in to view profile"),
+                    UseCaseError.SignInRequired,
                 )
 
         val user =
             userRepository.getById(userId)
                 ?: return UseCaseResult.Failure(
-                    UseCaseError.NotFound("Profile not found"),
+                    UseCaseError.ResourceNotFound,
                 )
 
         return UseCaseResult.Success(user)

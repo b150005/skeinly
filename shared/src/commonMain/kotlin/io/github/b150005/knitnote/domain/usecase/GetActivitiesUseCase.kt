@@ -16,7 +16,7 @@ class GetActivitiesUseCase(
     suspend operator fun invoke(userId: String): UseCaseResult<List<Activity>> {
         if (activityRepository == null) {
             return UseCaseResult.Failure(
-                UseCaseError.Validation("Activity feed requires cloud connectivity"),
+                UseCaseError.RequiresConnectivity,
             )
         }
         return UseCaseResult.Success(activityRepository.getByUserId(userId))

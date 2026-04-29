@@ -10,5 +10,5 @@ class GetProjectByIdUseCase(
         repository
             .getById(id)
             ?.let { UseCaseResult.Success(it) }
-            ?: UseCaseResult.Failure(UseCaseError.NotFound("Project not found: $id"))
+            ?: UseCaseResult.Failure(UseCaseError.ResourceNotFound)
 }

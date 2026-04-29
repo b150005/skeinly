@@ -75,7 +75,7 @@ class CreateProjectUseCaseTest {
             val result = useCase(title = "  ", totalRows = 50)
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldRequired, result.error)
         }
 
     @Test
@@ -84,7 +84,7 @@ class CreateProjectUseCaseTest {
             val result = useCase(title = "", totalRows = 50)
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldRequired, result.error)
         }
 
     @Test

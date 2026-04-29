@@ -55,7 +55,7 @@ class GetPullRequestUseCaseTest {
             val result = useCase("missing")
 
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.NotFound>(result.error)
+            assertIs<UseCaseError.ResourceNotFound>(result.error)
         }
 
     @Test

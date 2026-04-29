@@ -69,7 +69,7 @@ class CreatePatternUseCaseTest {
         runTest {
             val result = useCase(title = "   ")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldRequired, result.error)
         }
 
     @Test
@@ -77,7 +77,7 @@ class CreatePatternUseCaseTest {
         runTest {
             val result = useCase(title = "")
             assertIs<UseCaseResult.Failure>(result)
-            assertIs<UseCaseError.Validation>(result.error)
+            assertEquals(UseCaseError.FieldRequired, result.error)
         }
 
     @Test
