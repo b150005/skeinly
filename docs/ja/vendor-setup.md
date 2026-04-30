@@ -6,19 +6,19 @@
 
 このドキュメントは **Apple 側の設定** (Apple Developer Portal + App Store Connect + Universal Links) に絞っています。理由は、Provisioning Profile 生成後に Capability を追加すると profile 再生成のサイクルが必要になり、これがクリティカルパスだからです。その他のベンダー（Google Play、Firebase、Sentry、PostHog）の取得手順は [release-secrets.md](release-secrets.md) の各 secret セクション内 OBTAIN ステップに記述しています（既存パターン）。
 
-## Knit Note 定数
+## Skeinly 定数
 
 ベンダーポータルのフォーム入力に使う値です。プロンプトされたら以下を入力してください。
 
 | 項目 | 値 |
 |---|---|
-| Bundle ID (iOS) | `io.github.b150005.knitnote` |
-| Application ID (Android) | `io.github.b150005.knitnote` |
-| アプリ名 | Knit Note |
+| Bundle ID (iOS) | `io.github.b150005.skeinly` |
+| Application ID (Android) | `io.github.b150005.skeinly` |
+| アプリ名 | Skeinly |
 | デフォルト言語 | English (U.S.) |
 | Apple Developer Team ID | (10文字の ID。enrollment 後に確認) |
-| プライバシーポリシー URL | `https://b150005.github.io/knit-note/privacy-policy/` |
-| サポート URL | `https://github.com/b150005/knit-note/issues` |
+| プライバシーポリシー URL | `https://b150005.github.io/skeinly/privacy-policy/` |
+| サポート URL | `https://github.com/b150005/skeinly/issues` |
 
 ## 前提条件
 
@@ -32,8 +32,8 @@
 
 1. <https://developer.apple.com/account> → **Certificates, Identifiers & Profiles** → **Identifiers** → **+**
 2. **App IDs** → Continue → **App** → Continue
-3. Description: `Knit Note`
-4. Bundle ID: **Explicit** → `io.github.b150005.knitnote`
+3. Description: `Skeinly`
+4. Bundle ID: **Explicit** → `io.github.b150005.skeinly`
 5. **Capabilities — 4つすべて有効化**:
    - **Sign In with Apple** — *Configure* クリック → **Enable as a primary App ID** 選択 → Save
    - **Push Notifications** — チェックボックスのみ。設定は APNs key 生成時 (Phase A0a-2) で実施
@@ -46,14 +46,14 @@
 ### A0a-2: APNs Auth Key (`.p8`) 生成
 
 1. 同じ Certificates, Identifiers & Profiles → **Keys** → **+**
-2. Name: `knit-note APNs`
+2. Name: `skeinly APNs`
 3. Enable: **Apple Push Notifications service (APNs)**
 4. Continue → Register
 5. **`.p8` ファイルを即座にダウンロード**。一度限りのダウンロード — Apple 側は生成後に秘密鍵を破棄します。ダウンロードファイル名は `AuthKey_<KEY_ID>.p8`
 6. **10文字の Key ID** を控える（Keys 一覧に表示）
 7. `.p8` ファイルと Key ID をパスワードマネージャに保存
 
-同じ APNs key で **Production と TestFlight 両方**の push を Knit Note の Supabase Edge Function から送信できます — 環境別の鍵は不要です。
+同じ APNs key で **Production と TestFlight 両方**の push を Skeinly の Supabase Edge Function から送信できます — 環境別の鍵は不要です。
 
 **登録**:
 - Base64 エンコード → [release-secrets.md](release-secrets.md#supabase-edge-function-secrets) の通り `APPLE_APNS_KEY_BASE64` を Supabase Edge Function secret として登録
@@ -85,26 +85,26 @@ key を **両方**のコンテキストに登録: GitHub Secret `APP_STORE_CONNE
 
 1. <https://appstoreconnect.apple.com> → **My Apps** → **+** → **New App**
 2. Platform: **iOS** (チェックボックス)
-3. Name: `Knit Note`
+3. Name: `Skeinly`
 4. Primary Language: **English (U.S.)**
-5. Bundle ID: `io.github.b150005.knitnote` を選択 (Phase A0a-1 で作成済みのもの)
-6. SKU: `knitnote-001`
+5. Bundle ID: `io.github.b150005.skeinly` を選択 (Phase A0a-1 で作成済みのもの)
+6. SKU: `skeinly-001`
 7. User Access: **Full Access**
 8. Create
 
 ### A0b-2: Subscription Group
 
 1. アプリ詳細 → **Monetization** → **Subscriptions** → **Create Subscription Group**
-2. Reference Name: `Knit Note Pro`
+2. Reference Name: `Skeinly Pro`
 3. Localizations:
-   - English (U.S.): Display Name `Knit Note Pro`
-   - Japanese: Display Name `Knit Note Pro` (ブランド名は全 locale で同一)
+   - English (U.S.): Display Name `Skeinly Pro`
+   - Japanese: Display Name `Skeinly Pro` (ブランド名は全 locale で同一)
 
 ### A0b-3: IAP Products — Pro グループ内に2つの subscription
 
 | 項目 | Monthly | Yearly |
 |---|---|---|
-| Product ID | `knitnote.pro.monthly` | `knitnote.pro.yearly` |
+| Product ID | `skeinly.pro.monthly` | `skeinly.pro.yearly` |
 | Reference Name | Monthly Pro | Yearly Pro |
 | 価格 (USD) | $3.99 | $24.99 |
 | 価格 (JPY) | ¥600 | ¥3,800 |
@@ -128,7 +128,7 @@ key を **両方**のコンテキストに登録: GitHub Secret `APP_STORE_CONNE
 ### A0b-5: プライバシー宣言
 
 1. アプリ詳細 → **App Privacy**
-2. Privacy Policy URL: `https://b150005.github.io/knit-note/privacy-policy/`
+2. Privacy Policy URL: `https://b150005.github.io/skeinly/privacy-policy/`
 3. **収集データ種別** — alpha1 のスコープに合わせて以下を宣言 (Sentry + PostHog + Feedback と整合):
    - **Identifiers**: User ID (Supabase auth UUID), Device ID (PostHog distinct_id, opt-in)
    - **User Content**: Other User Content (knitting project data, patterns, comments)
@@ -146,7 +146,7 @@ Phase 27a プライバシーポリシーは既にこれらに言及済み — al
 
 Apple は AASA ファイルを `https://<domain>/.well-known/apple-app-site-association` (またはルート `https://<domain>/apple-app-site-association`) に HTTPS で、**`Content-Type: application/json`** で、**リダイレクトなし**で配信する必要があります。アプリの `applinks:<domain>` entitlement は同じ `<domain>` を指します。
 
-**Knit Note のホスティング状況**: GitHub Pages は本プロジェクトを `https://b150005.github.io/knit-note/` (ユーザー `b150005` 配下のプロジェクトページ) で配信しています。AASA は関連ドメインの apex に必要 — `https://b150005.github.io/.well-known/apple-app-site-association`。この apex はユーザー `b150005` の **GitHub user site** に対応し、別リポジトリ `b150005/b150005.github.io` に存在します。プロジェクトリポジトリ `b150005/knit-note` ではこの apex で AASA を配信できません。
+**Skeinly のホスティング状況**: GitHub Pages は本プロジェクトを `https://b150005.github.io/skeinly/` (ユーザー `b150005` 配下のプロジェクトページ) で配信しています。AASA は関連ドメインの apex に必要 — `https://b150005.github.io/.well-known/apple-app-site-association`。この apex はユーザー `b150005` の **GitHub user site** に対応し、別リポジトリ `b150005/b150005.github.io` に存在します。プロジェクトリポジトリ `b150005/skeinly` ではこの apex で AASA を配信できません。
 
 3つの選択肢、推奨順:
 
@@ -155,16 +155,16 @@ Apple は AASA ファイルを `https://<domain>/.well-known/apple-app-site-asso
 - リポジトリルートに `.well-known/apple-app-site-association` と `.well-known/assetlinks.json` を配置
 - GitHub Pages は `main` ブランチルートから自動デプロイ
 - 初回デプロイ後すぐに `https://b150005.github.io/.well-known/apple-app-site-association` で解決
-- アプリの entitlements に `applinks:b150005.github.io` を追加。path matching を `/knit-note/share/*` 等に制限することで、user site が他のパスを誤ってアプリに routing するのを防ぐ
+- アプリの entitlements に `applinks:b150005.github.io` を追加。path matching を `/skeinly/share/*` 等に制限することで、user site が他のパスを誤ってアプリに routing するのを防ぐ
 
 **選択肢 B — カスタムドメイン (有料、v1.0 推奨)**
-- `knitnote.app` 等を購入 (Cloudflare Registrar at-cost で約 $10/年)
+- `skeinly.app` 等を購入 (Cloudflare Registrar at-cost で約 $10/年)
 - GitHub Pages CNAME → カスタムドメイン
-- AASA は `https://knitnote.app/.well-known/apple-app-site-association`
+- AASA は `https://skeinly.app/.well-known/apple-app-site-association`
 - production リリース時のブランディングがクリーン
 
 **選択肢 C — Universal Links を v1.0 に延期 (alpha でドメイン投資なし)**
-- alpha 中は `knitnote://share/<token>` URI scheme のみ
+- alpha 中は `skeinly://share/<token>` URI scheme のみ
 - SMS / メール経由で送信された share URL がアプリを自動起動しないことを許容
 - App ID の Universal Links Capability は v1.0 まで無効のまま (その時点で Provisioning Profile 再生成 — 一回だけのコスト)
 
@@ -179,11 +179,11 @@ Apple は AASA ファイルを `https://<domain>/.well-known/apple-app-site-asso
   "applinks": {
     "details": [
       {
-        "appIDs": ["TEAMID.io.github.b150005.knitnote"],
+        "appIDs": ["TEAMID.io.github.b150005.skeinly"],
         "components": [
-          { "/": "/knit-note/share/*", "comment": "Direct share invite deep link" },
-          { "/": "/knit-note/pull-request/*", "comment": "PR open/comment/merge deep link" },
-          { "/": "/knit-note/shared-content/*", "comment": "Shared pattern/project deep link" }
+          { "/": "/skeinly/share/*", "comment": "Direct share invite deep link" },
+          { "/": "/skeinly/pull-request/*", "comment": "PR open/comment/merge deep link" },
+          { "/": "/skeinly/shared-content/*", "comment": "Shared pattern/project deep link" }
         ]
       }
     ]
@@ -191,7 +191,7 @@ Apple は AASA ファイルを `https://<domain>/.well-known/apple-app-site-asso
 }
 ```
 
-`TEAMID` は 10 文字の Apple Developer Team ID に置換。選択肢 B の場合は `/knit-note/...` プレフィックスを削除（カスタムドメインなのでパス無し）。
+`TEAMID` は 10 文字の Apple Developer Team ID に置換。選択肢 B の場合は `/skeinly/...` プレフィックスを削除（カスタムドメインなのでパス無し）。
 
 ### A0c-3: assetlinks.json (Android App Links 対応)
 
@@ -202,7 +202,7 @@ Apple は AASA ファイルを `https://<domain>/.well-known/apple-app-site-asso
   "relation": ["delegate_permission/common.handle_all_urls"],
   "target": {
     "namespace": "android_app",
-    "package_name": "io.github.b150005.knitnote",
+    "package_name": "io.github.b150005.skeinly",
     "sha256_cert_fingerprints": [
       "<upload-keystore.jks の SHA-256 fingerprint>"
     ]
@@ -229,14 +229,14 @@ curl -I https://b150005.github.io/.well-known/assetlinks.json
 
 `v1.0.0-alpha1` タグ push 前に確認:
 
-- [ ] Apple Developer App ID `io.github.b150005.knitnote` が 4 capability 有効で存在 (Sign In with Apple、Push Notifications、Associated Domains、In-App Purchase)
+- [ ] Apple Developer App ID `io.github.b150005.skeinly` が 4 capability 有効で存在 (Sign In with Apple、Push Notifications、Associated Domains、In-App Purchase)
 - [ ] APNs Auth Key `.p8` ダウンロード済 + パスワードマネージャ保存済
 - [ ] APPLE_APNS_KEY_BASE64 + APPLE_APNS_KEY_ID を Supabase Edge Function secret として登録済
 - [ ] Capability 追加後に Provisioning Profile を再生成済
 - [ ] APPLE_PROVISIONING_PROFILE_BASE64 を GitHub Secret として(再)登録済
-- [ ] App Store Connect で `Knit Note` アプリを bundle ID `io.github.b150005.knitnote` で作成済
-- [ ] Subscription Group `Knit Note Pro` 作成済
-- [ ] 2 つの IAP product 作成済: `knitnote.pro.monthly` ($3.99/¥600)、`knitnote.pro.yearly` ($24.99/¥3,800)、両方 7日 free trial
+- [ ] App Store Connect で `Skeinly` アプリを bundle ID `io.github.b150005.skeinly` で作成済
+- [ ] Subscription Group `Skeinly Pro` 作成済
+- [ ] 2 つの IAP product 作成済: `skeinly.pro.monthly` ($3.99/¥600)、`skeinly.pro.yearly` ($24.99/¥3,800)、両方 7日 free trial
 - [ ] Sandbox Tester を最低 2 人作成済
 - [ ] App Privacy 宣言を Sentry + PostHog + Feedback データ種別で提出済
 - [ ] AASA ホスティング決定 (選択肢 A / B / C) と AASA + assetlinks.json デプロイ済 (選択肢 A または B の場合)

@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-18
 **Reviewer:** Knitter agent (see [`.claude/agents/knitter.md`](../../../.claude/agents/knitter.md))
-**Source under review:** [`shared/src/commonMain/kotlin/io/github/b150005/knitnote/domain/symbol/catalog/CrochetSymbols.kt`](../../../shared/src/commonMain/kotlin/io/github/b150005/knitnote/domain/symbol/catalog/CrochetSymbols.kt) — 25 glyphs, unit square `viewBox 0 0 1 1` (y-down).
+**Source under review:** [`shared/src/commonMain/kotlin/io/github/b150005/skeinly/domain/symbol/catalog/CrochetSymbols.kt`](../../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/domain/symbol/catalog/CrochetSymbols.kt) — 25 glyphs, unit square `viewBox 0 0 1 1` (y-down).
 **Viewer:** Phase 31 Compose `ChartViewerScreen` + SwiftUI `StructuredChartViewerScreen` + Phase 30.1 `SymbolGalleryScreen`.
 **References:** JIS L 0201-1995 Table 2 (かぎ針編目), CYC crochet chart, Nihon Vogue / Bunka JP publisher conventions.
 

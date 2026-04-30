@@ -1,4 +1,4 @@
--- Knit Note: Sharing Schema
+-- Skeinly: Sharing Schema
 -- Phase 4b-1: Link Sharing MVP
 -- Adds patterns and shares tables
 

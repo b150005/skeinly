@@ -1,4 +1,4 @@
-appId: io.github.b150005.knitnote
+appId: io.github.b150005.skeinly
 name: "P0 - Onboarding Flow"
 tags:
   - p0
@@ -6,11 +6,11 @@ tags:
   - skip-ios26
 ---
 # Pre-condition: clear app state for test isolation
-- clearState: io.github.b150005.knitnote
+- clearState: io.github.b150005.skeinly
 
 # Launch the app — first run shows onboarding
 - launchApp:
-    appId: io.github.b150005.knitnote
+    appId: io.github.b150005.skeinly
 
 # Verify page 1 via locale-independent testTag
 - assertVisible:
@@ -49,9 +49,9 @@ tags:
     id: "projectListScreen"
 
 # Relaunch the app — onboarding should NOT appear again
-- stopApp: io.github.b150005.knitnote
+- stopApp: io.github.b150005.skeinly
 - launchApp:
-    appId: io.github.b150005.knitnote
+    appId: io.github.b150005.skeinly
 
 # Should go directly to ProjectList — no onboarding page visible
 - assertVisible:

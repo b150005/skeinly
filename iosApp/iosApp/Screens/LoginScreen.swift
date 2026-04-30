@@ -20,7 +20,7 @@ struct LoginScreen: View {
 
             // App title
             VStack(spacing: 8) {
-                // app_name is locale-identical ("Knit Note" in both en and ja).
+                // app_name is locale-identical ("Skeinly" in both en and ja).
                 Text("app_name")
                     .font(.largeTitle)
                     .fontWeight(.bold)

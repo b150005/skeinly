@@ -153,12 +153,12 @@ struct SettingsScreen: View {
 
             // About / Legal section — Phase E2
             Section("label_about_section") {
-                Link(destination: URL(string: "https://b150005.github.io/knit-note/privacy-policy/")!) {
+                Link(destination: URL(string: "https://b150005.github.io/skeinly/privacy-policy/")!) {
                     Label("action_privacy_policy", systemImage: "lock.shield")
                 }
                 .accessibilityIdentifier("privacyPolicyButton")
 
-                Link(destination: URL(string: "https://b150005.github.io/knit-note/terms-of-service/")!) {
+                Link(destination: URL(string: "https://b150005.github.io/skeinly/terms-of-service/")!) {
                     Label("action_terms_of_service", systemImage: "doc.text")
                 }
                 .accessibilityIdentifier("termsOfServiceButton")

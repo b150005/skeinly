@@ -17,9 +17,9 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     platform TEXT NOT NULL CHECK (platform IN ('ios', 'android', 'alpha-grant')),
     product_id TEXT NOT NULL CHECK (product_id IN (
-        'knitnote.pro.monthly',
-        'knitnote.pro.yearly',
-        'knitnote.pro.alpha'
+        'skeinly.pro.monthly',
+        'skeinly.pro.yearly',
+        'skeinly.pro.alpha'
     )),
     status TEXT NOT NULL CHECK (status IN (
         'active',
@@ -133,7 +133,7 @@ BEGIN
     ) VALUES (
         uid,
         'alpha-grant',
-        'knitnote.pro.alpha',
+        'skeinly.pro.alpha',
         'active',
         'alpha-' || uid::text,
         NULL,

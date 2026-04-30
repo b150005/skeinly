@@ -35,7 +35,7 @@ struct iOSApp: App {
         // Phase F2: PostHog product analytics. Default OFF (opt-in, not
         // opt-out). SDK is initialized lazily on the first ON flip; toggling
         // OFF mid-session calls optOut() to suspend further capture; toggling
-        // ON again calls optIn(). Mirrors KnitNoteApplication.kt's lifecycle.
+        // ON again calls optIn(). Mirrors SkeinlyApplication.kt's lifecycle.
         Self.observeAnalyticsOptIn()
         // Phase F.3 — bridge shared AnalyticsTracker events to PostHog.
         Self.observeAnalyticsEvents()
@@ -139,7 +139,7 @@ struct iOSApp: App {
 
     private static func resetDatabase() {
         let fileManager = FileManager.default
-        let dbNames = ["knitnote.db", "knitnote.db-shm", "knitnote.db-wal"]
+        let dbNames = ["skeinly.db", "skeinly.db-shm", "skeinly.db-wal"]
 
         // NativeSqliteDriver stores the DB in Library/Application Support/databases/
         var searchDirs: [URL] = []
@@ -151,7 +151,7 @@ struct iOSApp: App {
             searchDirs.append(docURL)
         }
 
-        let logger = Logger(subsystem: "io.github.b150005.knitnote", category: "database")
+        let logger = Logger(subsystem: "io.github.b150005.skeinly", category: "database")
         for dir in searchDirs {
             for name in dbNames {
                 let url = dir.appendingPathComponent(name)

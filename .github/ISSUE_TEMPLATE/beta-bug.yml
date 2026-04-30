@@ -5,8 +5,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thank you for testing Knit Note Phase 39 beta. Please fill in the details below.
-        Knit Noteフェーズ39ベータをテストしていただきありがとうございます。以下の詳細を記入してください。
+        Thank you for testing Skeinly Phase 39 beta. Please fill in the details below.
+        Skeinlyフェーズ39ベータをテストしていただきありがとうございます。以下の詳細を記入してください。
 
         Before reporting, please check the **known-broken list** in the
         [Phase 39 beta rubric](../blob/main/docs/en/phase/phase-39-beta-rubric.md#whats-known-broken--testers-should-not-report-these)

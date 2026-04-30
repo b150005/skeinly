@@ -1,4 +1,4 @@
-appId: io.github.b150005.knitnote
+appId: io.github.b150005.skeinly
 name: "P1 - Per-Segment Progress (Phase 34)"
 tags:
   - p1
@@ -11,9 +11,9 @@ tags:
 # at least one ProjectSegment row — unreachable from the onboarding path
 # without a Supabase round-trip.
 
-- clearState: io.github.b150005.knitnote
+- clearState: io.github.b150005.skeinly
 - launchApp:
-    appId: io.github.b150005.knitnote
+    appId: io.github.b150005.skeinly
 
 - tapOn: "PhaseThirtyFourFixture"
 

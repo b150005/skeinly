@@ -7,7 +7,7 @@
   Run scripts/verify-i18n-keys.sh to detect drift.
 -->
 <resources>
-    <string name="app_name">Knit Note</string>
+    <string name="app_name">Skeinly</string>
 
     <!-- Action primitives (buttons, menu items, a11y labels) -->
     <string name="action_save">Save</string>

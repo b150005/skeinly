@@ -1,6 +1,6 @@
-# Knit Note E2E Tests
+# Skeinly E2E Tests
 
-End-to-end tests using [Maestro](https://maestro.mobile.dev/) for the Knit Note app.
+End-to-end tests using [Maestro](https://maestro.mobile.dev/) for the Skeinly app.
 
 ## Prerequisites
 
@@ -121,10 +121,10 @@ Both platforms run in **local-only mode** (no Supabase credentials) so no networ
 
 | Aspect | Android | iOS |
 |--------|---------|-----|
-| App ID | `io.github.b150005.knitnote` | `io.github.b150005.knitnote` |
+| App ID | `io.github.b150005.skeinly` | `io.github.b150005.skeinly` |
 | Empty state title | "No projects yet" | "No Projects Yet" |
 | Create form field | "Project Name" | "Project Title" |
-| Back button | `contentDescription: "Back"` | Previous screen's `navigationTitle` (e.g., "Knit Note") |
+| Back button | `contentDescription: "Back"` | Previous screen's `navigationTitle` (e.g., "Skeinly") |
 | Menu navigation | Direct text tap (items visible) | Tap `moreMenu` first, then text tap (Menu dropdown) |
 | Search clear | `contentDescription: "Clear search"` | "Cancel" button (iOS search bar) |
 

@@ -1,4 +1,4 @@
-appId: io.github.b150005.knitnote
+appId: io.github.b150005.skeinly
 name: "Helper - Complete Onboarding"
 ---
 # Bypass onboarding by relaunching with NSUserDefaults launch argument.
@@ -7,8 +7,8 @@ name: "Helper - Complete Onboarding"
 # does not register in SwiftUI. This approach sets the preference via
 # iOS launch argument domain, which NSUserDefaults picks up with
 # higher precedence than the (cleared) persistent store.
-- stopApp: io.github.b150005.knitnote
+- stopApp: io.github.b150005.skeinly
 - launchApp:
-    appId: io.github.b150005.knitnote
+    appId: io.github.b150005.skeinly
     arguments:
       has_seen_onboarding: "true"

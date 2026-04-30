@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-18
 **Reviewer:** Knitter agent (see [`.claude/agents/knitter.md`](../../../.claude/agents/knitter.md))
-**Source under review:** [`shared/src/commonMain/kotlin/io/github/b150005/knitnote/domain/symbol/catalog/CrochetSymbols.kt`](../../../shared/src/commonMain/kotlin/io/github/b150005/knitnote/domain/symbol/catalog/CrochetSymbols.kt) — now 28 glyphs.
+**Source under review:** [`shared/src/commonMain/kotlin/io/github/b150005/skeinly/domain/symbol/catalog/CrochetSymbols.kt`](../../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/domain/symbol/catalog/CrochetSymbols.kt) — now 28 glyphs.
 **References:** JIS L 0201-1995 Table 2 (かぎ針編目), CYC crochet chart, Nihon Vogue / Bunka JP publisher conventions.
 
 This is the companion review to Phase 30.2-fix, scoped to three glyphs added in Phase 30.3 to close the commercial-JP coverage gap flagged in [`phase-30.2.md §4`](./phase-30.2.md#4-coverage). Adding these three brings `jis.crochet.*` to ~90% of commonly-seen JP commercial crochet pattern surface area, which was the target the Knitter set for "Phase 32 editor can ship on a catalog real JP knitters recognise".

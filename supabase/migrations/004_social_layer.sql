@@ -1,4 +1,4 @@
--- Knit Note: Social Layer
+-- Skeinly: Social Layer
 -- Phase 5a-5b: Comments and Activity Feed
 -- Creates comments and activities tables with RLS policies
 

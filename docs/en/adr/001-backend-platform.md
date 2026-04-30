@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Knit Note's core value proposition is user-to-user sharing and interaction around knitting patterns and progress. This requires a backend platform that provides:
+Skeinly's core value proposition is user-to-user sharing and interaction around knitting patterns and progress. This requires a backend platform that provides:
 
 - **Authentication**: User sign-up/sign-in (Google, Apple, email)
 - **Database**: Relational data with real-time subscriptions (users, patterns, projects, shares, comments, activity feed)

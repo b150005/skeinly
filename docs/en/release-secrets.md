@@ -54,7 +54,7 @@ gh auth login
 gh auth status   # should show: Logged in to github.com as <you>
 ```
 
-All secret commands assume you are inside the repository root (`cd knit-note`).
+All secret commands assume you are inside the repository root (`cd skeinly`).
 
 ## How to register a secret in GitHub
 
@@ -161,8 +161,8 @@ gh secret set APPLE_DISTRIBUTION_CERT_PASSWORD
 
 1. Sign in to [Apple Developer](https://developer.apple.com/account) → **Certificates, Identifiers & Profiles** → **Profiles**.
 2. Either:
-   - Use an existing profile if one already covers `io.github.b150005.knitnote` for App Store distribution. Click it → **Download**.
-   - Or click `+` → **App Store** under Distribution → select bundle ID `io.github.b150005.knitnote` → select the Apple Distribution cert from step 1 → name it (e.g. `Knit Note App Store`) → **Generate** → **Download**.
+   - Use an existing profile if one already covers `io.github.b150005.skeinly` for App Store distribution. Click it → **Download**.
+   - Or click `+` → **App Store** under Distribution → select bundle ID `io.github.b150005.skeinly` → select the Apple Distribution cert from step 1 → name it (e.g. `Skeinly App Store`) → **Generate** → **Download**.
 3. Base64-encode:
 
    ```bash
@@ -178,7 +178,7 @@ security cms -D -i Knit_Note_App_Store.mobileprovision | head -40
 
 Confirm:
 - `<key>Name</key>` value matches what you named the profile
-- `<key>application-identifier</key>` ends with `io.github.b150005.knitnote`
+- `<key>application-identifier</key>` ends with `io.github.b150005.skeinly`
 - `<key>ExpirationDate</key>` is in the future (typically 1 year out)
 - `<key>TeamIdentifier</key>` matches your Team ID (next secret)
 
@@ -228,7 +228,7 @@ These three credentials authorize CI to upload builds to TestFlight via the App 
 2. **Users and Access** → **Integrations** tab → **Team Keys**.
 3. Click **Generate API Key** (or `+` if keys already exist).
 4. Set:
-   - **Name**: e.g. `knit-note CI`
+   - **Name**: e.g. `skeinly CI`
    - **Access**: at minimum **App Manager** for TestFlight uploads. **Developer** is insufficient. **Admin** works but is over-privileged for CI.
 5. Click **Generate**.
 6. **Download the `.p8` file IMMEDIATELY**. This is your only chance — Apple discards the private key on their side after generation. The downloaded file is named `AuthKey_<KEY_ID>.p8`.
@@ -445,10 +445,10 @@ This secret is the Firebase project's client-side configuration for the Android 
 **OBTAIN:**
 
 1. Sign in to [Firebase Console](https://console.firebase.google.com).
-2. If no Firebase project exists for Knit Note: **Add project** → Name `knit-note` → **Disable Google Analytics** (we use PostHog) → Create.
+2. If no Firebase project exists for Skeinly: **Add project** → Name `skeinly` → **Disable Google Analytics** (we use PostHog) → Create.
 3. Inside the project: **Project Overview** → **Add app** → Android icon.
-4. Android package name: `io.github.b150005.knitnote`.
-5. App nickname: `Knit Note Android`.
+4. Android package name: `io.github.b150005.skeinly`.
+5. App nickname: `Skeinly Android`.
 6. Signing certificate SHA-1: run `keytool -list -v -keystore upload-keystore.jks` and copy the **SHA-1** fingerprint (release keystore — debug builds use a separate auto-generated keystore that does not need registration here for alpha; add the debug SHA-1 later if FCM debug testing is needed).
 7. Continue → Continue → **Download `google-services.json`** → Continue → skip the SDK setup step (we wire SDKs via Gradle separately).
 8. Base64-encode:
@@ -465,8 +465,8 @@ cat google-services.json | python3 -m json.tool | head -10
 ```
 
 Confirm:
-- `project_info.project_id` matches your Firebase project name (`knit-note`)
-- `client[0].client_info.android_client_info.package_name` is `io.github.b150005.knitnote`
+- `project_info.project_id` matches your Firebase project name (`skeinly`)
+- `client[0].client_info.android_client_info.package_name` is `io.github.b150005.skeinly`
 - `client[0].api_key[0].current_key` is a long alphanumeric string (the Android API key, restricted to the package + SHA-1)
 
 **REGISTER:**
@@ -489,9 +489,9 @@ These secrets wire the Sentry SDK on iOS + Android and authorize CI to upload de
 
 **OBTAIN:**
 
-1. Sign in to [Sentry](https://sentry.io). Create an organization for Knit Note if not already.
-2. **Projects** → **Create Project** → Platform: **Apple iOS** → Project Name: `knit-note-ios` → Create.
-3. After creation: **Settings** → **Projects** → `knit-note-ios` → **Client Keys (DSN)** → copy the DSN.
+1. Sign in to [Sentry](https://sentry.io). Create an organization for Skeinly if not already.
+2. **Projects** → **Create Project** → Platform: **Apple iOS** → Project Name: `skeinly-ios` → Create.
+3. After creation: **Settings** → **Projects** → `skeinly-ios` → **Client Keys (DSN)** → copy the DSN.
 4. Format: `https://<32-char-public-key>@<org>.ingest.sentry.io/<project-id>`.
 
 **VERIFY**: URL parses as HTTPS, contains `@`, contains `.ingest.sentry.io`, ends with a numeric project ID.
@@ -503,13 +503,13 @@ gh secret set SENTRY_DSN_IOS
 # paste DSN, Ctrl+D
 ```
 
-**ROTATE**: Sentry → Settings → Projects → `knit-note-ios` → Client Keys → revoke old key + create new. Update GitHub Secret.
+**ROTATE**: Sentry → Settings → Projects → `skeinly-ios` → Client Keys → revoke old key + create new. Update GitHub Secret.
 
 ### 16. `SENTRY_DSN_ANDROID`
 
 **WHAT**: DSN for the Android Sentry project. Same shape as `SENTRY_DSN_IOS` but a separate Sentry project so iOS and Android crashes filter independently.
 
-**OBTAIN**: Repeat the procedure for #15, but choose Platform: **Android** and name the project `knit-note-android`.
+**OBTAIN**: Repeat the procedure for #15, but choose Platform: **Android** and name the project `skeinly-android`.
 
 **REGISTER:**
 
@@ -526,7 +526,7 @@ gh secret set SENTRY_DSN_ANDROID
 
 1. Sentry → click your avatar (top-left) → **User Settings** → **Auth Tokens**.
 2. **Create New Token**.
-3. Name: `knit-note CI`.
+3. Name: `skeinly CI`.
 4. Scopes (minimum):
    - `project:releases` — create releases + upload artifacts
    - `org:read` — list orgs/projects (required by sentry-cli to resolve the project from a slug)
@@ -561,8 +561,8 @@ These secrets wire the PostHog SDK on iOS + Android. Unlike Sentry, we use the *
 **OBTAIN:**
 
 1. Sign in to [PostHog](https://eu.posthog.com) (use the **EU cloud** for GDPR data residency).
-2. If no organization exists: create one named `knit-note`.
-3. **Settings** → **Projects** → **Create Project** → Name: `knitnote-prod`.
+2. If no organization exists: create one named `skeinly`.
+3. **Settings** → **Projects** → **Create Project** → Name: `skeinly-prod`.
 4. Inside the project: **Settings** → **Project** → **General** → **Project API Key** → copy the value (starts with `phc_`).
 
 **VERIFY**: Starts with `phc_`, exactly 47 chars total (`phc_` + 43-char base62), case-sensitive.
@@ -580,7 +580,7 @@ gh secret set POSTHOG_PROJECT_API_KEY_PROD
 
 **WHAT**: Project API Key for the development PostHog project. Embedded in debug builds so developer churn doesn't show up in the prod dataset.
 
-**OBTAIN**: Repeat #18 but create a **separate** project named `knitnote-dev` and copy that project's API key.
+**OBTAIN**: Repeat #18 but create a **separate** project named `skeinly-dev` and copy that project's API key.
 
 **REGISTER:**
 
@@ -630,7 +630,7 @@ The Edge Function also needs `APPLE_TEAM_ID` (same 10-char value as the GitHub S
 supabase secrets set APPLE_TEAM_ID=ABCDE12345
 ```
 
-(The Bundle ID `io.github.b150005.knitnote` is hard-coded in the Edge Function source, not in secrets.)
+(The Bundle ID `io.github.b150005.skeinly` is hard-coded in the Edge Function source, not in secrets.)
 
 ### EF-3. `FIREBASE_SERVICE_ACCOUNT_JSON`
 
@@ -638,7 +638,7 @@ supabase secrets set APPLE_TEAM_ID=ABCDE12345
 
 **OBTAIN:**
 
-1. [Firebase Console](https://console.firebase.google.com) → your project (`knit-note`) → **Project Settings** → **Service Accounts**.
+1. [Firebase Console](https://console.firebase.google.com) → your project (`skeinly`) → **Project Settings** → **Service Accounts**.
 2. **Firebase Admin SDK** tab → **Generate new private key** → confirm → JSON downloads.
 3. Default-shipped role is **Firebase Admin SDK Administrator Service Agent** which includes Cloud Messaging — no extra IAM tweaking needed.
 
@@ -661,7 +661,7 @@ supabase secrets set FIREBASE_SERVICE_ACCOUNT_JSON="$(cat firebase-admin-sdk.jso
 1. [Google Play Console](https://play.google.com/console) → **Setup** → **API access**.
 2. If not already linked: **Choose a project to link** → use the same Google Cloud project as Firebase (or a separate one — both are fine; reuse keeps billing simpler).
 3. **Service accounts** section → **Create new service account** → opens Google Cloud Console.
-4. Service Account Name: `knit-note-play-publisher`.
+4. Service Account Name: `skeinly-play-publisher`.
 5. Skip role grants in Cloud Console (Play Console handles role grants in its own UI).
 6. Done → back in Cloud Console: click the SA → **Keys** → **Add Key** → **Create new key** → JSON → Download.
 7. Back in Play Console **API access** → click the new SA → **Grant access**.

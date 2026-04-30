@@ -8,7 +8,7 @@
 
 ## コンテキスト
 
-Knit Note は Android と iOS の両プラットフォームをターゲットとしている。リリースワークフロー (`release.yml`) は GitHub Secrets に base64 エンコードされたキーストアを使用して署名済み Android APK を生成済みだが、iOS パイプラインは共有 KMP フレームワークのビルドのみで、iOS アプリのアーカイブ・署名・配布は行っていない。
+Skeinly は Android と iOS の両プラットフォームをターゲットとしている。リリースワークフロー (`release.yml`) は GitHub Secrets に base64 エンコードされたキーストアを使用して署名済み Android APK を生成済みだが、iOS パイプラインは共有 KMP フレームワークのビルドのみで、iOS アプリのアーカイブ・署名・配布は行っていない。
 
 TestFlight（および最終的に App Store）に到達するには、CI パイプラインが以下を行う必要がある：
 

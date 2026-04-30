@@ -1,4 +1,4 @@
-appId: io.github.b150005.knitnote
+appId: io.github.b150005.skeinly
 name: "Store Screenshots - Android"
 tags:
   - screenshots
@@ -11,9 +11,9 @@ tags:
 # ============================================================
 
 # --- Setup: Clean state ---
-- clearState: io.github.b150005.knitnote
+- clearState: io.github.b150005.skeinly
 - launchApp:
-    appId: io.github.b150005.knitnote
+    appId: io.github.b150005.skeinly
 
 # ============================================================
 # Screenshot 1: Onboarding

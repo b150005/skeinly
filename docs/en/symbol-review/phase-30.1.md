@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-18
 **Reviewer:** Knitter agent (see [`.claude/agents/knitter.md`](../../../.claude/agents/knitter.md))
-**Source under review:** [`shared/src/commonMain/kotlin/io/github/b150005/knitnote/domain/symbol/catalog/KnitSymbols.kt`](../../../shared/src/commonMain/kotlin/io/github/b150005/knitnote/domain/symbol/catalog/KnitSymbols.kt) — 35 glyphs, unit square `viewBox 0 0 1 1` (y-down).
+**Source under review:** [`shared/src/commonMain/kotlin/io/github/b150005/skeinly/domain/symbol/catalog/KnitSymbols.kt`](../../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/domain/symbol/catalog/KnitSymbols.kt) — 35 glyphs, unit square `viewBox 0 0 1 1` (y-down).
 **Viewer:** Phase 31 Compose `ChartViewerScreen` + SwiftUI `StructuredChartViewerScreen` + Phase 30.1 `SymbolGalleryScreen` (dictionary UI).
 
 This document is the written review checkpoint scheduled in Phase 30.1 of the roadmap (per ADR-007). It captures craft-correctness findings against JIS L 0201-1995 + CYC + major JP publisher conventions so the human user and Knitter can agree on (a) geometry fixes for the existing catalog and (b) the next catalog category to ship.

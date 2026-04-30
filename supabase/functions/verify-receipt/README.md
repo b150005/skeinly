@@ -26,7 +26,7 @@ Body (Android):
   "userId": "<auth.uid()>",
   "receipt": {
     "purchaseToken": "<Subscription.purchaseToken>",
-    "productId": "knitnote.pro.monthly"
+    "productId": "skeinly.pro.monthly"
   }
 }
 ```
@@ -38,7 +38,7 @@ Success (200):
 {
   "isPro": true,
   "expiresAt": "2026-05-29T12:34:56Z",
-  "productId": "knitnote.pro.monthly"
+  "productId": "skeinly.pro.monthly"
 }
 ```
 

@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DERIVED_DATA="$PROJECT_ROOT/build/ios-e2e"
 
-echo "=== Knit Note E2E: iOS Flows ==="
+echo "=== Skeinly E2E: iOS Flows ==="
 
 # Step 1: Build iOS app for simulator in local-only mode.
 # Empty Supabase credentials cause the app to skip auth (same as Android).

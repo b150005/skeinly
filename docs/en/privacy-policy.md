@@ -1,12 +1,12 @@
 # Privacy Policy
 
-**Knit Note**
+**Skeinly**
 **Effective Date: April 15, 2026**
 **Last Updated: April 15, 2026**
 
 ## Overview
 
-Knit Note ("the App") is a knitting pattern management application developed by the Knit Note team. This Privacy Policy explains how we collect, use, and protect your information when you use the App.
+Skeinly ("the App") is a knitting pattern management application developed by the Skeinly team. This Privacy Policy explains how we collect, use, and protect your information when you use the App.
 
 ## Information We Collect
 
@@ -95,8 +95,8 @@ We may update this Privacy Policy from time to time. Changes will be reflected i
 
 If you have questions about this Privacy Policy or your data, please contact us at:
 
-**Email**: knitnote.app@gmail.com
+**Email**: skeinly.app@gmail.com
 
 ---
 
-*This privacy policy applies to Knit Note version 1.0.0 and later.*
+*This privacy policy applies to Skeinly version 1.0.0 and later.*

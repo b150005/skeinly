@@ -1,4 +1,4 @@
--- Knit Note: Initial Supabase Schema
+-- Skeinly: Initial Supabase Schema
 -- ADR-001: Supabase as backend
 -- ADR-003: Offline-first sync strategy
 
