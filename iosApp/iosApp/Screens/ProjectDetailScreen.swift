@@ -192,16 +192,40 @@ struct ProjectDetailScreen: View {
             }
 
             // Status action
+            // Sprint B M3 (Phase 39 pre-beta UX audit): Mark Complete reads as
+            // a primary CTA, not a link. SwiftUI `Button(LocalizedStringKey)`
+            // inside a `Form > Section` row defaults to plain accent-text
+            // styling — visually a link, structurally low-emphasis. Mirrors the
+            // Compose `Button` (Material 3 primary filled) shape via
+            // `.buttonStyle(.borderedProminent)` + a checkmark.circle.fill icon
+            // for hierarchy parity. The Reopen variant uses `.bordered` to
+            // match Compose's `FilledTonalButton` (lower emphasis since
+            // re-opening a finished project is a corrective action, not the
+            // primary CTA).
             Section {
                 if project.status == .completed {
-                    Button(LocalizedStringKey("action_reopen_project")) {
+                    Button {
                         viewModel.onEvent(event: ProjectDetailEventReopenProject.shared)
+                    } label: {
+                        Label(
+                            LocalizedStringKey("action_reopen_project"),
+                            systemImage: "arrow.counterclockwise"
+                        )
+                        .frame(maxWidth: .infinity, alignment: .center)
                     }
+                    .buttonStyle(.bordered)
                     .accessibilityIdentifier("reopenProjectButton")
                 } else {
-                    Button(LocalizedStringKey("action_mark_complete")) {
+                    Button {
                         viewModel.onEvent(event: ProjectDetailEventCompleteProject.shared)
+                    } label: {
+                        Label(
+                            LocalizedStringKey("action_mark_complete"),
+                            systemImage: "checkmark.circle.fill"
+                        )
+                        .frame(maxWidth: .infinity, alignment: .center)
                     }
+                    .buttonStyle(.borderedProminent)
                     .accessibilityIdentifier("markCompleteButton")
                 }
 
