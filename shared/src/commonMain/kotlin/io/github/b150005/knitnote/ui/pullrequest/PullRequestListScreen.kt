@@ -21,7 +21,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -49,6 +48,7 @@ import io.github.b150005.knitnote.generated.resources.label_someone
 import io.github.b150005.knitnote.generated.resources.state_no_pull_requests
 import io.github.b150005.knitnote.generated.resources.state_no_pull_requests_body
 import io.github.b150005.knitnote.generated.resources.title_pull_requests
+import io.github.b150005.knitnote.ui.components.LiveSnackbarHost
 import io.github.b150005.knitnote.ui.components.localized
 import io.github.b150005.knitnote.ui.util.formatFull
 import org.jetbrains.compose.resources.StringResource
@@ -99,7 +99,7 @@ fun PullRequestListScreen(
                 },
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { LiveSnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(
             modifier =

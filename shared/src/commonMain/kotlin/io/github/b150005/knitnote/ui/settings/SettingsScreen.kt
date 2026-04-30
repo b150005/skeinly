@@ -27,7 +27,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -77,6 +76,7 @@ import io.github.b150005.knitnote.generated.resources.message_email_change_pendi
 import io.github.b150005.knitnote.generated.resources.message_password_changed
 import io.github.b150005.knitnote.generated.resources.state_deleting_account
 import io.github.b150005.knitnote.generated.resources.title_settings
+import io.github.b150005.knitnote.ui.components.LiveSnackbarHost
 import io.github.b150005.knitnote.ui.components.localized
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -140,7 +140,7 @@ fun SettingsScreen(
                 },
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { LiveSnackbarHost(snackbarHostState) },
     ) { padding ->
         if (state.isLoading) {
             Box(

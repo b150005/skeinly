@@ -21,7 +21,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -52,6 +51,7 @@ import io.github.b150005.knitnote.generated.resources.label_unknown_pattern
 import io.github.b150005.knitnote.generated.resources.state_no_shares
 import io.github.b150005.knitnote.generated.resources.state_no_shares_body
 import io.github.b150005.knitnote.generated.resources.title_shared_with_me
+import io.github.b150005.knitnote.ui.components.LiveSnackbarHost
 import io.github.b150005.knitnote.ui.components.localized
 import io.github.b150005.knitnote.ui.util.formatFull
 import org.jetbrains.compose.resources.stringResource
@@ -90,7 +90,7 @@ fun SharedWithMeScreen(
                 },
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { LiveSnackbarHost(snackbarHostState) },
     ) { padding ->
         Box(
             modifier =

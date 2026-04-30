@@ -26,7 +26,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -67,6 +66,7 @@ import io.github.b150005.knitnote.generated.resources.message_pr_closed_successf
 import io.github.b150005.knitnote.generated.resources.message_pr_merged_successfully
 import io.github.b150005.knitnote.generated.resources.state_pr_not_found
 import io.github.b150005.knitnote.generated.resources.title_pull_request_detail
+import io.github.b150005.knitnote.ui.components.LiveSnackbarHost
 import io.github.b150005.knitnote.ui.components.localized
 import io.github.b150005.knitnote.ui.util.formatFull
 import org.jetbrains.compose.resources.StringResource
@@ -144,7 +144,7 @@ fun PullRequestDetailScreen(
                 },
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { LiveSnackbarHost(snackbarHostState) },
     ) { padding ->
         Box(
             modifier =

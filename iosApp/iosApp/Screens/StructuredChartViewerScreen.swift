@@ -97,7 +97,9 @@ struct StructuredChartViewerScreen: View {
                 onDismiss: { showBranchPicker = false },
                 onBranchSwitched: { branchName in
                     let template = NSLocalizedString("message_switched_to_branch", comment: "")
-                    switchedToast = String(format: template, branchName)
+                    let message = String(format: template, branchName)
+                    switchedToast = message
+                    announceToVoiceOver(message: message)
                     showBranchPicker = false
                 }
             )
@@ -173,6 +175,7 @@ struct StructuredChartViewerScreen: View {
                     if let created = event as? ChartViewerNavEventPullRequestCreated {
                         let message = NSLocalizedString("message_pr_opened_successfully", comment: "")
                         prOpenedToast = message
+                        announceToVoiceOver(message: message)
                         path.append(Route.pullRequestDetail(prId: created.prId))
                     }
                 }

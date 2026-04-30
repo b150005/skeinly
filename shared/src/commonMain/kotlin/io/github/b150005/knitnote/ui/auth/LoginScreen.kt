@@ -14,7 +14,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,6 +42,7 @@ import io.github.b150005.knitnote.generated.resources.label_email
 import io.github.b150005.knitnote.generated.resources.label_password
 import io.github.b150005.knitnote.generated.resources.title_create_account
 import io.github.b150005.knitnote.generated.resources.title_sign_in
+import io.github.b150005.knitnote.ui.components.LiveSnackbarHost
 import io.github.b150005.knitnote.ui.components.localized
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -64,7 +64,7 @@ fun LoginScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { LiveSnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(
             modifier =

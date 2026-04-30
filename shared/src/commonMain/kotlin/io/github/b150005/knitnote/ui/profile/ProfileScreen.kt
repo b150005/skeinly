@@ -25,7 +25,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -57,6 +56,7 @@ import io.github.b150005.knitnote.generated.resources.label_display_name
 import io.github.b150005.knitnote.generated.resources.message_profile_updated
 import io.github.b150005.knitnote.generated.resources.state_profile_load_failed
 import io.github.b150005.knitnote.generated.resources.title_profile
+import io.github.b150005.knitnote.ui.components.LiveSnackbarHost
 import io.github.b150005.knitnote.ui.components.localized
 import io.github.b150005.knitnote.ui.imagepicker.rememberImagePickerLauncher
 import kotlinx.coroutines.flow.collect
@@ -115,7 +115,7 @@ fun ProfileScreen(
                 },
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { LiveSnackbarHost(snackbarHostState) },
     ) { padding ->
         val user = state.user
         Box(

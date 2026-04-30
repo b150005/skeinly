@@ -19,7 +19,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -45,6 +44,7 @@ import io.github.b150005.knitnote.generated.resources.label_yarn
 import io.github.b150005.knitnote.generated.resources.state_pattern_not_found
 import io.github.b150005.knitnote.generated.resources.state_view_only_share
 import io.github.b150005.knitnote.generated.resources.title_shared_pattern
+import io.github.b150005.knitnote.ui.components.LiveSnackbarHost
 import io.github.b150005.knitnote.ui.components.labelKey
 import io.github.b150005.knitnote.ui.components.localized
 import kotlinx.coroutines.flow.collect
@@ -95,7 +95,7 @@ fun SharedContentScreen(
                 },
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { LiveSnackbarHost(snackbarHostState) },
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             val pattern = state.pattern

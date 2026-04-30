@@ -46,7 +46,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
@@ -104,6 +103,7 @@ import io.github.b150005.knitnote.generated.resources.state_no_matching_projects
 import io.github.b150005.knitnote.generated.resources.state_no_projects
 import io.github.b150005.knitnote.generated.resources.state_no_projects_body
 import io.github.b150005.knitnote.ui.components.EmptyStateView
+import io.github.b150005.knitnote.ui.components.LiveSnackbarHost
 import io.github.b150005.knitnote.ui.components.localized
 import io.github.b150005.knitnote.ui.components.selectedCheckmarkIcon
 import io.github.b150005.knitnote.ui.platform.dialogTestTagsAsResourceId
@@ -246,7 +246,7 @@ fun ProjectListScreen(
                 },
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { LiveSnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { viewModel.onEvent(ProjectListEvent.ShowCreateDialog) },
