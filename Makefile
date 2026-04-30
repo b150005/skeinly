@@ -1,4 +1,4 @@
-# Knit Note — top-level orchestration.
+# Skeinly — top-level orchestration.
 #
 # Run `make help` to see the full target list with descriptions.
 # Targets are thin wrappers over Gradle / xcodebuild / fastlane / Maestro;
@@ -21,7 +21,7 @@ IOS_SIM_DEST ?= platform=iOS Simulator,name=iPhone 16
         clean
 
 help:  ## Show this help.
-	@awk 'BEGIN {FS = ":.*##"; printf "\nKnit Note — make targets\n\n"} \
+	@awk 'BEGIN {FS = ":.*##"; printf "\nSkeinly — make targets\n\n"} \
 		/^[a-zA-Z][a-zA-Z0-9_-]*:.*##/ { printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2 } \
 		/^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) }' $(MAKEFILE_LIST)
 	@echo
