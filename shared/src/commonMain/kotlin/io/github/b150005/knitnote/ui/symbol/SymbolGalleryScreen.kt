@@ -37,7 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import io.github.b150005.knitnote.domain.symbol.PathCommand
 import io.github.b150005.knitnote.domain.symbol.SymbolCategory
 import io.github.b150005.knitnote.domain.symbol.SymbolDefinition
@@ -209,12 +208,6 @@ private fun SymbolCard(
                 text = definition.enLabel,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = definition.id,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 10.sp,
             )
             val jaDesc = definition.jaDescription
             val enDesc = definition.enDescription
