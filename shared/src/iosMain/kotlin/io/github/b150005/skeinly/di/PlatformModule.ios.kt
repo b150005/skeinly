@@ -10,7 +10,7 @@ val platformModule =
     module {
         single { DriverFactory() }
         single { ConnectivityMonitor() }
-        // knit_note_prefs is unencrypted NSUserDefaults — suitable for non-sensitive UX flags only.
+        // skeinly_prefs is unencrypted NSUserDefaults — suitable for non-sensitive UX flags only.
         // Use Keychain for auth tokens and user PII.
-        single<Settings> { NSUserDefaultsSettings.Factory().create("knit_note_prefs") }
+        single<Settings> { NSUserDefaultsSettings.Factory().create("skeinly_prefs") }
     }

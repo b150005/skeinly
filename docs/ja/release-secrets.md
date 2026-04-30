@@ -166,14 +166,14 @@ gh secret set APPLE_DISTRIBUTION_CERT_PASSWORD
 3. base64 エンコード:
 
    ```bash
-   base64 -i Knit_Note_App_Store.mobileprovision -o profile.base64
+   base64 -i Skeinly_App_Store.mobileprovision -o profile.base64
    ```
 
 **検証:**
 
 ```bash
 # CMS エンベロープをデコード — 出力はプロファイルメタデータの XML plist。
-security cms -D -i Knit_Note_App_Store.mobileprovision | head -40
+security cms -D -i Skeinly_App_Store.mobileprovision | head -40
 ```
 
 確認項目:
@@ -200,7 +200,7 @@ gh secret set APPLE_PROVISIONING_PROFILE_BASE64 < profile.base64
 - もしくはダウンロードした `.mobileprovision` から抽出:
 
    ```bash
-   security cms -D -i Knit_Note_App_Store.mobileprovision \
+   security cms -D -i Skeinly_App_Store.mobileprovision \
      | grep -A1 'TeamIdentifier' | tail -1 \
      | sed -E 's/.*<string>([^<]+)<\/string>.*/\1/'
    ```

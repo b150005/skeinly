@@ -166,14 +166,14 @@ gh secret set APPLE_DISTRIBUTION_CERT_PASSWORD
 3. Base64-encode:
 
    ```bash
-   base64 -i Knit_Note_App_Store.mobileprovision -o profile.base64
+   base64 -i Skeinly_App_Store.mobileprovision -o profile.base64
    ```
 
 **VERIFY:**
 
 ```bash
 # Decode the CMS envelope — output is XML plist with the profile metadata.
-security cms -D -i Knit_Note_App_Store.mobileprovision | head -40
+security cms -D -i Skeinly_App_Store.mobileprovision | head -40
 ```
 
 Confirm:
@@ -200,7 +200,7 @@ gh secret set APPLE_PROVISIONING_PROFILE_BASE64 < profile.base64
 - Or, extracted from the `.mobileprovision` you just downloaded:
 
    ```bash
-   security cms -D -i Knit_Note_App_Store.mobileprovision \
+   security cms -D -i Skeinly_App_Store.mobileprovision \
      | grep -A1 'TeamIdentifier' | tail -1 \
      | sed -E 's/.*<string>([^<]+)<\/string>.*/\1/'
    ```

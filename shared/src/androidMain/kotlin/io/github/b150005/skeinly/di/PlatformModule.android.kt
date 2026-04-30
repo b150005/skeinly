@@ -10,7 +10,7 @@ val platformModule =
     module {
         single { DriverFactory(get()) }
         single { ConnectivityMonitor(get()) }
-        // knit_note_prefs is unencrypted — suitable for non-sensitive UX flags only.
+        // skeinly_prefs is unencrypted — suitable for non-sensitive UX flags only.
         // Use EncryptedSharedPreferences for auth tokens and user PII.
-        single<Settings> { SharedPreferencesSettings.Factory(get()).create("knit_note_prefs") }
+        single<Settings> { SharedPreferencesSettings.Factory(get()).create("skeinly_prefs") }
     }
