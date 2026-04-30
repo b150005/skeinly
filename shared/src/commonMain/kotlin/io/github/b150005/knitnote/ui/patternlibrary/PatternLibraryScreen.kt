@@ -37,7 +37,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
@@ -85,6 +84,7 @@ import io.github.b150005.knitnote.generated.resources.state_no_patterns
 import io.github.b150005.knitnote.generated.resources.state_no_patterns_body
 import io.github.b150005.knitnote.generated.resources.title_pattern_library
 import io.github.b150005.knitnote.ui.components.EmptyStateView
+import io.github.b150005.knitnote.ui.components.LiveSnackbarHost
 import io.github.b150005.knitnote.ui.components.labelKey
 import io.github.b150005.knitnote.ui.components.localized
 import io.github.b150005.knitnote.ui.components.selectedCheckmarkIcon
@@ -125,7 +125,7 @@ fun PatternLibraryScreen(
                 },
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { LiveSnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onCreatePattern,

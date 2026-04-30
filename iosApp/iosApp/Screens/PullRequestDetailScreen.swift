@@ -73,10 +73,12 @@ struct PullRequestDetailScreen: View {
                         switch event {
                         case is PullRequestDetailNavEventPrClosed:
                             withAnimation { pendingClosedToast = true }
+                            announceToVoiceOver(messageKey: "message_pr_closed_successfully")
                             try? await Task.sleep(nanoseconds: 2_000_000_000)
                             withAnimation { pendingClosedToast = false }
                         case is PullRequestDetailNavEventPrMerged:
                             withAnimation { pendingMergedToast = true }
+                            announceToVoiceOver(messageKey: "message_pr_merged_successfully")
                             try? await Task.sleep(nanoseconds: 2_000_000_000)
                             withAnimation { pendingMergedToast = false }
                         case let nav as PullRequestDetailNavEventNavigateToConflictResolution:

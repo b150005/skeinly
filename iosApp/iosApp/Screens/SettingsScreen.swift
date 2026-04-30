@@ -94,7 +94,9 @@ struct SettingsScreen: View {
                         } else {
                             ""
                         }
-                    toastMessage = NSLocalizedString(key, comment: "")
+                    let resolved = NSLocalizedString(key, comment: "")
+                    toastMessage = resolved
+                    announceToVoiceOver(message: resolved)
                     try? await Task.sleep(nanoseconds: 2_500_000_000)
                     toastMessage = nil
                 }

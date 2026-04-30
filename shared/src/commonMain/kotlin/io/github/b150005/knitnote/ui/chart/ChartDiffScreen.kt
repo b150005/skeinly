@@ -21,7 +21,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -66,6 +65,7 @@ import io.github.b150005.knitnote.generated.resources.label_layer_shown
 import io.github.b150005.knitnote.generated.resources.label_layer_unlocked
 import io.github.b150005.knitnote.generated.resources.state_no_changes
 import io.github.b150005.knitnote.generated.resources.title_chart_diff
+import io.github.b150005.knitnote.ui.components.LiveSnackbarHost
 import io.github.b150005.knitnote.ui.components.localized
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -131,7 +131,7 @@ fun ChartDiffScreen(
                 },
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { LiveSnackbarHost(snackbarHostState) },
     ) { padding ->
         Box(
             modifier =

@@ -224,6 +224,7 @@ struct DiscoveryScreen: View {
                     ? "message_forked_chart_failed"
                     : "message_forked_successfully"
                 forkResultToast = NSLocalizedString(key, comment: "")
+                announceToVoiceOver(messageKey: key)
                 do {
                     try await Task.sleep(nanoseconds: 2_000_000_000)
                 } catch {

@@ -38,7 +38,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
@@ -131,6 +130,7 @@ import io.github.b150005.knitnote.generated.resources.title_pull_requests
 import io.github.b150005.knitnote.ui.chartviewer.ChartImageGrid
 import io.github.b150005.knitnote.ui.chartviewer.ChartImageViewer
 import io.github.b150005.knitnote.ui.comments.CommentSection
+import io.github.b150005.knitnote.ui.components.LiveSnackbarHost
 import io.github.b150005.knitnote.ui.components.labelKey
 import io.github.b150005.knitnote.ui.components.localized
 import io.github.b150005.knitnote.ui.imagepicker.ImagePickerResult
@@ -361,7 +361,7 @@ fun ProjectDetailScreen(
                 },
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { LiveSnackbarHost(snackbarHostState) },
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when {

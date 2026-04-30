@@ -82,6 +82,7 @@ struct ChartConflictResolutionScreen: View {
                     Task { @MainActor in
                         if event is ChartConflictResolutionNavEventMergeApplied {
                             withAnimation { pendingMergedToast = true }
+                            announceToVoiceOver(messageKey: "message_pr_merged_successfully")
                             try? await Task.sleep(nanoseconds: 1_500_000_000)
                             withAnimation { pendingMergedToast = false }
                             // Pop back to the PR detail screen — Realtime

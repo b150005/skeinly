@@ -32,7 +32,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -91,6 +90,7 @@ import io.github.b150005.knitnote.generated.resources.state_no_structured_chart
 import io.github.b150005.knitnote.generated.resources.title_branch_picker
 import io.github.b150005.knitnote.generated.resources.title_chart_history
 import io.github.b150005.knitnote.generated.resources.title_chart_viewer
+import io.github.b150005.knitnote.ui.components.LiveSnackbarHost
 import io.github.b150005.knitnote.ui.components.localized
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -160,7 +160,7 @@ fun ChartViewerScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { LiveSnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(Res.string.title_chart_viewer)) },
