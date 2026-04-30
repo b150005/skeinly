@@ -39,3 +39,38 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+      - name: Verify deployed URLs return 200
+        # Closes the "deploy succeeded but content 404s" gap that hid a missing
+        # root index.html for several deploys. Each path is one of the URL
+        # surfaces the iOS / Android Settings screen and store-listing docs
+        # publicly link to — failure here means we shipped a broken legal link.
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          base="${PAGE_URL%/}"
+          paths=(
+            "/"
+            "/privacy-policy/"
+            "/terms-of-service/"
+            "/ja/"
+            "/ja/privacy-policy/"
+            "/ja/terms-of-service/"
+            "/site.webmanifest"
+          )
+          fail=0
+          for p in "${paths[@]}"; do
+            url="${base}${p}"
+            # First-deploy CDN propagation can take >30s on a path that didn't
+            # previously exist; retry up to 3 times before declaring failure.
+            code=$(curl -s -o /dev/null -w "%{http_code}" -L \
+              --max-time 30 --retry 3 --retry-delay 5 --retry-all-errors "$url")
+            if [ "$code" = "200" ]; then
+              echo "OK   $code  $url"
+            else
+              echo "FAIL $code  $url"
+              fail=1
+            fi
+          done
+          exit $fail
