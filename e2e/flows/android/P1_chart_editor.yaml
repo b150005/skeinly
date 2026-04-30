@@ -1,0 +1,126 @@
+appId: io.github.b150005.knitnote
+name: "P1 - Chart Editor (Phase 32)"
+tags:
+  - p1
+  - android
+---
+# Phase 32 chart editor smoke flow. Validates the full path:
+#   onboarding → pattern create → project create with pattern link →
+#   project detail → open chart editor → place a cell → save →
+#   confirm chart was created.
+#
+# Self-contained: no Supabase requirement. Pattern + project + chart
+# all live in local-only mode. Closes the Tech Debt Backlog "Maestro
+# E2E for chart editor" entry.
+
+# Pre-condition: clean state
+- clearState: io.github.b150005.knitnote
+- launchApp:
+    appId: io.github.b150005.knitnote
+
+- runFlow: ../../helpers/complete_onboarding_android.yaml
+
+# Step 1 — create a pattern via the helper. The pattern title is
+# user-supplied so subsequent text-tap on the dropdown stays
+# locale-independent.
+- runFlow:
+    file: ../../helpers/create_pattern_android.yaml
+    env:
+      PATTERN_TITLE: "ChartEditorTestPattern"
+
+# Step 2 — create a project linked to that pattern.
+- assertVisible:
+    id: "createProjectFab"
+- tapOn:
+    id: "createProjectFab"
+- assertVisible:
+    id: "newProjectDialog"
+- tapOn:
+    id: "projectNameInput"
+- inputText: "ChartEditorTestProject"
+- hideKeyboard
+
+# Open the pattern dropdown and select our seeded pattern. The dropdown
+# anchor has a `patternPicker` testTag (Phase 33.4 dialog-window spike
+# makes testTags inside dialog windows resolve as Android resource-ids).
+# The dropdown items themselves render the pattern title verbatim, so a
+# text-tap is locale-independent on user-supplied data.
+#
+# `patternPicker` is conditionally rendered inside `if
+# (patterns.isNotEmpty())` in CreateProjectDialog — the dialog opens the
+# instant the FAB tap fires, but `ProjectListViewModel`'s pattern flow
+# may take a beat to hydrate from SQLDelight on slower CI emulators,
+# during which the picker is not in the hierarchy. `extendedWaitUntil`
+# polls up to 5s (vs Maestro's default 2s) to buy headroom for that
+# race without ballooning the flow runtime on the happy path.
+- extendedWaitUntil:
+    visible:
+      id: "patternPicker"
+    timeout: 5000
+- tapOn:
+    id: "patternPicker"
+- tapOn: "ChartEditorTestPattern"
+
+- tapOn:
+    id: "createProjectButton"
+
+# Project landed in the list
+- assertVisible: "ChartEditorTestProject"
+
+# Step 3 — open project detail
+- tapOn: "ChartEditorTestProject"
+
+# The open-chart-editor link is gated on `state.pattern != null` and
+# renders `action_create_structured_chart` ("Create structured chart"
+# in en-US) before any chart exists. The testTag stays the same once
+# the chart is saved and the label flips to `action_edit_structured_chart`.
+- assertVisible:
+    id: "openChartEditorLink"
+
+# Step 4 — open the chart editor
+- tapOn:
+    id: "openChartEditorLink"
+
+# Editor canvas mounted
+- assertVisible:
+    id: "editorCanvas"
+
+# Step 5 — select a symbol from the palette. Two constraints drive the
+# choice of `jis.knit.bobble`:
+#   1. The palette is a horizontally-scrolling LazyRow that only mounts
+#      visible items, so we need a symbol that's in the leading viewport
+#      on fresh editor entry. The default JIS knit palette renders 6
+#      items at start (bind-off / bobble / cable-1x1-l / cable-1x1-l-p
+#      / cable-1x1-r / cable-1x1-r-p).
+#   2. The selected symbol must be non-parametric — a parametric symbol
+#      (like `bind-off` with its `count` slot) opens an inline parameter
+#      dialog after the canvas tap, which would block this smoke flow
+#      from reaching the save button. `bobble` ships with no
+#      `parameterSlots` field, so the canvas tap commits immediately.
+- tapOn:
+    id: "paletteSymbol_jis.knit.bobble"
+
+# Tap the canvas — Maestro's tap-by-id targets the element bounds
+# center, which corresponds to the center of the default 8x8 grid
+# (cell ~(4, 4) under the current `computeLayout` math). Any cell
+# placement is sufficient to flip `hasUnsavedChanges` and produce a
+# saveable chart row.
+- tapOn:
+    id: "editorCanvas"
+
+# Step 6 — save. ChartEditorViewModel's save path emits to `_saved`,
+# which the screen consumes to navigate back to project detail.
+- tapOn:
+    id: "editorSaveButton"
+
+# Step 7 — confirm we're back on project detail and the chart now
+# exists. `openChartViewerLink` is the load-bearing visibility check:
+# it's gated on `state.hasStructuredChart` (ProjectDetailScreen.kt
+# line ~1110), so it can only appear after the editor save flipped
+# `chart_documents` from empty to populated. Locale-independent unlike
+# the "Edit structured chart" text label, which renders as "構造化
+# チャートを編集" on ja-JP devices.
+- assertVisible:
+    id: "openChartEditorLink"
+- assertVisible:
+    id: "openChartViewerLink"

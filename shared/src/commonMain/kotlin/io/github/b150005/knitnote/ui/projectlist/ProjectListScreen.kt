@@ -145,7 +145,10 @@ fun ProjectListScreen(
                             contentDescription = stringResource(Res.string.action_discover_patterns),
                         )
                     }
-                    IconButton(onClick = onPatternLibraryClick) {
+                    IconButton(
+                        onClick = onPatternLibraryClick,
+                        modifier = Modifier.testTag("patternLibraryButton"),
+                    ) {
                         Icon(
                             Icons.Default.Favorite,
                             contentDescription = stringResource(Res.string.action_pattern_library),

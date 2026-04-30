@@ -1,0 +1,43 @@
+appId: io.github.b150005.knitnote
+---
+# Helper flow — creates a pattern with the supplied PATTERN_TITLE so the
+# downstream flow can link a project to it. Locale-independent: every
+# selector is testTag-based (Phase 33.4 dialog-window semantics spike
+# made testTags resolve as Android resource-ids inside dialogs too).
+#
+# Pre-conditions: caller must have completed onboarding and be on the
+# project list screen.
+# Post-conditions: returns to the project list screen with the new
+# pattern visible in the Pattern Library list (not on the project list,
+# since pattern creation does NOT auto-create a project).
+#
+# Caller-supplied env: PATTERN_TITLE (string). Caller is responsible
+# for choosing a unique title to avoid collisions across flows.
+
+# Open Pattern Library
+- tapOn:
+    id: "patternLibraryButton"
+
+# Tap the FAB to open the pattern create form
+- tapOn:
+    id: "createPatternFab"
+
+# Fill in the title
+- tapOn:
+    id: "patternTitleInput"
+- inputText: ${PATTERN_TITLE}
+
+# Hide keyboard so the Save button is reachable on smaller screens
+- hideKeyboard
+
+# Save
+- tapOn:
+    id: "savePatternButton"
+
+# Verify pattern landed in the library list (locale-independent —
+# user-supplied title)
+- assertVisible: ${PATTERN_TITLE}
+
+# Return to project list
+- tapOn:
+    id: "backButton"

@@ -114,6 +114,7 @@ fun PatternEditScreen(
                         TextButton(
                             onClick = { viewModel.onEvent(PatternEditEvent.Save) },
                             enabled = state.title.isNotBlank(),
+                            modifier = Modifier.testTag("savePatternButton"),
                         ) {
                             Text(stringResource(Res.string.action_save))
                         }
@@ -145,7 +146,7 @@ fun PatternEditScreen(
                     onValueChange = { viewModel.onEvent(PatternEditEvent.UpdateTitle(it)) },
                     label = { Text(stringResource(Res.string.label_pattern_title)) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag("patternTitleInput"),
                 )
 
                 OutlinedTextField(

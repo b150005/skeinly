@@ -90,7 +90,8 @@ fun CreateProjectDialog(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+                                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                                    .testTag("patternPicker"),
                         )
                         ExposedDropdownMenu(
                             expanded = patternDropdownExpanded,
