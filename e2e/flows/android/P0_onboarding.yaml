@@ -45,7 +45,8 @@ tags:
 
 # Verify we landed on ProjectList (app_name identical across locales;
 # FAB testTag is a locale-independent landmark now that empty-state text is i18n'd)
-- assertVisible: "Knit Note"
+- assertVisible:
+    id: "createProjectFab"
 - assertVisible:
     id: "createProjectFab"
 
@@ -55,6 +56,7 @@ tags:
     appId: io.github.b150005.knitnote
 
 # Should go directly to ProjectList — no onboarding page visible
-- assertVisible: "Knit Note"
+- assertVisible:
+    id: "createProjectFab"
 - assertNotVisible:
     id: "onboardingPage1"

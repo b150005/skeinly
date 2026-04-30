@@ -13,11 +13,16 @@ tags:
 - runFlow: ../../helpers/complete_onboarding_android.yaml
 
 # Verify we start on the project list
-- assertVisible: "Knit Note"
+- assertVisible:
+    id: "createProjectFab"
 
 # --- Navigate to Profile ---
-# Route through testTags — the contentDescription/title resolve through i18n
-# ("プロフィール" on ja), so string selectors drift with locale.
+# Sprint A: ProjectList nav now lives behind a single overflow `MoreVert`
+# menu (8 nav entries collapsed to declutter the AppBar). Open the menu first,
+# then tap the entry's testTag. Testtags propagate through the popup window
+# via `dialogTestTagsAsResourceId()` (Phase 33.4 helper, reused for DropdownMenu).
+- tapOn:
+    id: "moreMenu"
 - tapOn:
     id: "profileButton"
 - assertVisible:
@@ -26,11 +31,13 @@ tags:
 # Go back to project list (testTag — locale-independent, Phase 33.2)
 - tapOn:
     id: "backButton"
-- assertVisible: "Knit Note"
+- assertVisible:
+    id: "createProjectFab"
 
 # --- Navigate to Settings ---
-# Route through testTags — the title/contentDescription resolve through i18n
-# ("設定" on ja), so string selectors drift with locale.
+# Sprint A: same overflow-menu pivot as Profile above.
+- tapOn:
+    id: "moreMenu"
 - tapOn:
     id: "settingsButton"
 - assertVisible:
@@ -39,7 +46,8 @@ tags:
 # Go back to project list (testTag — locale-independent, Phase 33.2)
 - tapOn:
     id: "backButton"
-- assertVisible: "Knit Note"
+- assertVisible:
+    id: "createProjectFab"
 
 # --- Navigate to Project Detail and back ---
 # Create a project first (dialog ids locale-independent, Phase 33.4)
@@ -60,5 +68,6 @@ tags:
 # Go back (testTag — locale-independent, Phase 33.2)
 - tapOn:
     id: "backButton"
-- assertVisible: "Knit Note"
+- assertVisible:
+    id: "createProjectFab"
 - assertVisible: "Nav Test"
