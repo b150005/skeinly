@@ -208,14 +208,21 @@ private struct DifficultyFilterChip: View {
 
     var body: some View {
         Button(action: action) {
-            Text(titleKey)
-                .font(.subheadline)
-                .fontWeight(isSelected ? .semibold : .regular)
-                .padding(.horizontal, DesignTokens.chipPaddingH)
-                .padding(.vertical, DesignTokens.chipPaddingV)
-                .background(isSelected ? Color.accentColor.opacity(DesignTokens.highlightOpacity) : Color(.systemGray6))
-                .foregroundStyle(isSelected ? Color.accentColor : .primary)
-                .clipShape(Capsule())
+            // Sprint A PR5 — non-color selected signal per WCAG 1.4.1.
+            HStack(spacing: 4) {
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.caption2.weight(.semibold))
+                }
+                Text(titleKey)
+                    .font(.subheadline)
+                    .fontWeight(isSelected ? .semibold : .regular)
+            }
+            .padding(.horizontal, DesignTokens.chipPaddingH)
+            .padding(.vertical, DesignTokens.chipPaddingV)
+            .background(isSelected ? Color.accentColor.opacity(DesignTokens.highlightOpacity) : Color(.systemGray6))
+            .foregroundStyle(isSelected ? Color.accentColor : .primary)
+            .clipShape(Capsule())
         }
         .buttonStyle(.plain)
     }
