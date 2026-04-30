@@ -41,4 +41,5 @@ tags:
 - tapOn:
     id: "getStartedButton"
 
-- assertVisible: "Knit Note"
+- assertVisible:
+    id: "projectListScreen"

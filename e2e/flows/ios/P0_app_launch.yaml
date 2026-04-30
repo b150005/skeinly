@@ -14,9 +14,11 @@ tags:
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_ios.yaml
 
-# Verify the navigation title is visible ("Knit Note" is locale-identical per
-# the i18n-convention `app_name` rule — stays as a text assertion).
-- assertVisible: "Knit Note"
+# Sprint A: brand title removed from the AppBar (the wordmark conveys no
+# information once the user is inside the app). Anchor on the screen-level
+# accessibilityIdentifier instead.
+- assertVisible:
+    id: "projectListScreen"
 
 # Verify empty state messaging (Phase 33.5: locale-independent ids on the
 # ContentUnavailableView Label + its empty-state Create CTA).

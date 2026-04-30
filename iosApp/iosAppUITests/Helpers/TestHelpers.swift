@@ -16,9 +16,11 @@ extension XCUIApplication {
         guard skipButton.waitForExistence(timeout: 3) else { return }
         skipButton.tap()
 
-        // Wait for onboarding to dismiss and ProjectList to appear
-        let navTitle = navigationBars["Knit Note"]
-        _ = navTitle.waitForExistence(timeout: 5)
+        // Wait for onboarding to dismiss and ProjectList to appear.
+        // Sprint A removed the `.navigationTitle` so we anchor on the FAB,
+        // which is always visible on ProjectList regardless of empty/non-empty.
+        let fab = buttons["createProjectFab"]
+        _ = fab.waitForExistence(timeout: 5)
     }
 }
 

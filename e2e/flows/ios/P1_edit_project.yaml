@@ -68,5 +68,5 @@ tags:
 
 # Go back and verify the list reflects the change
 # (iOS back button shows previous screen's navigationTitle)
-- tapOn: "Knit Note"
+- tapOn: "Back"
 - assertVisible: "Updated Scarf"

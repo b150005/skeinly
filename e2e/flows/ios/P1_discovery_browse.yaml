@@ -14,7 +14,8 @@ tags:
 - runFlow: ../../helpers/complete_onboarding_ios.yaml
 
 # Verify we start on the project list
-- assertVisible: "Knit Note"
+- assertVisible:
+    id: "projectListScreen"
 
 # Navigate to Discovery screen via menu (Phase 33.5 pivoted ProjectListScreen
 # menu entry to `discoverPatternsButton` accessibilityIdentifier).
@@ -34,5 +35,6 @@ tags:
     id: "difficultyAllChip"
 
 # Back navigation
-- tapOn: "Knit Note"
-- assertVisible: "Knit Note"
+- tapOn: "Back"
+- assertVisible:
+    id: "projectListScreen"

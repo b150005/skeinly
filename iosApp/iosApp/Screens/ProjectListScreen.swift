@@ -99,11 +99,19 @@ struct ProjectListScreen: View {
         .onAppear {
             searchText = holder.state.searchQuery
         }
-        // `app_name` is locale-identical ("Knit Note" in both en and ja) per the
-        // i18n-convention doc. The bare-literal nav-title is intentional —
-        // LocalizedStringKey would resolve to the same string and any future
-        // rename ships through the xcstrings source anyway.
-        .navigationTitle(LocalizedStringKey("app_name"))
+        // Sprint A: brand title intentionally absent — once the user is inside
+        // the app the wordmark conveys no information, and removing it lets
+        // the toolbar's overflow Menu carry every nav target without an
+        // off-balance composition. Compose mirrors this by passing an empty
+        // `title = { }` to its `TopAppBar`. Tests anchor on
+        // `accessibilityIdentifier("projectListScreen")` (added below) instead
+        // of the previous `navigationBars["Knit Note"]` query.
+        // The `accessibilityElement(children: .contain)` modifier is required
+        // for the identifier to surface as `app.otherElements["projectListScreen"]`
+        // — without it the modifier is absorbed into a child element and the
+        // landmark query times out (Phase 33.1.6 footgun).
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("projectListScreen")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {

@@ -14,7 +14,8 @@ tags:
 - runFlow: ../../helpers/complete_onboarding_ios.yaml
 
 # Verify we start on the project list
-- assertVisible: "Knit Note"
+- assertVisible:
+    id: "projectListScreen"
 
 # Open the overflow menu and tap Symbol Dictionary.
 # Post Phase 33.1 i18n migration the top-bar title is now a CMP StringResource,
@@ -38,5 +39,6 @@ tags:
 - scroll
 
 # Back navigation
-- tapOn: "Knit Note"
-- assertVisible: "Knit Note"
+- tapOn: "Back"
+- assertVisible:
+    id: "projectListScreen"

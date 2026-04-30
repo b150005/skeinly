@@ -45,7 +45,8 @@ tags:
     id: "getStartedButton"
 
 # Verify we landed on ProjectList (app_name is locale-identical across en/ja)
-- assertVisible: "Knit Note"
+- assertVisible:
+    id: "projectListScreen"
 
 # Relaunch the app — onboarding should NOT appear again
 - stopApp: io.github.b150005.knitnote
@@ -53,6 +54,7 @@ tags:
     appId: io.github.b150005.knitnote
 
 # Should go directly to ProjectList — no onboarding page visible
-- assertVisible: "Knit Note"
+- assertVisible:
+    id: "projectListScreen"
 - assertNotVisible:
     id: "onboardingPage1"

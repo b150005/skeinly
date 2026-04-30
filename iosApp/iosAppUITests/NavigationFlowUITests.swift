@@ -11,7 +11,10 @@ final class NavigationFlowUITests: XCTestCase {
     }
 
     func testStartDestination_isProjectList() {
-        XCTAssertTrue(app.navigationBars["Knit Note"].waitForExistence(timeout: 5))
+        // Sprint A pivot: navigationTitle removed from ProjectListScreen, so
+        // the screen-level `accessibilityIdentifier("projectListScreen")` is
+        // the new locale-independent anchor.
+        XCTAssertTrue(app.otherElements["projectListScreen"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.otherElements["emptyStateLabel"].exists)
     }
 
@@ -28,7 +31,7 @@ final class NavigationFlowUITests: XCTestCase {
         XCTAssertTrue(app.otherElements["profileScreen"].waitForExistence(timeout: 3))
 
         app.navigationBars.buttons.element(boundBy: 0).tap()
-        XCTAssertTrue(app.navigationBars["Knit Note"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.otherElements["projectListScreen"].waitForExistence(timeout: 3))
     }
 
     func testDeepLink_invalidURL_doesNotNavigate() {
@@ -37,7 +40,7 @@ final class NavigationFlowUITests: XCTestCase {
         app.open(invalidURL)
 
         // Should remain on project list
-        XCTAssertTrue(app.navigationBars["Knit Note"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.otherElements["projectListScreen"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.otherElements["emptyStateLabel"].waitForExistence(timeout: 3), "Expected empty state after invalid deep link")
     }
 
@@ -48,7 +51,7 @@ final class NavigationFlowUITests: XCTestCase {
         app.open(deepLinkURL)
 
         // App should remain on project list, not navigate to shared content
-        XCTAssertTrue(app.navigationBars["Knit Note"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.otherElements["projectListScreen"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.otherElements["emptyStateLabel"].waitForExistence(timeout: 3), "Expected empty state after deep link in local mode")
         // Phase 33.1.13: pivoted from navigationBars["Shared Content"] to the
         // accessibilityIdentifier landmark so the assert stays valid on a
@@ -66,8 +69,6 @@ final class NavigationFlowUITests: XCTestCase {
         XCTAssertTrue(app.otherElements["activityFeedScreen"].waitForExistence(timeout: 3))
 
         app.navigationBars.buttons.element(boundBy: 0).tap()
-        // app_name ("Knit Note") is locale-identical, so this nav-bar title
-        // query stays literal and does not need a testTag pivot.
-        XCTAssertTrue(app.navigationBars["Knit Note"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.otherElements["projectListScreen"].waitForExistence(timeout: 3))
     }
 }

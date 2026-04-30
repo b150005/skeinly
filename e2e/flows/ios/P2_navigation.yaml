@@ -13,7 +13,8 @@ tags:
 - runFlow: ../../helpers/complete_onboarding_ios.yaml
 
 # Verify we start on the project list
-- assertVisible: "Knit Note"
+- assertVisible:
+    id: "projectListScreen"
 
 # --- Navigate to Profile ---
 # Phase 33.5: menu entry now has `profileButton` accessibilityIdentifier.
@@ -25,8 +26,9 @@ tags:
     id: "profileScreen"
 
 # Go back to project list (iOS back button shows previous screen title)
-- tapOn: "Knit Note"
-- assertVisible: "Knit Note"
+- tapOn: "Back"
+- assertVisible:
+    id: "projectListScreen"
 
 # --- Navigate to Settings ---
 # Phase 33.5: menu entry now has `settingsButton` accessibilityIdentifier.
@@ -38,8 +40,9 @@ tags:
     id: "settingsScreen"
 
 # Go back to project list
-- tapOn: "Knit Note"
-- assertVisible: "Knit Note"
+- tapOn: "Back"
+- assertVisible:
+    id: "projectListScreen"
 
 # --- Navigate to Project Detail and back ---
 # Create a project first (Phase 33.4 iOS ids — locale-independent)
@@ -58,6 +61,7 @@ tags:
     id: "rowCounter"
 
 # Go back
-- tapOn: "Knit Note"
-- assertVisible: "Knit Note"
+- tapOn: "Back"
+- assertVisible:
+    id: "projectListScreen"
 - assertVisible: "Nav Test"

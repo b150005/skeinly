@@ -52,11 +52,11 @@ final class OnboardingUITests: XCTestCase {
         )
         getStartedButton.tap()
 
-        // "Knit Note" is the `app_name` key, which resolves to the same
-        // literal in both en and ja (see androidApp/res/values{,-ja}/strings.xml).
-        // If that ever diverges, pivot this assertion to a testTag landmark.
+        // Sprint A removed the brand title from the ProjectList AppBar (the
+        // wordmark was forcing the toolbar to overflow). Anchor on the FAB
+        // accessibilityIdentifier instead — always visible on ProjectList.
         XCTAssertTrue(
-            app.navigationBars["Knit Note"].waitForExistence(timeout: 5),
+            app.buttons["createProjectFab"].waitForExistence(timeout: 5),
             "Onboarding did not complete — ProjectList never appeared"
         )
     }
@@ -73,9 +73,9 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertTrue(skipButton.waitForExistence(timeout: 3), "Skip button missing")
         skipButton.tap()
 
-        // See the note above on `app_name` locale-identity.
+        // Same Sprint A pivot — anchor on the FAB instead of the removed nav title.
         XCTAssertTrue(
-            app.navigationBars["Knit Note"].waitForExistence(timeout: 5),
+            app.buttons["createProjectFab"].waitForExistence(timeout: 5),
             "Skip did not complete onboarding — ProjectList never appeared"
         )
     }

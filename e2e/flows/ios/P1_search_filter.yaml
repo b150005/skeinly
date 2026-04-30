@@ -42,7 +42,7 @@ tags:
 - tapOn:
     id: "incrementButton"
 # Go back (iOS back button shows previous screen title)
-- tapOn: "Knit Note"
+- tapOn: "Back"
 
 # Both projects should be visible
 - assertVisible: "Wool Scarf"

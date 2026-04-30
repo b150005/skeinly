@@ -63,9 +63,9 @@ tags:
 - tapOn:
     id: "incrementButton"
 
-# Go back to project list (iOS back button shows parent nav title "Knit Note",
-# which is locale-identical per the app_name convention).
-- tapOn: "Knit Note"
+# Sprint A removed the parent nav title; iOS back chevron now defaults to
+# accessibilityLabel "Back" — tap by that literal.
+- tapOn: "Back"
 
 # Project 2: Winter Socks
 - tapOn:
@@ -108,7 +108,7 @@ tags:
 - takeScreenshot: screenshot_04_row_counter
 
 # Go back
-- tapOn: "Knit Note"
+- tapOn: "Back"
 
 # ============================================================
 # Screenshot 5: Pattern Library (Phase 33.5: open overflow menu, then tap
@@ -119,7 +119,7 @@ tags:
 - tapOn:
     id: "patternLibraryButton"
 - takeScreenshot: screenshot_05_pattern_library
-- tapOn: "Knit Note"
+- tapOn: "Back"
 
 # ============================================================
 # Screenshot 6: Profile (Phase 33.5: open overflow menu, then tap
