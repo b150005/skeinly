@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Explore
@@ -63,7 +64,6 @@ import io.github.b150005.knitnote.generated.resources.label_difficulty_all
 import io.github.b150005.knitnote.generated.resources.label_filter_charts_only
 import io.github.b150005.knitnote.generated.resources.label_gauge_value
 import io.github.b150005.knitnote.generated.resources.label_needle_value
-import io.github.b150005.knitnote.generated.resources.label_sort_alphabetical
 import io.github.b150005.knitnote.generated.resources.label_sort_alphabetical_detail
 import io.github.b150005.knitnote.generated.resources.label_sort_recent
 import io.github.b150005.knitnote.generated.resources.label_yarn_value
@@ -144,6 +144,20 @@ fun DiscoveryScreen(
                         )
                     }
                 },
+                // Sprint B M2 (Phase 39 pre-beta UX audit): sort moved out of the
+                // inline filter row into a dedicated trailing IconButton, mirroring
+                // the iOS `ToolbarItem(.primaryAction) Menu` shape. The previous
+                // FilterChip-styled sort selector competed for horizontal space
+                // with the difficulty chip row and clipped the trailing chip
+                // (上級 / "Advanced" on JA-locale narrow screens).
+                actions = {
+                    DiscoverySortMenu(
+                        sortOrder = state.sortOrder,
+                        onSortOrderChange = {
+                            viewModel.onEvent(DiscoveryEvent.UpdateSortOrder(it))
+                        },
+                    )
+                },
             )
         },
         snackbarHost = { LiveSnackbarHost(snackbarHostState) },
@@ -163,15 +177,11 @@ fun DiscoveryScreen(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
 
-                DiscoveryFilterSortRow(
+                DiscoveryFilterRow(
                     difficultyFilter = state.difficultyFilter,
-                    sortOrder = state.sortOrder,
                     chartsOnlyFilter = state.chartsOnlyFilter,
                     onDifficultyFilterChange = {
                         viewModel.onEvent(DiscoveryEvent.UpdateDifficultyFilter(it))
-                    },
-                    onSortOrderChange = {
-                        viewModel.onEvent(DiscoveryEvent.UpdateSortOrder(it))
                     },
                     onToggleChartsOnly = {
                         viewModel.onEvent(DiscoveryEvent.ToggleChartsOnly)
@@ -282,140 +292,137 @@ private fun DiscoverySearchField(
 }
 
 @Composable
-private fun DiscoveryFilterSortRow(
+private fun DiscoveryFilterRow(
     difficultyFilter: Difficulty?,
-    sortOrder: SortOrder,
     chartsOnlyFilter: Boolean,
     onDifficultyFilterChange: (Difficulty?) -> Unit,
-    onSortOrderChange: (SortOrder) -> Unit,
     onToggleChartsOnly: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
+    LazyRow(
         modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        LazyRow(
-            modifier = Modifier.weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            // Phase 36.4 (ADR-012 §4): "Charts only" sits between the search
-            // field and the difficulty chip row per the ADR; in the LazyRow
-            // it leads so it is visible without horizontal scrolling.
-            // Sprint A PR5: leadingIcon checkmark gives non-color selected
-            // signal per WCAG 1.4.1.
-            item {
-                FilterChip(
-                    selected = chartsOnlyFilter,
-                    onClick = onToggleChartsOnly,
-                    label = { Text(stringResource(Res.string.label_filter_charts_only)) },
-                    leadingIcon = selectedCheckmarkIcon(chartsOnlyFilter),
-                    modifier = Modifier.testTag("chartsOnlyChip"),
-                )
-            }
-            item {
-                FilterChip(
-                    selected = difficultyFilter == null,
-                    onClick = { onDifficultyFilterChange(null) },
-                    label = { Text(stringResource(Res.string.label_difficulty_all)) },
-                    leadingIcon = selectedCheckmarkIcon(difficultyFilter == null),
-                    modifier = Modifier.testTag("difficultyAllChip"),
-                )
-            }
-            item {
-                FilterChip(
-                    selected = difficultyFilter == Difficulty.BEGINNER,
-                    onClick = {
-                        onDifficultyFilterChange(
-                            if (difficultyFilter == Difficulty.BEGINNER) null else Difficulty.BEGINNER,
-                        )
-                    },
-                    label = { Text(stringResource(Difficulty.BEGINNER.labelKey)) },
-                    leadingIcon = selectedCheckmarkIcon(difficultyFilter == Difficulty.BEGINNER),
-                    modifier = Modifier.testTag("difficultyBeginnerChip"),
-                )
-            }
-            item {
-                FilterChip(
-                    selected = difficultyFilter == Difficulty.INTERMEDIATE,
-                    onClick = {
-                        onDifficultyFilterChange(
-                            if (difficultyFilter == Difficulty.INTERMEDIATE) null else Difficulty.INTERMEDIATE,
-                        )
-                    },
-                    label = { Text(stringResource(Difficulty.INTERMEDIATE.labelKey)) },
-                    leadingIcon = selectedCheckmarkIcon(difficultyFilter == Difficulty.INTERMEDIATE),
-                    modifier = Modifier.testTag("difficultyIntermediateChip"),
-                )
-            }
-            item {
-                FilterChip(
-                    selected = difficultyFilter == Difficulty.ADVANCED,
-                    onClick = {
-                        onDifficultyFilterChange(
-                            if (difficultyFilter == Difficulty.ADVANCED) null else Difficulty.ADVANCED,
-                        )
-                    },
-                    label = { Text(stringResource(Difficulty.ADVANCED.labelKey)) },
-                    leadingIcon = selectedCheckmarkIcon(difficultyFilter == Difficulty.ADVANCED),
-                    modifier = Modifier.testTag("difficultyAdvancedChip"),
-                )
-            }
+        // Phase 36.4 (ADR-012 §4): "Charts only" sits between the search field
+        // and the difficulty chip row per the ADR; in the LazyRow it leads so
+        // it is visible without horizontal scrolling. Sprint A PR5: leadingIcon
+        // checkmark gives non-color selected signal per WCAG 1.4.1.
+        item {
+            FilterChip(
+                selected = chartsOnlyFilter,
+                onClick = onToggleChartsOnly,
+                label = { Text(stringResource(Res.string.label_filter_charts_only)) },
+                leadingIcon = selectedCheckmarkIcon(chartsOnlyFilter),
+                modifier = Modifier.testTag("chartsOnlyChip"),
+            )
         }
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        DiscoverySortDropdown(sortOrder = sortOrder, onSortOrderChange = onSortOrderChange)
+        item {
+            FilterChip(
+                selected = difficultyFilter == null,
+                onClick = { onDifficultyFilterChange(null) },
+                label = { Text(stringResource(Res.string.label_difficulty_all)) },
+                leadingIcon = selectedCheckmarkIcon(difficultyFilter == null),
+                modifier = Modifier.testTag("difficultyAllChip"),
+            )
+        }
+        item {
+            FilterChip(
+                selected = difficultyFilter == Difficulty.BEGINNER,
+                onClick = {
+                    onDifficultyFilterChange(
+                        if (difficultyFilter == Difficulty.BEGINNER) null else Difficulty.BEGINNER,
+                    )
+                },
+                label = { Text(stringResource(Difficulty.BEGINNER.labelKey)) },
+                leadingIcon = selectedCheckmarkIcon(difficultyFilter == Difficulty.BEGINNER),
+                modifier = Modifier.testTag("difficultyBeginnerChip"),
+            )
+        }
+        item {
+            FilterChip(
+                selected = difficultyFilter == Difficulty.INTERMEDIATE,
+                onClick = {
+                    onDifficultyFilterChange(
+                        if (difficultyFilter == Difficulty.INTERMEDIATE) null else Difficulty.INTERMEDIATE,
+                    )
+                },
+                label = { Text(stringResource(Difficulty.INTERMEDIATE.labelKey)) },
+                leadingIcon = selectedCheckmarkIcon(difficultyFilter == Difficulty.INTERMEDIATE),
+                modifier = Modifier.testTag("difficultyIntermediateChip"),
+            )
+        }
+        item {
+            FilterChip(
+                selected = difficultyFilter == Difficulty.ADVANCED,
+                onClick = {
+                    onDifficultyFilterChange(
+                        if (difficultyFilter == Difficulty.ADVANCED) null else Difficulty.ADVANCED,
+                    )
+                },
+                label = { Text(stringResource(Difficulty.ADVANCED.labelKey)) },
+                leadingIcon = selectedCheckmarkIcon(difficultyFilter == Difficulty.ADVANCED),
+                modifier = Modifier.testTag("difficultyAdvancedChip"),
+            )
+        }
     }
 }
 
 @Composable
-private fun DiscoverySortDropdown(
+private fun DiscoverySortMenu(
     sortOrder: SortOrder,
     onSortOrderChange: (SortOrder) -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
-    val chipLabelKey =
-        when (sortOrder) {
-            SortOrder.RECENT -> Res.string.label_sort_recent
-            SortOrder.ALPHABETICAL -> Res.string.label_sort_alphabetical
-            SortOrder.PROGRESS -> Res.string.label_sort_recent
-        }
 
     Box {
-        FilterChip(
-            selected = sortOrder != SortOrder.RECENT,
+        IconButton(
             onClick = { expanded = true },
-            label = { Text(stringResource(chipLabelKey)) },
-            trailingIcon = {
-                Icon(
-                    Icons.AutoMirrored.Filled.Sort,
-                    contentDescription = stringResource(Res.string.action_sort),
-                )
-            },
-        )
+            modifier = Modifier.testTag("sortMenuButton"),
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.Sort,
+                contentDescription = stringResource(Res.string.action_sort),
+            )
+        }
 
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
         ) {
+            // Leading checkmark on the active item mirrors the iOS toolbar Menu
+            // (`systemImage: holder.state.sortOrder == .recent ? "checkmark" : ""`)
+            // so the user can discover the current sort selection on menu open.
+            // Sprint B M2 review surfaced the loss of always-visible current-sort
+            // label as a MEDIUM concern; the checkmark restores discoverability
+            // inside the menu without re-introducing the inline-chip clipping.
             DropdownMenuItem(
                 text = { Text(stringResource(Res.string.label_sort_recent)) },
+                leadingIcon = activeSortCheckmark(active = sortOrder == SortOrder.RECENT),
                 onClick = {
                     onSortOrderChange(SortOrder.RECENT)
                     expanded = false
                 },
+                modifier = Modifier.testTag("sortRecentItem"),
             )
             DropdownMenuItem(
                 text = { Text(stringResource(Res.string.label_sort_alphabetical_detail)) },
+                leadingIcon = activeSortCheckmark(active = sortOrder == SortOrder.ALPHABETICAL),
                 onClick = {
                     onSortOrderChange(SortOrder.ALPHABETICAL)
                     expanded = false
                 },
+                modifier = Modifier.testTag("sortAlphabeticalItem"),
             )
         }
     }
 }
+
+private fun activeSortCheckmark(active: Boolean): (@Composable () -> Unit)? =
+    if (active) {
+        { Icon(Icons.Default.Check, contentDescription = null) }
+    } else {
+        null
+    }
 
 @Composable
 private fun DiscoveryPatternCard(
