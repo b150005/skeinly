@@ -250,11 +250,19 @@ struct ProjectListScreen: View {
                 // selector — TextField's bare-literal `titleKey` is still auto-localized
                 // via LocalizedStringKey per the SwiftUI literal-promotion table in
                 // docs/{en,ja}/i18n-convention.md.
+                // Sprint A PR4 — explicit `.accessibilityLabel` mirrors the
+                // `titleKey` so VoiceOver continues announcing the field name
+                // after the user starts typing. SwiftUI's auto-derived label
+                // is reportedly inconsistent across iOS 17+ minor versions
+                // (audit found "テキストフィールド" announcement post-input);
+                // the explicit label is defensive and locks in the contract.
                 TextField(LocalizedStringKey("label_title"), text: $newTitle)
                     .accessibilityIdentifier("projectNameInput")
+                    .accessibilityLabel(LocalizedStringKey("label_title"))
                 TextField(LocalizedStringKey("label_total_rows_optional"), text: $newTotalRows)
                     .keyboardType(.numberPad)
                     .accessibilityIdentifier("totalRowsInput")
+                    .accessibilityLabel(LocalizedStringKey("label_total_rows_optional"))
 
                 if !holder.state.patternsForCreate.isEmpty {
                     Picker(LocalizedStringKey("label_pattern_optional"), selection: $selectedPatternId) {

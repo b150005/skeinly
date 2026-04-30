@@ -570,11 +570,15 @@ struct ProjectDetailScreen: View {
     private func editSheet(_ project: Project?) -> some View {
         NavigationStack {
             Form {
+                // Sprint A PR4 — explicit `.accessibilityLabel` ensures VoiceOver
+                // keeps announcing the field name after the user starts typing.
                 TextField(LocalizedStringKey("label_title"), text: $editTitle)
                     .accessibilityIdentifier("projectNameInput")
+                    .accessibilityLabel(LocalizedStringKey("label_title"))
                 TextField(LocalizedStringKey("label_total_rows_optional"), text: $editTotalRows)
                     .keyboardType(.numberPad)
                     .accessibilityIdentifier("totalRowsInput")
+                    .accessibilityLabel(LocalizedStringKey("label_total_rows_optional"))
             }
             .navigationTitle(LocalizedStringKey("dialog_edit_project_title"))
             .navigationBarTitleDisplayMode(.inline)
@@ -615,6 +619,7 @@ struct ProjectDetailScreen: View {
             Form {
                 TextField(LocalizedStringKey("label_note"), text: $newNote, axis: .vertical)
                     .lineLimit(3...6)
+                    .accessibilityLabel(LocalizedStringKey("label_note"))
 
                 Section {
                     if let photoData = notePhotoData, let uiImage = UIImage(data: photoData) {
