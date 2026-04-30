@@ -3,6 +3,7 @@ package io.github.b150005.knitnote.ui
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
@@ -52,7 +53,10 @@ class NavigationFlowTest {
             }
 
             waitForIdle()
-            onNodeWithText("Knit Note").assertIsDisplayed()
+            // The brand wordmark "Knit Note" is intentionally absent from the
+            // ProjectList AppBar after Sprint A (the title is empty so the
+            // overflow `MoreVert` button has uncontested horizontal space).
+            // Anchor on the empty-state copy instead.
             onNodeWithText("No projects yet").assertIsDisplayed()
         }
 
@@ -69,7 +73,11 @@ class NavigationFlowTest {
             }
 
             waitForIdle()
-            onNodeWithContentDescription("Profile").performClick()
+            // ProjectList nav now uses an overflow `MoreVert` menu (Sprint A).
+            // Open the menu first, then tap the Profile entry by its testTag.
+            onNodeWithTag("moreMenu").performClick()
+            waitForIdle()
+            onNodeWithTag("profileButton").performClick()
             waitForIdle()
 
             onNodeWithText("Profile").assertIsDisplayed()
@@ -77,7 +85,7 @@ class NavigationFlowTest {
             onNodeWithContentDescription("Back").performClick()
             waitForIdle()
 
-            onNodeWithText("Knit Note").assertIsDisplayed()
+            onNodeWithText("No projects yet").assertIsDisplayed()
         }
 
     @Test
@@ -120,7 +128,9 @@ class NavigationFlowTest {
             onNodeWithContentDescription("Back").performClick()
             waitForIdle()
 
-            onNodeWithText("Knit Note").assertIsDisplayed()
+            // ProjectList no longer renders a "Knit Note" title; the project
+            // card itself is the back-navigation anchor.
+            onNodeWithText("Navigation Test Scarf").assertIsDisplayed()
         }
 
     @Test
@@ -136,7 +146,9 @@ class NavigationFlowTest {
             }
 
             waitForIdle()
-            onNodeWithContentDescription("Activity Feed").performClick()
+            onNodeWithTag("moreMenu").performClick()
+            waitForIdle()
+            onNodeWithTag("activityFeedButton").performClick()
             waitForIdle()
 
             onNodeWithText("Activity Feed").assertIsDisplayed()
@@ -144,7 +156,7 @@ class NavigationFlowTest {
             onNodeWithContentDescription("Back").performClick()
             waitForIdle()
 
-            onNodeWithText("Knit Note").assertIsDisplayed()
+            onNodeWithText("No projects yet").assertIsDisplayed()
         }
 
     @Test
@@ -160,7 +172,9 @@ class NavigationFlowTest {
             }
 
             waitForIdle()
-            onNodeWithContentDescription("Shared With Me").performClick()
+            onNodeWithTag("moreMenu").performClick()
+            waitForIdle()
+            onNodeWithTag("sharedWithMeButton").performClick()
             waitForIdle()
 
             onNodeWithText("Shared With Me").assertIsDisplayed()
@@ -168,6 +182,6 @@ class NavigationFlowTest {
             onNodeWithContentDescription("Back").performClick()
             waitForIdle()
 
-            onNodeWithText("Knit Note").assertIsDisplayed()
+            onNodeWithText("No projects yet").assertIsDisplayed()
         }
 }

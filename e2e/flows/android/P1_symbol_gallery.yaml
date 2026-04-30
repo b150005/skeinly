@@ -13,13 +13,15 @@ tags:
 - runFlow: ../../helpers/complete_onboarding_android.yaml
 
 # Verify we start on the project list
-- assertVisible: "Knit Note"
+- assertVisible:
+    id: "createProjectFab"
 
-# Open the Symbol Dictionary from the top bar.
-# Post Phase 33.1 i18n migration the top-bar title is now a CMP StringResource,
-# so do not assert on the literal English text — use the grid container testTag
-# which is locale-independent. It is the stable landmark that proves navigation
-# reached this screen.
+# Open the Symbol Dictionary from the overflow menu (Sprint A — nav targets
+# moved from inline AppBar IconButtons into a single `MoreVert` menu, freeing
+# horizontal space that was previously forcing the title to wrap vertically).
+# testTags propagate through the popup window via `dialogTestTagsAsResourceId()`.
+- tapOn:
+    id: "moreMenu"
 - tapOn:
     id: "symbolGalleryButton"
 
@@ -38,4 +40,5 @@ tags:
 # Back navigation (testTag — locale-independent, Phase 33.2)
 - tapOn:
     id: "backButton"
-- assertVisible: "Knit Note"
+- assertVisible:
+    id: "createProjectFab"

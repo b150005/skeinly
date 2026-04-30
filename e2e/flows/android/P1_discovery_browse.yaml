@@ -14,13 +14,15 @@ tags:
 - runFlow: ../../helpers/complete_onboarding_android.yaml
 
 # Verify we start on the project list
-- assertVisible: "Knit Note"
+- assertVisible:
+    id: "createProjectFab"
 
-# Navigate to Discovery screen (content description still resolves in English
-# while ProjectListScreen is i18n'd; the screen we land on is asserted via
-# testTag below so it stays locale-independent).
+# Navigate to Discovery screen via the overflow menu (Sprint A — Discover is
+# now an entry inside the single `MoreVert` menu rather than a top-level icon).
 - tapOn:
-    text: "Discover Patterns"
+    id: "moreMenu"
+- tapOn:
+    id: "discoverPatternsButton"
 - assertVisible:
     id: "discoveryScreen"
 
@@ -48,4 +50,5 @@ tags:
 # Back navigation (testTag — locale-independent, Phase 33.2)
 - tapOn:
     id: "backButton"
-- assertVisible: "Knit Note"
+- assertVisible:
+    id: "createProjectFab"

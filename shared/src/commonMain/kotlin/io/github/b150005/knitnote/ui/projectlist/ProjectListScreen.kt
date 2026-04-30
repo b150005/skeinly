@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
@@ -75,6 +76,7 @@ import io.github.b150005.knitnote.generated.resources.action_clear_search
 import io.github.b150005.knitnote.generated.resources.action_create_project
 import io.github.b150005.knitnote.generated.resources.action_delete
 import io.github.b150005.knitnote.generated.resources.action_discover_patterns
+import io.github.b150005.knitnote.generated.resources.action_more_options
 import io.github.b150005.knitnote.generated.resources.action_new_project
 import io.github.b150005.knitnote.generated.resources.action_pattern_library
 import io.github.b150005.knitnote.generated.resources.action_profile
@@ -83,7 +85,6 @@ import io.github.b150005.knitnote.generated.resources.action_settings
 import io.github.b150005.knitnote.generated.resources.action_shared_with_me
 import io.github.b150005.knitnote.generated.resources.action_sort
 import io.github.b150005.knitnote.generated.resources.action_symbol_dictionary
-import io.github.b150005.knitnote.generated.resources.app_name
 import io.github.b150005.knitnote.generated.resources.dialog_delete_project_body
 import io.github.b150005.knitnote.generated.resources.dialog_delete_project_title
 import io.github.b150005.knitnote.generated.resources.hint_search_projects
@@ -104,6 +105,7 @@ import io.github.b150005.knitnote.generated.resources.state_no_projects
 import io.github.b150005.knitnote.generated.resources.state_no_projects_body
 import io.github.b150005.knitnote.ui.components.EmptyStateView
 import io.github.b150005.knitnote.ui.components.localized
+import io.github.b150005.knitnote.ui.platform.dialogTestTagsAsResourceId
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -134,82 +136,110 @@ fun ProjectListScreen(
         }
     }
 
+    // Plain `remember` (not `rememberSaveable`) — restoring an open menu after
+    // a rotation / process death loses the anchor focus and surprises users.
+    var menuExpanded by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
+            // Title intentionally empty: the brand wordmark "Knit Note" carries
+            // no information for a user already inside the app, and inlining 8
+            // navigation IconButtons alongside it forced the title to wrap one
+            // letter per line on Android (Sprint A audit, 2026-04-30). Compose
+            // now mirrors the iOS shape — a single overflow `MoreVert` button
+            // collapses every nav target into a `DropdownMenu`.
             TopAppBar(
-                title = { Text(stringResource(Res.string.app_name)) },
+                title = { },
                 actions = {
-                    IconButton(onClick = onDiscoverClick) {
-                        Icon(
-                            Icons.Default.Explore,
-                            contentDescription = stringResource(Res.string.action_discover_patterns),
-                        )
-                    }
                     IconButton(
-                        onClick = onPatternLibraryClick,
-                        modifier = Modifier.testTag("patternLibraryButton"),
+                        onClick = { menuExpanded = true },
+                        modifier = Modifier.testTag("moreMenu"),
                     ) {
                         Icon(
-                            Icons.Default.Favorite,
-                            contentDescription = stringResource(Res.string.action_pattern_library),
+                            Icons.Default.MoreVert,
+                            contentDescription = stringResource(Res.string.action_more_options),
                         )
                     }
-                    IconButton(
-                        onClick = onSymbolGalleryClick,
-                        modifier = Modifier.testTag("symbolGalleryButton"),
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false },
+                        modifier = Modifier.dialogTestTagsAsResourceId(),
                     ) {
-                        Icon(
-                            Icons.Default.GridView,
-                            contentDescription = stringResource(Res.string.action_symbol_dictionary),
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.action_discover_patterns)) },
+                            leadingIcon = { Icon(Icons.Default.Explore, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                onDiscoverClick()
+                            },
+                            modifier = Modifier.testTag("discoverPatternsButton"),
                         )
-                    }
-                    IconButton(
-                        onClick = onProfileClick,
-                        modifier = Modifier.testTag("profileButton"),
-                    ) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = stringResource(Res.string.action_profile),
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.action_pattern_library)) },
+                            leadingIcon = { Icon(Icons.Default.Favorite, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                onPatternLibraryClick()
+                            },
+                            modifier = Modifier.testTag("patternLibraryButton"),
                         )
-                    }
-                    IconButton(
-                        onClick = onActivityFeedClick,
-                        modifier = Modifier.testTag("activityFeedButton"),
-                    ) {
-                        Icon(
-                            Icons.Default.Notifications,
-                            contentDescription = stringResource(Res.string.action_activity_feed),
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.action_symbol_dictionary)) },
+                            leadingIcon = { Icon(Icons.Default.GridView, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                onSymbolGalleryClick()
+                            },
+                            modifier = Modifier.testTag("symbolGalleryButton"),
                         )
-                    }
-                    // Phase 38.2 (ADR-014 §6) — entry point to the read-only PR
-                    // list. Defaults to the Incoming filter (the user's own
-                    // patterns receive PRs from forkers); the chip row in the
-                    // list lets them toggle to Outgoing without re-navigating.
-                    IconButton(
-                        onClick = onSuggestionsClick,
-                        modifier = Modifier.testTag("pullRequestsButton"),
-                    ) {
-                        Icon(
-                            Icons.Default.Forum,
-                            contentDescription = stringResource(Res.string.action_pull_requests),
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.action_profile)) },
+                            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                onProfileClick()
+                            },
+                            modifier = Modifier.testTag("profileButton"),
                         )
-                    }
-                    IconButton(
-                        onClick = onSharedWithMeClick,
-                        modifier = Modifier.testTag("sharedWithMeButton"),
-                    ) {
-                        Icon(
-                            Icons.Default.People,
-                            contentDescription = stringResource(Res.string.action_shared_with_me),
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.action_activity_feed)) },
+                            leadingIcon = { Icon(Icons.Default.Notifications, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                onActivityFeedClick()
+                            },
+                            modifier = Modifier.testTag("activityFeedButton"),
                         )
-                    }
-                    IconButton(
-                        onClick = onSettingsClick,
-                        modifier = Modifier.testTag("settingsButton"),
-                    ) {
-                        Icon(
-                            Icons.Default.Settings,
-                            contentDescription = stringResource(Res.string.action_settings),
+                        // Phase 38.2 (ADR-014 §6) — entry point to the read-only PR
+                        // list. Defaults to the Incoming filter (the user's own
+                        // patterns receive PRs from forkers); the chip row in the
+                        // list lets them toggle to Outgoing without re-navigating.
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.action_pull_requests)) },
+                            leadingIcon = { Icon(Icons.Default.Forum, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                onSuggestionsClick()
+                            },
+                            modifier = Modifier.testTag("pullRequestsButton"),
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.action_shared_with_me)) },
+                            leadingIcon = { Icon(Icons.Default.People, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                onSharedWithMeClick()
+                            },
+                            modifier = Modifier.testTag("sharedWithMeButton"),
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.action_settings)) },
+                            leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                onSettingsClick()
+                            },
+                            modifier = Modifier.testTag("settingsButton"),
                         )
                     }
                 },
