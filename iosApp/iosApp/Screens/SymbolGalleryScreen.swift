@@ -120,9 +120,6 @@ private struct SymbolCardView: View {
             Text(definition.enLabel)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text(definition.id)
-                .font(.system(size: 10))
-                .foregroundStyle(.secondary)
             if let ja = definition.jaDescription, !ja.isEmpty {
                 Text(ja).font(.caption2)
             }
