@@ -123,8 +123,10 @@ class KnitNoteApplication : Application() {
             // Phase F.4 — `event.properties` is `Map<String, Any>?` matching
             // PostHog Android's expected `properties: Map<String, Any>?`
             // shape. Bool / Int / Double / String values pass through to
-            // PostHog's typed event-property storage; cardinality discipline
-            // is enforced at the call site (see AnalyticsEvents.Props KDoc).
+            // PostHog's typed event-property storage. Phase F.5+ promoted
+            // the call sites to a sealed [AnalyticsEvent] hierarchy so
+            // cardinality discipline is enforced structurally — see
+            // [AnalyticsEvent] KDoc for the variant catalog and contract.
             val analyticsTracker: AnalyticsTracker = get()
             applicationScope.launch {
                 analyticsTracker.events.collect { event ->

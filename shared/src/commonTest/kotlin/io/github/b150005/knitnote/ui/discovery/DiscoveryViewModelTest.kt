@@ -1,6 +1,7 @@
 package io.github.b150005.knitnote.ui.discovery
 
 import app.cash.turbine.test
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvent
 import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.knitnote.data.remote.FakePublicPatternDataSource
@@ -462,9 +463,10 @@ class DiscoveryViewModelTest {
             viewModel.onEvent(DiscoveryEvent.ForkPattern("pub-a"))
             advanceUntilIdle()
 
-            assertEquals(1, tracker.captured.size)
-            assertEquals("pattern_forked", tracker.captured[0].name)
-            assertEquals(mapOf("had_chart" to false), tracker.captured[0].properties)
+            assertEquals(
+                listOf<AnalyticsEvent>(AnalyticsEvent.PatternForked(hadChart = false)),
+                tracker.captured,
+            )
             stateJob.cancel()
             forkJob.cancel()
         }

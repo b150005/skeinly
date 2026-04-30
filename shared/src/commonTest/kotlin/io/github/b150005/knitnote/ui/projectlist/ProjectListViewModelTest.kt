@@ -1,6 +1,7 @@
 package io.github.b150005.knitnote.ui.projectlist
 
 import app.cash.turbine.test
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvent
 import io.github.b150005.knitnote.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.knitnote.domain.model.AuthState
 import io.github.b150005.knitnote.domain.model.Project
@@ -640,7 +641,10 @@ class ProjectListViewModelTest {
                 awaitItem() // dialog dismiss
                 cancelAndIgnoreRemainingEvents()
             }
-            assertEquals(listOf("project_created"), analyticsTracker.capturedNames)
+            assertEquals(
+                listOf<AnalyticsEvent>(AnalyticsEvent.ProjectCreated),
+                analyticsTracker.captured,
+            )
         }
 
     @Test
@@ -653,7 +657,7 @@ class ProjectListViewModelTest {
                 cancelAndIgnoreRemainingEvents()
             }
             assertTrue(
-                analyticsTracker.capturedNames.isEmpty(),
+                analyticsTracker.captured.isEmpty(),
                 "validation failure should NOT emit project_created",
             )
         }

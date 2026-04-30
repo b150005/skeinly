@@ -1,6 +1,6 @@
 package io.github.b150005.knitnote.ui.pullrequest
 
-import io.github.b150005.knitnote.data.analytics.AnalyticsEvents
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvent
 import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.knitnote.domain.chart.CellCoordinate
@@ -398,9 +398,14 @@ class ChartConflictResolutionViewModelTest {
             advanceUntilIdle()
 
             assertEquals(1, tracker.captured.size)
-            val event = tracker.captured.single()
-            assertEquals(AnalyticsEvents.PULL_REQUEST_MERGED, event.name)
-            assertEquals(mapOf(AnalyticsEvents.Props.HAD_CONFLICTS to true), event.properties)
+            // Phase F.5+ — assert against the typed variant directly so a
+            // future property-shape regression (e.g. dropping had_conflicts)
+            // surfaces here as a compile/equality failure rather than a
+            // silent drift in the wire map.
+            assertEquals(
+                AnalyticsEvent.PullRequestMerged(hadConflicts = true),
+                tracker.captured.single(),
+            )
             // Anchor the "capture BEFORE _navEvents.trySend" invariant: if the
             // ordering ever flips silently in applyAndMerge(), the nav event
             // would still emit but the analytics-test contract would still

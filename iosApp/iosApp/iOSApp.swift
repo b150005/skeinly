@@ -126,9 +126,11 @@ struct iOSApp: App {
                 // Phase F.4 — Kotlin `Map<String, Any>?` bridges to Swift
                 // `[String : Any]?`. PostHog-iOS's `capture(_:properties:)`
                 // accepts `[String : Any]?` and decodes Bool / Int / Double
-                // / String at the SDK boundary; cardinality discipline is
-                // enforced at the call site (see AnalyticsEvents.Props
-                // KDoc).
+                // / String at the SDK boundary. Phase F.5+ promoted the
+                // call sites to a sealed `AnalyticsEvent` hierarchy so
+                // cardinality discipline is enforced structurally — see
+                // `AnalyticsEvent` KDoc on the Kotlin side for the
+                // variant catalog and contract.
                 let props = event.properties as? [String: Any]
                 PostHogSDK.shared.capture(event.name, properties: props)
             }

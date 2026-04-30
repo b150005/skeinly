@@ -1,6 +1,7 @@
 package io.github.b150005.knitnote.ui.projectdetail
 
 import app.cash.turbine.test
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvent
 import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.knitnote.data.remote.FakeRemoteStorageDataSource
@@ -1218,7 +1219,7 @@ class ProjectDetailViewModelTest {
                 awaitItem() // row incremented
                 cancelAndIgnoreRemainingEvents()
             }
-            assertEquals(listOf("row_incremented"), tracker.capturedNames)
+            assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.RowIncremented), tracker.captured)
         }
 
     @Test
@@ -1234,6 +1235,6 @@ class ProjectDetailViewModelTest {
                 awaitItem() // row decremented
                 cancelAndIgnoreRemainingEvents()
             }
-            assertTrue(tracker.capturedNames.isEmpty(), "decrement should not capture in Phase F.3")
+            assertTrue(tracker.captured.isEmpty(), "decrement should not capture in Phase F.3")
         }
 }

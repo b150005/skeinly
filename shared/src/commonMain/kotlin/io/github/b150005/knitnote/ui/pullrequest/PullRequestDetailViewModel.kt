@@ -2,7 +2,7 @@ package io.github.b150005.knitnote.ui.pullrequest
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.b150005.knitnote.data.analytics.AnalyticsEvents
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvent
 import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.domain.chart.ConflictDetector
 import io.github.b150005.knitnote.domain.model.PullRequest
@@ -412,7 +412,7 @@ class PullRequestDetailViewModel(
                     }
                     resolveUsersForComments(listOf(result.value))
                     // Phase F.4 — engagement signal; no properties (cardinality safe).
-                    analyticsTracker?.capture(AnalyticsEvents.PULL_REQUEST_COMMENTED)
+                    analyticsTracker?.track(AnalyticsEvent.PullRequestCommented)
                 }
                 is UseCaseResult.Failure ->
                     _state.update {
@@ -514,9 +514,8 @@ class PullRequestDetailViewModel(
                         // conflicting branch above. Together the two
                         // ViewModels cover every successful merge transition
                         // exactly once.
-                        analyticsTracker?.capture(
-                            eventName = AnalyticsEvents.PULL_REQUEST_MERGED,
-                            properties = mapOf(AnalyticsEvents.Props.HAD_CONFLICTS to false),
+                        analyticsTracker?.track(
+                            AnalyticsEvent.PullRequestMerged(hadConflicts = false),
                         )
                         _navEvents.trySend(
                             PullRequestDetailNavEvent.PrMerged(
@@ -553,7 +552,7 @@ class PullRequestDetailViewModel(
                     }
                     // Phase F.4 — alpha1 cares about close-vs-merge ratio
                     // (collab loop completion vs abandonment). No properties.
-                    analyticsTracker?.capture(AnalyticsEvents.PULL_REQUEST_CLOSED)
+                    analyticsTracker?.track(AnalyticsEvent.PullRequestClosed)
                     _navEvents.trySend(PullRequestDetailNavEvent.PrClosed)
                 }
                 is UseCaseResult.Failure ->

@@ -2,8 +2,9 @@ package io.github.b150005.knitnote.ui.chart
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.b150005.knitnote.data.analytics.AnalyticsEvents
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvent
 import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
+import io.github.b150005.knitnote.data.analytics.ChartFormat
 import io.github.b150005.knitnote.domain.chart.PolarSymmetry
 import io.github.b150005.knitnote.domain.model.ChartCell
 import io.github.b150005.knitnote.domain.model.ChartExtents
@@ -768,17 +769,15 @@ class ChartEditorViewModel(
                     // Phase F.4 — split create vs update + chart format via
                     // properties so PostHog dashboards can segment editor
                     // usage by `is_new` and `chart_format`.
-                    analyticsTracker?.capture(
-                        eventName = AnalyticsEvents.CHART_EDITOR_SAVE,
-                        properties =
-                            mapOf(
-                                AnalyticsEvents.Props.IS_NEW to (snapshot.original == null),
-                                AnalyticsEvents.Props.CHART_FORMAT to
-                                    when (snapshot.draftExtents) {
-                                        is ChartExtents.Rect -> AnalyticsEvents.Props.CHART_FORMAT_RECT
-                                        is ChartExtents.Polar -> AnalyticsEvents.Props.CHART_FORMAT_POLAR
-                                    },
-                            ),
+                    analyticsTracker?.track(
+                        AnalyticsEvent.ChartEditorSave(
+                            isNew = snapshot.original == null,
+                            chartFormat =
+                                when (snapshot.draftExtents) {
+                                    is ChartExtents.Rect -> ChartFormat.Rect
+                                    is ChartExtents.Polar -> ChartFormat.Polar
+                                },
+                        ),
                     )
                     _saved.send(Unit)
                 }

@@ -17,21 +17,14 @@ import kotlinx.coroutines.flow.asSharedFlow
  * package into Kotlin/Native interop.
  *
  * Privacy invariant: when `analyticsPrefs.analyticsOptIn.value` is false
- * (default per Phase 27a no-tracking stance), `capture()` is a silent
+ * (default per Phase 27a no-tracking stance), `track()` is a silent
  * no-op — no event is emitted, so callers never need to check opt-in
  * state at the call site. This shifts the gate to one well-tested place.
  *
- * Phase F.4 added the optional `properties` map. Property values may be
- * Bool / Int / Double / String — the Application layer passes the map
- * through to PostHog SDKs which decode the underlying primitive type.
- * Callers should use [AnalyticsEvents] constants for both event names
- * and property keys to prevent typos.
- *
- * **Cardinality warning (devops invariant)**: NEVER include high-
- * cardinality values (pattern.id, project.id, user-authored titles,
- * email addresses, etc.) in properties — both for PII protection and
- * PostHog cost control. Only enum-like discrete values (`"rect"` /
- * `"polar"`), booleans, and small integers (e.g. ring count) are safe.
+ * Phase F.5+ promoted the wire shape from `(eventName: String, properties:
+ * Map<String, Any>?)` to a typed [AnalyticsEvent] sealed-interface
+ * hierarchy. Per-event property shape is now enforced at compile time —
+ * see [AnalyticsEvent] for the cardinality contract and variant catalog.
  */
 interface AnalyticsTracker {
     /**
@@ -47,26 +40,12 @@ interface AnalyticsTracker {
      * uses a buffered SharedFlow so emit-faster-than-collect cases drop
      * to the buffer rather than blocking the caller.
      *
-     * @param eventName prefer constants from [AnalyticsEvents].
-     * @param properties optional Bool / Int / Double / String values.
-     *   See cardinality warning in [AnalyticsTracker] KDoc.
+     * @param event a typed [AnalyticsEvent] variant. Construct directly
+     *   at the call site — the sealed-type design prevents typos in
+     *   event names, property keys, and property values.
      */
-    fun capture(
-        eventName: String,
-        properties: Map<String, Any>? = null,
-    )
+    fun track(event: AnalyticsEvent)
 }
-
-/**
- * Phase F.4 added `properties` for parametric events. Phase F.5+ may
- * promote this to a sealed-class hierarchy enforcing per-event property
- * shape at compile time, but v1 keeps `Map<String, Any>` for the smaller
- * diff while [AnalyticsEvents] const keys provide a typo guard.
- */
-data class AnalyticsEvent(
-    val name: String,
-    val properties: Map<String, Any>? = null,
-)
 
 internal class AnalyticsTrackerImpl(
     private val analyticsPrefs: AnalyticsPreferences,
@@ -78,11 +57,8 @@ internal class AnalyticsTrackerImpl(
     private val _events = MutableSharedFlow<AnalyticsEvent>(extraBufferCapacity = 64)
     override val events: SharedFlow<AnalyticsEvent> = _events.asSharedFlow()
 
-    override fun capture(
-        eventName: String,
-        properties: Map<String, Any>?,
-    ) {
+    override fun track(event: AnalyticsEvent) {
         if (!analyticsPrefs.analyticsOptIn.value) return
-        _events.tryEmit(AnalyticsEvent(eventName, properties))
+        _events.tryEmit(event)
     }
 }
