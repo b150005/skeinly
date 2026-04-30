@@ -2,7 +2,7 @@ package io.github.b150005.knitnote.ui.projectdetail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.b150005.knitnote.data.analytics.AnalyticsEvents
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvent
 import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.domain.LocalUser
 import io.github.b150005.knitnote.domain.model.Pattern
@@ -374,7 +374,7 @@ class ProjectDetailViewModel(
                     counterMutex.withLock {
                         when (val result = incrementRow(projectId)) {
                             is UseCaseResult.Success -> {
-                                analyticsTracker?.capture(AnalyticsEvents.ROW_INCREMENTED)
+                                analyticsTracker?.track(AnalyticsEvent.RowIncremented)
                             }
                             is UseCaseResult.Failure -> _uiOverlay.update { it.copy(error = result.error.toErrorMessage()) }
                         }

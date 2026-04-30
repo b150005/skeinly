@@ -35,30 +35,30 @@ class AnalyticsTrackerTest {
         runTest(UnconfinedTestDispatcher(), testBody = block)
 
     @Test
-    fun `capture is silent no-op when opt-in is OFF`() =
+    fun `track is silent no-op when opt-in is OFF`() =
         runUnconfined {
             val prefs = FakeAnalyticsPreferences(initial = false)
             val tracker = AnalyticsTrackerImpl(prefs)
             val collected = mutableListOf<AnalyticsEvent>()
             val job = launch { tracker.events.collect { collected.add(it) } }
 
-            tracker.capture("test_event")
+            tracker.track(AnalyticsEvent.ProjectCreated)
 
             assertTrue(collected.isEmpty(), "no event should be emitted while opt-in is OFF")
             job.cancel()
         }
 
     @Test
-    fun `capture emits event when opt-in is ON`() =
+    fun `track emits event when opt-in is ON`() =
         runUnconfined {
             val prefs = FakeAnalyticsPreferences(initial = true)
             val tracker = AnalyticsTrackerImpl(prefs)
             val collected = mutableListOf<AnalyticsEvent>()
             val job = launch { tracker.events.collect { collected.add(it) } }
 
-            tracker.capture("project_created")
+            tracker.track(AnalyticsEvent.ProjectCreated)
 
-            assertEquals(listOf(AnalyticsEvent("project_created")), collected)
+            assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.ProjectCreated), collected)
             job.cancel()
         }
 
@@ -70,11 +70,11 @@ class AnalyticsTrackerTest {
             val collected = mutableListOf<AnalyticsEvent>()
             val job = launch { tracker.events.collect { collected.add(it) } }
 
-            tracker.capture("first")
+            tracker.track(AnalyticsEvent.ProjectCreated)
             prefs.setAnalyticsOptIn(false)
-            tracker.capture("second")
+            tracker.track(AnalyticsEvent.RowIncremented)
 
-            assertEquals(listOf(AnalyticsEvent("first")), collected)
+            assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.ProjectCreated), collected)
             job.cancel()
         }
 
@@ -86,44 +86,44 @@ class AnalyticsTrackerTest {
             val collected = mutableListOf<AnalyticsEvent>()
             val job = launch { tracker.events.collect { collected.add(it) } }
 
-            tracker.capture("dropped")
+            tracker.track(AnalyticsEvent.ProjectCreated)
             prefs.setAnalyticsOptIn(true)
-            tracker.capture("kept")
+            tracker.track(AnalyticsEvent.RowIncremented)
 
-            assertEquals(listOf(AnalyticsEvent("kept")), collected)
+            assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.RowIncremented), collected)
             job.cancel()
         }
 
     @Test
-    fun `event carries the event name verbatim`() =
+    fun `event carries the wire name from the typed variant`() =
         runUnconfined {
             val prefs = FakeAnalyticsPreferences(initial = true)
             val tracker = AnalyticsTrackerImpl(prefs)
             val collected = mutableListOf<AnalyticsEvent>()
             val job = launch { tracker.events.collect { collected.add(it) } }
 
-            tracker.capture("chart_editor_save")
-
-            assertEquals(1, collected.size)
-            assertEquals("chart_editor_save", collected[0].name)
-            job.cancel()
-        }
-
-    @Test
-    fun `properties round-trip through the events flow`() =
-        runUnconfined {
-            val prefs = FakeAnalyticsPreferences(initial = true)
-            val tracker = AnalyticsTrackerImpl(prefs)
-            val collected = mutableListOf<AnalyticsEvent>()
-            val job = launch { tracker.events.collect { collected.add(it) } }
-
-            tracker.capture(
-                eventName = "chart_editor_save",
-                properties = mapOf("is_new" to true, "chart_format" to "rect"),
+            tracker.track(
+                AnalyticsEvent.ChartEditorSave(isNew = true, chartFormat = ChartFormat.Rect),
             )
 
             assertEquals(1, collected.size)
             assertEquals("chart_editor_save", collected[0].name)
+            job.cancel()
+        }
+
+    @Test
+    fun `parametric variant builds wire properties from constructor params`() =
+        runUnconfined {
+            val prefs = FakeAnalyticsPreferences(initial = true)
+            val tracker = AnalyticsTrackerImpl(prefs)
+            val collected = mutableListOf<AnalyticsEvent>()
+            val job = launch { tracker.events.collect { collected.add(it) } }
+
+            tracker.track(
+                AnalyticsEvent.ChartEditorSave(isNew = true, chartFormat = ChartFormat.Rect),
+            )
+
+            assertEquals(1, collected.size)
             assertEquals(
                 mapOf("is_new" to true, "chart_format" to "rect"),
                 collected[0].properties,
@@ -132,16 +132,42 @@ class AnalyticsTrackerTest {
         }
 
     @Test
-    fun `null properties are preserved as null in the emitted event`() =
+    fun `non-parametric variant emits null properties`() =
         runUnconfined {
             val prefs = FakeAnalyticsPreferences(initial = true)
             val tracker = AnalyticsTrackerImpl(prefs)
             val collected = mutableListOf<AnalyticsEvent>()
             val job = launch { tracker.events.collect { collected.add(it) } }
 
-            tracker.capture("project_created")
+            tracker.track(AnalyticsEvent.ProjectCreated)
 
-            assertEquals(AnalyticsEvent(name = "project_created", properties = null), collected[0])
+            assertEquals(null, collected[0].properties)
             job.cancel()
         }
+
+    @Test
+    fun `SegmentMarkedDone wire shape covers all gesture paths`() {
+        // No emit/collect needed — the wire shape is a pure function of
+        // constructor params and is what we care about here.
+        assertEquals(
+            mapOf("via" to "tap"),
+            AnalyticsEvent.SegmentMarkedDone(SegmentVia.Tap).properties,
+        )
+        assertEquals(
+            mapOf("via" to "long_press"),
+            AnalyticsEvent.SegmentMarkedDone(SegmentVia.LongPress).properties,
+        )
+        assertEquals(
+            mapOf("via" to "row_batch"),
+            AnalyticsEvent.SegmentMarkedDone(SegmentVia.RowBatch).properties,
+        )
+    }
+
+    @Test
+    fun `ChartFormat polar wire value matches storage taxonomy`() {
+        assertEquals(
+            mapOf("chart_format" to "polar"),
+            AnalyticsEvent.PullRequestOpened(ChartFormat.Polar).properties,
+        )
+    }
 }

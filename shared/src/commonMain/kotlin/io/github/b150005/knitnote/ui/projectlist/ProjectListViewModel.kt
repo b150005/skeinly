@@ -2,7 +2,7 @@ package io.github.b150005.knitnote.ui.projectlist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.b150005.knitnote.data.analytics.AnalyticsEvents
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvent
 import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.domain.model.Pattern
 import io.github.b150005.knitnote.domain.model.Project
@@ -142,7 +142,7 @@ class ProjectListViewModel(
                     when (val result = createProject(event.title, event.totalRows, event.patternId)) {
                         is UseCaseResult.Success -> {
                             uiFlags.update { it.copy(showCreateDialog = false) }
-                            analyticsTracker?.capture(AnalyticsEvents.PROJECT_CREATED)
+                            analyticsTracker?.track(AnalyticsEvent.ProjectCreated)
                         }
                         is UseCaseResult.Failure -> {
                             uiFlags.update { it.copy(error = result.error.toErrorMessage()) }

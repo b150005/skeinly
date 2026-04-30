@@ -1,6 +1,7 @@
 package io.github.b150005.knitnote.ui.onboarding
 
 import app.cash.turbine.test
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvent
 import io.github.b150005.knitnote.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.knitnote.data.preferences.FakeOnboardingPreferences
 import io.github.b150005.knitnote.domain.usecase.CompleteOnboardingUseCase
@@ -189,7 +190,10 @@ class OnboardingViewModelTest {
             val tracker = RecordingAnalyticsTracker()
             val viewModel = createViewModel(tracker)
             viewModel.onEvent(OnboardingEvent.Skip)
-            assertEquals(listOf("onboarding_completed"), tracker.capturedNames)
+            assertEquals(
+                listOf<AnalyticsEvent>(AnalyticsEvent.OnboardingCompleted),
+                tracker.captured,
+            )
         }
 
     @Test
@@ -198,7 +202,10 @@ class OnboardingViewModelTest {
             val tracker = RecordingAnalyticsTracker()
             val viewModel = createViewModel(tracker)
             viewModel.onEvent(OnboardingEvent.Complete)
-            assertEquals(listOf("onboarding_completed"), tracker.capturedNames)
+            assertEquals(
+                listOf<AnalyticsEvent>(AnalyticsEvent.OnboardingCompleted),
+                tracker.captured,
+            )
         }
 
     @Test
@@ -209,7 +216,7 @@ class OnboardingViewModelTest {
             val viewModel = createViewModel(tracker)
             viewModel.onEvent(OnboardingEvent.Complete)
             assertTrue(
-                tracker.capturedNames.isEmpty(),
+                tracker.captured.isEmpty(),
                 "no event should fire when transitioning from completed to completed",
             )
         }

@@ -1,6 +1,7 @@
 package io.github.b150005.knitnote.ui.patternedit
 
 import app.cash.turbine.test
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvent
 import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.knitnote.domain.model.Difficulty
@@ -183,7 +184,7 @@ class PatternEditViewModelTest {
             viewModel.onEvent(PatternEditEvent.UpdateTitle("Created via test"))
             viewModel.onEvent(PatternEditEvent.Save)
             advanceUntilIdle()
-            assertEquals(listOf("pattern_created"), tracker.capturedNames)
+            assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.PatternCreated), tracker.captured)
         }
 
     @Test
@@ -216,7 +217,7 @@ class PatternEditViewModelTest {
             viewModel.onEvent(PatternEditEvent.Save)
             advanceUntilIdle()
             assertTrue(
-                tracker.capturedNames.isEmpty(),
+                tracker.captured.isEmpty(),
                 "edit-existing path is reserved for Phase F.4 pattern_edited event",
             )
         }

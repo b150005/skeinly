@@ -1,5 +1,6 @@
 package io.github.b150005.knitnote.ui.pullrequest
 
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvent
 import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.knitnote.domain.model.AuthState
@@ -335,7 +336,7 @@ class PullRequestDetailViewModelTest {
             vm.onEvent(PullRequestDetailEvent.CommentDraftChanged("Looks good"))
             vm.onEvent(PullRequestDetailEvent.PostComment)
 
-            assertEquals(listOf("pull_request_commented"), tracker.capturedNames)
+            assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.PullRequestCommented), tracker.captured)
         }
 
     @Test
@@ -348,6 +349,6 @@ class PullRequestDetailViewModelTest {
             vm.onEvent(PullRequestDetailEvent.RequestClose)
             vm.onEvent(PullRequestDetailEvent.ConfirmClose)
 
-            assertEquals(listOf("pull_request_closed"), tracker.capturedNames)
+            assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.PullRequestClosed), tracker.captured)
         }
 }

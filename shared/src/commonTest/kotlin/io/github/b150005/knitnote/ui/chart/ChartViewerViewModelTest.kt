@@ -1,8 +1,11 @@
 package io.github.b150005.knitnote.ui.chart
 
 import app.cash.turbine.test
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvent
 import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
+import io.github.b150005.knitnote.data.analytics.ChartFormat
 import io.github.b150005.knitnote.data.analytics.RecordingAnalyticsTracker
+import io.github.b150005.knitnote.data.analytics.SegmentVia
 import io.github.b150005.knitnote.domain.model.AuthState
 import io.github.b150005.knitnote.domain.model.ChartBranch
 import io.github.b150005.knitnote.domain.model.ChartCell
@@ -909,9 +912,10 @@ class ChartViewerViewModelTest {
             viewModel.onEvent(ChartViewerEvent.TapCell("L1", 1, 2))
             advanceUntilIdle()
 
-            assertEquals(1, tracker.captured.size)
-            assertEquals("segment_marked_done", tracker.captured[0].name)
-            assertEquals(mapOf("via" to "tap"), tracker.captured[0].properties)
+            assertEquals(
+                listOf<AnalyticsEvent>(AnalyticsEvent.SegmentMarkedDone(via = SegmentVia.Tap)),
+                tracker.captured,
+            )
         }
 
     @Test
@@ -937,9 +941,10 @@ class ChartViewerViewModelTest {
             viewModel.onEvent(ChartViewerEvent.LongPressCell("L1", 4, 5))
             advanceUntilIdle()
 
-            assertEquals(1, tracker.captured.size)
-            assertEquals("segment_marked_done", tracker.captured[0].name)
-            assertEquals(mapOf("via" to "long_press"), tracker.captured[0].properties)
+            assertEquals(
+                listOf<AnalyticsEvent>(AnalyticsEvent.SegmentMarkedDone(via = SegmentVia.LongPress)),
+                tracker.captured,
+            )
         }
 
     @Test
@@ -991,9 +996,11 @@ class ChartViewerViewModelTest {
             viewModel.onEvent(ChartViewerEvent.MarkRowDone(row = 2))
             advanceUntilIdle()
 
-            assertEquals(1, tracker.captured.size, "row-batch fires once regardless of segment count")
-            assertEquals("segment_marked_done", tracker.captured[0].name)
-            assertEquals(mapOf("via" to "row_batch"), tracker.captured[0].properties)
+            assertEquals(
+                listOf<AnalyticsEvent>(AnalyticsEvent.SegmentMarkedDone(via = SegmentVia.RowBatch)),
+                tracker.captured,
+                "row-batch fires once regardless of segment count",
+            )
         }
 
     @Test
@@ -1006,10 +1013,11 @@ class ChartViewerViewModelTest {
             advanceUntilIdle()
 
             assertNotNull(rig.prRepo.lastOpened, "test fixture sanity: PR should land")
-            assertEquals(1, tracker.captured.size)
-            assertEquals("pull_request_opened", tracker.captured[0].name)
             // The seeded chart uses RECT_GRID by default in [chart].
-            assertEquals(mapOf("chart_format" to "rect"), tracker.captured[0].properties)
+            assertEquals(
+                listOf<AnalyticsEvent>(AnalyticsEvent.PullRequestOpened(chartFormat = ChartFormat.Rect)),
+                tracker.captured,
+            )
         }
 
     // endregion

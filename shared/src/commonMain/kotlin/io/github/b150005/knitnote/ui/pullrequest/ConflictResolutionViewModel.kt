@@ -2,7 +2,7 @@ package io.github.b150005.knitnote.ui.pullrequest
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.b150005.knitnote.data.analytics.AnalyticsEvents
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvent
 import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.domain.chart.CellConflict
 import io.github.b150005.knitnote.domain.chart.CellCoordinate
@@ -226,9 +226,8 @@ class ChartConflictResolutionViewModel(
                     // counterpart in PullRequestDetailViewModel reports
                     // had_conflicts=false. Together the two ViewModels cover
                     // every successful merge transition.
-                    analyticsTracker?.capture(
-                        eventName = AnalyticsEvents.PULL_REQUEST_MERGED,
-                        properties = mapOf(AnalyticsEvents.Props.HAD_CONFLICTS to true),
+                    analyticsTracker?.track(
+                        AnalyticsEvent.PullRequestMerged(hadConflicts = true),
                     )
                     _navEvents.trySend(
                         ChartConflictResolutionNavEvent.MergeApplied(

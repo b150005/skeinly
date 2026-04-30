@@ -2,8 +2,10 @@ package io.github.b150005.knitnote.ui.chart
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.b150005.knitnote.data.analytics.AnalyticsEvents
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvent
 import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
+import io.github.b150005.knitnote.data.analytics.ChartFormat
+import io.github.b150005.knitnote.data.analytics.SegmentVia
 import io.github.b150005.knitnote.domain.model.ChartBranch
 import io.github.b150005.knitnote.domain.model.CoordinateSystem
 import io.github.b150005.knitnote.domain.model.Pattern
@@ -334,9 +336,8 @@ class ChartViewerViewModel(
             when (val result = toggleSegmentState(pid, layerId, x, y)) {
                 is UseCaseResult.Success -> {
                     if (priorState == SegmentState.WIP) {
-                        analyticsTracker?.capture(
-                            eventName = AnalyticsEvents.SEGMENT_MARKED_DONE,
-                            properties = mapOf(AnalyticsEvents.Props.SEGMENT_VIA to AnalyticsEvents.Props.SEGMENT_VIA_TAP),
+                        analyticsTracker?.track(
+                            AnalyticsEvent.SegmentMarkedDone(via = SegmentVia.Tap),
                         )
                     }
                 }
@@ -371,9 +372,8 @@ class ChartViewerViewModel(
             when (val result = markSegmentDone(pid, layerId, x, y)) {
                 is UseCaseResult.Success -> {
                     if (priorState != SegmentState.DONE) {
-                        analyticsTracker?.capture(
-                            eventName = AnalyticsEvents.SEGMENT_MARKED_DONE,
-                            properties = mapOf(AnalyticsEvents.Props.SEGMENT_VIA to AnalyticsEvents.Props.SEGMENT_VIA_LONG_PRESS),
+                        analyticsTracker?.track(
+                            AnalyticsEvent.SegmentMarkedDone(via = SegmentVia.LongPress),
                         )
                     }
                 }
@@ -393,9 +393,8 @@ class ChartViewerViewModel(
                     // of how many segments transitioned. The user did one
                     // intentional gesture; the analytics row should reflect
                     // that, not the cardinality of segments touched.
-                    analyticsTracker?.capture(
-                        eventName = AnalyticsEvents.SEGMENT_MARKED_DONE,
-                        properties = mapOf(AnalyticsEvents.Props.SEGMENT_VIA to AnalyticsEvents.Props.SEGMENT_VIA_ROW_BATCH),
+                    analyticsTracker?.track(
+                        AnalyticsEvent.SegmentMarkedDone(via = SegmentVia.RowBatch),
                     )
                 }
                 is UseCaseResult.Failure ->
@@ -522,16 +521,14 @@ class ChartViewerViewModel(
                     // Phase F.4 — chart format reflects the source pattern's
                     // grid (rect / polar) so PostHog can segment PR-open
                     // adoption by chart type.
-                    analyticsTracker?.capture(
-                        eventName = AnalyticsEvents.PULL_REQUEST_OPENED,
-                        properties =
-                            mapOf(
-                                AnalyticsEvents.Props.CHART_FORMAT to
-                                    when (chart.coordinateSystem) {
-                                        CoordinateSystem.RECT_GRID -> AnalyticsEvents.Props.CHART_FORMAT_RECT
-                                        CoordinateSystem.POLAR_ROUND -> AnalyticsEvents.Props.CHART_FORMAT_POLAR
-                                    },
-                            ),
+                    analyticsTracker?.track(
+                        AnalyticsEvent.PullRequestOpened(
+                            chartFormat =
+                                when (chart.coordinateSystem) {
+                                    CoordinateSystem.RECT_GRID -> ChartFormat.Rect
+                                    CoordinateSystem.POLAR_ROUND -> ChartFormat.Polar
+                                },
+                        ),
                     )
                     _navEvents.trySend(
                         ChartViewerNavEvent.PullRequestCreated(prId = result.value.id),

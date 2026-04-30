@@ -1,7 +1,9 @@
 package io.github.b150005.knitnote.ui.chart
 
 import app.cash.turbine.test
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvent
 import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
+import io.github.b150005.knitnote.data.analytics.ChartFormat
 import io.github.b150005.knitnote.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.knitnote.domain.model.AuthState
 import io.github.b150005.knitnote.domain.model.ChartCell
@@ -2153,13 +2155,16 @@ class ChartEditorViewModelTest {
                 awaitItem()
                 cancelAndConsumeRemainingEvents()
             }
-            assertEquals(listOf("chart_editor_save"), tracker.capturedNames)
             // Phase F.4 — create branch must report is_new = true so PostHog
             // can segment editor adoption by first-save vs subsequent edits.
-            assertEquals(true, tracker.captured[0].properties?.get("is_new"))
+            // Phase F.5+ asserts on the typed variant so a property-shape
+            // regression surfaces as an equality failure here, not as a silent
+            // wire-map drift.
             assertEquals(
-                "rect",
-                tracker.captured[0].properties?.get("chart_format"),
+                listOf<AnalyticsEvent>(
+                    AnalyticsEvent.ChartEditorSave(isNew = true, chartFormat = ChartFormat.Rect),
+                ),
+                tracker.captured,
             )
         }
 
@@ -2178,14 +2183,14 @@ class ChartEditorViewModelTest {
                 awaitItem()
                 cancelAndConsumeRemainingEvents()
             }
-            assertEquals(listOf("chart_editor_save"), tracker.capturedNames)
             // Phase F.4 — update branch must report is_new = false (regression
             // anchor; Phase F.3 originally captured both branches as a single
             // event, F.4 split via this property).
-            assertEquals(false, tracker.captured[0].properties?.get("is_new"))
             assertEquals(
-                "rect",
-                tracker.captured[0].properties?.get("chart_format"),
+                listOf<AnalyticsEvent>(
+                    AnalyticsEvent.ChartEditorSave(isNew = false, chartFormat = ChartFormat.Rect),
+                ),
+                tracker.captured,
             )
         }
 }

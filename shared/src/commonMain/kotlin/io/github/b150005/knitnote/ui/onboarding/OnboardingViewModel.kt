@@ -1,7 +1,7 @@
 package io.github.b150005.knitnote.ui.onboarding
 
 import androidx.lifecycle.ViewModel
-import io.github.b150005.knitnote.data.analytics.AnalyticsEvents
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvent
 import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.domain.usecase.CompleteOnboardingUseCase
 import io.github.b150005.knitnote.domain.usecase.GetOnboardingCompletedUseCase
@@ -87,7 +87,7 @@ class OnboardingViewModel(
         completeOnboarding()
         _state.update { it.copy(isCompleted = true) }
         if (!wasCompleted) {
-            analyticsTracker?.capture(AnalyticsEvents.ONBOARDING_COMPLETED)
+            analyticsTracker?.track(AnalyticsEvent.OnboardingCompleted)
         }
     }
 

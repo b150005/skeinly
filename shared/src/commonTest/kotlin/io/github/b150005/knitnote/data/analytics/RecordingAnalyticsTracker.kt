@@ -5,14 +5,19 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
 /**
- * Test fake that records every captured event by name + properties into
- * [captured]. Does NOT gate on opt-in state — that is tested separately
- * in [AnalyticsTrackerTest]. ViewModel tests that inject this can assume
- * every `capture(eventName, properties)` call lands in the list.
+ * Test fake that records every tracked [AnalyticsEvent] into [captured].
+ * Does NOT gate on opt-in state — that is tested separately in
+ * [AnalyticsTrackerTest]. ViewModel tests that inject this can assume
+ * every `track(event)` call lands in the list.
  *
- * Phase F.4: extended to record properties alongside event name. Tests
- * that only care about names use the [capturedNames] convenience
- * accessor; tests that assert property shape read [captured] directly.
+ * Phase F.5+ updated the recording shape to typed [AnalyticsEvent]
+ * variants. Tests asserting on event identity should compare against
+ * the typed variant directly (e.g. `AnalyticsEvent.ProjectCreated`)
+ * rather than wire names — that way property-shape regressions surface
+ * at the test layer too.
+ *
+ * The [capturedNames] convenience accessor remains for tests that only
+ * care that an event of a given name fired (e.g. opt-in gating).
  */
 internal class RecordingAnalyticsTracker : AnalyticsTracker {
     private val _events = MutableSharedFlow<AnalyticsEvent>(extraBufferCapacity = 64)
@@ -24,11 +29,7 @@ internal class RecordingAnalyticsTracker : AnalyticsTracker {
     val capturedNames: List<String>
         get() = captured.map { it.name }
 
-    override fun capture(
-        eventName: String,
-        properties: Map<String, Any>?,
-    ) {
-        val event = AnalyticsEvent(eventName, properties)
+    override fun track(event: AnalyticsEvent) {
         captured.add(event)
         _events.tryEmit(event)
     }

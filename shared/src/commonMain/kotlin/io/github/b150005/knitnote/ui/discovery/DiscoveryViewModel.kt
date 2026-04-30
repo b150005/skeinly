@@ -2,7 +2,7 @@ package io.github.b150005.knitnote.ui.discovery
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.b150005.knitnote.data.analytics.AnalyticsEvents
+import io.github.b150005.knitnote.data.analytics.AnalyticsEvent
 import io.github.b150005.knitnote.data.analytics.AnalyticsTracker
 import io.github.b150005.knitnote.domain.model.Difficulty
 import io.github.b150005.knitnote.domain.model.Pattern
@@ -234,9 +234,8 @@ class DiscoveryViewModel(
                     // shape is "had chart but clone threw" — surfaces here
                     // as had_chart=false because the user observable end
                     // state is "no chart on the fork".
-                    analyticsTracker?.capture(
-                        eventName = AnalyticsEvents.PATTERN_FORKED,
-                        properties = mapOf(AnalyticsEvents.Props.HAD_CHART to result.value.chartCloned),
+                    analyticsTracker?.track(
+                        AnalyticsEvent.PatternForked(hadChart = result.value.chartCloned),
                     )
                     _forkedProjectChannel.send(
                         DiscoveryForkResult(
