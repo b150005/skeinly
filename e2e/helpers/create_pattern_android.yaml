@@ -14,7 +14,12 @@ appId: io.github.b150005.knitnote
 # Caller-supplied env: PATTERN_TITLE (string). Caller is responsible
 # for choosing a unique title to avoid collisions across flows.
 
-# Open Pattern Library
+# Open Pattern Library via the overflow menu (Sprint A — nav targets moved
+# from inline AppBar IconButtons into a single `MoreVert` menu, freeing
+# horizontal space that was previously forcing the title to wrap vertically).
+# testTags propagate through the popup window via `dialogTestTagsAsResourceId()`.
+- tapOn:
+    id: "moreMenu"
 - tapOn:
     id: "patternLibraryButton"
 
