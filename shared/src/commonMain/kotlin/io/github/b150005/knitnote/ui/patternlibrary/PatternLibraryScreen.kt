@@ -1,7 +1,8 @@
 package io.github.b150005.knitnote.ui.patternlibrary
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,6 +56,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.b150005.knitnote.domain.model.Difficulty
@@ -407,13 +409,17 @@ private fun SortDropdown(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun SwipeToDismissPatternCard(
     pattern: Pattern,
     onClick: () -> Unit,
     onDeleteRequest: () -> Unit,
 ) {
+    // Sprint B M6 (WCAG 2.5.7 Dragging Movements): long-press → context menu
+    // provides a non-drag delete path so motor-impaired users + screen reader
+    // users can reach the delete affordance via single-pointer-no-drag input.
+    var contextMenuExpanded by remember { mutableStateOf(false) }
     val dismissState =
         rememberSwipeToDismissBoxState(
             confirmValueChange = { value ->
@@ -426,40 +432,67 @@ private fun SwipeToDismissPatternCard(
             },
         )
 
-    SwipeToDismissBox(
-        state = dismissState,
-        backgroundContent = {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.errorContainer)
-                        .padding(horizontal = 24.dp),
-                contentAlignment = Alignment.CenterEnd,
-            ) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = stringResource(Res.string.action_delete),
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                )
-            }
-        },
-        enableDismissFromStartToEnd = false,
-    ) {
-        PatternCard(pattern = pattern, onClick = onClick)
+    Box {
+        SwipeToDismissBox(
+            state = dismissState,
+            backgroundContent = {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.errorContainer)
+                            .padding(horizontal = 24.dp),
+                    contentAlignment = Alignment.CenterEnd,
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = stringResource(Res.string.action_delete),
+                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                }
+            },
+            enableDismissFromStartToEnd = false,
+        ) {
+            PatternCard(
+                pattern = pattern,
+                onClick = onClick,
+                onLongClick = { contextMenuExpanded = true },
+            )
+        }
+        DropdownMenu(
+            expanded = contextMenuExpanded,
+            onDismissRequest = { contextMenuExpanded = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.action_delete)) },
+                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                onClick = {
+                    contextMenuExpanded = false
+                    onDeleteRequest()
+                },
+                modifier = Modifier.testTag("patternContextDeleteItem"),
+            )
+        }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PatternCard(
     pattern: Pattern,
     onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
 ) {
     Card(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick),
+                .combinedClickable(
+                    role = Role.Button,
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                    onLongClickLabel = stringResource(Res.string.action_delete),
+                ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {

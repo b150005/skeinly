@@ -1,7 +1,8 @@
 package io.github.b150005.knitnote.ui.projectlist
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -64,6 +65,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import io.github.b150005.knitnote.domain.model.Project
 import io.github.b150005.knitnote.domain.model.ProjectStatus
@@ -519,13 +521,19 @@ private fun SortDropdown(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun SwipeToDismissProjectCard(
     project: Project,
     onClick: () -> Unit,
     onDeleteRequest: () -> Unit,
 ) {
+    // Sprint B M6 (Phase 39 pre-beta a11y audit, WCAG 2.5.7 Dragging Movements):
+    // swipe-to-delete is a dragging gesture; users with motor impairments + screen
+    // reader users need a non-drag alternative. Long-press → context menu provides
+    // the SC 2.5.7-compliant single-pointer-no-drag path. The dialog confirmation
+    // remains the safety net regardless of how delete was triggered.
+    var contextMenuExpanded by remember { mutableStateOf(false) }
     val dismissState =
         rememberSwipeToDismissBoxState(
             confirmValueChange = { value ->
@@ -538,40 +546,67 @@ private fun SwipeToDismissProjectCard(
             },
         )
 
-    SwipeToDismissBox(
-        state = dismissState,
-        backgroundContent = {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.errorContainer)
-                        .padding(horizontal = 24.dp),
-                contentAlignment = Alignment.CenterEnd,
-            ) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = stringResource(Res.string.action_delete),
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                )
-            }
-        },
-        enableDismissFromStartToEnd = false,
-    ) {
-        ProjectCard(project = project, onClick = onClick)
+    Box {
+        SwipeToDismissBox(
+            state = dismissState,
+            backgroundContent = {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.errorContainer)
+                            .padding(horizontal = 24.dp),
+                    contentAlignment = Alignment.CenterEnd,
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = stringResource(Res.string.action_delete),
+                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                }
+            },
+            enableDismissFromStartToEnd = false,
+        ) {
+            ProjectCard(
+                project = project,
+                onClick = onClick,
+                onLongClick = { contextMenuExpanded = true },
+            )
+        }
+        DropdownMenu(
+            expanded = contextMenuExpanded,
+            onDismissRequest = { contextMenuExpanded = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.action_delete)) },
+                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                onClick = {
+                    contextMenuExpanded = false
+                    onDeleteRequest()
+                },
+                modifier = Modifier.testTag("projectContextDeleteItem"),
+            )
+        }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ProjectCard(
     project: Project,
     onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
 ) {
     Card(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick),
+                .combinedClickable(
+                    role = Role.Button,
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                    onLongClickLabel = stringResource(Res.string.action_delete),
+                ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {

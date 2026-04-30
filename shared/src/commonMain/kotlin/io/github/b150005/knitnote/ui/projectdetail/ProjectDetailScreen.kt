@@ -1,7 +1,9 @@
 package io.github.b150005.knitnote.ui.projectdetail
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +30,8 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
@@ -692,7 +696,7 @@ private fun CounterSection(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun SwipeToDismissNoteItem(
     note: Progress,
@@ -700,6 +704,10 @@ private fun SwipeToDismissNoteItem(
     photoSignedUrl: String? = null,
     onPhotoClick: ((String) -> Unit)? = null,
 ) {
+    // Sprint B M6 (WCAG 2.5.7 Dragging Movements): long-press → context menu
+    // provides a non-drag delete path so motor-impaired users + screen reader
+    // users can reach the delete affordance via single-pointer-no-drag input.
+    var contextMenuExpanded by remember { mutableStateOf(false) }
     val dismissState =
         rememberSwipeToDismissBoxState(
             confirmValueChange = { value ->
@@ -710,43 +718,70 @@ private fun SwipeToDismissNoteItem(
             },
         )
 
-    SwipeToDismissBox(
-        state = dismissState,
-        backgroundContent = {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.errorContainer)
-                        .padding(horizontal = 24.dp),
-                contentAlignment = Alignment.CenterEnd,
-            ) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = stringResource(Res.string.action_delete_note),
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                )
-            }
-        },
-        enableDismissFromStartToEnd = false,
-    ) {
-        NoteItem(
-            note = note,
-            photoSignedUrl = photoSignedUrl,
-            onPhotoClick = onPhotoClick,
-        )
+    Box {
+        SwipeToDismissBox(
+            state = dismissState,
+            backgroundContent = {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.errorContainer)
+                            .padding(horizontal = 24.dp),
+                    contentAlignment = Alignment.CenterEnd,
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = stringResource(Res.string.action_delete_note),
+                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                }
+            },
+            enableDismissFromStartToEnd = false,
+        ) {
+            NoteItem(
+                note = note,
+                onLongClick = { contextMenuExpanded = true },
+                photoSignedUrl = photoSignedUrl,
+                onPhotoClick = onPhotoClick,
+            )
+        }
+        DropdownMenu(
+            expanded = contextMenuExpanded,
+            onDismissRequest = { contextMenuExpanded = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.action_delete_note)) },
+                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                onClick = {
+                    contextMenuExpanded = false
+                    onDelete()
+                },
+                modifier = Modifier.testTag("noteContextDeleteItem"),
+            )
+        }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun NoteItem(
     note: Progress,
+    onLongClick: () -> Unit = {},
     photoSignedUrl: String? = null,
     onPhotoClick: ((String) -> Unit)? = null,
 ) {
     val timestamp = remember(note.createdAt) { note.createdAt.formatShort() }
 
     ListItem(
+        modifier =
+            Modifier.combinedClickable(
+                // Empty onClick — note rows have no primary tap action; long-press
+                // is the only new affordance for the context-menu delete path.
+                onClick = {},
+                onLongClick = onLongClick,
+                onLongClickLabel = stringResource(Res.string.action_delete_note),
+            ),
         headlineContent = {
             Text(text = note.note)
         },
