@@ -128,7 +128,10 @@ struct DiscoveryScreen: View {
                         } label: {
                             Label("action_fork", systemImage: "doc.on.doc")
                         }
-                        .tint(.blue)
+                        // Brand accent (#7B61FF) — Sprint A unified the app's primary
+                        // action color via Assets.xcassets/AccentColor; previously the
+                        // swipe button was hard-coded to system blue.
+                        .tint(.accentColor)
                     }
             }
         }

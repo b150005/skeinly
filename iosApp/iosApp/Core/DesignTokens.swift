@@ -23,4 +23,12 @@ enum DesignTokens {
     // MARK: - Opacity
 
     static let highlightOpacity: Double = 0.15
+
+    // MARK: - Brand
+
+    /// Brand accent color (#7B61FF) sourced from `Assets.xcassets/AccentColor`.
+    /// SwiftUI auto-applies this as the default tint across the app — explicit
+    /// references are only needed when a child view's local context overrides
+    /// the inherited tint (e.g. swipe-actions buttons, custom status indicators).
+    static let brandAccent: Color = .accentColor
 }
