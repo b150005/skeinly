@@ -302,13 +302,23 @@ private struct DiscoveryFilterChip: View {
 
     var body: some View {
         Button(action: action) {
-            Text(labelKey)
-                .font(.subheadline)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(isSelected ? Color.accentColor : Color.gray.opacity(0.15))
-                .foregroundStyle(isSelected ? .white : .primary)
-                .clipShape(Capsule())
+            // Sprint A PR5 — non-color selected signal per WCAG 1.4.1.
+            // The Discovery filter chip variant uses a heavier filled
+            // accent on selected, but a checkmark ensures the cue stays
+            // perceivable for users who can't distinguish the fill.
+            HStack(spacing: 4) {
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.caption2.weight(.semibold))
+                }
+                Text(labelKey)
+                    .font(.subheadline)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(isSelected ? Color.accentColor : Color.gray.opacity(0.15))
+            .foregroundStyle(isSelected ? .white : .primary)
+            .clipShape(Capsule())
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier(identifier)

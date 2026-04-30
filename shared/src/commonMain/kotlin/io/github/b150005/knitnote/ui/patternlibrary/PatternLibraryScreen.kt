@@ -87,6 +87,7 @@ import io.github.b150005.knitnote.generated.resources.title_pattern_library
 import io.github.b150005.knitnote.ui.components.EmptyStateView
 import io.github.b150005.knitnote.ui.components.labelKey
 import io.github.b150005.knitnote.ui.components.localized
+import io.github.b150005.knitnote.ui.components.selectedCheckmarkIcon
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -289,11 +290,13 @@ private fun FilterSortRow(
             modifier = Modifier.weight(1f),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            // Sprint A PR5: leadingIcon checkmark on selected chips per WCAG 1.4.1.
             item {
                 FilterChip(
                     selected = difficultyFilter == null,
                     onClick = { onDifficultyFilterChange(null) },
                     label = { Text(stringResource(Res.string.label_difficulty_all)) },
+                    leadingIcon = selectedCheckmarkIcon(difficultyFilter == null),
                     modifier = Modifier.testTag("difficultyAllChip"),
                 )
             }
@@ -306,6 +309,7 @@ private fun FilterSortRow(
                         )
                     },
                     label = { Text(stringResource(Difficulty.BEGINNER.labelKey)) },
+                    leadingIcon = selectedCheckmarkIcon(difficultyFilter == Difficulty.BEGINNER),
                     modifier = Modifier.testTag("difficultyBeginnerChip"),
                 )
             }
@@ -322,6 +326,7 @@ private fun FilterSortRow(
                         )
                     },
                     label = { Text(stringResource(Difficulty.INTERMEDIATE.labelKey)) },
+                    leadingIcon = selectedCheckmarkIcon(difficultyFilter == Difficulty.INTERMEDIATE),
                     modifier = Modifier.testTag("difficultyIntermediateChip"),
                 )
             }
@@ -334,6 +339,7 @@ private fun FilterSortRow(
                         )
                     },
                     label = { Text(stringResource(Difficulty.ADVANCED.labelKey)) },
+                    leadingIcon = selectedCheckmarkIcon(difficultyFilter == Difficulty.ADVANCED),
                     modifier = Modifier.testTag("difficultyAdvancedChip"),
                 )
             }

@@ -105,6 +105,7 @@ import io.github.b150005.knitnote.generated.resources.state_no_projects
 import io.github.b150005.knitnote.generated.resources.state_no_projects_body
 import io.github.b150005.knitnote.ui.components.EmptyStateView
 import io.github.b150005.knitnote.ui.components.localized
+import io.github.b150005.knitnote.ui.components.selectedCheckmarkIcon
 import io.github.b150005.knitnote.ui.platform.dialogTestTagsAsResourceId
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -414,11 +415,16 @@ private fun FilterSortRow(
             modifier = Modifier.weight(1f),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            // Sprint A PR5 — `leadingIcon` (a checkmark when selected) gives
+            // the chips a non-color cue per WCAG 1.4.1 Use of Color. The pale
+            // lavender fill alone was indistinguishable from disabled at a
+            // glance for users who can't perceive the tint.
             item {
                 FilterChip(
                     selected = statusFilter == null,
                     onClick = { onStatusFilterChange(null) },
                     label = { Text(stringResource(Res.string.label_status_all)) },
+                    leadingIcon = selectedCheckmarkIcon(statusFilter == null),
                     modifier = Modifier.testTag("filterAllChip"),
                 )
             }
@@ -431,6 +437,7 @@ private fun FilterSortRow(
                         )
                     },
                     label = { Text(stringResource(Res.string.label_status_in_progress)) },
+                    leadingIcon = selectedCheckmarkIcon(statusFilter == ProjectStatus.IN_PROGRESS),
                     modifier = Modifier.testTag("filterInProgressChip"),
                 )
             }
@@ -443,6 +450,7 @@ private fun FilterSortRow(
                         )
                     },
                     label = { Text(stringResource(Res.string.label_status_not_started)) },
+                    leadingIcon = selectedCheckmarkIcon(statusFilter == ProjectStatus.NOT_STARTED),
                     modifier = Modifier.testTag("filterNotStartedChip"),
                 )
             }
@@ -455,6 +463,7 @@ private fun FilterSortRow(
                         )
                     },
                     label = { Text(stringResource(Res.string.label_status_completed)) },
+                    leadingIcon = selectedCheckmarkIcon(statusFilter == ProjectStatus.COMPLETED),
                     modifier = Modifier.testTag("filterCompletedChip"),
                 )
             }
