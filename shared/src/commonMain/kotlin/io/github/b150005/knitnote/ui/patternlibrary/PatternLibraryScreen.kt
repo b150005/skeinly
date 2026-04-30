@@ -64,7 +64,6 @@ import io.github.b150005.knitnote.generated.resources.Res
 import io.github.b150005.knitnote.generated.resources.action_back
 import io.github.b150005.knitnote.generated.resources.action_cancel
 import io.github.b150005.knitnote.generated.resources.action_clear_search
-import io.github.b150005.knitnote.generated.resources.action_create_pattern
 import io.github.b150005.knitnote.generated.resources.action_delete
 import io.github.b150005.knitnote.generated.resources.action_new_pattern
 import io.github.b150005.knitnote.generated.resources.action_sort
@@ -213,12 +212,16 @@ fun PatternLibraryScreen(
                     }
                 }
                 state.patterns.isEmpty() -> {
+                    // Sprint B M4 (Phase 39 pre-beta UX audit): the EmptyStateView
+                    // CTA button was visually duplicating the always-visible FAB
+                    // bottom-right. The FAB is Material 3's canonical
+                    // "create pattern" entry point on this surface; the empty
+                    // state now just explains *why* the user is seeing nothing
+                    // and points the eye toward the FAB.
                     EmptyStateView(
                         icon = Icons.Default.Favorite,
                         title = stringResource(Res.string.state_no_patterns),
                         body = stringResource(Res.string.state_no_patterns_body),
-                        actionLabel = stringResource(Res.string.action_create_pattern),
-                        onAction = onCreatePattern,
                     )
                 }
                 else -> {

@@ -72,7 +72,6 @@ import io.github.b150005.knitnote.generated.resources.Res
 import io.github.b150005.knitnote.generated.resources.action_activity_feed
 import io.github.b150005.knitnote.generated.resources.action_cancel
 import io.github.b150005.knitnote.generated.resources.action_clear_search
-import io.github.b150005.knitnote.generated.resources.action_create_project
 import io.github.b150005.knitnote.generated.resources.action_delete
 import io.github.b150005.knitnote.generated.resources.action_discover_patterns
 import io.github.b150005.knitnote.generated.resources.action_more_options
@@ -328,12 +327,17 @@ fun ProjectListScreen(
                     }
                 }
                 state.projects.isEmpty() -> {
+                    // Sprint B M4 (Phase 39 pre-beta UX audit): the EmptyStateView
+                    // CTA button was visually duplicating the always-visible FAB
+                    // bottom-right. The FAB is Material 3's canonical
+                    // "create project" entry point on this surface; the empty
+                    // state now just explains *why* the user is seeing nothing
+                    // and points the eye toward the FAB. Maestro flows that tap
+                    // `createProjectFab` from clean state continue to work.
                     EmptyStateView(
                         icon = Icons.Default.FolderOpen,
                         title = stringResource(Res.string.state_no_projects),
                         body = stringResource(Res.string.state_no_projects_body),
-                        actionLabel = stringResource(Res.string.action_create_project),
-                        onAction = { viewModel.onEvent(ProjectListEvent.ShowCreateDialog) },
                     )
                 }
                 else -> {
