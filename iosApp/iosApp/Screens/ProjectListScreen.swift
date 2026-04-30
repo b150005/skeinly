@@ -105,7 +105,7 @@ struct ProjectListScreen: View {
         // off-balance composition. Compose mirrors this by passing an empty
         // `title = { }` to its `TopAppBar`. Tests anchor on
         // `accessibilityIdentifier("projectListScreen")` (added below) instead
-        // of the previous `navigationBars["Knit Note"]` query.
+        // of the previous `navigationBars["Skeinly"]` query.
         // The `accessibilityElement(children: .contain)` modifier is required
         // for the identifier to surface as `app.otherElements["projectListScreen"]`
         // — without it the modifier is absorbed into a child element and the

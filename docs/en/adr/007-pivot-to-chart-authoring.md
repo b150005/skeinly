@@ -86,7 +86,7 @@ be locked before the product identity is finalized.
 - The existing row counter, project CRUD, progress notes, photo-based chart
   images, sharing, and Supabase sync stay in the codebase. They will be
   re-framed around the structured chart model rather than removed.
-- Bundle ID change (`com.knitnote.*` → `io.github.b150005.knitnote`) is
+- Bundle ID change (`com.skeinly.*` → `io.github.b150005.skeinly`) is
   scoped as Phase 28 to decouple naming from the rename-heavy chart work.
 
 ## Alternatives Considered

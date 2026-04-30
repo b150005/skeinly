@@ -4,7 +4,7 @@
 
 **日付:** 2026-04-18
 **レビュアー:** Knitter エージェント（[`.claude/agents/knitter.md`](../../../.claude/agents/knitter.md) 参照）
-**レビュー対象:** [`shared/src/commonMain/kotlin/io/github/b150005/knitnote/domain/symbol/catalog/CrochetSymbols.kt`](../../../shared/src/commonMain/kotlin/io/github/b150005/knitnote/domain/symbol/catalog/CrochetSymbols.kt) — 25 グリフ、単位正方形 `viewBox 0 0 1 1`（y 下方向）。
+**レビュー対象:** [`shared/src/commonMain/kotlin/io/github/b150005/skeinly/domain/symbol/catalog/CrochetSymbols.kt`](../../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/domain/symbol/catalog/CrochetSymbols.kt) — 25 グリフ、単位正方形 `viewBox 0 0 1 1`（y 下方向）。
 **ビューア:** Phase 31 Compose `ChartViewerScreen` + SwiftUI `StructuredChartViewerScreen` + Phase 30.1 `SymbolGalleryScreen`。
 **参考資料:** JIS L 0201-1995 表 2（かぎ針編目）、CYC クロシェ表、日本ヴォーグ社／文化出版局 国内出版社規約。
 

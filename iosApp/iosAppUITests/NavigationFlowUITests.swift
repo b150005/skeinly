@@ -36,7 +36,7 @@ final class NavigationFlowUITests: XCTestCase {
 
     func testDeepLink_invalidURL_doesNotNavigate() {
         // Open an invalid deep link — app should stay on project list
-        let invalidURL = URL(string: "knitnote://share/not-a-uuid")!
+        let invalidURL = URL(string: "skeinly://share/not-a-uuid")!
         app.open(invalidURL)
 
         // Should remain on project list
@@ -47,7 +47,7 @@ final class NavigationFlowUITests: XCTestCase {
     func testDeepLink_validToken_localOnlyMode_staysOnProjectList() {
         // In local-only mode (no Supabase), a valid deep link should not crash
         let validUUID = "12345678-1234-1234-1234-123456789abc"
-        let deepLinkURL = URL(string: "knitnote://share/\(validUUID)")!
+        let deepLinkURL = URL(string: "skeinly://share/\(validUUID)")!
         app.open(deepLinkURL)
 
         // App should remain on project list, not navigate to shared content

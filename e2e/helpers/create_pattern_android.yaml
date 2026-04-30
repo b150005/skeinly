@@ -1,4 +1,4 @@
-appId: io.github.b150005.knitnote
+appId: io.github.b150005.skeinly
 ---
 # Helper flow — creates a pattern with the supplied PATTERN_TITLE so the
 # downstream flow can link a project to it. Locale-independent: every

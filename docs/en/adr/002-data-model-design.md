@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Knit Note's differentiator is user-to-user sharing and interaction. The data model must treat sharing as a core concept, not a bolted-on feature. Key requirements:
+Skeinly's differentiator is user-to-user sharing and interaction. The data model must treat sharing as a core concept, not a bolted-on feature. Key requirements:
 
 - Users create patterns and track project progress
 - Users share patterns with specific users or publicly

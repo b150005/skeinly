@@ -1,4 +1,4 @@
--- Knit Note: Direct Sharing Support
+-- Skeinly: Direct Sharing Support
 -- Phase 4b-2b: Direct user-to-user sharing
 -- Adds RLS policies for profile search and share status updates
 

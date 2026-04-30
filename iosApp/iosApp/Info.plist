@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Knit Note</string>
+	<string>Skeinly</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -29,10 +29,10 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>io.github.b150005.knitnote.share</string>
+			<string>io.github.b150005.skeinly.share</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>knitnote</string>
+				<string>skeinly</string>
 			</array>
 		</dict>
 	</array>

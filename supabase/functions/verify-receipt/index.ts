@@ -187,7 +187,7 @@ async function verifyGoogleReceipt(
     //    (or GOOGLE_PLAY_SERVICE_ACCOUNT_JSON if separate service account).
     //    Scope: https://www.googleapis.com/auth/androidpublisher
     // 2. GET https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{packageName}/purchases/subscriptionsv2/tokens/{token}
-    //    where packageName = "io.github.b150005.knitnote"
+    //    where packageName = "io.github.b150005.skeinly"
     // 3. Extract from `lineItems[0]`: productId, expiryTime,
     //    autoRenewingPlan.autoRenewEnabled, plus top-level
     //    subscriptionState (SUBSCRIPTION_STATE_ACTIVE / IN_GRACE_PERIOD

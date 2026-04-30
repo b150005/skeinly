@@ -51,7 +51,7 @@ Phase 1〜27b で行カウンタアプリとして機能完成。Supabase 同期
 ### ニュートラル
 
 - 既存の行カウンタ、プロジェクト CRUD、進捗ノート、写真ベース編み図画像、共有、Supabase 同期はコードベースに残す。削除ではなく構造化 chart モデルを中心に再フレーミングする。
-- Bundle ID 変更 (`com.knitnote.*` → `io.github.b150005.knitnote`) は chart 関連のリネーム工数と切り離すために Phase 28 に独立。
+- Bundle ID 変更 (`com.skeinly.*` → `io.github.b150005.skeinly`) は chart 関連のリネーム工数と切り離すために Phase 28 に独立。
 
 ## 検討した代替案
 

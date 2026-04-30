@@ -258,7 +258,7 @@ session's pending queue.
 
 ### 2. SQLDelight mirror
 
-`shared/src/commonMain/sqldelight/io/github/b150005/knitnote/db/ChartRevision.sq`:
+`shared/src/commonMain/sqldelight/io/github/b150005/skeinly/db/ChartRevision.sq`:
 
 ```sql
 CREATE TABLE ChartRevisionEntity (

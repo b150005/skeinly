@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 APK_PATH="$PROJECT_ROOT/androidApp/build/outputs/apk/debug/androidApp-debug.apk"
 
-echo "=== Knit Note E2E: Android Flows ==="
+echo "=== Skeinly E2E: Android Flows ==="
 
 # Step 1: Build debug APK in local-only mode (empty Supabase credentials
 # override local.properties so the app skips the auth screen).

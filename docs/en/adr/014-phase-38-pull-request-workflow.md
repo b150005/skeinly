@@ -428,7 +428,7 @@ Notes:
 
 ### 2. SQLDelight mirror
 
-`shared/src/commonMain/sqldelight/io/github/b150005/knitnote/db/PullRequest.sq`:
+`shared/src/commonMain/sqldelight/io/github/b150005/skeinly/db/PullRequest.sq`:
 
 ```sql
 CREATE TABLE PullRequestEntity (

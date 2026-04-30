@@ -1,0 +1,60 @@
+package io.github.b150005.skeinly.domain.usecase
+
+import io.github.b150005.skeinly.domain.model.User
+import io.github.b150005.skeinly.domain.repository.AuthRepository
+import io.github.b150005.skeinly.domain.repository.UserRepository
+
+private const val MAX_DISPLAY_NAME_LENGTH = 50
+private const val MAX_BIO_LENGTH = 500
+
+class UpdateProfileUseCase(
+    private val authRepository: AuthRepository,
+    private val userRepository: UserRepository,
+) {
+    suspend operator fun invoke(
+        displayName: String,
+        bio: String?,
+        avatarUrl: String?,
+    ): UseCaseResult<User> {
+        val userId =
+            authRepository.getCurrentUserId()
+                ?: return UseCaseResult.Failure(
+                    UseCaseError.SignInRequired,
+                )
+
+        val trimmedName = displayName.trim()
+        if (trimmedName.isEmpty()) {
+            return UseCaseResult.Failure(
+                UseCaseError.FieldRequired,
+            )
+        }
+        if (trimmedName.length > MAX_DISPLAY_NAME_LENGTH) {
+            return UseCaseResult.Failure(
+                UseCaseError.FieldTooLong,
+            )
+        }
+
+        val trimmedBio = bio?.trim()?.takeIf { it.isNotEmpty() }
+        if (trimmedBio != null && trimmedBio.length > MAX_BIO_LENGTH) {
+            return UseCaseResult.Failure(
+                UseCaseError.FieldTooLong,
+            )
+        }
+
+        val currentUser =
+            userRepository.getById(userId)
+                ?: return UseCaseResult.Failure(
+                    UseCaseError.ResourceNotFound,
+                )
+
+        val updatedUser =
+            currentUser.copy(
+                displayName = trimmedName,
+                bio = trimmedBio,
+                avatarUrl = avatarUrl,
+            )
+
+        val saved = userRepository.update(updatedUser)
+        return UseCaseResult.Success(saved)
+    }
+}

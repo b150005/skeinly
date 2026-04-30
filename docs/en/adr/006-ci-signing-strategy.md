@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Knit Note targets both Android and iOS. The release workflow (`release.yml`) already produces a signed Android APK via base64-encoded keystore stored in GitHub Secrets. However, the iOS pipeline only builds the shared KMP framework — the iOS app is never archived, signed, or distributed.
+Skeinly targets both Android and iOS. The release workflow (`release.yml`) already produces a signed Android APK via base64-encoded keystore stored in GitHub Secrets. However, the iOS pipeline only builds the shared KMP framework — the iOS app is never archived, signed, or distributed.
 
 To reach TestFlight (and eventually the App Store), the CI pipeline must:
 

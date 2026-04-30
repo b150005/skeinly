@@ -26,7 +26,7 @@ through the closest-fitting mechanism:
   network-security descriptors, and screens defined directly in
   `androidApp/` — not shared).
 - **`shared/.../composeResources/values/`** is used by shared Compose
-  Multiplatform screens via `import io.github.b150005.knitnote.generated.resources.Res`
+  Multiplatform screens via `import io.github.b150005.skeinly.generated.resources.Res`
   + `stringResource(Res.string.<key>)`. Shared commonMain Kotlin cannot
   reference Android's `R`, so it resolves through the Compose resources
   plugin instead.
@@ -78,8 +78,8 @@ script runs in CI and blocks on drift.
 path for any screen that lives under `shared/src/commonMain/.../ui/`:
 
 ```kotlin
-import io.github.b150005.knitnote.generated.resources.Res
-import io.github.b150005.knitnote.generated.resources.action_save
+import io.github.b150005.skeinly.generated.resources.Res
+import io.github.b150005.skeinly.generated.resources.action_save
 import org.jetbrains.compose.resources.stringResource
 
 Text(stringResource(Res.string.action_save))
@@ -95,7 +95,7 @@ platform code that cannot see the shared module's `Res`:
 
 ```kotlin
 import androidx.compose.ui.res.stringResource
-import io.github.b150005.knitnote.R
+import io.github.b150005.skeinly.R
 
 Text(stringResource(R.string.action_save))
 ```

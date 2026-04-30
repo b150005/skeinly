@@ -4,7 +4,7 @@
   See values/strings.xml for the canonical comment block.
 -->
 <resources>
-    <string name="app_name">Knit Note</string>
+    <string name="app_name">Skeinly</string>
 
     <!-- Action primitives -->
     <string name="action_save">保存</string>

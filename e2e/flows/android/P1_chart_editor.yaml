@@ -1,4 +1,4 @@
-appId: io.github.b150005.knitnote
+appId: io.github.b150005.skeinly
 name: "P1 - Chart Editor (Phase 32)"
 tags:
   - p1
@@ -14,9 +14,9 @@ tags:
 # E2E for chart editor" entry.
 
 # Pre-condition: clean state
-- clearState: io.github.b150005.knitnote
+- clearState: io.github.b150005.skeinly
 - launchApp:
-    appId: io.github.b150005.knitnote
+    appId: io.github.b150005.skeinly
 
 - runFlow: ../../helpers/complete_onboarding_android.yaml
 

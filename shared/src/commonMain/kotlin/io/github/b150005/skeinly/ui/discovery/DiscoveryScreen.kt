@@ -1,0 +1,542 @@
+package io.github.b150005.skeinly.ui.discovery
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import io.github.b150005.skeinly.domain.model.Difficulty
+import io.github.b150005.skeinly.domain.model.Pattern
+import io.github.b150005.skeinly.domain.model.SortOrder
+import io.github.b150005.skeinly.generated.resources.Res
+import io.github.b150005.skeinly.generated.resources.action_back
+import io.github.b150005.skeinly.generated.resources.action_clear_search
+import io.github.b150005.skeinly.generated.resources.action_fork_pattern
+import io.github.b150005.skeinly.generated.resources.action_sort
+import io.github.b150005.skeinly.generated.resources.hint_search_public_patterns
+import io.github.b150005.skeinly.generated.resources.label_difficulty_all
+import io.github.b150005.skeinly.generated.resources.label_filter_charts_only
+import io.github.b150005.skeinly.generated.resources.label_gauge_value
+import io.github.b150005.skeinly.generated.resources.label_needle_value
+import io.github.b150005.skeinly.generated.resources.label_sort_alphabetical_detail
+import io.github.b150005.skeinly.generated.resources.label_sort_recent
+import io.github.b150005.skeinly.generated.resources.label_yarn_value
+import io.github.b150005.skeinly.generated.resources.message_forked_chart_failed
+import io.github.b150005.skeinly.generated.resources.message_forked_successfully
+import io.github.b150005.skeinly.generated.resources.state_no_matching_patterns
+import io.github.b150005.skeinly.generated.resources.state_no_matching_patterns_body
+import io.github.b150005.skeinly.generated.resources.state_no_public_patterns
+import io.github.b150005.skeinly.generated.resources.state_no_public_patterns_body
+import io.github.b150005.skeinly.generated.resources.title_discover_patterns
+import io.github.b150005.skeinly.ui.chart.ChartThumbnail
+import io.github.b150005.skeinly.ui.components.EmptyStateView
+import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
+import io.github.b150005.skeinly.ui.components.labelKey
+import io.github.b150005.skeinly.ui.components.localized
+import io.github.b150005.skeinly.ui.components.selectedCheckmarkIcon
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.viewmodel.koinViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DiscoveryScreen(
+    onBack: () -> Unit,
+    onForked: (projectId: String) -> Unit,
+    onChartViewerClick: (patternId: String) -> Unit,
+    viewModel: DiscoveryViewModel = koinViewModel(),
+) {
+    val state by viewModel.state.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val errorText = state.error?.localized()
+
+    LaunchedEffect(errorText) {
+        errorText?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.onEvent(DiscoveryEvent.ClearError)
+        }
+    }
+
+    val forkSuccessMessage = stringResource(Res.string.message_forked_successfully)
+    val forkChartFailedMessage = stringResource(Res.string.message_forked_chart_failed)
+
+    LaunchedEffect(Unit) {
+        viewModel.forkedProject.collect { result ->
+            // Phase 36.3 (ADR-012 §3, §7): success Snackbar branches on the
+            // failure flag — NOT on `chartCloned`. A metadata-only public
+            // pattern (no chart at all) lands as `chartCloned=false,
+            // chartCloneFailed=false` and is a success path; surfacing the
+            // failure copy there would be a UX regression. Only the
+            // genuine throw-path (`chartCloneFailed=true`) warrants the
+            // fallback copy directing the user to ProjectDetail's
+            // "Create structured chart" CTA.
+            //
+            // The Snackbar fires before `onForked` triggers navigation;
+            // Compose launches the host coroutine that survives the parent
+            // Composable's unmount briefly enough to render at the next
+            // destination's edge.
+            launch {
+                snackbarHostState.showSnackbar(
+                    if (result.chartCloneFailed) forkChartFailedMessage else forkSuccessMessage,
+                )
+            }
+            onForked(result.projectId)
+        }
+    }
+
+    Scaffold(
+        modifier = Modifier.testTag("discoveryScreen"),
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(Res.string.title_discover_patterns)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack, modifier = Modifier.testTag("backButton")) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(Res.string.action_back),
+                        )
+                    }
+                },
+                // Sprint B M2 (Phase 39 pre-beta UX audit): sort moved out of the
+                // inline filter row into a dedicated trailing IconButton, mirroring
+                // the iOS `ToolbarItem(.primaryAction) Menu` shape. The previous
+                // FilterChip-styled sort selector competed for horizontal space
+                // with the difficulty chip row and clipped the trailing chip
+                // (上級 / "Advanced" on JA-locale narrow screens).
+                actions = {
+                    DiscoverySortMenu(
+                        sortOrder = state.sortOrder,
+                        onSortOrderChange = {
+                            viewModel.onEvent(DiscoveryEvent.UpdateSortOrder(it))
+                        },
+                    )
+                },
+            )
+        },
+        snackbarHost = { LiveSnackbarHost(snackbarHostState) },
+    ) { padding ->
+        PullToRefreshBox(
+            isRefreshing = state.isLoading,
+            onRefresh = { viewModel.onEvent(DiscoveryEvent.Refresh) },
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                DiscoverySearchField(
+                    query = state.searchQuery,
+                    onQueryChange = { viewModel.onEvent(DiscoveryEvent.UpdateSearchQuery(it)) },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+
+                DiscoveryFilterRow(
+                    difficultyFilter = state.difficultyFilter,
+                    chartsOnlyFilter = state.chartsOnlyFilter,
+                    onDifficultyFilterChange = {
+                        viewModel.onEvent(DiscoveryEvent.UpdateDifficultyFilter(it))
+                    },
+                    onToggleChartsOnly = {
+                        viewModel.onEvent(DiscoveryEvent.ToggleChartsOnly)
+                    },
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Phase 36.4: include chartsOnlyFilter so that "Charts only"
+                // with an empty result set shows the matching-filter empty
+                // state ("No matching patterns / Try adjusting your filters")
+                // rather than the misleading no-public-patterns variant.
+                val hasActiveFilter =
+                    state.searchQuery.isNotBlank() ||
+                        state.difficultyFilter != null ||
+                        state.chartsOnlyFilter
+
+                when {
+                    state.isLoading && state.patterns.isEmpty() -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                    state.patterns.isEmpty() && hasActiveFilter -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = stringResource(Res.string.state_no_matching_patterns),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = stringResource(Res.string.state_no_matching_patterns_body),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                    state.patterns.isEmpty() -> {
+                        EmptyStateView(
+                            icon = Icons.Default.Explore,
+                            title = stringResource(Res.string.state_no_public_patterns),
+                            body = stringResource(Res.string.state_no_public_patterns_body),
+                        )
+                    }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                        ) {
+                            items(state.patterns, key = { it.id }) { pattern ->
+                                DiscoveryPatternCard(
+                                    pattern = pattern,
+                                    isForkInProgress = state.forkingPatternId == pattern.id,
+                                    hasChart = pattern.id in state.patternsWithCharts,
+                                    onFork = { viewModel.onEvent(DiscoveryEvent.ForkPattern(pattern.id)) },
+                                    onChartClick = { onChartViewerClick(pattern.id) },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DiscoverySearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .testTag("discoverySearchField"),
+        placeholder = { Text(stringResource(Res.string.hint_search_public_patterns)) },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+        trailingIcon = {
+            if (query.isNotEmpty()) {
+                IconButton(
+                    onClick = { onQueryChange("") },
+                    modifier = Modifier.testTag("clearSearchButton"),
+                ) {
+                    Icon(
+                        Icons.Default.Clear,
+                        contentDescription = stringResource(Res.string.action_clear_search),
+                    )
+                }
+            }
+        },
+        singleLine = true,
+    )
+}
+
+@Composable
+private fun DiscoveryFilterRow(
+    difficultyFilter: Difficulty?,
+    chartsOnlyFilter: Boolean,
+    onDifficultyFilterChange: (Difficulty?) -> Unit,
+    onToggleChartsOnly: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyRow(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        // Phase 36.4 (ADR-012 §4): "Charts only" sits between the search field
+        // and the difficulty chip row per the ADR; in the LazyRow it leads so
+        // it is visible without horizontal scrolling. Sprint A PR5: leadingIcon
+        // checkmark gives non-color selected signal per WCAG 1.4.1.
+        item {
+            FilterChip(
+                selected = chartsOnlyFilter,
+                onClick = onToggleChartsOnly,
+                label = { Text(stringResource(Res.string.label_filter_charts_only)) },
+                leadingIcon = selectedCheckmarkIcon(chartsOnlyFilter),
+                modifier = Modifier.testTag("chartsOnlyChip"),
+            )
+        }
+        item {
+            FilterChip(
+                selected = difficultyFilter == null,
+                onClick = { onDifficultyFilterChange(null) },
+                label = { Text(stringResource(Res.string.label_difficulty_all)) },
+                leadingIcon = selectedCheckmarkIcon(difficultyFilter == null),
+                modifier = Modifier.testTag("difficultyAllChip"),
+            )
+        }
+        item {
+            FilterChip(
+                selected = difficultyFilter == Difficulty.BEGINNER,
+                onClick = {
+                    onDifficultyFilterChange(
+                        if (difficultyFilter == Difficulty.BEGINNER) null else Difficulty.BEGINNER,
+                    )
+                },
+                label = { Text(stringResource(Difficulty.BEGINNER.labelKey)) },
+                leadingIcon = selectedCheckmarkIcon(difficultyFilter == Difficulty.BEGINNER),
+                modifier = Modifier.testTag("difficultyBeginnerChip"),
+            )
+        }
+        item {
+            FilterChip(
+                selected = difficultyFilter == Difficulty.INTERMEDIATE,
+                onClick = {
+                    onDifficultyFilterChange(
+                        if (difficultyFilter == Difficulty.INTERMEDIATE) null else Difficulty.INTERMEDIATE,
+                    )
+                },
+                label = { Text(stringResource(Difficulty.INTERMEDIATE.labelKey)) },
+                leadingIcon = selectedCheckmarkIcon(difficultyFilter == Difficulty.INTERMEDIATE),
+                modifier = Modifier.testTag("difficultyIntermediateChip"),
+            )
+        }
+        item {
+            FilterChip(
+                selected = difficultyFilter == Difficulty.ADVANCED,
+                onClick = {
+                    onDifficultyFilterChange(
+                        if (difficultyFilter == Difficulty.ADVANCED) null else Difficulty.ADVANCED,
+                    )
+                },
+                label = { Text(stringResource(Difficulty.ADVANCED.labelKey)) },
+                leadingIcon = selectedCheckmarkIcon(difficultyFilter == Difficulty.ADVANCED),
+                modifier = Modifier.testTag("difficultyAdvancedChip"),
+            )
+        }
+    }
+}
+
+@Composable
+private fun DiscoverySortMenu(
+    sortOrder: SortOrder,
+    onSortOrderChange: (SortOrder) -> Unit,
+) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+
+    Box {
+        IconButton(
+            onClick = { expanded = true },
+            modifier = Modifier.testTag("sortMenuButton"),
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.Sort,
+                contentDescription = stringResource(Res.string.action_sort),
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            // Leading checkmark on the active item mirrors the iOS toolbar Menu
+            // (`systemImage: holder.state.sortOrder == .recent ? "checkmark" : ""`)
+            // so the user can discover the current sort selection on menu open.
+            // Sprint B M2 review surfaced the loss of always-visible current-sort
+            // label as a MEDIUM concern; the checkmark restores discoverability
+            // inside the menu without re-introducing the inline-chip clipping.
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.label_sort_recent)) },
+                leadingIcon = activeSortCheckmark(active = sortOrder == SortOrder.RECENT),
+                onClick = {
+                    onSortOrderChange(SortOrder.RECENT)
+                    expanded = false
+                },
+                modifier = Modifier.testTag("sortRecentItem"),
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.label_sort_alphabetical_detail)) },
+                leadingIcon = activeSortCheckmark(active = sortOrder == SortOrder.ALPHABETICAL),
+                onClick = {
+                    onSortOrderChange(SortOrder.ALPHABETICAL)
+                    expanded = false
+                },
+                modifier = Modifier.testTag("sortAlphabeticalItem"),
+            )
+        }
+    }
+}
+
+private fun activeSortCheckmark(active: Boolean): (@Composable () -> Unit)? =
+    if (active) {
+        { Icon(Icons.Default.Check, contentDescription = null) }
+    } else {
+        null
+    }
+
+@Composable
+private fun DiscoveryPatternCard(
+    pattern: Pattern,
+    isForkInProgress: Boolean,
+    hasChart: Boolean,
+    onFork: () -> Unit,
+    onChartClick: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            // Phase 36.4 (ADR-012 §5): chart-preview thumbnail rendered live
+            // when the pattern has a chart_documents row. Off-screen rows do
+            // not fetch (LazyColumn lazy-instantiates).
+            if (hasChart) {
+                ChartThumbnail(
+                    patternId = pattern.id,
+                    onClick = onChartClick,
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = pattern.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (pattern.difficulty != null) {
+                        DiscoveryDifficultyBadge(pattern.difficulty)
+                    }
+                }
+
+                if (!pattern.description.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = pattern.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+
+                val details = buildDiscoveryPatternDetails(pattern)
+                if (details.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = details,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    if (isForkInProgress) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.height(20.dp).width(20.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        IconButton(
+                            onClick = onFork,
+                            modifier = Modifier.testTag("forkButton_${pattern.id}"),
+                        ) {
+                            Icon(
+                                Icons.Default.ContentCopy,
+                                contentDescription = stringResource(Res.string.action_fork_pattern),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DiscoveryDifficultyBadge(difficulty: Difficulty) {
+    val color =
+        when (difficulty) {
+            Difficulty.BEGINNER -> MaterialTheme.colorScheme.tertiary
+            Difficulty.INTERMEDIATE -> MaterialTheme.colorScheme.primary
+            Difficulty.ADVANCED -> MaterialTheme.colorScheme.error
+        }
+    Text(
+        text = stringResource(difficulty.labelKey),
+        style = MaterialTheme.typography.labelSmall,
+        color = color,
+    )
+}
+
+@Composable
+private fun buildDiscoveryPatternDetails(pattern: Pattern): String {
+    val gauge = pattern.gauge?.let { stringResource(Res.string.label_gauge_value, it) }
+    val yarn = pattern.yarnInfo?.let { stringResource(Res.string.label_yarn_value, it) }
+    val needle = pattern.needleSize?.let { stringResource(Res.string.label_needle_value, it) }
+    return listOfNotNull(gauge, yarn, needle).joinToString(" \u2022 ")
+}

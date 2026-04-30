@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-Apple App Store Review Guideline 5.1.1(v) requires apps that support account creation to also offer account deletion. Google Play has a similar requirement. Knit Note needs a mechanism for authenticated users to permanently delete their accounts and all associated data.
+Apple App Store Review Guideline 5.1.1(v) requires apps that support account creation to also offer account deletion. Google Play has a similar requirement. Skeinly needs a mechanism for authenticated users to permanently delete their accounts and all associated data.
 
 ## Decision
 Implement account deletion using a **PostgreSQL RPC function** (`SECURITY DEFINER`) rather than a Supabase Edge Function.

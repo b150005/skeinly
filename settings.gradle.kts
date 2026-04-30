@@ -1,4 +1,4 @@
-rootProject.name = "KnitNote"
+rootProject.name = "Skeinly"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 

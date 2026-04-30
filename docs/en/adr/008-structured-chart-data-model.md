@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-ADR-007 pivoted Knit Note from a row counter to a structured chart authoring
+ADR-007 pivoted Skeinly from a row counter to a structured chart authoring
 product. Phase 29 must land the first version of that data model — a
 representation of a knitting chart as a structured document rather than a
 photo — on which all of Phase 30 (Symbol Library), Phase 31 (Chart Viewer),

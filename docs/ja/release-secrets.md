@@ -54,7 +54,7 @@ gh auth login
 gh auth status   # 「Logged in to github.com as <あなた>」が表示されるはず
 ```
 
-シークレット関連コマンドはリポジトリルート（`cd knit-note`）で実行する前提です。
+シークレット関連コマンドはリポジトリルート（`cd skeinly`）で実行する前提です。
 
 ## GitHub にシークレットを登録する方法
 
@@ -161,8 +161,8 @@ gh secret set APPLE_DISTRIBUTION_CERT_PASSWORD
 
 1. [Apple Developer](https://developer.apple.com/account) にサインイン → **Certificates, Identifiers & Profiles** → **Profiles**。
 2. 以下のいずれか:
-   - 既存のプロファイルが `io.github.b150005.knitnote` の App Store 配布用にあれば、それをクリック → **Download**。
-   - なければ `+` → Distribution の **App Store** → bundle ID `io.github.b150005.knitnote` を選択 → 手順 1 の Apple Distribution cert を選択 → 名前（例: `Knit Note App Store`）→ **Generate** → **Download**。
+   - 既存のプロファイルが `io.github.b150005.skeinly` の App Store 配布用にあれば、それをクリック → **Download**。
+   - なければ `+` → Distribution の **App Store** → bundle ID `io.github.b150005.skeinly` を選択 → 手順 1 の Apple Distribution cert を選択 → 名前（例: `Skeinly App Store`）→ **Generate** → **Download**。
 3. base64 エンコード:
 
    ```bash
@@ -178,7 +178,7 @@ security cms -D -i Knit_Note_App_Store.mobileprovision | head -40
 
 確認項目:
 - `<key>Name</key>` の値がプロファイル名と一致すること
-- `<key>application-identifier</key>` が `io.github.b150005.knitnote` で終わること
+- `<key>application-identifier</key>` が `io.github.b150005.skeinly` で終わること
 - `<key>ExpirationDate</key>` が未来の日付であること（通常 1 年後）
 - `<key>TeamIdentifier</key>` が次のシークレットの Team ID と一致すること
 
@@ -228,7 +228,7 @@ gh secret set APPLE_TEAM_ID
 2. **Users and Access** → **Integrations** タブ → **Team Keys**。
 3. **Generate API Key** をクリック（既存キーがある場合は `+`）。
 4. 設定:
-   - **Name**: 例えば `knit-note CI`。
+   - **Name**: 例えば `skeinly CI`。
    - **Access**: TestFlight アップロードには最低 **App Manager**。**Developer** では不足。**Admin** は動作しますが CI には過剰権限です。
 5. **Generate** をクリック。
 6. **`.p8` ファイルを直ちにダウンロード**。これが唯一のチャンスです — Apple は生成後に秘密鍵を破棄します。ダウンロードファイル名は `AuthKey_<KEY_ID>.p8`。
@@ -445,10 +445,10 @@ gh secret set SUPABASE_ANON_KEY
 **OBTAIN:**
 
 1. [Firebase Console](https://console.firebase.google.com) にサインイン
-2. Knit Note 用 Firebase プロジェクトがなければ: **Add project** → 名前 `knit-note` → **Disable Google Analytics** (PostHog を使うため) → Create
+2. Skeinly 用 Firebase プロジェクトがなければ: **Add project** → 名前 `skeinly` → **Disable Google Analytics** (PostHog を使うため) → Create
 3. プロジェクト内: **Project Overview** → **Add app** → Android アイコン
-4. Android パッケージ名: `io.github.b150005.knitnote`
-5. App nickname: `Knit Note Android`
+4. Android パッケージ名: `io.github.b150005.skeinly`
+5. App nickname: `Skeinly Android`
 6. 署名証明書 SHA-1: `keytool -list -v -keystore upload-keystore.jks` を実行して **SHA-1** fingerprint をコピー（リリース keystore — debug ビルドは別の自動生成 keystore を使うので alpha ではここの登録は不要。FCM debug テストが必要になったら debug SHA-1 を後追加）
 7. Continue → Continue → **`google-services.json` をダウンロード** → Continue → SDK セットアップ手順はスキップ（Gradle で別途配線）
 8. Base64 エンコード:
@@ -465,8 +465,8 @@ cat google-services.json | python3 -m json.tool | head -10
 ```
 
 確認:
-- `project_info.project_id` が Firebase プロジェクト名 (`knit-note`) と一致
-- `client[0].client_info.android_client_info.package_name` が `io.github.b150005.knitnote`
+- `project_info.project_id` が Firebase プロジェクト名 (`skeinly`) と一致
+- `client[0].client_info.android_client_info.package_name` が `io.github.b150005.skeinly`
 - `client[0].api_key[0].current_key` が長い英数字文字列（パッケージ + SHA-1 で制限された Android API キー）
 
 **REGISTER:**
@@ -489,9 +489,9 @@ Android Gradle ビルドはこれをビルド時に `androidApp/google-services.
 
 **OBTAIN:**
 
-1. [Sentry](https://sentry.io) にサインイン。Knit Note 用組織がなければ作成
-2. **Projects** → **Create Project** → Platform: **Apple iOS** → Project Name: `knit-note-ios` → Create
-3. 作成後: **Settings** → **Projects** → `knit-note-ios` → **Client Keys (DSN)** → DSN をコピー
+1. [Sentry](https://sentry.io) にサインイン。Skeinly 用組織がなければ作成
+2. **Projects** → **Create Project** → Platform: **Apple iOS** → Project Name: `skeinly-ios` → Create
+3. 作成後: **Settings** → **Projects** → `skeinly-ios` → **Client Keys (DSN)** → DSN をコピー
 4. 形式: `https://<32-char-public-key>@<org>.ingest.sentry.io/<project-id>`
 
 **VERIFY**: URL が HTTPS、`@` 含む、`.ingest.sentry.io` 含む、数値プロジェクト ID で終わる。
@@ -503,13 +503,13 @@ gh secret set SENTRY_DSN_IOS
 # DSN を貼り付け、Ctrl+D
 ```
 
-**ROTATE**: Sentry → Settings → Projects → `knit-note-ios` → Client Keys → 古い key を revoke + 新規作成。GitHub Secret を更新。
+**ROTATE**: Sentry → Settings → Projects → `skeinly-ios` → Client Keys → 古い key を revoke + 新規作成。GitHub Secret を更新。
 
 ### 16. `SENTRY_DSN_ANDROID`
 
 **WHAT**: Android Sentry プロジェクトの DSN。`SENTRY_DSN_IOS` と同じ形式だが iOS と Android のクラッシュをダッシュボード上で独立してフィルタリングできるよう別プロジェクトを使う。
 
-**OBTAIN**: #15 の手順を繰り返すが、Platform: **Android** を選び、プロジェクト名を `knit-note-android` に。
+**OBTAIN**: #15 の手順を繰り返すが、Platform: **Android** を選び、プロジェクト名を `skeinly-android` に。
 
 **REGISTER:**
 
@@ -526,7 +526,7 @@ gh secret set SENTRY_DSN_ANDROID
 
 1. Sentry → 左上のアバタークリック → **User Settings** → **Auth Tokens**
 2. **Create New Token**
-3. Name: `knit-note CI`
+3. Name: `skeinly CI`
 4. Scopes (最小):
    - `project:releases` — release 作成 + アーティファクトアップロード
    - `org:read` — org/projects リスト (sentry-cli が slug からプロジェクトを解決するのに必要)
@@ -561,8 +561,8 @@ gh secret set SENTRY_AUTH_TOKEN
 **OBTAIN:**
 
 1. [PostHog](https://eu.posthog.com) にサインイン (GDPR データレジデンシーのため **EU クラウド**を使う)
-2. 組織がなければ `knit-note` という名前で作成
-3. **Settings** → **Projects** → **Create Project** → Name: `knitnote-prod`
+2. 組織がなければ `skeinly` という名前で作成
+3. **Settings** → **Projects** → **Create Project** → Name: `skeinly-prod`
 4. プロジェクト内: **Settings** → **Project** → **General** → **Project API Key** → 値をコピー (`phc_` で始まる)
 
 **VERIFY**: `phc_` 始まり、合計 47 文字 (`phc_` + 43 文字 base62)、大文字小文字区別。
@@ -580,7 +580,7 @@ gh secret set POSTHOG_PROJECT_API_KEY_PROD
 
 **WHAT**: development PostHog プロジェクトの Project API Key。debug ビルドに焼き込まれることで、開発者の churn が prod データセットに混入しない。
 
-**OBTAIN**: #18 を繰り返すが、`knitnote-dev` という**別プロジェクト**を作り、そのプロジェクトの API キーをコピー。
+**OBTAIN**: #18 を繰り返すが、`skeinly-dev` という**別プロジェクト**を作り、そのプロジェクトの API キーをコピー。
 
 **REGISTER:**
 
@@ -630,7 +630,7 @@ Edge Function はさらに `APPLE_TEAM_ID` (GitHub Secret と同じ 10 文字値
 supabase secrets set APPLE_TEAM_ID=ABCDE12345
 ```
 
-(Bundle ID `io.github.b150005.knitnote` は Edge Function ソースに直接埋め込まれており、シークレットには登録しません)
+(Bundle ID `io.github.b150005.skeinly` は Edge Function ソースに直接埋め込まれており、シークレットには登録しません)
 
 ### EF-3. `FIREBASE_SERVICE_ACCOUNT_JSON`
 
@@ -638,7 +638,7 @@ supabase secrets set APPLE_TEAM_ID=ABCDE12345
 
 **OBTAIN:**
 
-1. [Firebase Console](https://console.firebase.google.com) → プロジェクト (`knit-note`) → **Project Settings** → **Service Accounts**
+1. [Firebase Console](https://console.firebase.google.com) → プロジェクト (`skeinly`) → **Project Settings** → **Service Accounts**
 2. **Firebase Admin SDK** タブ → **Generate new private key** → 確認 → JSON ダウンロード
 3. デフォルト付与ロール **Firebase Admin SDK Administrator Service Agent** に Cloud Messaging が含まれている — 追加 IAM 設定不要
 
@@ -661,7 +661,7 @@ supabase secrets set FIREBASE_SERVICE_ACCOUNT_JSON="$(cat firebase-admin-sdk.jso
 1. [Google Play Console](https://play.google.com/console) → **Setup** → **API access**
 2. リンク済みでなければ: **Choose a project to link** → Firebase と同じ Google Cloud プロジェクトを使用 (または別プロジェクトでも OK。再利用すると billing が単純化)
 3. **Service accounts** セクション → **Create new service account** → Google Cloud Console が開く
-4. Service Account Name: `knit-note-play-publisher`
+4. Service Account Name: `skeinly-play-publisher`
 5. Cloud Console での role 付与はスキップ (Play Console 側 UI で別途付与)
 6. Done → Cloud Console に戻り SA クリック → **Keys** → **Add Key** → **Create new key** → JSON → ダウンロード
 7. Play Console **API access** に戻り、新しい SA をクリック → **Grant access**

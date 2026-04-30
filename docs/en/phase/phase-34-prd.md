@@ -4,7 +4,7 @@ Related: [ADR-010](../adr/010-per-segment-progress.md)
 
 ## Problem statement
 
-Knit Note today tracks progress at two levels:
+Skeinly today tracks progress at two levels:
 
 - **Row level** (Phase 1–1.5) — `Project.currentRow` advances an integer;
   `ProgressEntity` logs per-row notes and photos.

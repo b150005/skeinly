@@ -1,0 +1,78 @@
+package io.github.b150005.skeinly.data.repository
+
+import io.github.b150005.skeinly.data.local.LocalPatternDataSource
+import io.github.b150005.skeinly.data.remote.RemotePatternDataSource
+import io.github.b150005.skeinly.data.sync.SyncEntityType
+import io.github.b150005.skeinly.data.sync.SyncManagerOperations
+import io.github.b150005.skeinly.data.sync.SyncOperation
+import io.github.b150005.skeinly.domain.model.Pattern
+import io.github.b150005.skeinly.domain.model.Visibility
+import io.github.b150005.skeinly.domain.repository.PatternRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+
+class PatternRepositoryImpl(
+    private val local: LocalPatternDataSource,
+    private val remote: RemotePatternDataSource?,
+    private val isOnline: StateFlow<Boolean>,
+    private val syncManager: SyncManagerOperations,
+    private val json: Json,
+) : PatternRepository {
+    override suspend fun getById(id: String): Pattern? {
+        val localPattern = local.getById(id)
+        if (localPattern != null || remote == null || !isOnline.value) return localPattern
+
+        return try {
+            remote.getById(id)?.also { local.upsert(it) }
+        } catch (_: Exception) {
+            localPattern
+        }
+    }
+
+    override suspend fun getByOwnerId(ownerId: String): List<Pattern> {
+        if (remote == null || !isOnline.value) return local.getByOwnerId(ownerId)
+
+        return try {
+            val remotePatterns = remote.getByOwnerId(ownerId)
+            local.upsertAll(remotePatterns)
+            remotePatterns
+        } catch (_: Exception) {
+            local.getByOwnerId(ownerId)
+        }
+    }
+
+    override suspend fun getByVisibility(visibility: Visibility): List<Pattern> {
+        if (visibility != Visibility.PUBLIC || remote == null || !isOnline.value) return emptyList()
+        return try {
+            // Phase 36.4 (ADR-012 §5): `getPublic` now returns the patterns
+            // plus a chart-presence companion set. Repository callers do not
+            // need the companion set; only Discovery does.
+            remote.getPublic().patterns
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    override fun observeById(id: String): Flow<Pattern?> = local.observeById(id)
+
+    override fun observeByOwnerId(ownerId: String): Flow<List<Pattern>> = local.observeByOwnerId(ownerId)
+
+    override suspend fun create(pattern: Pattern): Pattern {
+        local.insert(pattern)
+        syncManager.syncOrEnqueue(SyncEntityType.PATTERN, pattern.id, SyncOperation.INSERT, json.encodeToString(pattern))
+        return pattern
+    }
+
+    override suspend fun update(pattern: Pattern): Pattern {
+        local.update(pattern)
+        syncManager.syncOrEnqueue(SyncEntityType.PATTERN, pattern.id, SyncOperation.UPDATE, json.encodeToString(pattern))
+        return pattern
+    }
+
+    override suspend fun delete(id: String) {
+        local.delete(id)
+        syncManager.syncOrEnqueue(SyncEntityType.PATTERN, id, SyncOperation.DELETE, "")
+    }
+}

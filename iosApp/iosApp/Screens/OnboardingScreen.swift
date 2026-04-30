@@ -2,7 +2,7 @@ import SwiftUI
 import Shared
 
 // Index-keyed copy. Order MUST match OnboardingViewModel.DEFAULT_PAGES in
-// shared/src/commonMain/kotlin/io/github/b150005/knitnote/ui/onboarding/OnboardingViewModel.kt.
+// shared/src/commonMain/kotlin/io/github/b150005/skeinly/ui/onboarding/OnboardingViewModel.kt.
 private let onboardingTitleKeys: [LocalizedStringKey] = [
     "title_onboarding_track",
     "title_onboarding_count",

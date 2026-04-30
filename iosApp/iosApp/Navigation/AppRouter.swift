@@ -173,7 +173,7 @@ struct AppRootView: View {
     }
 
     func handleDeepLink(url: URL) {
-        guard url.scheme == "knitnote",
+        guard url.scheme == "skeinly",
               url.host == "share",
               let token = url.pathComponents.dropFirst().first,
               isValidShareToken(token) else {

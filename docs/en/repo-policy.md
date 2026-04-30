@@ -2,7 +2,7 @@
 
 > 翻訳: [docs/ja/repo-policy.md](../ja/repo-policy.md)
 
-This document describes the branch protection rules and contribution policy for the `knit-note` repository.
+This document describes the branch protection rules and contribution policy for the `skeinly` repository.
 
 ## Quick reference
 
@@ -16,7 +16,7 @@ This document describes the branch protection rules and contribution policy for 
 | Required CI status checks | `Shared Module (Lint + Test + Coverage + Build)`, `Android (Build + Test)`, `iOS (Build + Test)`, `Android E2E (Maestro)`, `iOS E2E (Maestro)`, `CodeQL Analysis (swift, macos-latest, manual)` |
 | Bypass actor | Repository Admin role (Owner only on a personal account) |
 
-The active ruleset is `main-strict` (id `15581036`). Configuration: <https://github.com/b150005/knit-note/rules/15581036>.
+The active ruleset is `main-strict` (id `15581036`). Configuration: <https://github.com/b150005/skeinly/rules/15581036>.
 
 ## Apple App Store SDK requirements
 
@@ -145,9 +145,9 @@ This goes through the full PR workflow — useful for changes that benefit from 
 
 ### As an external contributor (fork PR)
 
-1. Fork `b150005/knit-note` to your own account.
+1. Fork `b150005/skeinly` to your own account.
 2. Push your changes to a branch on your fork.
-3. Open a PR against `b150005/knit-note`'s `main` branch.
+3. Open a PR against `b150005/skeinly`'s `main` branch.
 4. Wait for CI to pass.
 5. The Owner reviews, approves, and merges.
 
@@ -165,19 +165,19 @@ The `update` rule applies to everyone, but the Admin role bypasses it. This mean
 
 ```bash
 # View the active ruleset
-gh api repos/b150005/knit-note/rulesets/15581036 | jq
+gh api repos/b150005/skeinly/rulesets/15581036 | jq
 
 # List all rulesets on the repository
-gh api repos/b150005/knit-note/rulesets | jq '.[] | {id, name, enforcement}'
+gh api repos/b150005/skeinly/rulesets | jq '.[] | {id, name, enforcement}'
 
 # Disable temporarily (e.g., for a major migration)
-gh api -X PUT repos/b150005/knit-note/rulesets/15581036 -f enforcement=disabled
+gh api -X PUT repos/b150005/skeinly/rulesets/15581036 -f enforcement=disabled
 
 # Re-enable
-gh api -X PUT repos/b150005/knit-note/rulesets/15581036 -f enforcement=active
+gh api -X PUT repos/b150005/skeinly/rulesets/15581036 -f enforcement=active
 
 # Delete entirely
-gh api -X DELETE repos/b150005/knit-note/rulesets/15581036
+gh api -X DELETE repos/b150005/skeinly/rulesets/15581036
 ```
 
 ## Security posture (CI runners)
@@ -203,13 +203,13 @@ The security hardening applied during the self-hosted experiment is retained bec
 
 ### Historical: self-hosted runner experiment (2026-04-27)
 
-For ~6 hours during Phase 39.0.1 prep, this repository ran CI on a self-hosted runner installed at `/Users/b150005/Development/Tools/actions-runner-knitnote/` on the maintainer's Mac. The experiment was reverted the same day. Two reasons:
+For ~6 hours during Phase 39.0.1 prep, this repository ran CI on a self-hosted runner installed at `/Users/b150005/Development/Tools/actions-runner-skeinly/` on the maintainer's Mac. The experiment was reverted the same day. Two reasons:
 
 1. **Inherent residual security risk on a public repo**. Even after closing CRITICAL findings (fork PR approval gate, third-party action SHA pinning), the residual HIGH findings — persistent workspace cross-run poisoning, runner runs as admin-group user with full Keychain access, shared Gradle cache between CI and local development — could not be closed without runner isolation (Lume VM, container, or dedicated machine). Shipping closed-beta tester invites with that residual risk was not comfortable.
 
 2. **Host-PC operational overhead**. The host-runner setup kept surfacing new state-persistence problems that GitHub-hosted ephemeral runners structurally do not have:
    - Android E2E hit `INSTALL_FAILED_UPDATE_INCOMPATIBLE` because the host AVD carried a dev install of the app signed with the maintainer's local debug keystore (commit `7a9101b` patched with `adb uninstall` before `adb install`).
-   - iOS E2E `xcrun simctl install` hung for 42 minutes before the 45-min job timeout killed it, because the host's iPhone 17 Pro Simulator carried a dev install of knit-note.
+   - iOS E2E `xcrun simctl install` hung for 42 minutes before the 45-min job timeout killed it, because the host's iPhone 17 Pro Simulator carried a dev install of skeinly.
    - CI `:shared:build` step hit `Gradle build daemon stopped: JVM GC thrashing` even with `GRADLE_OPTS=-Xmx6g` (commit `24194b9`).
 
    Each fix accreted workflow-YAML complexity, and the failure modes were inherent to having a non-ephemeral runner that shared resources with ongoing local development.

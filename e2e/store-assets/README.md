@@ -14,7 +14,7 @@ Maestro flows for capturing App Store / Play Store screenshots.
 ### Android
 ```bash
 # Build and install the app first
-cd /path/to/knit-note
+cd /path/to/skeinly
 ./gradlew :androidApp:installDebug
 
 # Capture screenshots

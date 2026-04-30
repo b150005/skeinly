@@ -4,7 +4,7 @@
 
 **日付:** 2026-04-18
 **レビュアー:** Knitter エージェント（[`.claude/agents/knitter.md`](../../../.claude/agents/knitter.md) 参照）
-**レビュー対象:** [`shared/src/commonMain/kotlin/io/github/b150005/knitnote/domain/symbol/catalog/CrochetSymbols.kt`](../../../shared/src/commonMain/kotlin/io/github/b150005/knitnote/domain/symbol/catalog/CrochetSymbols.kt) — 計 28 グリフ。
+**レビュー対象:** [`shared/src/commonMain/kotlin/io/github/b150005/skeinly/domain/symbol/catalog/CrochetSymbols.kt`](../../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/domain/symbol/catalog/CrochetSymbols.kt) — 計 28 グリフ。
 **参考資料:** JIS L 0201-1995 表 2（かぎ針編目）、CYC クロシェ表、日本ヴォーグ社／文化出版局 国内出版社規約。
 
 Phase 30.2-fix の同系レビューで、対象は Phase 30.3 で追加された 3 グリフに絞る。[`phase-30.2.md §4`](./phase-30.2.md) で Knitter が指摘した商業 JP パターン網羅ギャップを埋めるもので、追加後は `jis.crochet.*` が国内商業クロシェパターンの約 90% を覆う。これは「Phase 32（チャートエディタ MVP）が国内編み手に違和感のないカタログで出荷できる」ための最低ラインとして Knitter が設定した閾値。

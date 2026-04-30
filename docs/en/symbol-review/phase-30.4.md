@@ -3,7 +3,7 @@
 **Date:** 2026-04-21
 **Reviewer:** Knitter agent (see [`.claude/agents/knitter.md`](../../../.claude/agents/knitter.md))
 **Authority:** [ADR-009 §8 — `picot-N` resolution](../adr/009-parametric-symbols.md) — picots ship as a discrete family, not parametric.
-**Source under review:** [`shared/src/commonMain/kotlin/io/github/b150005/knitnote/domain/symbol/catalog/CrochetSymbols.kt`](../../../shared/src/commonMain/kotlin/io/github/b150005/knitnote/domain/symbol/catalog/CrochetSymbols.kt) — currently 28 glyphs; Phase 30.4 lands 7 additions.
+**Source under review:** [`shared/src/commonMain/kotlin/io/github/b150005/skeinly/domain/symbol/catalog/CrochetSymbols.kt`](../../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/domain/symbol/catalog/CrochetSymbols.kt) — currently 28 glyphs; Phase 30.4 lands 7 additions.
 **References:** JIS L 0201-1995 Table 2 (かぎ針編目), CYC crochet chart, Nihon Vogue / Bunka / Ondori JP publisher conventions.
 
 This is a **pre-implementation** advisory. It drafts canonical geometry for the seven glyphs queued after Phase 30.3 per [`phase-30.3.md §4`](./phase-30.3.md#4-coverage-assessment), resolves the picot-N family contract against ADR-009 §8, and folds in the one deferred cosmetic tweak (`hdc-cluster-3` stem spacing).

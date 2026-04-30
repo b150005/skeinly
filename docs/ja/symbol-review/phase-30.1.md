@@ -2,7 +2,7 @@
 
 **日付:** 2026-04-18
 **レビュアー:** Knitter agent（[`.claude/agents/knitter.md`](../../../.claude/agents/knitter.md) 参照）
-**レビュー対象:** [`shared/src/commonMain/kotlin/io/github/b150005/knitnote/domain/symbol/catalog/KnitSymbols.kt`](../../../shared/src/commonMain/kotlin/io/github/b150005/knitnote/domain/symbol/catalog/KnitSymbols.kt) — 35 glyph、単位正方形 `viewBox 0 0 1 1`（y-down）。
+**レビュー対象:** [`shared/src/commonMain/kotlin/io/github/b150005/skeinly/domain/symbol/catalog/KnitSymbols.kt`](../../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/domain/symbol/catalog/KnitSymbols.kt) — 35 glyph、単位正方形 `viewBox 0 0 1 1`（y-down）。
 **ビューア:** Phase 31 Compose `ChartViewerScreen` + SwiftUI `StructuredChartViewerScreen` + Phase 30.1 `SymbolGalleryScreen`（記号辞書 UI）。
 
 英語版（Source of truth）: [docs/en/symbol-review/phase-30.1.md](../../en/symbol-review/phase-30.1.md)

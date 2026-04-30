@@ -5,7 +5,7 @@
 **日付:** 2026-04-21
 **レビュアー:** Knitter エージェント（[`.claude/agents/knitter.md`](../../../.claude/agents/knitter.md) 参照）
 **典拠:** [ADR-009 §8 — `picot-N` の取り扱い](../adr/009-parametric-symbols.md) — ピコットは離散ファミリとして出荷、パラメトリックにはしない。
-**レビュー対象:** [`shared/src/commonMain/kotlin/io/github/b150005/knitnote/domain/symbol/catalog/CrochetSymbols.kt`](../../../shared/src/commonMain/kotlin/io/github/b150005/knitnote/domain/symbol/catalog/CrochetSymbols.kt) — 現行 28 グリフ、Phase 30.4 で 7 追加。
+**レビュー対象:** [`shared/src/commonMain/kotlin/io/github/b150005/skeinly/domain/symbol/catalog/CrochetSymbols.kt`](../../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/domain/symbol/catalog/CrochetSymbols.kt) — 現行 28 グリフ、Phase 30.4 で 7 追加。
 **参考資料:** JIS L 0201-1995 表 2（かぎ針編目）、CYC クロシェ表、日本ヴォーグ社／文化出版局／オンドリ社 国内出版社規約。
 
 本文書は**実装前助言**。Phase 30.3 以降 [`phase-30.3.md §4`](./phase-30.3.md) で繰り延べた 7 グリフに対して正規ジオメトリを起案し、ADR-009 §8 に照らして picot-N ファミリ契約を確定させ、30.3 に持ち越された 1 件のジオメトリ微調整（`hdc-cluster-3` ステム間隔）も同時に反映する。

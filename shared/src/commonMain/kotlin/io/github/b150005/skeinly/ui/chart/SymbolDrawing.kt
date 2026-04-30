@@ -1,0 +1,108 @@
+package io.github.b150005.skeinly.ui.chart
+
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.drawscope.Stroke
+import io.github.b150005.skeinly.domain.chart.CellBounds
+import io.github.b150005.skeinly.domain.chart.SymbolRenderTransform
+import io.github.b150005.skeinly.domain.model.ChartCell
+import io.github.b150005.skeinly.domain.model.ChartExtents
+import io.github.b150005.skeinly.domain.symbol.PathCommand
+import io.github.b150005.skeinly.domain.symbol.SvgPathParser
+import io.github.b150005.skeinly.domain.symbol.SymbolDefinition
+
+/**
+ * Render the SVG path of [def] inside [bounds], applying axis-aligned [rotation]
+ * around the cell center. Coordinate math is delegated to
+ * [SymbolRenderTransform] so the same logic is shared with the iOS renderer.
+ */
+fun DrawScope.drawSymbolPath(
+    def: SymbolDefinition,
+    bounds: Rect,
+    rotation: Int = 0,
+    color: Color = Color.Black,
+    strokeWidthPx: Float = 2f,
+    parsedPathCache: MutableMap<String, List<PathCommand>>? = null,
+) {
+    if (bounds.width <= 0f || bounds.height <= 0f) return
+    val cellBounds =
+        CellBounds(
+            left = bounds.left.toDouble(),
+            top = bounds.top.toDouble(),
+            right = bounds.right.toDouble(),
+            bottom = bounds.bottom.toDouble(),
+        )
+    val commands =
+        parsedPathCache?.getOrPut(def.id) { SvgPathParser.parse(def.pathData) }
+            ?: SvgPathParser.parse(def.pathData)
+    val path = Path()
+    commands.forEach { raw ->
+        when (val cmd = SymbolRenderTransform.mapCommand(raw, cellBounds, rotation)) {
+            is PathCommand.MoveTo -> path.moveTo(cmd.x.toFloat(), cmd.y.toFloat())
+            is PathCommand.LineTo -> path.lineTo(cmd.x.toFloat(), cmd.y.toFloat())
+            is PathCommand.CurveTo ->
+                path.cubicTo(
+                    cmd.c1x.toFloat(),
+                    cmd.c1y.toFloat(),
+                    cmd.c2x.toFloat(),
+                    cmd.c2y.toFloat(),
+                    cmd.x.toFloat(),
+                    cmd.y.toFloat(),
+                )
+            is PathCommand.QuadTo ->
+                path.quadraticTo(
+                    cmd.c1x.toFloat(),
+                    cmd.c1y.toFloat(),
+                    cmd.x.toFloat(),
+                    cmd.y.toFloat(),
+                )
+            PathCommand.ClosePath -> path.close()
+        }
+    }
+    // Fill-vs-stroke is a per-symbol choice expressed by SymbolDefinition.fill.
+    // JIS / publisher conventions use solid fills for glyphs like sl-st (filled
+    // dot) and bobble variants; the rest stroke their outline. Phase 30.2-fix.
+    drawPath(
+        path = path,
+        color = color,
+        style = if (def.fill) Fill else Stroke(width = strokeWidthPx, cap = StrokeCap.Round),
+    )
+}
+
+/** Draw a faint background tile to mark the cell boundary while inspecting a chart. */
+fun DrawScope.drawCellBackground(
+    bounds: Rect,
+    color: Color,
+) {
+    drawRect(
+        color = color,
+        topLeft = bounds.topLeft,
+        size = bounds.size,
+    )
+}
+
+/**
+ * Screen-space rect for a [ChartCell] placed inside [rect], given the laid-out
+ * cell size and origin. Chart coordinates have y-up; the returned [Rect] is in
+ * the viewer/editor's y-down screen space after the flip.
+ */
+fun cellScreenRect(
+    cell: ChartCell,
+    rect: ChartExtents.Rect,
+    gridHeight: Int,
+    cellSize: Float,
+    originX: Float,
+    originY: Float,
+): Rect {
+    val gx = cell.x - rect.minX
+    val gy = cell.y - rect.minY
+    val left = originX + gx * cellSize
+    val bottom = originY + (gridHeight - gy) * cellSize
+    val top = bottom - cell.height * cellSize
+    val right = left + cell.width * cellSize
+    return Rect(left = left, top = top, right = right, bottom = bottom)
+}

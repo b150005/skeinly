@@ -22,11 +22,11 @@ val localProps =
     }
 
 android {
-    namespace = "io.github.b150005.knitnote"
+    namespace = "io.github.b150005.skeinly"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "io.github.b150005.knitnote"
+        applicationId = "io.github.b150005.skeinly"
         minSdk = 26
         targetSdk = 36
         versionCode = versionProps.getProperty("VERSION_CODE", "1").toInt()
@@ -173,7 +173,7 @@ val copyComposeResourcesForAndroid =
             rootProject.layout.projectDirectory
                 .dir("shared/build/generated/compose/resourceGenerator/preparedResources/commonMain/composeResources"),
         )
-        resourcePackage.set("io.github.b150005.knitnote.generated.resources")
+        resourcePackage.set("io.github.b150005.skeinly.generated.resources")
         outputDir.set(layout.buildDirectory.dir("generated/composeResourcesForAndroid"))
     }
 
