@@ -15,8 +15,12 @@ tags:
 
 - clearState: io.github.b150005.skeinly
 
+# `-local_only_mode true` bypasses AppRouter's auth gate so the final
+# `assertVisible: projectListScreen` lands without a real login.
 - launchApp:
     appId: io.github.b150005.skeinly
+    arguments:
+      "-local_only_mode": "true"
 
 - assertVisible:
     id: "onboardingPage1"
