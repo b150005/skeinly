@@ -130,10 +130,10 @@ class SharedContentViewModelTest {
 
             assertFalse(state.isLoading)
             assertNotNull(state.pattern)
-            assertEquals("Cable Knit Sweater", state.pattern?.title)
+            assertEquals("Cable Knit Sweater", state.pattern.title)
             assertEquals(1, state.projectCount)
             assertNotNull(state.share)
-            assertEquals(SharePermission.FORK, state.share?.permission)
+            assertEquals(SharePermission.FORK, state.share.permission)
         }
 
     @Test
@@ -206,9 +206,9 @@ class SharedContentViewModelTest {
 
             assertFalse(state.isLoading)
             assertNotNull(state.pattern)
-            assertEquals("Cable Knit Sweater", state.pattern?.title)
+            assertEquals("Cable Knit Sweater", state.pattern.title)
             assertNotNull(state.share)
-            assertEquals("direct-share-1", state.share?.id)
+            assertEquals("direct-share-1", state.share.id)
         }
 
     @Test

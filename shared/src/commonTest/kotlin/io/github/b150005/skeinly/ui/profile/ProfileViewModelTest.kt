@@ -69,7 +69,7 @@ class ProfileViewModelTest {
             val state = viewModel.state.value
             assertFalse(state.isLoading)
             assertNotNull(state.user)
-            assertEquals("Test User", state.user?.displayName)
+            assertEquals("Test User", state.user.displayName)
         }
 
     @Test

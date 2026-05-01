@@ -219,8 +219,7 @@ struct DiscoveryScreen: View {
             // circuit the function, leaving `path` untouched on cancel.
             forkTask?.cancel()
             forkTask = Task { @MainActor in
-                guard let forkResult = result as? DiscoveryForkResult else { return }
-                let key = forkResult.chartCloneFailed
+                let key = result.chartCloneFailed
                     ? "message_forked_chart_failed"
                     : "message_forked_successfully"
                 forkResultToast = NSLocalizedString(key, comment: "")
@@ -233,7 +232,7 @@ struct DiscoveryScreen: View {
                 }
                 forkResultToast = nil
                 path = NavigationPath()
-                path.append(Route.projectDetail(projectId: forkResult.projectId))
+                path.append(Route.projectDetail(projectId: result.projectId))
             }
         }
     }

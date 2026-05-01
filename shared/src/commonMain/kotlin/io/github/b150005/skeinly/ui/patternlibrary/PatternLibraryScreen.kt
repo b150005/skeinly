@@ -420,6 +420,11 @@ private fun SwipeToDismissPatternCard(
     // provides a non-drag delete path so motor-impaired users + screen reader
     // users can reach the delete affordance via single-pointer-no-drag input.
     var contextMenuExpanded by remember { mutableStateOf(false) }
+
+    // See ProjectListScreen.kt for the rationale on holding the deprecated
+    // `confirmValueChange` veto pattern instead of the snapshotFlow+reset()
+    // migration — UX-impacting change pending the design system audit.
+    @Suppress("DEPRECATION")
     val dismissState =
         rememberSwipeToDismissBoxState(
             confirmValueChange = { value ->

@@ -141,8 +141,8 @@ class ProjectDetailViewModelTest {
                 val state = awaitItem()
                 assertFalse(state.isLoading)
                 assertNotNull(state.project)
-                assertEquals("Test Scarf", state.project?.title)
-                assertEquals(0, state.project?.currentRow)
+                assertEquals("Test Scarf", state.project.title)
+                assertEquals(0, state.project.currentRow)
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -445,7 +445,7 @@ class ProjectDetailViewModelTest {
                 viewModel.onEvent(ProjectDetailEvent.ShareProject)
                 val updated = awaitItem()
                 assertNotNull(updated.shareLink)
-                assertNotNull(updated.shareLink?.patternId)
+                assertNotNull(updated.shareLink.patternId)
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -1133,9 +1133,9 @@ class ProjectDetailViewModelTest {
                 while (state.parentPattern == null) {
                     state = awaitItem()
                 }
-                assertEquals("source-pat", state.parentPattern?.id)
-                assertEquals("Cable Beanie", state.parentPattern?.title)
-                assertEquals(Visibility.PUBLIC, state.parentPattern?.visibility)
+                assertEquals("source-pat", state.parentPattern.id)
+                assertEquals("Cable Beanie", state.parentPattern.title)
+                assertEquals(Visibility.PUBLIC, state.parentPattern.visibility)
                 assertEquals("Alice", state.parentPatternAuthor?.displayName)
                 cancelAndIgnoreRemainingEvents()
             }
@@ -1164,7 +1164,7 @@ class ProjectDetailViewModelTest {
                 while (state.pattern?.parentPatternId != "deleted-pat") {
                     state = awaitItem()
                 }
-                assertEquals("deleted-pat", state.pattern?.parentPatternId)
+                assertEquals("deleted-pat", state.pattern.parentPatternId)
                 assertNull(state.parentPattern)
                 assertNull(state.parentPatternAuthor)
                 cancelAndIgnoreRemainingEvents()
@@ -1201,7 +1201,7 @@ class ProjectDetailViewModelTest {
                 while (state.parentPattern == null) {
                     state = awaitItem()
                 }
-                assertEquals("source-pat", state.parentPattern?.id)
+                assertEquals("source-pat", state.parentPattern.id)
                 assertNull(state.parentPatternAuthor)
                 cancelAndIgnoreRemainingEvents()
             }

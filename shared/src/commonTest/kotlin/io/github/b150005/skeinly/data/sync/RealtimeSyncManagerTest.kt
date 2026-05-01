@@ -28,6 +28,7 @@ import kotlin.time.Instant
  * Part 1: Tests the data layer contracts that RealtimeSyncManager depends on.
  * Part 2 (Phase 13): Tests the subscription lifecycle via FakeRealtimeChannelProvider.
  */
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class RealtimeSyncManagerTest {
     private lateinit var localProject: LocalProjectDataSource
     private lateinit var localProgress: LocalProgressDataSource

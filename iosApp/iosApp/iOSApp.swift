@@ -87,13 +87,12 @@ struct iOSApp: App {
         let prefs = KoinHelperKt.getAnalyticsPreferences()
         let wrapper = KoinHelperKt.wrapAnalyticsOptInFlow(flow: prefs.analyticsOptIn)
         analyticsOptInCloseable = wrapper.collect { value in
-            // Generic FlowWrapper<Boolean> bridges to KotlinBoolean on Swift
-            // side — unwrap explicitly. False on accidental nil to keep
-            // analytics off (privacy default).
-            let optIn = (value as? KotlinBoolean)?.boolValue ?? false
+            // FlowWrapper<Boolean> bridges to a non-optional KotlinBoolean
+            // on the Swift side — read .boolValue directly.
+            let optIn = value.boolValue
             switch (optIn, posthogInitialized) {
             case (true, false):
-                let config = PostHogConfig(apiKey: apiKey, host: host)
+                let config = PostHogConfig(projectToken: apiKey, host: host)
                 // Privacy-respecting defaults parallel to the Android side:
                 // no screen-view ping, no app-lifecycle pings, no autocapture
                 // of touch events, no session replay, no automatic feature-
@@ -138,8 +137,7 @@ struct iOSApp: App {
         analyticsEventsCloseable?.close()
         let tracker = KoinHelperKt.getAnalyticsTracker()
         let wrapper = KoinHelperKt.wrapAnalyticsEventsFlow(flow: tracker.events)
-        analyticsEventsCloseable = wrapper.collect { value in
-            guard let event = value as? AnalyticsEvent else { return }
+        analyticsEventsCloseable = wrapper.collect { event in
             if posthogInitialized {
                 // Phase F.4 — Kotlin `Map<String, Any>?` bridges to Swift
                 // `[String : Any]?`. PostHog-iOS's `capture(_:properties:)`
@@ -149,8 +147,7 @@ struct iOSApp: App {
                 // cardinality discipline is enforced structurally — see
                 // `AnalyticsEvent` KDoc on the Kotlin side for the
                 // variant catalog and contract.
-                let props = event.properties as? [String: Any]
-                PostHogSDK.shared.capture(event.name, properties: props)
+                PostHogSDK.shared.capture(event.name, properties: event.properties)
             }
         }
     }

@@ -46,6 +46,14 @@ val generateSupabaseConfig by tasks.registering {
 kotlin {
     applyDefaultHierarchyTemplate()
 
+    compilerOptions {
+        // Suppress KT-61573 Beta warning for expect/actual classes — the
+        // feature is stable in practice and our KMP architecture relies on
+        // expect/actual class hierarchies (DriverFactory, ConnectivityMonitor,
+        // SupabaseConfig, ImagePicker). Tracked upstream for stabilization.
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
     android {
         namespace = "io.github.b150005.skeinly.shared"
         compileSdk = 36
