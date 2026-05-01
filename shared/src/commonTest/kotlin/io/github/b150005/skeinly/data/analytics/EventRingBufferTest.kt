@@ -179,6 +179,42 @@ class EventRingBufferTest {
         }
 
     @Test
+    fun `clear empties the buffer`() =
+        runUnconfined {
+            val tracker = RecordingAnalyticsTracker()
+            val buffer = EventRingBuffer(tracker = tracker)
+            buffer.start(backgroundScope)
+
+            tracker.track(AnalyticsEvent.ProjectCreated)
+            tracker.track(AnalyticsEvent.RowIncremented)
+            tracker.track(AnalyticsEvent.PullRequestCommented)
+            assertEquals(3, buffer.snapshot().size)
+
+            buffer.clear()
+            assertEquals(emptyList(), buffer.snapshot())
+        }
+
+    @Test
+    fun `clear is idempotent on an empty buffer`() =
+        runUnconfined {
+            val tracker = RecordingAnalyticsTracker()
+            val buffer = EventRingBuffer(tracker = tracker)
+            buffer.start(backgroundScope)
+
+            // Clear before any event lands — must not throw or leave the
+            // buffer in a broken state. Subsequent emissions still
+            // accumulate as normal.
+            buffer.clear()
+            assertEquals(emptyList(), buffer.snapshot())
+
+            buffer.clear()
+            assertEquals(emptyList(), buffer.snapshot())
+
+            tracker.track(AnalyticsEvent.RowIncremented)
+            assertEquals(listOf(AnalyticsEvent.RowIncremented), buffer.snapshot())
+        }
+
+    @Test
     fun `does not record events tracked before start is called`() =
         runUnconfined {
             val tracker = RecordingAnalyticsTracker()

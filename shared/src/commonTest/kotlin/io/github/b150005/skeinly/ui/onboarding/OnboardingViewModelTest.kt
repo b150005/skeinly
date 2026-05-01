@@ -3,11 +3,15 @@ package io.github.b150005.skeinly.ui.onboarding
 import app.cash.turbine.test
 import io.github.b150005.skeinly.data.analytics.AnalyticsEvent
 import io.github.b150005.skeinly.data.analytics.RecordingAnalyticsTracker
+import io.github.b150005.skeinly.data.preferences.AnalyticsPreferences
 import io.github.b150005.skeinly.data.preferences.FakeOnboardingPreferences
 import io.github.b150005.skeinly.domain.usecase.CompleteOnboardingUseCase
 import io.github.b150005.skeinly.domain.usecase.GetOnboardingCompletedUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -36,8 +40,17 @@ class OnboardingViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel(analyticsTracker: RecordingAnalyticsTracker? = null) =
-        OnboardingViewModel(getOnboardingCompleted, completeOnboarding, analyticsTracker)
+    private fun createViewModel(
+        analyticsTracker: RecordingAnalyticsTracker? = null,
+        analyticsPreferences: AnalyticsPreferences? = null,
+        includeBetaConsent: Boolean = false,
+    ) = OnboardingViewModel(
+        getOnboardingCompleted = getOnboardingCompleted,
+        completeOnboarding = completeOnboarding,
+        analyticsTracker = analyticsTracker,
+        analyticsPreferences = analyticsPreferences,
+        includeBetaConsent = includeBetaConsent,
+    )
 
     @Test
     fun `initial state has currentPage 0 and isCompleted false`() =
@@ -220,4 +233,93 @@ class OnboardingViewModelTest {
                 "no event should fire when transitioning from completed to completed",
             )
         }
+
+    // Phase 39.4 (ADR-015 §6) — beta-gated 4th page coverage.
+
+    @Test
+    fun `pages list has 3 items when includeBetaConsent is false`() =
+        runTest {
+            val viewModel = createViewModel(includeBetaConsent = false)
+            viewModel.state.test {
+                val state = awaitItem()
+                assertEquals(3, state.pages.size)
+                // No diagnostic-data sentinel must surface in production.
+                assertEquals(
+                    listOf("home", "add_circle", "favorite"),
+                    state.pages.map { it.iconName },
+                )
+            }
+        }
+
+    @Test
+    fun `pages list has 4 items when includeBetaConsent is true`() =
+        runTest {
+            val viewModel =
+                createViewModel(
+                    analyticsPreferences = FakeAnalyticsPreferencesForOnboarding(),
+                    includeBetaConsent = true,
+                )
+            viewModel.state.test {
+                val state = awaitItem()
+                assertEquals(4, state.pages.size)
+                assertEquals(
+                    "diagnostic_data",
+                    state.pages.last().iconName,
+                    "consent page must be the LAST page so the user sees it after the value props",
+                )
+            }
+        }
+
+    @Test
+    fun `SetAnalyticsOptIn writes through to AnalyticsPreferences`() =
+        runTest {
+            val prefs = FakeAnalyticsPreferencesForOnboarding()
+            val viewModel = createViewModel(analyticsPreferences = prefs, includeBetaConsent = true)
+            viewModel.onEvent(OnboardingEvent.SetAnalyticsOptIn(true))
+            assertTrue(prefs.analyticsOptIn.value, "preference must persist immediately on toggle")
+            // State mirrors the preference via the init-block observer.
+            viewModel.state.test {
+                assertTrue(awaitItem().analyticsOptIn)
+            }
+            viewModel.onEvent(OnboardingEvent.SetAnalyticsOptIn(false))
+            assertFalse(prefs.analyticsOptIn.value)
+        }
+
+    @Test
+    fun `state reflects persisted analyticsOptIn at init`() =
+        runTest {
+            val prefs = FakeAnalyticsPreferencesForOnboarding()
+            prefs.setAnalyticsOptIn(true)
+            val viewModel = createViewModel(analyticsPreferences = prefs, includeBetaConsent = true)
+            viewModel.state.test {
+                assertTrue(
+                    awaitItem().analyticsOptIn,
+                    "init must mirror the persisted preference value rather than always default OFF",
+                )
+            }
+        }
+
+    @Test
+    fun `SetAnalyticsOptIn no-ops when AnalyticsPreferences is null`() =
+        runTest {
+            // includeBetaConsent = false (production) + analyticsPreferences = null.
+            // The event must not throw — the screen will never dispatch
+            // it under this config, but defensive against a future
+            // refactor that fires it from an unrelated code path.
+            val viewModel = createViewModel(includeBetaConsent = false)
+            viewModel.onEvent(OnboardingEvent.SetAnalyticsOptIn(true))
+            // No exception, no state change.
+            viewModel.state.test {
+                assertFalse(awaitItem().analyticsOptIn)
+            }
+        }
+}
+
+private class FakeAnalyticsPreferencesForOnboarding : AnalyticsPreferences {
+    private val flow = MutableStateFlow(false)
+    override val analyticsOptIn: StateFlow<Boolean> = flow.asStateFlow()
+
+    override fun setAnalyticsOptIn(value: Boolean) {
+        flow.value = value
+    }
 }

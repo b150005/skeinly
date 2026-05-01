@@ -1,6 +1,9 @@
 package io.github.b150005.skeinly.ui.settings
 
 import app.cash.turbine.test
+import io.github.b150005.skeinly.data.analytics.AnalyticsEvent
+import io.github.b150005.skeinly.data.analytics.EventRingBuffer
+import io.github.b150005.skeinly.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.skeinly.data.preferences.AnalyticsPreferences
 import io.github.b150005.skeinly.domain.model.AuthState
 import io.github.b150005.skeinly.domain.usecase.CloseRealtimeChannelsUseCase
@@ -46,7 +49,7 @@ class SettingsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel(): SettingsViewModel =
+    private fun createViewModel(eventRingBuffer: EventRingBuffer? = null): SettingsViewModel =
         SettingsViewModel(
             observeAuthState = ObserveAuthStateUseCase(authRepo),
             signOut = SignOutUseCase(authRepo, CloseRealtimeChannelsUseCase(null, null, null)),
@@ -54,6 +57,7 @@ class SettingsViewModelTest {
             updatePassword = UpdatePasswordUseCase(authRepo),
             updateEmail = UpdateEmailUseCase(authRepo),
             analyticsPreferences = analyticsPrefs,
+            eventRingBuffer = eventRingBuffer,
         )
 
     @Test
@@ -212,6 +216,55 @@ class SettingsViewModelTest {
             viewModel.state.test {
                 assertFalse(awaitItem().analyticsOptIn)
             }
+        }
+
+    /**
+     * Phase 39.4 (ADR-015 §6): toggling diagnostic-data sharing OFF
+     * MUST drop any event trail accumulated under the prior opt-in
+     * window, otherwise a follow-up bug report would attach events
+     * captured before the user revoked consent.
+     *
+     * Uses [UnconfinedTestDispatcher] so the buffer collector attaches
+     * synchronously to the SharedFlow before the test calls
+     * `tracker.track()` — see [EventRingBufferTest.runUnconfined] for
+     * the same pattern.
+     */
+    @Test
+    fun `SetAnalyticsOptIn false clears the event ring buffer`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val tracker = RecordingAnalyticsTracker()
+            val buffer = EventRingBuffer(tracker = tracker)
+            buffer.start(backgroundScope)
+            tracker.track(AnalyticsEvent.ProjectCreated)
+            tracker.track(AnalyticsEvent.RowIncremented)
+            assertEquals(2, buffer.snapshot().size)
+
+            // Wire the buffer into the ViewModel and toggle off.
+            val viewModel = createViewModel(eventRingBuffer = buffer)
+            viewModel.onEvent(SettingsEvent.SetAnalyticsOptIn(false))
+
+            // Buffer drained on toggle-off.
+            assertEquals(emptyList(), buffer.snapshot())
+            // Preference also flipped through to the persisted store.
+            assertFalse(analyticsPrefs.analyticsOptIn.value)
+        }
+
+    @Test
+    fun `SetAnalyticsOptIn true does NOT clear the event ring buffer`() =
+        runTest(UnconfinedTestDispatcher()) {
+            // Toggling ON must NOT clear the buffer — there's nothing
+            // sensitive to drop, and clearing would create an unintended
+            // gap in the event trail of a user who toggles ON-OFF-ON.
+            val tracker = RecordingAnalyticsTracker()
+            val buffer = EventRingBuffer(tracker = tracker)
+            buffer.start(backgroundScope)
+            tracker.track(AnalyticsEvent.ProjectCreated)
+            assertEquals(1, buffer.snapshot().size)
+
+            val viewModel = createViewModel(eventRingBuffer = buffer)
+            viewModel.onEvent(SettingsEvent.SetAnalyticsOptIn(true))
+
+            assertEquals(1, buffer.snapshot().size, "buffer must be untouched on toggle-on")
         }
 }
 

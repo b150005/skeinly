@@ -1225,6 +1225,23 @@
         }
       }
     },
+    "action_send_feedback": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send Feedback"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フィードバックを送信"
+          }
+        }
+      }
+    },
     "action_send_reset_link": {
       "extractionState": "manual",
       "localizations": {
@@ -1684,23 +1701,6 @@
         }
       }
     },
-    "body_analytics_explanation": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anonymous event counts help us understand which features you use. No personal data, no advertising IDs. You can change this any time."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "どの機能が使われているかを匿名のイベント数で把握するために使います。個人情報や広告 ID は収集しません。いつでも変更できます。"
-          }
-        }
-      }
-    },
     "body_delete_account_warning": {
       "extractionState": "manual",
       "localizations": {
@@ -1714,6 +1714,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "アカウントを削除すると、すべてのプロジェクト、進捗、共有コンテンツが完全に削除されます。この操作は取り消せません。"
+          }
+        }
+      }
+    },
+    "body_diagnostic_consent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beta builds can send anonymous diagnostic data to help us track down bugs. Default is off — you choose. You can change this any time in Settings."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ベータビルドでは、不具合の特定に役立てるため匿名の診断データを送信できます。初期設定はオフです。設定からいつでも変更できます。"
+          }
+        }
+      }
+    },
+    "body_diagnostic_data_explanation": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anonymous app version, OS, device model, screen names, and tapped action names. Never your patterns, projects, notes, photos, email, or display name. Toggle off any time; turning it off clears the bug-report event trail immediately."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "送信する内容：アプリのバージョン、OS、端末モデル、画面名、タップしたアクション名（いずれも匿名）。送信しない内容：パターン、プロジェクト、メモ、写真、メールアドレス、表示名。いつでもオフに切り替えられます。オフにするとバグレポートに添付される操作履歴も即座に消去されます。"
           }
         }
       }
@@ -1782,6 +1816,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "段数カウントと進捗記録で、すべての編み物プロジェクトを一か所に整理できます。"
+          }
+        }
+      }
+    },
+    "body_send_feedback_explanation": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens a pre-filled GitHub Issue in your browser. The bug report includes the last 10 actions you took (no PII)."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ブラウザで GitHub Issue を開き、内容を事前入力します。直近 10 件の操作履歴（個人情報なし）も添付されます。"
           }
         }
       }
@@ -3147,23 +3198,6 @@
         }
       }
     },
-    "label_allow_analytics": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allow usage analytics"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "使用状況の収集を許可"
-          }
-        }
-      }
-    },
     "label_auto_save": {
       "extractionState": "manual",
       "localizations": {
@@ -3194,6 +3228,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "アバター"
+          }
+        }
+      }
+    },
+    "label_beta_section": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beta"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ベータ"
           }
         }
       }
@@ -3450,6 +3501,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "詳細"
+          }
+        }
+      }
+    },
+    "label_diagnostic_data_sharing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share diagnostic data"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "診断データを送信する"
           }
         }
       }
@@ -4610,23 +4678,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "タイトル"
-          }
-        }
-      }
-    },
-    "label_privacy_section": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Privacy"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "プライバシー"
           }
         }
       }
@@ -6354,6 +6405,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "アカウント作成"
+          }
+        }
+      }
+    },
+    "title_diagnostic_consent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Help improve Skeinly"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skeinly の改善にご協力ください"
           }
         }
       }

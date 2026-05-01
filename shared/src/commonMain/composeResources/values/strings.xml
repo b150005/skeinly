@@ -73,10 +73,19 @@
     <!-- Profile — Avatar (Phase C) -->
     <string name="action_change_avatar">Change Avatar</string>
 
-    <!-- Settings — Privacy / Analytics (Phase F2) -->
-    <string name="label_privacy_section">Privacy</string>
-    <string name="label_allow_analytics">Allow usage analytics</string>
-    <string name="body_analytics_explanation">Anonymous event counts help us understand which features you use. No personal data, no advertising IDs. You can change this any time.</string>
+    <!-- Settings / Onboarding — Beta diagnostic data (Phase 39.4, ADR-015 §6).
+         Section is BETA-ONLY: gated on `BuildFlags.isBeta` so production
+         binaries don't surface it. Pre-39.4 keys (label_privacy_section /
+         label_allow_analytics / body_analytics_explanation) renamed to the
+         diagnostic-data variants for accuracy — what we collect is
+         diagnostic in beta, not "usage analytics" in general. -->
+    <string name="label_beta_section">Beta</string>
+    <string name="label_diagnostic_data_sharing">Share diagnostic data</string>
+    <string name="body_diagnostic_data_explanation">Anonymous app version, OS, device model, screen names, and tapped action names. Never your patterns, projects, notes, photos, email, or display name. Toggle off any time; turning it off clears the bug-report event trail immediately.</string>
+    <string name="title_diagnostic_consent">Help improve Skeinly</string>
+    <string name="body_diagnostic_consent">Beta builds can send anonymous diagnostic data to help us track down bugs. Default is off — you choose. You can change this any time in Settings.</string>
+    <string name="action_send_feedback">Send Feedback</string>
+    <string name="body_send_feedback_explanation">Opens a pre-filled GitHub Issue in your browser. The bug report includes the last 10 actions you took (no PII).</string>
 
     <string name="error_authentication_failed">Authentication failed</string>
     <string name="error_email_invalid">Invalid email address</string>
