@@ -32,17 +32,36 @@ jobs:
             runner: macos-latest
             build-mode: manual
     runs-on: ${{ matrix.runner }}
-    # java-kotlin: CodeQL Kotlin extractor fails to capture in-process Gradle
-    # build despite the standard --no-daemon + kotlin.daemon.enabled=false +
-    # kotlin.compiler.execution.strategy=in-process flags. The error surfaces
-    # as "CodeQL detected code written in Java/Kotlin but this run didn't
-    # build any of it" — root cause not yet diagnosed (under investigation
-    # since 2026-04-27, see CLAUDE.md "CI Known Limitations"). The job is
-    # marked continue-on-error so it does not block the workflow run; the
-    # required status checks intentionally exclude this matrix entry. The
-    # overlay-base database warning ("build-mode is set to manual instead
-    # of none") is benign — CodeQL falls back to full (non-incremental)
-    # analysis.
+    # java-kotlin: CodeQL Kotlin extractor fails to capture KMP Android Kotlin
+    # compilation. The error surfaces as "CodeQL detected code written in
+    # Java/Kotlin but this run didn't build any of it".
+    #
+    # 2026-05-01 root-cause update: the AGP 9 KMP plugin
+    # (`com.android.kotlin.multiplatform.library`, AGP 9.1.0 + Kotlin 2.3.20)
+    # implements `:shared:compileAndroidMain` as a lifecycle task with no
+    # direct kotlinc invocation — `./gradlew :shared:compileAndroidMain
+    # --dry-run` shows zero compile work. The traced build below was
+    # changed to `:shared:assembleAndroidMain :androidApp:assembleDebug`
+    # to force real Kotlin compilation through the entire dependency
+    # graph, giving the CodeQL extractor an actual kotlinc process to
+    # hook into. The Android-only `assembleAndroidMain` variant is used
+    # because the umbrella `:shared:assemble` would pull in iOS-native
+    # link tasks that the `ubuntu-latest` runner cannot satisfy. Whether
+    # this is sufficient to produce a non-empty CodeQL database is being
+    # verified in CI — the job remains continue-on-error: true until two
+    # consecutive green runs are observed, after which this flag and the
+    # exclusion from required status checks should be removed.
+    #
+    # Related upstream issues / discussions:
+    #   - github/codeql#20880          https://github.com/github/codeql/issues/20880
+    #   - community discussion #151626 https://github.com/orgs/community/discussions/151626
+    #   - JetBrains AGP 9 migration    https://blog.jetbrains.com/kotlin/2026/01/update-your-projects-for-agp9/
+    #   - Android KMP plugin docs      https://developer.android.com/kotlin/multiplatform/plugin
+    #   - CodeQL CLI 2.25.2 changelog  https://github.blog/changelog/2026-04-15-codeql-2-25-2-adds-kotlin-2-3-20-support-and-other-updates/
+    #
+    # The overlay-base database warning ("build-mode is set to manual
+    # instead of none") is benign — CodeQL falls back to full
+    # (non-incremental) analysis.
     continue-on-error: ${{ matrix.language == 'java-kotlin' }}
     steps:
       - name: Checkout
@@ -84,6 +103,13 @@ jobs:
           build-mode: ${{ matrix.build-mode }}
 
       # --- Traced builds ---
+      # See the 2026-05-01 root-cause update on the `continue-on-error`
+      # line above: `compileAndroidMain` is a lifecycle task under AGP 9
+      # KMP, so we run the Android-only assemble pipeline
+      # (`:shared:assembleAndroidMain` + `:androidApp:assembleDebug`) to
+      # force a real kotlinc invocation that the CodeQL extractor can
+      # hook, while avoiding iOS-native link tasks that the
+      # ubuntu-latest runner cannot satisfy.
       - name: Build (java-kotlin)
         if: matrix.language == 'java-kotlin'
         env:
@@ -92,8 +118,8 @@ jobs:
           ./gradlew --no-daemon
           -Pkotlin.daemon.enabled=false
           -Dkotlin.compiler.execution.strategy=in-process
-          :shared:compileAndroidMain
-          :androidApp:compileDebugKotlin
+          :shared:assembleAndroidMain
+          :androidApp:assembleDebug
 
       - name: Resolve iOS Simulator destination
         if: matrix.language == 'swift'
