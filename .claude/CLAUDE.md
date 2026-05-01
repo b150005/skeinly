@@ -131,20 +131,28 @@ Agents detect this project as **Kotlin Multiplatform** by finding:
    - Only then proceed to commit
 7. **Documentation**: The technical-writer updates docs and changelog
 8. **Release**: The devops-engineer manages deployment and release
-8.5. **Final pre-push re-verification (after ALL edits)**: Any edit made AFTER the invariant chain passed — including code-review fix-ups, ktlintFormat post-edits, single-line import reorders, default-arg additions, KDoc fixes — invalidates the prior `make ci-local` / individual-target runs. Before `git commit`, re-run the FULL invariant chain (`make ci-local && make verify-ios` from project root) regardless of how trivial the last edit looked. The invariant set is:
+8.5. **Final pre-push re-verification (after ALL edits)**: Any edit made AFTER the invariant chain passed — including code-review fix-ups, ktlintFormat post-edits, single-line import reorders, default-arg additions, KDoc fixes — invalidates the prior `make ci-local` run. Before `git commit`, re-run the FULL invariant chain (`make ci-local` from project root) regardless of how trivial the last edit looked. **`make ci-local` is the single canonical pre-push entry point** — earlier session-only `make verify-all` / `make verify-ios` aliases were folded back in on 2026-05-02 after they shipped a runtime gap (XCUITest assertion failures + Maestro flow regressions) for three consecutive CI failures.
+
+   `make ci-local` runs the following layered chain:
    - `:shared:ktlintCheck` (KMP shared module style)
    - `:androidApp:ktlintCheck` (Android-app module style — `MainActivity` and adjacent files)
    - `:shared:compileTestKotlinIosSimulatorArm64` (iOS simulator compile-test, catches Kotlin/Native test-name restrictions + commonTest type errors)
    - `:shared:testAndroidHostTest` (full shared test suite on JVM)
    - `:shared:koverVerify` (coverage gate)
    - `verifyI18nKeys` (CMP en/ja + iOS xcstrings parity)
-   - iOS `xcodebuild build` AND `xcodebuild build-for-testing` (both — the test build links a different target subset and catches `Core/Bridging/` regressions like Phase 39.3 `ScreenTracking.swift`)
+   - `make ios-build` (iOS app `xcodebuild build` with `generic/platform=iOS Simulator` — multi-arch arm64+x86_64; catches Swift compile/link errors the specific-sim test-build path won't hit)
+   - `make ios-test` (iOS XCUITest run — `xcodebuild test`, which internally does `build-for-testing` first, catches `Core/Bridging/` test-target compile regressions AND runtime XCUITest assertion failures like the Phase 39.4 4-page onboarding regression)
+   - `make e2e-android` (Android Maestro suite — `bash e2e/run-android.sh`; builds debug APK + verifies running emulator + installs + runs every flow under `e2e/flows/android/` excluding `requires-supabase`)
+   - `make e2e-ios` (iOS Maestro suite — `bash e2e/run-ios.sh`; same shape, excludes `skip-ios26` + `requires-supabase`)
+
+   **Time cost ~30-45 min**, requires booted Android emulator + iOS Simulator before invocation. The chain trades pre-push wall-clock for "no daylight between local green and CI green" — it reproduces every check CI runs. Treat `make ci-local` as the single source of truth for "is this safe to push".
 
    Ground rules:
    - Don't trust an `Edit` operation that "only changes one line" — single-line import reorders have caused CI failures (Phase 39.5 `kotlin.time.Instant` placement).
    - Don't trust that a compile-pass implies a lint-pass. ktlint and the compiler have orthogonal rules (Phase 39.5 `import-ordering` violation passed compile).
    - Don't trust that `xcodebuild build` (app target) implies test-target builds. The `iosAppTests` target deliberately excludes `Core/Bridging/` because it doesn't link `Shared.framework`; an iOS `Shared`-importing file misplaced under `Core/` will pass app build and fail test build (Phase 39.3 regression).
-   - When in doubt, run `make ci-local && make verify-ios` one more time after the last edit and before `git commit`. The cost of a clean cache hit is seconds; the cost of a CI red is a fix-forward commit + reviewer attention.
+   - **Don't trust that compile-pass implies test-pass.** XCUITest assertion regressions (e.g. Phase 39.4 onboarding adding a 4th page; the test still compiled because `XCTAssertTrue(getStartedButton.waitForExistence(timeout: 3))` is syntactically valid — only the runtime existence check failed) and Maestro flow-element regressions surface only at test execution. `make ci-local` runs both; do not skip either by invoking individual targets in lieu of the full chain.
+   - When in doubt, run `make ci-local` one more time after the last edit and before `git commit`. The cost of a clean cache hit is small (Gradle UP-TO-DATE + xcodebuild incremental) compared to the cost of a CI red and fix-forward commit + reviewer attention.
 
 9. **Commit, Push & CI Verification**: When the code review is APPROVED and all tests pass:
    - **Pre-commit CI check**: If any CI workflow file (`.github/workflows/`) was modified, reproduce its build/test commands locally before committing to catch task name mismatches, missing dependencies, or configuration errors early

@@ -15,7 +15,7 @@ IOS_SIM_DEST ?= platform=iOS Simulator,name=iPhone 16
         ios-build ios-test \
         e2e-android e2e-ios \
         lint format coverage i18n-verify \
-        ci-local verify-ios verify-all \
+        ci-local \
         verify-xcode \
         release-ipa-local \
         clean
@@ -95,7 +95,44 @@ coverage:  ## Generate Kover coverage XML and verify the 80% threshold.
 i18n-verify:  ## Verify i18n key parity across androidApp, shared composeResources, and iOS xcstrings.
 	./gradlew verifyI18nKeys
 
-ci-local:  ## Reproduce the CI pre-push invariant chain (KMP + Android module). For iOS see verify-ios.
+# Comprehensive pre-push verification — reproduces every check that
+# CI runs, locally, in the order CI fails fastest. Run BEFORE every
+# `git commit` (or, at minimum, before every `git push`).
+#
+# Time cost: ~30-45 minutes. Requires booted iOS Simulator + Android
+# emulator (or connected Android device) before invocation —
+# `ios-test`, `e2e-android`, and `e2e-ios` all need them and will fail
+# fast with a clear error message if missing.
+#
+# Why slow: Phase 39.4 added a 4th onboarding consent page, which
+# silently broke the Android Maestro suite (9/9 flows) and the iOS
+# `OnboardingUITests.testTappingNextAdvancesThroughAllPagesAndCompletes`
+# XCUITest. The prior fast (~3 min) ci-local + verify-ios chain was
+# compile-only on the iOS side and skipped Maestro entirely, so
+# neither runtime regression was caught locally before push. The full
+# chain below pays the time cost in exchange for catching anything CI
+# would catch — there is no longer a gap between "make ci-local
+# green" and "CI green".
+#
+# Layered reasoning:
+#   1. Cheapest: Gradle KMP + Android module (~5-7 min). Catches
+#      ktlint, type errors, JVM unit tests, coverage, i18n parity.
+#   2. iOS app build (~30s). Catches Swift compile errors + linker
+#      issues with the `generic/platform=iOS Simulator` destination
+#      (multi-arch — both arm64 and x86_64), which the specific-sim
+#      `ios-test` destination (arm64-only on Apple Silicon) does not.
+#   3. iOS XCUITest (~5-7 min). `xcodebuild test` internally does
+#      `build-for-testing` then runs every test. Catches
+#      `Core/Bridging/` test-target compile regressions (the prior
+#      reason `verify-ios` existed) AND runtime XCUITest assertion
+#      failures (which `xcodebuild build-for-testing` could not).
+#   4. Android Maestro E2E (~20 min). `bash e2e/run-android.sh`
+#      builds debug APK + verifies running emulator + installs +
+#      runs every flow under `e2e/flows/android/` (excluding
+#      `requires-supabase`).
+#   5. iOS Maestro E2E (~15 min). `bash e2e/run-ios.sh` similar,
+#      excluding `skip-ios26` + `requires-supabase`.
+ci-local:  ## Comprehensive pre-push verification — reproduces every CI check (~30-45 min, requires booted emu+sim).
 	./gradlew \
 		:shared:ktlintCheck \
 		:androidApp:ktlintCheck \
@@ -103,25 +140,10 @@ ci-local:  ## Reproduce the CI pre-push invariant chain (KMP + Android module). 
 		:shared:testAndroidHostTest \
 		:shared:koverVerify \
 		verifyI18nKeys
-
-verify-ios:  ## iOS-side pre-push: regen xcodeproj + build app + build-for-testing (catches Core/Bridging/ regressions).
-	cd iosApp && xcodegen generate
-	xcodebuild build \
-		-project iosApp/iosApp.xcodeproj \
-		-scheme iosApp \
-		-sdk iphonesimulator \
-		-configuration Debug \
-		-destination 'generic/platform=iOS Simulator' \
-		CODE_SIGNING_ALLOWED=NO
-	xcodebuild build-for-testing \
-		-project iosApp/iosApp.xcodeproj \
-		-scheme iosApp \
-		-sdk iphonesimulator \
-		-configuration Debug \
-		-destination 'generic/platform=iOS Simulator' \
-		CODE_SIGNING_ALLOWED=NO
-
-verify-all: ci-local verify-ios  ## Full pre-push chain (ci-local + verify-ios). Run before every git commit.
+	$(MAKE) ios-build
+	$(MAKE) ios-test
+	$(MAKE) e2e-android
+	$(MAKE) e2e-ios
 
 ##@ Release
 
