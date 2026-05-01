@@ -116,7 +116,7 @@ Most-used targets:
 | `make format` | ktlint auto-fix |
 | `make coverage` | Generate Kover coverage report and verify 80% threshold |
 | `make i18n-verify` | Validate i18n key parity across 5 sources |
-| `make ci-local` | Reproduce the CI pre-push invariant chain locally |
+| `make ci-local` | **Comprehensive pre-push verification.** Runs ktlint + KMP unit tests + coverage + i18n parity + iOS build + iOS XCUITest + Android & iOS Maestro flows. ~30-45 min, requires booted Android emulator + iOS Simulator before invocation. |
 | `make release-ipa-local` | Build a Release IPA via fastlane (no upload) |
 | `make clean` | Remove Gradle + Xcode build artifacts |
 
@@ -124,18 +124,27 @@ Recipes are thin wrappers over Gradle / xcodebuild / fastlane / Maestro — invo
 
 #### Pre-push invariants
 
-Reproduce the CI's required checks locally before pushing:
+`make ci-local` is the single canonical pre-push entry point. It reproduces every check CI runs — there is no longer any daylight between "local green" and "CI green":
 
 ```bash
 make ci-local
 ```
 
-Runs in order:
-- `ktlintCheck` — formatting and style
-- `compileTestKotlinIosSimulatorArm64` — iOS-target compile sanity
-- `testAndroidHostTest` — JVM-target test suite
-- `koverVerify` — 80% coverage threshold on the shared module
-- `verifyI18nKeys` — 5-source i18n key parity (androidApp `values/` + `values-ja/` + shared `composeResources/values/` + `composeResources/values-ja/` + iOS `Localizable.xcstrings`)
+Runs in order (fail-fast):
+
+| # | Step | Catches |
+|---|---|---|
+| 1 | `ktlintCheck` (shared + androidApp) | Formatting and style |
+| 2 | `compileTestKotlinIosSimulatorArm64` | iOS-target test compile sanity (Kotlin/Native test-name restrictions, commonTest type errors) |
+| 3 | `testAndroidHostTest` | JVM unit tests on the shared module |
+| 4 | `koverVerify` | 80% coverage threshold on the shared module |
+| 5 | `verifyI18nKeys` | 5-source i18n key parity (androidApp `values/` + `values-ja/` + shared `composeResources/values/` + `composeResources/values-ja/` + iOS `Localizable.xcstrings`) |
+| 6 | `make ios-build` | iOS app `xcodebuild build` (multi-arch simulator) |
+| 7 | `make ios-test` | iOS XCUITest run (`xcodebuild test`) — catches runtime test assertion failures + `Core/Bridging/` regressions |
+| 8 | `make e2e-android` | Android Maestro flows (P0 + P1 + P2, excluding `requires-supabase`) |
+| 9 | `make e2e-ios` | iOS Maestro flows (excluding `skip-ios26` + `requires-supabase`) |
+
+**Time cost: ~30-45 minutes.** **Prerequisites:** a running Android emulator (or connected device) and a booted iOS Simulator before invocation — steps 7–9 will fail fast with a clear error message if either is missing. For iterative dev work that doesn't need the full chain, invoke individual targets directly (`make lint`, `make shared-test`, `make ios-build`, `make ios-test`, etc.).
 
 #### Release pipeline (iOS)
 
@@ -322,7 +331,7 @@ brew install xcodegen maestro
 | `make format` | ktlint 自動修正 |
 | `make coverage` | Kover カバレッジレポート生成 + 80% 閾値検証 |
 | `make i18n-verify` | 5 ソースの i18n キー parity 検証 |
-| `make ci-local` | CI の pre-push 不変条件をローカルで再現 |
+| `make ci-local` | **包括的な pre-push 検証**。ktlint + KMP unit テスト + カバレッジ + i18n parity + iOS ビルド + iOS XCUITest + Android & iOS の Maestro フローを実行。所要時間 ~30-45 分。実行前に Android エミュレータと iOS Simulator が起動済みである必要がある。 |
 | `make release-ipa-local` | fastlane で Release IPA をローカルビルド（アップロードなし） |
 | `make clean` | Gradle と Xcode のビルド成果物を削除 |
 
@@ -330,18 +339,27 @@ brew install xcodegen maestro
 
 #### Pre-push 不変条件
 
-push 前に CI の必須チェックをローカルで再現:
+`make ci-local` が pre-push 検証の唯一の正規エントリーポイントです。CI が実行するすべてのチェックを再現するので、「ローカル green」と「CI green」の間に隙間は存在しません:
 
 ```bash
 make ci-local
 ```
 
-順番に実行:
-- `ktlintCheck` — フォーマットとスタイル
-- `compileTestKotlinIosSimulatorArm64` — iOS ターゲットのコンパイル健全性
-- `testAndroidHostTest` — JVM ターゲットのテストスイート
-- `koverVerify` — shared モジュールの 80% カバレッジ閾値
-- `verifyI18nKeys` — 5 ソース（androidApp `values/` + `values-ja/` + shared `composeResources/values/` + `composeResources/values-ja/` + iOS `Localizable.xcstrings`）の i18n キー parity
+順番に実行 (fail-fast):
+
+| # | ステップ | 検出対象 |
+|---|---|---|
+| 1 | `ktlintCheck` (shared + androidApp) | フォーマットとスタイル |
+| 2 | `compileTestKotlinIosSimulatorArm64` | iOS ターゲットのテストコンパイル健全性 (Kotlin/Native のテスト名制限、commonTest の型エラー) |
+| 3 | `testAndroidHostTest` | shared モジュールの JVM unit テスト |
+| 4 | `koverVerify` | shared モジュールの 80% カバレッジ閾値 |
+| 5 | `verifyI18nKeys` | 5 ソース (androidApp `values/` + `values-ja/` + shared `composeResources/values/` + `composeResources/values-ja/` + iOS `Localizable.xcstrings`) の i18n キー parity |
+| 6 | `make ios-build` | iOS アプリの `xcodebuild build` (マルチアーキテクチャシミュレータ) |
+| 7 | `make ios-test` | iOS XCUITest 実行 (`xcodebuild test`) — テストアサーション失敗 + `Core/Bridging/` 回帰の検出 |
+| 8 | `make e2e-android` | Android Maestro フロー (P0 + P1 + P2、`requires-supabase` 除外) |
+| 9 | `make e2e-ios` | iOS Maestro フロー (`skip-ios26` + `requires-supabase` 除外) |
+
+**所要時間: ~30-45 分。** **前提条件:** 実行前に Android エミュレータ (または接続端末) と iOS Simulator が起動済みであること — 手順 7〜9 は端末がない場合に明確なエラーメッセージで即座に失敗します。フル chain が不要な反復開発では、個別ターゲット (`make lint`, `make shared-test`, `make ios-build`, `make ios-test` 等) を直接呼び出してください。
 
 #### リリースパイプライン (iOS)
 
