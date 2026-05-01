@@ -192,7 +192,7 @@ class OnboardingViewModelTest {
             viewModel.onEvent(OnboardingEvent.Skip)
             assertEquals(
                 listOf<AnalyticsEvent>(AnalyticsEvent.OnboardingCompleted),
-                tracker.captured,
+                tracker.outcomeEvents,
             )
         }
 
@@ -204,7 +204,7 @@ class OnboardingViewModelTest {
             viewModel.onEvent(OnboardingEvent.Complete)
             assertEquals(
                 listOf<AnalyticsEvent>(AnalyticsEvent.OnboardingCompleted),
-                tracker.captured,
+                tracker.outcomeEvents,
             )
         }
 
@@ -216,7 +216,7 @@ class OnboardingViewModelTest {
             val viewModel = createViewModel(tracker)
             viewModel.onEvent(OnboardingEvent.Complete)
             assertTrue(
-                tracker.captured.isEmpty(),
+                tracker.outcomeEvents.isEmpty(),
                 "no event should fire when transitioning from completed to completed",
             )
         }

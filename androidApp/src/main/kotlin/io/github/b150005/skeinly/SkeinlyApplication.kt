@@ -5,7 +5,9 @@ import android.util.Log
 import com.posthog.PostHog
 import com.posthog.android.PostHogAndroid
 import com.posthog.android.PostHogAndroidConfig
+import io.github.b150005.skeinly.config.BuildFlags
 import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
+import io.github.b150005.skeinly.data.analytics.EventRingBuffer
 import io.github.b150005.skeinly.data.preferences.AnalyticsPreferences
 import io.github.b150005.skeinly.data.remote.SupabaseConfig
 import io.github.b150005.skeinly.data.remote.isConfigured
@@ -63,14 +65,30 @@ class SkeinlyApplication : Application() {
             )
         }
 
+        // Phase 39.3 (ADR-015 §6) — bug-report event trail. Starts the
+        // FIFO collector regardless of `BuildFlags.isBeta` or PostHog
+        // configuration: the trail is for `Phase 39.5` bug-report
+        // attachment, which is gated separately on `BuildFlags.isBeta`
+        // at the gesture-detection layer. The tracker itself silently
+        // no-ops emissions while opt-in is OFF, so the buffer naturally
+        // stays empty for users who never consent — no PII leak risk.
+        val eventRingBuffer: EventRingBuffer = get()
+        eventRingBuffer.start(applicationScope)
+
         // Phase F2: PostHog product analytics. Default OFF (opt-in, not
         // opt-out) per Phase 27a no-tracking stance. The SDK is initialized
         // lazily on the first ON flip so no events are queued/sent before
         // the user explicitly consents. Toggling OFF mid-session calls
         // PostHog.optOut() to suspend further capture without losing the
         // existing session; toggling ON again calls optIn() (no re-init).
+        //
+        // Phase 39.3 (ADR-015 §2) — additionally gated on `BuildFlags.isBeta`.
+        // Production (v1.0+) binaries skip PostHog entirely so no event ever
+        // leaves the device, even with opt-in toggled ON via a stale settings
+        // payload. The `BuildFlags.isBeta` constant is generated from the
+        // `version.properties` `VERSION_NAME` `-beta` suffix at build time.
         val posthogApiKey = BuildConfig.POSTHOG_API_KEY
-        if (posthogApiKey.isNotEmpty()) {
+        if (BuildFlags.isBeta && posthogApiKey.isNotEmpty()) {
             val analyticsPrefs: AnalyticsPreferences = get()
             // Phase F.3 promoted `posthogInitialized` from a captured `var` to
             // an AtomicBoolean because the analytics-events collector below

@@ -184,7 +184,7 @@ class PatternEditViewModelTest {
             viewModel.onEvent(PatternEditEvent.UpdateTitle("Created via test"))
             viewModel.onEvent(PatternEditEvent.Save)
             advanceUntilIdle()
-            assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.PatternCreated), tracker.captured)
+            assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.PatternCreated), tracker.outcomeEvents)
         }
 
     @Test
@@ -217,8 +217,9 @@ class PatternEditViewModelTest {
             viewModel.onEvent(PatternEditEvent.Save)
             advanceUntilIdle()
             assertTrue(
-                tracker.captured.isEmpty(),
-                "edit-existing path is reserved for Phase F.4 pattern_edited event",
+                tracker.outcomeEvents.isEmpty(),
+                "edit-existing path is reserved for Phase F.4 pattern_edited event " +
+                    "(ClickAction is fine — it tracks the tap intent regardless of branch)",
             )
         }
 }

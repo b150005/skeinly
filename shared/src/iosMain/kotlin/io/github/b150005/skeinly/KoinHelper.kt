@@ -2,9 +2,11 @@ package io.github.b150005.skeinly
 
 import io.github.b150005.skeinly.data.analytics.AnalyticsEvent
 import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
+import io.github.b150005.skeinly.data.analytics.EventRingBuffer
 import io.github.b150005.skeinly.data.preferences.AnalyticsPreferences
 import io.github.b150005.skeinly.data.remote.SupabaseConfig
 import io.github.b150005.skeinly.data.remote.isConfigured
+import io.github.b150005.skeinly.di.applicationScopeQualifier
 import io.github.b150005.skeinly.di.platformModule
 import io.github.b150005.skeinly.di.sharedModules
 import io.github.b150005.skeinly.domain.model.CommentTargetType
@@ -35,6 +37,7 @@ import io.github.b150005.skeinly.ui.symbol.SymbolGalleryViewModel
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
+import kotlinx.coroutines.CoroutineScope
 import org.koin.core.context.startKoin
 import org.koin.core.parameter.parametersOf
 import org.koin.mp.KoinPlatform
@@ -83,6 +86,31 @@ fun getAnalyticsTracker(): AnalyticsTracker = KoinPlatform.getKoin().get()
 
 fun wrapAnalyticsEventsFlow(flow: kotlinx.coroutines.flow.SharedFlow<AnalyticsEvent>): EventFlowWrapper<AnalyticsEvent> =
     EventFlowWrapper(flow)
+
+// Phase 39.3 (ADR-015 §6) — bug-report event trail accessor. iOSApp.swift
+// resolves this once at init and stores the reference; Phase 39.5 calls
+// `snapshot()` from the bug-report submission flow to attach the last
+// 10 events to the GitHub Issue body.
+fun getEventRingBuffer(): EventRingBuffer = KoinPlatform.getKoin().get()
+
+/**
+ * Phase 39.3 (ADR-015 §6) — kicks off the [EventRingBuffer] collector on
+ * the shared [applicationScopeQualifier] CoroutineScope. iOS-only entry
+ * point: Swift `iOSApp.init` calls this exactly once at app init time, so
+ * the bug-report trail is populated for the entire process lifetime.
+ *
+ * Android has its own `applicationScope` field on `SkeinlyApplication`
+ * (separate from Koin's `applicationScopeQualifier` for historical
+ * reasons) and calls `EventRingBuffer.start(applicationScope)` directly
+ * from `onCreate`.
+ *
+ * Idempotent — [EventRingBuffer.start] no-ops on a second call.
+ */
+fun startEventRingBuffer() {
+    val buffer: EventRingBuffer = KoinPlatform.getKoin().get()
+    val scope: CoroutineScope = KoinPlatform.getKoin().get(applicationScopeQualifier)
+    buffer.start(scope)
+}
 
 fun getActivityFeedViewModel(): ActivityFeedViewModel = KoinPlatform.getKoin().get()
 

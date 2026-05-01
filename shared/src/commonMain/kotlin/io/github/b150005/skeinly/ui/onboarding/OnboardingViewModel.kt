@@ -3,6 +3,8 @@ package io.github.b150005.skeinly.ui.onboarding
 import androidx.lifecycle.ViewModel
 import io.github.b150005.skeinly.data.analytics.AnalyticsEvent
 import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
+import io.github.b150005.skeinly.data.analytics.ClickActionId
+import io.github.b150005.skeinly.data.analytics.Screen
 import io.github.b150005.skeinly.domain.usecase.CompleteOnboardingUseCase
 import io.github.b150005.skeinly.domain.usecase.GetOnboardingCompletedUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,8 +50,18 @@ class OnboardingViewModel(
         when (event) {
             is OnboardingEvent.NextPage -> advancePage()
             is OnboardingEvent.PreviousPage -> goBackPage()
-            is OnboardingEvent.Skip -> markComplete()
-            is OnboardingEvent.Complete -> markComplete()
+            is OnboardingEvent.Skip -> {
+                analyticsTracker?.track(
+                    AnalyticsEvent.ClickAction(ClickActionId.SubmitOnboarding, Screen.Onboarding),
+                )
+                markComplete()
+            }
+            is OnboardingEvent.Complete -> {
+                analyticsTracker?.track(
+                    AnalyticsEvent.ClickAction(ClickActionId.SubmitOnboarding, Screen.Onboarding),
+                )
+                markComplete()
+            }
             is OnboardingEvent.PageChanged ->
                 _state.update { current ->
                     val clamped = event.page.coerceIn(0, current.pages.lastIndex)

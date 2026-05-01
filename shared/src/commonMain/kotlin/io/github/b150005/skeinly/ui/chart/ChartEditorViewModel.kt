@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import io.github.b150005.skeinly.data.analytics.AnalyticsEvent
 import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
 import io.github.b150005.skeinly.data.analytics.ChartFormat
+import io.github.b150005.skeinly.data.analytics.ClickActionId
+import io.github.b150005.skeinly.data.analytics.Screen
 import io.github.b150005.skeinly.domain.chart.PolarSymmetry
 import io.github.b150005.skeinly.domain.model.ChartCell
 import io.github.b150005.skeinly.domain.model.ChartExtents
@@ -274,7 +276,12 @@ class ChartEditorViewModel(
 
     fun onEvent(event: ChartEditorEvent) {
         when (event) {
-            is ChartEditorEvent.SelectSymbol -> _state.update { it.copy(selectedSymbolId = event.symbolId) }
+            is ChartEditorEvent.SelectSymbol -> {
+                analyticsTracker?.track(
+                    AnalyticsEvent.ClickAction(ClickActionId.SelectPaletteSymbol, Screen.ChartEditor),
+                )
+                _state.update { it.copy(selectedSymbolId = event.symbolId) }
+            }
             is ChartEditorEvent.SelectCategory ->
                 _state.update {
                     it.copy(
@@ -292,9 +299,24 @@ class ChartEditorViewModel(
             is ChartEditorEvent.ApplyReflection -> applyReflection(event.axisStitch)
             ChartEditorEvent.StartPickReflectionAxis -> startPickReflectionAxis()
             ChartEditorEvent.CancelPickReflectionAxis -> cancelPickReflectionAxis()
-            ChartEditorEvent.Undo -> undo()
-            ChartEditorEvent.Redo -> redo()
-            ChartEditorEvent.Save -> save()
+            ChartEditorEvent.Undo -> {
+                analyticsTracker?.track(
+                    AnalyticsEvent.ClickAction(ClickActionId.UndoChart, Screen.ChartEditor),
+                )
+                undo()
+            }
+            ChartEditorEvent.Redo -> {
+                analyticsTracker?.track(
+                    AnalyticsEvent.ClickAction(ClickActionId.RedoChart, Screen.ChartEditor),
+                )
+                redo()
+            }
+            ChartEditorEvent.Save -> {
+                analyticsTracker?.track(
+                    AnalyticsEvent.ClickAction(ClickActionId.SaveChart, Screen.ChartEditor),
+                )
+                save()
+            }
             ChartEditorEvent.ClearError -> _state.update { it.copy(errorMessage = null) }
             is ChartEditorEvent.SelectLayer -> selectLayer(event.layerId)
             is ChartEditorEvent.AddLayer -> addLayer(event.name)

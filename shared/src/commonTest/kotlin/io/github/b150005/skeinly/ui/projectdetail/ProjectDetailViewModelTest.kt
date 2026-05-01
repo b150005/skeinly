@@ -1219,13 +1219,18 @@ class ProjectDetailViewModelTest {
                 awaitItem() // row incremented
                 cancelAndIgnoreRemainingEvents()
             }
-            assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.RowIncremented), tracker.captured)
+            // Phase 39.3 — `outcomeEvents` filters out the new ClickAction
+            // engagement-funnel emission so we still assert on the outcome
+            // shape only.
+            assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.RowIncremented), tracker.outcomeEvents)
         }
 
     @Test
-    fun `DecrementRow does not capture analytics event in Phase F-3`() =
+    fun `DecrementRow does not capture analytics outcome event`() =
         runTest(testDispatcher) {
-            // Phase F.3 ships row_incremented only; decrement is Phase F.4+ if at all.
+            // Phase F.3 shipped row_incremented only — decrement does not
+            // emit an outcome event. Phase 39.3 added a ClickAction
+            // emission for the tap, but no outcome variant was added.
             projectRepository.create(createTestProject().copy(currentRow = 5))
             val tracker = RecordingAnalyticsTracker()
             val viewModel = createViewModel(tracker)
@@ -1235,6 +1240,6 @@ class ProjectDetailViewModelTest {
                 awaitItem() // row decremented
                 cancelAndIgnoreRemainingEvents()
             }
-            assertTrue(tracker.captured.isEmpty(), "decrement should not capture in Phase F.3")
+            assertTrue(tracker.outcomeEvents.isEmpty(), "decrement should not fire an outcome event")
         }
 }

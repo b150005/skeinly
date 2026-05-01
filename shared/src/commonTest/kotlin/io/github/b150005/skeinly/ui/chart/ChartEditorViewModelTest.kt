@@ -2164,7 +2164,7 @@ class ChartEditorViewModelTest {
                 listOf<AnalyticsEvent>(
                     AnalyticsEvent.ChartEditorSave(isNew = true, chartFormat = ChartFormat.Rect),
                 ),
-                tracker.captured,
+                tracker.outcomeEvents,
             )
         }
 
@@ -2190,7 +2190,7 @@ class ChartEditorViewModelTest {
                 listOf<AnalyticsEvent>(
                     AnalyticsEvent.ChartEditorSave(isNew = false, chartFormat = ChartFormat.Rect),
                 ),
-                tracker.captured,
+                tracker.outcomeEvents,
             )
         }
 }

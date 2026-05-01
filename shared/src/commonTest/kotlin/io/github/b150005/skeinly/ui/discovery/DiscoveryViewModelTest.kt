@@ -465,7 +465,7 @@ class DiscoveryViewModelTest {
 
             assertEquals(
                 listOf<AnalyticsEvent>(AnalyticsEvent.PatternForked(hadChart = false)),
-                tracker.captured,
+                tracker.outcomeEvents,
             )
             stateJob.cancel()
             forkJob.cancel()

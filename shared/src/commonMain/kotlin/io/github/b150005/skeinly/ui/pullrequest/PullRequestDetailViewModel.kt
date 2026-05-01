@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.b150005.skeinly.data.analytics.AnalyticsEvent
 import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
+import io.github.b150005.skeinly.data.analytics.ClickActionId
+import io.github.b150005.skeinly.data.analytics.Screen
 import io.github.b150005.skeinly.domain.chart.ConflictDetector
 import io.github.b150005.skeinly.domain.model.PullRequest
 import io.github.b150005.skeinly.domain.model.PullRequestComment
@@ -240,8 +242,12 @@ class PullRequestDetailViewModel(
 
             PullRequestDetailEvent.PostComment -> postCommentInternal()
 
-            PullRequestDetailEvent.RequestClose ->
+            PullRequestDetailEvent.RequestClose -> {
+                analyticsTracker?.track(
+                    AnalyticsEvent.ClickAction(ClickActionId.ClosePullRequest, Screen.PullRequestDetail),
+                )
                 _state.update { it.copy(pendingCloseConfirmation = true) }
+            }
 
             PullRequestDetailEvent.ConfirmClose -> {
                 _state.update { it.copy(pendingCloseConfirmation = false) }
@@ -251,8 +257,12 @@ class PullRequestDetailViewModel(
             PullRequestDetailEvent.DismissCloseConfirmation ->
                 _state.update { it.copy(pendingCloseConfirmation = false) }
 
-            PullRequestDetailEvent.RequestMerge ->
+            PullRequestDetailEvent.RequestMerge -> {
+                analyticsTracker?.track(
+                    AnalyticsEvent.ClickAction(ClickActionId.MergePullRequest, Screen.PullRequestDetail),
+                )
                 _state.update { it.copy(pendingMergeConfirmation = true) }
+            }
 
             PullRequestDetailEvent.ConfirmMerge -> {
                 _state.update { it.copy(pendingMergeConfirmation = false) }

@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.b150005.skeinly.data.analytics.AnalyticsEvent
 import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
+import io.github.b150005.skeinly.data.analytics.ClickActionId
+import io.github.b150005.skeinly.data.analytics.Screen
 import io.github.b150005.skeinly.domain.model.Pattern
 import io.github.b150005.skeinly.domain.model.Project
 import io.github.b150005.skeinly.domain.model.ProjectStatus
@@ -138,6 +140,9 @@ class ProjectListViewModel(
     fun onEvent(event: ProjectListEvent) {
         when (event) {
             is ProjectListEvent.CreateProject -> {
+                analyticsTracker?.track(
+                    AnalyticsEvent.ClickAction(ClickActionId.CreateProject, Screen.ProjectList),
+                )
                 viewModelScope.launch {
                     when (val result = createProject(event.title, event.totalRows, event.patternId)) {
                         is UseCaseResult.Success -> {
