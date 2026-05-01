@@ -12,30 +12,30 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 
--keep,includedescriptorclasses class io.github.b150005.knitnote.**$$serializer { *; }
--keepclassmembers class io.github.b150005.knitnote.** {
+-keep,includedescriptorclasses class io.github.b150005.skeinly.**$$serializer { *; }
+-keepclassmembers class io.github.b150005.skeinly.** {
     *** Companion;
 }
--keepclasseswithmembers class io.github.b150005.knitnote.** {
+-keepclasseswithmembers class io.github.b150005.skeinly.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 
 # ---- Domain models (all @Serializable) ----
--keep class io.github.b150005.knitnote.domain.model.** { *; }
+-keep class io.github.b150005.skeinly.domain.model.** { *; }
 
 # ---- Navigation route classes (@Serializable) ----
--keep class io.github.b150005.knitnote.ui.navigation.Onboarding { *; }
--keep class io.github.b150005.knitnote.ui.navigation.Login { *; }
--keep class io.github.b150005.knitnote.ui.navigation.ProjectList { *; }
--keep class io.github.b150005.knitnote.ui.navigation.ProjectDetail { *; }
--keep class io.github.b150005.knitnote.ui.navigation.SharedWithMe { *; }
--keep class io.github.b150005.knitnote.ui.navigation.ActivityFeed { *; }
--keep class io.github.b150005.knitnote.ui.navigation.Profile { *; }
--keep class io.github.b150005.knitnote.ui.navigation.Settings { *; }
--keep class io.github.b150005.knitnote.ui.navigation.PatternLibrary { *; }
--keep class io.github.b150005.knitnote.ui.navigation.PatternEdit { *; }
--keep class io.github.b150005.knitnote.ui.navigation.Discovery { *; }
--keep class io.github.b150005.knitnote.ui.navigation.SharedContent { *; }
+-keep class io.github.b150005.skeinly.ui.navigation.Onboarding { *; }
+-keep class io.github.b150005.skeinly.ui.navigation.Login { *; }
+-keep class io.github.b150005.skeinly.ui.navigation.ProjectList { *; }
+-keep class io.github.b150005.skeinly.ui.navigation.ProjectDetail { *; }
+-keep class io.github.b150005.skeinly.ui.navigation.SharedWithMe { *; }
+-keep class io.github.b150005.skeinly.ui.navigation.ActivityFeed { *; }
+-keep class io.github.b150005.skeinly.ui.navigation.Profile { *; }
+-keep class io.github.b150005.skeinly.ui.navigation.Settings { *; }
+-keep class io.github.b150005.skeinly.ui.navigation.PatternLibrary { *; }
+-keep class io.github.b150005.skeinly.ui.navigation.PatternEdit { *; }
+-keep class io.github.b150005.skeinly.ui.navigation.Discovery { *; }
+-keep class io.github.b150005.skeinly.ui.navigation.SharedContent { *; }
 
 # ---- Koin DI ----
 -keep class org.koin.core.** { *; }

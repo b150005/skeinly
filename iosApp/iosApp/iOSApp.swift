@@ -141,9 +141,13 @@ struct iOSApp: App {
         let fileManager = FileManager.default
         let dbNames = ["skeinly.db", "skeinly.db-shm", "skeinly.db-wal"]
 
-        // NativeSqliteDriver stores the DB in Library/Application Support/databases/
+        // NativeSqliteDriver default path is Library/databases/<name>; older
+        // versions wrote to Library/Application Support/databases/. Walk both
+        // plus Library/ root and Documents/ to cover historical layouts. See
+        // touchlab/SQLiter NativeSqliteDriver for the canonical default.
         var searchDirs: [URL] = []
         if let libURL = fileManager.urls(for: .libraryDirectory, in: .userDomainMask).first {
+            searchDirs.append(libURL.appendingPathComponent("databases"))
             searchDirs.append(libURL.appendingPathComponent("Application Support/databases"))
             searchDirs.append(libURL)
         }
