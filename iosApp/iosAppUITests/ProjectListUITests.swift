@@ -14,7 +14,7 @@ final class ProjectListUITests: XCTestCase {
         // Phase 33.5: pivoted from `app.staticTexts["No Projects Yet"]` to
         // the landmark accessibilityIdentifier on the ContentUnavailableView
         // Label — robust once the app runs under a non-English locale.
-        XCTAssertTrue(app.otherElements["emptyStateLabel"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["emptyStateLabel"].waitForExistence(timeout: 5))
     }
 
     func testPlusButton_opensCreateSheet() {
@@ -64,6 +64,6 @@ final class ProjectListUITests: XCTestCase {
         // Phase 33.5: pivoted to the `cancelButton` accessibilityIdentifier on
         // the createProjectSheet toolbar cancel Button.
         app.buttons["cancelButton"].tap()
-        XCTAssertTrue(app.otherElements["emptyStateLabel"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["emptyStateLabel"].waitForExistence(timeout: 3))
     }
 }

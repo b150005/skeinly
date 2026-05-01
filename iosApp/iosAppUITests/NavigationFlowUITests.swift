@@ -15,7 +15,7 @@ final class NavigationFlowUITests: XCTestCase {
         // the screen-level `accessibilityIdentifier("projectListScreen")` is
         // the new locale-independent anchor.
         XCTAssertTrue(app.otherElements["projectListScreen"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.otherElements["emptyStateLabel"].exists)
+        XCTAssertTrue(app.staticTexts["emptyStateLabel"].exists)
     }
 
     func testNavigateToProfile_andBack() {
@@ -41,7 +41,7 @@ final class NavigationFlowUITests: XCTestCase {
 
         // Should remain on project list
         XCTAssertTrue(app.otherElements["projectListScreen"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.otherElements["emptyStateLabel"].waitForExistence(timeout: 3), "Expected empty state after invalid deep link")
+        XCTAssertTrue(app.staticTexts["emptyStateLabel"].waitForExistence(timeout: 3), "Expected empty state after invalid deep link")
     }
 
     func testDeepLink_validToken_localOnlyMode_staysOnProjectList() {
@@ -52,7 +52,7 @@ final class NavigationFlowUITests: XCTestCase {
 
         // App should remain on project list, not navigate to shared content
         XCTAssertTrue(app.otherElements["projectListScreen"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.otherElements["emptyStateLabel"].waitForExistence(timeout: 3), "Expected empty state after deep link in local mode")
+        XCTAssertTrue(app.staticTexts["emptyStateLabel"].waitForExistence(timeout: 3), "Expected empty state after deep link in local mode")
         // Phase 33.1.13: pivoted from navigationBars["Shared Content"] to the
         // accessibilityIdentifier landmark so the assert stays valid on a
         // ja-locale simulator. (The prior string also did not match the actual
