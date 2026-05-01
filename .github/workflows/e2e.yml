@@ -120,6 +120,16 @@ jobs:
         run: cd iosApp && xcodegen generate
 
       - name: Build iOS app for simulator (local-only mode)
+        # Forward the empty Supabase env vars to xcodebuild as build
+        # settings so Info.plist `$(SUPABASE_URL)` / `$(SUPABASE_PUBLISHABLE_KEY)`
+        # placeholders resolve to empty strings. Without this the
+        # placeholders survive into the runtime Info.plist as literal
+        # `$(SUPABASE_URL)` text — non-blank, so `SupabaseConfig.isConfigured`
+        # evaluates true and AppRouter routes the test simulator to
+        # LoginScreen, breaking every Maestro flow downstream.
+        # AppRouter's `local_only_mode` launch arg in the Maestro flows
+        # is the second line of defense; keeping the build-setting form
+        # in sync with ci.yml ensures both layers stay aligned.
         env:
           SUPABASE_URL: ""
           SUPABASE_PUBLISHABLE_KEY: ""
@@ -133,6 +143,8 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build/ios-e2e \
             CODE_SIGNING_ALLOWED=NO \
+            SUPABASE_URL="$SUPABASE_URL" \
+            SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
             | xcpretty; exit ${PIPESTATUS[0]}
 
       - name: Boot iOS simulator

@@ -3,8 +3,10 @@ import XCTest
 extension XCUIApplication {
     /// Launch the app with a clean database for test isolation.
     /// Automatically completes onboarding if it appears on first launch.
+    /// `-local_only_mode true` bypasses AppRouter's auth gate so tests
+    /// that build with real Supabase secrets still land on ProjectList.
     func launchClean() {
-        launchArguments = ["--reset-database"]
+        launchArguments = ["--reset-database", "-local_only_mode", "true"]
         launch()
         completeOnboardingIfPresent()
     }

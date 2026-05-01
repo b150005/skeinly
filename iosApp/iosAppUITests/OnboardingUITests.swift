@@ -19,7 +19,13 @@ final class OnboardingUITests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         // Reset onboarding completion state so the carousel appears on launch.
-        app.launchArguments = ["--reset-database", "-has_seen_onboarding", "false"]
+        // `-local_only_mode true` bypasses AppRouter's auth gate so the
+        // post-completion ProjectList assertion lands without a real login.
+        app.launchArguments = [
+            "--reset-database",
+            "-has_seen_onboarding", "false",
+            "-local_only_mode", "true",
+        ]
     }
 
     func testTappingNextAdvancesThroughAllPagesAndCompletes() {

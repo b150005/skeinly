@@ -14,6 +14,8 @@ tags:
 - clearState: io.github.b150005.skeinly
 - launchApp:
     appId: io.github.b150005.skeinly
+    arguments:
+      "-local_only_mode": "true"
 
 - tapOn: "PhaseThirtyFourFixture"
 

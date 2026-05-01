@@ -81,17 +81,29 @@ struct AppRootView: View {
     @State private var path = NavigationPath()
     @State private var pendingDeepLinkToken: String?
     @State private var hasSeenOnboarding: Bool
+    // Tests inject `-local_only_mode true` via NSUserDefaults launch
+    // arguments (mirroring `-has_seen_onboarding`) so ProjectListScreen
+    // renders without forcing a real Supabase login. Without this gate,
+    // any build that wires up real SUPABASE_URL — including ci.yml's
+    // XCUITest job — would route the test simulator to LoginScreen and
+    // every `emptyStateLabel` / `createProjectFab` assertion would fail.
+    // Captured once at init time because launch args are immutable for
+    // the lifetime of the process; reading from `body` would re-query
+    // UserDefaults on every render and would not participate in
+    // SwiftUI's state-tracking either way.
+    @State private var localOnlyMode: Bool
 
     init() {
         let vm = ViewModelFactory.authViewModel()
         let wrapper = KoinHelperKt.wrapAuthState(flow: vm.state)
         _authHolder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
         _hasSeenOnboarding = State(initialValue: KoinHelperKt.isOnboardingCompleted())
+        _localOnlyMode = State(initialValue: UserDefaults.standard.bool(forKey: "local_only_mode"))
     }
 
     var body: some View {
         let authState = authHolder.state.authState
-        let isConfigured = SupabaseConfig.shared.isConfigured
+        let isConfigured = SupabaseConfig.shared.isConfigured && !localOnlyMode
 
         // Onboarding is a UX gate only. Auth enforcement via authState cannot be bypassed
         // by clearing the onboarding preference.

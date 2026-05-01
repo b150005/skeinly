@@ -17,3 +17,7 @@ name: "Helper - Complete Onboarding"
     # Array form mirrors the XCUITest convention in OnboardingUITests.swift.
     arguments:
       "-has_seen_onboarding": "true"
+      # Bypass AppRouter auth gate (mirrors AppRouter.swift `local_only_mode`
+      # check). Without this, e2e builds that pick up a real `SUPABASE_URL`
+      # land on LoginScreen and every downstream `assertVisible` fails.
+      "-local_only_mode": "true"
