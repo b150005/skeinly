@@ -8,9 +8,13 @@ tags:
 # Pre-condition: clear app state for test isolation
 - clearState: io.github.b150005.skeinly
 
-# Launch the app — first run shows onboarding
+# Launch the app — first run shows onboarding.
+# `-local_only_mode true` bypasses AppRouter's auth gate so the
+# post-onboarding ProjectList assertion lands without a real login.
 - launchApp:
     appId: io.github.b150005.skeinly
+    arguments:
+      "-local_only_mode": "true"
 
 # Verify page 1 via locale-independent testTag
 - assertVisible:
@@ -52,6 +56,8 @@ tags:
 - stopApp: io.github.b150005.skeinly
 - launchApp:
     appId: io.github.b150005.skeinly
+    arguments:
+      "-local_only_mode": "true"
 
 # Should go directly to ProjectList — no onboarding page visible
 - assertVisible:

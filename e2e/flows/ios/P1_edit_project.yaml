@@ -8,6 +8,8 @@ tags:
 - clearState: io.github.b150005.skeinly
 - launchApp:
     appId: io.github.b150005.skeinly
+    arguments:
+      "-local_only_mode": "true"
 
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_ios.yaml
