@@ -24,33 +24,34 @@ subprojects {
     }
 }
 
-// Verifies that all 5 i18n source files share the same key set:
-//   - androidApp/src/main/res/values/strings.xml          (English, Android native R.string.*)
-//   - androidApp/src/main/res/values-ja/strings.xml       (Japanese, Android native R.string.*)
+// Verifies that the 3 user-facing i18n source files share the same key set:
 //   - shared/src/commonMain/composeResources/values/strings.xml     (English, shared Compose Res.string.*)
 //   - shared/src/commonMain/composeResources/values-ja/strings.xml  (Japanese, shared Compose Res.string.*)
-//   - iosApp/iosApp/Resources/Localizable.xcstrings       (both locales, iOS SwiftUI)
+//   - iosApp/iosApp/Resources/Localizable.xcstrings                 (both locales, iOS SwiftUI)
 //
-// Pivot label is "androidApp values" (English Android native). All other
-// sources are diffed against it, and any key set drift fails the build.
+// Pivot label is "shared composeResources values" (English shared). Drift
+// between any two of the three sources fails the build.
+//
+// `androidApp/src/main/res/values/strings.xml` is intentionally not part of
+// the parity set — it now holds only Android-platform-specific resources
+// (`@string/app_name` referenced from AndroidManifest), not user-facing
+// translations. All Compose UI consumes `Res.string.*` / `Res.plurals.*`
+// from the shared composeResources, so the previous five-file mirror was
+// dead duplication that lint flagged as `UnusedResources`.
 //
 // Wired into :shared:check so pre-push `./gradlew :shared:check` covers
 // i18n parity automatically. Replaces the previous scripts/verify-i18n-keys.sh
 // bash invocation; the regex extraction logic mirrors the bash version exactly.
 val verifyI18nKeys by tasks.registering {
-    description = "Verifies i18n key parity across androidApp, shared composeResources, and iosApp .xcstrings."
+    description = "Verifies i18n key parity across shared composeResources (en/ja) and iosApp .xcstrings."
     group = "verification"
 
-    val androidEn = rootProject.file("androidApp/src/main/res/values/strings.xml")
-    val androidJa = rootProject.file("androidApp/src/main/res/values-ja/strings.xml")
     val sharedEn = rootProject.file("shared/src/commonMain/composeResources/values/strings.xml")
     val sharedJa = rootProject.file("shared/src/commonMain/composeResources/values-ja/strings.xml")
     val iosCatalog = rootProject.file("iosApp/iosApp/Resources/Localizable.xcstrings")
 
     val sources =
         linkedMapOf(
-            "androidApp values" to androidEn,
-            "androidApp values-ja" to androidJa,
             "shared composeResources values" to sharedEn,
             "shared composeResources values-ja" to sharedJa,
             "iosApp xcstrings" to iosCatalog,
@@ -88,7 +89,7 @@ val verifyI18nKeys by tasks.registering {
                 keys
             }
 
-        val canonicalLabel = "androidApp values"
+        val canonicalLabel = "shared composeResources values"
         val canonical = keysByLabel.getValue(canonicalLabel)
 
         var hasDrift = false
@@ -112,7 +113,7 @@ val verifyI18nKeys by tasks.registering {
 
         if (hasDrift) {
             throw GradleException(
-                "i18n key drift detected. Add or remove the missing keys in all five files.",
+                "i18n key drift detected. Add or remove the missing keys in all three files.",
             )
         }
 
@@ -121,8 +122,8 @@ val verifyI18nKeys by tasks.registering {
             writeText("OK ${canonical.size} keys\n")
         }
         logger.lifecycle(
-            "OK: ${canonical.size} keys synchronized across androidApp (en/ja), " +
-                "shared composeResources (en/ja), and iOS String Catalog.",
+            "OK: ${canonical.size} keys synchronized across shared composeResources (en/ja) " +
+                "and iOS String Catalog.",
         )
     }
 }
