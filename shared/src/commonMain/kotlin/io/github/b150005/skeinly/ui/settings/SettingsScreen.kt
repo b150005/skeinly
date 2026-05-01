@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -48,6 +49,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import io.github.b150005.skeinly.config.BuildFlags
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_back
 import io.github.b150005.skeinly.generated.resources.action_cancel
@@ -57,21 +59,23 @@ import io.github.b150005.skeinly.generated.resources.action_delete
 import io.github.b150005.skeinly.generated.resources.action_delete_account
 import io.github.b150005.skeinly.generated.resources.action_privacy_policy
 import io.github.b150005.skeinly.generated.resources.action_save
+import io.github.b150005.skeinly.generated.resources.action_send_feedback
 import io.github.b150005.skeinly.generated.resources.action_sign_out
 import io.github.b150005.skeinly.generated.resources.action_terms_of_service
-import io.github.b150005.skeinly.generated.resources.body_analytics_explanation
 import io.github.b150005.skeinly.generated.resources.body_delete_account_warning
+import io.github.b150005.skeinly.generated.resources.body_diagnostic_data_explanation
+import io.github.b150005.skeinly.generated.resources.body_send_feedback_explanation
 import io.github.b150005.skeinly.generated.resources.dialog_change_email_title
 import io.github.b150005.skeinly.generated.resources.dialog_change_password_title
 import io.github.b150005.skeinly.generated.resources.dialog_delete_account_body
 import io.github.b150005.skeinly.generated.resources.dialog_delete_account_title
 import io.github.b150005.skeinly.generated.resources.label_about_section
 import io.github.b150005.skeinly.generated.resources.label_account_section
-import io.github.b150005.skeinly.generated.resources.label_allow_analytics
+import io.github.b150005.skeinly.generated.resources.label_beta_section
 import io.github.b150005.skeinly.generated.resources.label_danger_zone
+import io.github.b150005.skeinly.generated.resources.label_diagnostic_data_sharing
 import io.github.b150005.skeinly.generated.resources.label_new_email
 import io.github.b150005.skeinly.generated.resources.label_new_password
-import io.github.b150005.skeinly.generated.resources.label_privacy_section
 import io.github.b150005.skeinly.generated.resources.message_email_change_pending
 import io.github.b150005.skeinly.generated.resources.message_password_changed
 import io.github.b150005.skeinly.generated.resources.state_deleting_account
@@ -89,6 +93,12 @@ private const val URL_TERMS_OF_SERVICE = "https://b150005.github.io/skeinly/term
 fun SettingsScreen(
     onBack: () -> Unit,
     onAccountDeleted: () -> Unit,
+    // Phase 39.4 (ADR-015 §6) — invoked when the user taps "Send Feedback".
+    // Phase 39.5 will wire this to the BugReportPreviewScreen + GitHub
+    // Issue prefill flow; today the binding from NavGraph is a no-op so
+    // the row renders correctly under the beta-gated section without
+    // surfacing a half-built UX.
+    onSendFeedback: () -> Unit = {},
     viewModel: SettingsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -255,49 +265,85 @@ fun SettingsScreen(
                             }.testTag("termsOfServiceButton"),
                 )
 
-                Spacer(Modifier.height(24.dp))
-                HorizontalDivider()
-                Spacer(Modifier.height(24.dp))
+                // Beta section — Phase 39.4 (ADR-015 §6). Holds diagnostic
+                // data sharing toggle + Send Feedback. Gated on
+                // [BuildFlags.isBeta] so production binaries surface
+                // neither — Phase 27a no-tracking stance for v1.0+. The
+                // pre-39.4 "Privacy" header / `label_allow_analytics`
+                // copy was renamed because what we collect on beta is
+                // diagnostic data, not "usage analytics" in general.
+                if (BuildFlags.isBeta) {
+                    Spacer(Modifier.height(24.dp))
+                    HorizontalDivider()
+                    Spacer(Modifier.height(24.dp))
 
-                // Privacy section — Phase F2 analytics opt-in. Default OFF;
-                // PostHog SDK init (SkeinlyApplication / iOSApp) is gated on
-                // this flag. The whole row is clickable so tapping anywhere
-                // (not just the Switch thumb) flips the value.
-                Text(
-                    text = stringResource(Res.string.label_privacy_section),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
+                    Text(
+                        text = stringResource(Res.string.label_beta_section),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
 
-                ListItem(
-                    headlineContent = { Text(stringResource(Res.string.label_allow_analytics)) },
-                    trailingContent = {
-                        // `onCheckedChange = null` so the Switch is purely visual —
-                        // the row's `clickable` is the single dispatch site. With
-                        // both wired, a tap on the Switch thumb fires onCheckedChange
-                        // (with the new value) AND the row's clickable (toggling the
-                        // already-flipped value), cancelling the user's intent.
-                        Switch(
-                            checked = state.analyticsOptIn,
-                            onCheckedChange = null,
-                            modifier = Modifier.testTag("analyticsOptInSwitch"),
-                        )
-                    },
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable(role = Role.Switch) {
-                                viewModel.onEvent(
-                                    SettingsEvent.SetAnalyticsOptIn(!state.analyticsOptIn),
-                                )
-                            },
-                )
-                Text(
-                    text = stringResource(Res.string.body_analytics_explanation),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
+                    ListItem(
+                        headlineContent = {
+                            Text(stringResource(Res.string.label_diagnostic_data_sharing))
+                        },
+                        trailingContent = {
+                            // `onCheckedChange = null` so the Switch is purely
+                            // visual — the row's `clickable` is the single
+                            // dispatch site. With both wired, a tap on the
+                            // Switch thumb fires onCheckedChange (with the
+                            // new value) AND the row's clickable (toggling
+                            // the already-flipped value), cancelling intent.
+                            Switch(
+                                checked = state.analyticsOptIn,
+                                onCheckedChange = null,
+                                modifier = Modifier.testTag("analyticsOptInSwitch"),
+                            )
+                        },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable(role = Role.Switch) {
+                                    viewModel.onEvent(
+                                        SettingsEvent.SetAnalyticsOptIn(!state.analyticsOptIn),
+                                    )
+                                },
+                    )
+                    Text(
+                        text = stringResource(Res.string.body_diagnostic_data_explanation),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    // Phase 39.5 wires this to the BugReportPreviewScreen
+                    // + GitHub Issue prefill launcher. Today the callback
+                    // is a no-op (default `onSendFeedback = {}` at the
+                    // screen signature), so the entry renders correctly
+                    // and a tester can discover the feature without an
+                    // observable broken UX behind the row.
+                    ListItem(
+                        headlineContent = {
+                            Text(stringResource(Res.string.action_send_feedback))
+                        },
+                        leadingContent = {
+                            Icon(Icons.Filled.Feedback, contentDescription = null)
+                        },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable(role = Role.Button) { onSendFeedback() }
+                                .testTag("sendFeedbackButton"),
+                    )
+                    Text(
+                        text = stringResource(Res.string.body_send_feedback_explanation),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
 
                 // B3 (Phase 39.1): Danger zone is auth-only — same gating
                 // as the Account section above.

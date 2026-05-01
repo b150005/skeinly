@@ -65,10 +65,19 @@
     <!-- Profile — Avatar (Phase C) -->
     <string name="action_change_avatar">アバターを変更</string>
 
-    <!-- Settings — Privacy / Analytics (Phase F2) -->
-    <string name="label_privacy_section">プライバシー</string>
-    <string name="label_allow_analytics">使用状況の収集を許可</string>
-    <string name="body_analytics_explanation">どの機能が使われているかを匿名のイベント数で把握するために使います。個人情報や広告 ID は収集しません。いつでも変更できます。</string>
+    <!-- Settings / Onboarding — ベータ診断データ (Phase 39.4, ADR-015 §6).
+         セクションは BETA 専用: `BuildFlags.isBeta` で表示制御するため、
+         本番ビルドでは見えません。Phase 39.4 以前の3キー
+         (label_privacy_section / label_allow_analytics /
+         body_analytics_explanation) は、収集対象が「使用状況」全般ではなく
+         ベータの「診断データ」である正確さを反映するためリネームしました。 -->
+    <string name="label_beta_section">ベータ</string>
+    <string name="label_diagnostic_data_sharing">診断データを送信する</string>
+    <string name="body_diagnostic_data_explanation">送信する内容：アプリのバージョン、OS、端末モデル、画面名、タップしたアクション名（いずれも匿名）。送信しない内容：パターン、プロジェクト、メモ、写真、メールアドレス、表示名。いつでもオフに切り替えられます。オフにするとバグレポートに添付される操作履歴も即座に消去されます。</string>
+    <string name="title_diagnostic_consent">Skeinly の改善にご協力ください</string>
+    <string name="body_diagnostic_consent">ベータビルドでは、不具合の特定に役立てるため匿名の診断データを送信できます。初期設定はオフです。設定からいつでも変更できます。</string>
+    <string name="action_send_feedback">フィードバックを送信</string>
+    <string name="body_send_feedback_explanation">ブラウザで GitHub Issue を開き、内容を事前入力します。直近 10 件の操作履歴（個人情報なし）も添付されます。</string>
 
     <string name="error_authentication_failed">認証に失敗しました</string>
     <string name="error_email_invalid">無効なメールアドレスです</string>

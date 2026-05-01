@@ -10,9 +10,17 @@ struct SettingsScreen: View {
     @State private var toastMessage: String?
     @State private var toastCloseable: Closeable?
 
+    // Phase 39.4 (ADR-015 §6) — invoked when the user taps "Send
+    // Feedback". Phase 39.5 will plumb this to BugReportPreviewScreen
+    // + GitHub Issue prefill; today the binding from the call site is a
+    // no-op so the row renders correctly under the beta-gated section
+    // without surfacing a half-built UX.
+    let onSendFeedback: () -> Void
+
     private var viewModel: SettingsViewModel { holder.viewModel }
 
-    init() {
+    init(onSendFeedback: @escaping () -> Void = {}) {
+        self.onSendFeedback = onSendFeedback
         let vm = ViewModelFactory.settingsViewModel()
         let wrapper = KoinHelperKt.wrapSettingsState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
@@ -170,27 +178,44 @@ struct SettingsScreen: View {
                 .accessibilityIdentifier("termsOfServiceButton")
             }
 
-            // Privacy section — Phase F2 analytics opt-in. Default OFF; the
-            // PostHog SDK init in iOSApp.swift is gated on this flag. Toggle
-            // dispatches SetAnalyticsOptIn; the StateFlow flip is the single
-            // source of truth, so SwiftUI re-renders from `state.analyticsOptIn`
-            // rather than a local @State binding.
-            Section {
-                Toggle(isOn: Binding(
-                    get: { state.analyticsOptIn },
-                    set: { newValue in
-                        viewModel.onEvent(
-                            event: SettingsEventSetAnalyticsOptIn(value: newValue)
-                        )
+            // Beta section — Phase 39.4 (ADR-015 §6). Holds diagnostic
+            // data sharing + Send Feedback. Gated on `BuildFlags.isBeta`
+            // so production binaries surface neither — Phase 27a
+            // no-tracking stance for v1.0+. The pre-39.4 "Privacy"
+            // section header / `label_allow_analytics` copy was renamed
+            // because what we collect on beta is diagnostic data, not
+            // "usage analytics" in general.
+            if BuildFlags.isBeta {
+                Section {
+                    Toggle(isOn: Binding(
+                        get: { state.analyticsOptIn },
+                        set: { newValue in
+                            viewModel.onEvent(
+                                event: SettingsEventSetAnalyticsOptIn(value: newValue)
+                            )
+                        }
+                    )) {
+                        Text("label_diagnostic_data_sharing")
                     }
-                )) {
-                    Text("label_allow_analytics")
+                    .accessibilityIdentifier("analyticsOptInSwitch")
+
+                    Button {
+                        onSendFeedback()
+                    } label: {
+                        Label("action_send_feedback", systemImage: "exclamationmark.bubble")
+                    }
+                    .accessibilityIdentifier("sendFeedbackButton")
+                } header: {
+                    Text("label_beta_section")
+                } footer: {
+                    // Two paragraphs joined; Section footer surfaces them
+                    // inline as a single block. Mirrors the Compose
+                    // sibling-Texts under the toggle.
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("body_diagnostic_data_explanation")
+                        Text("body_send_feedback_explanation")
+                    }
                 }
-                .accessibilityIdentifier("analyticsOptInSwitch")
-            } header: {
-                Text("label_privacy_section")
-            } footer: {
-                Text("body_analytics_explanation")
             }
 
             // B3 (Phase 39.1): Danger zone is auth-only — same gating

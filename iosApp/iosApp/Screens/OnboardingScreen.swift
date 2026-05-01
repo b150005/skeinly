@@ -3,6 +3,11 @@ import Shared
 
 // Index-keyed copy. Order MUST match OnboardingViewModel.DEFAULT_PAGES in
 // shared/src/commonMain/kotlin/io/github/b150005/skeinly/ui/onboarding/OnboardingViewModel.kt.
+//
+// Phase 39.4: the diagnostic-consent page (iconName == "diagnostic_data")
+// is rendered by [DiagnosticConsentPageView] and does NOT consume entries
+// from these arrays — the consent page has a Toggle + dedicated copy
+// keyed by `title_diagnostic_consent` / `body_diagnostic_consent`.
 private let onboardingTitleKeys: [LocalizedStringKey] = [
     "title_onboarding_track",
     "title_onboarding_count",
@@ -52,8 +57,22 @@ struct OnboardingScreen: View {
                 }
             )) {
                 ForEach(Array(state.pages.enumerated()), id: \.offset) { index, page in
-                    OnboardingPageView(page: page, index: index)
+                    if page.iconName == "diagnostic_data" {
+                        DiagnosticConsentPageView(
+                            analyticsOptIn: state.analyticsOptIn,
+                            onAnalyticsOptInChanged: { value in
+                                viewModel.onEvent(
+                                    event: OnboardingEventSetAnalyticsOptIn(value: value)
+                                )
+                            }
+                        )
                         .tag(index)
+                        .accessibilityElement(children: .contain)
+                        .accessibilityIdentifier("onboardingPage\(index + 1)")
+                    } else {
+                        OnboardingPageView(page: page, index: index)
+                            .tag(index)
+                    }
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
@@ -135,7 +154,60 @@ private struct OnboardingPageView: View {
         case "home": return "house"
         case "add_circle": return "plus.circle"
         case "favorite": return "heart.text.square"
+        case "diagnostic_data": return "chart.bar.doc.horizontal"
         default: return "house"
         }
+    }
+}
+
+// Phase 39.4 — beta-only diagnostic-data consent page. Mirrors the
+// Compose [DiagnosticConsentPageContent] composable: title + body,
+// then a Toggle row + small explanation text.
+private struct DiagnosticConsentPageView: View {
+    let analyticsOptIn: Bool
+    let onAnalyticsOptInChanged: (Bool) -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Spacer()
+
+            Image(systemName: "chart.bar.doc.horizontal")
+                .font(.system(size: 64))
+                .foregroundStyle(.tint)
+
+            Text(LocalizedStringKey("title_diagnostic_consent"))
+                .font(.title)
+                .fontWeight(.bold)
+                .multilineTextAlignment(.center)
+                .padding(.top, 16)
+
+            Text(LocalizedStringKey("body_diagnostic_consent"))
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+
+            // Toggle row matches the Compose ListItem + Switch shape.
+            Toggle(isOn: Binding(
+                get: { analyticsOptIn },
+                set: { onAnalyticsOptInChanged($0) }
+            )) {
+                Text(LocalizedStringKey("label_diagnostic_data_sharing"))
+            }
+            .accessibilityIdentifier("diagnosticConsentSwitch")
+            .padding(.horizontal, 32)
+            .padding(.top, 16)
+
+            Text(LocalizedStringKey("body_diagnostic_data_explanation"))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.leading)
+                .padding(.horizontal, 32)
+                .padding(.top, 4)
+
+            Spacer()
+            Spacer()
+        }
+        .padding(.horizontal, 24)
     }
 }

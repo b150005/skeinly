@@ -93,6 +93,25 @@ class EventRingBuffer(
      */
     suspend fun snapshot(): List<AnalyticsEvent> = mutex.withLock { buffer.toList() }
 
+    /**
+     * Drops every event currently in the buffer. Idempotent on an empty
+     * buffer.
+     *
+     * Phase 39.4 (ADR-015 §6) — invoked from `SettingsViewModel` whenever
+     * the user toggles diagnostic-data sharing OFF, so any event trail
+     * that accumulated while opt-in was ON does NOT leak into a
+     * subsequent bug-report submission. Without this, the user's
+     * follow-up "I just opted out" report would still attach the events
+     * captured before the opt-out — a privacy contract violation.
+     *
+     * The mutex serializes against the collector coroutine in [start];
+     * an in-flight `addLast` either lands before or after the clear, but
+     * cannot interleave inside it.
+     */
+    suspend fun clear() {
+        mutex.withLock { buffer.clear() }
+    }
+
     companion object {
         const val DEFAULT_CAPACITY: Int = 10
     }

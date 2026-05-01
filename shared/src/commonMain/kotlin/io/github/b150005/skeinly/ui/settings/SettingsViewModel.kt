@@ -2,6 +2,7 @@ package io.github.b150005.skeinly.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.b150005.skeinly.data.analytics.EventRingBuffer
 import io.github.b150005.skeinly.data.preferences.AnalyticsPreferences
 import io.github.b150005.skeinly.domain.model.AuthState
 import io.github.b150005.skeinly.domain.usecase.DeleteAccountUseCase
@@ -89,6 +90,13 @@ class SettingsViewModel(
     private val updatePassword: UpdatePasswordUseCase,
     private val updateEmail: UpdateEmailUseCase,
     private val analyticsPreferences: AnalyticsPreferences,
+    // Phase 39.4 (ADR-015 §6) — when the user toggles diagnostic-data
+    // sharing OFF we MUST drop any event trail accumulated under the
+    // prior opt-in window so a follow-up bug report after opt-out does
+    // not leak the pre-revocation events. Nullable + default null keeps
+    // existing test call-sites valid; production wiring always supplies
+    // non-null via [ViewModelModule].
+    private val eventRingBuffer: EventRingBuffer? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(SettingsState())
     val state: StateFlow<SettingsState> = _state.asStateFlow()
@@ -126,8 +134,20 @@ class SettingsViewModel(
             SettingsEvent.DismissChangeEmail ->
                 _state.update { it.copy(pendingChangeEmailDialog = false) }
             is SettingsEvent.ConfirmChangeEmail -> performChangeEmail(event.newEmail)
-            is SettingsEvent.SetAnalyticsOptIn ->
+            is SettingsEvent.SetAnalyticsOptIn -> {
+                // Phase 39.4 (ADR-015 §6): clear the in-memory event
+                // trail BEFORE flipping the persisted preference OFF —
+                // ordering matters because a concurrent bug-report
+                // submission running on the snapshot side reads the
+                // buffer through the same Mutex. Clearing first ensures
+                // no read-after-revoke window. Idempotent on already-empty.
+                if (!event.value) {
+                    viewModelScope.launch {
+                        eventRingBuffer?.clear()
+                    }
+                }
                 analyticsPreferences.setAnalyticsOptIn(event.value)
+            }
             SettingsEvent.ClearError -> _state.update { it.copy(error = null) }
         }
     }

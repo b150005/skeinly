@@ -1,5 +1,6 @@
 package io.github.b150005.skeinly.di
 
+import io.github.b150005.skeinly.config.BuildFlags
 import io.github.b150005.skeinly.ui.activityfeed.ActivityFeedViewModel
 import io.github.b150005.skeinly.ui.auth.AuthViewModel
 import io.github.b150005.skeinly.ui.auth.ForgotPasswordViewModel
@@ -37,11 +38,38 @@ val viewModelModule =
         // param via reflection, but the explicit form makes the analytics
         // wiring greppable. The `ActivityFeedViewModel` line just below is
         // unrelated to Phase F.3 (it was already explicit pre-Phase F.3).
-        viewModel { OnboardingViewModel(get(), get(), get()) }
+        // Phase 39.4 (ADR-015 §6) — `analyticsPreferences` + the
+        // `includeBetaConsent` flag are threaded so the 4th onboarding
+        // consent page only appears on beta builds. `BuildFlags.isBeta`
+        // resolves at build time on Android (codegen) and at runtime on
+        // iOS (Info.plist). Production binaries get a 3-page carousel.
+        viewModel {
+            OnboardingViewModel(
+                getOnboardingCompleted = get(),
+                completeOnboarding = get(),
+                analyticsTracker = get(),
+                analyticsPreferences = get(),
+                includeBetaConsent = BuildFlags.isBeta,
+            )
+        }
         viewModelOf(::AuthViewModel)
         viewModelOf(::ForgotPasswordViewModel)
         viewModelOf(::ProfileViewModel)
-        viewModelOf(::SettingsViewModel)
+        // Phase 39.4 — `eventRingBuffer` ctor param threaded so a
+        // toggle-OFF on diagnostic-data sharing clears the in-memory
+        // event trail before any subsequent bug-report submission can
+        // attach it.
+        viewModel {
+            SettingsViewModel(
+                observeAuthState = get(),
+                signOut = get(),
+                deleteAccount = get(),
+                updatePassword = get(),
+                updateEmail = get(),
+                analyticsPreferences = get(),
+                eventRingBuffer = get(),
+            )
+        }
         viewModel { ActivityFeedViewModel(get(), get(), get()) }
         viewModel { ProjectListViewModel(get(), get(), get(), get(), get(), get()) }
         viewModelOf(::PatternLibraryViewModel)
