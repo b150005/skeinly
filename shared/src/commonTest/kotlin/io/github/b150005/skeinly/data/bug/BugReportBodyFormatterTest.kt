@@ -5,9 +5,9 @@ import io.github.b150005.skeinly.data.analytics.ChartFormat
 import io.github.b150005.skeinly.data.analytics.ClickActionId
 import io.github.b150005.skeinly.data.analytics.Screen
 import kotlin.test.Test
-import kotlin.time.Instant
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 /**
  * Phase 39.5 (ADR-015 §3) — coverage for the pure Markdown body
