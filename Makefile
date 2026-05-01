@@ -15,7 +15,7 @@ IOS_SIM_DEST ?= platform=iOS Simulator,name=iPhone 16
         ios-build ios-test \
         e2e-android e2e-ios \
         lint format coverage i18n-verify \
-        ci-local \
+        ci-local verify-ios verify-all \
         verify-xcode \
         release-ipa-local \
         clean
@@ -95,13 +95,33 @@ coverage:  ## Generate Kover coverage XML and verify the 80% threshold.
 i18n-verify:  ## Verify i18n key parity across androidApp, shared composeResources, and iOS xcstrings.
 	./gradlew verifyI18nKeys
 
-ci-local:  ## Reproduce the CI pre-push invariant chain locally.
+ci-local:  ## Reproduce the CI pre-push invariant chain (KMP + Android module). For iOS see verify-ios.
 	./gradlew \
 		:shared:ktlintCheck \
+		:androidApp:ktlintCheck \
 		:shared:compileTestKotlinIosSimulatorArm64 \
 		:shared:testAndroidHostTest \
 		:shared:koverVerify \
 		verifyI18nKeys
+
+verify-ios:  ## iOS-side pre-push: regen xcodeproj + build app + build-for-testing (catches Core/Bridging/ regressions).
+	cd iosApp && xcodegen generate
+	xcodebuild build \
+		-project iosApp/iosApp.xcodeproj \
+		-scheme iosApp \
+		-sdk iphonesimulator \
+		-configuration Debug \
+		-destination 'generic/platform=iOS Simulator' \
+		CODE_SIGNING_ALLOWED=NO
+	xcodebuild build-for-testing \
+		-project iosApp/iosApp.xcodeproj \
+		-scheme iosApp \
+		-sdk iphonesimulator \
+		-configuration Debug \
+		-destination 'generic/platform=iOS Simulator' \
+		CODE_SIGNING_ALLOWED=NO
+
+verify-all: ci-local verify-ios  ## Full pre-push chain (ci-local + verify-ios). Run before every git commit.
 
 ##@ Release
 
