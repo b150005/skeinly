@@ -497,50 +497,54 @@ class ChartViewerViewModel(
         val description = current.openPrDescriptionDraft.trim().takeIf { it.isNotEmpty() }
         viewModelScope.launch {
             _state.update { it.copy(isOpeningPullRequest = true, openPrError = null) }
-            val result =
-                openPr(
-                    sourcePatternId = pattern.id,
-                    sourceBranchId = sourceBranch.id,
-                    sourceTipRevisionId = chart.revisionId,
-                    targetPatternId = parentPatternId,
-                    targetBranchId = targetBranch.id,
-                    title = title,
-                    description = description,
-                )
-            when (result) {
-                is UseCaseResult.Success -> {
-                    _state.update {
-                        it.copy(
-                            isOpeningPullRequest = false,
-                            pendingOpenPrSheet = false,
-                            openPrTitleDraft = "",
-                            openPrDescriptionDraft = "",
-                            openPrError = null,
+            try {
+                val result =
+                    openPr(
+                        sourcePatternId = pattern.id,
+                        sourceBranchId = sourceBranch.id,
+                        sourceTipRevisionId = chart.revisionId,
+                        targetPatternId = parentPatternId,
+                        targetBranchId = targetBranch.id,
+                        title = title,
+                        description = description,
+                    )
+                when (result) {
+                    is UseCaseResult.Success -> {
+                        _state.update {
+                            it.copy(
+                                pendingOpenPrSheet = false,
+                                openPrTitleDraft = "",
+                                openPrDescriptionDraft = "",
+                                openPrError = null,
+                            )
+                        }
+                        // Phase F.4 — chart format reflects the source pattern's
+                        // grid (rect / polar) so PostHog can segment PR-open
+                        // adoption by chart type.
+                        analyticsTracker?.track(
+                            AnalyticsEvent.PullRequestOpened(
+                                chartFormat =
+                                    when (chart.coordinateSystem) {
+                                        CoordinateSystem.RECT_GRID -> ChartFormat.Rect
+                                        CoordinateSystem.POLAR_ROUND -> ChartFormat.Polar
+                                    },
+                            ),
+                        )
+                        _navEvents.trySend(
+                            ChartViewerNavEvent.PullRequestCreated(prId = result.value.id),
                         )
                     }
-                    // Phase F.4 — chart format reflects the source pattern's
-                    // grid (rect / polar) so PostHog can segment PR-open
-                    // adoption by chart type.
-                    analyticsTracker?.track(
-                        AnalyticsEvent.PullRequestOpened(
-                            chartFormat =
-                                when (chart.coordinateSystem) {
-                                    CoordinateSystem.RECT_GRID -> ChartFormat.Rect
-                                    CoordinateSystem.POLAR_ROUND -> ChartFormat.Polar
-                                },
-                        ),
-                    )
-                    _navEvents.trySend(
-                        ChartViewerNavEvent.PullRequestCreated(prId = result.value.id),
-                    )
+                    is UseCaseResult.Failure ->
+                        _state.update {
+                            it.copy(openPrError = result.error.toErrorMessage())
+                        }
                 }
-                is UseCaseResult.Failure ->
-                    _state.update {
-                        it.copy(
-                            isOpeningPullRequest = false,
-                            openPrError = result.error.toErrorMessage(),
-                        )
-                    }
+            } finally {
+                // Single source of truth for clearing the spinner: success,
+                // failure, AND cancellation (e.g., user navigates away mid-
+                // submit) all converge here so isOpeningPullRequest never
+                // sticks at true (B2 — 2026-05-01 fix).
+                _state.update { it.copy(isOpeningPullRequest = false) }
             }
         }
     }
