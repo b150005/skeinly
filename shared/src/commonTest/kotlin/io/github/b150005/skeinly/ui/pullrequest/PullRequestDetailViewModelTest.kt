@@ -336,7 +336,7 @@ class PullRequestDetailViewModelTest {
             vm.onEvent(PullRequestDetailEvent.CommentDraftChanged("Looks good"))
             vm.onEvent(PullRequestDetailEvent.PostComment)
 
-            assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.PullRequestCommented), tracker.captured)
+            assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.PullRequestCommented), tracker.outcomeEvents)
         }
 
     @Test
@@ -349,6 +349,6 @@ class PullRequestDetailViewModelTest {
             vm.onEvent(PullRequestDetailEvent.RequestClose)
             vm.onEvent(PullRequestDetailEvent.ConfirmClose)
 
-            assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.PullRequestClosed), tracker.captured)
+            assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.PullRequestClosed), tracker.outcomeEvents)
         }
 }

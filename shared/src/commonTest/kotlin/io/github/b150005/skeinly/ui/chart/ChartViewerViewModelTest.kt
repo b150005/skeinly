@@ -914,7 +914,7 @@ class ChartViewerViewModelTest {
 
             assertEquals(
                 listOf<AnalyticsEvent>(AnalyticsEvent.SegmentMarkedDone(via = SegmentVia.Tap)),
-                tracker.captured,
+                tracker.outcomeEvents,
             )
         }
 
@@ -928,7 +928,7 @@ class ChartViewerViewModelTest {
             viewModel.onEvent(ChartViewerEvent.TapCell("L1", 1, 2))
             advanceUntilIdle()
 
-            assertTrue(tracker.captured.isEmpty(), "tap on TODO transitions to WIP not DONE")
+            assertTrue(tracker.outcomeEvents.isEmpty(), "tap on TODO transitions to WIP not DONE")
         }
 
     @Test
@@ -943,7 +943,7 @@ class ChartViewerViewModelTest {
 
             assertEquals(
                 listOf<AnalyticsEvent>(AnalyticsEvent.SegmentMarkedDone(via = SegmentVia.LongPress)),
-                tracker.captured,
+                tracker.outcomeEvents,
             )
         }
 
@@ -970,7 +970,7 @@ class ChartViewerViewModelTest {
             advanceUntilIdle()
 
             assertTrue(
-                tracker.captured.isEmpty(),
+                tracker.outcomeEvents.isEmpty(),
                 "long-press on already-DONE is idempotent at the use case but must not fire analytics",
             )
         }
@@ -998,7 +998,7 @@ class ChartViewerViewModelTest {
 
             assertEquals(
                 listOf<AnalyticsEvent>(AnalyticsEvent.SegmentMarkedDone(via = SegmentVia.RowBatch)),
-                tracker.captured,
+                tracker.outcomeEvents,
                 "row-batch fires once regardless of segment count",
             )
         }
@@ -1016,7 +1016,7 @@ class ChartViewerViewModelTest {
             // The seeded chart uses RECT_GRID by default in [chart].
             assertEquals(
                 listOf<AnalyticsEvent>(AnalyticsEvent.PullRequestOpened(chartFormat = ChartFormat.Rect)),
-                tracker.captured,
+                tracker.outcomeEvents,
             )
         }
 

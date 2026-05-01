@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.b150005.skeinly.data.analytics.AnalyticsEvent
 import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
+import io.github.b150005.skeinly.data.analytics.ClickActionId
+import io.github.b150005.skeinly.data.analytics.Screen
 import io.github.b150005.skeinly.domain.LocalUser
 import io.github.b150005.skeinly.domain.model.Pattern
 import io.github.b150005.skeinly.domain.model.Progress
@@ -371,6 +373,9 @@ class ProjectDetailViewModel(
     fun onEvent(event: ProjectDetailEvent) {
         when (event) {
             ProjectDetailEvent.IncrementRow -> {
+                analyticsTracker?.track(
+                    AnalyticsEvent.ClickAction(ClickActionId.IncrementRow, Screen.ProjectDetail),
+                )
                 viewModelScope.launch {
                     counterMutex.withLock {
                         when (val result = incrementRow(projectId)) {
@@ -383,6 +388,9 @@ class ProjectDetailViewModel(
                 }
             }
             ProjectDetailEvent.DecrementRow -> {
+                analyticsTracker?.track(
+                    AnalyticsEvent.ClickAction(ClickActionId.DecrementRow, Screen.ProjectDetail),
+                )
                 viewModelScope.launch {
                     counterMutex.withLock {
                         when (val result = decrementRow(projectId)) {
@@ -434,6 +442,9 @@ class ProjectDetailViewModel(
                 }
             }
             ProjectDetailEvent.CompleteProject -> {
+                analyticsTracker?.track(
+                    AnalyticsEvent.ClickAction(ClickActionId.MarkComplete, Screen.ProjectDetail),
+                )
                 viewModelScope.launch {
                     when (val result = completeProject(projectId)) {
                         is UseCaseResult.Success -> { /* state updates via Flow */ }
@@ -442,6 +453,9 @@ class ProjectDetailViewModel(
                 }
             }
             ProjectDetailEvent.ReopenProject -> {
+                analyticsTracker?.track(
+                    AnalyticsEvent.ClickAction(ClickActionId.Reopen, Screen.ProjectDetail),
+                )
                 viewModelScope.launch {
                     when (val result = reopenProject(projectId)) {
                         is UseCaseResult.Success -> { /* state updates via Flow */ }

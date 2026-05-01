@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.b150005.skeinly.data.analytics.AnalyticsEvent
 import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
+import io.github.b150005.skeinly.data.analytics.ClickActionId
+import io.github.b150005.skeinly.data.analytics.Screen
 import io.github.b150005.skeinly.domain.model.Difficulty
 import io.github.b150005.skeinly.domain.model.Visibility
 import io.github.b150005.skeinly.domain.repository.PatternRepository
@@ -123,7 +125,12 @@ class PatternEditViewModel(
             is PatternEditEvent.UpdateYarnInfo -> _state.update { it.copy(yarnInfo = event.yarnInfo) }
             is PatternEditEvent.UpdateNeedleSize -> _state.update { it.copy(needleSize = event.needleSize) }
             is PatternEditEvent.UpdateVisibility -> _state.update { it.copy(visibility = event.visibility) }
-            PatternEditEvent.Save -> save()
+            PatternEditEvent.Save -> {
+                analyticsTracker?.track(
+                    AnalyticsEvent.ClickAction(ClickActionId.SavePattern, Screen.PatternEdit),
+                )
+                save()
+            }
             PatternEditEvent.ClearError -> _state.update { it.copy(error = null) }
         }
     }

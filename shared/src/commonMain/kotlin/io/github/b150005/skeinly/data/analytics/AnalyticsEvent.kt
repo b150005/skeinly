@@ -150,6 +150,50 @@ sealed interface AnalyticsEvent {
         override val name: String = "pull_request_commented"
         override val properties: Map<String, Any>? = null
     }
+
+    // ----- Phase 39.3 (ADR-015 §6): generic screen + click instrumentation -----
+
+    /**
+     * A user-visible screen became active. Emitted by the Android
+     * `MainActivity` `NavController.OnDestinationChangedListener` and the
+     * iOS `.trackScreen(_:)` ViewModifier (see `iosApp/iosApp/Core/`).
+     *
+     * Sits **alongside** the typed-action variants above, not in place of
+     * them — engagement-funnel signal is a different question from
+     * outcome-event signal. PostHog dashboards group by `screen` to derive
+     * per-screen DAU and tap-through rates without exposing pattern /
+     * project ids at the wire boundary.
+     */
+    data class ScreenViewed(
+        val screen: Screen,
+    ) : AnalyticsEvent {
+        override val name: String get() = "screen_viewed"
+        override val properties: Map<String, Any>
+            get() = mapOf(PROP_SCREEN to screen.wireValue)
+    }
+
+    /**
+     * A user clicked a tracked action. Carries both the action [action] and
+     * the originating [screen] so per-screen breakdowns and per-action
+     * cross-screen comparisons (e.g. CreateProject from ProjectList vs
+     * empty-state CTA — though Phase 39.0.2 Sprint B M4 collapsed the
+     * empty-state CTA on Android) are both expressible in PostHog.
+     *
+     * Fires on **intent**, not outcome — see [ClickActionId] KDoc for the
+     * intent-vs-outcome distinction with the existing typed variants.
+     */
+    data class ClickAction(
+        val action: ClickActionId,
+        val screen: Screen,
+    ) : AnalyticsEvent {
+        override val name: String get() = "click_action"
+        override val properties: Map<String, Any>
+            get() =
+                mapOf(
+                    PROP_ACTION to action.wireValue,
+                    PROP_SCREEN to screen.wireValue,
+                )
+    }
 }
 
 /**
@@ -184,3 +228,5 @@ private const val PROP_CHART_FORMAT = "chart_format"
 private const val PROP_VIA = "via"
 private const val PROP_HAD_CHART = "had_chart"
 private const val PROP_HAD_CONFLICTS = "had_conflicts"
+private const val PROP_SCREEN = "screen"
+private const val PROP_ACTION = "action"

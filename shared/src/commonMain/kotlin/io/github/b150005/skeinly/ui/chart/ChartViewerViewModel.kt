@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import io.github.b150005.skeinly.data.analytics.AnalyticsEvent
 import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
 import io.github.b150005.skeinly.data.analytics.ChartFormat
+import io.github.b150005.skeinly.data.analytics.ClickActionId
+import io.github.b150005.skeinly.data.analytics.Screen
 import io.github.b150005.skeinly.data.analytics.SegmentVia
 import io.github.b150005.skeinly.domain.model.ChartBranch
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
@@ -262,10 +264,14 @@ class ChartViewerViewModel(
             is ChartViewerEvent.TapCell -> tapCell(event.layerId, event.x, event.y)
             is ChartViewerEvent.LongPressCell -> longPressCell(event.layerId, event.x, event.y)
             is ChartViewerEvent.MarkRowDone -> markRowDone(event.row)
-            is ChartViewerEvent.RequestOpenPullRequest ->
+            is ChartViewerEvent.RequestOpenPullRequest -> {
+                analyticsTracker?.track(
+                    AnalyticsEvent.ClickAction(ClickActionId.OpenPullRequest, Screen.ChartViewer),
+                )
                 _state.update {
                     it.copy(pendingOpenPrSheet = true, openPrError = null)
                 }
+            }
             is ChartViewerEvent.OpenPrTitleChanged ->
                 _state.update { it.copy(openPrTitleDraft = event.value) }
             is ChartViewerEvent.OpenPrDescriptionChanged ->

@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.b150005.skeinly.data.analytics.AnalyticsEvent
 import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
+import io.github.b150005.skeinly.data.analytics.ClickActionId
+import io.github.b150005.skeinly.data.analytics.Screen
 import io.github.b150005.skeinly.domain.model.Difficulty
 import io.github.b150005.skeinly.domain.model.Pattern
 import io.github.b150005.skeinly.domain.model.SortOrder
@@ -168,7 +170,12 @@ class DiscoveryViewModel(
             is DiscoveryEvent.UpdateSortOrder -> {
                 filterState.update { it.copy(sortOrder = event.order) }
             }
-            is DiscoveryEvent.ForkPattern -> fork(event.patternId)
+            is DiscoveryEvent.ForkPattern -> {
+                analyticsTracker?.track(
+                    AnalyticsEvent.ClickAction(ClickActionId.Fork, Screen.Discovery),
+                )
+                fork(event.patternId)
+            }
             DiscoveryEvent.ToggleChartsOnly -> {
                 // Phase 36.4 (ADR-012 §4): server-side filter so toggling
                 // re-fetches against the current search query. Difficulty +

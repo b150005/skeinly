@@ -109,13 +109,18 @@ struct AppRootView: View {
         // by clearing the onboarding preference.
         Group {
             if !hasSeenOnboarding {
+                // Phase 39.3 (ADR-015 §6) — pre-router screens declare
+                // their own `.trackScreen()` since they don't pass through
+                // `destinationView(for:)`.
                 OnboardingScreen {
                     hasSeenOnboarding = true
                 }
+                .trackScreen(.onboarding)
             } else if !isConfigured {
                 // Local-only mode: skip auth
                 NavigationStack(path: $path) {
                     ProjectListScreen(path: $path)
+                        .trackScreen(.projectlist)
                         .navigationDestination(for: Route.self) { route in
                             destinationView(for: route)
                         }
@@ -123,6 +128,7 @@ struct AppRootView: View {
             } else if authState is AuthStateAuthenticated {
                 NavigationStack(path: $path) {
                     ProjectListScreen(path: $path)
+                        .trackScreen(.projectlist)
                         .navigationDestination(for: Route.self) { route in
                             destinationView(for: route)
                         }
@@ -137,6 +143,7 @@ struct AppRootView: View {
                 ProgressView("Loading...")
             } else {
                 LoginScreen(viewModel: authHolder.viewModel)
+                    .trackScreen(.login)
             }
         }
         .onOpenURL { url in
@@ -146,41 +153,72 @@ struct AppRootView: View {
 
     @ViewBuilder
     private func destinationView(for route: Route) -> some View {
+        // Phase 39.3 (ADR-015 §6) — every navigation destination registers
+        // a `ScreenViewed` event via the shared `Screen` enum. Centralizing
+        // the modifier in the router beats per-screen edits because it's a
+        // single anchor — adding a new route is one diff (Route case +
+        // destination view + .trackScreen() suffix), not three.
+        // Kotlin/Native ObjC bridging lowercases PascalCase enum entries
+        // entirely (no camelCase split): `Screen.ProjectDetail` (Kotlin)
+        // surfaces as `Screen.projectdetail` (Swift). Same convention as
+        // multi-word `ClickActionId.SelectPaletteSymbol` →
+        // `.selectpalettesymbol`. Single-word entries stay tidy
+        // (`Screen.discovery`); multi-word ones look unusual but are
+        // mechanical from the bridge — annotating each entry with
+        // `@ObjCName` would let us override but balloons the Kotlin enum
+        // declaration.
         switch route {
         case .projectDetail(let projectId):
             ProjectDetailScreen(projectId: projectId, path: $path)
+                .trackScreen(.projectdetail)
         case .profile:
             ProfileScreen()
+                .trackScreen(.profile)
         case .settings:
             SettingsScreen()
+                .trackScreen(.settings)
         case .activityFeed:
             ActivityFeedScreen()
+                .trackScreen(.activityfeed)
         case .sharedWithMe:
             SharedWithMeScreen(path: $path)
+                .trackScreen(.sharedwithme)
         case .sharedContent(let token, let shareId):
             SharedContentScreen(token: token, shareId: shareId, path: $path)
+                .trackScreen(.sharedcontent)
         case .discovery:
             DiscoveryScreen(path: $path)
+                .trackScreen(.discovery)
         case .patternLibrary:
             PatternLibraryScreen(path: $path)
+                .trackScreen(.patternlibrary)
         case .patternEdit(let patternId):
             PatternEditScreen(patternId: patternId, path: $path)
+                .trackScreen(.patternedit)
         case .chartViewer(let patternId, let projectId):
             StructuredChartViewerScreen(patternId: patternId, projectId: projectId, path: $path)
+                .trackScreen(.chartviewer)
         case .chartEditor(let patternId):
             StructuredChartEditorScreen(patternId: patternId, path: $path)
+                .trackScreen(.charteditor)
         case .chartHistory(let patternId):
             ChartHistoryScreen(patternId: patternId, path: $path)
+                .trackScreen(.charthistory)
         case .chartDiff(let baseRevisionId, let targetRevisionId):
             ChartDiffScreen(baseRevisionId: baseRevisionId, targetRevisionId: targetRevisionId)
+                .trackScreen(.chartdiff)
         case .symbolGallery:
             SymbolGalleryScreen()
+                .trackScreen(.symbolgallery)
         case .pullRequestList(let defaultFilter):
             PullRequestListScreen(defaultFilter: defaultFilter, path: $path)
+                .trackScreen(.pullrequestlist)
         case .pullRequestDetail(let prId):
             PullRequestDetailScreen(prId: prId, path: $path)
+                .trackScreen(.pullrequestdetail)
         case .chartConflictResolution(let prId):
             ChartConflictResolutionScreen(prId: prId, path: $path)
+                .trackScreen(.chartconflictresolution)
         }
     }
 

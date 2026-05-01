@@ -41,13 +41,36 @@ struct iOSApp: App {
 
         KoinHelperKt.doInitKoin()
 
+        // Phase 39.3 (ADR-015 §6) — start the bug-report event trail
+        // collector exactly once at app init. Not gated on `BuildFlags.isBeta`
+        // — the buffer is harmless on production (it only ever fills with
+        // opt-in-gated events, and Phase 39.5's bug-reporter gesture is
+        // itself beta-only so production never reads `snapshot()`).
+        Self.startEventRingBuffer()
+
         // Phase F2: PostHog product analytics. Default OFF (opt-in, not
         // opt-out). SDK is initialized lazily on the first ON flip; toggling
         // OFF mid-session calls optOut() to suspend further capture; toggling
         // ON again calls optIn(). Mirrors SkeinlyApplication.kt's lifecycle.
-        Self.observeAnalyticsOptIn()
-        // Phase F.3 — bridge shared AnalyticsTracker events to PostHog.
-        Self.observeAnalyticsEvents()
+        //
+        // Phase 39.3 (ADR-015 §2) — gated on `BuildFlags.isBeta` so production
+        // (v1.0+) binaries never call PostHog SDK setup, even if opt-in toggles
+        // ON via a stale settings payload. Mirrors the Android-side gate.
+        if BuildFlags.isBeta {
+            Self.observeAnalyticsOptIn()
+            // Phase F.3 — bridge shared AnalyticsTracker events to PostHog.
+            Self.observeAnalyticsEvents()
+        }
+    }
+
+    /// Phase 39.3 (ADR-015 §6) — kicks off the EventRingBuffer collector
+    /// on the shared `applicationScopeQualifier` CoroutineScope (resolved
+    /// inside `KoinHelperKt.startEventRingBuffer`, so Swift never juggles
+    /// the scope). The buffer itself is a Koin `single`, so the same
+    /// instance services Phase 39.5's `snapshot()` calls from the
+    /// bug-report flow.
+    private static func startEventRingBuffer() {
+        KoinHelperKt.startEventRingBuffer()
     }
 
     /// Holds the `Closeable` for the analytics opt-in observer. Static so

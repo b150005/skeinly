@@ -643,12 +643,12 @@ class ProjectListViewModelTest {
             }
             assertEquals(
                 listOf<AnalyticsEvent>(AnalyticsEvent.ProjectCreated),
-                analyticsTracker.captured,
+                analyticsTracker.outcomeEvents,
             )
         }
 
     @Test
-    fun `failed CreateProject does not capture analytics event`() =
+    fun `failed CreateProject does not capture outcome event`() =
         runTest {
             viewModel.state.test {
                 awaitItem() // initial
@@ -657,8 +657,9 @@ class ProjectListViewModelTest {
                 cancelAndIgnoreRemainingEvents()
             }
             assertTrue(
-                analyticsTracker.captured.isEmpty(),
-                "validation failure should NOT emit project_created",
+                analyticsTracker.outcomeEvents.isEmpty(),
+                "validation failure should NOT emit project_created " +
+                    "(ClickAction is fine — it tracks the tap intent regardless of outcome)",
             )
         }
 
