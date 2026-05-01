@@ -128,6 +128,15 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    lint {
+        // The launcher icons are intentional fill-the-square brand artwork,
+        // not the silhouetted Material Design recommendation. Adaptive-icon
+        // adoption (mipmap-anydpi-v26) is a brand-asset deliverable, not an
+        // engineering one — disabling the rule here keeps the warning floor
+        // at zero without hiding the real design follow-up.
+        disable += "IconLauncherShape"
+    }
 }
 
 // Compose Multiplatform resources workaround for AGP 9.x KMP library plugin.
