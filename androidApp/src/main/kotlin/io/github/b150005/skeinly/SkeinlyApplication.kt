@@ -37,6 +37,11 @@ class SkeinlyApplication : Application() {
             SentryAndroid.init(this) { options ->
                 options.dsn = sentryDsn
                 options.release = BuildConfig.VERSION_NAME
+                // I1 (Phase 39.1): tag every event with the runtime
+                // environment so Sentry dashboards / alerts / release-health
+                // can filter dev vs prod cleanly. Without this, debug
+                // crashes pollute the production stability metric.
+                options.environment = if (BuildConfig.DEBUG) "development" else "production"
                 // Phase F1 ships with breadcrumbs but conservative perf
                 // sampling — we'll tune via Sentry dashboard once telemetry
                 // arrives. 1.0 captures everything; lowering to 0.2 for
@@ -94,6 +99,15 @@ class SkeinlyApplication : Application() {
                                     sendFeatureFlagEvent = false
                                 }
                             PostHogAndroid.setup(this@SkeinlyApplication, config)
+                            // I1 (Phase 39.1): tag every event with the
+                            // runtime environment so dev captures filter
+                            // out of prod dashboards. Registered as a
+                            // super property so every subsequent capture
+                            // inherits it without per-call boilerplate.
+                            PostHog.register(
+                                key = "environment",
+                                value = if (BuildConfig.DEBUG) "development" else "production",
+                            )
                             posthogInitialized.set(true)
                             Log.i("Skeinly", "PostHog initialized (analytics opt-in)")
                         }

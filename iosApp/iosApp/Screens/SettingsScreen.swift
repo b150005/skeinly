@@ -115,40 +115,46 @@ struct SettingsScreen: View {
     @ViewBuilder
     private func settingsContent(_ state: SettingsState) -> some View {
         List {
-            // Account section
-            Section("label_account_section") {
-                if let email = state.email {
-                    HStack {
-                        Text("label_email")
-                        Spacer()
-                        Text(email)
-                            .foregroundStyle(.secondary)
+            // B3 (Phase 39.1): Account section is gated on `state.isSignedIn`.
+            // Apple Reviewers may reject UIs that imply features the user
+            // can't access (e.g. showing "Sign Out" / "Delete Account"
+            // while never signed in).
+            if state.isSignedIn {
+                // Account section
+                Section("label_account_section") {
+                    if let email = state.email {
+                        HStack {
+                            Text("label_email")
+                            Spacer()
+                            Text(email)
+                                .foregroundStyle(.secondary)
+                        }
                     }
-                }
 
-                Button {
-                    viewModel.onEvent(event: SettingsEventSignOut.shared)
-                } label: {
-                    Label("action_sign_out", systemImage: "rectangle.portrait.and.arrow.right")
-                }
-                .accessibilityIdentifier("signOutButton")
+                    Button {
+                        viewModel.onEvent(event: SettingsEventSignOut.shared)
+                    } label: {
+                        Label("action_sign_out", systemImage: "rectangle.portrait.and.arrow.right")
+                    }
+                    .accessibilityIdentifier("signOutButton")
 
-                // Phase B3: change password / change email
-                Button {
-                    newPassword = ""
-                    viewModel.onEvent(event: SettingsEventRequestChangePassword.shared)
-                } label: {
-                    Label("action_change_password", systemImage: "key.fill")
-                }
-                .accessibilityIdentifier("changePasswordButton")
+                    // Phase B3: change password / change email
+                    Button {
+                        newPassword = ""
+                        viewModel.onEvent(event: SettingsEventRequestChangePassword.shared)
+                    } label: {
+                        Label("action_change_password", systemImage: "key.fill")
+                    }
+                    .accessibilityIdentifier("changePasswordButton")
 
-                Button {
-                    newEmail = ""
-                    viewModel.onEvent(event: SettingsEventRequestChangeEmail.shared)
-                } label: {
-                    Label("action_change_email", systemImage: "envelope")
+                    Button {
+                        newEmail = ""
+                        viewModel.onEvent(event: SettingsEventRequestChangeEmail.shared)
+                    } label: {
+                        Label("action_change_email", systemImage: "envelope")
+                    }
+                    .accessibilityIdentifier("changeEmailButton")
                 }
-                .accessibilityIdentifier("changeEmailButton")
             }
 
             // About / Legal section — Phase E2
@@ -187,28 +193,30 @@ struct SettingsScreen: View {
                 Text("body_analytics_explanation")
             }
 
-            // Danger zone section
-            // (continues below)
-            Section {
-                Button(role: .destructive) {
-                    showDeleteConfirmation = true
-                } label: {
-                    if state.isDeletingAccount {
-                        HStack {
-                            ProgressView()
-                                .padding(.trailing, 8)
-                            Text("state_deleting_account")
+            // B3 (Phase 39.1): Danger zone is auth-only — same gating
+            // as the Account section above.
+            if state.isSignedIn {
+                Section {
+                    Button(role: .destructive) {
+                        showDeleteConfirmation = true
+                    } label: {
+                        if state.isDeletingAccount {
+                            HStack {
+                                ProgressView()
+                                    .padding(.trailing, 8)
+                                Text("state_deleting_account")
+                            }
+                        } else {
+                            Label("action_delete_account", systemImage: "trash")
                         }
-                    } else {
-                        Label("action_delete_account", systemImage: "trash")
                     }
+                    .disabled(state.isDeletingAccount)
+                    .accessibilityIdentifier("deleteAccountButton")
+                } header: {
+                    Text("label_danger_zone")
+                } footer: {
+                    Text("body_delete_account_warning")
                 }
-                .disabled(state.isDeletingAccount)
-                .accessibilityIdentifier("deleteAccountButton")
-            } header: {
-                Text("label_danger_zone")
-            } footer: {
-                Text("body_delete_account_warning")
             }
         }
     }

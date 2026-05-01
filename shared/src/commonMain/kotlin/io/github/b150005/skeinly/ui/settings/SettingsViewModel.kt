@@ -23,6 +23,16 @@ import kotlinx.coroutines.launch
 
 data class SettingsState(
     val email: String? = null,
+    /**
+     * B3 (Phase 39.1): explicit auth gate — `true` only when the
+     * `ObserveAuthStateUseCase` flow emits [AuthState.Authenticated]. UI
+     * uses this to hide Account / Sign Out / Change Password / Change
+     * Email / Delete Account sections when the user has never signed in
+     * or has signed out. Using `email != null` as a proxy is fragile
+     * because some auth providers can return Authenticated with a null
+     * email; the explicit boolean is unambiguous.
+     */
+    val isSignedIn: Boolean = false,
     val isLoading: Boolean = true,
     val isDeletingAccount: Boolean = false,
     val isChangingPassword: Boolean = false,
@@ -129,10 +139,20 @@ class SettingsViewModel(
                     when (authState) {
                         is AuthState.Authenticated ->
                             _state.update {
-                                it.copy(email = authState.email, isLoading = false)
+                                it.copy(
+                                    email = authState.email,
+                                    isSignedIn = true,
+                                    isLoading = false,
+                                )
                             }
                         else ->
-                            _state.update { it.copy(isLoading = false) }
+                            _state.update {
+                                it.copy(
+                                    email = null,
+                                    isSignedIn = false,
+                                    isLoading = false,
+                                )
+                            }
                     }
                 }
         }
