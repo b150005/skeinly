@@ -27,13 +27,23 @@ tags:
 - assertVisible:
     id: "onboardingPage2"
 
-# Swipe to page 3 (last page)
+# Swipe to page 3
 - swipe:
     direction: LEFT
     duration: 400
 
 - assertVisible:
     id: "onboardingPage3"
+
+# Phase 39.4: beta builds add a 4th diagnostic-consent page; current
+# `version.properties` `1.0.0-beta1` triggers `BuildFlags.isBeta == true`.
+# Drop this stanza at v1.0 GA.
+- swipe:
+    direction: LEFT
+    duration: 400
+
+- assertVisible:
+    id: "onboardingPage4"
 
 # Verify "Get Started" button appears on last page
 - assertVisible:

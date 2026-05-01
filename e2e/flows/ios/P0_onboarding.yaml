@@ -32,13 +32,24 @@ tags:
 - assertVisible:
     id: "onboardingPage2"
 
-# Swipe to page 3 (last page)
+# Swipe to page 3
 - swipe:
     direction: LEFT
     duration: 400
 
 - assertVisible:
     id: "onboardingPage3"
+
+# Phase 39.4: iOS production builds always set `IS_BETA: "YES"` (xcconfig
+# macro in `iosApp/project.yml`), so the 4th diagnostic-consent page is
+# always present. Drop this stanza at v1.0 GA when IS_BETA flips off —
+# see Tech Debt Backlog `### Phase 40 GA release prep`.
+- swipe:
+    direction: LEFT
+    duration: 400
+
+- assertVisible:
+    id: "onboardingPage4"
 
 # Verify "Get Started" button appears on last page
 - assertVisible:

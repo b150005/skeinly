@@ -42,6 +42,16 @@ jobs:
     # is used (not umbrella `:shared:assemble`) because the latter pulls
     # in iOS-native link tasks that ubuntu-latest cannot satisfy.
     #
+    # `--no-build-cache` is REQUIRED on the Build (java-kotlin) step:
+    # without it, gradle-actions cache restores `:shared:compileAndroidMain`
+    # and `:androidApp:compileDebugKotlin` outputs from a previous run
+    # (FROM-CACHE), which means kotlinc never actually executes and the
+    # CodeQL extractor's process trace is empty. Result: "CodeQL detected
+    # code written in Java/Kotlin but this run didn't build any of it".
+    # Cache restoration triggered the regression on 2026-05-01 once Phase
+    # 39.3 had warmed the cache; the same workflow worked on a cold cache
+    # (`48abc21`) and re-failed once the cache had compile outputs cached.
+    #
     # The overlay-base database warning ("build-mode is set to manual
     # instead of none") is benign — CodeQL falls back to full
     # (non-incremental) analysis.
@@ -89,8 +99,10 @@ jobs:
         if: matrix.language == 'java-kotlin'
         env:
           GRADLE_OPTS: "-Xmx4g"
+        # `--no-build-cache` forces real kotlinc execution so the CodeQL
+        # extractor can trace it. See header comment for full rationale.
         run: >-
-          ./gradlew --no-daemon
+          ./gradlew --no-daemon --no-build-cache
           -Pkotlin.daemon.enabled=false
           -Dkotlin.compiler.execution.strategy=in-process
           :shared:assembleAndroidMain
