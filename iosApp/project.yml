@@ -78,6 +78,15 @@ targets:
         # Supabase init in SupabaseConfig.ios.kt (local-only mode).
         SUPABASE_URL: "$(SUPABASE_URL)"
         SUPABASE_PUBLISHABLE_KEY: "$(SUPABASE_PUBLISHABLE_KEY)"
+        # Phase 39.2 — Build-flavor flag exposed to runtime via Info.plist.
+        # The xcconfig macro IS_BETA (set in `settings.base` below) is
+        # substituted as a literal string ("YES" / "NO") here. iOS
+        # consumers (`BuildFlags.ios.kt`, `Core/BuildFlags.swift`) read
+        # this key and compare to "YES" — Info.plist string-typed booleans
+        # do not auto-convert to NSNumber when accessed via
+        # `objectForInfoDictionaryKey`. Drives the F2 (ADR-015) bug
+        # reporter gating on iOS.
+        IsBetaBuild: "$(IS_BETA)"
         UILaunchScreen:
           UIColorName: SystemBackground
         CFBundleURLTypes:
@@ -98,6 +107,14 @@ targets:
         MARKETING_VERSION: "1.0.0-beta1"
         CURRENT_PROJECT_VERSION: "2"
         PRODUCT_BUNDLE_IDENTIFIER: io.github.b150005.skeinly
+        # Phase 39.2 — F2 build-flavor flag. "YES" while MARKETING_VERSION
+        # carries a `-beta` suffix; flip to "NO" alongside the v1.0 GA
+        # version bump (Phase 40). Consumed via the `IsBetaBuild`
+        # Info.plist key — see the `info.properties` block above. The
+        # xcconfig substitutes the literal string verbatim, so the plist
+        # entry is `<string>YES</string>` not `<true/>` (Apple's xcconfig
+        # → plist substitution does not perform type coercion).
+        IS_BETA: "YES"
         FRAMEWORK_SEARCH_PATHS:
           - "$(inherited)"
           - "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"
