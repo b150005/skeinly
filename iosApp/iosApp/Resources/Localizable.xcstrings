@@ -1446,6 +1446,23 @@
         }
       }
     },
+    "action_submit_bug_report": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Submit on GitHub"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub で送信"
+          }
+        }
+      }
+    },
     "action_switch": {
       "extractionState": "manual",
       "localizations": {
@@ -1697,6 +1714,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "鏡映軸にしたい目をタップしてください。"
+          }
+        }
+      }
+    },
+    "body_bug_report_includes_actions": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Submitting opens GitHub. The report includes your description plus app version, OS, device, locale, and your last 10 actions — no patterns, notes, photos, or PII."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "送信すると GitHub が開きます。レポートには、入力した内容に加えて、アプリバージョン・OS・デバイス・ロケール・直近 10 件の操作履歴が含まれます。パターン、メモ、写真、個人情報は含まれません。"
           }
         }
       }
@@ -2909,6 +2943,23 @@
         }
       }
     },
+    "hint_bug_description_placeholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steps to reproduce, what you expected, what happened…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再現手順、期待していた動作、実際に起きたこと…"
+          }
+        }
+      }
+    },
     "hint_gauge_example": {
       "extractionState": "manual",
       "localizations": {
@@ -3279,6 +3330,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "ブランチ名"
+          }
+        }
+      }
+    },
+    "label_bug_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Describe the bug"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "バグの内容"
+          }
+        }
+      }
+    },
+    "label_bug_report_preview_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnostic body to be attached"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添付される診断情報"
           }
         }
       }
@@ -6337,6 +6422,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "ブランチ"
+          }
+        }
+      }
+    },
+    "title_bug_report_preview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send Feedback"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フィードバックを送信"
           }
         }
       }

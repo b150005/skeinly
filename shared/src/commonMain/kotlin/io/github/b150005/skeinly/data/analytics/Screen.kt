@@ -44,4 +44,5 @@ enum class Screen(
     SharedContent("sharedContentScreen"),
     PullRequestList("pullRequestListScreen"),
     PullRequestDetail("pullRequestDetailScreen"),
+    BugReportPreview("bugReportPreviewScreen"),
 }

@@ -14,6 +14,7 @@ import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
 import io.github.b150005.skeinly.domain.usecase.GetOnboardingCompletedUseCase
 import io.github.b150005.skeinly.ui.activityfeed.ActivityFeedViewModel
 import io.github.b150005.skeinly.ui.auth.AuthViewModel
+import io.github.b150005.skeinly.ui.bugreport.BugReportPreviewViewModel
 import io.github.b150005.skeinly.ui.chart.ChartBranchPickerViewModel
 import io.github.b150005.skeinly.ui.chart.ChartDiffViewModel
 import io.github.b150005.skeinly.ui.chart.ChartEditorViewModel
@@ -74,6 +75,18 @@ fun getSettingsViewModel(): SettingsViewModel = KoinPlatform.getKoin().get()
 // observes the StateFlow via `wrapAnalyticsOptInFlow` to react to runtime
 // toggles.
 fun getAnalyticsPreferences(): AnalyticsPreferences = KoinPlatform.getKoin().get()
+
+/**
+ * Phase 39.5 (ADR-015 §1) — synchronous accessor for the current opt-in
+ * value, read by the iOS shake-gesture handler in `AppRootView` to gate
+ * `dispatchTouchEvent`-equivalent navigation. Avoids the Kotlin/Native
+ * `Boolean` → `KotlinBoolean` bridging surface that would otherwise force
+ * Swift call sites through `.boolValue`.
+ */
+fun analyticsOptInValue(): Boolean {
+    val prefs: AnalyticsPreferences = KoinPlatform.getKoin().get()
+    return prefs.analyticsOptIn.value
+}
 
 fun wrapAnalyticsOptInFlow(flow: kotlinx.coroutines.flow.StateFlow<Boolean>): FlowWrapper<kotlin.Boolean> = FlowWrapper(flow)
 
@@ -201,6 +214,13 @@ fun wrapProgressNotesState(
 fun wrapSettingsState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.settings.SettingsState>,
 ): FlowWrapper<io.github.b150005.skeinly.ui.settings.SettingsState> = FlowWrapper(flow)
+
+// Phase 39.5 (ADR-015 §6) — bug-report preview ViewModel + state wrapper.
+fun getBugReportPreviewViewModel(): BugReportPreviewViewModel = KoinPlatform.getKoin().get()
+
+fun wrapBugReportPreviewState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.bugreport.BugReportPreviewState>,
+): FlowWrapper<io.github.b150005.skeinly.ui.bugreport.BugReportPreviewState> = FlowWrapper(flow)
 
 fun wrapSettingsAccountDeletedFlow(flow: kotlinx.coroutines.flow.Flow<kotlin.Unit>): EventFlowWrapper<kotlin.Unit> = EventFlowWrapper(flow)
 

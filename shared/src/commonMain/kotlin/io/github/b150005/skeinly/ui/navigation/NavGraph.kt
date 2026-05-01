@@ -19,6 +19,7 @@ import io.github.b150005.skeinly.ui.activityfeed.ActivityFeedScreen
 import io.github.b150005.skeinly.ui.auth.AuthViewModel
 import io.github.b150005.skeinly.ui.auth.ForgotPasswordScreen
 import io.github.b150005.skeinly.ui.auth.LoginScreen
+import io.github.b150005.skeinly.ui.bugreport.BugReportPreviewScreen
 import io.github.b150005.skeinly.ui.chart.ChartDiffScreen
 import io.github.b150005.skeinly.ui.chart.ChartEditorScreen
 import io.github.b150005.skeinly.ui.chart.ChartHistoryScreen
@@ -165,6 +166,16 @@ data class SharedContent(
     val token: String? = null,
     val shareId: String? = null,
 )
+
+/**
+ * Phase 39.5 (ADR-015 §6) — bug-report preview screen reachable from
+ * Settings → Beta → "Send Feedback" and from the platform-specific
+ * gesture triggers (Android 3-finger long-press, iOS shake). Beta-only;
+ * production builds never navigate here because the entry points are
+ * gated on [io.github.b150005.skeinly.config.BuildFlags.isBeta].
+ */
+@Serializable
+data object BugReportPreview
 
 @Composable
 fun SkeinlyNavHost(
@@ -335,6 +346,16 @@ fun SkeinlyNavHost(
                         popUpTo(0) { inclusive = true }
                     }
                 },
+                // Phase 39.5 (ADR-015 §6) — Send Feedback routes to the
+                // bug-report preview screen. Phase 39.4 wired the
+                // SettingsScreen callback as a no-op stub; this slice
+                // pivots it to the real navigation target.
+                onSendFeedback = { navController.navigate(BugReportPreview) },
+            )
+        }
+        composable<BugReportPreview> {
+            BugReportPreviewScreen(
+                onCancel = { navController.popBackStack() },
             )
         }
         composable<ActivityFeed> {

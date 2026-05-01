@@ -87,6 +87,16 @@
     <string name="action_send_feedback">Send Feedback</string>
     <string name="body_send_feedback_explanation">Opens a pre-filled GitHub Issue in your browser. The bug report includes the last 10 actions you took (no PII).</string>
 
+    <!-- Bug-report preview screen (Phase 39.5, ADR-015 §3 + §6). Beta-only;
+         reachable from Settings → Beta → "Send Feedback" and the platform
+         shake / 3-finger-long-press gestures. -->
+    <string name="title_bug_report_preview">Send Feedback</string>
+    <string name="label_bug_description">Describe the bug</string>
+    <string name="hint_bug_description_placeholder">Steps to reproduce, what you expected, what happened…</string>
+    <string name="label_bug_report_preview_body">Diagnostic body to be attached</string>
+    <string name="body_bug_report_includes_actions">Submitting opens GitHub. The report includes your description plus app version, OS, device, locale, and your last 10 actions — no patterns, notes, photos, or PII.</string>
+    <string name="action_submit_bug_report">Submit on GitHub</string>
+
     <string name="error_authentication_failed">Authentication failed</string>
     <string name="error_email_invalid">Invalid email address</string>
     <string name="error_email_not_confirmed">Please confirm your email address first</string>
