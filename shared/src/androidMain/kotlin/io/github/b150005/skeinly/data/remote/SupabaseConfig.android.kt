@@ -4,5 +4,5 @@ import io.github.b150005.skeinly.config.SupabaseCredentials
 
 actual object SupabaseConfig {
     actual val url: String = SupabaseCredentials.URL
-    actual val anonKey: String = SupabaseCredentials.ANON_KEY
+    actual val publishableKey: String = SupabaseCredentials.PUBLISHABLE_KEY
 }

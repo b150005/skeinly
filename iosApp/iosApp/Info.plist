@@ -46,6 +46,10 @@
 	<string>$(POSTHOG_HOST)</string>
 	<key>SENTRY_DSN_IOS</key>
 	<string>$(SENTRY_DSN_IOS)</string>
+	<key>SUPABASE_PUBLISHABLE_KEY</key>
+	<string>$(SUPABASE_PUBLISHABLE_KEY)</string>
+	<key>SUPABASE_URL</key>
+	<string>$(SUPABASE_URL)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

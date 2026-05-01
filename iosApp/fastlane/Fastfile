@@ -142,15 +142,35 @@ end
 # Build the xcargs string passed to xcodebuild via build_app. Versioning
 # (MARKETING_VERSION + CURRENT_PROJECT_VERSION) is sourced from CI env so
 # the tag/run-number drives the iOS bundle version. CODE_SIGN_STYLE +
-# CODE_SIGN_IDENTITY pinned to manual + Apple Distribution.
+# CODE_SIGN_IDENTITY pinned to manual + Apple Distribution. Vendor SDK
+# configuration (Supabase / Sentry / PostHog) is also passed through —
+# the values land as build settings, which Info.plist resolves via
+# `$(VAR)` placeholders declared in project.yml. This is the single
+# injection point in the CI/Release path; the local.xcconfig file used
+# locally provides the same settings via a different surface.
 def build_xcargs
   args = []
   args << "MARKETING_VERSION=#{ENV['MARKETING_VERSION']}" unless ENV["MARKETING_VERSION"].to_s.empty?
   args << "CURRENT_PROJECT_VERSION=#{ENV['CURRENT_PROJECT_VERSION']}" unless ENV["CURRENT_PROJECT_VERSION"].to_s.empty?
   args << "DEVELOPMENT_TEAM=#{ENV['APPLE_TEAM_ID']}" unless ENV["APPLE_TEAM_ID"].to_s.empty?
+  args << "SUPABASE_URL=#{shell_escape(ENV['SUPABASE_URL'])}" unless ENV["SUPABASE_URL"].to_s.empty?
+  args << "SUPABASE_PUBLISHABLE_KEY=#{shell_escape(ENV['SUPABASE_PUBLISHABLE_KEY'])}" unless ENV["SUPABASE_PUBLISHABLE_KEY"].to_s.empty?
+  args << "SENTRY_DSN_IOS=#{shell_escape(ENV['SENTRY_DSN_IOS'])}" unless ENV["SENTRY_DSN_IOS"].to_s.empty?
+  args << "POSTHOG_API_KEY=#{shell_escape(ENV['POSTHOG_PROJECT_API_KEY'])}" unless ENV["POSTHOG_PROJECT_API_KEY"].to_s.empty?
+  args << "POSTHOG_HOST=#{shell_escape(ENV['POSTHOG_HOST'])}" unless ENV["POSTHOG_HOST"].to_s.empty?
   args << "CODE_SIGN_STYLE=Manual"
   args << 'CODE_SIGN_IDENTITY="Apple Distribution"'
   args.join(" ")
+end
+
+# Quote a value for safe inclusion in the xcargs string. xcodebuild
+# splits xcargs on whitespace, so any value containing spaces, quotes,
+# or shell metacharacters must be wrapped. URLs with `//` are fine here
+# — the xcconfig comment-marker pitfall does not apply because xcargs
+# values are injected directly as build settings, not via xcconfig.
+def shell_escape(value)
+  return "" if value.nil? || value.empty?
+  "'#{value.gsub("'", "'\\\\''")}'"
 end
 
 # Where build_app writes the .ipa. On CI, prefer $RUNNER_TEMP so cleanup

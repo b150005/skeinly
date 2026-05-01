@@ -17,13 +17,13 @@ val localProps =
         if (localFile.exists()) props.load(FileInputStream(localFile))
         // CI fallback: read from environment variables when local.properties is absent
         System.getenv("SUPABASE_URL")?.let { props.setProperty("SUPABASE_URL", it) }
-        System.getenv("SUPABASE_ANON_KEY")?.let { props.setProperty("SUPABASE_ANON_KEY", it) }
+        System.getenv("SUPABASE_PUBLISHABLE_KEY")?.let { props.setProperty("SUPABASE_PUBLISHABLE_KEY", it) }
     }
 
 val generateSupabaseConfig by tasks.registering {
     val outputDir = layout.buildDirectory.dir("generated/supabaseConfig")
     val url = localProps.getProperty("SUPABASE_URL", "")
-    val key = localProps.getProperty("SUPABASE_ANON_KEY", "")
+    val key = localProps.getProperty("SUPABASE_PUBLISHABLE_KEY", "")
     outputs.dir(outputDir)
     doLast {
         val dir = outputDir.get().asFile.resolve("io/github/b150005/skeinly/config")
@@ -36,7 +36,7 @@ val generateSupabaseConfig by tasks.registering {
                 appendLine()
                 appendLine("internal object SupabaseCredentials {")
                 appendLine("    const val URL: String = \"$escapedUrl\"")
-                appendLine("    const val ANON_KEY: String = \"$escapedKey\"")
+                appendLine("    const val PUBLISHABLE_KEY: String = \"$escapedKey\"")
                 appendLine("}")
             },
         )

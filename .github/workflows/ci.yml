@@ -79,7 +79,7 @@ jobs:
       - name: Build Android debug APK
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: ./gradlew :androidApp:assembleDebug
 
       - name: Upload APK artifact
@@ -139,8 +139,18 @@ jobs:
         # Per security audit M1: assign step output to env var rather than
         # interpolating ${{ }} directly into shell — eliminates injection
         # surface even though the simctl-derived value is system-controlled.
+        # Vendor secrets are forwarded to xcodebuild as build settings so
+        # Info.plist `$(VAR)` placeholders resolve correctly. Without this
+        # the iOS app boots with empty SupabaseConfig and the ProjectList
+        # ViewModel hangs on initial Supabase request, leaving 5 XCUITests
+        # stuck on ProgressView (B4 root cause).
         env:
           XCODE_DEST: ${{ steps.sim.outputs.dest }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          SENTRY_DSN_IOS: ${{ secrets.SENTRY_DSN_IOS }}
+          POSTHOG_PROJECT_API_KEY: ${{ secrets.POSTHOG_PROJECT_API_KEY }}
+          POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
         run: |
           set -o pipefail
           xcodebuild test \
@@ -149,4 +159,9 @@ jobs:
             -destination "$XCODE_DEST" \
             -resultBundlePath TestResults \
             CODE_SIGNING_ALLOWED=NO \
+            SUPABASE_URL="$SUPABASE_URL" \
+            SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
+            SENTRY_DSN_IOS="$SENTRY_DSN_IOS" \
+            POSTHOG_API_KEY="$POSTHOG_PROJECT_API_KEY" \
+            POSTHOG_HOST="$POSTHOG_HOST" \
             | xcpretty; exit ${PIPESTATUS[0]}

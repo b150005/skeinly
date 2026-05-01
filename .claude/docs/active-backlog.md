@@ -66,18 +66,20 @@
 - **Files to inspect**: `SettingsScreen.kt` (Compose) + `SettingsScreen.swift` (SwiftUI).
 - **App Store risk**: Apple Reviewers may reject UIs that imply features the user can't access. **Must fix before Phase 39 beta TestFlight upload**.
 
-### B4: "Discover Patterns" shows "Internet required" despite online connection
+### B4: "Discover Patterns" shows "Internet required" despite online connection — **ROOT CAUSE IDENTIFIED 2026-05-01, fix in flight**
 - **NOT a Supabase migration issue**. Verified 2026-04-30 via `mcp__supabase__list_migrations` — all 16 migrations applied on prod (`nasjwbrhkcbkyegthrrl.supabase.co`).
-- **Suspected root causes** (in order of likelihood):
-  1. App's compiled `SupabaseCredentials` is empty (TestFlight build accidentally configured as local-only)
-  2. `ConnectivityMonitor` actual implementation has false-positive offline path on iOS (NWPathMonitor edge case?)
-  3. `DiscoveryViewModel` or `GetPublicPatternsUseCase` surfaces wrong error string for a different failure type
-- **Files to inspect**:
-  - `shared/build.gradle.kts` `SupabaseCredentials` generation (verify env vars / GitHub Secrets are populated)
-  - `shared/src/iosMain/.../ConnectivityMonitor.kt` (iOS actual)
-  - `shared/src/androidMain/.../ConnectivityMonitor.kt` (Android actual)
-  - `DiscoveryViewModel.kt` error mapping
-- **Reproduction**: install fresh, sign in (or skip auth), tap "パターンを探す" / "Discover Patterns".
+- **Confirmed root cause (2026-05-01)**: iOS `Info.plist` had **no `SUPABASE_URL` / Supabase key entries at all**, and neither `local.xcconfig.example` nor Fastfile `build_xcargs` injected them. `SupabaseConfig.ios.kt` reads via `NSBundle.mainBundle.objectForInfoDictionaryKey(...)` → returned empty string in every iOS build → Supabase client initialized with empty URL → all Discovery requests failed.
+- **Same root cause caused 5 XCUITest + 4 Maestro flow failures**: `ProjectListViewModel` hung on `state.isLoading == true` waiting for the broken Supabase response, so the `emptyStateLabel` branch never rendered.
+- **Fix applied (2026-05-01, this session's commit)** — also performed a full `SUPABASE_ANON_KEY` → `SUPABASE_PUBLISHABLE_KEY` migration in the same PR (Supabase deprecated legacy anon JWT 2025-11-01):
+  - Kotlin: `expect/actual val anonKey` → `publishableKey` across `commonMain` / `androidMain` / `iosMain`; codegen constant `ANON_KEY` → `PUBLISHABLE_KEY` in `shared/build.gradle.kts`.
+  - `iosApp/project.yml`: added `SUPABASE_URL` + `SUPABASE_PUBLISHABLE_KEY` Info.plist properties as `$(VAR)` placeholders.
+  - `iosApp/iosApp/Info.plist`: mirrored `<key>SUPABASE_URL</key>` + `<key>SUPABASE_PUBLISHABLE_KEY</key>` entries.
+  - `iosApp/local.xcconfig.example`: added template entries with xcconfig `//` escaping documentation; also added missing `POSTHOG_API_KEY` / `POSTHOG_HOST` (same gap).
+  - `iosApp/fastlane/Fastfile` `build_xcargs`: now passes `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SENTRY_DSN_IOS`, `POSTHOG_API_KEY`, `POSTHOG_HOST` from env to xcodebuild as build settings (with shell escaping).
+  - `.github/workflows/ci.yml` iOS job: env block + xcodebuild xcargs for the 5 vendor settings
+  - `.github/workflows/release.yml` iOS jobs: added `SENTRY_DSN_IOS`, `POSTHOG_PROJECT_API_KEY`, `POSTHOG_HOST` to env (Supabase env was already present, just unused by Fastfile until now)
+- **Side effect**: Sentry + PostHog were also broken in production iOS builds (same root cause: Info.plist `$(VAR)` placeholders without xcargs injection). Same fix resolves them.
+- **Verification**: CI on the fix commit must show iOS XCUITest + Maestro green. Manual on-device: install TestFlight build, tap Discovery → should show patterns instead of "Internet required".
 
 ### B5: Full screen-by-screen UI/UX audit
 - **Scope**: Settings, Discovery, Pull Request Submit dialog, all empty/loaded/error states across 15+ screens (mirror Phase 39.0.2 Sprint A approach).
@@ -189,4 +191,15 @@ These items are tracked in [CLAUDE.md](../CLAUDE.md) `## Tech Debt Backlog` but 
 - **Bundle ID** is unified across iOS + Android as `io.github.b150005.skeinly` (verified 2026-04-30 — CLAUDE.md `.android` suffix references in Phase 39.0.1 / 33.3 are stale runtime-package memos, not the actual installed app id).
 - **Supabase prod is healthy** (16/16 migrations applied 2026-04-30 via MCP).
 - **Vendor setup docs** ([docs/ja/vendor-setup.md](../../docs/ja/vendor-setup.md), [docs/ja/release-secrets.md](../../docs/ja/release-secrets.md)) already exist (2026-04-29) and cover most P0 prereqs in detail. Cross-reference these before authoring new procedure docs.
-- **Sentry + PostHog SDKs are already wired in code** on both platforms (`SkeinlyApplication.kt`, `iOSApp.swift`). Dormant until DSN/API key is provisioned.
+- **Sentry + PostHog SDKs are already wired in code** on both platforms (`SkeinlyApplication.kt`, `iOSApp.swift`). DSN/API keys provisioned 2026-04-30 to 2026-05-01 by the user; Info.plist injection was added 2026-05-01 (B4 fix).
+
+## Status as of 2026-05-01
+
+- ✅ **P0 vendor prereqs**: Apple Developer + Google Play Console + support email + Sentry projects (`skeinly-ios` + `skeinly-android`) + PostHog (`Skeinly`) + RevenueCat (`Skeinly`, with both stores configured) + Firebase 2 projects (`Skeinly` Blaze + `Skeinly-Dev` Spark) — all completed by user.
+- ✅ **GitHub + Supabase Edge Function secrets**: registered. `REVENUECAT_WEBHOOK_SECRET` deferred to F1 (Phase 41) since the Webhook handler Edge Function will be authored alongside the Pro subscription work.
+- ✅ **B4 (Discover "Internet required") root cause + fix**: iOS Info.plist `$(VAR)` placeholders + Fastfile `build_xcargs` + CI / Release workflow xcargs. Also unblocks Sentry + PostHog on iOS production.
+- ⚠️ **Migrations 017–019** (subscriptions / feedback / avatars): still local-only. Apply via `supabase db push` before any Phase 39 beta TestFlight upload **after user confirms** (destructive on prod DB).
+- ⚠️ **B1 (iOS AppIcon "19 unassigned children")**: still open. Bundle with D0.2 (Skeinly skein-motif redesign) before TestFlight.
+- ⚠️ **B2 (PR Submit infinite loading)**: open, no investigation yet.
+- ⚠️ **B3 (Settings Sign Out / Delete Account while signed-out)**: open.
+- ⚠️ **B5 (full screen-by-screen UI/UX audit)**: open, post-B1-B4.

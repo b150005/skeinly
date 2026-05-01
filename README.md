@@ -43,8 +43,28 @@ A Kotlin Multiplatform knitting app for managing patterns, tracking progress, an
 | Serialization | kotlinx.serialization |
 | Async | Kotlin Coroutines + Flow / Swift async-await |
 | DI | Koin Multiplatform |
+| Backend / Auth | Supabase (Postgres, Auth, Realtime, Storage, Edge Functions) |
+| Crash + Errors | Sentry (iOS + Android, separate projects) |
+| Analytics | PostHog |
+| Push (Android) | Firebase Cloud Messaging via Edge Function (HTTP v1) |
+| Push (iOS) | APNs `.p8` via Edge Function |
+| Subscriptions | RevenueCat (Apple App Store + Google Play) |
 | iOS Release | fastlane |
 | E2E | Maestro |
+
+### Vendor Environments
+
+| Vendor | Project layout | Plan | Environment split mechanism |
+|---|---|---|---|
+| Supabase | 1 project (`Skeinly`) + local CLI for dev | Free | `supabase start` (Docker) for dev, hosted for prod |
+| Firebase | 2 projects: `Skeinly` (prod) + `Skeinly-Dev` (dev) | Blaze (prod) / Spark (dev) | Project-level isolation; GitHub Environment secrets |
+| Sentry | 2 projects per platform: `skeinly-ios` + `skeinly-android` | Free | `environment` tag (development / production) per build config |
+| PostHog | 1 project (`Skeinly`), iOS + Android share | Free (1-project cap) | `$os` super property + `posthog.init` skipped in DEBUG |
+| RevenueCat | 1 project (`Skeinly`) with iOS + Android Apps | Free (<$2.5K MTR) | Auto sandbox/production detection by Apple/Google receipt |
+| Google Play | 1 production app + Internal/Closed/Open testing tracks | $25 one-time reg fee | Tracks under one application ID |
+| Apple ASC | 1 app + TestFlight (Internal + External testers) | $99/year | TestFlight as the dev/staging surface |
+
+The full step-by-step setup procedure is in [`docs/ja/vendor-setup.md`](docs/ja/vendor-setup.md) (Japanese-primary). Secret registration steps are in [`docs/ja/release-secrets.md`](docs/ja/release-secrets.md).
 
 ### Development
 
@@ -75,7 +95,7 @@ Optional but recommended for contributors:
 brew install xcodegen maestro
 ```
 
-If you intend to run the app against a live Supabase backend, copy `iosApp/local.xcconfig.example` to `iosApp/local.xcconfig` and add your `SUPABASE_URL` / `SUPABASE_ANON_KEY` to a root-level `local.properties` file (both are git-ignored).
+If you intend to run the app against a live Supabase backend, copy `iosApp/local.xcconfig.example` to `iosApp/local.xcconfig` and add your `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` to a root-level `local.properties` file (both are git-ignored).
 
 #### Common tasks (Makefile)
 
@@ -160,7 +180,7 @@ The full set covers 19 GitHub Secrets across 7 categories (iOS code signing + AS
 
 Android releases produce a signed APK as a GitHub Actions artifact. Upload to Google Play Console → Internal Testing is **manual** (no auto-upload via API in v1).
 
-Required signing secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Plus `SUPABASE_URL` and `SUPABASE_ANON_KEY` for live-backend builds. See [docs/en/release-secrets.md](./docs/en/release-secrets.md) for full setup and verification.
+Required signing secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Plus `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` for live-backend builds. See [docs/en/release-secrets.md](./docs/en/release-secrets.md) for full setup and verification.
 
 `VERSION_CODE` in [`version.properties`](./version.properties) MUST be incremented before each Play Console upload (Play rejects duplicate codes).
 
@@ -229,8 +249,28 @@ Required signing secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `
 | シリアライズ | kotlinx.serialization |
 | 非同期 | Kotlin Coroutines + Flow / Swift async-await |
 | DI | Koin Multiplatform |
+| バックエンド / 認証 | Supabase（Postgres、Auth、Realtime、Storage、Edge Functions） |
+| クラッシュ + エラー | Sentry（iOS + Android、別プロジェクト） |
+| 分析 | PostHog |
+| Push（Android） | Firebase Cloud Messaging（Edge Function 経由 HTTP v1） |
+| Push（iOS） | APNs `.p8`（Edge Function 経由） |
+| サブスクリプション | RevenueCat（Apple App Store + Google Play） |
 | iOS リリース | fastlane |
 | E2E | Maestro |
+
+### ベンダー環境構成
+
+| ベンダー | プロジェクト構成 | プラン | 環境分離方式 |
+|---|---|---|---|
+| Supabase | 1 プロジェクト（`Skeinly`）+ ローカル CLI | 無料 | dev は `supabase start`（Docker）、prod はホスト |
+| Firebase | 2 プロジェクト: `Skeinly`（prod）+ `Skeinly-Dev`（dev） | Blaze（prod）/ Spark（dev） | プロジェクト単位で完全分離、GitHub Environment secrets |
+| Sentry | プラットフォーム別 2 プロジェクト: `skeinly-ios` + `skeinly-android` | 無料 | `environment` タグ（development / production）をビルドコンフィグで切替 |
+| PostHog | 1 プロジェクト（`Skeinly`）、iOS + Android 共有 | 無料（1 プロジェクト上限） | `$os` super property + DEBUG ビルドで `posthog.init` スキップ |
+| RevenueCat | 1 プロジェクト（`Skeinly`）に iOS + Android アプリ | 無料（MTR < $2.5K） | Apple/Google レシートから sandbox/production を自動判定 |
+| Google Play | 1 本番アプリ + Internal/Closed/Open テストトラック | $25 一括登録 | 同一 application ID 配下のトラックで分離 |
+| Apple ASC | 1 アプリ + TestFlight（Internal/External テスター） | $99/年 | TestFlight が dev/staging サーフェス |
+
+詳細な手順は [`docs/ja/vendor-setup.md`](docs/ja/vendor-setup.md) と [`docs/ja/release-secrets.md`](docs/ja/release-secrets.md) を参照してください。
 
 ### 開発
 
@@ -261,7 +301,7 @@ make setup            # Bundler 経由で fastlane gem をインストール
 brew install xcodegen maestro
 ```
 
-ライブの Supabase バックエンドに接続して動作確認する場合は、`iosApp/local.xcconfig.example` を `iosApp/local.xcconfig` にコピーし、ルートの `local.properties` ファイルに `SUPABASE_URL` / `SUPABASE_ANON_KEY` を追加してください（両方とも git 管理外）。
+ライブの Supabase バックエンドに接続して動作確認する場合は、`iosApp/local.xcconfig.example` を `iosApp/local.xcconfig` にコピーし、ルートの `local.properties` ファイルに `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` を追加してください（両方とも git 管理外）。
 
 #### 主なタスク (Makefile)
 
@@ -346,7 +386,7 @@ iOS リリースパイプライン用 GitHub Secrets（19 個中の 7 個）:
 
 Android リリースは署名済み APK を GitHub Actions のアーティファクトとして出力します。Google Play Console の Internal Testing へのアップロードは **手動**（v1 では API 経由の自動化なし）。
 
-必要な署名シークレット: `KEYSTORE_BASE64`、`KEYSTORE_PASSWORD`、`KEY_ALIAS`、`KEY_PASSWORD`。ライブバックエンドビルドには `SUPABASE_URL` と `SUPABASE_ANON_KEY` も必要。詳細なセットアップと検証手順は [docs/ja/release-secrets.md](./docs/ja/release-secrets.md) を参照。
+必要な署名シークレット: `KEYSTORE_BASE64`、`KEYSTORE_PASSWORD`、`KEY_ALIAS`、`KEY_PASSWORD`。ライブバックエンドビルドには `SUPABASE_URL` と `SUPABASE_PUBLISHABLE_KEY` も必要。詳細なセットアップと検証手順は [docs/ja/release-secrets.md](./docs/ja/release-secrets.md) を参照。
 
 [`version.properties`](./version.properties) の `VERSION_CODE` は Play Console アップロードのたびに必ず増加させてください（Play は重複コードを拒否します）。
 
