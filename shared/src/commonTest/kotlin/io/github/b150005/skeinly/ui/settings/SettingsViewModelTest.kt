@@ -88,7 +88,7 @@ class SettingsViewModelTest {
      * report `isSignedIn = false` for the unauthenticated state.
      */
     @Test
-    fun `unauthenticated state has isSignedIn false (B3)`() =
+    fun `unauthenticated state has isSignedIn false B3`() =
         runTest {
             authRepo.setAuthState(AuthState.Unauthenticated)
             val viewModel = createViewModel()
