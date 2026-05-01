@@ -248,7 +248,7 @@ struct StructuredChartEditorScreen: View {
             savedCloseable = nil
         }
         .onChange(of: state.errorMessage != nil) { _, newValue in
-            showError = newValue != nil
+            showError = newValue
         }
         .alert("Error", isPresented: $showError) {
             Button("OK") { viewModel.onEvent(event: ChartEditorEventClearError.shared) }

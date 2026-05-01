@@ -36,7 +36,7 @@ class UseCaseResultTest {
 
         assertIs<UseCaseResult.Failure>(result)
         assertIs<UseCaseError.Unknown>(result.error)
-        assertEquals(exception, (result.error as UseCaseError.Unknown).cause)
+        assertEquals(exception, result.error.cause)
     }
 
     // --- toUseCaseError() mapper tests ---

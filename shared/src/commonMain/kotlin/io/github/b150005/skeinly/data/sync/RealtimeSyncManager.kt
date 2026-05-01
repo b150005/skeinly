@@ -161,7 +161,7 @@ class RealtimeSyncManager(
      * The [subscribe] call inside the launched coroutine acquires [channelMutex]
      * separately — no deadlock since this function releases the lock first.
      */
-    private suspend fun scheduleRetry(ownerId: String) =
+    private suspend fun scheduleRetry(ownerId: String) {
         channelMutex.withLock {
             // If a retry is already in flight, skip — avoids triple-increment
             // when all 3 channels fail simultaneously from the same network drop.
@@ -182,6 +182,7 @@ class RealtimeSyncManager(
                     }
                 }
         }
+    }
 
     private fun calculateBackoff(retryRound: Int): Long {
         val baseDelay = config.baseDelayMs * (1L shl retryRound.coerceAtMost(20))

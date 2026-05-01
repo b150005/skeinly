@@ -410,7 +410,7 @@ class StructuredChartRepositoryImplTest {
             assertNotNull(retrieved)
             assertEquals(CoordinateSystem.POLAR_ROUND, retrieved.coordinateSystem)
             assertTrue(retrieved.extents is ChartExtents.Polar)
-            assertEquals(listOf(6, 12, 18), (retrieved.extents as ChartExtents.Polar).stitchesPerRing)
+            assertEquals(listOf(6, 12, 18), retrieved.extents.stitchesPerRing)
         }
 
     // ---- Phase 37.1 (ADR-013 §1, §7): commit history + ensureDefaultBranch ----

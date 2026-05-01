@@ -2,7 +2,12 @@ name: iosApp
 options:
   bundleIdPrefix: io.github.b150005.skeinly
   deploymentTarget:
-    iOS: "17.0"
+    # 17.2 matches the iOS-simulator version Kotlin/Native bundles its
+    # libicu.icudtl with; pinning to 17.0 produced a "object file built
+    # for newer iOS-simulator (17.2) than being linked (17.0)" linker
+    # warning at every iOS build. Bumped to 17.2 — released Dec 2023, so
+    # the user-base impact of the floor lift is negligible.
+    iOS: "17.2"
   xcodeVersion: "26.0"
   generateEmptyDirectories: true
 

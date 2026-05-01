@@ -273,7 +273,7 @@ struct ProjectDetailScreen: View {
                     ForEach(notes, id: \.id) { note in
                         NoteRow(
                             note: note,
-                            photoSignedUrl: holder.state.photoSignedUrls[note.id] as? String
+                            photoSignedUrl: holder.state.photoSignedUrls[note.id]
                         )
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {

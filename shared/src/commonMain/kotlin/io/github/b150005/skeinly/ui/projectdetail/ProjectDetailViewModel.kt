@@ -163,6 +163,7 @@ sealed interface ProjectDetailEvent {
     data object ResetProgress : ProjectDetailEvent
 }
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class ProjectDetailViewModel(
     private val projectId: String,
     private val projectRepository: ProjectRepository,

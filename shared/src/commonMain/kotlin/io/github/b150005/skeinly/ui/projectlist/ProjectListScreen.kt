@@ -534,6 +534,15 @@ private fun SwipeToDismissProjectCard(
     // the SC 2.5.7-compliant single-pointer-no-drag path. The dialog confirmation
     // remains the safety net regardless of how delete was triggered.
     var contextMenuExpanded by remember { mutableStateOf(false) }
+
+    // `confirmValueChange` is deprecated without replacement (Material3 1.7+).
+    // The recommended migration (collect `targetValue` via snapshotFlow then
+    // call `dismissState.reset()`) lets the swipe animation complete before
+    // snapping back, which changes the UX from "blocked at swipe edge" to
+    // "swipe-out then bounce". Holding the synchronous-veto behavior until
+    // the design system audit picks an explicit replacement; tracked in the
+    // Tech Debt Backlog (Compose Material3 dismiss-box anchor migration).
+    @Suppress("DEPRECATION")
     val dismissState =
         rememberSwipeToDismissBoxState(
             confirmValueChange = { value ->
