@@ -1,6 +1,8 @@
 # Release Secrets — Setup Guide
 
 > Japanese translation: [docs/ja/release-secrets.md](../ja/release-secrets.md)
+>
+> **⚠️ Out-of-sync notice (2026-05-01)**: vendor modernization updates (Supabase Publishable key migration, Sentry **Organization** Auth Token clarification, PostHog free-tier 1-project consolidation, Firebase 2-project + GitHub Environment secrets layout, RevenueCat section, Edge Function `REVENUECAT_WEBHOOK_SECRET`) have landed in **JA only**. Refer to `docs/ja/release-secrets.md` for the current canonical guidance until this English file is synced. Tracking: separate follow-up PR.
 
 This document is a step-by-step guide for obtaining, verifying, and registering every secret consumed by the release pipeline and the Supabase Edge Functions. It covers **19 GitHub Secrets** in 6 categories plus **4 Supabase Edge Function runtime secrets** in a 7th category:
 

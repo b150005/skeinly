@@ -10,5 +10,10 @@ name: "Helper - Complete Onboarding"
 - stopApp: io.github.b150005.skeinly
 - launchApp:
     appId: io.github.b150005.skeinly
+    # NSUserDefaults launch-arg keys must include the leading "-" so iOS
+    # registers them as defaults at app start. The map form previously used
+    # here (without the dash) did not write to NSUserDefaults, leaving the
+    # OnboardingScreen visible and breaking every Maestro flow downstream.
+    # Array form mirrors the XCUITest convention in OnboardingUITests.swift.
     arguments:
-      has_seen_onboarding: "true"
+      "-has_seen_onboarding": "true"
