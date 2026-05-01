@@ -41,27 +41,26 @@ struct ProjectListScreen: View {
                 )
                 .accessibilityIdentifier("emptyStateNoMatch")
             } else if state.projects.isEmpty {
-                // `ContentUnavailableView` with a content closure renders its
-                // Label as two child accessibility elements; placing the id on
-                // an inner view makes cross-query lookup unreliable. Wrap in a
-                // ZStack-backed landmark so Maestro (`assertVisible: id`) and
-                // XCUITest (`otherElements[id]`) both resolve to a single
-                // container — same pattern as 33.1.6's ProfileScreen.swift.
-                ZStack {
-                    ContentUnavailableView {
-                        Label(LocalizedStringKey("state_no_projects"), systemImage: "folder")
-                    } description: {
-                        Text(LocalizedStringKey("state_no_projects_body"))
-                    } actions: {
-                        Button(LocalizedStringKey("action_create_project")) {
-                            showCreateSheet = true
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .accessibilityIdentifier("createProjectEmptyCta")
+                // The previous ZStack `.contain` landmark was swallowed on
+                // iOS 26 by the screen-level `.accessibilityElement(children:
+                // .contain)` below — nested container modifiers collapse into
+                // a single Other element, dropping the inner identifier. The
+                // identifier now rides on the description Text directly so it
+                // surfaces as `staticTexts["emptyStateLabel"]` for XCUITest
+                // and remains queryable as `id: emptyStateLabel` for Maestro
+                // (Maestro's id selector matches any element type).
+                ContentUnavailableView {
+                    Label(LocalizedStringKey("state_no_projects"), systemImage: "folder")
+                } description: {
+                    Text(LocalizedStringKey("state_no_projects_body"))
+                        .accessibilityIdentifier("emptyStateLabel")
+                } actions: {
+                    Button(LocalizedStringKey("action_create_project")) {
+                        showCreateSheet = true
                     }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("createProjectEmptyCta")
                 }
-                .accessibilityElement(children: .contain)
-                .accessibilityIdentifier("emptyStateLabel")
             } else {
                 List {
                     StatusFilterSection(
