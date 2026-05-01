@@ -1,9 +1,13 @@
 package io.github.b150005.skeinly.di
 
 import io.github.b150005.skeinly.config.BuildFlags
+import io.github.b150005.skeinly.platform.BugSubmissionLauncher
+import io.github.b150005.skeinly.platform.DeviceContextProvider
+import io.github.b150005.skeinly.platform.snapshotContext
 import io.github.b150005.skeinly.ui.activityfeed.ActivityFeedViewModel
 import io.github.b150005.skeinly.ui.auth.AuthViewModel
 import io.github.b150005.skeinly.ui.auth.ForgotPasswordViewModel
+import io.github.b150005.skeinly.ui.bugreport.BugReportPreviewViewModel
 import io.github.b150005.skeinly.ui.chart.ChartBranchPickerViewModel
 import io.github.b150005.skeinly.ui.chart.ChartDiffViewModel
 import io.github.b150005.skeinly.ui.chart.ChartEditorViewModel
@@ -233,6 +237,22 @@ val viewModelModule =
                 // module; production wiring uses get() not getOrNull()
                 // (matches the F.3/F.4 pattern across the other ViewModels).
                 analyticsTracker = get(),
+            )
+        }
+        // Phase 39.5 (ADR-015 §6) — bug-report preview surface. The
+        // ViewModel takes a plain DTO + a lambda rather than the
+        // `expect class` provider/launcher directly so commonTest can
+        // stub them without running into the "expect class is final at
+        // the actual" subclassing limitation. The DI boundary owns the
+        // adaptation: snapshot the device-context provider into the DTO
+        // and bind the launcher's `launch` method to the lambda.
+        viewModel {
+            val launcher: BugSubmissionLauncher = get()
+            val provider: DeviceContextProvider = get()
+            BugReportPreviewViewModel(
+                ringBuffer = get(),
+                deviceContext = provider.snapshotContext(),
+                submit = { title, body -> launcher.launch(title, body) },
             )
         }
     }

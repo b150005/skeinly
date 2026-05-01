@@ -127,4 +127,9 @@ enum ViewModelFactory {
     static func symbolGalleryViewModel() -> SymbolGalleryViewModel {
         KoinHelperKt.getSymbolGalleryViewModel()
     }
+
+    /// Phase 39.5 (ADR-015 §6) — bug-report preview ViewModel.
+    static func bugReportPreviewViewModel() -> BugReportPreviewViewModel {
+        KoinHelperKt.getBugReportPreviewViewModel()
+    }
 }

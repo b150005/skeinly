@@ -79,6 +79,16 @@
     <string name="action_send_feedback">フィードバックを送信</string>
     <string name="body_send_feedback_explanation">ブラウザで GitHub Issue を開き、内容を事前入力します。直近 10 件の操作履歴（個人情報なし）も添付されます。</string>
 
+    <!-- バグレポートプレビュー画面（Phase 39.5、ADR-015 §3 + §6）。
+         ベータビルドでのみ表示。設定 → ベータ → 「フィードバックを送信」、
+         またはシェイク / 3 本指長押しジェスチャーから開けます。 -->
+    <string name="title_bug_report_preview">フィードバックを送信</string>
+    <string name="label_bug_description">バグの内容</string>
+    <string name="hint_bug_description_placeholder">再現手順、期待していた動作、実際に起きたこと…</string>
+    <string name="label_bug_report_preview_body">添付される診断情報</string>
+    <string name="body_bug_report_includes_actions">送信すると GitHub が開きます。レポートには、入力した内容に加えて、アプリバージョン・OS・デバイス・ロケール・直近 10 件の操作履歴が含まれます。パターン、メモ、写真、個人情報は含まれません。</string>
+    <string name="action_submit_bug_report">GitHub で送信</string>
+
     <string name="error_authentication_failed">認証に失敗しました</string>
     <string name="error_email_invalid">無効なメールアドレスです</string>
     <string name="error_email_not_confirmed">メールアドレスを先に確認してください</string>

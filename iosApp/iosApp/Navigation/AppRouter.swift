@@ -20,6 +20,7 @@ enum Route: Hashable {
     case pullRequestList(defaultFilter: PullRequestFilter)
     case pullRequestDetail(prId: String)
     case chartConflictResolution(prId: String)
+    case bugReportPreview
 
     // Hashable conformance for sharedContent with optionals
     func hash(into hasher: inout Hasher) {
@@ -71,6 +72,8 @@ enum Route: Hashable {
         case .chartConflictResolution(let prId):
             hasher.combine("chartConflictResolution")
             hasher.combine(prId)
+        case .bugReportPreview:
+            hasher.combine("bugReportPreview")
         }
     }
 }
@@ -149,6 +152,24 @@ struct AppRootView: View {
         .onOpenURL { url in
             handleDeepLink(url: url)
         }
+        // Phase 39.5 (ADR-015 §1) — shake gesture opens the bug-report
+        // preview. Gated on:
+        //  - `BuildFlags.isBeta` (production binaries are bit-identical
+        //    minus the SDK; the gesture surface is hidden entirely).
+        //  - `KoinHelperKt.analyticsOptInValue()` synchronous read of the
+        //    AnalyticsPreferences StateFlow (the EventRingBuffer is also
+        //    privacy-gated upstream so the report would have an empty
+        //    trail anyway, but gating the trigger itself matches the
+        //    Android `MainActivity.dispatchTouchEvent` shape and keeps
+        //    the behavior contracts symmetric across platforms).
+        // No top-of-path dedup: NavigationPath does not expose a typed
+        // `peek`, and a duplicate preview stack is harmless — Cancel
+        // pops one, the prior view is still underneath.
+        .onShake {
+            guard BuildFlags.isBeta else { return }
+            guard KoinHelperKt.analyticsOptInValue() else { return }
+            path.append(Route.bugReportPreview)
+        }
     }
 
     @ViewBuilder
@@ -175,7 +196,7 @@ struct AppRootView: View {
             ProfileScreen()
                 .trackScreen(.profile)
         case .settings:
-            SettingsScreen()
+            SettingsScreen(onSendFeedback: { path.append(Route.bugReportPreview) })
                 .trackScreen(.settings)
         case .activityFeed:
             ActivityFeedScreen()
@@ -219,6 +240,9 @@ struct AppRootView: View {
         case .chartConflictResolution(let prId):
             ChartConflictResolutionScreen(prId: prId, path: $path)
                 .trackScreen(.chartconflictresolution)
+        case .bugReportPreview:
+            BugReportPreviewScreen(onCancel: { path.removeLast() })
+                .trackScreen(.bugreportpreview)
         }
     }
 
