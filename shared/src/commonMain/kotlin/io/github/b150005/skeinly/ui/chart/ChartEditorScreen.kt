@@ -136,6 +136,7 @@ import io.github.b150005.skeinly.ui.components.localized
 import io.github.b150005.skeinly.ui.platform.SystemBackHandler
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -319,7 +320,13 @@ fun ChartEditorScreen(
                 onDismissRequest = { pendingDeleteLayerId = null },
                 title = { Text(stringResource(Res.string.dialog_delete_layer_title)) },
                 text = {
-                    Text(stringResource(Res.string.dialog_delete_layer_body, target.cells.size))
+                    Text(
+                        pluralStringResource(
+                            Res.plurals.dialog_delete_layer_body,
+                            target.cells.size,
+                            target.cells.size,
+                        ),
+                    )
                 },
                 confirmButton = {
                     TextButton(
@@ -1257,7 +1264,12 @@ private fun ResizeChartDialog(
                         if (trimCount > 0) {
                             Spacer(Modifier.height(8.dp))
                             Text(
-                                text = stringResource(Res.string.label_resize_trim_count, trimCount),
+                                text =
+                                    pluralStringResource(
+                                        Res.plurals.label_resize_trim_count,
+                                        trimCount,
+                                        trimCount,
+                                    ),
                                 color = MaterialTheme.colorScheme.error,
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.testTag("resizeTrimWarning"),
@@ -1330,7 +1342,12 @@ private fun ResizeChartDialog(
                         if (trimCount > 0) {
                             Spacer(Modifier.height(8.dp))
                             Text(
-                                text = stringResource(Res.string.label_resize_trim_count, trimCount),
+                                text =
+                                    pluralStringResource(
+                                        Res.plurals.label_resize_trim_count,
+                                        trimCount,
+                                        trimCount,
+                                    ),
                                 color = MaterialTheme.colorScheme.error,
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.testTag("resizeTrimWarning"),

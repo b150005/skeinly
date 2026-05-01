@@ -310,7 +310,10 @@ struct ProjectDetailScreen: View {
                 .accessibilityIdentifier("rowCounter")
 
             if let total = project.totalRows?.intValue {
-                Text(String(format: NSLocalizedString("label_of_rows", comment: ""), total))
+                Text(String.localizedStringWithFormat(
+                    NSLocalizedString("label_of_rows", comment: ""),
+                    Int(total)
+                ))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("rowTotalLabel")
@@ -363,9 +366,9 @@ struct ProjectDetailScreen: View {
         // (xcstrings `%d` specifier matches Int32 unambiguously on all Apple
         // architectures, including hypothetical 32-bit).
         Button(action: onTap) {
-            Text(String(
-                format: NSLocalizedString("label_segments_completed", comment: ""),
-                Int32(done), Int32(total), Int32(percent)
+            Text(String.localizedStringWithFormat(
+                NSLocalizedString("label_segments_completed", comment: ""),
+                Int(done), Int(total), Int(percent)
             ))
             .font(.subheadline)
             .foregroundStyle(Color.accentColor)

@@ -54,7 +54,9 @@ import io.github.b150005.skeinly.domain.model.StructuredChart
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_back
-import io.github.b150005.skeinly.generated.resources.label_diff_summary
+import io.github.b150005.skeinly.generated.resources.label_diff_added
+import io.github.b150005.skeinly.generated.resources.label_diff_modified
+import io.github.b150005.skeinly.generated.resources.label_diff_removed
 import io.github.b150005.skeinly.generated.resources.label_initial_commit
 import io.github.b150005.skeinly.generated.resources.label_layer_added
 import io.github.b150005.skeinly.generated.resources.label_layer_hidden
@@ -67,6 +69,7 @@ import io.github.b150005.skeinly.generated.resources.state_no_changes
 import io.github.b150005.skeinly.generated.resources.title_chart_diff
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.localized
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -209,18 +212,15 @@ private fun DiffSummaryRow(diff: ChartDiff) {
                 .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        val addedText =
+            pluralStringResource(Res.plurals.label_diff_added, diff.addedCellCount, diff.addedCellCount)
+        val modifiedText =
+            pluralStringResource(Res.plurals.label_diff_modified, diff.modifiedCellCount, diff.modifiedCellCount)
+        val removedText =
+            pluralStringResource(Res.plurals.label_diff_removed, diff.removedCellCount, diff.removedCellCount)
         AssistChip(
             onClick = { /* informational only */ },
-            label = {
-                Text(
-                    stringResource(
-                        Res.string.label_diff_summary,
-                        diff.addedCellCount,
-                        diff.modifiedCellCount,
-                        diff.removedCellCount,
-                    ),
-                )
-            },
+            label = { Text("$addedText · $modifiedText · $removedText") },
             modifier = Modifier.testTag("diffSummaryChip"),
             colors = AssistChipDefaults.assistChipColors(),
         )

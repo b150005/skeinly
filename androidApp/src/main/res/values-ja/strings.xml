@@ -26,7 +26,6 @@
 
     <!-- Load / empty states -->
     <string name="state_loading">読み込み中\u2026</string>
-    <string name="state_empty">まだ何もありません</string>
     <string name="state_empty_chart">空のチャート</string>
     <string name="state_no_structured_chart">構造化チャートがありません</string>
 
@@ -116,7 +115,9 @@
     <string name="label_grid_width">幅</string>
     <string name="label_grid_height">高さ</string>
     <string name="label_polar_stitches_uniform">各段の目数 (一律)</string>
-    <string name="label_resize_trim_count">%1$d 個のセルが削除されます</string>
+    <plurals name="label_resize_trim_count">
+        <item quantity="other">%1$d 個のセルが削除されます</item>
+    </plurals>
 
     <!-- Project list screen -->
     <string name="action_discover_patterns">パターンを探す</string>
@@ -146,8 +147,12 @@
     <string name="dialog_delete_project_title">プロジェクトを削除</string>
     <string name="dialog_delete_project_body">「%1$s」を削除してもよろしいですか？この操作は取り消せません。</string>
     <string name="hint_search_projects">プロジェクトを検索\u2026</string>
-    <string name="label_rows_of_total">%1$d / %2$d 行</string>
-    <string name="label_rows_current">%1$d 行</string>
+    <plurals name="label_rows_of_total">
+        <item quantity="other">%1$d / %2$d 行</item>
+    </plurals>
+    <plurals name="label_rows_current">
+        <item quantity="other">%1$d 行</item>
+    </plurals>
 
     <!-- Onboarding carousel -->
     <string name="action_skip">スキップ</string>
@@ -259,7 +264,9 @@
     <string name="label_notes_section">メモ</string>
     <string name="action_add_note">メモを追加</string>
     <string name="state_no_notes">メモはまだありません</string>
-    <string name="label_of_rows">全 %1$d 行</string>
+    <plurals name="label_of_rows">
+        <item quantity="other">全 %1$d 行</item>
+    </plurals>
     <string name="label_rows_only">行</string>
     <string name="action_delete_note">メモを削除</string>
     <string name="label_note_row_timestamp">%1$d 段目 \u2022 %2$s</string>
@@ -350,7 +357,9 @@
     <string name="action_reset_progress">進捗をリセット</string>
     <string name="dialog_reset_progress_title">進捗をリセットしますか？</string>
     <string name="dialog_reset_progress_body">このプロジェクトでマークしたすべての目がクリアされます。段カウンターのメモと写真は保持されます。この操作は取り消せません。</string>
-    <string name="label_segments_completed">%1$d / %2$d 目 (%3$d%%)</string>
+    <plurals name="label_segments_completed">
+        <item quantity="other">%1$d / %2$d 目 (%3$d%%)</item>
+    </plurals>
     <string name="message_reset_progress_done">進捗をリセットしました</string>
 
     <!-- User picker dialog -->
@@ -378,7 +387,9 @@
     <string name="action_drag_to_reorder">ドラッグで並べ替え</string>
     <string name="label_layer_default_name">レイヤー %1$d</string>
     <string name="dialog_delete_layer_title">レイヤーを削除しますか？</string>
-    <string name="dialog_delete_layer_body">このレイヤーには %1$d 個のセルがあります。削除しても、ツールバーの「元に戻す」で復元できます。</string>
+    <plurals name="dialog_delete_layer_body">
+        <item quantity="other">このレイヤーには %1$d 個のセルがあります。削除しても、ツールバーの「元に戻す」で復元できます。</item>
+    </plurals>
     <string name="state_no_layers">レイヤーがありません</string>
     <string name="label_layers_section">レイヤー</string>
 
@@ -394,7 +405,15 @@
 
     <!-- Phase 37.3 chart diff view (ADR-013 §5 §6) -->
     <string name="title_chart_diff">チャート差分</string>
-    <string name="label_diff_summary">追加 %1$d ・ 変更 %2$d ・ 削除 %3$d</string>
+    <plurals name="label_diff_added">
+        <item quantity="other">追加 %1$d</item>
+    </plurals>
+    <plurals name="label_diff_modified">
+        <item quantity="other">変更 %1$d</item>
+    </plurals>
+    <plurals name="label_diff_removed">
+        <item quantity="other">削除 %1$d</item>
+    </plurals>
     <string name="label_layer_renamed">%1$s → %2$s</string>
     <string name="label_layer_hidden">レイヤーを非表示</string>
     <string name="label_layer_shown">レイヤーを表示</string>
@@ -444,7 +463,9 @@
 
     <!-- Phase 38.4 conflict resolution + merge (ADR-014 §4 §5 §6 §8). -->
     <string name="title_resolve_conflicts">コンフリクトの解決</string>
-    <string name="label_conflict_summary">解決が必要なコンフリクト: %1$d 件</string>
+    <plurals name="label_conflict_summary">
+        <item quantity="other">解決が必要なコンフリクト: %1$d 件</item>
+    </plurals>
     <string name="label_conflict_layer">レイヤー</string>
     <string name="label_conflict_cell">セル (%1$d, %2$d)</string>
     <string name="action_take_theirs">相手側を採用</string>

@@ -120,15 +120,20 @@ private struct DiffSummaryRow: View {
     let diff: ChartDiff
 
     var body: some View {
-        HStack {
-            Text(
-                String(
-                    format: NSLocalizedString("label_diff_summary", comment: ""),
-                    Int32(diff.addedCellCount),
-                    Int32(diff.modifiedCellCount),
-                    Int32(diff.removedCellCount)
-                )
-            )
+        let added = String.localizedStringWithFormat(
+            NSLocalizedString("label_diff_added", comment: ""),
+            Int(diff.addedCellCount)
+        )
+        let modified = String.localizedStringWithFormat(
+            NSLocalizedString("label_diff_modified", comment: ""),
+            Int(diff.modifiedCellCount)
+        )
+        let removed = String.localizedStringWithFormat(
+            NSLocalizedString("label_diff_removed", comment: ""),
+            Int(diff.removedCellCount)
+        )
+        return HStack {
+            Text("\(added) · \(modified) · \(removed)")
             .font(.caption)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)

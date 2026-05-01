@@ -109,6 +109,7 @@ import io.github.b150005.skeinly.ui.components.localized
 import io.github.b150005.skeinly.ui.components.selectedCheckmarkIcon
 import io.github.b150005.skeinly.ui.platform.dialogTestTagsAsResourceId
 import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -636,9 +637,18 @@ private fun ProjectCard(
 
             val progressText =
                 if (project.totalRows != null) {
-                    stringResource(Res.string.label_rows_of_total, project.currentRow, project.totalRows)
+                    pluralStringResource(
+                        Res.plurals.label_rows_of_total,
+                        project.totalRows,
+                        project.currentRow,
+                        project.totalRows,
+                    )
                 } else {
-                    stringResource(Res.string.label_rows_current, project.currentRow)
+                    pluralStringResource(
+                        Res.plurals.label_rows_current,
+                        project.currentRow,
+                        project.currentRow,
+                    )
                 }
             Text(
                 text = progressText,

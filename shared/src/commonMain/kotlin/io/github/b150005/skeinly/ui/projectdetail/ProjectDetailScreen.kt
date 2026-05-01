@@ -142,6 +142,7 @@ import io.github.b150005.skeinly.ui.imagepicker.rememberImagePickerLauncher
 import io.github.b150005.skeinly.ui.platform.dialogTestTagsAsResourceId
 import io.github.b150005.skeinly.ui.util.formatShort
 import kotlinx.coroutines.flow.collect
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -637,7 +638,12 @@ private fun CounterSection(
 
         if (totalRows != null) {
             Text(
-                text = stringResource(Res.string.label_of_rows, totalRows),
+                text =
+                    pluralStringResource(
+                        Res.plurals.label_of_rows,
+                        totalRows,
+                        totalRows,
+                    ),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.testTag("rowTotalLabel"),
@@ -830,7 +836,14 @@ private fun SegmentProgressSummary(
         horizontalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = stringResource(Res.string.label_segments_completed, done, total, percent),
+            text =
+                pluralStringResource(
+                    Res.plurals.label_segments_completed,
+                    total,
+                    done,
+                    total,
+                    percent,
+                ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.primary,
             modifier =

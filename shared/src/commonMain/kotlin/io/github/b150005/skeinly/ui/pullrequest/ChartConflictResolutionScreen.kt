@@ -55,6 +55,7 @@ import io.github.b150005.skeinly.generated.resources.state_all_conflicts_resolve
 import io.github.b150005.skeinly.generated.resources.title_resolve_conflicts
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.localized
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -146,7 +147,11 @@ fun ChartConflictResolutionScreen(
                                         if (total == 0) {
                                             stringResource(Res.string.state_all_conflicts_resolved)
                                         } else {
-                                            stringResource(Res.string.label_conflict_summary, total)
+                                            pluralStringResource(
+                                                Res.plurals.label_conflict_summary,
+                                                total,
+                                                total,
+                                            )
                                         },
                                 )
                             },
