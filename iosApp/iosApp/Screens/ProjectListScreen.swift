@@ -402,10 +402,10 @@ private struct ProjectRow: View {
             HStack {
                 if let total = project.totalRows?.intValue {
                     Text(
-                        String(
-                            format: NSLocalizedString("label_rows_of_total", comment: ""),
-                            project.currentRow,
-                            total
+                        String.localizedStringWithFormat(
+                            NSLocalizedString("label_rows_of_total", comment: ""),
+                            Int(project.currentRow),
+                            Int(total)
                         )
                     )
                     .font(.subheadline)
@@ -413,9 +413,9 @@ private struct ProjectRow: View {
                     .accessibilityIdentifier("projectRowCount")
                 } else {
                     Text(
-                        String(
-                            format: NSLocalizedString("label_rows_current", comment: ""),
-                            project.currentRow
+                        String.localizedStringWithFormat(
+                            NSLocalizedString("label_rows_current", comment: ""),
+                            Int(project.currentRow)
                         )
                     )
                     .font(.subheadline)

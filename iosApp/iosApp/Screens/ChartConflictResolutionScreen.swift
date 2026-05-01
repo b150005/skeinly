@@ -43,9 +43,9 @@ struct ChartConflictResolutionScreen: View {
                                 .accessibilityIdentifier("conflictSummaryChip")
                         } else {
                             Text(
-                                String(
-                                    format: NSLocalizedString("label_conflict_summary", comment: ""),
-                                    total
+                                String.localizedStringWithFormat(
+                                    NSLocalizedString("label_conflict_summary", comment: ""),
+                                    Int(total)
                                 )
                             )
                             .font(.caption)

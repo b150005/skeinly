@@ -391,9 +391,9 @@ struct StructuredChartEditorScreen: View {
                 pendingDeleteLayer = nil
             }
         } message: { layer in
-            Text(String(
-                format: NSLocalizedString("dialog_delete_layer_body", comment: ""),
-                layer.cells.count
+            Text(String.localizedStringWithFormat(
+                NSLocalizedString("dialog_delete_layer_body", comment: ""),
+                Int(layer.cells.count)
             ))
         }
     }
@@ -1212,9 +1212,9 @@ private struct ResizeChartSheet: View {
                 }
 
                 if trimCount > 0 {
-                    Text(String(
-                        format: NSLocalizedString("label_resize_trim_count", comment: ""),
-                        trimCount
+                    Text(String.localizedStringWithFormat(
+                        NSLocalizedString("label_resize_trim_count", comment: ""),
+                        Int(trimCount)
                     ))
                     .foregroundStyle(.red)
                     .accessibilityIdentifier("resizeTrimWarning")
