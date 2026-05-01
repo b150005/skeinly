@@ -32,7 +32,7 @@ jobs:
         uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6
 
       - name: Build debug APK (local-only mode)
-        run: SUPABASE_URL="" SUPABASE_ANON_KEY="" ./gradlew :androidApp:assembleDebug
+        run: SUPABASE_URL="" SUPABASE_PUBLISHABLE_KEY="" ./gradlew :androidApp:assembleDebug
 
       - name: Install Maestro CLI
         env:
@@ -122,7 +122,7 @@ jobs:
       - name: Build iOS app for simulator (local-only mode)
         env:
           SUPABASE_URL: ""
-          SUPABASE_ANON_KEY: ""
+          SUPABASE_PUBLISHABLE_KEY: ""
         run: |
           set -o pipefail
           xcodebuild build \

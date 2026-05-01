@@ -16,3 +16,21 @@ DEVELOPMENT_TEAM = YOUR_TEAM_ID_HERE
 // SENTRY_DSN_IOS = https:/$()/<rest-of-dsn>  (NOTE the $() to break // sequence)
 // See https://pewpewthespells.com/blog/xcconfig_guide.html for details.
 SENTRY_DSN_IOS =
+
+// Phase F2 — PostHog Project API Key + Host. Get the key from:
+// PostHog > Settings > Project > Project API Key (phc_… prefix).
+// Default host is https://us.i.posthog.com or https://eu.i.posthog.com.
+// Empty key disables PostHog init (privacy-safe local-only mode).
+POSTHOG_API_KEY =
+POSTHOG_HOST =
+
+// Phase 39.1 — Supabase backend URL and Publishable key
+// (`sb_publishable_…` form). Both URL and Publishable key are safe to
+// expose in client binaries per Supabase docs (RLS enforced server-side).
+// The legacy `anon` JWT key was deprecated 2025-11-01 — do not use it
+// for new builds.
+//
+// xcconfig // escape applies to the URL value:
+//   SUPABASE_URL = https:/$()/<project-ref>.supabase.co
+SUPABASE_URL =
+SUPABASE_PUBLISHABLE_KEY =

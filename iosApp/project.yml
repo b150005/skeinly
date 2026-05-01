@@ -12,6 +12,16 @@ options:
 # Phase F2 — PostHog-iOS via SwiftPM. API key + host injected into
 # Info.plist via local.xcconfig (POSTHOG_API_KEY / POSTHOG_HOST). Init
 # also gated on the user's analytics opt-in toggle (Settings).
+# Phase 39.1 — Supabase URL + Publishable key are injected into Info.plist
+# (SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY) and consumed by
+# SupabaseConfig.ios.kt via NSBundle.mainBundle.objectForInfoDictionaryKey.
+# Empty values mean local-only mode (no Supabase round-trips, no Realtime
+# sync). Production CI (release.yml) and main-branch CI (ci.yml) must
+# pass real values via fastlane build_xcargs / xcodebuild xcargs
+# respectively. The e2e workflow intentionally passes empty strings to
+# exercise the local-only code path. The legacy `anon` JWT key is
+# deprecated by Supabase (2025-11-01) — only `sb_publishable_…` values
+# should be passed in.
 packages:
   Sentry:
     url: https://github.com/getsentry/sentry-cocoa
@@ -58,6 +68,11 @@ targets:
         # public US cloud; override via xcconfig for self-hosted.
         POSTHOG_API_KEY: "$(POSTHOG_API_KEY)"
         POSTHOG_HOST: "$(POSTHOG_HOST)"
+        # Phase 39.1 — Supabase backend URL + Publishable key
+        # (`sb_publishable_…` form, post-2025-11-01). Empty values disable
+        # Supabase init in SupabaseConfig.ios.kt (local-only mode).
+        SUPABASE_URL: "$(SUPABASE_URL)"
+        SUPABASE_PUBLISHABLE_KEY: "$(SUPABASE_PUBLISHABLE_KEY)"
         UILaunchScreen:
           UIColorName: SystemBackground
         CFBundleURLTypes:

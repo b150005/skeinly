@@ -417,24 +417,33 @@ gh secret set SUPABASE_URL
 # paste, Ctrl+D
 ```
 
-### 13. `SUPABASE_ANON_KEY`
+### 13. `SUPABASE_PUBLISHABLE_KEY`
 
-**WHAT**: The "anon" public API key. Designed to be embedded in client apps (RLS policies prevent unauthorized access at the database layer).
+> **2025-11-01 full migration**: legacy `SUPABASE_ANON_KEY` (`eyJ...` JWT) has been fully retired in this codebase and replaced by `SUPABASE_PUBLISHABLE_KEY` across every consumer (Kotlin `expect/actual val publishableKey`, iOS `Info.plist` key, Gradle env, all CI workflows). See `docs/ja/release-secrets.md` for the canonical guidance.
+
+**WHAT**: The "Publishable" public API key (`sb_publishable_…`). Designed to be embedded in client apps (RLS policies prevent unauthorized access at the database layer). Opaque token, NOT a JWT.
 
 **OBTAIN:**
 
-- Same Project Settings page → **API Keys** section → copy the **anon public** key (a long JWT-shaped string starting with `eyJ`).
+1. Supabase Dashboard → project (`Skeinly`) → **Project Settings** → **API Keys**
+2. **Publishable key** tab → copy the existing key or **Generate new key** (starts with `sb_publishable_`)
 
-**VERIFY**: Starts with `eyJ` (Base64-URL-encoded JWT). Decoding the middle segment (e.g. with [jwt.io](https://jwt.io)) shows `"role": "anon"` and `"ref": "<project-ref>"`.
+**VERIFY**: Starts with `sb_publishable_`. Not the legacy JWT (`eyJ...`).
 
 **REGISTER:**
 
 ```bash
-gh secret set SUPABASE_ANON_KEY
-# paste long JWT, Ctrl+D
+gh secret set SUPABASE_PUBLISHABLE_KEY
+# paste sb_publishable_..., Ctrl+D
 ```
 
-**Do NOT register the `service_role` key as a GitHub Secret for client builds**. The service-role key bypasses RLS and would be a critical leak if shipped in an APK.
+**Cleanup of legacy `SUPABASE_ANON_KEY`** (after migration):
+
+```bash
+gh secret delete SUPABASE_ANON_KEY
+```
+
+**Do NOT register the `Secret key` (`sb_secret_…`, the successor of `service_role`) as a GitHub Secret for client builds**. The Secret key bypasses RLS and would be a critical leak if shipped in an APK.
 
 ## Android FCM client (1 secret)
 
@@ -721,7 +730,7 @@ POSTHOG_PROJECT_API_KEY_PROD          Updated YYYY-MM-DD
 SENTRY_AUTH_TOKEN                     Updated YYYY-MM-DD
 SENTRY_DSN_ANDROID                    Updated YYYY-MM-DD
 SENTRY_DSN_IOS                        Updated YYYY-MM-DD
-SUPABASE_ANON_KEY                     Updated YYYY-MM-DD
+SUPABASE_PUBLISHABLE_KEY              Updated YYYY-MM-DD
 SUPABASE_URL                          Updated YYYY-MM-DD
 ```
 

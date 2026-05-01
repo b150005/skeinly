@@ -19,7 +19,7 @@ val supabaseModule =
             single<SupabaseClient> {
                 createSupabaseClient(
                     supabaseUrl = SupabaseConfig.url,
-                    supabaseKey = SupabaseConfig.anonKey,
+                    supabaseKey = SupabaseConfig.publishableKey,
                 ) {
                     install(Auth) {
                         flowType = FlowType.PKCE
