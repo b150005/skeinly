@@ -157,60 +157,66 @@ fun SettingsScreen(
                         .padding(padding)
                         .padding(horizontal = 16.dp),
             ) {
-                // Account section
-                Text(
-                    text = stringResource(Res.string.label_account_section),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(vertical = 16.dp),
-                )
-
-                state.email?.let { email ->
+                // B3 (Phase 39.1): Account section is gated on
+                // `state.isSignedIn`. Apple Reviewers may reject UIs that
+                // imply features the user can't access (e.g. showing
+                // "Sign Out" / "Delete Account" while never signed in).
+                if (state.isSignedIn) {
+                    // Account section
                     Text(
-                        text = email,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = stringResource(Res.string.label_account_section),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(vertical = 16.dp),
                     )
-                    Spacer(Modifier.height(16.dp))
-                }
 
-                Button(
-                    onClick = { viewModel.onEvent(SettingsEvent.SignOut) },
-                    modifier = Modifier.fillMaxWidth().testTag("signOutButton"),
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ExitToApp,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 8.dp),
+                    state.email?.let { email ->
+                        Text(
+                            text = email,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(16.dp))
+                    }
+
+                    Button(
+                        onClick = { viewModel.onEvent(SettingsEvent.SignOut) },
+                        modifier = Modifier.fillMaxWidth().testTag("signOutButton"),
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 8.dp),
+                        )
+                        Text(stringResource(Res.string.action_sign_out))
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    // Phase B3: Change password / change email
+                    ListItem(
+                        headlineContent = { Text(stringResource(Res.string.action_change_password)) },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable(role = Role.Button) {
+                                    viewModel.onEvent(SettingsEvent.RequestChangePassword)
+                                }.testTag("changePasswordButton"),
                     )
-                    Text(stringResource(Res.string.action_sign_out))
+
+                    ListItem(
+                        headlineContent = { Text(stringResource(Res.string.action_change_email)) },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable(role = Role.Button) {
+                                    viewModel.onEvent(SettingsEvent.RequestChangeEmail)
+                                }.testTag("changeEmailButton"),
+                    )
+
+                    Spacer(Modifier.height(24.dp))
+                    HorizontalDivider()
+                    Spacer(Modifier.height(24.dp))
                 }
-
-                Spacer(Modifier.height(8.dp))
-
-                // Phase B3: Change password / change email
-                ListItem(
-                    headlineContent = { Text(stringResource(Res.string.action_change_password)) },
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable(role = Role.Button) {
-                                viewModel.onEvent(SettingsEvent.RequestChangePassword)
-                            }.testTag("changePasswordButton"),
-                )
-
-                ListItem(
-                    headlineContent = { Text(stringResource(Res.string.action_change_email)) },
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable(role = Role.Button) {
-                                viewModel.onEvent(SettingsEvent.RequestChangeEmail)
-                            }.testTag("changeEmailButton"),
-                )
-
-                Spacer(Modifier.height(24.dp))
-                HorizontalDivider()
-                Spacer(Modifier.height(24.dp))
 
                 // About / Legal section — Phase E2
                 Text(
@@ -293,48 +299,52 @@ fun SettingsScreen(
                     modifier = Modifier.padding(top = 4.dp),
                 )
 
-                Spacer(Modifier.height(24.dp))
-                HorizontalDivider()
-                Spacer(Modifier.height(24.dp))
+                // B3 (Phase 39.1): Danger zone is auth-only — same gating
+                // as the Account section above.
+                if (state.isSignedIn) {
+                    Spacer(Modifier.height(24.dp))
+                    HorizontalDivider()
+                    Spacer(Modifier.height(24.dp))
 
-                // Danger zone
-                Text(
-                    text = stringResource(Res.string.label_danger_zone),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
-                Text(
-                    text = stringResource(Res.string.body_delete_account_warning),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 16.dp),
-                )
+                    // Danger zone
+                    Text(
+                        text = stringResource(Res.string.label_danger_zone),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                    Text(
+                        text = stringResource(Res.string.body_delete_account_warning),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 16.dp),
+                    )
 
-                Button(
-                    onClick = { showDeleteConfirmation = true },
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
-                            contentColor = MaterialTheme.colorScheme.onError,
-                        ),
-                    enabled = !state.isDeletingAccount,
-                    modifier = Modifier.fillMaxWidth().testTag("deleteAccountButton"),
-                ) {
-                    if (state.isDeletingAccount) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.padding(end = 8.dp),
-                            color = MaterialTheme.colorScheme.onError,
-                            strokeWidth = 2.dp,
+                    Button(
+                        onClick = { showDeleteConfirmation = true },
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError,
+                            ),
+                        enabled = !state.isDeletingAccount,
+                        modifier = Modifier.fillMaxWidth().testTag("deleteAccountButton"),
+                    ) {
+                        if (state.isDeletingAccount) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.padding(end = 8.dp),
+                                color = MaterialTheme.colorScheme.onError,
+                                strokeWidth = 2.dp,
+                            )
+                        }
+                        Text(
+                            if (state.isDeletingAccount) {
+                                stringResource(Res.string.state_deleting_account)
+                            } else {
+                                stringResource(Res.string.action_delete_account)
+                            },
                         )
                     }
-                    Text(
-                        if (state.isDeletingAccount) {
-                            stringResource(Res.string.state_deleting_account)
-                        } else {
-                            stringResource(Res.string.action_delete_account)
-                        },
-                    )
                 }
             }
         }

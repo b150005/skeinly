@@ -20,6 +20,15 @@ struct iOSApp: App {
                 options.dsn = dsn
                 options.releaseName =
                     Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+                // I1 (Phase 39.1): tag every event with the runtime
+                // environment so Sentry dashboards / alerts / release-health
+                // can filter dev vs prod cleanly. Mirrors the Android
+                // SkeinlyApplication.kt configuration.
+                #if DEBUG
+                options.environment = "development"
+                #else
+                options.environment = "production"
+                #endif
                 // Phase F1 ships with conservative perf sampling; tune via
                 // Sentry dashboard once telemetry arrives.
                 options.tracesSampleRate = 0.2
@@ -95,6 +104,15 @@ struct iOSApp: App {
                 config.sessionReplay = false
                 config.sendFeatureFlagEvent = false
                 PostHogSDK.shared.setup(config)
+                // I1 (Phase 39.1): tag every event with the runtime
+                // environment so dev captures filter out of prod
+                // dashboards. Registered as a super property so every
+                // subsequent capture inherits it without per-call boilerplate.
+                #if DEBUG
+                PostHogSDK.shared.register(["environment": "development"])
+                #else
+                PostHogSDK.shared.register(["environment": "production"])
+                #endif
                 posthogInitialized = true
             case (false, true):
                 PostHogSDK.shared.optOut()

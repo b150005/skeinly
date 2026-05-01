@@ -64,6 +64,7 @@ class SettingsViewModelTest {
             viewModel.state.test {
                 val state = awaitItem()
                 assertEquals("test@example.com", state.email)
+                assertTrue(state.isSignedIn)
                 assertFalse(state.isLoading)
             }
         }
@@ -75,7 +76,26 @@ class SettingsViewModelTest {
             viewModel.state.test {
                 val state = awaitItem()
                 assertNull(state.email)
+                assertFalse(state.isSignedIn)
                 assertFalse(state.isLoading)
+            }
+        }
+
+    /**
+     * B3 (Phase 39.1): regression guard for "Settings shows Sign Out /
+     * Delete Account while signed out". The screen gates the Account +
+     * Danger zone sections on `state.isSignedIn`, so the ViewModel must
+     * report `isSignedIn = false` for the unauthenticated state.
+     */
+    @Test
+    fun `unauthenticated state has isSignedIn false (B3)`() =
+        runTest {
+            authRepo.setAuthState(AuthState.Unauthenticated)
+            val viewModel = createViewModel()
+            viewModel.state.test {
+                val state = awaitItem()
+                assertFalse(state.isSignedIn, "Unauthenticated must not expose Sign Out UI")
+                assertNull(state.email)
             }
         }
 
