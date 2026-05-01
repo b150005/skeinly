@@ -1,9 +1,18 @@
 appId: io.github.b150005.skeinly
 name: "Helper - Complete Onboarding"
 ---
-# Complete onboarding carousel after clearState
+# Complete onboarding carousel after clearState.
+#
+# Phase 39.4: Android `BuildFlags.isBeta` is derived from `version.properties`
+# `VERSION_NAME` `-beta` suffix; the current `1.0.0-beta1` build appends a
+# 4th diagnostic-consent page. Three swipes traverse Track → Count →
+# Library → Diagnostic Consent (last page). Drop the third swipe at v1.0
+# GA — see Tech Debt Backlog `### Phase 40 GA release prep`.
 - assertVisible:
     id: "onboardingPage1"
+- swipe:
+    direction: LEFT
+    duration: 400
 - swipe:
     direction: LEFT
     duration: 400

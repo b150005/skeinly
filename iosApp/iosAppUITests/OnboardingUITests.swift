@@ -7,10 +7,17 @@ import XCTest
 /// The ScopedViewModel holder fix pins the ViewModel via @StateObject so
 /// these flows complete deterministically.
 ///
-/// Page asserts use the locale-independent `onboardingPage{1,2,3}` accessibility
+/// Page asserts use the locale-independent `onboardingPage{1,2,3,4}` accessibility
 /// identifiers so the tests remain valid under any localization of the
 /// xcstrings catalog (Phase 33.1.4 rule: any literal migrated to i18n must
 /// be re-anchored to a testTag / accessibilityIdentifier).
+///
+/// Phase 39.4: iOS production builds always set `IS_BETA: "YES"` (xcconfig
+/// macro in `iosApp/project.yml`), so `BuildFlags.isBeta == true` and the
+/// 4th diagnostic-consent onboarding page is always present. Tests advance
+/// through 4 pages; on a future v1.0 GA build this assertion set will need
+/// to relax to "advance until getStartedButton appears" — see Tech Debt
+/// Backlog `### Phase 40 GA release prep`.
 final class OnboardingUITests: XCTestCase {
     private var app: XCUIApplication!
 
@@ -49,6 +56,14 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertTrue(
             app.otherElements["onboardingPage3"].waitForExistence(timeout: 3),
             "Page 3 did not render after tapping Next"
+        )
+        nextButton.tap()
+
+        // Phase 39.4: 4th diagnostic-consent page (only on beta builds, but
+        // iOS always builds beta — see header comment).
+        XCTAssertTrue(
+            app.otherElements["onboardingPage4"].waitForExistence(timeout: 3),
+            "Page 4 (diagnostic-consent) did not render after tapping Next"
         )
 
         let getStartedButton = app.buttons["getStartedButton"]

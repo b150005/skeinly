@@ -39,6 +39,13 @@ tags:
 - assertVisible:
     id: "onboardingPage3"
 
+# Phase 39.4: 4th diagnostic-consent page on iOS beta builds (always on
+# until v1.0 GA — see Tech Debt Backlog `### Phase 40 GA release prep`).
+- tapOn:
+    id: "nextButton"
+- assertVisible:
+    id: "onboardingPage4"
+
 # Last page shows Get Started, not Next
 - assertVisible:
     id: "getStartedButton"
