@@ -13,7 +13,7 @@
 | Force push、ブランチ削除 | **全員禁止** (bypass無し) |
 | Merge コミット | **禁止** — squash または rebase のみ (linear history 強制) |
 | PR 承認要件 | 最低1件の承認、push 時に古い承認は破棄、最終 push に対する承認必須、全レビュースレッド解決必須 |
-| 必須 CI status check | `Shared Module (Lint + Test + Coverage + Build)`, `Android (Build + Test)`, `iOS (Build + Test)`, `Android E2E (Maestro)`, `iOS E2E (Maestro)`, `CodeQL Analysis (swift, macos-latest, manual)` |
+| 必須 CI status check | `Shared Module (Lint + Test + Coverage + Build)`, `Android (Build + Test)`, `iOS (Build + Test)`, `Android E2E (Maestro)`, `iOS E2E (Maestro)`, `CodeQL Analysis (swift, macos-latest, manual)`, `CodeQL Analysis (java-kotlin, ubuntu-latest, manual)` |
 | Bypass actor | Repository Admin role (Personal account では Owner のみ) |
 
 有効な ruleset 名は `main-strict` (id `15581036`)。設定: <https://github.com/b150005/skeinly/rules/15581036>
@@ -99,10 +99,13 @@ Merge コミット禁止。PR は squash または rebase でのみ merge 可能
 | Android E2E (Maestro) | `.github/workflows/e2e.yml` | `android-e2e` |
 | iOS E2E (Maestro) | `.github/workflows/e2e.yml` | `ios-e2e` |
 | CodeQL Analysis (swift, macos-latest, manual) | `.github/workflows/security.yml` | `codeql` (swift matrix entry) |
+| CodeQL Analysis (java-kotlin, ubuntu-latest, manual) | `.github/workflows/security.yml` | `codeql` (java-kotlin matrix entry) |
 
 `strict_required_status_checks_policy` は `false` — PR ブランチが `main` の最新まで up-to-date でなくても check は valid 扱い。長期 PR の rebase loop 摩擦を回避するため。
 
-**`CodeQL Analysis (java-kotlin, ubuntu-latest, manual)` について** — このチェックは Kotlin ビルドの上流抽出問題のため意図的に必須から除外しています (`CLAUDE.md` の "CI Known Limitations" 参照)。Workflow 側で `continue-on-error: true` 設定により workflow 全体を block しないようになっており、原因解決まで required check から除外を継続します。
+**重要**: 上記の各 workflow は `push` に加えて `pull_request: branches: [main]` でも trigger される必要があります。required status check に登録された workflow が PR で起動しないと、check は永遠に "expected" のまま PR が構造的に merge 不可能になります。現在 3つの required-check workflow (`ci.yml` / `e2e.yml` / `security.yml`) はこの契約を満たしています。将来 workflow 変更でいずれかから `pull_request` trigger を落とすと、PR は admin bypass を要求するようになるため、3つの trigger 形を一致させて維持してください。
+
+**`CodeQL Analysis (java-kotlin, ubuntu-latest, manual)` について** — Kotlin ビルドの上流抽出問題のため一時的に必須から除外していましたが、`1298b4b` (2026-05-02) で build target を `:shared:compileAndroidMain` (lifecycle task で kotlinc を呼ばない) から `:shared:assembleAndroidMain :androidApp:assembleDebug` に切り替えて kotlinc 強制実行を成立させた後、required に昇格しました。その後 Gradle build cache が kotlinc 出力を FROM-CACHE で復元する regression が発生 (CodeQL extractor の trace が空に) → gradle invocation に `--no-build-cache` を追加して close。詳細は `CLAUDE.md` の "CI Known Limitations" → "CodeQL java-kotlin" 参照。
 
 ## Bypass の仕組み
 

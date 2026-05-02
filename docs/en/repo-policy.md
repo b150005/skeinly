@@ -13,7 +13,7 @@ This document describes the branch protection rules and contribution policy for 
 | Force push, branch deletion | **Forbidden** for everyone (no bypass) |
 | Merge commits | **Forbidden** — squash or rebase only (linear history enforced) |
 | PR approval requirement | At least 1 approval; stale approvals dismissed on push; last-push approval required; all review threads must be resolved |
-| Required CI status checks | `Shared Module (Lint + Test + Coverage + Build)`, `Android (Build + Test)`, `iOS (Build + Test)`, `Android E2E (Maestro)`, `iOS E2E (Maestro)`, `CodeQL Analysis (swift, macos-latest, manual)` |
+| Required CI status checks | `Shared Module (Lint + Test + Coverage + Build)`, `Android (Build + Test)`, `iOS (Build + Test)`, `Android E2E (Maestro)`, `iOS E2E (Maestro)`, `CodeQL Analysis (swift, macos-latest, manual)`, `CodeQL Analysis (java-kotlin, ubuntu-latest, manual)` |
 | Bypass actor | Repository Admin role (Owner only on a personal account) |
 
 The active ruleset is `main-strict` (id `15581036`). Configuration: <https://github.com/b150005/skeinly/rules/15581036>.
@@ -93,10 +93,13 @@ The following CI jobs must complete with status `success` before a PR can be mer
 | Android E2E (Maestro) | `.github/workflows/e2e.yml` | `android-e2e` |
 | iOS E2E (Maestro) | `.github/workflows/e2e.yml` | `ios-e2e` |
 | CodeQL Analysis (swift, macos-latest, manual) | `.github/workflows/security.yml` | `codeql` (swift matrix entry) |
+| CodeQL Analysis (java-kotlin, ubuntu-latest, manual) | `.github/workflows/security.yml` | `codeql` (java-kotlin matrix entry) |
 
 `strict_required_status_checks_policy` is `false` — the PR branch does not need to be up-to-date with `main` for the checks to be considered fresh. This avoids rebase-loop friction on long-running PRs.
 
-**Note on `CodeQL Analysis (java-kotlin, ubuntu-latest, manual)`** — this check is intentionally *not* required because of an upstream extraction issue with Kotlin builds (see `CLAUDE.md` → "CI Known Limitations"). The job is configured with `continue-on-error: true` in the workflow so it does not block the workflow run, and is excluded from required checks until the underlying issue is resolved.
+**Critical**: every workflow listed above MUST trigger on `pull_request: branches: [main]` in addition to `push`. A required status check whose workflow does not run on PRs makes every PR structurally unmergeable (the check is "expected" forever). All three required-check workflows (`ci.yml`, `e2e.yml`, `security.yml`) currently match this contract. If a future workflow change drops `pull_request` from any of them, PRs will silently start requiring admin bypass — keep the trigger shape consistent across the three.
+
+**Note on `CodeQL Analysis (java-kotlin, ubuntu-latest, manual)`** — this check used to be excluded from required checks due to an upstream Kotlin extraction issue, but was promoted to required after `1298b4b` (2026-05-02) flipped the build target from `:shared:compileAndroidMain` (lifecycle task, no kotlinc invocation) to `:shared:assembleAndroidMain :androidApp:assembleDebug` (forces real Kotlin compilation through the dependency graph). A subsequent regression caused by Gradle build-cache restoring kotlinc outputs (FROM-CACHE → empty CodeQL extractor trace) was closed by adding `--no-build-cache` to the gradle invocation. See `CLAUDE.md` → "CI Known Limitations" → "CodeQL java-kotlin" for the full incident history.
 
 ## Bypass mechanics
 
