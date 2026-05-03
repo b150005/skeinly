@@ -1,24 +1,26 @@
 # Release Secrets — Setup Guide
 
 > Japanese translation: [docs/ja/release-secrets.md](../ja/release-secrets.md)
->
-> **⚠️ Out-of-sync notice (2026-05-01)**: vendor modernization updates (Supabase Publishable key migration, Sentry **Organization** Auth Token clarification, PostHog free-tier 1-project consolidation, Firebase 2-project + GitHub Environment secrets layout, RevenueCat section, Edge Function `REVENUECAT_WEBHOOK_SECRET`) have landed in **JA only**. Refer to `docs/ja/release-secrets.md` for the current canonical guidance until this English file is synced. Tracking: separate follow-up PR.
 
-This document is a step-by-step guide for obtaining, verifying, and registering every secret consumed by the release pipeline and the Supabase Edge Functions. It covers **19 GitHub Secrets** in 6 categories plus **4 Supabase Edge Function runtime secrets** in a 7th category:
+This document is a step-by-step guide for obtaining, verifying, and registering every secret consumed by the release pipeline and the Supabase Edge Functions. It covers **19 GitHub Secrets** at Repository scope + **2 Environment-scoped Firebase secrets × 2 environments (= 4 Environment registrations)** plus **5 Supabase Edge Function runtime secrets**.
 
-**GitHub Secrets** (registered via `gh secret set`):
+**GitHub Secrets — Repository scope** (registered via `gh secret set`):
 - **iOS code signing** (4) — Distribution cert + provisioning profile + Team ID
 - **App Store Connect API** (3) — `.p8` API key + Key ID + Issuer ID
 - **Android signing** (4) — keystore + passwords + alias
-- **Supabase runtime** (2) — backend URL + anon key
-- **Android FCM client** (1) — `google-services.json` for Push client SDK
-- **Crash + error reporting** (3) — Sentry DSNs (iOS + Android) + Auth Token
-- **Analytics** (2) — PostHog project API keys (prod + dev)
+- **Supabase runtime** (2) — backend URL + Publishable key
+- **Crash + error reporting** (3) — Sentry DSNs (iOS + Android) + Organization Auth Token
+- **Analytics** (1) — PostHog Project API key (free-tier consolidated; `POSTHOG_HOST` is a Repository **Variable**, not a Secret)
+- **Subscriptions** (2) — RevenueCat Public iOS / Android SDK Keys
+
+**GitHub Secrets — Environment scope** (registered via `gh secret set --env <env>`):
+- **Firebase client config** (2 names × 2 environments) — `FIREBASE_GOOGLE_SERVICES_JSON_BASE64` (Android) + `FIREBASE_GOOGLE_SERVICE_INFO_PLIST_BASE64` (iOS), each registered against `production` (`Skeinly` Blaze project) and `development` (`Skeinly-Dev` Spark project)
 
 **Supabase Edge Function Secrets** (registered via `supabase secrets set`):
 - **iOS Push** (2) — APNs `.p8` + Key ID
 - **Android Push** (1) — Firebase Service Account JSON for FCM HTTP v1
 - **Android IAP** (1) — Google Play Service Account JSON for receipt validation
+- **Subscriptions Webhook** (1) — RevenueCat Webhook Authorization secret
 - (App Store Connect API key is reused from GitHub Secrets — same `.p8` file, registered in both contexts.)
 
 The release workflow ([`.github/workflows/release.yml`](../../.github/workflows/release.yml)) reads GitHub Secrets as `${{ secrets.* }}`. Missing or incorrect values fail the release silently for some (build still succeeds, just no upload) or loudly for others (signing fails). The Supabase Edge Function reads its own secrets via `Deno.env.get(...)`. This guide includes verification steps so you can confirm a value is correct **before** registering it.
@@ -31,10 +33,11 @@ The release workflow ([`.github/workflows/release.yml`](../../.github/workflows/
 - [App Store Connect API (3 secrets)](#app-store-connect-api-3-secrets)
 - [Android signing (4 secrets)](#android-signing-4-secrets)
 - [Supabase runtime (2 secrets)](#supabase-runtime-2-secrets)
-- [Android FCM client (1 secret)](#android-fcm-client-1-secret)
+- [Firebase client (2 secrets × 2 environments = 4 registrations)](#firebase-client-2-secrets--2-environments--4-registrations)
 - [Crash + error reporting — Sentry (3 secrets)](#crash--error-reporting--sentry-3-secrets)
-- [Analytics — PostHog (2 secrets)](#analytics--posthog-2-secrets)
-- [Supabase Edge Function Secrets (4 secrets)](#supabase-edge-function-secrets-4-secrets)
+- [Analytics — PostHog (1 secret)](#analytics--posthog-1-secret)
+- [Subscriptions — RevenueCat (2 secrets)](#subscriptions--revenuecat-2-secrets)
+- [Supabase Edge Function Secrets (5 secrets)](#supabase-edge-function-secrets-5-secrets)
 - [Bulk verification](#bulk-verification)
 - [Rotation and revocation](#rotation-and-revocation)
 - [Security notes](#security-notes)
@@ -445,22 +448,53 @@ gh secret delete SUPABASE_ANON_KEY
 
 **Do NOT register the `Secret key` (`sb_secret_…`, the successor of `service_role`) as a GitHub Secret for client builds**. The Secret key bypasses RLS and would be a critical leak if shipped in an APK.
 
-## Android FCM client (1 secret)
+## Firebase client (2 secrets × 2 environments = 4 registrations)
 
-This secret is the Firebase project's client-side configuration for the Android app. It is read at build time and embedded in the APK so the FCM SDK can register with Firebase. The value is restricted to the app's package name + signing certificate SHA-1 in Firebase, so leaking it is low-blast-radius — but we still keep it git-ignored to avoid clutter and to support per-environment swaps later.
+These secrets are the Firebase client-side configuration for the iOS + Android apps. They are read at build time and embedded in the binaries so the Crashlytics / FCM / Analytics / Performance / Remote Config SDKs can register with Firebase. The values are restricted in Firebase by package name + signing certificate SHA-1 (Android) or Bundle ID (iOS), so leaking them is low-blast-radius — but we still git-ignore them and route per-environment swaps through GitHub Environments.
 
-### 14. `FIREBASE_GOOGLE_SERVICES_JSON_BASE64`
+### Firebase project layout (official guidance: separate project per environment)
 
-**WHAT**: Base64-encoded `google-services.json` file from the Firebase Console for the Android app.
+Firebase officially recommends one Firebase project **per environment**:
 
-**OBTAIN:**
+> "Firebase recommends using a separate Firebase project for each environment in your development workflow."
+
+Skeinly's layout:
+
+| Project name | Plan | Purpose | Config files |
+|---|---|---|---|
+| **`Skeinly`** | **Blaze** + $5/month budget alert | production (release) | `google-services.json` + `GoogleService-Info.plist` (1 each) |
+| **`Skeinly-Dev`** | **Spark** (free) | development (debug builds + local + CI) | `google-services.json` + `GoogleService-Info.plist` (1 each) |
+
+A total of **4 files** are base64-encoded and registered under **GitHub Environments** (`production` / `development`) under the same secret name in each environment (no suffix needed).
+
+### GitHub Environments setup (prerequisite)
+
+```bash
+gh api -X PUT "repos/{owner}/{repo}/environments/development" -f wait_timer=0
+gh api -X PUT "repos/{owner}/{repo}/environments/production" \
+  -f deployment_branch_policy[protected_branches]=true \
+  -f deployment_branch_policy[custom_branch_policies]=false
+# production deploys only from main, wait_timer 0
+```
+
+Or via the GitHub UI: Settings → Environments → New environment → on `production`, set the Deployment branch policy to allow only `main`.
+
+### 14. `FIREBASE_GOOGLE_SERVICES_JSON_BASE64` (Android)
+
+**WHAT**: Base64-encoded `google-services.json` file downloaded from the Firebase Console for the Android app. Registered **once per Environment** (`production` / `development`) under the same secret name.
+
+**OBTAIN (repeat per environment):**
 
 1. Sign in to [Firebase Console](https://console.firebase.google.com).
-2. If no Firebase project exists for Skeinly: **Add project** → Name `skeinly` → **Disable Google Analytics** (we use PostHog) → Create.
+2. Select the project (`Skeinly` or `Skeinly-Dev`; if not yet created: **Add project** → **Disable Google Analytics** (we use PostHog) → Create).
 3. Inside the project: **Project Overview** → **Add app** → Android icon.
-4. Android package name: `io.github.b150005.skeinly`.
-5. App nickname: `Skeinly Android`.
-6. Signing certificate SHA-1: run `keytool -list -v -keystore upload-keystore.jks` and copy the **SHA-1** fingerprint (release keystore — debug builds use a separate auto-generated keystore that does not need registration here for alpha; add the debug SHA-1 later if FCM debug testing is needed).
+4. Android package name:
+   - `Skeinly` → `io.github.b150005.skeinly`
+   - `Skeinly-Dev` → `io.github.b150005.skeinly.dev` (Application ID suffix `.dev` selected via build variant)
+5. App nickname: `Skeinly Android` / `Skeinly Dev Android`.
+6. Signing certificate SHA-1:
+   - `Skeinly` (prod): release keystore SHA-1 (`keytool -list -v -keystore upload-keystore.jks`)
+   - `Skeinly-Dev`: debug keystore SHA-1 (`~/.android/debug.keystore`, default password `android`)
 7. Continue → Continue → **Download `google-services.json`** → Continue → skip the SDK setup step (we wire SDKs via Gradle separately).
 8. Base64-encode:
 
@@ -471,24 +505,76 @@ This secret is the Firebase project's client-side configuration for the Android 
 **VERIFY:**
 
 ```bash
-# Should print a JSON object with "project_info" and "client" keys.
 cat google-services.json | python3 -m json.tool | head -10
 ```
 
 Confirm:
-- `project_info.project_id` matches your Firebase project name (`skeinly`)
-- `client[0].client_info.android_client_info.package_name` is `io.github.b150005.skeinly`
-- `client[0].api_key[0].current_key` is a long alphanumeric string (the Android API key, restricted to the package + SHA-1)
+- `project_info.project_id` matches the Firebase project (`skeinly` / `skeinly-dev`)
+- `client[0].client_info.android_client_info.package_name` matches the registered package name
+- `client[0].api_key[0].current_key` is a long alphanumeric string (restricted to package + SHA-1)
 
-**REGISTER:**
+**REGISTER (per Environment, same secret name):**
 
 ```bash
-gh secret set FIREBASE_GOOGLE_SERVICES_JSON_BASE64 < google-services.base64
+# Register the Skeinly project's value to the production Environment
+gh secret set FIREBASE_GOOGLE_SERVICES_JSON_BASE64 \
+  --env production < google-services-prod.base64
+
+# Register the Skeinly-Dev project's value to the development Environment
+gh secret set FIREBASE_GOOGLE_SERVICES_JSON_BASE64 \
+  --env development < google-services-dev.base64
 ```
+
+The workflow only needs to declare `environment: production` / `environment: development` at the job level; the matching value resolves automatically.
 
 The Android Gradle build decodes this at build time into `androidApp/google-services.json` (git-ignored).
 
-**ROTATE**: Re-download from the Firebase Console only if you change the package name (Phase 28 already settled this) or the signing SHA-1 (which means losing the upload keystore — see [§8 Backup](#8-keystore_base64) for why this is unrecoverable). Day-to-day no rotation is needed.
+**ROTATE**: Re-download from the Firebase Console only if you change the package name or signing SHA-1. Day-to-day no rotation is needed.
+
+### 14b. `FIREBASE_GOOGLE_SERVICE_INFO_PLIST_BASE64` (iOS)
+
+**WHAT**: Base64-encoded `GoogleService-Info.plist` file downloaded from the Firebase Console for the iOS app. Registered **once per Environment** (`production` / `development`) under the same secret name.
+
+**OBTAIN (repeat per environment):**
+
+1. Firebase Console → the project → **Project Overview** → **Add app** → iOS icon.
+2. Bundle ID:
+   - `Skeinly` → `io.github.b150005.skeinly`
+   - `Skeinly-Dev` → `io.github.b150005.skeinly.dev` (selected via Xcode Debug Configuration)
+3. App nickname: `Skeinly iOS` / `Skeinly Dev iOS`.
+4. App Store ID: leave blank (add later once the app is registered on App Store Connect).
+5. Register App → **Download `GoogleService-Info.plist`** → Continue → skip SDK setup.
+6. Base64-encode:
+
+   ```bash
+   base64 -i GoogleService-Info.plist -o google-service-info.base64
+   ```
+
+**VERIFY:**
+
+```bash
+plutil -p GoogleService-Info.plist | head -10
+# BUNDLE_ID, PROJECT_ID, GOOGLE_APP_ID etc. should appear
+```
+
+Confirm:
+- `BUNDLE_ID` matches the registered Bundle ID
+- `PROJECT_ID` matches `skeinly` / `skeinly-dev`
+- `GOOGLE_APP_ID` is in `1:<sender-id>:ios:<hash>` form
+
+**REGISTER (per Environment, same secret name):**
+
+```bash
+gh secret set FIREBASE_GOOGLE_SERVICE_INFO_PLIST_BASE64 \
+  --env production < google-service-info-prod.base64
+
+gh secret set FIREBASE_GOOGLE_SERVICE_INFO_PLIST_BASE64 \
+  --env development < google-service-info-dev.base64
+```
+
+The iOS release workflow decodes this at build time into `iosApp/iosApp/GoogleService-Info.plist` (git-ignored).
+
+**ROTATE**: Re-download from the Firebase Console only on Bundle ID change.
 
 ## Crash + error reporting — Sentry (3 secrets)
 
@@ -531,25 +617,38 @@ gh secret set SENTRY_DSN_ANDROID
 
 ### 17. `SENTRY_AUTH_TOKEN`
 
-**WHAT**: A user auth token that lets CI upload dSYMs (iOS) and mapping files (Android) to Sentry after each release build, so stack traces are symbolicated automatically.
+**WHAT**: An **Organization Auth Token** that lets CI upload dSYMs (iOS) and mapping files (Android) to Sentry after each release build, so stack traces are symbolicated automatically. **Not a User Auth Token** — User Tokens are tied to a specific user account and silently expire if that user is removed from the organization, which is a real operational risk for CI. Sentry's documentation explicitly recommends Organization Auth Tokens for CI:
+
+> "To upload source maps you have to configure an Organization Token."
+>
+> "Organization tokens are designed to be used in CI environments and with Sentry CLI."
 
 **OBTAIN:**
 
-1. Sentry → click your avatar (top-left) → **User Settings** → **Auth Tokens**.
-2. **Create New Token**.
+1. Sentry → bottom of left sidebar: **Settings** → **Organization Settings** → **Auth Tokens**.
+   - ⚠️ **Do NOT use User Settings → Auth Tokens.**
+2. **Create New Organization Token**.
 3. Name: `skeinly CI`.
-4. Scopes (minimum):
-   - `project:releases` — create releases + upload artifacts
-   - `org:read` — list orgs/projects (required by sentry-cli to resolve the project from a slug)
+4. Scopes: Organization Auth Tokens **automatically include** the scopes CI needs (`project:releases`, `project:write`, `org:read`) — no manual scope selection like the User Token flow.
 5. Create → copy the token immediately (one-time view).
+
+**Token type comparison:**
+
+| Type | CI suitability | Recommendation | Expiry risk |
+|---|---|---|---|
+| **Organization Auth Token** | ✅ | **Recommended** | Valid as long as the org exists |
+| User Auth Token (formerly Personal Token) | ⚠️ | Not recommended | Expires immediately when the creating user leaves the org |
+| Internal Integration token | △ | Advanced integrations only | n/a |
+
+**Relationship to per-environment Sentry projects**: Even with the two-project layout (`skeinly-ios` + `skeinly-android`), `SENTRY_AUTH_TOKEN` is a **single secret** — Org Tokens act across every project in the org. `SENTRY_PROJECT` / `SENTRY_ORG` are switched per CI Job via `env:`.
 
 **VERIFY:**
 
 ```bash
-# Token shape: 64-char hex; sentry-cli can verify connectivity.
+# Token shape: sntrys_<base64>... (Org Token)
 brew install getsentry/tools/sentry-cli  # if not installed
 sentry-cli --auth-token <token> info
-# Should show your org name + project list.
+# Should show the org name + project list.
 ```
 
 **REGISTER:**
@@ -559,21 +658,38 @@ gh secret set SENTRY_AUTH_TOKEN
 # paste token, Ctrl+D
 ```
 
-**ROTATE**: User Settings → Auth Tokens → revoke + recreate. Update GitHub Secret.
+**ROTATE**: Organization Settings → Auth Tokens → revoke + recreate. Update the GitHub Secret.
 
-## Analytics — PostHog (2 secrets)
+Reference: [Sentry Auth Tokens](https://docs.sentry.io/account/auth-tokens/)
 
-These secrets wire the PostHog SDK on iOS + Android. Unlike Sentry, we use the **same project key** for both platforms but separate **production / development** PostHog projects so dev events don't pollute the prod dataset. Both keys are configured with `auto_capture: false` and gated behind an opt-in toggle (Settings → Allow usage analytics, default OFF) per Phase 27a privacy policy.
+## Analytics — PostHog (1 secret)
 
-### 18. `POSTHOG_PROJECT_API_KEY_PROD`
+This secret wires the PostHog SDK on iOS + Android. **PostHog's free tier caps at 1 Project**, so splitting prod / dev into separate Projects is only possible after upgrading to the paid PAYG plan (which permits up to 6 Projects). The current free-tier setup:
 
-**WHAT**: The Project API Key for the production PostHog project. Embedded in release builds. Format: `phc_<43-char-base62>`.
+- **One Project (`Skeinly`)** receives connections from both iOS + Android.
+- Platform identification uses the SDK's automatic `$os` super property (a custom `platform` super property may be added if needed).
+- **Skip `posthog.init` in DEBUG builds** so dev events don't pollute the prod dataset.
+- `auto_capture: false` plus an opt-in toggle (Settings → "Allow usage data collection", default OFF) gate event ingestion per the Phase 27a privacy policy.
+
+PostHog's official documentation also explicitly **discourages** splitting projects per platform:
+
+> "PostHog strongly recommends keeping your apps and marketing website on the same production project"
+
+### 18. `POSTHOG_PROJECT_API_KEY`
+
+**WHAT**: The Project API Key for the PostHog project. Embedded in release builds. Format: `phc_<43-char-base62>`.
+
+**Important fact**: PostHog Project API Keys are designed as **"write-only keys"** intended to be embedded in client binaries shipped via SDKs. The official docs:
+
+> "Safer than other API key types for client-side use"
+
+So they are not "secrets" in the traditional sense — leaking one has a small blast radius. We still register it as a GitHub Secret for **operational hygiene** (easy rotation, grep-ability, prevention of accidental commits), not for confidentiality.
 
 **OBTAIN:**
 
-1. Sign in to [PostHog](https://eu.posthog.com) (use the **EU cloud** for GDPR data residency).
+1. Sign in to [PostHog](https://us.posthog.com) or [EU cloud](https://eu.posthog.com) (EU for GDPR data residency).
 2. If no organization exists: create one named `skeinly`.
-3. **Settings** → **Projects** → **Create Project** → Name: `skeinly-prod`.
+3. **Settings** → **Projects** → **Create Project** → Name: `Skeinly`.
 4. Inside the project: **Settings** → **Project** → **General** → **Project API Key** → copy the value (starts with `phc_`).
 
 **VERIFY**: Starts with `phc_`, exactly 47 chars total (`phc_` + 43-char base62), case-sensitive.
@@ -581,26 +697,80 @@ These secrets wire the PostHog SDK on iOS + Android. Unlike Sentry, we use the *
 **REGISTER:**
 
 ```bash
-gh secret set POSTHOG_PROJECT_API_KEY_PROD
+gh secret set POSTHOG_PROJECT_API_KEY
 # paste, Ctrl+D
 ```
 
-**ROTATE**: PostHog → Settings → Project → reset the Project API Key. Update GitHub Secret. Old events stay attributed to the project; only new ingestion shifts.
+**(Future) per-env split after PAYG**: If you later upgrade to PAYG and want to separate dev / prod, choose one of:
+- **(A) Recommended**: Create a `Skeinly-Dev` PostHog Project, then leverage GitHub Repository **Environments** (`development` / `production`) and register `POSTHOG_PROJECT_API_KEY` under each Environment with the matching project's value (no name suffix needed).
+- (B) Use PostHog's Environments feature (sub-scopes inside a single Project).
 
-### 19. `POSTHOG_PROJECT_API_KEY_DEV`
+**ROTATE**: PostHog → Settings → Project → reset the Project API Key. Update the GitHub Secret. Old events stay attributed to the project; only new ingestion shifts.
 
-**WHAT**: Project API Key for the development PostHog project. Embedded in debug builds so developer churn doesn't show up in the prod dataset.
+### `POSTHOG_HOST` (Repository Variable, NOT a secret)
 
-**OBTAIN**: Repeat #18 but create a **separate** project named `skeinly-dev` and copy that project's API key.
+**WHAT**: The PostHog backend host URL, e.g. `https://us.i.posthog.com` (US cloud) or `https://eu.i.posthog.com` (EU cloud, GDPR-preferred). This is a **non-confidential public URL**, so it is registered as a Repository **Variable** (not a Secret) and read from workflows as `vars.POSTHOG_HOST`.
+
+**REGISTER (GitHub UI recommended)**: Repo → Settings → Secrets and variables → Actions → **Variables** tab → New repository variable → Name: `POSTHOG_HOST` / Value: `https://us.i.posthog.com` (or your preferred region URL).
+
+**Or via `gh`:**
+
+```bash
+gh variable set POSTHOG_HOST --body "https://us.i.posthog.com"
+gh variable list  # confirm a POSTHOG_HOST row appears
+```
+
+**Note**: If unset, `vars.POSTHOG_HOST` resolves to an empty string and the PostHog SDK initialization may fail with `init failed: invalid host`. Always register this variable to prevent CI flakes.
+
+References: [PostHog: Multi-environment tutorial](https://posthog.com/tutorials/multiple-environments) / [PostHog Pricing](https://posthog.com/pricing)
+
+## Subscriptions — RevenueCat (2 secrets)
+
+These secrets wire the RevenueCat SDK on iOS + Android. **Public SDK Keys** are designed to be embedded in client binaries (passed to `Purchases.configure()`). The `Secret Key (sk_...)` is **server-only and must NEVER be embedded in a client**. RevenueCat issues **separate Public SDK Keys for iOS / Android per Project** (we run a single Project named `Skeinly` that hosts both iOS + Android App Configurations).
+
+### 19. `REVENUECAT_API_KEY_IOS`
+
+**WHAT**: The Public iOS SDK Key. Embedded in the iOS release binary.
+
+**OBTAIN:**
+
+1. Sign in to the [RevenueCat Dashboard](https://app.revenuecat.com) → select Project (`Skeinly`).
+2. **Project Settings** → **Apps** → click the **iOS** App entry (Bundle ID `io.github.b150005.skeinly`).
+3. **API Keys** tab → copy the **Public iOS SDK Key** (starts with `appl_`).
+
+**VERIFY**: Starts with `appl_`. Confirm it is NOT a Secret Key (`sk_...`).
 
 **REGISTER:**
 
 ```bash
-gh secret set POSTHOG_PROJECT_API_KEY_DEV
-# paste, Ctrl+D
+gh secret set REVENUECAT_API_KEY_IOS
+# paste appl_..., Ctrl+D
 ```
 
-## Supabase Edge Function Secrets (4 secrets)
+**ROTATE**: RevenueCat → Project Settings → Apps → iOS → API Keys → revoke + issue new. The new key takes effect from the next release after the GitHub Secret update.
+
+### 20. `REVENUECAT_API_KEY_ANDROID`
+
+**WHAT**: The Public Android SDK Key. Embedded in the Android release AAB.
+
+**OBTAIN**: Same procedure as #19 but select the **Android** App entry and copy the Public Android SDK Key (starts with `goog_`).
+
+**VERIFY**: Starts with `goog_`.
+
+**REGISTER:**
+
+```bash
+gh secret set REVENUECAT_API_KEY_ANDROID
+# paste goog_..., Ctrl+D
+```
+
+**About the Webhook secret**: RevenueCat's Webhook signature-verification secret is **Edge Function only** (not needed by the client). See [EF-5 `REVENUECAT_WEBHOOK_SECRET`](#ef-5-revenuecat_webhook_secret) at the end of this document.
+
+**RevenueCat ↔ Apple/Google IAP wiring** (registering App Store Connect API Key + Google Play Service Account in RevenueCat, which is a prerequisite for Public SDK Key issuance) is documented in [vendor-setup.md](vendor-setup.md) under the RevenueCat section.
+
+Reference: [RevenueCat API Keys & Authentication](https://www.revenuecat.com/docs/projects/authentication)
+
+## Supabase Edge Function Secrets (5 secrets)
 
 These secrets are consumed by Supabase Edge Functions (`notify-on-write` for Push, `verify-receipt` for IAP receipt validation). They are **not** GitHub Secrets — they are registered against the Supabase project via the Supabase CLI:
 
@@ -689,6 +859,48 @@ supabase secrets set GOOGLE_PLAY_SERVICE_ACCOUNT_JSON="$(cat play-developer-api.
 
 **ROTATE**: Cloud Console → IAM → Service Accounts → click SA → Keys → revoke old + create new JSON. Update Supabase Edge Function secret.
 
+### EF-5. `REVENUECAT_WEBHOOK_SECRET`
+
+**WHAT**: A shared secret used **server-side** to verify Webhook deliveries from RevenueCat to your Edge Function (e.g. `revenuecat-webhook`). The value entered into RevenueCat's **Webhooks → Authorization header** field is matched on the Edge Function side against the incoming `Authorization: Bearer <value>` header.
+
+**OBTAIN:**
+
+1. Generate a strong random value (**you choose this** — RevenueCat just stores and forwards whatever you give it):
+
+   ```bash
+   openssl rand -hex 32
+   # e.g. 7f3a9c2d8e1b5a4f6c9d2e7b8a1f3c5d9e2b4a6c8f1d3e5a7b9c2d4e6f8a1b3c
+   ```
+
+2. [RevenueCat Dashboard](https://app.revenuecat.com) → Project (`Skeinly`) → **Integrations** → **Webhooks** → **Add Webhook**:
+   - **Webhook URL**: your Edge Function URL (e.g. `https://<project-ref>.supabase.co/functions/v1/revenuecat-webhook`)
+   - **Authorization header**: paste the value generated in step 1
+   - **Environment filter**: optional (e.g. route Sandbox events to a different webhook)
+3. **Save**.
+
+**VERIFY**: 64-char hex string. Confirm the value stored on the RevenueCat side matches the value registered as a Supabase secret exactly.
+
+**REGISTER:**
+
+```bash
+supabase secrets set REVENUECAT_WEBHOOK_SECRET="<value-from-step-1>"
+supabase secrets list | grep REVENUECAT
+```
+
+Edge Function side:
+
+```typescript
+const incomingAuth = req.headers.get("authorization") ?? "";
+const expected = `Bearer ${Deno.env.get("REVENUECAT_WEBHOOK_SECRET")}`;
+if (incomingAuth !== expected) {
+  return new Response("unauthorized", { status: 401 });
+}
+```
+
+**ROTATE**: Edit the webhook in the RevenueCat dashboard → update the Authorization header to a new value → re-register the Supabase secret. RevenueCat retries failed webhook deliveries up to 5 times automatically, so the rotation window has built-in tolerance for missed events.
+
+Reference: [RevenueCat Webhooks](https://www.revenuecat.com/docs/integrations/webhooks)
+
 ### Reused: App Store Connect API key
 
 The Edge Function `verify-receipt` (iOS branch) calls the App Store Server API and needs the same App Store Connect API key already registered as GitHub Secrets §5–§7. Register it with Supabase too (single source of truth, two registration places):
@@ -704,13 +916,18 @@ When you rotate the GitHub Secret per [§5 ROTATE](#5-app_store_connect_api_key_
 
 ## Bulk verification
 
-After registering all 19 GitHub Secrets, confirm with `gh`:
+After registering all GitHub Secrets, confirm with `gh`:
 
 ```bash
+# Repository scope
 gh secret list
+
+# Environment scope
+gh secret list --env production
+gh secret list --env development
 ```
 
-Expected output (names + last-updated timestamps; values are never shown):
+Expected **Repository scope** output (19 entries — values shared across all environments):
 
 ```
 APPLE_DISTRIBUTION_CERT_BASE64        Updated YYYY-MM-DD
@@ -720,13 +937,13 @@ APPLE_TEAM_ID                         Updated YYYY-MM-DD
 APP_STORE_CONNECT_API_KEY_BASE64      Updated YYYY-MM-DD
 APP_STORE_CONNECT_API_KEY_ID          Updated YYYY-MM-DD
 APP_STORE_CONNECT_ISSUER_ID           Updated YYYY-MM-DD
-FIREBASE_GOOGLE_SERVICES_JSON_BASE64  Updated YYYY-MM-DD
 KEY_ALIAS                             Updated YYYY-MM-DD
 KEY_PASSWORD                          Updated YYYY-MM-DD
 KEYSTORE_BASE64                       Updated YYYY-MM-DD
 KEYSTORE_PASSWORD                     Updated YYYY-MM-DD
-POSTHOG_PROJECT_API_KEY_DEV           Updated YYYY-MM-DD
-POSTHOG_PROJECT_API_KEY_PROD          Updated YYYY-MM-DD
+POSTHOG_PROJECT_API_KEY               Updated YYYY-MM-DD
+REVENUECAT_API_KEY_ANDROID            Updated YYYY-MM-DD
+REVENUECAT_API_KEY_IOS                Updated YYYY-MM-DD
 SENTRY_AUTH_TOKEN                     Updated YYYY-MM-DD
 SENTRY_DSN_ANDROID                    Updated YYYY-MM-DD
 SENTRY_DSN_IOS                        Updated YYYY-MM-DD
@@ -734,7 +951,26 @@ SUPABASE_PUBLISHABLE_KEY              Updated YYYY-MM-DD
 SUPABASE_URL                          Updated YYYY-MM-DD
 ```
 
-19 entries. Anything missing or with a stale timestamp is suspect.
+Expected **`production` Environment scope** output (2 entries — `Skeinly` Firebase project values):
+
+```
+FIREBASE_GOOGLE_SERVICES_JSON_BASE64        Updated YYYY-MM-DD
+FIREBASE_GOOGLE_SERVICE_INFO_PLIST_BASE64   Updated YYYY-MM-DD
+```
+
+Expected **`development` Environment scope** output (2 entries — `Skeinly-Dev` Firebase project values):
+
+```
+FIREBASE_GOOGLE_SERVICES_JSON_BASE64        Updated YYYY-MM-DD
+FIREBASE_GOOGLE_SERVICE_INFO_PLIST_BASE64   Updated YYYY-MM-DD
+```
+
+Total: 19 Repository + Environment scope (production: 2 + development: 2) = **23 registrations**. Anything missing or with a stale timestamp is suspect.
+
+> **Legacy name cleanup**: When migrating from a prior layout, delete the following with `gh secret delete`:
+> - `SUPABASE_ANON_KEY` (→ fully migrated to `SUPABASE_PUBLISHABLE_KEY`)
+> - `POSTHOG_PROJECT_API_KEY_PROD` / `POSTHOG_PROJECT_API_KEY_DEV` (→ consolidated into `POSTHOG_PROJECT_API_KEY`)
+> - The old Repository-scope `FIREBASE_GOOGLE_SERVICES_JSON_BASE64` (→ moved to Environment scope)
 
 For Supabase Edge Function secrets (registered via `supabase secrets set`):
 
@@ -742,7 +978,7 @@ For Supabase Edge Function secrets (registered via `supabase secrets set`):
 supabase secrets list
 ```
 
-Expected (8 entries — 4 unique to Edge Function + 4 reused values from App Store Connect API):
+Expected (9 entries — 5 unique to Edge Function + 4 reused values from App Store Connect API):
 
 ```
 APP_STORE_CONNECT_API_KEY
@@ -753,6 +989,7 @@ APPLE_APNS_KEY_P8
 APPLE_TEAM_ID
 FIREBASE_SERVICE_ACCOUNT_JSON
 GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
+REVENUECAT_WEBHOOK_SECRET
 ```
 
 The first end-to-end verification of the iOS pipeline only happens at tag push — the iOS release job is gated on tag triggers, not regular pushes. Before the first alpha/beta tag push, you can:
@@ -777,14 +1014,17 @@ Specifically:
 | `APPLE_TEAM_ID` | Cannot change without changing teams | N/A |
 | `APP_STORE_CONNECT_API_KEY_*` | App Store Connect → Team Keys → revoke + generate new (also re-register Supabase Edge Function secret) | Recommended every 12 months |
 | `KEYSTORE_*` | **Do NOT rotate**. Losing the keystore breaks Play Store updates. Use Google Play's "App Signing by Google Play" key reset only as a last resort. | Never (under normal conditions) |
-| `SUPABASE_*` | Supabase Dashboard → Project Settings → API Keys → reset anon key | On suspected leak |
-| `FIREBASE_GOOGLE_SERVICES_JSON_BASE64` | Re-download from Firebase Console only on package or signing SHA-1 change | Effectively never |
+| `SUPABASE_PUBLISHABLE_KEY` | Supabase Dashboard → Project Settings → API Keys → Generate new Publishable key | On suspected leak |
+| `FIREBASE_GOOGLE_SERVICES_JSON_BASE64` (Environment scope) | Re-download from Firebase Console only on package or signing SHA-1 change (per environment) | Effectively never |
+| `FIREBASE_GOOGLE_SERVICE_INFO_PLIST_BASE64` (Environment scope) | Re-download from Firebase Console only on Bundle ID change (per environment) | Effectively never |
 | `SENTRY_DSN_*` | Sentry → Settings → Project → Client Keys → revoke + create new | On suspected leak |
-| `SENTRY_AUTH_TOKEN` | User Settings → Auth Tokens → revoke + recreate | Annual or on incident |
-| `POSTHOG_PROJECT_API_KEY_*` | PostHog → Settings → Project → reset Project API Key | On suspected leak |
+| `SENTRY_AUTH_TOKEN` | **Organization Settings** → Auth Tokens → revoke + recreate | Annual or on incident |
+| `POSTHOG_PROJECT_API_KEY` | PostHog → Settings → Project → reset Project API Key | On suspected leak |
+| `REVENUECAT_API_KEY_*` | RevenueCat → Project Settings → Apps → Public SDK Key revoke + issue new | On suspected leak |
 | Edge Function `APPLE_APNS_KEY_*` | Apple Developer → Keys → revoke + generate new + re-register Supabase secret | Annual or on incident |
 | Edge Function `FIREBASE_SERVICE_ACCOUNT_JSON` | Firebase Console → Service Accounts → revoke + new key | Annual or on incident |
 | Edge Function `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | Cloud Console → IAM → Service Accounts → revoke + new key | Annual or on incident |
+| Edge Function `REVENUECAT_WEBHOOK_SECRET` | `openssl rand -hex 32` for new value → update RevenueCat Webhook Authorization header → re-register Supabase secret | Annual or on incident |
 
 After rotating, re-run `gh secret set` for each affected secret. The next CI run picks up the new value automatically.
 

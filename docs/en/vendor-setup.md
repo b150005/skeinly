@@ -225,6 +225,73 @@ curl -I https://b150005.github.io/.well-known/assetlinks.json
 # https://search.developer.apple.com/appsearch-validation-tool
 ```
 
+## Phase A0d — RevenueCat Setup
+
+RevenueCat is the cross-platform IAP / subscription orchestration layer. It abstracts Apple StoreKit and Google Play Billing into one Public SDK Key per platform that the client passes to `Purchases.configure()`. **Prerequisites**: A0a-5 (App Store Connect API Key) + A0b-3 (IAP products created in App Store Connect) + Google Play Console app published with Service Account API access enabled (covered server-side via release-secrets EF-4 `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`).
+
+### A0d-1: Create the RevenueCat Project
+
+1. Sign in to [RevenueCat Dashboard](https://app.revenuecat.com).
+2. **+ New Project** → Project Name: `Skeinly` → Create.
+3. **Project Settings** → **General** → confirm Project ID.
+
+### A0d-2: Link the iOS App (App Store Connect)
+
+1. In the new Project: **Project Settings** → **Apps** → **+ New** → **App Store**.
+2. App name: `Skeinly iOS`.
+3. Bundle ID: `io.github.b150005.skeinly`.
+4. **App Store Connect API Key**: upload the `.p8` from A0a-5 + provide Key ID + Issuer ID (RevenueCat caches these to fetch product metadata + observe subscription state changes).
+5. **App-specific Shared Secret**: not required when API Key is uploaded (legacy mechanism).
+6. Save → wait for RevenueCat to fetch product list (typically <1 minute).
+7. **API Keys** tab → copy the **Public iOS SDK Key** (starts with `appl_`) — register as `REVENUECAT_API_KEY_IOS` per [release-secrets §19](release-secrets.md#19-revenuecat_api_key_ios).
+
+### A0d-3: Link the Android App (Google Play)
+
+1. Same Project: **Project Settings** → **Apps** → **+ New** → **Play Store**.
+2. App name: `Skeinly Android`.
+3. Package name: `io.github.b150005.skeinly`.
+4. **Service Account Credentials**: upload the same JSON file used for `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` in [release-secrets EF-4](release-secrets.md#ef-4-google_play_service_account_json) (single source of truth — RevenueCat needs Play Developer API read access for product + receipt validation).
+5. Save → wait for RevenueCat to fetch the Play Console product list.
+6. **API Keys** tab → copy the **Public Android SDK Key** (starts with `goog_`) — register as `REVENUECAT_API_KEY_ANDROID` per [release-secrets §20](release-secrets.md#20-revenuecat_api_key_android).
+
+### A0d-4: Create the Entitlement + Offering
+
+The Entitlement is the *capability* you grant a user (e.g. `pro`). The Offering is the *bundle of products* the paywall presents. Both are RevenueCat constructs; RevenueCat resolves which IAP product the user actually purchased and grants the matching Entitlement automatically.
+
+1. **Product Catalog** → **Entitlements** → **+ New Entitlement**:
+   - Identifier: `pro`
+   - Display Name: `Skeinly Pro`
+   - Attached Products (after products are imported): both `skeinly.pro.monthly` (iOS + Android variants if Play Console product IDs match) and `skeinly.pro.yearly`.
+
+2. **Product Catalog** → **Offerings** → **+ New Offering**:
+   - Identifier: `default`
+   - Description: `Default paywall offering`
+   - **+ Add Package** → identifier `$rc_monthly` → attach `skeinly.pro.monthly` (iOS + Android).
+   - **+ Add Package** → identifier `$rc_annual` → attach `skeinly.pro.yearly` (iOS + Android).
+   - Mark this Offering as **Current**.
+
+The client then calls `Purchases.shared.getOfferings()` and reads the `current` offering's packages to render the paywall — no hardcoded product IDs in client code.
+
+### A0d-5: Webhook Integration (alpha+)
+
+Webhooks let RevenueCat push subscription state changes (renewal, cancel, refund, billing issue) to your Supabase Edge Function so server-side Pro entitlement state stays in sync without per-client polling.
+
+1. Generate a strong shared secret: `openssl rand -hex 32`.
+2. **Integrations** → **Webhooks** → **+ New Webhook**:
+   - Webhook URL: `https://<project-ref>.supabase.co/functions/v1/revenuecat-webhook` (Edge Function authored alongside Phase 41 — F1).
+   - Authorization header: paste the secret from step 1.
+   - Environment filter: leave default (both Sandbox + Production) for alpha.
+3. Save.
+4. Register the same secret value as `REVENUECAT_WEBHOOK_SECRET` per [release-secrets EF-5](release-secrets.md#ef-5-revenuecat_webhook_secret).
+
+The Edge Function itself is authored as part of F1 (Pro subscription rollout). Until then, this step can be deferred — RevenueCat correctly maintains client-side entitlement state without the webhook; the webhook is for server-side reconciliation.
+
+### A0d-6: Test the integration
+
+1. Use the same Sandbox Testers from A0b-4 (iOS) + a debug-signed Android build under a Google Play Internal Testing track license tester account.
+2. Run a test purchase from a debug build (`Purchases.configure(apiKey: "appl_..." or "goog_...")` + `Purchases.purchase(package:)`).
+3. RevenueCat Dashboard → **Customers** → search for the test user → confirm the `pro` entitlement is granted with the expected expiration timestamp.
+
 ## Phase A0 verification checklist
 
 Before tagging `v1.0.0-alpha1`:
@@ -240,6 +307,10 @@ Before tagging `v1.0.0-alpha1`:
 - [ ] At least 2 Sandbox Testers created
 - [ ] App Privacy declaration submitted with Sentry + PostHog + Feedback data types
 - [ ] AASA hosting decision made (Option A / B / C) and AASA + assetlinks.json deployed if Option A or B
+- [ ] RevenueCat Project `Skeinly` created with iOS + Android Apps linked
+- [ ] Entitlement `pro` + Offering `default` configured with monthly + yearly packages
+- [ ] `REVENUECAT_API_KEY_IOS` + `REVENUECAT_API_KEY_ANDROID` registered as GitHub Secrets
+- [ ] Webhook integration deferred to F1 (Phase 41) unless server-side entitlement reconciliation is needed before then
 
 ## Cross-references
 

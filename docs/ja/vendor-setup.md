@@ -225,6 +225,73 @@ curl -I https://b150005.github.io/.well-known/assetlinks.json
 # https://search.developer.apple.com/appsearch-validation-tool
 ```
 
+## Phase A0d — RevenueCat セットアップ
+
+RevenueCat はクロスプラットフォーム IAP / サブスク管理レイヤ。Apple StoreKit と Google Play Billing を抽象化し、プラットフォームごとに Public SDK Key 1 個を発行 — クライアントは `Purchases.configure()` にこれを渡すだけで済む。**前提**: A0a-5 (App Store Connect API Key) + A0b-3 (App Store Connect で IAP product 作成済) + Google Play Console で本アプリを公開し Service Account API access を有効化済 (release-secrets EF-4 `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` 同 JSON を使う)。
+
+### A0d-1: RevenueCat Project 作成
+
+1. [RevenueCat Dashboard](https://app.revenuecat.com) にサインイン。
+2. **+ New Project** → Project Name: `Skeinly` → Create。
+3. **Project Settings** → **General** → Project ID を確認。
+
+### A0d-2: iOS App 連携 (App Store Connect)
+
+1. 新 Project 内: **Project Settings** → **Apps** → **+ New** → **App Store**。
+2. App name: `Skeinly iOS`。
+3. Bundle ID: `io.github.b150005.skeinly`。
+4. **App Store Connect API Key**: A0a-5 で生成した `.p8` をアップロード + Key ID + Issuer ID を入力 (RevenueCat はこれをキャッシュして product メタデータ取得 + サブスク状態変化の観測に使う)。
+5. **App-specific Shared Secret**: API Key 提供時は不要 (legacy 仕組み)。
+6. Save → RevenueCat が product 一覧を取得するまで待機 (通常 1 分未満)。
+7. **API Keys** タブ → **Public iOS SDK Key** (`appl_` 始まり) をコピー → [release-secrets §19](release-secrets.md#19-revenuecat_api_key_ios) の手順で `REVENUECAT_API_KEY_IOS` として登録。
+
+### A0d-3: Android App 連携 (Google Play)
+
+1. 同 Project: **Project Settings** → **Apps** → **+ New** → **Play Store**。
+2. App name: `Skeinly Android`。
+3. Package name: `io.github.b150005.skeinly`。
+4. **Service Account Credentials**: [release-secrets EF-4](release-secrets.md#ef-4-google_play_service_account_json) で `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` に使った同じ JSON ファイルをアップロード (single source of truth — RevenueCat は product + receipt validation のために Play Developer API read access が必要)。
+5. Save → RevenueCat が Play Console product 一覧を取得するまで待機。
+6. **API Keys** タブ → **Public Android SDK Key** (`goog_` 始まり) をコピー → [release-secrets §20](release-secrets.md#20-revenuecat_api_key_android) の手順で `REVENUECAT_API_KEY_ANDROID` として登録。
+
+### A0d-4: Entitlement + Offering の作成
+
+Entitlement は user に付与する*能力* (例: `pro`)。Offering はペイウォールが提示する*product バンドル*。両者とも RevenueCat 側の概念で、user が実際に購入した IAP product を RevenueCat が解決し対応 Entitlement を自動付与する。
+
+1. **Product Catalog** → **Entitlements** → **+ New Entitlement**:
+   - Identifier: `pro`
+   - Display Name: `Skeinly Pro`
+   - Attached Products (product import 後): `skeinly.pro.monthly` (iOS + Android variant、Play Console product ID が一致する場合) + `skeinly.pro.yearly` 両方。
+
+2. **Product Catalog** → **Offerings** → **+ New Offering**:
+   - Identifier: `default`
+   - Description: `Default paywall offering`
+   - **+ Add Package** → identifier `$rc_monthly` → `skeinly.pro.monthly` (iOS + Android) 紐付け。
+   - **+ Add Package** → identifier `$rc_annual` → `skeinly.pro.yearly` (iOS + Android) 紐付け。
+   - この Offering を **Current** に設定。
+
+クライアントは `Purchases.shared.getOfferings()` を呼び `current` offering の package を読んでペイウォールを描画する — クライアントコードに product ID をハードコードしない。
+
+### A0d-5: Webhook 統合 (alpha+)
+
+Webhook は RevenueCat からサブスク状態変化 (renewal / cancel / refund / billing issue) を Supabase Edge Function に push し、サーバーサイド Pro entitlement 状態をクライアント polling なしで同期する。
+
+1. 強い shared secret 生成: `openssl rand -hex 32`。
+2. **Integrations** → **Webhooks** → **+ New Webhook**:
+   - Webhook URL: `https://<project-ref>.supabase.co/functions/v1/revenuecat-webhook` (Phase 41 — F1 で作成する Edge Function)。
+   - Authorization header: 手順 1 の secret を貼り付け。
+   - Environment filter: alpha 期間中は Sandbox + Production 両方 (デフォルト) のままで OK。
+3. Save。
+4. 同じ secret を [release-secrets EF-5](release-secrets.md#ef-5-revenuecat_webhook_secret) の手順で `REVENUECAT_WEBHOOK_SECRET` として登録。
+
+Edge Function 自体は F1 (Pro サブスクロールアウト) と同時に作成する。それまではこのステップは保留可能 — RevenueCat はクライアント側 entitlement 状態を webhook なしでも正しく維持する。webhook はサーバーサイド reconciliation 用途。
+
+### A0d-6: 統合テスト
+
+1. A0b-4 で作成した Sandbox Tester (iOS) + Google Play Internal Testing トラックに登録した license tester アカウント (Android debug ビルド) を使う。
+2. debug ビルドからテスト購入実行 (`Purchases.configure(apiKey: "appl_..." or "goog_...")` + `Purchases.purchase(package:)`)。
+3. RevenueCat Dashboard → **Customers** → テスト user を検索 → `pro` entitlement が予期した有効期限で付与されていることを確認。
+
 ## Phase A0 検証チェックリスト
 
 `v1.0.0-alpha1` タグ push 前に確認:
@@ -240,6 +307,10 @@ curl -I https://b150005.github.io/.well-known/assetlinks.json
 - [ ] Sandbox Tester を最低 2 人作成済
 - [ ] App Privacy 宣言を Sentry + PostHog + Feedback データ種別で提出済
 - [ ] AASA ホスティング決定 (選択肢 A / B / C) と AASA + assetlinks.json デプロイ済 (選択肢 A または B の場合)
+- [ ] RevenueCat Project `Skeinly` 作成済 + iOS + Android Apps 連携済
+- [ ] Entitlement `pro` + Offering `default` を monthly + yearly package 構成で設定済
+- [ ] `REVENUECAT_API_KEY_IOS` + `REVENUECAT_API_KEY_ANDROID` を GitHub Secret として登録済
+- [ ] Webhook 統合は F1 (Phase 41) まで保留 (それ以前にサーバーサイド entitlement reconciliation が必要な場合のみ先行設定)
 
 ## 関連リンク
 
