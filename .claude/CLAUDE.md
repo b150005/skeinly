@@ -129,7 +129,7 @@ Agents detect this project as **Kotlin Multiplatform** by finding:
    - Re-run the code review after fixes
    - Repeat the review-fix cycle until no issues remain (APPROVED)
    - Only then proceed to commit
-7. **Documentation**: The technical-writer updates docs and changelog
+7. **Documentation**: The technical-writer updates docs and changelog. **When the change touches a feature surface that has a spec under [`.claude/docs/spec/`](docs/spec/)** (e.g. chart-editor, pull-request-flow, collaboration-history), update the spec in the **same commit** so the "current shape" view stays accurate. Specs describe *what is* — defer *why decisions were made* to the relevant ADR.
 8. **Release**: The devops-engineer manages deployment and release
 8.5. **Final pre-push re-verification (after ALL edits)**: Any edit made AFTER the invariant chain passed — including code-review fix-ups, ktlintFormat post-edits, single-line import reorders, default-arg additions, KDoc fixes — invalidates the prior `make ci-local` run. Before `git commit`, re-run the FULL invariant chain (`make ci-local` from project root) regardless of how trivial the last edit looked. **`make ci-local` is the single canonical pre-push entry point** — earlier session-only `make verify-all` / `make verify-ios` aliases were folded back in on 2026-05-02 after they shipped a runtime gap (XCUITest assertion failures + Maestro flow regressions) for three consecutive CI failures.
 
@@ -238,6 +238,18 @@ If the handoff is growing past ~40 lines it means you are duplicating CLAUDE.md 
 **Ordering**: emit the handoff as the very last message of the session, after every execution decision (push, CI verify, etc.) is resolved. Never emit it mid-session — state can change afterwards and the handoff goes stale.
 
 **Voice check**: before emitting, re-read the block as if you were opening a fresh session and someone handed it to you. If any sentence reads as "the next session will do X" rather than "do X", rewrite it. The user copy-pastes this block verbatim as the first message of the resuming session — it must read as a direct instruction to that session, not a description of it.
+
+## Specifications
+
+Feature-organized "current shape" docs. Loaded into agent context when extending a specific feature; cheaper than re-discovering structure via grep + reading scattered Phase entries. Specs describe *what is*; ADRs answer *why we decided that*.
+
+| Spec | Covers | Key ADRs |
+|---|---|---|
+| [docs/spec/chart-editor.md](docs/spec/chart-editor.md) | Structured chart authoring (palette + canvas + history + save). Phase 32.x / 35.1a–d / metadata picker | ADR-007, 008, 009, 011, 013 |
+| [docs/spec/pull-request-flow.md](docs/spec/pull-request-flow.md) | PR open / list / detail / comment / close / merge / conflict resolution. Phase 38.x | ADR-012, 013, 014 |
+| [docs/spec/collaboration-history.md](docs/spec/collaboration-history.md) | `chart_revisions` append-only spine, history / branch / diff / restore. Phase 37.x | ADR-007, 013 |
+
+Specs intentionally do NOT exist for: `i18n` (script-verified parity is the source of truth), `auth` (small surface, well-trodden), `realtime-sync` / `discovery-fork` / `segment-progress` / `symbol-catalog` (sufficiently captured by their respective ADRs).
 
 ## Development Roadmap
 
