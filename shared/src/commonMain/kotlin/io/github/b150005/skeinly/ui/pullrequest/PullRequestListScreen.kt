@@ -50,6 +50,7 @@ import io.github.b150005.skeinly.generated.resources.state_no_pull_requests_body
 import io.github.b150005.skeinly.generated.resources.title_pull_requests
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.localized
+import io.github.b150005.skeinly.ui.components.selectedCheckmarkIcon
 import io.github.b150005.skeinly.ui.util.formatFull
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -185,12 +186,14 @@ private fun FilterChipRow(
                 selected = current == PullRequestFilter.INCOMING,
                 onClick = { onSelect(PullRequestFilter.INCOMING) },
                 label = { Text(stringResource(Res.string.label_filter_incoming)) },
+                leadingIcon = selectedCheckmarkIcon(current == PullRequestFilter.INCOMING),
                 modifier = Modifier.testTag("incomingFilterChip"),
             )
             FilterChip(
                 selected = current == PullRequestFilter.OUTGOING,
                 onClick = { onSelect(PullRequestFilter.OUTGOING) },
                 label = { Text(stringResource(Res.string.label_filter_outgoing)) },
+                leadingIcon = selectedCheckmarkIcon(current == PullRequestFilter.OUTGOING),
                 modifier = Modifier.testTag("outgoingFilterChip"),
             )
         }

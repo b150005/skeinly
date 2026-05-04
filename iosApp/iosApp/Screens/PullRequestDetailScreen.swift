@@ -309,6 +309,7 @@ struct PullRequestDetailScreen: View {
             .lineLimit(1...4)
             .textFieldStyle(.roundedBorder)
             .disabled(state.isSendingComment)
+            .accessibilityLabel(LocalizedStringKey("hint_add_comment_to_pr"))
             .accessibilityIdentifier("commentInputField")
 
             Button(LocalizedStringKey("action_post_comment")) {

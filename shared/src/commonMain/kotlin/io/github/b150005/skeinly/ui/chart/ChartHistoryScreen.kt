@@ -210,6 +210,7 @@ private fun RevisionRow(
                     role = Role.Button,
                     onClick = onClick,
                     onLongClick = onLongClick,
+                    onLongClickLabel = stringResource(Res.string.action_restore_revision),
                 ).testTag("revisionRow_${revision.revisionId}")
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
