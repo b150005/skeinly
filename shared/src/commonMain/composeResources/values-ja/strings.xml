@@ -488,7 +488,7 @@
     <plurals name="label_conflict_summary">
         <item quantity="other">解決が必要なコンフリクト: %1$d 件</item>
     </plurals>
-    <string name="label_conflict_layer">レイヤー</string>
+    <string name="label_conflict_layer">レイヤー: %1$s</string>
     <string name="label_conflict_cell">セル (%1$d, %2$d)</string>
     <string name="action_take_theirs">相手側を採用</string>
     <string name="action_keep_mine">自分側を維持</string>

@@ -192,7 +192,7 @@ struct ChartConflictResolutionScreen: View {
             ?? conflict.ancestor?.name
             ?? conflict.layerId
         VStack(alignment: .leading, spacing: 8) {
-            Text("\(NSLocalizedString("label_conflict_layer", comment: "")): \(layerName)")
+            Text(String(format: NSLocalizedString("label_conflict_layer", comment: ""), layerName))
                 .font(.subheadline.weight(.semibold))
             resolutionPickerRow(
                 pick: pick,

@@ -205,6 +205,24 @@ Agents detect this project as **Kotlin Multiplatform** by finding:
 - Use `SwiftFormat` / `SwiftLint` for Swift formatting
 - Gradle: use version catalogs (`libs.versions.toml`)
 
+## Output Quality Standard
+
+**There is no token-consumption ceiling**. Output budget is not a scarce resource on this project — the user has explicitly removed it as a constraint. Optimize relentlessly for **precision and quality of deliverables** over output brevity:
+
+- **Investigate to the bottom of the question, not to the edge of comfort.** When code review flags a finding, read every relevant file before responding. When ADR / spec writing requires understanding the current shape, dispatch a `code-explorer` agent rather than guess. When user-visible UI is at stake, exhaustively enumerate the finding categories rather than listing the easy two.
+- **Never skip the agent-team deliberation step to save tokens.** Multi-voice deliberation (product-manager, architect, implementer, knitter, ui-ux-designer, security-reviewer, etc.) catches scope-cut decisions and security holes that a single-voice answer drops. The cost of running 3 voices in one response is negligible vs. the cost of shipping a wrong design.
+- **Never trade test coverage for output brevity.** When a slice introduces N units of behavior, ship N tests. Don't write 4 tests "to keep the diff small" when 12 tests are needed to lock down the regression surface.
+- **Don't pre-collapse documentation.** ADRs that capture every decision + rationale (1000+ lines acceptable) are net-better than 200-line ADRs that save tokens by hand-waving the tricky parts. The doc is read once during writing and referenced N times during implementation.
+- **Code-review iterations are not a cost.** Land all findings (CRITICAL → LOW) before commit per the existing Workflow step 6 rule. Two review passes is the floor when any non-trivial finding surfaces.
+- **Prefer doing too much over doing too little.** When in doubt about whether a check, test, or doc clarification is necessary, do it. The user explicitly chose the budget configuration that makes this safe.
+
+This standard does NOT override:
+- The "minimal-diff change" principle in build-error-resolver mode (still scope-bounded).
+- The agent-team-deliberation requirement before path choices (still mandatory).
+- The CI-wait policy (still skip blocking on remote CI per the existing rule).
+
+What it DOES override: any tendency to truncate analysis, skip clarifying questions, or collapse multi-voice deliberation into a single fast answer just because output volume is starting to feel large. Output volume is **not** the constraint here.
+
 ## Documentation Convention
 
 - Technology reference docs: `docs/en/` (English, source of truth)
