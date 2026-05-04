@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -22,6 +20,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -39,6 +38,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -218,12 +219,27 @@ private fun DiffSummaryRow(diff: ChartDiff) {
             pluralStringResource(Res.plurals.label_diff_modified, diff.modifiedCellCount, diff.modifiedCellCount)
         val removedText =
             pluralStringResource(Res.plurals.label_diff_removed, diff.removedCellCount, diff.removedCellCount)
-        AssistChip(
-            onClick = { /* informational only */ },
-            label = { Text("$addedText · $modifiedText · $removedText") },
-            modifier = Modifier.testTag("diffSummaryChip"),
-            colors = AssistChipDefaults.assistChipColors(),
-        )
+        // Decorative summary; not tappable. Wrapped in Surface (not AssistChip)
+        // so screen readers do not announce a phantom button — the iOS mirror
+        // uses a plain Capsule+Text for the same reason. Setting role=null
+        // strips any latent button semantics from the underlying clickable
+        // ancestors so VoiceOver/TalkBack announces the text as a static label.
+        Surface(
+            shape = MaterialTheme.shapes.small,
+            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            modifier =
+                Modifier
+                    .testTag("diffSummaryChip")
+                    .semantics {
+                        contentDescription = "$addedText · $modifiedText · $removedText"
+                    },
+        ) {
+            Text(
+                text = "$addedText · $modifiedText · $removedText",
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                style = MaterialTheme.typography.labelMedium,
+            )
+        }
     }
 }
 

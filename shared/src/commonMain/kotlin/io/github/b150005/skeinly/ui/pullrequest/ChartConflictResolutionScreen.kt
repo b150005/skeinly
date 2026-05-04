@@ -335,7 +335,7 @@ private fun LayerConflictRow(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = "${stringResource(Res.string.label_conflict_layer)}: $layerName",
+                text = stringResource(Res.string.label_conflict_layer, layerName),
                 style = MaterialTheme.typography.titleSmall,
             )
             ResolutionPickerRow(

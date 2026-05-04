@@ -662,7 +662,7 @@
         <item quantity="one">%1$d conflict to resolve</item>
         <item quantity="other">%1$d conflicts to resolve</item>
     </plurals>
-    <string name="label_conflict_layer">Layer</string>
+    <string name="label_conflict_layer">Layer: %1$s</string>
     <string name="label_conflict_cell">Cell (%1$d, %2$d)</string>
     <string name="action_take_theirs">Take theirs</string>
     <string name="action_keep_mine">Keep mine</string>

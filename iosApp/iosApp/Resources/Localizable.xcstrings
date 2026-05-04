@@ -3425,13 +3425,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Layer"
+            "value": "Layer: %1$@"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "レイヤー"
+            "value": "レイヤー: %1$@"
           }
         }
       }
