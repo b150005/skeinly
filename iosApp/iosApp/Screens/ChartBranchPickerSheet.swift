@@ -50,6 +50,7 @@ struct ChartBranchPickerSheet: View {
                     }
                 }
         }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("branchPickerSheet")
         .task { observeBranchSwitched() }
         .onDisappear {

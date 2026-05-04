@@ -473,7 +473,7 @@ private fun CommentComposeBox(
             OutlinedTextField(
                 value = draft,
                 onValueChange = onChange,
-                placeholder = { Text(stringResource(Res.string.hint_add_comment_to_pr)) },
+                label = { Text(stringResource(Res.string.hint_add_comment_to_pr)) },
                 modifier =
                     Modifier
                         .weight(1f, fill = true)

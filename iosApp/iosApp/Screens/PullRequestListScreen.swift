@@ -120,17 +120,23 @@ private struct FilterChipButton: View {
 
     var body: some View {
         Button(action: onTap) {
-            Text(title)
-                .font(.subheadline)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .fill(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
-                )
-                .overlay(
-                    Capsule().stroke(isSelected ? Color.accentColor : Color.gray.opacity(0.4))
-                )
+            HStack(spacing: 4) {
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.caption)
+                }
+                Text(title)
+                    .font(.subheadline)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(
+                Capsule()
+                    .fill(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
+            )
+            .overlay(
+                Capsule().stroke(isSelected ? Color.accentColor : Color.gray.opacity(0.4))
+            )
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier(identifier)
