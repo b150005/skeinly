@@ -299,3 +299,53 @@ kover {
         }
     }
 }
+
+// Phase 41.1.4: regenerate `symbol-packs/<pack_id>/<version>/payload.json`
+// for the seed packs (`jis.knit.beginner` + `jis.crochet.beginner`) by
+// running the always-on `SymbolPackPayloadGeneratorTest` test with the
+// `skeinly.payloads.outputDir` system property set. The test asserts pack
+// invariants on every CI run; setting the system property additionally
+// emits the JSON files + prints the seed metadata SQL block to stdout.
+//
+// Output directory: `<projectRoot>/build/generated/symbol-pack-payloads/`.
+//
+// Manual upload follows (per ADR-016 §3.1, the bucket is private and
+// payloads are mediated by the 41.1.5 Edge Function — no public-read
+// path exists): use the Supabase Dashboard or `supabase storage cp` to
+// place the files at the path matching the printed `payloadPath`. The
+// printed seed SQL is then applied via `mcp__supabase__apply_migration`.
+val generateSymbolPackPayloads by tasks.registering(Test::class) {
+    description =
+        "Regenerates seed symbol pack payload.json files + prints metadata SQL for upload."
+    group = "skeinly content authoring"
+
+    val testTaskProvider = tasks.named("testAndroidHostTest", Test::class)
+    testClassesDirs = testTaskProvider.get().testClassesDirs
+    classpath = testTaskProvider.get().classpath
+    dependsOn("compileAndroidHostTest")
+
+    filter {
+        includeTestsMatching(
+            "io.github.b150005.skeinly.tools.SymbolPackPayloadGeneratorTest.generatePayloadsAndSeedSql",
+        )
+    }
+    systemProperty(
+        "skeinly.payloads.outputDir",
+        layout.buildDirectory
+            .dir("generated/symbol-pack-payloads")
+            .get()
+            .asFile.absolutePath,
+    )
+
+    // Always re-run when invoked — the test side effect is the JSON file
+    // emission, not a Gradle output we can declare.
+    outputs.upToDateWhen { false }
+
+    // Forward the test's stdout to the Gradle console so the manifest +
+    // seed SQL block surface to the dev directly without digging into
+    // build/reports/tests/.
+    testLogging {
+        showStandardStreams = true
+        events("passed", "failed", "skipped")
+    }
+}
