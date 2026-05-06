@@ -3,7 +3,7 @@
 > **ステータス**: Proposed (2026-05-04)
 > **フェーズ**: 41 (Phase 39 ベータクローズ後 + Phase 40 GA リリース後)
 > **関連**: ADR-005 (アカウント削除)、ADR-008 (構造化チャート データモデル)、ADR-009 (パラメトリックシンボル)、ADR-013 (コラボレーションコア)、ADR-014 (PR ワークフロー)
-> **追跡**: F1 in [.claude/docs/active-backlog.md](../../../.claude/docs/active-backlog.md)。Migration 017 (`subscriptions` テーブル) は Phase 39 alpha で配置済み。RevenueCat ベンダー設定は [docs/ja/vendor-setup.md](../vendor-setup.md) Phase A0d 参照。
+> **追跡**: F1 = Phase 41 (Pro サブスクリプション + 動的シンボル)。Phase 41.1 データスパイン (migrations 020 / 021 / 022 + Edge Function `request-pack-download`) は出荷済み — [.claude/CLAUDE.md](../../../.claude/CLAUDE.md) `### Completed` 参照。Phase 41.2 (composite catalog + entitlement resolver + downloaded pack store + Realtime) が §6 サブスライス計画に従い次。Migration 017 (`subscriptions` テーブル) は prod 適用済み。RevenueCat ベンダー設定は [docs/ja/vendor-setup.md](../vendor-setup.md) Phase A0d 参照。
 
 英語版 (canonical): [../../en/adr/016-phase-41-pro-subscription-dynamic-symbols.md](../../en/adr/016-phase-41-pro-subscription-dynamic-symbols.md)
 
