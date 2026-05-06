@@ -1,0 +1,72 @@
+-- Phase 41.2a (ADR-016 §3.1 + §4.2): client-side mirror of `public.subscriptions`.
+-- See [7.sqm](7.sqm) for the migration + design notes.
+--
+-- Wire format: timestamp columns hold ISO-8601 strings (`Instant.toString()`),
+-- boolean columns are stored as INTEGER 0/1.
+
+CREATE TABLE SubscriptionEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    product_id TEXT NOT NULL,
+    status TEXT NOT NULL,
+    original_transaction_id TEXT,
+    expires_at TEXT,
+    is_in_trial INTEGER NOT NULL DEFAULT 0,
+    auto_renew_status INTEGER NOT NULL DEFAULT 1,
+    last_verified_at TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscription_user_status
+    ON SubscriptionEntity(user_id, status);
+
+-- Used by EntitlementResolver hot path. Picks the most recently updated
+-- active-or-grace row; "active" semantics (status check + expires_at gate)
+-- live in domain layer per the SubscriptionStatus.isActiveAt() helper.
+getActiveForUser:
+SELECT * FROM SubscriptionEntity
+WHERE user_id = ?
+  AND status IN ('active', 'in_grace_period')
+ORDER BY updated_at DESC
+LIMIT 1;
+
+-- Returns every row for the user (including expired/canceled/refunded). Used
+-- by Settings → Manage Subscription + diagnostic surfaces.
+getAllForUser:
+SELECT * FROM SubscriptionEntity
+WHERE user_id = ?
+ORDER BY updated_at DESC;
+
+observeActiveForUser:
+SELECT * FROM SubscriptionEntity
+WHERE user_id = ?
+  AND status IN ('active', 'in_grace_period')
+ORDER BY updated_at DESC
+LIMIT 1;
+
+-- Idempotent INSERT-OR-REPLACE — refresh paths simply overwrite the row by
+-- primary key. The `subscriptions` table is server-write-only (verify-receipt
+-- Edge Function + service role) so the client never originates a write; the
+-- only reason this is `INSERT OR REPLACE` rather than `INSERT OR IGNORE` is
+-- to absorb refresh fetches that surface a newer row with the same id.
+upsert:
+INSERT OR REPLACE INTO SubscriptionEntity(
+    id,
+    user_id,
+    platform,
+    product_id,
+    status,
+    original_transaction_id,
+    expires_at,
+    is_in_trial,
+    auto_renew_status,
+    last_verified_at,
+    created_at,
+    updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+-- Logout cleanup — the auth.users CASCADE handles the server side.
+clearForUser:
+DELETE FROM SubscriptionEntity WHERE user_id = ?;
