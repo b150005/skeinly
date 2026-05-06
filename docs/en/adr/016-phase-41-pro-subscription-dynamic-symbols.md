@@ -5,7 +5,7 @@
 > **Supersedes**: none
 > **Superseded by**: none
 > **Related**: ADR-005 (account deletion), ADR-008 (structured chart data model), ADR-009 (parametric symbols), ADR-013 (collaboration core), ADR-014 (PR workflow). [docs/spec/chart-editor.md](../../../.claude/docs/spec/chart-editor.md) covers the editor surface that consumes this catalog.
-> **Tracking**: F1 in [.claude/docs/active-backlog.md](../../../.claude/docs/active-backlog.md). Migration 017 (`subscriptions` table) ships in Phase 39 alpha alongside `verify-receipt` Edge Function. RevenueCat vendor wiring covered by [docs/en/vendor-setup.md](../vendor-setup.md) Phase A0d.
+> **Tracking**: F1 = Phase 41 (Pro subscription + dynamic symbols). Phase 41.1 data spine (migrations 020 / 021 / 022 + Edge Function `request-pack-download`) shipped — see [.claude/CLAUDE.md](../../../.claude/CLAUDE.md) `### Completed`. Phase 41.2 (composite catalog + entitlement resolver + downloaded pack store + Realtime) next per §6 sub-slice plan. Migration 017 (`subscriptions` table) already prod-applied. RevenueCat vendor wiring covered by [docs/en/vendor-setup.md](../vendor-setup.md) Phase A0d.
 
 JA summary: [../../ja/adr/016-phase-41-pro-subscription-dynamic-symbols.md](../../ja/adr/016-phase-41-pro-subscription-dynamic-symbols.md) (to be cut alongside this ADR going to Accepted).
 
