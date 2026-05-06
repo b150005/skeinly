@@ -10,10 +10,13 @@ has been informed by knitter advisory plus the agent team — beta is the
 first non-author signal we get on whether the merge / open-PR / branch
 flows read as "knitter editing" or as foreign Git ceremony.
 
-Data-migration compatibility freezes at Phase 39. Schema changes
-shipped during beta must be backward-compatible against the
-1.0.0-beta1 client. Phase 35.2 polar editor and Phase 24 push
-notifications stay deferred until beta closes.
+Data-migration compatibility does NOT freeze at Phase 39. Per the
+"pre-v1 breaking changes accepted" policy adopted 2026-05-05, schema
+breakage that produces a better v1.0 outcome is acceptable during
+beta — tester data may need to be reset on schema flips. Phase 40 GA
+(v1.0.0) re-imposes backward-compat discipline. Phase 35.2 polar
+editor and Phase 24 push notifications stay deferred until beta
+closes regardless.
 
 ## Tester profile
 
@@ -36,22 +39,24 @@ Target 5–10 invitees covering at least:
 
 - **iOS**: TestFlight Internal Testing. Invite via Apple ID email.
   Build artifact: `iosApp.ipa` from the `release.yml` workflow run
-  triggered by tag `v1.0.0-beta1`.
+  triggered by tag `v0.1.0`.
 - **Android**: Google Play Internal Testing. Invite via Google
   account email. Build artifact: `androidApp-release.apk` from the
   same workflow run.
 
 Per-tag CURRENT_PROJECT_VERSION (iOS) is `${{ github.run_number }}`,
-auto-monotonic. Android VERSION_CODE is static in `version.properties`
-and must bump on every fix-forward beta tag (current: `2`; next beta
-build: `3`, etc.).
+auto-monotonic at release time (the local `iosApp/project.yml` value
+of `1` is for local-build use only and is overridden by the workflow).
+Android VERSION_CODE is static in `version.properties` and must bump
+on every fix-forward beta tag (current: `4` after the 2026-05-05
+0.1.0 pivot; next beta build: `5`, etc.).
 
 ## Pre-launch verification (HARD GATES — invites do not go out until all pass)
 
 Each item below is a blocking gate: a tester invite sent before the
 gate is satisfied will produce false bug reports or non-functional
 test paths. Verify in the same session that pushes
-`v1.0.0-beta1` so the state is observably current.
+`v0.1.0` so the state is observably current.
 
 1. **HARD GATE: Migration 016 applied to prod Supabase.** Run
    `supabase migration list --linked` and confirm `016_pull_requests`
@@ -63,7 +68,7 @@ test paths. Verify in the same session that pushes
    happened during the version-bump session), retry from a stable
    network or run `gh run list` against the Supabase deploy workflow.
 2. **HARD GATE: Tag CI green.** The workflow run triggered by
-   `v1.0.0-beta1` must complete with `build-android`, `build-ios`,
+   `v0.1.0` must complete with `build-android`, `build-ios`,
    and `release` jobs all green. Verify via
    `gh run list --workflow release.yml --limit 1`.
 3. **HARD GATE: Android VERSION_CODE strictly greater than prior
@@ -74,17 +79,16 @@ test paths. Verify in the same session that pushes
    strictly greater than the highest previously-uploaded code. Play
    Console rejects duplicate `versionCode` values silently from the
    workflow's perspective, so this is the only way to catch the
-   error before invite blast. Current value: `2`. Bump to `3` for
+   error before invite blast. Current value: `4`. Bump to `5` for
    the next fix-forward beta build, etc.
 4. **HARD GATE: TestFlight + Play artifacts visible.** Confirm the
    IPA and APK appear in the workflow artifact list for tag
-   `v1.0.0-beta1`. The release job auto-uploads to TestFlight when
-   `APP_STORE_CONNECT_*` secrets are configured. If TestFlight
-   rejects the `MARKETING_VERSION` pre-release string `1.0.0-beta1`
-   at upload time (some `xcrun altool` / `notarytool` versions
-   reject hyphen-suffixed semver in `CFBundleShortVersionString`),
-   re-tag as `v1.0.0.1` (dot-separated only) and bump VERSION_CODE
-   per gate 3.
+   `v0.1.0`. The release job auto-uploads to TestFlight when
+   `APP_STORE_CONNECT_*` secrets are configured. The 2026-05-05
+   pivot to semver `0.X.Y` (no hyphen suffix) eliminates the prior
+   `xcrun altool` / `notarytool` rejection risk on
+   `CFBundleShortVersionString` — the marketing string `0.1.0` is
+   digits-and-dots only, accepted by App Store Connect at upload.
 5. **HARD GATE: Beta-bug reporting channel live.** The
    `.github/ISSUE_TEMPLATE/beta-bug.md` template must be live on
    the default branch so the URL `https://github.com/<owner>/<repo>/issues/new?template=beta-bug.md`
@@ -231,8 +235,9 @@ re-scope.
 
 ## Fix-forward policy during beta
 
-- Polish slices that don't change schemas land mid-beta as
-  `1.0.0-beta2`, `1.0.0-beta3`, etc. Bump VERSION_CODE in
+- Polish slices that don't change schemas land mid-beta as semver
+  patch bumps `0.1.1`, `0.1.2`, etc. (or minor bumps `0.2.0`,
+  `0.9.0` for larger beta milestones). Bump VERSION_CODE in
   `version.properties` per beta.
 - Schema changes (anything beyond migration 016) require a beta
   reset: invalidate prior testers' data, re-invite. Avoid unless

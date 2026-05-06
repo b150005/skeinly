@@ -455,7 +455,23 @@ struct StatusBadge: View {
             .background(statusColor.opacity(DesignTokens.highlightOpacity))
             .foregroundStyle(statusColor)
             .clipShape(Capsule())
-            .accessibilityIdentifier("projectStatusBadge")
+            // Variant-specific accessibility identifier so Maestro / XCUITest
+            // can assert on the *currently rendered* status independent of the
+            // simulator locale (the visible text is localized via
+            // `label_status_*` keys; the id stays stable). The trailing
+            // `_unknown` suffix surfaces the `default` arm explicitly so a
+            // future Kotlin enum addition that lacks a matching Swift case
+            // is observable in failing tests rather than silently mislabelled.
+            .accessibilityIdentifier("projectStatusBadge_\(identifierSuffix)")
+    }
+
+    private var identifierSuffix: String {
+        switch status {
+        case .notStarted: return "notStarted"
+        case .inProgress: return "inProgress"
+        case .completed: return "completed"
+        default: return "unknown"
+        }
     }
 
     @ViewBuilder

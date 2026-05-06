@@ -188,59 +188,96 @@ struct AppRootView: View {
         // mechanical from the bridge — annotating each entry with
         // `@ObjCName` would let us override but balloons the Kotlin enum
         // declaration.
+        // Phase E2E hardening (2026-05-06): every NavigationStack destination
+        // gets `.skeinlyBackButton(path: $path)` so Maestro / XCUITest can
+        // locate the back button by `accessibilityIdentifier("backButton")`
+        // — independent of the simulator locale (which renders the native
+        // SwiftUI back button label as `戻る` on ja-JP and `Back` on en-US).
+        // The `chartEditor` case is the sole exception: it ships its own
+        // toolbar item with a discard-guard wrapper but DOES use the same
+        // `accessibilityIdentifier("backButton")` so the contract is
+        // uniform from the test side. See `Components/SkeinlyBackButton.swift`.
         switch route {
         case .projectDetail(let projectId):
             ProjectDetailScreen(projectId: projectId, path: $path)
                 .trackScreen(.projectdetail)
+                .skeinlyBackButton(path: $path)
         case .profile:
             ProfileScreen()
                 .trackScreen(.profile)
+                .skeinlyBackButton(path: $path)
         case .settings:
             SettingsScreen(onSendFeedback: { path.append(Route.bugReportPreview) })
                 .trackScreen(.settings)
+                .skeinlyBackButton(path: $path)
         case .activityFeed:
             ActivityFeedScreen()
                 .trackScreen(.activityfeed)
+                .skeinlyBackButton(path: $path)
         case .sharedWithMe:
             SharedWithMeScreen(path: $path)
                 .trackScreen(.sharedwithme)
+                .skeinlyBackButton(path: $path)
         case .sharedContent(let token, let shareId):
             SharedContentScreen(token: token, shareId: shareId, path: $path)
                 .trackScreen(.sharedcontent)
+                .skeinlyBackButton(path: $path)
         case .discovery:
             DiscoveryScreen(path: $path)
                 .trackScreen(.discovery)
+                .skeinlyBackButton(path: $path)
         case .patternLibrary:
             PatternLibraryScreen(path: $path)
                 .trackScreen(.patternlibrary)
+                .skeinlyBackButton(path: $path)
         case .patternEdit(let patternId):
             PatternEditScreen(patternId: patternId, path: $path)
                 .trackScreen(.patternedit)
+                .skeinlyBackButton(path: $path)
         case .chartViewer(let patternId, let projectId):
             StructuredChartViewerScreen(patternId: patternId, projectId: projectId, path: $path)
                 .trackScreen(.chartviewer)
+                .skeinlyBackButton(path: $path)
         case .chartEditor(let patternId):
+            // Owns its own back button with discard-guard semantics + the
+            // same `accessibilityIdentifier("backButton")` — see
+            // `StructuredChartEditorScreen.swift`. Do NOT add
+            // `.skeinlyBackButton` here; it would duplicate the toolbar item.
             StructuredChartEditorScreen(patternId: patternId, path: $path)
                 .trackScreen(.charteditor)
         case .chartHistory(let patternId):
             ChartHistoryScreen(patternId: patternId, path: $path)
                 .trackScreen(.charthistory)
+                .skeinlyBackButton(path: $path)
         case .chartDiff(let baseRevisionId, let targetRevisionId):
             ChartDiffScreen(baseRevisionId: baseRevisionId, targetRevisionId: targetRevisionId)
                 .trackScreen(.chartdiff)
+                .skeinlyBackButton(path: $path)
         case .symbolGallery:
             SymbolGalleryScreen()
                 .trackScreen(.symbolgallery)
+                .skeinlyBackButton(path: $path)
         case .pullRequestList(let defaultFilter):
             PullRequestListScreen(defaultFilter: defaultFilter, path: $path)
                 .trackScreen(.pullrequestlist)
+                .skeinlyBackButton(path: $path)
         case .pullRequestDetail(let prId):
             PullRequestDetailScreen(prId: prId, path: $path)
                 .trackScreen(.pullrequestdetail)
+                .skeinlyBackButton(path: $path)
         case .chartConflictResolution(let prId):
             ChartConflictResolutionScreen(prId: prId, path: $path)
                 .trackScreen(.chartconflictresolution)
+                .skeinlyBackButton(path: $path)
         case .bugReportPreview:
+            // Excluded from `.skeinlyBackButton` because the screen ships
+            // its own primary dismissal — a body-level Cancel button calling
+            // `onCancel`. Adding `.skeinlyBackButton` would duplicate that
+            // affordance with a top-bar "Back" button (different label,
+            // same effect), violating "one obvious dismiss per screen". The
+            // SwiftUI-default back button stays — its label is the parent's
+            // localized title, but Maestro flows do not interact with this
+            // screen so locale-coupling does not surface.
             BugReportPreviewScreen(onCancel: { path.removeLast() })
                 .trackScreen(.bugreportpreview)
         }

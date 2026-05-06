@@ -43,8 +43,12 @@ tags:
 # Phase 33.1.12: accessibilityLabel "Increment row" → id for locale independence.
 - tapOn:
     id: "incrementButton"
-# Go back (iOS back button shows previous screen title)
-- tapOn: "Back"
+# Phase E2E hardening (2026-05-06) — `accessibilityIdentifier("backButton")`
+# from `SkeinlyBackButtonModifier` replaces the locale-coupled `tapOn: "Back"`
+# (which broke on ja-JP simulators where the SwiftUI native back button
+# rendered as `戻る`).
+- tapOn:
+    id: "backButton"
 
 # Both projects should be visible
 - assertVisible: "Wool Scarf"
@@ -60,11 +64,11 @@ tags:
 
 # Guard: verify increment actually registered before testing filters.
 # If the Maestro tap bug caused the increment to silently fail, the project
-# will still show "Not Started" and the filter assertions would be meaningless.
-# Phase 33.5 i18n'd StatusBadge; `projectStatusBadge` repeats for every row so
-# we still assert on the en-US rendered text here (matches what the ProjectRow
-# body actually reads; CI is en-US-only).
-- assertVisible: "In Progress"
+# will still show notStarted and the filter assertions would be meaningless.
+# Phase E2E hardening (2026-05-06) uses the variant-keyed
+# `projectStatusBadge_inProgress` id (locale-independent).
+- assertVisible:
+    id: "projectStatusBadge_inProgress"
 
 # Filter: In Progress — only Wool Scarf (1/10 rows) should remain. Phase 33.5
 # pivoted the chip tap from the English label text to a per-chip id landmark.

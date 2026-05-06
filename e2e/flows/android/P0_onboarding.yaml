@@ -36,8 +36,8 @@ tags:
     id: "onboardingPage3"
 
 # Phase 39.4: beta builds add a 4th diagnostic-consent page; current
-# `version.properties` `1.0.0-beta1` triggers `BuildFlags.isBeta == true`.
-# Drop this stanza at v1.0 GA.
+# `version.properties` `0.1.0` (semver major == 0) triggers
+# `BuildFlags.isBeta == true`. Drop this stanza at v1.0 GA (major == 1).
 - swipe:
     direction: LEFT
     duration: 400

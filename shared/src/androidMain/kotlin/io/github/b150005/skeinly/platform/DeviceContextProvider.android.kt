@@ -23,7 +23,7 @@ actual class DeviceContextProvider(
                 val name = info.versionName ?: "unknown"
 
                 // Concatenate the build (versionCode) so triagers see both —
-                // matches the iOS "1.0.0-beta1 (3)" shape.
+                // matches the iOS "0.1.0 (4)" shape.
                 @Suppress("DEPRECATION")
                 val code = info.versionCode
                 "$name ($code)"

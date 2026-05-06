@@ -54,7 +54,7 @@ body:
     attributes:
       label: "App version + build / アプリバージョン・ビルド"
       description: "From Settings → About, or the App Store Connect / Play Console build label / 設定 → アプリ情報、またはApp Store Connect / Play Consoleのビルドラベルから"
-      placeholder: "1.0.0-beta1 (build 2)"
+      placeholder: "0.1.0 (build 4)"
     validations:
       required: true
 

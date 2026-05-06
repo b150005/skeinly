@@ -46,10 +46,12 @@ tags:
 
 # Verify the project appears in the list
 - assertVisible: "My Test Scarf"
-# `Not Started` resolves through `label_status_not_started` on the StatusBadge;
-# on en-US CI it renders English. Pivot to a per-row status id once ProjectRow
-# gains stable per-project accessibility landmarks.
-- assertVisible: "Not Started"
+# Phase E2E hardening (2026-05-06) — variant-keyed
+# `projectStatusBadge_notStarted` accessibilityIdentifier replaces the
+# locale-coupled `assertVisible: "Not Started"`. New projects render the
+# notStarted variant (currentRow == 0).
+- assertVisible:
+    id: "projectStatusBadge_notStarted"
 
 # Verify empty state is gone (Phase 33.5: locale-independent id)
 - assertNotVisible:

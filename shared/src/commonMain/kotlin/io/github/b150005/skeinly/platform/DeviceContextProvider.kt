@@ -15,7 +15,7 @@ package io.github.b150005.skeinly.platform
  * directly — no expect-class dependency injection needed.
  */
 expect class DeviceContextProvider {
-    /** Marketing version, e.g. `1.0.0-beta1` on Android, `1.0.0-beta1 (3)` on iOS. */
+    /** Marketing version, e.g. `0.1.0` on Android, `0.1.0 (4)` on iOS. */
     val appVersion: String
 
     /** OS family + version, e.g. `Android 14 (API 34)` or `iOS 18.0`. */

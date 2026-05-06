@@ -27,7 +27,7 @@ class BugReportBodyFormatterTest {
             description = description,
             events = events,
             posthogDistinctId = posthogDistinctId,
-            appVersion = "1.0.0-beta1 (3)",
+            appVersion = "0.1.0 (4)",
             osVersion = "Android 14 (API 34)",
             deviceModel = "Google Pixel 8",
             locale = "en-US",
@@ -70,7 +70,7 @@ class BugReportBodyFormatterTest {
     @Test
     fun reproduction_context_block_lists_every_field() {
         val body = formatWithDefaults()
-        assertTrue(body.contains("- App version: 1.0.0-beta1 (3)"))
+        assertTrue(body.contains("- App version: 0.1.0 (4)"))
         assertTrue(body.contains("- Platform: Android Android 14 (API 34)"))
         assertTrue(body.contains("- Device: Google Pixel 8"))
         assertTrue(body.contains("- Locale: en-US"))
