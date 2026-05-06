@@ -96,8 +96,10 @@ CREATE INDEX idx_user_pack_state_user ON public.user_symbol_pack_state (user_id)
 ```
 
 **Storage bucket** `symbol-packs` (Supabase Storage):
-- Public-read **only** for `tier='free'` packs (RLS bucket policy: row-level READ matches `(SELECT tier FROM symbol_packs WHERE id = <pack_id>) = 'free'`).
-- Pro packs use **per-user signed URLs** minted by the `request_pack_download` RPC (§3.3). Signed URL TTL: 1 hour. Client downloads, persists locally, refreshes on next sync if `version` bumped.
+- **Private bucket for both `tier='free'` and `tier='pro'` packs.** No bucket-level public-read.
+- All payload reads — free or pro — are mediated by the `request-pack-download` Edge Function (§3.3) which mints a per-call short-TTL signed URL after an entitlement check. Free packs skip the entitlement gate (any authenticated request succeeds modulo rate cap); pro packs additionally require an active subscription row in `subscriptions`.
+- Why mediate free downloads too: (a) unifies the client download path so the free→pro upgrade is structurally invisible to the sync manager, (b) enables structured per-invocation telemetry (§7) on every pack download regardless of tier, (c) puts §10 Q5 (refund revocation) and Q6 (rate limiting) under one consistent control plane, (d) avoids two divergent code paths (public-read GET vs signed-URL POST) in the client + the related divergent failure surfaces.
+- **Signed URL TTL: 5 minutes.** Short by design — the client downloads + persists immediately. A refunded user hits "Pro entitlement required" on the *next* request (revoking via Realtime push to `subscriptions`); they keep access only through any in-flight URL until its 5-minute TTL elapses. Re-mint via the same Edge Function on next sync if `version` bumped or TTL passed.
 - Layout: `<pack_id>/<version>/payload.json` (the manifest + path data) + optional `<pack_id>/<version>/preview.png` (paywall thumbnail).
 
 ### 3.2 RLS
@@ -139,71 +141,61 @@ CREATE POLICY own_pack_state_update ON public.user_symbol_pack_state
 -- (admin-time content authoring via apply_migration / execute_sql).
 ```
 
-### 3.3 RPC: `request_pack_download`
+### 3.3 Edge Function: `request-pack-download`
 
-```sql
-CREATE OR REPLACE FUNCTION public.request_pack_download(
-  p_pack_id TEXT
-) RETURNS TABLE (
-  payload_url      TEXT,
-  payload_url_ttl  TIMESTAMPTZ,
-  current_version  INT,
-  payload_size     INT
-)
-SECURITY DEFINER
-SET search_path = public, storage
-LANGUAGE plpgsql
-AS $$
-DECLARE
-  v_caller    UUID;
-  v_pack      RECORD;
-  v_is_pro    BOOLEAN;
-BEGIN
-  v_caller := auth.uid();
-  IF v_caller IS NULL THEN
-    RAISE EXCEPTION 'Unauthenticated';
-  END IF;
+A Supabase Edge Function (Deno runtime) replaces the originally-proposed Postgres `SECURITY DEFINER` RPC. The RPC was infeasible: current Supabase Postgres exposes no `storage.create_signed_url(...)` helper, and the alternatives (`pg_net` + Storage REST callback, or `pgjwt` + manual JWT signing with a vault-stored secret) introduce extension dependencies + security surface (signing-key custody, async http callback shape) that exceed what is justified for entitlement gating. The Edge Function pattern is precedent in this repo (`verify-receipt` from Phase H) and matches Supabase's idiomatic recommendation for download mediation. **Architecture pivot recorded 2026-05-06 (41.1.1a)**.
 
-  SELECT * INTO v_pack FROM public.symbol_packs WHERE id = p_pack_id;
-  IF v_pack IS NULL THEN
-    RAISE EXCEPTION 'Pack not found: %', p_pack_id;
-  END IF;
+**Request:**
 
-  -- Pro packs: gate on RevenueCat entitlement (mirrored to subscriptions table by verify-receipt).
-  IF v_pack.tier = 'pro' THEN
-    SELECT EXISTS (
-      SELECT 1 FROM public.subscriptions
-      WHERE user_id = v_caller
-        AND status IN ('active', 'in_grace_period')
-        AND (expires_at IS NULL OR expires_at > now())
-    ) INTO v_is_pro;
-
-    IF NOT v_is_pro THEN
-      RAISE EXCEPTION 'Pro entitlement required for pack: %', p_pack_id;
-    END IF;
-  END IF;
-
-  -- Mint a 1-hour signed URL via the storage extension's helper.
-  payload_url := storage.create_signed_url(
-    bucket_id => 'symbol-packs',
-    object_path => v_pack.payload_path,
-    expires_in => 3600
-  );
-  payload_url_ttl := now() + INTERVAL '1 hour';
-  current_version := v_pack.version;
-  payload_size := v_pack.payload_size;
-
-  RETURN NEXT;
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.request_pack_download FROM public;
-GRANT EXECUTE ON FUNCTION public.request_pack_download TO authenticated;
+```
+POST /functions/v1/request-pack-download
+Authorization: Bearer <user_jwt>
+Content-Type: application/json
+Body: { "pack_id": "jis.knit.intermediate" }
 ```
 
-**Concurrency**: No FOR UPDATE — pack metadata reads + signed URL minting are idempotent. Concurrent calls for the same pack from the same user simply produce two valid signed URLs.
+**Response — success:**
 
-**Pack-id error-message oracle**: `RAISE EXCEPTION 'Pack not found: %'` echoes `p_pack_id` to the caller, distinguishable from the entitlement-failure error message. This lets unauthenticated probes enumerate valid Pro pack ids by error-message shape. **Accepted** because `symbol_packs` SELECT policy is open-read (every pack id is already world-readable for paywall preview metadata) — there is no information disclosure beyond what the public-read RLS already permits.
+```
+200 OK
+{
+  "payload_url":      "https://<project>.supabase.co/storage/v1/object/sign/symbol-packs/jis.knit.intermediate/7/payload.json?token=...",
+  "payload_url_ttl":  "2026-05-06T08:00:00Z",
+  "current_version":  7,
+  "payload_size":     47821
+}
+```
+
+**Response — entitlement failure:**
+
+```
+403 Forbidden
+{ "error": "pro_entitlement_required", "pack_id": "jis.knit.intermediate" }
+```
+
+**Other failure shapes:** `401 unauthenticated` (missing or invalid JWT), `404 pack_not_found` (no row in `symbol_packs`), `429 rate_limited` (per-user sliding window exceeded — see below).
+
+**Internal flow:**
+
+1. `verify_jwt: true` deploy-time flag — Supabase enforces a valid `Authorization: Bearer <jwt>` before the function body runs. The function body extracts `user_id` from the JWT claims via `req.headers.get('Authorization')` + `jose`-style decode (or via the Supabase admin client's `auth.getUser(token)` for canonical resolution).
+2. **Per-user rate limiter** (sliding window) — 10 calls per 60 seconds per `user_id`, in-memory `Map<user_id, timestamps[]>` evaluated at request time. Closes ADR §10 Q6.
+3. Look up `symbol_packs` row by `pack_id` via service-role Supabase admin client. 404 if not found.
+4. Branch on `tier`:
+   - `free`: skip entitlement check.
+   - `pro`: query `subscriptions` for `user_id = caller AND status IN ('active','in_grace_period') AND (expires_at IS NULL OR expires_at > now())`. 403 if no row matches.
+5. **Mint a 5-minute signed URL** via the Storage REST API: `POST /storage/v1/object/sign/symbol-packs/<payload_path>?expiresIn=300` using the service-role key from `Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')`.
+6. Emit a structured log line: `{ event: "pack_download_signed", user_id, pack_id, version, tier, ts }`. Surfaced via `mcp__supabase__get_logs service=edge-function` for triage + the §7 telemetry roll-up.
+7. Return `{ payload_url, payload_url_ttl, current_version, payload_size }`.
+
+**Concurrency:** stateless across requests; concurrent calls for the same pack from the same user simply produce two valid signed URLs. The rate limiter is the only shared state and is intentionally per-instance (an Edge Function cold-start resets the window — acceptable for v1).
+
+**Pack-id error-message oracle:** the 404 response echoes `pack_id` to the caller, distinguishable from the 403 entitlement-failure response. **Accepted** because `symbol_packs` SELECT policy is open-read (every pack id is already world-readable for paywall preview metadata) — there is no information disclosure beyond what the public-read RLS already permits.
+
+**Service-role key custody:** stored in the Edge Function environment via `supabase secrets set SUPABASE_SERVICE_ROLE_KEY=...`; never embedded in client binaries; never logged. The function imports it via `Deno.env.get(...)` at request time and uses it only to mint signed URLs through the Storage REST API.
+
+**Rate-limiter caveats:** the in-memory limiter resets on Edge Function cold-start (~minutes between cold-starts in low-traffic conditions). For Phase 41 alpha + closed beta this is acceptable (subscriber count ~10s); revisit with Upstash Redis / a dedicated `edge_function_rate_limit` Postgres table once scale demands. Does not currently fire-and-forget log denied attempts beyond the structured log of successful invocations — acceptable trade-off for v1; PostHog `OutcomeEvent.PackSyncFailed(reason='rate_limited')` carries the client-side counter.
+
+**Refund-revocation semantics:** a `subscriptions.status='refunded'` write through `verify-receipt` causes the *next* `request-pack-download` invocation by that user to return 403 even if the user's local `EntitlementResolver` cache hasn't yet processed the Realtime push. The 5-minute signed-URL TTL bounds residual access through any in-flight URL the user already holds. Closes ADR §10 Q5 with finer revocation granularity than the 1-hour TTL the original RPC design carried.
 
 ### 3.4 Pack payload format (storage)
 
@@ -304,11 +296,12 @@ App boot (background, after main UI is interactive):
   1. SymbolPackSyncManager.sync()
   2. Fetch GET symbol_packs (RLS open-read; everyone sees catalog)
   3. Diff against local cache (per-pack version comparison)
-  4. For each stale-or-missing pack:
-       a. Free-tier pack → fetch payload via public-read storage URL directly
-       b. Pro-tier pack → call request_pack_download RPC; if RPC raises
-          'Pro entitlement required', skip silently (sync resumes when sub
-          activates)
+  4. For each stale-or-missing pack — call request-pack-download Edge Function:
+       a. 200 success → fetch payload from the returned 5-minute signed URL
+       b. 403 pro_entitlement_required → skip silently (sync resumes when
+          sub activates and Realtime push restores the entitlement)
+       c. 429 rate_limited → exponential backoff retry on next launch
+       d. 401 unauthenticated → defer to next session (auth refresh path)
   5. Persist new payload to local SQLDelight + filesystem
   6. UPSERT user_symbol_pack_state (downloaded_version)
   7. Emit SymbolPackSyncResult event for telemetry
@@ -316,8 +309,10 @@ App boot (background, after main UI is interactive):
 
 Failure modes:
 - Network error → silent retry on next app launch.
-- 403 on signed URL → re-mint via RPC.
+- 403 on signed URL itself (TTL elapsed mid-download) → re-call the Edge Function for a fresh 5-minute URL.
 - Pack version regression (current.version < cached.version) → never legitimate; surfaces as Sentry warning, sync skips this pack.
+
+Free + Pro packs traverse the **same** code path — the only divergence is the 403 short-circuit which is invisible to the sync manager's structural shape (sync simply skips that pack and continues). This unification is what §3.1 mandates for refund-revocation symmetry + §10 Q6 rate-limit symmetry.
 
 ## 5. Paywall + pack management UX
 
@@ -354,14 +349,19 @@ Phase 41 (post-beta-close, post-Phase-40-GA) splits into 5 atomic sub-slices, ea
 
 This document. Locks data shape, entitlement gating, sync flow, scope cuts. Pre-push: doc-only; no test delta.
 
-### 41.1 — Schema + RPC + content authoring tooling
+### 41.1 — Schema + Edge Function + content authoring tooling
 
-- Migration 020: `symbol_packs` + `symbol_pack_locales` + `user_symbol_pack_state` tables, RLS, indexes.
-- Migration 021: `request_pack_download` SECURITY DEFINER RPC.
-- Storage bucket `symbol-packs` provisioned (Supabase Dashboard or `apply_migration` if SQL helper available).
-- Migrate the existing 35 crochet + 30+ knit symbols from `DefaultSymbolCatalog` into `jis.knit.beginner` + `jis.crochet.beginner` packs (free tier). The bundled compile-time catalog stays in-binary as offline fallback — the migration is duplicative for v1 (stays bundled AND uploaded as a free pack), so first-launch users without network still see today's catalog identically.
-- Test: `+10` commonTest for migration / mapper / RPC exception paths.
-- No UI delta. No client wiring yet.
+Operationally split into 6 atomic sub-slices for incremental review + rollback. Each sub-slice independently shippable:
+
+- **41.1.0** (doc-only, shipped 2026-05-06): resolve §10 Q1 (storage retention) + confirm Q2 (Realtime channel multiplexing) deferred to 41.2.
+- **41.1.1a** (doc-only, shipped 2026-05-06): pivot §3.3 from Postgres `SECURITY DEFINER` RPC to `request-pack-download` Edge Function (Path A). Storage bucket private for both `tier='free'` and `tier='pro'`. Resolves §10 Q5 + Q6 by folding rate-limit + refund-revocation into the Edge Function body.
+- **41.1.1b**: Migration 020 — `symbol_packs` + `symbol_pack_locales` + `user_symbol_pack_state` tables, RLS, indexes. **No** RPC migration ships in this sub-slice (the originally-proposed migration 021 RPC is replaced by the 41.1.5 Edge Function).
+- **41.1.2**: Storage bucket `symbol-packs` provisioned (private, both tiers). User-side gate: prod bucket creation needs explicit user confirmation.
+- **41.1.3**: Domain `SymbolPack` + `SymbolPackPayload` data classes + `data/mapper/SymbolPackMapper.kt`. **+5 commonTest**. No client wiring yet.
+- **41.1.4**: Pack payload export Gradle task `generateSymbolPackPayloads` + pack metadata seed INSERTs (`jis.knit.beginner` / `jis.crochet.beginner` free packs). The bundled compile-time `DefaultSymbolCatalog` stays in-binary as offline fallback — first-launch users without network see today's catalog identically. **+5 commonTest**. User-side gate: prod payload upload to Storage needs explicit user confirmation.
+- **41.1.5**: Edge Function `request-pack-download` deploy via `mcp__supabase__deploy_edge_function`. JWT verify + per-user sliding-window rate limiter + entitlement gate against `subscriptions` + Storage REST API signed-URL minting (5-min TTL) + structured log emission. **+5 commonTest** for Deno-side pure helpers (rate limiter, response shape).
+
+Total Phase 41.1 budget: **+15 commonTest** (was +10 in the original §6 estimate; the bump reflects the extra Edge Function pure-helper coverage). No UI delta in any 41.1 sub-slice — `CompositeSymbolCatalog` wiring lands in 41.2.
 
 ### 41.2 — Client sync + `CompositeSymbolCatalog` + `EntitlementResolver`
 
@@ -434,7 +434,7 @@ Sentry tracks all `PackSyncFailed` reasons + `RevenueCatService` exceptions.
 
 5. **Offline default-deny on `isPro()`**. Cold launch with no network + no cached subscription row → `isPro() = false`. Sub-active users on a flight see Pro packs locked until network returns. Trade-off documented; alternative (offline default-allow) lets perpetual offline users hold Pro forever post-expiry.
 
-   **Clock-manipulation bypass window** (related concern): `EntitlementResolver.isPro()` evaluates `sub.expiresAt > clock.now()` using the device's local clock. A user who sets their device clock backward while offline keeps `isPro()` true past true expiry. Bounded by: (a) Realtime push restores server-side truth on next reconnect, (b) the `request_pack_download` RPC also re-validates via Postgres `now()` (server clock), so new pack downloads still fail correctly. Acceptable because the only thing the bypass extends is access to **already-downloaded** Pro pack files — no new entitlement-gated server resources can be obtained. If telemetry post-launch surfaces meaningful clock-manipulation abuse, mitigation options: (i) add a "last verified at" client check that requires periodic online re-verification (e.g. ≤ 14 days offline), or (ii) bind entitlement state to a server-issued JWT with shorter TTL.
+   **Clock-manipulation bypass window** (related concern): `EntitlementResolver.isPro()` evaluates `sub.expiresAt > clock.now()` using the device's local clock. A user who sets their device clock backward while offline keeps `isPro()` true past true expiry. Bounded by: (a) Realtime push restores server-side truth on next reconnect, (b) the `request-pack-download` Edge Function also re-validates the subscription against server-side `now()`, so new pack downloads still fail correctly. Acceptable because the only thing the bypass extends is access to **already-downloaded** Pro pack files — no new entitlement-gated server resources can be obtained. If telemetry post-launch surfaces meaningful clock-manipulation abuse, mitigation options: (i) add a "last verified at" client check that requires periodic online re-verification (e.g. ≤ 14 days offline), or (ii) bind entitlement state to a server-issued JWT with shorter TTL.
 
 6. **No client-side pack signature verification for v1**. Payload integrity relies on Supabase Storage's HTTPS + signed URL contract. A Supabase compromise that lets an attacker swap pack payloads would inject malicious SVG path data into all clients. Tradeoff: SVG is rendered through the existing `SymbolDrawing.kt` interpreter which only reads `M`/`L`/`C`/`Z` tokens — there is no script-execution surface. **Strict-token contract**: `SymbolDrawing.kt` MUST **reject** any token outside `{M, L, C, Z}` with a logged error and substitute the fallback "?" glyph, **NOT** silently ignore unknown tokens. This invariant must be re-validated whenever the SVG parser is extended; relaxing it (e.g. adding `A` arc support) requires a security review of the new token's parser surface. A future signed-pack scheme (Ed25519 signature in manifest, public key bundled at compile time) closes the upstream-payload-trust gap; deferred to v2 if the threat model changes.
 
@@ -462,7 +462,7 @@ Each item below was considered and consciously excluded from Phase 41. Reopen vi
 
 These do not block the ADR going to Accepted but must be answered before code starts.
 
-1. **Storage bucket retention policy** — **Resolved 2026-05-06 (41.1.0)**: keep all historical pack versions indefinitely. Rationale: (a) the `bytes` column on `symbol_packs` lets us monitor bucket size cheaply via `SELECT SUM(bytes)`, (b) the audit + cold-cache-restore use case is a strict superset of any prune policy we could write today, (c) at v1 cardinality (≤10 packs × ≤10 versions × ≤1 MB each ≈ 100 MB) the storage cost is negligible. **Re-check trigger**: when `SELECT SUM(bytes) FROM symbol_packs` first crosses 100 MB, cut a follow-up ADR amendment proposing a concrete prune policy (likely "keep latest + last N supersedes per pack, archive older to cold storage"). Until then, no client- or server-side prune logic ships.
+1. **Storage bucket retention policy** — **Resolved 2026-05-06 (41.1.0)**: keep all historical pack versions indefinitely. Rationale: (a) the `payload_size` column (bytes) on `symbol_packs` lets us monitor bucket size cheaply via `SELECT SUM(payload_size)`, (b) the audit + cold-cache-restore use case is a strict superset of any prune policy we could write today, (c) at v1 cardinality (≤10 packs × ≤10 versions × ≤1 MB each ≈ 100 MB) the storage cost is negligible. **Re-check trigger**: when `SELECT SUM(payload_size) FROM symbol_packs` first crosses 100 MB, cut a follow-up ADR amendment proposing a concrete prune policy (likely "keep latest + last N supersedes per pack, archive older to cold storage"). Until then, no client- or server-side prune logic ships.
 
 2. **`subscriptions` Realtime channel multiplexing** — **Deferred to 41.2 (resolved scope)**: today's `RealtimeSyncManager` runs 7 channels (5 baseline + 2 PR per Phase 38). Whether `subscriptions-<userId>` adds an 8th channel or coalesces with `patterns-<userId>` is an engineering call that depends on observed channel count vs. tier cap at the moment of wiring. The 41.1 data spine is platform-agnostic on this dimension — no schema or RPC change required either way. The 41.2 implementer makes the call when adding the client subscription manager; document the choice + rationale in the 41.2 ADR amendment or commit message at that time.
 
@@ -470,6 +470,6 @@ These do not block the ADR going to Accepted but must be answered before code st
 
 4. **Trial-period UX disclosure**: 7-day free trial is encoded in App Store Connect IAP product. App Store JA review historically requires explicit trial disclosure before purchase — copy needs verifying with Apple JA App Review at submission time. May require an additional `body_paywall_trial_disclosure` key.
 
-5. **Refund handling**: a user purchases yearly Pro, uses it for 6 months, requests refund through Apple. RevenueCat fires webhook → `verify-receipt` Edge Function writes `status='refunded'`. Local `EntitlementResolver.isPro()` flips false → CompositeSymbolCatalog locks Pro packs immediately. Existing chart cells referencing Pro symbols fall back to "?" glyph at render time. Confirm with Apple guidelines that this revocation behavior is permitted (it is — App Review accepts entitlement revocation on refund).
+5. **Refund handling** — **Resolved 2026-05-06 (41.1.1a) via Path A pivot**: a user purchases yearly Pro, uses it for 6 months, requests refund through Apple. RevenueCat fires webhook → `verify-receipt` Edge Function writes `status='refunded'`. Local `EntitlementResolver.isPro()` flips false on the next Realtime push → `CompositeSymbolCatalog` locks Pro packs immediately. Existing chart cells referencing Pro symbols fall back to "?" glyph at render time. **Server-side revocation** is enforced by `request-pack-download` (§3.3) which re-checks `subscriptions` on every invocation; the 5-minute signed-URL TTL bounds residual access to ≤ 5 minutes from any URL minted just before the refund landed. Apple App Review accepts entitlement revocation on refund (well-trodden pattern).
 
-6. **Rate-limiting `request_pack_download` RPC**: the RPC has no per-caller rate cap. A subscriber could script repeated calls to mint thousands of valid signed URLs (each 1-hour TTL). Supabase Storage CDN cache absorbs the actual byte cost, but the Postgres RPC compute is unbounded. Pre-Phase 41 GA, add either (a) a Supabase Edge Function in front of the RPC enforcing per-user requests/minute, or (b) a Postgres advisory-lock + sliding-window check inside the RPC. Not blocking the ADR — track for 41.1 implementation slice. (Reported by security review 2026-05-04.)
+6. **Rate-limiting** — **Resolved 2026-05-06 (41.1.1a) via Path A pivot**: the originally-proposed `request_pack_download` Postgres RPC had no per-caller rate cap. The architecture pivot to the `request-pack-download` Edge Function (§3.3) folds the rate-limiter directly into the function body — sliding window of 10 calls per 60 seconds per `user_id`, `Map<user_id, timestamps[]>` evaluated at request time, returns 429 on exceed. The in-memory limiter resets on cold-start (acceptable for v1 alpha + closed beta scale; revisit with Upstash Redis or a Postgres `edge_function_rate_limit` table when subscriber count justifies). (Original concern reported by security review 2026-05-04.)
