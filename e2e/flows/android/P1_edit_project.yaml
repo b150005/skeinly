@@ -59,9 +59,16 @@ tags:
 - tapOn:
     id: "saveButton"
 
-# Verify updated title is displayed on the detail screen
+# Verify updated title is displayed on the detail screen.
+# Phase E2E hardening (2026-05-06): id+regex match keeps the "120 rows
+# was wired" check while staying independent of simulator locale —
+# en-US renders "of 120 rows", ja-JP renders "全 120 行". The numeric
+# 120 is the load-bearing assertion (proves the eraseText/inputText
+# round-trip landed); the surrounding chrome is incidental.
 - assertVisible: "Updated Scarf"
-- assertVisible: "of 120 rows"
+- assertVisible:
+    id: "rowTotalLabel"
+    text: ".*120.*"
 
 # Go back and verify the list reflects the change (testTag — locale-independent)
 - tapOn:

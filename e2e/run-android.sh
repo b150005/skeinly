@@ -5,6 +5,15 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 APK_PATH="$PROJECT_ROOT/androidApp/build/outputs/apk/debug/androidApp-debug.apk"
 
+# Defensive cleanup on script exit (success, failure, or interrupt). Kills
+# any `maestro test` process this user owns — covers both the run we just
+# launched and any straggler from an interrupted prior invocation. Scope is
+# limited to the current $USER; other users on a shared machine are
+# untouched. `maestro mcp` daemons from Claude Code MCP integration are
+# explicitly NOT killed here — that's the `make e2e-clean` 4h-threshold
+# rule's job (so an active MCP integration in another window is preserved).
+trap 'pkill -u "$USER" -9 -f "maestro\\.cli\\.AppKt test" >/dev/null 2>&1 || true' EXIT INT TERM
+
 echo "=== Skeinly E2E: Android Flows ==="
 
 # Step 1: Build debug APK in local-only mode (empty Supabase credentials

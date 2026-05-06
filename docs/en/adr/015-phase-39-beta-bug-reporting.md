@@ -1080,7 +1080,9 @@ Each slice is independently shippable without breaking earlier slices.
   resolved similarly: thin server, rich client, no secrets in binary)
 - Phase 39.0 prep (commit `23c1ee1`): `version.properties` 1.0.0-beta1 +
   `.github/ISSUE_TEMPLATE/beta-bug.yml` + `docs/en/phase/phase-39-beta-rubric.md`
-  — F2 builds atop these
+  — F2 builds atop these. (Versioning was later pivoted to semver `0.1.0`
+  on 2026-05-05 to comply with `CFBundleShortVersionString` digit-and-dot
+  constraints; see CLAUDE.md Phase 39 section for the rationale.)
 - Phase 25 (`multiplatform-settings`): KMP key-value persistence pattern,
   reused via the existing `analytics_opt_in` key from `AnalyticsPreferences`
 - Phase 32.4 (`SystemBackHandler` `expect/actual`): the precedent for

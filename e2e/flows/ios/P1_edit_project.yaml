@@ -68,7 +68,8 @@ tags:
 - assertVisible:
     id: "rowTotalLabel"
 
-# Go back and verify the list reflects the change
-# (iOS back button shows previous screen's navigationTitle)
-- tapOn: "Back"
+# Go back and verify the list reflects the change.
+# Phase E2E hardening (2026-05-06) — locale-agnostic id from SkeinlyBackButton.
+- tapOn:
+    id: "backButton"
 - assertVisible: "Updated Scarf"

@@ -50,7 +50,7 @@ class BugReportPreviewViewModelTest {
 
     private val deviceContext =
         DeviceContext(
-            appVersion = "1.0.0-beta1 (3)",
+            appVersion = "0.1.0 (4)",
             osVersion = "Android 14 (API 34)",
             deviceModel = "Google Pixel 8",
             platformName = "Android",

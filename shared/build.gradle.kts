@@ -44,14 +44,21 @@ val generateSupabaseConfig by tasks.registering {
 }
 
 // Phase 39.2: derive `BuildFlags.isBeta` for shared/androidMain from
-// `version.properties` `VERSION_NAME`. Beta builds carry a `-beta`
-// suffix (e.g. `1.0.0-beta1`); v1.0 production drops it. Codegen
-// pattern mirrors `generateSupabaseConfig` because the AGP 9.x KMP
-// plugin (`com.android.kotlin.multiplatform.library`) does not expose
-// the standard `buildFeatures { buildConfig = true }` knob to shared
-// android source sets, so `BuildConfig.IS_BETA` is unavailable here.
-// The iOS actual reads from Info.plist at runtime — see
-// `BuildFlags.ios.kt` and `iosApp/project.yml`'s `IS_BETA` setting.
+// `version.properties` `VERSION_NAME`. Beta builds carry semver
+// `0.X.Y` (major == 0 = pre-stable API); v1.0 GA bumps the major
+// component to 1 (per agent-team deliberation 2026-05-05; see
+// `version.properties` header for the full rationale). Codegen pattern
+// mirrors `generateSupabaseConfig` because the AGP 9.x KMP plugin
+// (`com.android.kotlin.multiplatform.library`) does not expose the
+// standard `buildFeatures { buildConfig = true }` knob to shared android
+// source sets, so `BuildConfig.IS_BETA` is unavailable here. The iOS
+// actual reads from Info.plist at runtime — see `BuildFlags.ios.kt` and
+// `iosApp/project.yml`'s `IS_BETA` setting.
+//
+// Defensive default: malformed/missing VERSION_NAME → major defaults to
+// 0 → isBeta = true. Failing safe (treat unknown as beta) avoids
+// accidentally shipping a "production" binary if a parser regression
+// or upstream config error blanks the version string.
 val versionProps =
     Properties().also { props ->
         val versionFile = rootProject.file("version.properties")
@@ -61,7 +68,8 @@ val versionProps =
 val generateBuildFlagsAndroid by tasks.registering {
     val outputDir = layout.buildDirectory.dir("generated/buildFlags")
     val versionName = versionProps.getProperty("VERSION_NAME", "")
-    val isBeta = versionName.contains("-beta")
+    val major = versionName.substringBefore('.').toIntOrNull() ?: 0
+    val isBeta = major == 0
     outputs.dir(outputDir)
     inputs.property("isBeta", isBeta)
     doLast {

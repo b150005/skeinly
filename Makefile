@@ -75,10 +75,43 @@ ios-test:  ## Run iOS XCUITest. Override target sim via IOS_SIM_DEST.
 
 ##@ End-to-End (Maestro)
 
-e2e-android:  ## Run Android Maestro flows (requires running emulator/device).
+# Pre-flight cleanup target — invoked before every e2e run to defend against
+# zombie state from prior sessions:
+#   1. `maestro test` processes left over from killed runs (port 7001 holders).
+#   2. `maestro mcp` daemon processes older than 4h — these come from prior
+#      Claude Code MCP integration sessions that didn't shut down cleanly.
+#      Recent (<4h) `maestro mcp` processes are LEFT ALONE so an active MCP
+#      integration in another window/session is not disrupted.
+#   3. adb daemon — restarted to clear stale port forwards (Maestro driver
+#      uses tcp:7001 forward and stale forwards cause UNAVAILABLE gRPC errors).
+#
+# Scope guarantees:
+#   - All `pkill` / `kill` calls are scoped to `-u $$USER` so other users on
+#     the same machine are never affected.
+#   - The 4h `etimes` threshold (14400 seconds) is generous — typical e2e runs
+#     finish in <30 minutes, so anything still running at 4h is reliably stale.
+#
+# Platform note: `ps -o etimes=` is BSD-syntax (macOS). This target is invoked
+# only as a dependency of `e2e-android` / `e2e-ios`, both of which require a
+# booted Android emulator + iOS Simulator and therefore run only on macOS dev
+# hosts. CI runs `make e2e-android` / `make e2e-ios` on `macos-latest` GitHub
+# Actions runners, which are also BSD `ps`. Linux portability is not required.
+# If a future Linux-host need surfaces, replace with `pgrep -u "$$USER" -f
+# "maestro" | xargs ps -o etimes= -p 2>/dev/null` (POSIX-portable form).
+e2e-clean:  ## Clean up zombie maestro/adb state before an e2e run.
+	@echo "[e2e-clean] Killing leftover 'maestro test' processes..."
+	@pkill -u $$USER -9 -f "maestro\\.cli\\.AppKt test" 2>/dev/null || true
+	@echo "[e2e-clean] Killing 'maestro mcp' processes older than 4h (preserving recent MCP integrations)..."
+	@ps -u $$USER -o pid=,etimes=,command= | awk '/maestro\\.cli\\.AppKt mcp/ && $$2 > 14400 { print $$1 }' | xargs -r kill -9 2>/dev/null || true
+	@echo "[e2e-clean] Restarting adb to clear stale port forwards..."
+	@adb kill-server >/dev/null 2>&1 || true
+	@adb start-server >/dev/null 2>&1 || true
+	@echo "[e2e-clean] Done."
+
+e2e-android: e2e-clean  ## Run Android Maestro flows (requires running emulator/device).
 	bash e2e/run-android.sh
 
-e2e-ios:  ## Run iOS Maestro flows (requires running simulator).
+e2e-ios: e2e-clean  ## Run iOS Maestro flows (requires running simulator).
 	bash e2e/run-ios.sh
 
 ##@ Quality Gate

@@ -694,16 +694,27 @@ private fun DeleteConfirmDialog(
 
 @Composable
 private fun StatusChip(status: ProjectStatus) {
-    val (textKey, color) =
+    // Phase E2E hardening (2026-05-06) — variant-keyed testTag mirrors the iOS
+    // `projectStatusBadge_<variant>` accessibility identifier so Maestro flows
+    // can assert on the rendered status without coupling to the locale-rendered
+    // text. Same id shape on both platforms keeps any future cross-platform
+    // flow refactor straightforward. The `MainActivity` root applies
+    // `Modifier.semantics { testTagsAsResourceId = true }` so this testTag
+    // surfaces as `resource-id` in the Android view tree (Maestro `id:` lookup).
+    val (textKey, color, testTagSuffix) =
         when (status) {
-            ProjectStatus.NOT_STARTED -> Res.string.label_status_not_started to MaterialTheme.colorScheme.outline
-            ProjectStatus.IN_PROGRESS -> Res.string.label_status_in_progress to MaterialTheme.colorScheme.primary
-            ProjectStatus.COMPLETED -> Res.string.label_status_completed to MaterialTheme.colorScheme.tertiary
+            ProjectStatus.NOT_STARTED ->
+                Triple(Res.string.label_status_not_started, MaterialTheme.colorScheme.outline, "notStarted")
+            ProjectStatus.IN_PROGRESS ->
+                Triple(Res.string.label_status_in_progress, MaterialTheme.colorScheme.primary, "inProgress")
+            ProjectStatus.COMPLETED ->
+                Triple(Res.string.label_status_completed, MaterialTheme.colorScheme.tertiary, "completed")
         }
     Text(
         text = stringResource(textKey),
         style = MaterialTheme.typography.labelSmall,
         color = color,
+        modifier = Modifier.testTag("projectStatusBadge_$testTagSuffix"),
     )
 }
 

@@ -40,7 +40,8 @@ tags:
 - scroll
 - scroll
 
-# Back navigation
-- tapOn: "Back"
+# Phase E2E hardening (2026-05-06) — locale-agnostic id from SkeinlyBackButton.
+- tapOn:
+    id: "backButton"
 - assertVisible:
     id: "projectListScreen"

@@ -27,8 +27,13 @@ tags:
 - assertVisible:
     id: "profileScreen"
 
-# Go back to project list (iOS back button shows previous screen title)
-- tapOn: "Back"
+# Phase E2E hardening (2026-05-06) — `accessibilityIdentifier("backButton")`
+# from `SkeinlyBackButtonModifier` (applied across all NavigationStack
+# destinations in `AppRouter.destinationView`) replaces the locale-coupled
+# `tapOn: "Back"` (which broke on ja-JP simulators where the SwiftUI
+# native back button rendered as `戻る`). The same id is reused below.
+- tapOn:
+    id: "backButton"
 - assertVisible:
     id: "projectListScreen"
 
@@ -42,7 +47,8 @@ tags:
     id: "settingsScreen"
 
 # Go back to project list
-- tapOn: "Back"
+- tapOn:
+    id: "backButton"
 - assertVisible:
     id: "projectListScreen"
 
@@ -63,7 +69,8 @@ tags:
     id: "rowCounter"
 
 # Go back
-- tapOn: "Back"
+- tapOn:
+    id: "backButton"
 - assertVisible:
     id: "projectListScreen"
 - assertVisible: "Nav Test"

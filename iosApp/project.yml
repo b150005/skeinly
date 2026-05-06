@@ -104,11 +104,19 @@ targets:
           - UIInterfaceOrientationLandscapeRight
     settings:
       base:
-        MARKETING_VERSION: "1.0.0-beta1"
-        CURRENT_PROJECT_VERSION: "2"
+        # Versioning per agent-team deliberation 2026-05-05: pre-1.0 closed
+        # beta uses semver `0.X.Y` (major==0 = pre-stable API). Hyphen-
+        # suffixed prerelease identifiers (e.g. `1.0.0-beta1`) are deliberately
+        # avoided because `CFBundleShortVersionString` accepts only digits and
+        # dots — xcrun altool / App Store Connect reject hyphen suffix at
+        # upload. CURRENT_PROJECT_VERSION restarts at 1 because it must be
+        # strictly increasing only within a given MARKETING_VERSION stream;
+        # changing MARKETING_VERSION starts a fresh stream.
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
         PRODUCT_BUNDLE_IDENTIFIER: io.github.b150005.skeinly
         # Phase 39.2 — F2 build-flavor flag. "YES" while MARKETING_VERSION
-        # carries a `-beta` suffix; flip to "NO" alongside the v1.0 GA
+        # has major==0 (pre-stable); flip to "NO" alongside the v1.0 GA
         # version bump (Phase 40). Consumed via the `IsBetaBuild`
         # Info.plist key — see the `info.properties` block above. The
         # xcconfig substitutes the literal string verbatim, so the plist

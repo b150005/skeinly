@@ -60,10 +60,13 @@ tags:
 - assertVisible:
     id: "rowTotalLabel"
 
-# Status changes to In Progress when currentRow > 0 (domain rule). Phase 33.5
-# i18n'd StatusBadge; on en-US CI it still renders "In Progress" via
-# `label_status_in_progress`. A per-row status id landmark is future work — the
-# current `projectStatusBadge` identifier repeats for every row so it cannot
-# disambiguate this specific project's badge from the empty-state or filter
-# chips.
-- assertVisible: "In Progress"
+# Status changes to In Progress when currentRow > 0 (domain rule).
+# Phase E2E hardening (2026-05-06) — variant-keyed accessibilityIdentifier
+# (`projectStatusBadge_inProgress` / `_notStarted` / `_completed`) replaces
+# the prior locale-coupled `assertVisible: "In Progress"`. The
+# `projectStatusBadge_*` identifier still repeats per row when multiple
+# projects share the same status, so this assertion proves "at least one
+# in-progress project visible" rather than "this specific project's badge".
+# A per-row id landmark remains future work.
+- assertVisible:
+    id: "projectStatusBadge_inProgress"

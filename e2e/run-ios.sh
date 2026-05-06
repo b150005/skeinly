@@ -5,6 +5,13 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DERIVED_DATA="$PROJECT_ROOT/build/ios-e2e"
 
+# Defensive cleanup on script exit (success, failure, or interrupt). See
+# the matching trap in run-android.sh for the rationale. `maestro mcp`
+# daemons are NOT killed here — handled by `make e2e-clean` with a 4h
+# threshold so active Claude Code MCP integrations in other windows
+# survive.
+trap 'pkill -u "$USER" -9 -f "maestro\\.cli\\.AppKt test" >/dev/null 2>&1 || true' EXIT INT TERM
+
 echo "=== Skeinly E2E: iOS Flows ==="
 
 # Step 1: Build iOS app for simulator in local-only mode.
