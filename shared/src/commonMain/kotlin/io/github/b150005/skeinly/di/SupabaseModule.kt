@@ -6,6 +6,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.FlowType
 import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.storage.Storage
@@ -27,6 +28,10 @@ val supabaseModule =
                     install(Postgrest)
                     install(Realtime)
                     install(Storage)
+                    // Phase 41.2b (ADR-016 §3.3, §4.3): consumed by
+                    // RemoteSymbolPackDataSource for the
+                    // `request-pack-download` Edge Function.
+                    install(Functions)
                 }
             }
         }

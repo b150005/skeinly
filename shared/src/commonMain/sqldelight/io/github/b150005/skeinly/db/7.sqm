@@ -28,3 +28,49 @@ CREATE TABLE SubscriptionEntity (
 -- Hot-path index for EntitlementResolver — single user, current active row.
 CREATE INDEX IF NOT EXISTS idx_subscription_user_status
     ON SubscriptionEntity(user_id, status);
+
+-- Phase 41.2b (ADR-016 §3.1, §4.3): client-side cache of `public.symbol_packs`
+-- manifest (catalog metadata) + downloaded pack payload bodies.
+--
+-- Design split — two tables on purpose:
+--   1. SymbolPackEntity mirrors `symbol_packs` row metadata for EVERY pack the
+--      manifest fetch surfaces (free OR pro), including packs the user has
+--      not yet downloaded. Paywall preview UI reads from here without ever
+--      forcing a payload fetch.
+--   2. DownloadedPackPayloadEntity holds the JSON `payload.json` blob ONLY
+--      for packs the user has materialized locally (sync downloaded the body).
+--      Keyed by (pack_id, version) so a stale-version row coexists briefly
+--      with the just-downloaded newer one until the sync deletes the old.
+--
+-- The two-table shape keeps the payload column out of metadata-only reads
+-- (CompositeSymbolCatalog reads symbols from the payload table; UI layer
+-- reads pack listings from the metadata table). Single-table alternative
+-- would force every catalog metadata read to pay the cost of carrying the
+-- ~50KB payload column.
+--
+-- Wire format: timestamp columns hold ISO-8601 strings (`Instant.toString()`);
+-- payload_json is the raw `payload.json` body (text-encoded JSON).
+CREATE TABLE SymbolPackEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    tier TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    display_name TEXT NOT NULL,
+    description TEXT,
+    payload_path TEXT NOT NULL,
+    payload_size INTEGER NOT NULL,
+    symbol_count INTEGER NOT NULL,
+    signed_until TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_symbol_pack_tier
+    ON SymbolPackEntity(tier);
+
+CREATE TABLE DownloadedPackPayloadEntity (
+    pack_id TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    payload_json TEXT NOT NULL,
+    downloaded_at TEXT NOT NULL,
+    PRIMARY KEY (pack_id, version)
+);

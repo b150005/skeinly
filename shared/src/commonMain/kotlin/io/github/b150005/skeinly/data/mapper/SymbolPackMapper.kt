@@ -1,11 +1,14 @@
 package io.github.b150005.skeinly.data.mapper
 
+import io.github.b150005.skeinly.db.SymbolPackEntity
+import io.github.b150005.skeinly.domain.model.SymbolPack
 import io.github.b150005.skeinly.domain.model.SymbolPackPayloadEntry
 import io.github.b150005.skeinly.domain.model.SymbolPackPayloadParameterSlot
 import io.github.b150005.skeinly.domain.model.SymbolPackTier
 import io.github.b150005.skeinly.domain.symbol.ParameterSlot
 import io.github.b150005.skeinly.domain.symbol.SymbolCategory
 import io.github.b150005.skeinly.domain.symbol.SymbolDefinition
+import kotlin.time.Instant
 
 /**
  * Maps [SymbolPackPayloadEntry] (snake_case wire format from
@@ -98,4 +101,47 @@ internal fun String.toSymbolCategory(): SymbolCategory =
         SymbolCategory.AFGHAN.name -> SymbolCategory.AFGHAN
         SymbolCategory.MACHINE.name -> SymbolCategory.MACHINE
         else -> error("Unknown SymbolCategory wire value: '$this'")
+    }
+
+// ---------------------------------------------------------------------
+// Phase 41.2b: SymbolPack ↔ SymbolPackEntity (SQLDelight) mapping.
+// Catalog metadata mirror; payload bodies live in DownloadedPackPayloadEntity
+// and are stored as the raw JSON `payload.json` body.
+// ---------------------------------------------------------------------
+
+internal fun SymbolPackEntity.toDomain(): SymbolPack =
+    SymbolPack(
+        id = id,
+        tier = tier.toSymbolPackTier(),
+        version = version.toInt(),
+        displayName = display_name,
+        description = description,
+        payloadPath = payload_path,
+        payloadSize = payload_size.toInt(),
+        symbolCount = symbol_count.toInt(),
+        signedUntil = signed_until?.let { Instant.parse(it) },
+        createdAt = Instant.parse(created_at),
+        updatedAt = Instant.parse(updated_at),
+    )
+
+internal fun String.toSymbolPackTier(): SymbolPackTier =
+    when (this) {
+        "free" -> SymbolPackTier.FREE
+        "pro" -> SymbolPackTier.PRO
+        // Hard fail rather than silent fall-through to FREE — an unknown tier
+        // string from a future migration MUST surface loudly so we don't
+        // silently grant Pro symbols to free users (or vice versa).
+        else -> error("Unknown SymbolPackTier wire value: '$this'")
+    }
+
+// Exhaustiveness anchor: every member of SymbolPackTier MUST have a
+// branch here AND a matching `@SerialName` on the enum. The two formats
+// (db-string vs JSON wire) are kept independently in sync; the round-trip
+// test in SymbolPackMapperTest catches drift, but a new enum member added
+// without a matching branch here will fail compile-time exhaustiveness on
+// this `when` (no `else`) — that's the contract.
+internal fun SymbolPackTier.toDbString(): String =
+    when (this) {
+        SymbolPackTier.FREE -> "free"
+        SymbolPackTier.PRO -> "pro"
     }

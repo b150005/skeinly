@@ -1,0 +1,77 @@
+-- Phase 41.2b (ADR-016 §3.4, §4.3): downloaded `payload.json` blob storage,
+-- one row per (pack_id, version) the client has materialized locally.
+--
+-- Why keyed by (pack_id, version) rather than just pack_id: a pack-version
+-- bump fetches the new payload BEFORE deleting the old, so the catalog has
+-- a coherent in-memory view at all times. The sync manager then deletes
+-- the older row by `(pack_id, version)` once the new one is committed.
+-- A user who skips a version (offline through v6 + v7, comes online at v8)
+-- legitimately holds only the latest row; intermediate versions never land.
+--
+-- The blob is stored as TEXT (raw JSON body). v1 cardinality (~30 packs *
+-- ~50 KB ≈ 1.5 MB) keeps SQLite happy; if pack size grows beyond ~500 KB
+-- per pack post-v1, revisit moving payload bytes to filesystem with the
+-- row holding only the path. Keep TEXT for v1 — atomic transactional write
+-- through SQLDelight + offline survival are worth the modest in-DB overhead.
+
+CREATE TABLE DownloadedPackPayloadEntity (
+    pack_id TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    payload_json TEXT NOT NULL,
+    downloaded_at TEXT NOT NULL,
+    PRIMARY KEY (pack_id, version)
+);
+
+-- CompositeSymbolCatalog hot path — newest version per pack id wins. Older
+-- versions linger only briefly during a sync transition.
+getLatestByPackId:
+SELECT * FROM DownloadedPackPayloadEntity
+WHERE pack_id = ?
+ORDER BY version DESC
+LIMIT 1;
+
+-- Used by tests + the "free up storage" affordance to enumerate everything
+-- on disk.
+getAll:
+SELECT * FROM DownloadedPackPayloadEntity
+ORDER BY pack_id, version DESC;
+
+-- Used by the sync diff to confirm whether a pack version is already
+-- materialized locally without fetching the (potentially large) payload_json.
+existsForVersion:
+SELECT COUNT(*) FROM DownloadedPackPayloadEntity
+WHERE pack_id = ? AND version = ?;
+
+-- INSERT OR REPLACE — a re-download for the same (pack_id, version) silently
+-- overwrites. The transient "I had v7, now I'm fetching v8" state means
+-- the v8 row is INSERTed alongside v7 first (different keys), and v7 is
+-- deleted only after v8 commits.
+upsert:
+INSERT OR REPLACE INTO DownloadedPackPayloadEntity(
+    pack_id,
+    version,
+    payload_json,
+    downloaded_at
+) VALUES (?, ?, ?, ?);
+
+-- Surgical delete keyed on (pack_id, version) — used by the sync manager
+-- after a successful version-bump commit to drop the now-superseded payload.
+deleteByPackIdAndVersion:
+DELETE FROM DownloadedPackPayloadEntity
+WHERE pack_id = ? AND version = ?;
+
+-- Targeted delete used post-version-bump to drop strictly-older versions
+-- of the same pack in one round trip — keeps the upsertPayload transaction
+-- tight and avoids loading every pack's payload into memory just to filter.
+deleteOlderVersionsForPack:
+DELETE FROM DownloadedPackPayloadEntity
+WHERE pack_id = ? AND version < ?;
+
+-- Drop every version of a pack. Used by the "free up storage" affordance
+-- (Phase 41.4) and by the manifest-disappeared cleanup path.
+deleteAllForPack:
+DELETE FROM DownloadedPackPayloadEntity
+WHERE pack_id = ?;
+
+clearAll:
+DELETE FROM DownloadedPackPayloadEntity;
