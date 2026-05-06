@@ -8,6 +8,7 @@ import io.github.b150005.skeinly.data.local.LocalProjectDataSource
 import io.github.b150005.skeinly.data.local.LocalProjectSegmentDataSource
 import io.github.b150005.skeinly.data.local.LocalPullRequestDataSource
 import io.github.b150005.skeinly.data.local.LocalStructuredChartDataSource
+import io.github.b150005.skeinly.data.local.LocalSubscriptionDataSource
 import io.github.b150005.skeinly.data.realtime.RealtimeChannelProvider
 import io.github.b150005.skeinly.data.realtime.SupabaseRealtimeChannelProvider
 import io.github.b150005.skeinly.data.remote.ActivityDataSourceOperations
@@ -26,8 +27,10 @@ import io.github.b150005.skeinly.data.remote.RemotePullRequestDataSource
 import io.github.b150005.skeinly.data.remote.RemoteShareDataSource
 import io.github.b150005.skeinly.data.remote.RemoteStorageDataSource
 import io.github.b150005.skeinly.data.remote.RemoteStructuredChartDataSource
+import io.github.b150005.skeinly.data.remote.RemoteSubscriptionDataSource
 import io.github.b150005.skeinly.data.remote.RemoteUserDataSource
 import io.github.b150005.skeinly.data.remote.ShareDataSourceOperations
+import io.github.b150005.skeinly.data.remote.SubscriptionRemoteOperations
 import io.github.b150005.skeinly.data.remote.SupabaseConfig
 import io.github.b150005.skeinly.data.remote.isConfigured
 import io.github.b150005.skeinly.data.repository.ActivityRepositoryImpl
@@ -43,6 +46,7 @@ import io.github.b150005.skeinly.data.repository.ProjectSegmentRepositoryImpl
 import io.github.b150005.skeinly.data.repository.PullRequestRepositoryImpl
 import io.github.b150005.skeinly.data.repository.ShareRepositoryImpl
 import io.github.b150005.skeinly.data.repository.StructuredChartRepositoryImpl
+import io.github.b150005.skeinly.data.repository.SubscriptionRepositoryImpl
 import io.github.b150005.skeinly.data.repository.UserRepositoryImpl
 import io.github.b150005.skeinly.domain.repository.ActivityRepository
 import io.github.b150005.skeinly.domain.repository.AuthRepository
@@ -57,7 +61,9 @@ import io.github.b150005.skeinly.domain.repository.PullRequestRepository
 import io.github.b150005.skeinly.domain.repository.ShareRepository
 import io.github.b150005.skeinly.domain.repository.StorageOperations
 import io.github.b150005.skeinly.domain.repository.StructuredChartRepository
+import io.github.b150005.skeinly.domain.repository.SubscriptionRepository
 import io.github.b150005.skeinly.domain.repository.UserRepository
+import io.github.b150005.skeinly.domain.symbol.EntitlementResolver
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
 import io.github.b150005.skeinly.domain.symbol.catalog.DefaultSymbolCatalog
 import io.github.jan.supabase.SupabaseClient
@@ -78,6 +84,7 @@ val repositoryModule =
         single { LocalChartRevisionDataSource(get(), get(ioDispatcherQualifier), get()) }
         single { LocalChartBranchDataSource(get(), get(ioDispatcherQualifier)) }
         single { LocalPullRequestDataSource(get(), get(ioDispatcherQualifier)) }
+        single { LocalSubscriptionDataSource(get(), get(ioDispatcherQualifier)) }
 
         // Remote data sources & repositories — only registered when Supabase is configured.
         // Consumers use getOrNull() to handle their absence in local-only mode.
@@ -91,6 +98,11 @@ val repositoryModule =
             single { RemoteChartRevisionDataSource(get<SupabaseClient>()) }
             single { RemoteChartBranchDataSource(get<SupabaseClient>()) }
             single { RemotePullRequestDataSource(get<SupabaseClient>()) }
+            single { RemoteSubscriptionDataSource(get<SupabaseClient>()) }
+            // Interface alias lets SubscriptionRepositoryImpl be tested
+            // with an in-memory fake without standing up Supabase. Same
+            // shape as PullRequestMergeOperations above.
+            single<SubscriptionRemoteOperations> { get<RemoteSubscriptionDataSource>() }
             // Phase 38.4: Expose the merge RPC port as a domain-layer
             // interface so MergePullRequestUseCase doesn't take a hard
             // dependency on the Supabase-typed data source.
@@ -220,6 +232,16 @@ val repositoryModule =
             getOrNull<RemoteUserDataSource>()?.let { UserRepositoryImpl(it) }
                 ?: OfflineUserRepository()
         }
+        // Phase 41.2a (ADR-016 §4.2) — read-only subscription mirror feeding
+        // EntitlementResolver. Remote nullable for local-only mode.
+        single<SubscriptionRepository> {
+            SubscriptionRepositoryImpl(
+                local = get(),
+                remote = getOrNull<SubscriptionRemoteOperations>(),
+                isOnline = get<ConnectivityMonitor>().isOnline,
+            )
+        }
+        single { EntitlementResolver(subscriptionRepository = get(), authRepository = get()) }
         // Bundled knitting symbol catalog (Phase 30 + 31).
         single<SymbolCatalog> { DefaultSymbolCatalog.INSTANCE }
     }

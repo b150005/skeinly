@@ -1,0 +1,30 @@
+-- Phase 41.2a (ADR-016 §3.1 + §4.2): client-side mirror of `public.subscriptions`
+-- (migration 017). Read-only at the client; writes happen exclusively via the
+-- `verify-receipt` Edge Function with the service-role key. The local cache
+-- exists so EntitlementResolver.isPro() can answer synchronously without
+-- touching the network.
+--
+-- Note (ADR-016 §10 Q2 resolution, 41.2a): the client refreshes this cache via
+-- app-foreground hooks + the post-purchase RevenueCat callback (Phase 41.3
+-- wires the latter). Migration 017 lines 154-165 deliberately disable Realtime
+-- for the `subscriptions` table; the 8th-channel cost was not justified given
+-- subscription state is not push-time-sensitive the way collab notifications
+-- are.
+CREATE TABLE SubscriptionEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    product_id TEXT NOT NULL,
+    status TEXT NOT NULL,
+    original_transaction_id TEXT,
+    expires_at TEXT,
+    is_in_trial INTEGER NOT NULL DEFAULT 0,
+    auto_renew_status INTEGER NOT NULL DEFAULT 1,
+    last_verified_at TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+-- Hot-path index for EntitlementResolver — single user, current active row.
+CREATE INDEX IF NOT EXISTS idx_subscription_user_status
+    ON SubscriptionEntity(user_id, status);
