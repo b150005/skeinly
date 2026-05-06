@@ -188,8 +188,8 @@ Sentry が `PackSyncFailed` の reason + `RevenueCatService` 例外を追跡。
 
 ## 10. 未解決事項 (Phase 41.1 着手前に答えるべきもの)
 
-1. **Storage retention**: 全 historical version 永続 vs. older-than-N prune。デフォルト全保存 (audit + cold-cache 用途) → 100 MB 超で再評価。
-2. **`subscriptions` Realtime チャネル多重化**: 現状 7 チャネル (5 baseline + Phase 38 で 2 追加)。`subscriptions-<userId>` を別チャネルと collapse して free tier 接続上限を稼ぐか? `patterns-<userId>` と統合候補。41.2 実装時に判断。
+1. **Storage retention** — **2026-05-06 (41.1.0) 解決**: 全 historical version 無期限保存。`symbol_packs.bytes` 列で `SELECT SUM(bytes)` により bucket 総量を安価に監視可能。v1 想定カーディナリティ (≤10 pack × ≤10 version × ≤1 MB ≈ 100 MB) では storage cost 無視可能。**再評価トリガー**: `SUM(bytes) > 100 MB` を初めて越えた時点で、prune ポリシーを ADR amendment として cut する (最新版 + 直近 N 件 supersede を保持、古いものは cold storage 退避が candidate)。それまで client / server どちらにも prune ロジックは入らない。
+2. **`subscriptions` Realtime チャネル多重化** — **41.2 へ defer (スコープ確定)**: 現状 7 チャネル (5 baseline + Phase 38 で 2 追加)。`subscriptions-<userId>` を独立 8 番目とするか `patterns-<userId>` と統合するかは、41.2 wiring 時点の channel 数 vs. tier 上限を見たエンジニアリング判断。41.1 データスパイン側はどちらでも schema / RPC 変更不要 (中立)。41.2 実装者が決定し ADR amendment か commit message に記録する。
 3. **i18n キー数**: ~25 推定。Phase 38.3 / 38.4 の precedent (14 / 10) より多めだが、ペイウォール + パック管理併せて 30-35 に膨らむ可能性。41.4 で精緻化。
 4. **トライアル期間 UX 開示**: 7 日間無料トライアルは IAP product 設定済。App Store JA review はトライアル明示開示を求めることが多い → submission 直前に Apple JA App Review との copy 確認必要。`body_paywall_trial_disclosure` キー追加かもしれない。
 5. **返金ハンドリング**: Apple/Google 経由の返金 → RevenueCat webhook → verify-receipt Edge Function で `status='refunded'` 書込 → Realtime push → クライアント `EntitlementResolver.isPro() = false` → CompositeSymbolCatalog が即座に Pro パックロック → 既存チャートの Pro シンボル参照は "?" フォールバック。Apple ガイドライン上 entitlement 取り消しは許可されている (App Review が refund-on-revoke を受け入れる)。
