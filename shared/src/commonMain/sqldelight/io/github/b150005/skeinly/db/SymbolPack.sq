@@ -1,0 +1,67 @@
+-- Phase 41.2b (ADR-016 §3.1, §4.3): client-side mirror of `public.symbol_packs`.
+-- See [7.sqm](7.sqm) for the migration + design notes.
+--
+-- The catalog metadata is RLS open-read on Postgres (paywall preview UI lists
+-- Pro packs to non-subscribers). The mirror exists so the sync manager can
+-- diff (server manifest version vs cached version) WITHOUT first paying the
+-- payload-fetch round-trip; CompositeSymbolCatalog also reads tier from here
+-- to gate Pro-pack access at render time.
+--
+-- Wire format: timestamps as ISO-8601 strings; tier as 'free' | 'pro' raw.
+
+CREATE TABLE SymbolPackEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    tier TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    display_name TEXT NOT NULL,
+    description TEXT,
+    payload_path TEXT NOT NULL,
+    payload_size INTEGER NOT NULL,
+    symbol_count INTEGER NOT NULL,
+    signed_until TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_symbol_pack_tier
+    ON SymbolPackEntity(tier);
+
+getById:
+SELECT * FROM SymbolPackEntity
+WHERE id = ?;
+
+getAll:
+SELECT * FROM SymbolPackEntity
+ORDER BY id;
+
+-- Idempotent INSERT-OR-REPLACE — manifest sync simply overwrites on every
+-- successful fetch. The `created_at` column is preserved on REPLACE only when
+-- the caller carries it forward from the prior fetch; the typical "manifest
+-- bumps version" path supplies the server-side `created_at` unchanged.
+upsert:
+INSERT OR REPLACE INTO SymbolPackEntity(
+    id,
+    tier,
+    version,
+    display_name,
+    description,
+    payload_path,
+    payload_size,
+    symbol_count,
+    signed_until,
+    created_at,
+    updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+-- Used by the sync diff to drop locally-cached packs that disappeared from
+-- the server manifest (e.g. a pack that was archived). Keyed by id so the
+-- payload table's CASCADE-equivalent cleanup is the caller's responsibility
+-- — `clearDownloadedPayload` for the same id closes the loop.
+deleteById:
+DELETE FROM SymbolPackEntity WHERE id = ?;
+
+-- Wholesale clear used by logout cleanup. The auth.users CASCADE handles
+-- `user_symbol_pack_state` server-side; this mirror is per-device so we drop
+-- on logout to keep the next signed-in user's cache clean.
+clearAll:
+DELETE FROM SymbolPackEntity;

@@ -179,4 +179,22 @@ class SymbolPackMapperTest {
         // so future readers can pinpoint a wire-format drift quickly.
         assertTrue(rogueCategory in (ex.message ?: ""), "error message should echo the bad value, was: ${ex.message}")
     }
+
+    // ----- Phase 41.2b: SymbolPackTier db-string ↔ enum mapping ---------------
+
+    @Test
+    fun `SymbolPackTier db-string round trips for both values`() {
+        assertEquals(SymbolPackTier.FREE, "free".toSymbolPackTier())
+        assertEquals(SymbolPackTier.PRO, "pro".toSymbolPackTier())
+        assertEquals("free", SymbolPackTier.FREE.toDbString())
+        assertEquals("pro", SymbolPackTier.PRO.toDbString())
+    }
+
+    @Test
+    fun `unknown SymbolPackTier wire value raises rather than silently mis-classifying`() {
+        // Hard fail beats silent fall-through — an unknown tier string
+        // would silently grant or revoke Pro symbols if mapped incorrectly.
+        val ex = assertFailsWith<IllegalStateException> { "premium".toSymbolPackTier() }
+        assertTrue("premium" in (ex.message ?: ""), "error message should echo the bad value, was: ${ex.message}")
+    }
 }

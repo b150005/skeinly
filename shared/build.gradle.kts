@@ -148,6 +148,7 @@ kotlin {
             implementation(libs.supabase.compose.auth.ui)
             implementation(libs.supabase.realtime)
             implementation(libs.supabase.storage)
+            implementation(libs.supabase.functions)
             // Image loading
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor)

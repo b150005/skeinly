@@ -7,6 +7,7 @@ import io.github.b150005.skeinly.data.local.LocalProgressDataSource
 import io.github.b150005.skeinly.data.local.LocalProjectDataSource
 import io.github.b150005.skeinly.data.local.LocalProjectSegmentDataSource
 import io.github.b150005.skeinly.data.local.LocalPullRequestDataSource
+import io.github.b150005.skeinly.data.local.LocalSymbolPackDataSource
 import io.github.b150005.skeinly.data.realtime.RealtimeChannelProvider
 import io.github.b150005.skeinly.data.remote.ConnectivityMonitor
 import io.github.b150005.skeinly.data.remote.RemoteChartBranchDataSource
@@ -18,6 +19,7 @@ import io.github.b150005.skeinly.data.remote.RemoteProjectSegmentDataSource
 import io.github.b150005.skeinly.data.remote.RemotePullRequestDataSource
 import io.github.b150005.skeinly.data.remote.RemoteStructuredChartDataSource
 import io.github.b150005.skeinly.data.remote.SupabaseConfig
+import io.github.b150005.skeinly.data.remote.SymbolPackRemoteOperations
 import io.github.b150005.skeinly.data.remote.isConfigured
 import io.github.b150005.skeinly.data.sync.PendingSyncDataSource
 import io.github.b150005.skeinly.data.sync.RealtimeSyncManager
@@ -30,6 +32,7 @@ import io.github.b150005.skeinly.data.sync.RemoteProjectSyncOperations
 import io.github.b150005.skeinly.data.sync.RemotePullRequestCommentSyncOperations
 import io.github.b150005.skeinly.data.sync.RemotePullRequestSyncOperations
 import io.github.b150005.skeinly.data.sync.RemoteStructuredChartSyncOperations
+import io.github.b150005.skeinly.data.sync.SymbolPackSyncManager
 import io.github.b150005.skeinly.data.sync.SyncExecutor
 import io.github.b150005.skeinly.data.sync.SyncManager
 import io.github.b150005.skeinly.data.sync.SyncManagerOperations
@@ -80,6 +83,19 @@ val syncModule =
                 isOnline = get<ConnectivityMonitor>().isOnline,
                 scope = get<CoroutineScope>(applicationScopeQualifier),
             ).also { it.start() }
+        }
+
+        // Phase 41.2b (ADR-016 §4.3): Symbol pack sync orchestrator.
+        // Always registered (even in local-only mode) — the impl gracefully
+        // returns SyncCycleResult.Skipped when remote is null. Phase 41.3
+        // wires the foreground-hook + post-purchase callers; for now sync
+        // can be invoked manually from a debug entry point or test.
+        single {
+            SymbolPackSyncManager(
+                remote = getOrNull<SymbolPackRemoteOperations>(),
+                local = get<LocalSymbolPackDataSource>(),
+                json = get(),
+            )
         }
 
         // RealtimeSyncManager — only registered when Supabase is configured.

@@ -9,6 +9,7 @@ import io.github.b150005.skeinly.data.local.LocalProjectSegmentDataSource
 import io.github.b150005.skeinly.data.local.LocalPullRequestDataSource
 import io.github.b150005.skeinly.data.local.LocalStructuredChartDataSource
 import io.github.b150005.skeinly.data.local.LocalSubscriptionDataSource
+import io.github.b150005.skeinly.data.local.LocalSymbolPackDataSource
 import io.github.b150005.skeinly.data.realtime.RealtimeChannelProvider
 import io.github.b150005.skeinly.data.realtime.SupabaseRealtimeChannelProvider
 import io.github.b150005.skeinly.data.remote.ActivityDataSourceOperations
@@ -28,10 +29,13 @@ import io.github.b150005.skeinly.data.remote.RemoteShareDataSource
 import io.github.b150005.skeinly.data.remote.RemoteStorageDataSource
 import io.github.b150005.skeinly.data.remote.RemoteStructuredChartDataSource
 import io.github.b150005.skeinly.data.remote.RemoteSubscriptionDataSource
+import io.github.b150005.skeinly.data.remote.RemoteSymbolPackDataSource
 import io.github.b150005.skeinly.data.remote.RemoteUserDataSource
 import io.github.b150005.skeinly.data.remote.ShareDataSourceOperations
 import io.github.b150005.skeinly.data.remote.SubscriptionRemoteOperations
 import io.github.b150005.skeinly.data.remote.SupabaseConfig
+import io.github.b150005.skeinly.data.remote.SymbolPackRemoteOperations
+import io.github.b150005.skeinly.data.remote.createSymbolPackHttpClient
 import io.github.b150005.skeinly.data.remote.isConfigured
 import io.github.b150005.skeinly.data.repository.ActivityRepositoryImpl
 import io.github.b150005.skeinly.data.repository.AuthRepositoryImpl
@@ -67,8 +71,10 @@ import io.github.b150005.skeinly.domain.symbol.EntitlementResolver
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
 import io.github.b150005.skeinly.domain.symbol.catalog.DefaultSymbolCatalog
 import io.github.jan.supabase.SupabaseClient
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
 import org.koin.dsl.module
+import org.koin.dsl.onClose
 
 val repositoryModule =
     module {
@@ -85,6 +91,7 @@ val repositoryModule =
         single { LocalChartBranchDataSource(get(), get(ioDispatcherQualifier)) }
         single { LocalPullRequestDataSource(get(), get(ioDispatcherQualifier)) }
         single { LocalSubscriptionDataSource(get(), get(ioDispatcherQualifier)) }
+        single { LocalSymbolPackDataSource(get(), get(ioDispatcherQualifier)) }
 
         // Remote data sources & repositories — only registered when Supabase is configured.
         // Consumers use getOrNull() to handle their absence in local-only mode.
@@ -103,6 +110,26 @@ val repositoryModule =
             // with an in-memory fake without standing up Supabase. Same
             // shape as PullRequestMergeOperations above.
             single<SubscriptionRemoteOperations> { get<RemoteSubscriptionDataSource>() }
+            // Phase 41.2b (ADR-016 §3.3, §4.3): symbol pack catalog +
+            // Edge Function download mediation. The injected HttpClient is
+            // a separate Ktor instance (NOT the supabase-kt internal one
+            // which is `@SupabaseInternal`) used for the absolute signed
+            // Storage URL fetch. Constructed via expect/actual factory so
+            // the platform engine (Android / Darwin) is picked correctly
+            // on Kotlin/Native — `HttpClient { }` no-arg form does NOT
+            // discover engines on Native. Named qualifier prevents
+            // ambiguity with any future bare `HttpClient` consumer.
+            single<HttpClient>(symbolPackHttpClientQualifier) {
+                createSymbolPackHttpClient()
+            }.onClose { it?.close() }
+            single {
+                RemoteSymbolPackDataSource(
+                    supabaseClient = get<SupabaseClient>(),
+                    httpClient = get<HttpClient>(symbolPackHttpClientQualifier),
+                    json = get(),
+                )
+            }
+            single<SymbolPackRemoteOperations> { get<RemoteSymbolPackDataSource>() }
             // Phase 38.4: Expose the merge RPC port as a domain-layer
             // interface so MergePullRequestUseCase doesn't take a hard
             // dependency on the Supabase-typed data source.
