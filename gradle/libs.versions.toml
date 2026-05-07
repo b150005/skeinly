@@ -21,6 +21,7 @@ coil = "3.4.0"
 multiplatformSettings = "1.3.0"
 sentry = "7.22.0"
 posthog = "3.30.0"
+purchasesKmp = "2.10.2+17.55.1"
 
 # Build Plugins
 ktlint = "14.2.0"
@@ -88,6 +89,15 @@ sentry-android = { module = "io.sentry:sentry-android", version.ref = "sentry" }
 
 # Product analytics (Phase F2) — opt-in, default OFF.
 posthog-android = { module = "com.posthog:posthog-android", version.ref = "posthog" }
+
+# Subscription / IAP — RevenueCat KMP (Phase 41.3 / ADR-016 §4.3).
+# `purchases-kmp-core` carries the multi-platform Purchases.sharedInstance
+# API; `purchases-kmp-result` adds suspend Result<T> extensions used by the
+# ViewModel for cleaner await-style call sites. iOS additionally needs the
+# PurchasesHybridCommon framework linked at the iosApp level via SwiftPM
+# (see iosApp/project.yml).
+purchases-kmp-core = { module = "com.revenuecat.purchases:purchases-kmp-core", version.ref = "purchasesKmp" }
+purchases-kmp-result = { module = "com.revenuecat.purchases:purchases-kmp-result", version.ref = "purchasesKmp" }
 
 # Testing
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }

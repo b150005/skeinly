@@ -65,6 +65,15 @@ class SkeinlyApplication : Application() {
             )
         }
 
+        // Phase 41.3 (ADR-016 §6 §41.3) — RevenueCat IAP SDK init. Idempotent;
+        // no-ops when RevenueCatConfig.apiKey is empty (local-dev / CI without
+        // the GitHub Secret REVENUECAT_API_KEY_ANDROID wired). Verbose logs
+        // gated on BuildFlags.isBeta so beta testers' Sentry breadcrumbs
+        // capture richer purchase-flow detail.
+        io.github.b150005.skeinly.data.subscription.RevenueCatBootstrap.configure(
+            verbose = BuildFlags.isBeta,
+        )
+
         // Phase 39.3 (ADR-015 §6) — bug-report event trail. Starts the
         // FIFO collector regardless of `BuildFlags.isBeta` or PostHog
         // configuration: the trail is for `Phase 39.5` bug-report

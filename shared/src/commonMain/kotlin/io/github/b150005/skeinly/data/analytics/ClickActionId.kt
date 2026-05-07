@@ -53,4 +53,16 @@ enum class ClickActionId(
 
     // Onboarding
     SubmitOnboarding("submit_onboarding"),
+
+    // Paywall / subscription (Phase 41.3)
+    // SubscribeToPro is reserved for the Settings → Subscribe-to-Pro entry
+    // (lands in Phase 41.3b alongside the Settings ListItem wiring) — it
+    // captures the engagement intent BEFORE the paywall sheet opens, distinct
+    // from PaywallOpened(trigger=Settings) which captures the outcome of the
+    // tap (sheet successfully surfaced). Keeping it in the closed taxonomy
+    // here makes the 41.3b slice a one-line ClickAction emit.
+    SubscribeToPro("subscribe_to_pro"),
+    SelectPaywallPackage("select_paywall_package"),
+    ConfirmPurchase("confirm_purchase"),
+    RestorePurchases("restore_purchases"),
 }

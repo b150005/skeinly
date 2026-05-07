@@ -194,6 +194,85 @@ sealed interface AnalyticsEvent {
                     PROP_SCREEN to screen.wireValue,
                 )
     }
+
+    // ----- Phase 41.3 (ADR-016 §7): paywall + subscription funnel -----
+
+    /**
+     * The paywall sheet was opened. [trigger] discriminates how the user
+     * arrived (settings / auto-lock / chart-viewer ?-cell tap) so we can
+     * tell which entry point converts best.
+     */
+    data class PaywallOpened(
+        val trigger: PaywallTrigger,
+    ) : AnalyticsEvent {
+        override val name: String get() = "paywall_opened"
+        override val properties: Map<String, Any>
+            get() = mapOf(PROP_TRIGGER to trigger.wireValue)
+    }
+
+    /**
+     * The paywall sheet was dismissed without conversion. [reason]
+     * discriminates user-cancel (tapped Cancel) vs purchase-cancel
+     * (started purchase, then cancelled the platform dialog) vs failure
+     * (purchase errored out non-cancellation).
+     */
+    data class PaywallDismissed(
+        val trigger: PaywallTrigger,
+        val reason: PaywallDismissReason,
+    ) : AnalyticsEvent {
+        override val name: String get() = "paywall_dismissed"
+        override val properties: Map<String, Any>
+            get() =
+                mapOf(
+                    PROP_TRIGGER to trigger.wireValue,
+                    PROP_REASON to reason.wireValue,
+                )
+    }
+
+    /**
+     * A subscription purchase landed successfully. [productId] surfaces
+     * the SKU the user actually bought (may differ from the package
+     * the paywall surfaced on a crossgrade — RevenueCat resolves SKU
+     * choice server-side).
+     */
+    data class PurchaseSubscribed(
+        val productId: String,
+    ) : AnalyticsEvent {
+        override val name: String get() = "purchase_subscribed"
+        override val properties: Map<String, Any>
+            get() = mapOf(PROP_PRODUCT_ID to productId)
+    }
+
+    /**
+     * "Restore Purchases" CTA succeeded. [proActive] discriminates the
+     * "Welcome back!" path (user had a prior Pro entitlement that was
+     * just restored) from the "No purchases found" path.
+     */
+    data class PurchasesRestored(
+        val proActive: Boolean,
+    ) : AnalyticsEvent {
+        override val name: String get() = "purchases_restored"
+        override val properties: Map<String, Any>
+            get() = mapOf(PROP_PRO_ACTIVE to proActive)
+    }
+}
+
+/** Phase 41.3 — paywall entry-point discrimination for funnel analysis. */
+enum class PaywallTrigger(
+    val wireValue: String,
+) {
+    Settings("settings"),
+    AutoLockInEditor("auto_lock_in_editor"),
+    ChartViewerQuestionMark("chart_viewer_question_mark"),
+}
+
+/** Phase 41.3 — reason the paywall closed without conversion. */
+enum class PaywallDismissReason(
+    val wireValue: String,
+) {
+    UserCancel("user_cancel"),
+    PurchaseCancel("purchase_cancel"),
+    PurchaseFailed("purchase_failed"),
 }
 
 /**
@@ -230,3 +309,7 @@ private const val PROP_HAD_CHART = "had_chart"
 private const val PROP_HAD_CONFLICTS = "had_conflicts"
 private const val PROP_SCREEN = "screen"
 private const val PROP_ACTION = "action"
+private const val PROP_TRIGGER = "trigger"
+private const val PROP_REASON = "reason"
+private const val PROP_PRODUCT_ID = "product_id"
+private const val PROP_PRO_ACTIVE = "pro_active"

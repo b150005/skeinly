@@ -45,4 +45,5 @@ enum class Screen(
     PullRequestList("pullRequestListScreen"),
     PullRequestDetail("pullRequestDetailScreen"),
     BugReportPreview("bugReportPreviewScreen"),
+    Paywall("paywallScreen"),
 }

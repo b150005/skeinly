@@ -285,4 +285,15 @@ val repositoryModule =
                 applicationScope = get<CoroutineScope>(applicationScopeQualifier),
             )
         }
+        // Phase 41.3 (ADR-016 §6 §41.3) — RevenueCat IAP service. Production
+        // wiring uses the real `purchases-kmp-core` SDK via `Purchases.sharedInstance`.
+        // Tests inject a fake via the `RevenueCatService` interface. Local-dev
+        // builds without the SDK key (REVENUECAT_API_KEY empty) still get the
+        // singleton wired — but every method surfaces a "subscriptions
+        // unavailable" error gracefully because RevenueCatBootstrap.configure
+        // short-circuits on no key.
+        single<io.github.b150005.skeinly.domain.subscription.RevenueCatService> {
+            io.github.b150005.skeinly.data.subscription
+                .RevenueCatServiceImpl()
+        }
     }

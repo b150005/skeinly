@@ -255,4 +255,38 @@ val viewModelModule =
                 submit = { title, body -> launcher.launch(title, body) },
             )
         }
+        // Phase 41.3 (ADR-016 §6 §41.3) — paywall ViewModel. Parameterized
+        // factory so the entry point can pass the [PaywallTrigger] discriminator
+        // (Settings vs auto-lock-in-editor vs ?-cell tap) for funnel analytics.
+        // SymbolPackSyncManager is registered conditionally (only when Supabase
+        // is configured) so we use getOrNull to keep local-only dev builds working.
+        viewModel { params ->
+            // Safe-cast SymbolCatalog → CompositeSymbolCatalog so a future test
+            // module / mock binding doesn't throw ClassCastException here. The
+            // post-purchase catalog refresh is non-load-bearing — server-side
+            // Realtime push to `subscriptions` re-warms the entitlement gate
+            // even if the client-side refresh is skipped — so a no-op fallback
+            // is safe when the cast misses.
+            val refreshCatalogFn: suspend () -> Unit =
+                (
+                    get<io.github.b150005.skeinly.domain.symbol.SymbolCatalog>()
+                        as? io.github.b150005.skeinly.domain.symbol.CompositeSymbolCatalog
+                )?.let { catalog -> suspend { catalog.refresh() } } ?: { }
+            val packSync: io.github.b150005.skeinly.data.sync.SymbolPackSyncManager? = getOrNull()
+            io.github.b150005.skeinly.ui.paywall.PaywallViewModel(
+                trigger = params.get(),
+                revenueCatService = get(),
+                subscriptionRepository = get(),
+                authRepository = get(),
+                refreshCatalog = refreshCatalogFn,
+                syncPacks =
+                    packSync?.let { mgr ->
+                        suspend {
+                            mgr.sync()
+                            Unit
+                        }
+                    },
+                analyticsTracker = get(),
+            )
+        }
     }
