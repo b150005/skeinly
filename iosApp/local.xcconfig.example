@@ -34,3 +34,10 @@ POSTHOG_HOST =
 //   SUPABASE_URL = https:/$()/<project-ref>.supabase.co
 SUPABASE_URL =
 SUPABASE_PUBLISHABLE_KEY =
+
+// Phase 41.3 (ADR-016 §6 §41.3) — RevenueCat Public iOS SDK Key.
+// Get the key from RevenueCat Dashboard > API Keys > Public iOS SDK Key
+// (starts with `appl_`). See vendor-setup.md A0d-2 + release-secrets §19.
+// Empty key disables RevenueCatBootstrap.configure (paywall surfaces a
+// "subscriptions unavailable" error rather than crashing on Purchases.sharedInstance).
+REVENUECAT_API_KEY =

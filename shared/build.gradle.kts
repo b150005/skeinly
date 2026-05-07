@@ -18,6 +18,13 @@ val localProps =
         // CI fallback: read from environment variables when local.properties is absent
         System.getenv("SUPABASE_URL")?.let { props.setProperty("SUPABASE_URL", it) }
         System.getenv("SUPABASE_PUBLISHABLE_KEY")?.let { props.setProperty("SUPABASE_PUBLISHABLE_KEY", it) }
+        // Phase 41.3 (ADR-016 §6 §41.3): RevenueCat Public Android SDK Key.
+        // Vendor-setup §20 / GitHub Secret REVENUECAT_API_KEY_ANDROID.
+        // Empty fallback ⇒ RevenueCatConfig.isConfigured = false ⇒
+        // RevenueCatBootstrap.configure short-circuits with no SDK init.
+        System
+            .getenv("REVENUECAT_API_KEY_ANDROID")
+            ?.let { props.setProperty("REVENUECAT_API_KEY_ANDROID", it) }
     }
 
 val generateSupabaseConfig by tasks.registering {
@@ -37,6 +44,32 @@ val generateSupabaseConfig by tasks.registering {
                 appendLine("internal object SupabaseCredentials {")
                 appendLine("    const val URL: String = \"$escapedUrl\"")
                 appendLine("    const val PUBLISHABLE_KEY: String = \"$escapedKey\"")
+                appendLine("}")
+            },
+        )
+    }
+}
+
+// Phase 41.3 (ADR-016 §6 §41.3): RevenueCat Public Android SDK Key
+// codegen — same shape as `generateSupabaseConfig`. The KMP shared
+// android source set cannot read `BuildConfig` (the AGP 9.x KMP plugin
+// does not expose `buildFeatures { buildConfig = true }`), so we
+// generate a const object instead. Empty key ⇒ no Purchases.configure
+// call at runtime.
+val generateRevenueCatConfig by tasks.registering {
+    val outputDir = layout.buildDirectory.dir("generated/revenueCatConfig")
+    val key = localProps.getProperty("REVENUECAT_API_KEY_ANDROID", "")
+    outputs.dir(outputDir)
+    doLast {
+        val dir = outputDir.get().asFile.resolve("io/github/b150005/skeinly/config")
+        dir.mkdirs()
+        val escapedKey = key.replace("\\", "\\\\").replace("\"", "\\\"").replace("$", "\\$")
+        dir.resolve("RevenueCatCredentials.kt").writeText(
+            buildString {
+                appendLine("package io.github.b150005.skeinly.config")
+                appendLine()
+                appendLine("internal object RevenueCatCredentials {")
+                appendLine("    const val API_KEY: String = \"$escapedKey\"")
                 appendLine("}")
             },
         )
@@ -154,6 +187,17 @@ kotlin {
             implementation(libs.coil.network.ktor)
             // Preferences
             implementation(libs.multiplatform.settings)
+            // RevenueCat KMP (Phase 41.3) — subscription / IAP orchestration.
+            // `core` carries Purchases.sharedInstance + the offerings/purchase
+            // surface; `result` adds suspend Result<T> extensions used by
+            // PaywallViewModel for await-style call sites that surface
+            // structured errors instead of callbacks. The `RevenueCatService`
+            // domain interface wraps these so tests can inject a fake.
+            // iOS app additionally links PurchasesHybridCommon via SwiftPM
+            // (see iosApp/project.yml) — required at runtime for the iOS
+            // actual binding to resolve native StoreKit symbols.
+            implementation(libs.purchases.kmp.core)
+            implementation(libs.purchases.kmp.result)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -169,6 +213,11 @@ kotlin {
             kotlin.srcDir(
                 generateBuildFlagsAndroid.flatMap {
                     layout.buildDirectory.dir("generated/buildFlags")
+                },
+            )
+            kotlin.srcDir(
+                generateRevenueCatConfig.flatMap {
+                    layout.buildDirectory.dir("generated/revenueCatConfig")
                 },
             )
             dependencies {
@@ -206,6 +255,7 @@ tasks.configureEach {
     if (name.contains("AndroidMain", ignoreCase = true)) {
         dependsOn(generateSupabaseConfig)
         dependsOn(generateBuildFlagsAndroid)
+        dependsOn(generateRevenueCatConfig)
     }
 }
 

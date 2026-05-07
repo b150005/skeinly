@@ -125,6 +125,22 @@ fun startEventRingBuffer() {
     buffer.start(scope)
 }
 
+/**
+ * Phase 41.3 (ADR-016 §6 §41.3) — bootstrap RevenueCat IAP SDK from
+ * iOS Swift call site. iOSApp.swift invokes this once after
+ * `KoinHelperKt.doInitKoin()` completes. Idempotent and no-ops when
+ * the iOS Info.plist `REVENUECAT_API_KEY` is empty (local-dev / CI
+ * without GitHub Secret REVENUECAT_API_KEY_IOS wired).
+ *
+ * `verbose` is exposed as a parameter so iOS init can gate on
+ * `BuildFlags.isBeta` from Swift directly (avoiding a Kotlin-side
+ * runtime read of an iOS-only Info.plist key from the bootstrap path).
+ */
+fun configureRevenueCat(verbose: Boolean) {
+    io.github.b150005.skeinly.data.subscription.RevenueCatBootstrap
+        .configure(verbose = verbose)
+}
+
 fun getActivityFeedViewModel(): ActivityFeedViewModel = KoinPlatform.getKoin().get()
 
 fun getSharedWithMeViewModel(): SharedWithMeViewModel = KoinPlatform.getKoin().get()

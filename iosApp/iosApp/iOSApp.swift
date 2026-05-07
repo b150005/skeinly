@@ -48,6 +48,14 @@ struct iOSApp: App {
         // itself beta-only so production never reads `snapshot()`).
         Self.startEventRingBuffer()
 
+        // Phase 41.3 (ADR-016 §6 §41.3) — RevenueCat IAP SDK init.
+        // Idempotent; no-ops when REVENUECAT_API_KEY (Info.plist, sourced
+        // from xcconfig) is empty (local-dev / CI without GitHub Secret
+        // REVENUECAT_API_KEY_IOS wired). Verbose logs gated on
+        // BuildFlags.isBeta so beta testers' Sentry breadcrumbs capture
+        // richer purchase-flow detail. Mirrors SkeinlyApplication.kt.
+        KoinHelperKt.configureRevenueCat(verbose: BuildFlags.isBeta)
+
         // Phase F2: PostHog product analytics. Default OFF (opt-in, not
         // opt-out). SDK is initialized lazily on the first ON flip; toggling
         // OFF mid-session calls optOut() to suspend further capture; toggling
