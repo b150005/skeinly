@@ -67,6 +67,7 @@ import io.github.b150005.skeinly.domain.repository.StorageOperations
 import io.github.b150005.skeinly.domain.repository.StructuredChartRepository
 import io.github.b150005.skeinly.domain.repository.SubscriptionRepository
 import io.github.b150005.skeinly.domain.repository.UserRepository
+import io.github.b150005.skeinly.domain.symbol.CompositeSymbolCatalog
 import io.github.b150005.skeinly.domain.symbol.EntitlementResolver
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
 import io.github.b150005.skeinly.domain.symbol.catalog.DefaultSymbolCatalog
@@ -269,6 +270,19 @@ val repositoryModule =
             )
         }
         single { EntitlementResolver(subscriptionRepository = get(), authRepository = get()) }
-        // Bundled knitting symbol catalog (Phase 30 + 31).
-        single<SymbolCatalog> { DefaultSymbolCatalog.INSTANCE }
+        // Phase 41.2c (ADR-016 §4.1) — composite catalog overlays downloaded
+        // packs on top of the bundled compile-time catalog, gated by
+        // EntitlementResolver for Pro-tier entries. The constructor schedules
+        // an async warm-up on the application scope so the first chart
+        // editor open after process boot sees the downloaded packs as soon
+        // as the local mirror has them.
+        single<SymbolCatalog> {
+            CompositeSymbolCatalog(
+                bundled = DefaultSymbolCatalog.INSTANCE,
+                localSymbolPackDataSource = get(),
+                entitlementResolver = get(),
+                json = get(),
+                applicationScope = get<CoroutineScope>(applicationScopeQualifier),
+            )
+        }
     }
