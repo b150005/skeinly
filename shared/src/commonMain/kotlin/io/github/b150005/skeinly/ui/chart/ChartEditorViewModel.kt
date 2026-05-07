@@ -270,6 +270,18 @@ class ChartEditorViewModel(
     private val _saved = Channel<Unit>(Channel.BUFFERED)
     val saved: Flow<Unit> = _saved.receiveAsFlow()
 
+    /**
+     * Phase 41.3b (ADR-016 §5.1) — paywall auto-trigger seam. Emits when
+     * the user taps a palette symbol whose [SymbolCatalog.get] returns null
+     * (Pro symbol selected by a non-Pro user). Today this is a rare-fire
+     * path because Phase 41.4 has not yet added Pro symbols to the bundled
+     * catalog OR the lock-badge palette filter — but the seam is wired in
+     * 41.3b so the entire paywall integration loop is live before 41.4
+     * lands.
+     */
+    private val _paywallRequests = Channel<Unit>(Channel.BUFFERED)
+    val paywallRequests: Flow<Unit> = _paywallRequests.receiveAsFlow()
+
     init {
         viewModelScope.launch { load() }
     }
@@ -280,7 +292,21 @@ class ChartEditorViewModel(
                 analyticsTracker?.track(
                     AnalyticsEvent.ClickAction(ClickActionId.SelectPaletteSymbol, Screen.ChartEditor),
                 )
-                _state.update { it.copy(selectedSymbolId = event.symbolId) }
+                // Phase 41.3b (ADR-016 §5.1) — auto-trigger paywall when the
+                // tapped symbol is gated. `symbolCatalog.get(id)` returns
+                // null for Pro symbols when the user lacks the entitlement
+                // (per `CompositeSymbolCatalog`'s Pro gate). The eraser tap
+                // (symbolId == null) is NOT a Pro-gated path, so guard
+                // first. The state update DOES NOT advance — leaving
+                // `selectedSymbolId` on its prior value lets the user
+                // recover by either subscribing or picking a different
+                // symbol when the sheet dismisses.
+                val newId = event.symbolId
+                if (newId != null && symbolCatalog.get(newId) == null) {
+                    _paywallRequests.trySend(Unit)
+                    return
+                }
+                _state.update { it.copy(selectedSymbolId = newId) }
             }
             is ChartEditorEvent.SelectCategory ->
                 _state.update {

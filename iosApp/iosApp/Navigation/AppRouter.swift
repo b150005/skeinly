@@ -21,6 +21,11 @@ enum Route: Hashable {
     case pullRequestDetail(prId: String)
     case chartConflictResolution(prId: String)
     case bugReportPreview
+    /// Phase 41.3b (ADR-016 §5.1) — paywall route. Uses
+    /// `PaywallTrigger.wireValue` for the Hashable representation so the
+    /// case stays Codable / Hashable without forcing PaywallTrigger to
+    /// adopt SwiftUI conformances (it is bridged from a Kotlin enum).
+    case paywall(trigger: PaywallTrigger)
 
     // Hashable conformance for sharedContent with optionals
     func hash(into hasher: inout Hasher) {
@@ -74,6 +79,13 @@ enum Route: Hashable {
             hasher.combine(prId)
         case .bugReportPreview:
             hasher.combine("bugReportPreview")
+        case .paywall(let trigger):
+            hasher.combine("paywall")
+            // PaywallTrigger bridges from Kotlin as an ObjC singleton enum
+            // — `wireValue` is its stable string identifier and gives a
+            // deterministic hash component (NSObject identity is stable
+            // for singletons but its hash combines unstably with strings).
+            hasher.combine(trigger.wireValue)
         }
     }
 }
@@ -207,7 +219,15 @@ struct AppRootView: View {
                 .trackScreen(.profile)
                 .skeinlyBackButton(path: $path)
         case .settings:
-            SettingsScreen(onSendFeedback: { path.append(Route.bugReportPreview) })
+            SettingsScreen(
+                onSendFeedback: { path.append(Route.bugReportPreview) },
+                // Phase 41.3b (ADR-016 §5.1) — Settings → "Subscribe to
+                // Pro" routes to the paywall. Always-on entry, NOT
+                // beta-gated.
+                onSubscribeToProClick: {
+                    path.append(Route.paywall(trigger: PaywallTrigger.settings))
+                }
+            )
                 .trackScreen(.settings)
                 .skeinlyBackButton(path: $path)
         case .activityFeed:
@@ -280,6 +300,18 @@ struct AppRootView: View {
             // screen so locale-coupling does not surface.
             BugReportPreviewScreen(onCancel: { path.removeLast() })
                 .trackScreen(.bugreportpreview)
+        case .paywall(let trigger):
+            // Phase 41.3b (ADR-016 §5.1) — paywall sheet rendered as a
+            // pushed NavigationStack destination. Excluded from
+            // `.skeinlyBackButton` because the screen ships its own
+            // top-bar "Close" button (the canonical paywall dismissal
+            // affordance). The trackScreen modifier registers the
+            // ScreenViewed analytics event.
+            PaywallScreen(
+                trigger: trigger,
+                onDismiss: { path.removeLast() }
+            )
+                .trackScreen(.paywall)
         }
     }
 

@@ -132,4 +132,10 @@ enum ViewModelFactory {
     static func bugReportPreviewViewModel() -> BugReportPreviewViewModel {
         KoinHelperKt.getBugReportPreviewViewModel()
     }
+
+    /// Phase 41.3b (ADR-016 §5.1) — paywall ViewModel parametric on the
+    /// entry-point trigger.
+    static func paywallViewModel(trigger: PaywallTrigger) -> PaywallViewModel {
+        KoinHelperKt.getPaywallViewModel(trigger: trigger)
+    }
 }

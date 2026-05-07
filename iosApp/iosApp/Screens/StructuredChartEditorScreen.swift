@@ -12,6 +12,8 @@ struct StructuredChartEditorScreen: View {
     @State private var showDiscardConfirm = false
     @State private var showError = false
     @State private var savedCloseable: Closeable?
+    // Phase 41.3b (ADR-016 §5.1) — paywall request observer.
+    @State private var paywallCloseable: Closeable?
     // Decoupled from ViewModel state so the sheet's presented flag is driven by an
     // explicit handler, not by reading back from the reactive state flow (avoids a
     // transient race on confirm where the flag would spuriously fire CancelParameterInput).
@@ -242,10 +244,21 @@ struct StructuredChartEditorScreen: View {
                     }
                 }
             }
+            // Phase 41.3b (ADR-016 §5.1) — observe paywall requests from
+            // the ViewModel and route to the AutoLockInEditor-trigger
+            // paywall sheet.
+            let paywallFlow = KoinHelperKt.wrapChartEditorPaywallRequests(flow: viewModel.paywallRequests)
+            paywallCloseable = paywallFlow.collect { _ in
+                Task { @MainActor in
+                    path.append(Route.paywall(trigger: PaywallTrigger.autolockineditor))
+                }
+            }
         }
         .onDisappear {
             savedCloseable?.close()
             savedCloseable = nil
+            paywallCloseable?.close()
+            paywallCloseable = nil
         }
         .onChange(of: state.errorMessage != nil) { _, newValue in
             showError = newValue

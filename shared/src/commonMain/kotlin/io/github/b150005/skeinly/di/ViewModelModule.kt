@@ -72,6 +72,8 @@ val viewModelModule =
                 updateEmail = get(),
                 analyticsPreferences = get(),
                 eventRingBuffer = get(),
+                // Phase 41.3b — ClickAction analytics for the Pro entry tap.
+                analyticsTracker = get(),
             )
         }
         viewModel { ActivityFeedViewModel(get(), get(), get()) }

@@ -508,4 +508,30 @@
     <string name="hint_pr_description_optional">パターンオーナーへの補足メモ（任意）…</string>
     <string name="action_open_pr">作成</string>
     <string name="message_pr_opened_successfully">プルリクエストを作成しました</string>
+
+    <!-- Phase 41.3b (ADR-016 §5.1) — paywall sheet copy. EN source has the
+         full design rationale block. JA notes:
+           - `title_paywall`: "Skeinly Pro" stays as Latin script (proper
+             noun / brand name).
+           - `body_paywall_pitch`: Reflows around the JA grammar.
+           - `action_subscribe_monthly` / `_annual`: JA prefixes the price
+             with 月額 / 年額 per JP App Store marketing convention. -->
+    <string name="title_paywall">Skeinly Pro</string>
+    <string name="body_paywall_pitch">シンボルライブラリの全機能をアンロックしてインディー開発をサポート</string>
+    <string name="body_paywall_trial_disclosure">7日間の無料トライアル。キャンセルするまで自動更新されます。</string>
+    <string name="action_subscribe_monthly">月額 %1$s</string>
+    <string name="action_subscribe_annual">年額 %1$s</string>
+    <string name="action_subscribe">購読する</string>
+    <string name="action_restore_purchase">購入の復元</string>
+    <string name="state_purchase_in_progress">購入処理中…</string>
+    <string name="state_restoring">購入を復元しています…</string>
+    <string name="state_paywall_unavailable">サブスクリプションは一時的に利用できません。後でもう一度お試しください。</string>
+    <string name="state_purchase_failed">購入に失敗しました</string>
+    <string name="message_purchase_succeeded">Skeinly Proへようこそ！</string>
+    <string name="message_restore_succeeded">おかえりなさい！</string>
+    <string name="message_restore_no_purchases">復元できる購入が見つかりませんでした</string>
+    <string name="label_subscribe_to_pro">Proにアップグレード</string>
+    <string name="label_paywall_section">Skeinly Pro</string>
+    <string name="action_close_paywall">閉じる</string>
+    <string name="action_dismiss_paywall_error">閉じる</string>
 </resources>

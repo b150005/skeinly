@@ -16,11 +16,19 @@ struct SettingsScreen: View {
     // no-op so the row renders correctly under the beta-gated section
     // without surfacing a half-built UX.
     let onSendFeedback: () -> Void
+    /// Phase 41.3b (ADR-016 §5.1) — Pro section entry. Always-on, NOT
+    /// gated on `BuildFlags.isBeta` because F1 monetization is a
+    /// production feature.
+    let onSubscribeToProClick: () -> Void
 
     private var viewModel: SettingsViewModel { holder.viewModel }
 
-    init(onSendFeedback: @escaping () -> Void = {}) {
+    init(
+        onSendFeedback: @escaping () -> Void = {},
+        onSubscribeToProClick: @escaping () -> Void = {}
+    ) {
         self.onSendFeedback = onSendFeedback
+        self.onSubscribeToProClick = onSubscribeToProClick
         let vm = ViewModelFactory.settingsViewModel()
         let wrapper = KoinHelperKt.wrapSettingsState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
@@ -176,6 +184,18 @@ struct SettingsScreen: View {
                     Label("action_terms_of_service", systemImage: "doc.text")
                 }
                 .accessibilityIdentifier("termsOfServiceButton")
+            }
+
+            // Phase 41.3b (ADR-016 §5.1) — Skeinly Pro section. Always-on,
+            // NOT gated on BuildFlags.isBeta unlike the Beta section below.
+            Section("label_paywall_section") {
+                Button {
+                    viewModel.onEvent(event: SettingsEventSubscribeToProTapped.shared)
+                    onSubscribeToProClick()
+                } label: {
+                    Label("label_subscribe_to_pro", systemImage: "star.fill")
+                }
+                .accessibilityIdentifier("subscribeToProButton")
             }
 
             // Beta section — Phase 39.4 (ADR-015 §6). Holds diagnostic

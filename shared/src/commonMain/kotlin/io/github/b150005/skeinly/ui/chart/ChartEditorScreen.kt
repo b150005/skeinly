@@ -150,6 +150,13 @@ import kotlin.math.roundToInt
 fun ChartEditorScreen(
     patternId: String,
     onBack: () -> Unit,
+    // Phase 41.3b (ADR-016 §5.1) — invoked when the user taps a Pro
+    // palette symbol they cannot use (`symbolCatalog.get(id) == null`).
+    // The screen routes this to the paywall via `Paywall(trigger =
+    // AutoLockInEditor)`. Default no-op preserves existing call-site
+    // compatibility (test harnesses + screens that don't yet plumb the
+    // paywall navigation).
+    onPaywallRequested: () -> Unit = {},
     viewModel: ChartEditorViewModel = koinViewModel { parametersOf(patternId) },
     catalog: SymbolCatalog = koinInject(),
 ) {
@@ -176,6 +183,13 @@ fun ChartEditorScreen(
 
     LaunchedEffect(viewModel) {
         viewModel.saved.collect { onBack() }
+    }
+
+    // Phase 41.3b (ADR-016 §5.1) — collect paywall-trigger requests from
+    // the ViewModel. Fires when the user taps a Pro symbol they lack the
+    // entitlement for; the navigation site routes to the paywall sheet.
+    LaunchedEffect(viewModel) {
+        viewModel.paywallRequests.collect { onPaywallRequested() }
     }
 
     val attemptBack: () -> Unit = {

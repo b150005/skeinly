@@ -339,6 +339,7 @@ kover {
                     "io.github.b150005.skeinly.ui.pullrequest.PullRequestListScreenKt*",
                     "io.github.b150005.skeinly.ui.pullrequest.PullRequestDetailScreenKt*",
                     "io.github.b150005.skeinly.ui.pullrequest.ChartConflictResolutionScreenKt*",
+                    "io.github.b150005.skeinly.ui.paywall.PaywallScreenKt*",
                     "io.github.b150005.skeinly.ui.platform.*",
                 )
             }

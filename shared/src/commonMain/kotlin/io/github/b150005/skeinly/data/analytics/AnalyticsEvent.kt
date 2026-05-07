@@ -257,7 +257,15 @@ sealed interface AnalyticsEvent {
     }
 }
 
-/** Phase 41.3 — paywall entry-point discrimination for funnel analysis. */
+/**
+ * Phase 41.3 — paywall entry-point discrimination for funnel analysis.
+ *
+ * `@Serializable` so the
+ * [io.github.b150005.skeinly.ui.navigation.Paywall] route can carry it as
+ * its sole parameter (Phase 41.3b — kotlinx-serialization handles the
+ * enum natively without an ordinal-int conversion).
+ */
+@kotlinx.serialization.Serializable
 enum class PaywallTrigger(
     val wireValue: String,
 ) {

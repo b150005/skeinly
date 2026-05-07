@@ -697,4 +697,54 @@
     <string name="hint_pr_description_optional">Optional notes for the pattern owner…</string>
     <string name="action_open_pr">Open</string>
     <string name="message_pr_opened_successfully">Pull request opened</string>
+
+    <!-- Phase 41.3b (ADR-016 §5.1) — paywall sheet copy. Surfaces from
+         Settings → "Subscribe to Pro" (always-on entry, NOT beta-gated)
+         and as the auto-trigger seam from `ChartEditorViewModel.SelectSymbol`
+         when `symbolCatalog.get(id) == null` (Pro symbol selection by a
+         non-Pro user — rare-fire today, load-bearing post-Phase 41.4).
+
+         `body_paywall_pitch` is the headline pitch — keep short enough that
+         it renders on a 320-dp-wide phone without truncation.
+         `body_paywall_trial_disclosure` documents the 7-day trial and
+         auto-renew terms required by App Store Review § 3.1.2(a) +
+         Play Console subscription disclosure rules.
+
+         `action_subscribe_monthly` / `_annual` carry the parametric price
+         string from RevenueCat (`%1$s` = `priceString`, e.g. "¥800/mo" /
+         "¥6000/yr"). The price slot is at the end of the EN form to read
+         naturally; the JA form prefixes the price for the same reason.
+
+         `state_purchase_in_progress` / `state_restoring` cover the in-flight
+         spinner labels; the screen uses CircularProgressIndicator inside
+         the button with these as accessibility-only text.
+
+         `state_paywall_unavailable` is the empty-state when RevenueCat
+         returns `Result.success(null)` (no active offering — early-dev
+         dashboard state). `state_purchase_failed` covers the inline error
+         label rendered when [PaywallState.error] is non-null.
+
+         `message_purchase_succeeded` / `message_restore_succeeded` /
+         `message_restore_no_purchases` are the Snackbar / toast strings
+         after the sheet dismisses (paywall → host screen handoff).
+
+         `label_subscribe_to_pro` is the Settings ListItem entry. -->
+    <string name="title_paywall">Skeinly Pro</string>
+    <string name="body_paywall_pitch">Unlock the full symbol library and support indie development.</string>
+    <string name="body_paywall_trial_disclosure">7-day free trial. Auto-renews until canceled.</string>
+    <string name="action_subscribe_monthly">Monthly · %1$s</string>
+    <string name="action_subscribe_annual">Annual · %1$s</string>
+    <string name="action_subscribe">Subscribe</string>
+    <string name="action_restore_purchase">Restore Purchases</string>
+    <string name="state_purchase_in_progress">Processing purchase…</string>
+    <string name="state_restoring">Restoring purchases…</string>
+    <string name="state_paywall_unavailable">Subscriptions are temporarily unavailable. Please try again later.</string>
+    <string name="state_purchase_failed">Purchase failed</string>
+    <string name="message_purchase_succeeded">Welcome to Skeinly Pro!</string>
+    <string name="message_restore_succeeded">Welcome back!</string>
+    <string name="message_restore_no_purchases">No previous purchases found</string>
+    <string name="label_subscribe_to_pro">Subscribe to Pro</string>
+    <string name="label_paywall_section">Skeinly Pro</string>
+    <string name="action_close_paywall">Close</string>
+    <string name="action_dismiss_paywall_error">Dismiss</string>
 </resources>
