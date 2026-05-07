@@ -521,6 +521,9 @@
     <string name="body_paywall_trial_disclosure">7日間の無料トライアル。キャンセルするまで自動更新されます。</string>
     <string name="action_subscribe_monthly">月額 %1$s</string>
     <string name="action_subscribe_annual">年額 %1$s</string>
+    <!-- OTHER (買い切り / 週額 / カスタム期間) のフォールバック。誤って「月額」
+         を表示しないよう、価格文字列のみを表示する。 -->
+    <string name="action_subscribe_other">%1$s</string>
     <string name="action_subscribe">購読する</string>
     <string name="action_restore_purchase">購入の復元</string>
     <string name="state_purchase_in_progress">購入処理中…</string>

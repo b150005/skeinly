@@ -1,5 +1,7 @@
 package io.github.b150005.skeinly.data.analytics
 
+import kotlinx.serialization.Serializable
+
 /**
  * Phase F.5+ — typed analytics event hierarchy.
  *
@@ -265,7 +267,7 @@ sealed interface AnalyticsEvent {
  * its sole parameter (Phase 41.3b — kotlinx-serialization handles the
  * enum natively without an ordinal-int conversion).
  */
-@kotlinx.serialization.Serializable
+@Serializable
 enum class PaywallTrigger(
     val wireValue: String,
 ) {

@@ -6970,6 +6970,23 @@
         }
       }
     },
+    "action_subscribe_other": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@"
+          }
+        }
+      }
+    },
     "action_restore_purchase": {
       "extractionState": "manual",
       "localizations": {

@@ -11,6 +11,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import io.github.b150005.skeinly.data.analytics.PaywallTrigger
 import io.github.b150005.skeinly.data.remote.SupabaseConfig
 import io.github.b150005.skeinly.data.remote.isConfigured
 import io.github.b150005.skeinly.domain.model.AuthState
@@ -195,7 +196,7 @@ data object BugReportPreview
  */
 @Serializable
 data class Paywall(
-    val trigger: io.github.b150005.skeinly.data.analytics.PaywallTrigger,
+    val trigger: PaywallTrigger,
 )
 
 @Composable
@@ -374,9 +375,7 @@ fun SkeinlyNavHost(
                 // the paywall sheet. Always-on, NOT beta-gated.
                 onSubscribeToProClick = {
                     navController.navigate(
-                        Paywall(
-                            trigger = io.github.b150005.skeinly.data.analytics.PaywallTrigger.Settings,
-                        ),
+                        Paywall(trigger = PaywallTrigger.Settings),
                     )
                 },
             )
@@ -483,9 +482,7 @@ fun SkeinlyNavHost(
                 // entitlement routes to the paywall sheet.
                 onPaywallRequested = {
                     navController.navigate(
-                        Paywall(
-                            trigger = io.github.b150005.skeinly.data.analytics.PaywallTrigger.AutoLockInEditor,
-                        ),
+                        Paywall(trigger = PaywallTrigger.AutoLockInEditor),
                     )
                 },
             )

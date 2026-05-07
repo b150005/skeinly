@@ -734,6 +734,13 @@
     <string name="body_paywall_trial_disclosure">7-day free trial. Auto-renews until canceled.</string>
     <string name="action_subscribe_monthly">Monthly · %1$s</string>
     <string name="action_subscribe_annual">Annual · %1$s</string>
+    <!-- Fallback label for [PaywallPeriod.OTHER] packages (lifetime, weekly,
+         or custom-term) so a non-monthly package surfaces an honest price-
+         only label rather than silently inheriting the "Monthly" copy.
+         The format string carries only the localized priceString from
+         RevenueCat — distinct from the monthly/annual variants which prefix
+         it with a cadence label that would mislead the user. -->
+    <string name="action_subscribe_other">%1$s</string>
     <string name="action_subscribe">Subscribe</string>
     <string name="action_restore_purchase">Restore Purchases</string>
     <string name="state_purchase_in_progress">Processing purchase…</string>
