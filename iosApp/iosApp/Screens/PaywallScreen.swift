@@ -53,6 +53,14 @@ struct PaywallScreen: View {
 
                     Divider()
 
+                    // Hoist `if let offering = state.offering` to the
+                    // top of the chain so subsequent branches (loading,
+                    // empty offering) are reached only when offering is
+                    // genuinely nil. The prior `else if state.offering == nil
+                    // ... else if let offering = state.offering` form had a
+                    // guaranteed-successful let-binding in the third branch
+                    // — Swift's exhaustiveness checker accepts it but human
+                    // readers may infer a non-existent fourth case.
                     if state.isLoading {
                         HStack {
                             Spacer()
@@ -60,10 +68,6 @@ struct PaywallScreen: View {
                             Spacer()
                         }
                         .padding(.vertical, 24)
-                    } else if state.offering == nil {
-                        Text(LocalizedStringKey("state_paywall_unavailable"))
-                            .font(.body)
-                            .foregroundStyle(.secondary)
                     } else if let offering = state.offering {
                         // Iterate `packages` in order so a future OTHER-period
                         // addition (lifetime, weekly) renders without a layout
@@ -126,6 +130,14 @@ struct PaywallScreen: View {
                         .buttonStyle(.bordered)
                         .disabled(state.isPurchasing || state.isRestoring)
                         .accessibilityIdentifier("restorePurchasesButton")
+                    } else {
+                        // offering == nil and !isLoading — either fetch
+                        // failed (state.error non-nil, surfaced below) or
+                        // RevenueCat returned an empty offering. Same
+                        // recovery copy for both paths.
+                        Text(LocalizedStringKey("state_paywall_unavailable"))
+                            .font(.body)
+                            .foregroundStyle(.secondary)
                     }
 
                     if let error = state.error {
@@ -247,9 +259,11 @@ private struct PackageRowView: View {
         switch pkg.period {
         case .monthly: return "action_subscribe_monthly"
         case .annual: return "action_subscribe_annual"
-        // OTHER falls back to monthly form — matches Compose's behavior.
-        // Future weekly / lifetime offers should add a key here.
-        default: return "action_subscribe_monthly"
+        // OTHER (lifetime / weekly / custom-term) renders the priceString
+        // alone via `action_subscribe_other` — distinct from the monthly
+        // / annual variants which prefix it with a cadence label that
+        // would mislead the user about billing cadence.
+        default: return "action_subscribe_other"
         }
     }
 

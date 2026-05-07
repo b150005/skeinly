@@ -42,6 +42,7 @@ import io.github.b150005.skeinly.generated.resources.action_restore_purchase
 import io.github.b150005.skeinly.generated.resources.action_subscribe
 import io.github.b150005.skeinly.generated.resources.action_subscribe_annual
 import io.github.b150005.skeinly.generated.resources.action_subscribe_monthly
+import io.github.b150005.skeinly.generated.resources.action_subscribe_other
 import io.github.b150005.skeinly.generated.resources.action_terms_of_service
 import io.github.b150005.skeinly.generated.resources.body_paywall_pitch
 import io.github.b150005.skeinly.generated.resources.body_paywall_trial_disclosure
@@ -329,9 +330,13 @@ private fun PackageRow(
         when (pkg.period) {
             PaywallPeriod.MONTHLY -> Res.string.action_subscribe_monthly
             PaywallPeriod.ANNUAL -> Res.string.action_subscribe_annual
-            // OTHER falls back to the priceString alone — no period-specific
-            // copy. Future weekly / lifetime offers should add a key here.
-            PaywallPeriod.OTHER -> Res.string.action_subscribe_monthly
+            // OTHER (lifetime / weekly / custom term) renders the
+            // priceString alone via [action_subscribe_other]. The previous
+            // form silently inherited the "Monthly · …" label, which would
+            // mislead the user about billing cadence. If RevenueCat ever
+            // surfaces a known non-monthly cadence we should add a
+            // dedicated key here.
+            PaywallPeriod.OTHER -> Res.string.action_subscribe_other
         }
     val testTagSuffix =
         when (pkg.period) {
