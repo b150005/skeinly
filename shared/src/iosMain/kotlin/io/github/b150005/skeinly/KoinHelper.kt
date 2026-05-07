@@ -3,6 +3,7 @@ package io.github.b150005.skeinly
 import io.github.b150005.skeinly.data.analytics.AnalyticsEvent
 import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
 import io.github.b150005.skeinly.data.analytics.EventRingBuffer
+import io.github.b150005.skeinly.data.analytics.PaywallTrigger
 import io.github.b150005.skeinly.data.preferences.AnalyticsPreferences
 import io.github.b150005.skeinly.data.remote.SupabaseConfig
 import io.github.b150005.skeinly.data.remote.isConfigured
@@ -24,6 +25,9 @@ import io.github.b150005.skeinly.ui.comments.CommentSectionViewModel
 import io.github.b150005.skeinly.ui.onboarding.OnboardingViewModel
 import io.github.b150005.skeinly.ui.patternedit.PatternEditViewModel
 import io.github.b150005.skeinly.ui.patternlibrary.PatternLibraryViewModel
+import io.github.b150005.skeinly.ui.paywall.PaywallNavEvent
+import io.github.b150005.skeinly.ui.paywall.PaywallState
+import io.github.b150005.skeinly.ui.paywall.PaywallViewModel
 import io.github.b150005.skeinly.ui.profile.ProfileViewModel
 import io.github.b150005.skeinly.ui.projectdetail.ProjectDetailViewModel
 import io.github.b150005.skeinly.ui.projectlist.ProjectListViewModel
@@ -238,6 +242,15 @@ fun wrapBugReportPreviewState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.bugreport.BugReportPreviewState>,
 ): FlowWrapper<io.github.b150005.skeinly.ui.bugreport.BugReportPreviewState> = FlowWrapper(flow)
 
+// Phase 41.3b (ADR-016 §5.1) — paywall ViewModel + state / nav-event
+// wrappers. Parametric on `PaywallTrigger` so the entry point's
+// discriminator threads through to PostHog funnel analytics.
+fun getPaywallViewModel(trigger: PaywallTrigger): PaywallViewModel = KoinPlatform.getKoin().get { parametersOf(trigger) }
+
+fun wrapPaywallState(flow: kotlinx.coroutines.flow.StateFlow<PaywallState>): FlowWrapper<PaywallState> = FlowWrapper(flow)
+
+fun wrapPaywallNavEvents(flow: kotlinx.coroutines.flow.Flow<PaywallNavEvent>): EventFlowWrapper<PaywallNavEvent> = EventFlowWrapper(flow)
+
 fun wrapSettingsAccountDeletedFlow(flow: kotlinx.coroutines.flow.Flow<kotlin.Unit>): EventFlowWrapper<kotlin.Unit> = EventFlowWrapper(flow)
 
 fun wrapProfileState(
@@ -293,6 +306,11 @@ fun wrapChartEditorState(
 ): FlowWrapper<io.github.b150005.skeinly.ui.chart.ChartEditorState> = FlowWrapper(flow)
 
 fun wrapChartEditorSavedFlow(flow: kotlinx.coroutines.flow.Flow<Unit>): EventFlowWrapper<Unit> = EventFlowWrapper(flow)
+
+// Phase 41.3b (ADR-016 §5.1) — paywall trigger flow from the chart
+// editor. Surfaces when the user taps a Pro symbol they lack the
+// entitlement for.
+fun wrapChartEditorPaywallRequests(flow: kotlinx.coroutines.flow.Flow<Unit>): EventFlowWrapper<Unit> = EventFlowWrapper(flow)
 
 fun wrapChartHistoryState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.chart.ChartHistoryState>,

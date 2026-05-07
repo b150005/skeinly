@@ -2,8 +2,10 @@ package io.github.b150005.skeinly.ui.settings
 
 import app.cash.turbine.test
 import io.github.b150005.skeinly.data.analytics.AnalyticsEvent
+import io.github.b150005.skeinly.data.analytics.ClickActionId
 import io.github.b150005.skeinly.data.analytics.EventRingBuffer
 import io.github.b150005.skeinly.data.analytics.RecordingAnalyticsTracker
+import io.github.b150005.skeinly.data.analytics.Screen
 import io.github.b150005.skeinly.data.preferences.AnalyticsPreferences
 import io.github.b150005.skeinly.domain.model.AuthState
 import io.github.b150005.skeinly.domain.usecase.CloseRealtimeChannelsUseCase
@@ -49,7 +51,10 @@ class SettingsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel(eventRingBuffer: EventRingBuffer? = null): SettingsViewModel =
+    private fun createViewModel(
+        eventRingBuffer: EventRingBuffer? = null,
+        analyticsTracker: RecordingAnalyticsTracker? = null,
+    ): SettingsViewModel =
         SettingsViewModel(
             observeAuthState = ObserveAuthStateUseCase(authRepo),
             signOut = SignOutUseCase(authRepo, CloseRealtimeChannelsUseCase(null, null, null)),
@@ -58,6 +63,7 @@ class SettingsViewModelTest {
             updateEmail = UpdateEmailUseCase(authRepo),
             analyticsPreferences = analyticsPrefs,
             eventRingBuffer = eventRingBuffer,
+            analyticsTracker = analyticsTracker,
         )
 
     @Test
@@ -265,6 +271,35 @@ class SettingsViewModelTest {
             viewModel.onEvent(SettingsEvent.SetAnalyticsOptIn(true))
 
             assertEquals(1, buffer.snapshot().size, "buffer must be untouched on toggle-on")
+        }
+
+    /**
+     * Phase 41.3b (ADR-016 §5.1) — SubscribeToProTapped fires the
+     * `ClickAction(SubscribeToPro, Settings)` analytics event so a future
+     * regression where the entry tap fires but the paywall fails to
+     * surface is observable in PostHog.
+     */
+    @Test
+    fun `SubscribeToProTapped emits ClickAction analytics event`() =
+        runTest {
+            val tracker = RecordingAnalyticsTracker()
+            val viewModel = createViewModel(analyticsTracker = tracker)
+            viewModel.onEvent(SettingsEvent.SubscribeToProTapped)
+            val click =
+                tracker.captured.firstOrNull {
+                    it is AnalyticsEvent.ClickAction && it.action == ClickActionId.SubscribeToPro
+                }
+            assertNotNull(click)
+            assertEquals(Screen.Settings, (click as AnalyticsEvent.ClickAction).screen)
+        }
+
+    @Test
+    fun `SubscribeToProTapped is no-op when analytics tracker is null`() =
+        runTest {
+            // Default-null analyticsTracker preserves existing test compat.
+            val viewModel = createViewModel(analyticsTracker = null)
+            // Just verify no exception thrown.
+            viewModel.onEvent(SettingsEvent.SubscribeToProTapped)
         }
 }
 

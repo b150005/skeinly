@@ -2,7 +2,11 @@ package io.github.b150005.skeinly.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.b150005.skeinly.data.analytics.AnalyticsEvent
+import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
+import io.github.b150005.skeinly.data.analytics.ClickActionId
 import io.github.b150005.skeinly.data.analytics.EventRingBuffer
+import io.github.b150005.skeinly.data.analytics.Screen
 import io.github.b150005.skeinly.data.preferences.AnalyticsPreferences
 import io.github.b150005.skeinly.domain.model.AuthState
 import io.github.b150005.skeinly.domain.usecase.DeleteAccountUseCase
@@ -69,6 +73,17 @@ sealed interface SettingsEvent {
         val value: Boolean,
     ) : SettingsEvent
 
+    /**
+     * Phase 41.3b (ADR-016 §5.1) — fired when the user taps the "Subscribe
+     * to Pro" entry in the Pro section. Captures the engagement intent
+     * BEFORE the paywall sheet opens, distinct from `PaywallOpened(trigger
+     * = Settings)` which captures the outcome of the tap (sheet
+     * successfully surfaced). Click-through analytics use the pair to
+     * spot a future regression where the tap fires but the sheet fails
+     * to render.
+     */
+    data object SubscribeToProTapped : SettingsEvent
+
     data object ClearError : SettingsEvent
 }
 
@@ -97,6 +112,11 @@ class SettingsViewModel(
     // existing test call-sites valid; production wiring always supplies
     // non-null via [ViewModelModule].
     private val eventRingBuffer: EventRingBuffer? = null,
+    // Phase 41.3b (ADR-016 §5.1) — emit `ClickAction(SubscribeToPro,
+    // Settings)` when the user taps the Pro entry. Nullable + default null
+    // preserves existing test compat; production wiring always supplies
+    // the tracker via [ViewModelModule].
+    private val analyticsTracker: AnalyticsTracker? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(SettingsState())
     val state: StateFlow<SettingsState> = _state.asStateFlow()
@@ -148,6 +168,10 @@ class SettingsViewModel(
                 }
                 analyticsPreferences.setAnalyticsOptIn(event.value)
             }
+            SettingsEvent.SubscribeToProTapped ->
+                analyticsTracker?.track(
+                    AnalyticsEvent.ClickAction(ClickActionId.SubscribeToPro, Screen.Settings),
+                )
             SettingsEvent.ClearError -> _state.update { it.copy(error = null) }
         }
     }

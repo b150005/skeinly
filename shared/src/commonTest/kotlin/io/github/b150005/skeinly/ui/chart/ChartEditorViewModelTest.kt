@@ -14,7 +14,9 @@ import io.github.b150005.skeinly.domain.model.CraftType
 import io.github.b150005.skeinly.domain.model.ReadingConvention
 import io.github.b150005.skeinly.domain.model.StorageVariant
 import io.github.b150005.skeinly.domain.model.StructuredChart
+import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
 import io.github.b150005.skeinly.domain.symbol.SymbolCategory
+import io.github.b150005.skeinly.domain.symbol.SymbolDefinition
 import io.github.b150005.skeinly.domain.symbol.catalog.DefaultSymbolCatalog
 import io.github.b150005.skeinly.domain.usecase.CreateStructuredChartUseCase
 import io.github.b150005.skeinly.domain.usecase.FakeAuthRepository
@@ -91,13 +93,14 @@ class ChartEditorViewModelTest {
     private fun newViewModel(
         patternId: String = "pat-1",
         analyticsTracker: AnalyticsTracker? = null,
+        symbolCatalog: SymbolCatalog = catalog,
     ): ChartEditorViewModel =
         ChartEditorViewModel(
             patternId = patternId,
             getStructuredChart = GetStructuredChartByPatternIdUseCase(repo),
             createStructuredChart = CreateStructuredChartUseCase(repo, auth, testJson),
             updateStructuredChart = UpdateStructuredChartUseCase(repo, testJson),
-            symbolCatalog = catalog,
+            symbolCatalog = symbolCatalog,
             analyticsTracker = analyticsTracker,
         )
 
@@ -2193,4 +2196,80 @@ class ChartEditorViewModelTest {
                 tracker.outcomeEvents,
             )
         }
+
+    /**
+     * Phase 41.3b (ADR-016 §5.1) — paywall auto-trigger seam.
+     *
+     * When the user taps a palette symbol that the [SymbolCatalog] does not
+     * resolve (Pro symbol selection by a non-Pro user — `get(id)` returns
+     * null per [io.github.b150005.skeinly.domain.symbol.CompositeSymbolCatalog]'s
+     * Pro gate), the ViewModel emits a paywall request rather than advancing
+     * `selectedSymbolId`. The screen layer routes the emission to the
+     * paywall sheet via the `Paywall(trigger = AutoLockInEditor)` route.
+     */
+    @Test
+    fun `SelectSymbol with unknown id emits paywall request and does not advance selection`() =
+        runTest {
+            val gatedCatalog = GatedTestCatalog(blocked = setOf("jis.knit.bobble"))
+            val viewModel = newViewModel(symbolCatalog = gatedCatalog)
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            assertEquals("jis.knit.k", viewModel.state.value.selectedSymbolId)
+
+            viewModel.paywallRequests.test {
+                viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.bobble"))
+                awaitItem() // single Unit emission
+                cancelAndIgnoreRemainingEvents()
+            }
+            // Selection sticks at the prior value — the user can recover by
+            // subscribing or picking another symbol.
+            assertEquals("jis.knit.k", viewModel.state.value.selectedSymbolId)
+        }
+
+    @Test
+    fun `SelectSymbol with known id updates selectedSymbolId without paywall request`() =
+        runTest {
+            val viewModel = newViewModel(patternId = "pat-missing")
+            awaitReady(viewModel)
+            // catalog has jis.knit.k; this is the happy path.
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            assertEquals("jis.knit.k", viewModel.state.value.selectedSymbolId)
+        }
+
+    @Test
+    fun `SelectSymbol with null id eraser does not fire paywall request`() =
+        runTest {
+            // Eraser tap is NOT a Pro-gated path even when the catalog would
+            // return null for null id — guard short-circuits before the
+            // catalog lookup.
+            val gatedCatalog = GatedTestCatalog(blocked = setOf("anything"))
+            val viewModel = newViewModel(symbolCatalog = gatedCatalog)
+            awaitReady(viewModel)
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol("jis.knit.k"))
+            // Then switch to eraser (null) — should advance state, not fire
+            // paywall.
+            viewModel.onEvent(ChartEditorEvent.SelectSymbol(null))
+            assertNull(viewModel.state.value.selectedSymbolId)
+        }
+}
+
+/**
+ * Phase 41.3b (ADR-016 §5.1) — test fake that returns null for any id in
+ * [blocked], delegating to [DefaultSymbolCatalog.INSTANCE] otherwise.
+ * Mimics the [io.github.b150005.skeinly.domain.symbol.CompositeSymbolCatalog]
+ * Pro gate: a Pro symbol with no entitlement returns null from `get(id)`.
+ */
+private class GatedTestCatalog(
+    private val blocked: Set<String>,
+) : SymbolCatalog {
+    private val delegate = DefaultSymbolCatalog.INSTANCE
+
+    override fun get(id: String): SymbolDefinition? {
+        if (id in blocked) return null
+        return delegate.get(id)
+    }
+
+    override fun listByCategory(category: SymbolCategory): List<SymbolDefinition> = delegate.listByCategory(category)
+
+    override fun all(): List<SymbolDefinition> = delegate.all()
 }

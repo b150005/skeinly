@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -76,6 +77,8 @@ import io.github.b150005.skeinly.generated.resources.label_danger_zone
 import io.github.b150005.skeinly.generated.resources.label_diagnostic_data_sharing
 import io.github.b150005.skeinly.generated.resources.label_new_email
 import io.github.b150005.skeinly.generated.resources.label_new_password
+import io.github.b150005.skeinly.generated.resources.label_paywall_section
+import io.github.b150005.skeinly.generated.resources.label_subscribe_to_pro
 import io.github.b150005.skeinly.generated.resources.message_email_change_pending
 import io.github.b150005.skeinly.generated.resources.message_password_changed
 import io.github.b150005.skeinly.generated.resources.state_deleting_account
@@ -99,6 +102,11 @@ fun SettingsScreen(
     // the row renders correctly under the beta-gated section without
     // surfacing a half-built UX.
     onSendFeedback: () -> Unit = {},
+    // Phase 41.3b (ADR-016 §5.1) — invoked when the user taps "Subscribe
+    // to Pro". Always-on entry, NOT beta-gated; F1 monetization is a
+    // production feature, not a beta-only experiment. NavGraph wires this
+    // to the `Paywall(trigger = Settings)` route.
+    onSubscribeToProClick: () -> Unit = {},
     viewModel: SettingsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -263,6 +271,32 @@ fun SettingsScreen(
                             .clickable(role = Role.Button) {
                                 uriHandler.openUri(URL_TERMS_OF_SERVICE)
                             }.testTag("termsOfServiceButton"),
+                )
+
+                // Phase 41.3b (ADR-016 §5.1) — Skeinly Pro section. Always-on
+                // entry to the paywall, NOT gated on `BuildFlags.isBeta`
+                // unlike the Beta section below. F1 monetization is a
+                // production feature available on every release channel.
+                Spacer(Modifier.height(24.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(24.dp))
+
+                Text(
+                    text = stringResource(Res.string.label_paywall_section),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+
+                ListItem(
+                    headlineContent = { Text(stringResource(Res.string.label_subscribe_to_pro)) },
+                    leadingContent = { Icon(Icons.Filled.Star, contentDescription = null) },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable(role = Role.Button) {
+                                viewModel.onEvent(SettingsEvent.SubscribeToProTapped)
+                                onSubscribeToProClick()
+                            }.testTag("subscribeToProButton"),
                 )
 
                 // Beta section — Phase 39.4 (ADR-015 §6). Holds diagnostic

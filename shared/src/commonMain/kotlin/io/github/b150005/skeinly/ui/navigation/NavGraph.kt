@@ -28,6 +28,8 @@ import io.github.b150005.skeinly.ui.discovery.DiscoveryScreen
 import io.github.b150005.skeinly.ui.onboarding.OnboardingScreen
 import io.github.b150005.skeinly.ui.patternedit.PatternEditScreen
 import io.github.b150005.skeinly.ui.patternlibrary.PatternLibraryScreen
+import io.github.b150005.skeinly.ui.paywall.PaywallResult
+import io.github.b150005.skeinly.ui.paywall.PaywallScreen
 import io.github.b150005.skeinly.ui.profile.ProfileScreen
 import io.github.b150005.skeinly.ui.projectdetail.ProjectDetailScreen
 import io.github.b150005.skeinly.ui.projectlist.ProjectListScreen
@@ -176,6 +178,25 @@ data class SharedContent(
  */
 @Serializable
 data object BugReportPreview
+
+/**
+ * Phase 41.3b (ADR-016 §5.1) — paywall route. Always reachable from
+ * Settings → "Subscribe to Pro" (NOT beta-gated, unlike the Bug Report
+ * Preview). Future Phase 41.4 will also surface this route from a
+ * lock-badge tap on the chart editor palette and from the chart viewer
+ * `?` cell-tap path.
+ *
+ * The [trigger] discriminator lands in `PaywallViewModel`'s init analytics
+ * event so funnel analysis can tell which entry converts best (Settings
+ * vs auto-lock-in-editor vs ?-cell tap). PaywallTrigger surface at the
+ * KoinHelper bridge requires `parameters: PaywallTrigger` as a route arg
+ * — kotlinx-serialization handles the enum natively without an ordinal
+ * conversion.
+ */
+@Serializable
+data class Paywall(
+    val trigger: io.github.b150005.skeinly.data.analytics.PaywallTrigger,
+)
 
 @Composable
 fun SkeinlyNavHost(
@@ -347,15 +368,43 @@ fun SkeinlyNavHost(
                     }
                 },
                 // Phase 39.5 (ADR-015 §6) — Send Feedback routes to the
-                // bug-report preview screen. Phase 39.4 wired the
-                // SettingsScreen callback as a no-op stub; this slice
-                // pivots it to the real navigation target.
+                // bug-report preview screen.
                 onSendFeedback = { navController.navigate(BugReportPreview) },
+                // Phase 41.3b (ADR-016 §5.1) — Subscribe-to-Pro routes to
+                // the paywall sheet. Always-on, NOT beta-gated.
+                onSubscribeToProClick = {
+                    navController.navigate(
+                        Paywall(
+                            trigger = io.github.b150005.skeinly.data.analytics.PaywallTrigger.Settings,
+                        ),
+                    )
+                },
             )
         }
         composable<BugReportPreview> {
             BugReportPreviewScreen(
                 onCancel = { navController.popBackStack() },
+            )
+        }
+        composable<Paywall> { backStackEntry ->
+            val route = backStackEntry.toRoute<Paywall>()
+            // Phase 41.3b (ADR-016 §5.1) — paywall sheet rendered as a
+            // ModalBottomSheet. Result handling: the host pops the route
+            // when the sheet dismisses; the success message is surfaced
+            // by the destination the user lands on. For Settings entry
+            // we just pop — no toast on the Settings screen yet (the
+            // user knows what they did; the paywall already showed a
+            // success state before dismissing). Future entries (chart
+            // editor lock badge, ?-cell tap) may attach a toast on their
+            // host screen via shared snackbar infrastructure.
+            PaywallScreen(
+                trigger = route.trigger,
+                onDismiss = { navController.popBackStack() },
+                onPaywallResult = { _: PaywallResult ->
+                    // No-op for the Settings entry. Phase 41.4 wires the
+                    // chart-editor entry to surface a contextual toast
+                    // here.
+                },
             )
         }
         composable<ActivityFeed> {
@@ -430,6 +479,15 @@ fun SkeinlyNavHost(
             ChartEditorScreen(
                 patternId = route.patternId,
                 onBack = { navController.popBackStack() },
+                // Phase 41.3b (ADR-016 §5.1) — Pro symbol selection without
+                // entitlement routes to the paywall sheet.
+                onPaywallRequested = {
+                    navController.navigate(
+                        Paywall(
+                            trigger = io.github.b150005.skeinly.data.analytics.PaywallTrigger.AutoLockInEditor,
+                        ),
+                    )
+                },
             )
         }
         composable<ChartHistory> { backStackEntry ->
