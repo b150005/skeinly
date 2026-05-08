@@ -2,7 +2,7 @@
 
 > Japanese translation: [docs/ja/release-secrets.md](../ja/release-secrets.md)
 
-This document is a step-by-step guide for obtaining, verifying, and registering every secret consumed by the release pipeline and the Supabase Edge Functions. It covers **19 GitHub Secrets** at Repository scope + **2 Environment-scoped Firebase secrets × 2 environments (= 4 Environment registrations)** plus **5 Supabase Edge Function runtime secrets**.
+This document is a step-by-step guide for obtaining, verifying, and registering every secret consumed by the release pipeline and the Supabase Edge Functions. It covers **19 GitHub Secrets at Repository scope** + **3 Environment-scoped secrets** (`FIREBASE_GOOGLE_SERVICES_JSON_BASE64` and `FIREBASE_GOOGLE_SERVICE_INFO_PLIST_BASE64` × 2 environments, plus `GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64` × 1 environment = 5 Environment registrations) plus **5 Supabase Edge Function runtime secrets**.
 
 **GitHub Secrets — Repository scope** (registered via `gh secret set`):
 - **iOS code signing** (4) — Distribution cert + provisioning profile + Team ID
@@ -15,13 +15,16 @@ This document is a step-by-step guide for obtaining, verifying, and registering 
 
 **GitHub Secrets — Environment scope** (registered via `gh secret set --env <env>`):
 - **Firebase client config** (2 names × 2 environments) — `FIREBASE_GOOGLE_SERVICES_JSON_BASE64` (Android) + `FIREBASE_GOOGLE_SERVICE_INFO_PLIST_BASE64` (iOS), each registered against `production` (`Skeinly` Blaze project) and `development` (`Skeinly-Dev` Spark project)
+- **Android release publishing** (1 × 1 environment = 1 registration) — `GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64` registered against `production` only; consumed by `gradle-play-publisher` from CI to upload AABs to Google Play Internal track
 
 **Supabase Edge Function Secrets** (registered via `supabase secrets set`):
 - **iOS Push** (2) — APNs `.p8` + Key ID
-- **Android Push** (1) — Firebase Service Account JSON for FCM HTTP v1
-- **Android IAP** (1) — Google Play Service Account JSON for receipt validation
+- **Android Push** (1) — Firebase Service Account JSON for FCM HTTP v1 (`firebase-adminsdk-fbsvc@...` SA)
+- **Android IAP validation** (1) — Service Account JSON for Play Developer API receipt validation (`revenuecat@...` SA)
 - **Subscriptions Webhook** (1) — RevenueCat Webhook Authorization secret
 - (App Store Connect API key is reused from GitHub Secrets — same `.p8` file, registered in both contexts.)
+
+> **SA naming convention**: `GOOGLE_PLAY_<ROLE>_SA_JSON[_BASE64]` pattern bakes the role into the secret name. `PUBLISHER` = release uploads (write capability, scoped to the Skeinly app); `IAP_VALIDATOR` = IAP receipt validation (read + order management, scoped to the developer account). The two SAs hold orthogonal permission sets so a leak of either has a genuinely separated blast radius (PoLP).
 
 The release workflow ([`.github/workflows/release.yml`](../../.github/workflows/release.yml)) reads GitHub Secrets as `${{ secrets.* }}`. Missing or incorrect values fail the release silently for some (build still succeeds, just no upload) or loudly for others (signing fails). The Supabase Edge Function reads its own secrets via `Deno.env.get(...)`. This guide includes verification steps so you can confirm a value is correct **before** registering it.
 
@@ -37,6 +40,7 @@ The release workflow ([`.github/workflows/release.yml`](../../.github/workflows/
 - [Crash + error reporting — Sentry (3 secrets)](#crash--error-reporting--sentry-3-secrets)
 - [Analytics — PostHog (1 secret)](#analytics--posthog-1-secret)
 - [Subscriptions — RevenueCat (2 secrets)](#subscriptions--revenuecat-2-secrets)
+- [Android release publishing (1 secret × 1 environment = 1 registration)](#android-release-publishing-1-secret--1-environment--1-registration)
 - [Supabase Edge Function Secrets (5 secrets)](#supabase-edge-function-secrets-5-secrets)
 - [Bulk verification](#bulk-verification)
 - [Rotation and revocation](#rotation-and-revocation)
@@ -770,6 +774,59 @@ gh secret set REVENUECAT_API_KEY_ANDROID
 
 Reference: [RevenueCat API Keys & Authentication](https://www.revenuecat.com/docs/projects/authentication)
 
+## Android release publishing (1 secret × 1 environment = 1 registration)
+
+Service Account JSON used by `gradle-play-publisher` from CI to upload AABs to the Google Play Internal track. **Registered against the `production` Environment only** (debug builds never publish to Internal track, so `development` does not need it).
+
+### 21. `GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64`
+
+**WHAT**: Base64-encoded Service Account JSON with write access to Google Play Developer API release tracks. Consumed by `gradle-play-publisher` plugin (or fastlane `supply` equivalent) at AAB upload time.
+
+**SA**: `google-play-publisher@<project-ref>.iam.gserviceaccount.com` (separate from the IAP-validation SA `revenuecat@...` — orthogonal permission sets, PoLP-aligned).
+
+**OBTAIN:**
+
+1. [Google Cloud Console](https://console.cloud.google.com) → IAM & Admin → **Service Accounts**.
+2. Confirm `google-play-publisher@<project-ref>.iam.gserviceaccount.com` exists (created in the `Skeinly` project per the vendor-setup `A0c-3 RevenueCat` prerequisites).
+3. Click the SA → **Keys** tab → **Add Key** → **Create new key** → JSON → Download.
+4. Base64-encode locally:
+
+   ```bash
+   base64 -i ~/path/to/google-play-publisher-xxxx.json | pbcopy
+   ```
+
+**Play Console permission grant** (one-time):
+
+5. [Play Console](https://play.google.com/console) → **Users and permissions** → **Invite new users**.
+6. Email: `google-play-publisher@<project-ref>.iam.gserviceaccount.com`.
+7. Access expiry: none.
+8. **App permissions** tab → select Skeinly app → check **only**:
+   - **Release to testing tracks**
+   - **Manage testing tracks and edit tester lists**
+   - (auto: View app information read-only, View app quality information read-only)
+9. **Account permissions** tab: leave everything unchecked.
+10. Send invitation.
+
+> **Permissions to NEVER check**: Release apps to production, View financial data, Manage orders, Manage store presence, Reply to reviews, Policy, Deep links, Admin (all permissions). The CI pipeline must be structurally incapable of pushing to the production track — restrict release permissions to "testing tracks" only.
+>
+> **App-level vs account-level**: `google-play-publisher` should be **app-level** (Skeinly only). The CI publisher will only ever upload Skeinly AABs, so app-level scoping eliminates the risk of accidentally affecting other apps if any are added later.
+
+**VERIFY**: Play Console **Users and permissions** lists `google-play-publisher@...` with green checkmarks on the 2 granted permissions, scoped to the Skeinly app.
+
+**REGISTER:**
+
+```bash
+gh secret set GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64 \
+  --env production \
+  --body "$(base64 -i ~/path/to/google-play-publisher-xxxx.json)"
+```
+
+> Note `--env production` — this is an **Environment-scoped secret**. Do not register it at Repository scope or in the `development` Environment.
+
+**CONSUMED BY**: the `build-android` job in `.github/workflows/release.yml` (runs on tag push only). The `gradle-play-publisher` plugin Base64-decodes `${{ secrets.GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64 }}` to a JSON file path and `./gradlew :androidApp:publishBundleInternal` uploads the AAB to the Internal track.
+
+**ROTATE**: Cloud Console → IAM → Service Accounts → `google-play-publisher@...` → Keys → revoke old + create new JSON → re-run the REGISTER step above. Play Console permissions persist across key rotations because they are scoped to the SA email, which is unchanged.
+
 ## Supabase Edge Function Secrets (5 secrets)
 
 These secrets are consumed by Supabase Edge Functions (`notify-on-write` for Push, `verify-receipt` for IAP receipt validation). They are **not** GitHub Secrets — they are registered against the Supabase project via the Supabase CLI:
@@ -833,31 +890,57 @@ supabase secrets set FIREBASE_SERVICE_ACCOUNT_JSON="$(cat firebase-admin-sdk.jso
 
 **ROTATE**: Firebase Console → Project Settings → Service Accounts → Manage all service accounts → click the SA → Keys tab → revoke old + add new JSON.
 
-### EF-4. `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`
+### EF-4. `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON`
 
-**WHAT**: Service Account JSON for the Google Play Developer API, used to validate Android IAP receipts server-side and observe subscription state changes (renewal, cancellation, refund).
+**WHAT**: Service Account JSON for the Google Play Developer API, used to validate Android IAP receipts server-side and observe subscription state changes (renewal, cancellation, refund). **Consumed by `verifyGoogleReceipt` in `supabase/functions/verify-receipt/index.ts` at Phase H** (the function is currently a stub returning 501; the secret is registered but dormant).
+
+**SA**: `revenuecat@<project-ref>.iam.gserviceaccount.com` (same SA as the one uploaded to RevenueCat dashboard — single source of truth).
+
+> **2026-05-08 migration**: renamed from `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` and re-pointed from the `google-play-publisher@...` SA to `revenuecat@...` (PoLP separation). The `google-play-publisher@...` SA is now exclusively used for CI release publishing (see [#21 `GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64`](#21-google_play_publisher_sa_json_base64)). Migration steps at the end of this section.
 
 **OBTAIN:**
 
-1. [Google Play Console](https://play.google.com/console) → **Setup** → **API access**.
-2. If not already linked: **Choose a project to link** → use the same Google Cloud project as Firebase (or a separate one — both are fine; reuse keeps billing simpler).
-3. **Service accounts** section → **Create new service account** → opens Google Cloud Console.
-4. Service Account Name: `skeinly-play-publisher`.
-5. Skip role grants in Cloud Console (Play Console handles role grants in its own UI).
-6. Done → back in Cloud Console: click the SA → **Keys** → **Add Key** → **Create new key** → JSON → Download.
-7. Back in Play Console **API access** → click the new SA → **Grant access**.
-8. Permissions: **View financial data**, **Manage orders**, **Manage store presence** at minimum (covers receipt validation).
-9. Apply.
+The `revenuecat@...` SA is expected to exist in Cloud Console with a JSON key already issued (created during vendor-setup A0c-3 RevenueCat wiring). Re-issue the key only if needed:
 
-**VERIFY**: JSON has `"type": "service_account"`. The Play Console **API access** page shows the SA listed under **Service accounts** with green checkmarks on the granted permissions.
+1. [Google Cloud Console](https://console.cloud.google.com) → IAM & Admin → **Service Accounts** → click `revenuecat@...`.
+2. **Keys** tab → **Add Key** → **Create new key** → JSON → Download.
+3. (Optional) **Disable** + **Delete** the old key.
+
+**VERIFY**: JSON has `"type": "service_account"`, `client_email` is `revenuecat@<project-ref>.iam.gserviceaccount.com`. The Play Console **Users and permissions** page lists the same email with these permissions checked:
+- View revenue data, orders, churn survey responses (**View financial data**)
+- Manage orders and subscriptions (**Manage orders**)
+- View app information / bulk reports download — read-only (auto)
+
+> **Permission scope**: app-level or account-level both work. While Skeinly is the only app, the functional difference is zero. If the developer account ever manages multiple apps, scoping to Skeinly only would be tighter PoLP.
 
 **REGISTER:**
 
 ```bash
-supabase secrets set GOOGLE_PLAY_SERVICE_ACCOUNT_JSON="$(cat play-developer-api.json)"
+# Register under the new secret name
+supabase secrets set GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON="$(cat ~/path/to/revenuecat-sa.json)"
+supabase secrets list | grep GOOGLE_PLAY_IAP_VALIDATOR
 ```
 
-**ROTATE**: Cloud Console → IAM → Service Accounts → click SA → Keys → revoke old + create new JSON. Update Supabase Edge Function secret.
+**Migration steps** (if the legacy `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` secret is registered with the `google-play-publisher@...` JSON):
+
+```bash
+# 1. Delete the old secret
+supabase secrets unset GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
+
+# 2. Register under the new name with the new SA
+supabase secrets set GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON="$(cat ~/path/to/revenuecat-sa.json)"
+
+# 3. Confirm
+supabase secrets list | grep GOOGLE_PLAY
+# Only GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON should appear
+```
+
+> The Edge Function code reference at `verify-receipt/index.ts:21` is updated to the new name. The `verifyGoogleReceipt` body itself ships in Phase H.
+
+**ROTATE**: Cloud Console → IAM → Service Accounts → `revenuecat@...` → Keys → revoke old + create new JSON. **Re-register the secret in 3 places**:
+1. Supabase Edge Function: `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON`.
+2. RevenueCat dashboard: Project Settings → Apps → Skeinly → re-upload Service Account Credentials.
+3. (If applicable) any other consumer of the same JSON.
 
 ### EF-5. `REVENUECAT_WEBHOOK_SECRET`
 
@@ -951,11 +1034,12 @@ SUPABASE_PUBLISHABLE_KEY              Updated YYYY-MM-DD
 SUPABASE_URL                          Updated YYYY-MM-DD
 ```
 
-Expected **`production` Environment scope** output (2 entries — `Skeinly` Firebase project values):
+Expected **`production` Environment scope** output (3 entries — Firebase prod ×2 + Android release publishing ×1):
 
 ```
 FIREBASE_GOOGLE_SERVICES_JSON_BASE64        Updated YYYY-MM-DD
 FIREBASE_GOOGLE_SERVICE_INFO_PLIST_BASE64   Updated YYYY-MM-DD
+GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64        Updated YYYY-MM-DD
 ```
 
 Expected **`development` Environment scope** output (2 entries — `Skeinly-Dev` Firebase project values):
@@ -965,12 +1049,15 @@ FIREBASE_GOOGLE_SERVICES_JSON_BASE64        Updated YYYY-MM-DD
 FIREBASE_GOOGLE_SERVICE_INFO_PLIST_BASE64   Updated YYYY-MM-DD
 ```
 
-Total: 19 Repository + Environment scope (production: 2 + development: 2) = **23 registrations**. Anything missing or with a stale timestamp is suspect.
+Total: 19 Repository + Environment scope (production: 3 + development: 2) = **24 registrations**. Anything missing or with a stale timestamp is suspect.
 
 > **Legacy name cleanup**: When migrating from a prior layout, delete the following with `gh secret delete`:
 > - `SUPABASE_ANON_KEY` (→ fully migrated to `SUPABASE_PUBLISHABLE_KEY`)
 > - `POSTHOG_PROJECT_API_KEY_PROD` / `POSTHOG_PROJECT_API_KEY_DEV` (→ consolidated into `POSTHOG_PROJECT_API_KEY`)
 > - The old Repository-scope `FIREBASE_GOOGLE_SERVICES_JSON_BASE64` (→ moved to Environment scope)
+>
+> Edge Function legacy name cleanup:
+> - `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (→ renamed to `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON` and re-pointed at the `revenuecat@...` SA, 2026-05-08). Delete with `supabase secrets unset GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`.
 
 For Supabase Edge Function secrets (registered via `supabase secrets set`):
 
@@ -988,7 +1075,7 @@ APPLE_APNS_KEY_ID
 APPLE_APNS_KEY_P8
 APPLE_TEAM_ID
 FIREBASE_SERVICE_ACCOUNT_JSON
-GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
+GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON
 REVENUECAT_WEBHOOK_SECRET
 ```
 
@@ -1023,7 +1110,8 @@ Specifically:
 | `REVENUECAT_API_KEY_*` | RevenueCat → Project Settings → Apps → Public SDK Key revoke + issue new | On suspected leak |
 | Edge Function `APPLE_APNS_KEY_*` | Apple Developer → Keys → revoke + generate new + re-register Supabase secret | Annual or on incident |
 | Edge Function `FIREBASE_SERVICE_ACCOUNT_JSON` | Firebase Console → Service Accounts → revoke + new key | Annual or on incident |
-| Edge Function `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | Cloud Console → IAM → Service Accounts → revoke + new key | Annual or on incident |
+| Edge Function `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON` | Cloud Console → IAM → Service Accounts → `revenuecat@...` → revoke + new key → re-register Supabase secret + re-upload to RevenueCat dashboard | Annual or on incident |
+| Environment `GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64` | Cloud Console → IAM → Service Accounts → `google-play-publisher@...` → revoke + new key → re-run `gh secret set --env production` | Annual or on incident |
 | Edge Function `REVENUECAT_WEBHOOK_SECRET` | `openssl rand -hex 32` for new value → update RevenueCat Webhook Authorization header → re-register Supabase secret | Annual or on incident |
 
 After rotating, re-run `gh secret set` for each affected secret. The next CI run picks up the new value automatically.
