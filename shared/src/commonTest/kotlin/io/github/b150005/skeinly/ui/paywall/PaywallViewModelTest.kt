@@ -414,6 +414,10 @@ private class StubRevenueCatService(
     }
 
     override suspend fun restorePurchases(): RestoreResult = restoreResult
+
+    override suspend fun identifyUser(userId: String): Result<Unit> = Result.success(Unit)
+
+    override suspend fun logOutUser(): Result<Unit> = Result.success(Unit)
 }
 
 /**

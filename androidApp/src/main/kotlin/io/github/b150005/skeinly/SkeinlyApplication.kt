@@ -74,6 +74,19 @@ class SkeinlyApplication : Application() {
             verbose = BuildFlags.isBeta,
         )
 
+        // Phase 39 closed beta prep — bridge auth state to RevenueCat
+        // identity so webhook events carry the Skeinly user UUID.
+        // Started AFTER `RevenueCatBootstrap.configure` and Koin DI; the
+        // bridge silently no-ops on RevenueCat errors and never blocks
+        // auth flow. See `RevenueCatAuthBridge.kt` for the full rationale.
+        val authRepository: io.github.b150005.skeinly.domain.repository.AuthRepository = get()
+        val revenueCatService: io.github.b150005.skeinly.domain.subscription.RevenueCatService = get()
+        io.github.b150005.skeinly.data.subscription.startRevenueCatAuthBridge(
+            scope = applicationScope,
+            authRepository = authRepository,
+            revenueCatService = revenueCatService,
+        )
+
         // Phase 39.3 (ADR-015 §6) — bug-report event trail. Starts the
         // FIFO collector regardless of `BuildFlags.isBeta` or PostHog
         // configuration: the trail is for `Phase 39.5` bug-report

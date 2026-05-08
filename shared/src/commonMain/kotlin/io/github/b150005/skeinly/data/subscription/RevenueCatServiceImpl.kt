@@ -6,6 +6,8 @@ import com.revenuecat.purchases.kmp.models.Offerings
 import com.revenuecat.purchases.kmp.models.Package
 import com.revenuecat.purchases.kmp.models.PackageType
 import com.revenuecat.purchases.kmp.models.PurchasesTransactionException
+import com.revenuecat.purchases.kmp.result.awaitLogInResult
+import com.revenuecat.purchases.kmp.result.awaitLogOutResult
 import com.revenuecat.purchases.kmp.result.awaitOfferingsResult
 import com.revenuecat.purchases.kmp.result.awaitPurchaseResult
 import com.revenuecat.purchases.kmp.result.awaitRestoreResult
@@ -129,6 +131,50 @@ class RevenueCatServiceImpl : RevenueCatService {
             throw e
         } catch (e: Exception) {
             RestoreResult.Failed(e.message ?: "Restore failed.")
+        }
+
+    /**
+     * Phase 39 closed beta prep — wraps `Purchases.sharedInstance.awaitLogInResult(userId)`.
+     *
+     * Returns `Result.success(Unit)` when the SDK is not configured
+     * (local-dev build without `REVENUECAT_API_KEY_*`); the no-op short-
+     * circuit keeps the auth flow uncoupled from RevenueCat configuration
+     * state. Otherwise maps the SDK's `Result<SuccessfulLogin>` to
+     * `Result<Unit>` — callers (the auth bridge) don't need the
+     * customer-info / isCreated detail; they only care whether
+     * identification succeeded or failed.
+     */
+    override suspend fun identifyUser(userId: String): Result<Unit> =
+        try {
+            if (!RevenueCatBootstrap.isConfigured) {
+                Result.success(Unit)
+            } else {
+                Purchases.sharedInstance.awaitLogInResult(userId).map { Unit }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+
+    /**
+     * Phase 39 closed beta prep — wraps `Purchases.sharedInstance.awaitLogOutResult()`.
+     *
+     * Same no-op shortcut as [identifyUser] when the SDK is not
+     * configured. Discards the returned `CustomerInfo` (callers only
+     * care about success/failure).
+     */
+    override suspend fun logOutUser(): Result<Unit> =
+        try {
+            if (!RevenueCatBootstrap.isConfigured) {
+                Result.success(Unit)
+            } else {
+                Purchases.sharedInstance.awaitLogOutResult().map { Unit }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
         }
 
     private suspend fun resolvePackage(identifier: String): Package? {

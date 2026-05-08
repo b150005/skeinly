@@ -62,4 +62,43 @@ interface RevenueCatService {
      * "Welcome back!" vs "No purchases found" toast).
      */
     suspend fun restorePurchases(): RestoreResult
+
+    /**
+     * Phase 39 closed beta prep — binds the RevenueCat customer
+     * identity to [userId], typically the Supabase `auth.users.id` UUID
+     * of the signed-in user.
+     *
+     * Wraps `Purchases.sharedInstance.logIn(userId)`. After this call,
+     * webhook events delivered by RevenueCat carry `event.app_user_id`
+     * equal to [userId], which lets the
+     * `supabase/functions/revenuecat-webhook` Edge Function key into
+     * `public.subscriptions.user_id` directly.
+     *
+     * **Anonymous → identified migration**: the SDK alias-merges any
+     * purchases made under the prior anonymous `$RCAnonymousID:xxxx`
+     * into the [userId] account, so guest purchases are not lost when
+     * the user signs up afterwards.
+     *
+     * Failure modes (network, RevenueCat 5xx, SDK not configured) are
+     * surfaced as `Result.failure(...)` and never throw — callers
+     * (notably the auth flow via [startRevenueCatAuthBridge]) treat
+     * subscription identity sync as best-effort.
+     */
+    suspend fun identifyUser(userId: String): Result<Unit>
+
+    /**
+     * Phase 39 closed beta prep — clears the RevenueCat customer
+     * identity, returning to the anonymous `$RCAnonymousID:xxxx` track.
+     *
+     * Wraps `Purchases.sharedInstance.logOut()`. Called from the auth
+     * bridge on `AuthState.Unauthenticated`. After this call, any
+     * subsequent purchases on this device are routed to a fresh
+     * anonymous identity — preventing cross-user purchase leakage on
+     * shared devices.
+     *
+     * Failure modes are surfaced as `Result.failure(...)` and never
+     * throw — auth signOut is the source of truth for the local
+     * session, RevenueCat sync is best-effort.
+     */
+    suspend fun logOutUser(): Result<Unit>
 }
