@@ -36,6 +36,35 @@ struct iOSApp: App {
                 // could leak user-authored content into crash reports.
                 options.attachScreenshot = false
                 options.attachViewHierarchy = false
+
+                // App Hang Tracking — gated per environment to keep the
+                // signal/noise ratio tight before Phase 39 beta tester invites
+                // land. Stack-trace pattern observed in 9 unresolved issues
+                // (SKEINLY-IOS-{1,8,P,1Q,1Y,2K,2R,2S,2T} as of 2026-05-08):
+                // every one is a Simulator development build hitting the
+                // 2-second threshold during a) SF Symbol / SwiftUI Image
+                // first-resolve via CUIStructuredThemeStore lookupAssetForKey,
+                // b) UIKitToolbarStrategy first toolbar render after
+                // App.main, or c) XCUITest accessibility snapshot scans
+                // through NSBundle / readdir during E2E runs. None reproduce
+                // on physical-device Release builds — they are first-paint
+                // overhead amplified by host-CPU sharing + cold asset cache.
+                //
+                // - Simulator: disabled outright. False positives drown out
+                //   real signal; closed-beta testers will not run Simulator.
+                // - Real-device Debug: 4s threshold (vs 2s default) so
+                //   debugger pauses, breakpoints, and slow first-launch
+                //   asset hydration don't fire false hangs while still
+                //   capturing genuine multi-second freezes for beta testers
+                //   running development sideloads via TestFlight.
+                // - Release: leave defaults (enabled, 2s threshold). Strict
+                //   capture of production-grade hangs is the whole point of
+                //   Phase 39 telemetry.
+                #if targetEnvironment(simulator)
+                options.enableAppHangTrackingV2 = false
+                #elseif DEBUG
+                options.appHangTimeoutInterval = 4.0
+                #endif
             }
         }
 
