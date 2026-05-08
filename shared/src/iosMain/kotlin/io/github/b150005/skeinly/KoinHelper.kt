@@ -146,6 +146,36 @@ fun configureRevenueCat(verbose: Boolean) {
         .configure(verbose = verbose)
 }
 
+/**
+ * Phase 39 closed beta prep — start the auth → RevenueCat identity bridge.
+ *
+ * Called from `iOSApp.init` AFTER [configureRevenueCat] and Koin init have
+ * completed. The bridge subscribes to `AuthRepository.observeAuthState()`
+ * via the application-scope coroutine `CoroutineScope` registered in
+ * [io.github.b150005.skeinly.di.applicationScopeQualifier], reacting to
+ * `Authenticated` / `Unauthenticated` transitions by calling
+ * `Purchases.sharedInstance.logIn(userId)` / `logOut()`.
+ *
+ * Returns Unit (no Job exposed to Swift) — the bridge naturally lives for
+ * the application lifetime; explicit cancellation has no use case on iOS.
+ *
+ * See `RevenueCatAuthBridge.kt` KDoc for the full rationale.
+ */
+fun startRevenueCatAuthBridge() {
+    val koin = KoinPlatform.getKoin()
+    val scope =
+        koin.get<kotlinx.coroutines.CoroutineScope>(
+            io.github.b150005.skeinly.di.applicationScopeQualifier,
+        )
+    val authRepository = koin.get<io.github.b150005.skeinly.domain.repository.AuthRepository>()
+    val revenueCatService = koin.get<io.github.b150005.skeinly.domain.subscription.RevenueCatService>()
+    io.github.b150005.skeinly.data.subscription.startRevenueCatAuthBridge(
+        scope = scope,
+        authRepository = authRepository,
+        revenueCatService = revenueCatService,
+    )
+}
+
 fun getActivityFeedViewModel(): ActivityFeedViewModel = KoinPlatform.getKoin().get()
 
 fun getSharedWithMeViewModel(): SharedWithMeViewModel = KoinPlatform.getKoin().get()

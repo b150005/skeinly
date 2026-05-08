@@ -85,6 +85,13 @@ struct iOSApp: App {
         // richer purchase-flow detail. Mirrors SkeinlyApplication.kt.
         KoinHelperKt.configureRevenueCat(verbose: BuildFlags.isBeta)
 
+        // Phase 39 closed beta prep — bridge auth state to RevenueCat
+        // identity so webhook events carry the Skeinly user UUID.
+        // Started AFTER `configureRevenueCat` and Koin init; the bridge
+        // silently no-ops on RevenueCat errors and never blocks auth
+        // flow. See `RevenueCatAuthBridge.kt` for the full rationale.
+        KoinHelperKt.startRevenueCatAuthBridge()
+
         // Phase F2: PostHog product analytics. Default OFF (opt-in, not
         // opt-out). SDK is initialized lazily on the first ON flip; toggling
         // OFF mid-session calls optOut() to suspend further capture; toggling
