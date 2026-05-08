@@ -1,34 +1,20 @@
 package io.github.b150005.skeinly.ui.packmanagement
 
-import io.github.b150005.skeinly.data.local.LocalSymbolPackDataSource
 import io.github.b150005.skeinly.data.sync.PackSyncOutcome
 import io.github.b150005.skeinly.data.sync.SyncCycleResult
-import io.github.b150005.skeinly.db.SkeinlyDatabase
-import io.github.b150005.skeinly.db.createTestDriver
-import io.github.b150005.skeinly.domain.model.AuthState
-import io.github.b150005.skeinly.domain.model.Subscription
-import io.github.b150005.skeinly.domain.model.SubscriptionPlatform
-import io.github.b150005.skeinly.domain.model.SubscriptionStatus
-import io.github.b150005.skeinly.domain.model.SymbolPack
-import io.github.b150005.skeinly.domain.model.SymbolPackPayload
-import io.github.b150005.skeinly.domain.model.SymbolPackPayloadEntry
 import io.github.b150005.skeinly.domain.model.SymbolPackTier
-import io.github.b150005.skeinly.domain.repository.SubscriptionRepository
-import io.github.b150005.skeinly.domain.symbol.EntitlementResolver
-import io.github.b150005.skeinly.domain.symbol.SymbolCategory
-import io.github.b150005.skeinly.domain.usecase.FakeAuthRepository
+import io.github.b150005.skeinly.domain.symbol.PackInventory
+import io.github.b150005.skeinly.domain.symbol.PackRow
+import io.github.b150005.skeinly.domain.symbol.PackStatus
+import io.github.b150005.skeinly.domain.symbol.SymbolPackCatalog
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -37,8 +23,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlin.time.Clock
-import kotlin.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PackManagementViewModelTest {
@@ -54,121 +38,89 @@ class PackManagementViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private val now = Instant.parse("2026-05-07T12:00:00Z")
-    private val frozenClock =
-        object : Clock {
-            override fun now(): Instant = now
-        }
-    private val json = Json { ignoreUnknownKeys = true }
+    /**
+     * Phase 41.5 (ADR-016 §41.5.3) — VM tests now exercise the state
+     * machine + sync dispatch wiring against a [FakeSymbolPackCatalog].
+     * The actual gate-vs-status fold + ordering + total-bytes math
+     * lives in [DefaultSymbolPackCatalogTest] now that the catalog
+     * owns the gate per §41.5.1.
+     */
+    private class FakeSymbolPackCatalog(
+        var inventory: PackInventory = PackInventory(rows = emptyList(), totalDownloadedBytes = 0L),
+    ) : SymbolPackCatalog {
+        var listInventoryCallCount: Int = 0
+        var nextError: Throwable? = null
 
-    private fun pack(
-        id: String,
-        tier: SymbolPackTier = SymbolPackTier.FREE,
-        version: Int = 1,
-        displayName: String = id,
-        description: String? = null,
-        payloadSize: Int = 1024,
-        symbolCount: Int = 4,
-        updatedAt: Instant = Instant.parse("2026-05-01T00:00:00Z"),
-    ) = SymbolPack(
-        id = id,
-        tier = tier,
-        version = version,
-        displayName = displayName,
-        description = description,
-        payloadPath = "$id/$version/payload.json",
-        payloadSize = payloadSize,
-        symbolCount = symbolCount,
-        signedUntil = null,
-        createdAt = Instant.parse("2026-05-01T00:00:00Z"),
-        updatedAt = updatedAt,
-    )
-
-    private fun payloadJson(
-        packId: String,
-        version: Int,
-    ): String =
-        json.encodeToString(
-            SymbolPackPayload(
-                packId = packId,
-                version = version,
-                schemaVersion = SymbolPackPayload.CURRENT_SCHEMA_VERSION,
-                symbols =
-                    listOf(
-                        SymbolPackPayloadEntry(
-                            id = "$packId.symbol",
-                            category = SymbolCategory.KNIT.name,
-                            tier = SymbolPackTier.FREE,
-                            pathData = "M 0 0 L 1 1",
-                            jaLabel = "ja",
-                            enLabel = "en",
-                        ),
-                    ),
-            ),
-        )
-
-    private fun localStore(): LocalSymbolPackDataSource {
-        val driver = createTestDriver()
-        val db = SkeinlyDatabase(driver)
-        return LocalSymbolPackDataSource(db, Dispatchers.Unconfined)
-    }
-
-    private fun stubResolver(isPro: Boolean): EntitlementResolver {
-        val auth = FakeAuthRepository().apply { setAuthState(AuthState.Authenticated(userId = "u-1", email = "e@x")) }
-        val sub: Subscription? =
-            if (isPro) {
-                Subscription(
-                    id = "sub-1",
-                    userId = "u-1",
-                    platform = SubscriptionPlatform.IOS,
-                    productId = "p",
-                    status = SubscriptionStatus.ACTIVE,
-                    originalTransactionId = "txn",
-                    expiresAt = Instant.parse("2026-12-31T00:00:00Z"),
-                    lastVerifiedAt = now,
-                    createdAt = now,
-                    updatedAt = now,
-                )
-            } else {
-                null
+        override suspend fun listInventory(): PackInventory {
+            listInventoryCallCount++
+            nextError?.let {
+                nextError = null
+                throw it
             }
-        val repo = StubSubscriptionRepository(cachedFor = "u-1", sub = sub)
-        return EntitlementResolver(repo, auth, frozenClock)
-    }
-
-    private suspend fun seed(
-        local: LocalSymbolPackDataSource,
-        pack: SymbolPack,
-        downloadedVersion: Int? = null,
-    ) {
-        local.upsertPack(pack)
-        if (downloadedVersion != null) {
-            local.upsertPayload(
-                packId = pack.id,
-                version = downloadedVersion,
-                payloadJson = payloadJson(pack.id, downloadedVersion),
-            )
+            return inventory
         }
     }
 
-    private fun viewModel(
-        local: LocalSymbolPackDataSource,
-        resolver: EntitlementResolver = stubResolver(isPro = false),
-        syncDispatch: PackSyncDispatch? = null,
-    ) = PackManagementViewModel(
-        localSymbolPackDataSource = local,
-        entitlementResolver = resolver,
-        syncDispatch = syncDispatch,
+    private fun row(
+        packId: String,
+        tier: SymbolPackTier = SymbolPackTier.FREE,
+        serverVersion: Int = 1,
+        downloadedVersion: Int? = 1,
+        status: PackStatus = PackStatus.Downloaded,
+        payloadSize: Int = 1024,
+    ) = PackRow(
+        packId = packId,
+        displayName = packId,
+        description = null,
+        tier = tier,
+        serverVersion = serverVersion,
+        symbolCount = 4,
+        payloadSize = payloadSize,
+        downloadedVersion = downloadedVersion,
+        status = status,
     )
 
     // ----- load --------------------------------------------------------------
 
     @Test
-    fun `empty mirror produces empty rows and zero total`() =
+    fun `init dispatches a single load and forwards inventory verbatim`() =
         runTest {
-            val local = localStore()
-            val vm = viewModel(local)
+            val rows =
+                listOf(
+                    row("free.alpha", payloadSize = 100),
+                    row("free.beta", downloadedVersion = null, status = PackStatus.NotDownloaded, payloadSize = 200),
+                )
+            val catalog = FakeSymbolPackCatalog(PackInventory(rows = rows, totalDownloadedBytes = 100L))
+            val vm = PackManagementViewModel(symbolPackCatalog = catalog)
             advanceUntilIdle()
+
+            val state = vm.state.value
+            assertFalse(state.isLoading)
+            assertEquals(rows, state.rows)
+            assertEquals(100L, state.totalDownloadedBytes)
+            assertNull(state.error)
+            assertEquals(1, catalog.listInventoryCallCount)
+        }
+
+    @Test
+    fun `init load surfacing an exception sets error and clears loading`() =
+        runTest {
+            val catalog = FakeSymbolPackCatalog().apply { nextError = RuntimeException("boom") }
+            val vm = PackManagementViewModel(symbolPackCatalog = catalog)
+            advanceUntilIdle()
+
+            val state = vm.state.value
+            assertFalse(state.isLoading)
+            assertEquals("boom", state.error)
+            assertTrue(state.rows.isEmpty())
+        }
+
+    @Test
+    fun `init load with empty inventory produces empty rows and zero total`() =
+        runTest {
+            val vm = PackManagementViewModel(symbolPackCatalog = FakeSymbolPackCatalog())
+            advanceUntilIdle()
+
             val state = vm.state.value
             assertFalse(state.isLoading)
             assertTrue(state.rows.isEmpty())
@@ -176,143 +128,54 @@ class PackManagementViewModelTest {
             assertNull(state.error)
         }
 
-    @Test
-    fun `loaded packs produce rows with correct status and totals`() =
-        runTest {
-            val local = localStore()
-            seed(local, pack("free.alpha", payloadSize = 100), downloadedVersion = 1)
-            seed(local, pack("free.beta", payloadSize = 200), downloadedVersion = null)
-            val vm = viewModel(local, resolver = stubResolver(isPro = false))
-            advanceUntilIdle()
-
-            val state = vm.state.value
-            assertEquals(2, state.rows.size)
-            assertEquals(100L, state.totalDownloadedBytes)
-            assertEquals(PackStatus.Downloaded, state.rows.first { it.packId == "free.alpha" }.status)
-            assertEquals(PackStatus.NotDownloaded, state.rows.first { it.packId == "free.beta" }.status)
-        }
-
-    @Test
-    fun `update available when downloaded version is older than server`() =
-        runTest {
-            val local = localStore()
-            seed(local, pack("free.alpha", version = 3), downloadedVersion = 1)
-            val vm = viewModel(local)
-            advanceUntilIdle()
-
-            val row =
-                vm.state.value.rows
-                    .first()
-            assertEquals(PackStatus.UpdateAvailable, row.status)
-            assertEquals(3, row.serverVersion)
-            assertEquals(1, row.downloadedVersion)
-        }
-
-    @Test
-    fun `pro pack reads as locked when user is not entitled`() =
-        runTest {
-            val local = localStore()
-            seed(local, pack("pro.cables", tier = SymbolPackTier.PRO))
-            val vm = viewModel(local, resolver = stubResolver(isPro = false))
-            advanceUntilIdle()
-
-            val row =
-                vm.state.value.rows
-                    .first()
-            assertEquals(SymbolPackTier.PRO, row.tier)
-            assertEquals(PackStatus.Locked, row.status)
-            assertFalse(vm.state.value.isProEntitled)
-        }
-
-    @Test
-    fun `pro pack reads as not downloaded when user is entitled`() =
-        runTest {
-            val local = localStore()
-            seed(local, pack("pro.cables", tier = SymbolPackTier.PRO))
-            val vm = viewModel(local, resolver = stubResolver(isPro = true))
-            advanceUntilIdle()
-
-            val row =
-                vm.state.value.rows
-                    .first()
-            assertEquals(PackStatus.NotDownloaded, row.status)
-            assertTrue(vm.state.value.isProEntitled)
-        }
-
-    @Test
-    fun `rows ordered free packs before pro packs both alpha by id`() =
-        runTest {
-            val local = localStore()
-            seed(local, pack("free.zulu", tier = SymbolPackTier.FREE))
-            seed(local, pack("pro.alpha", tier = SymbolPackTier.PRO))
-            seed(local, pack("free.alpha", tier = SymbolPackTier.FREE))
-            val vm = viewModel(local)
-            advanceUntilIdle()
-
-            assertEquals(
-                listOf("free.alpha", "free.zulu", "pro.alpha"),
-                vm.state.value.rows
-                    .map { it.packId },
-            )
-        }
-
-    @Test
-    fun `total downloaded bytes counts only packs with payloads on disk`() =
-        runTest {
-            val local = localStore()
-            seed(local, pack("free.a", payloadSize = 500), downloadedVersion = 1)
-            seed(local, pack("free.b", payloadSize = 800), downloadedVersion = 1)
-            seed(local, pack("free.c", payloadSize = 9999), downloadedVersion = null) // not on disk
-            val vm = viewModel(local)
-            advanceUntilIdle()
-
-            assertEquals(1300L, vm.state.value.totalDownloadedBytes)
-        }
-
     // ----- refresh -----------------------------------------------------------
 
     @Test
-    fun `refresh dispatches sync and re-reads the mirror`() =
+    fun `refresh dispatches sync and re-reads the catalog`() =
         runTest {
-            val local = localStore()
-            seed(local, pack("free.a", version = 1, payloadSize = 100), downloadedVersion = 1)
+            val initial = PackInventory(rows = listOf(row("free.a", serverVersion = 1)), totalDownloadedBytes = 1024L)
+            val updated =
+                PackInventory(
+                    rows = listOf(row("free.a", serverVersion = 2, downloadedVersion = 2)),
+                    totalDownloadedBytes = 1024L,
+                )
+            val catalog = FakeSymbolPackCatalog(initial)
             var syncCallCount = 0
             val dispatch: PackSyncDispatch = {
                 syncCallCount++
-                // After the sync, simulate a server-side update by bumping the local mirror.
-                seed(local, pack("free.a", version = 2, payloadSize = 100), downloadedVersion = 2)
+                catalog.inventory = updated
                 SyncCycleResult.Completed(outcomes = listOf(PackSyncOutcome.Downloaded("free.a", version = 2)))
             }
-            val vm = viewModel(local, syncDispatch = dispatch)
+            val vm = PackManagementViewModel(symbolPackCatalog = catalog, syncDispatch = dispatch)
             advanceUntilIdle()
 
             vm.onEvent(PackManagementEvent.Refresh)
             advanceUntilIdle()
 
             assertEquals(1, syncCallCount)
-            val row =
-                vm.state.value.rows
-                    .first()
-            assertEquals(2, row.serverVersion)
-            assertEquals(2, row.downloadedVersion)
-            assertEquals(PackStatus.Downloaded, row.status)
+            assertEquals(updated.rows, vm.state.value.rows)
             assertFalse(vm.state.value.isRefreshing)
+            // 1 init load + 1 refresh re-read = 2 catalog calls.
+            assertEquals(2, catalog.listInventoryCallCount)
         }
 
     @Test
-    fun `refresh without sync dispatch still re-reads mirror`() =
+    fun `refresh without sync dispatch still re-reads the catalog`() =
         runTest {
-            // Local-only dev path: no sync manager wired. The local mirror
-            // just got updated by a hypothetical foreground hook, and the
-            // user taps Refresh to see the result. We must NOT throw or
-            // surface an error.
-            val local = localStore()
-            seed(local, pack("free.a"), downloadedVersion = 1)
-            val vm = viewModel(local, syncDispatch = null)
+            // Local-only dev path: no sync manager wired. The catalog's
+            // backing store just got updated by a hypothetical foreground
+            // hook, and the user taps Refresh to see the result. We must
+            // NOT throw or surface an error.
+            val catalog = FakeSymbolPackCatalog(PackInventory(rows = listOf(row("free.a")), totalDownloadedBytes = 1024L))
+            val vm = PackManagementViewModel(symbolPackCatalog = catalog, syncDispatch = null)
             advanceUntilIdle()
 
-            // Mutate the underlying store to simulate a downstream change.
-            seed(local, pack("free.b", payloadSize = 250), downloadedVersion = 1)
+            // Mutate the underlying inventory to simulate a downstream change.
+            catalog.inventory =
+                PackInventory(
+                    rows = listOf(row("free.a"), row("free.b", payloadSize = 250)),
+                    totalDownloadedBytes = 1024L + 250L,
+                )
 
             vm.onEvent(PackManagementEvent.Refresh)
             advanceUntilIdle()
@@ -321,27 +184,44 @@ class PackManagementViewModelTest {
             assertFalse(state.isRefreshing)
             assertEquals(2, state.rows.size)
             assertNull(state.error)
+            assertEquals(2, catalog.listInventoryCallCount)
         }
 
     @Test
     fun `refresh surfaces manifest fetch failure as error`() =
         runTest {
-            val local = localStore()
-            seed(local, pack("free.a"), downloadedVersion = 1)
+            val catalog = FakeSymbolPackCatalog(PackInventory(rows = listOf(row("free.a")), totalDownloadedBytes = 1024L))
             val dispatch: PackSyncDispatch = {
                 SyncCycleResult.ManifestFetchFailed(cause = RuntimeException("network down"))
             }
-            val vm = viewModel(local, syncDispatch = dispatch)
+            val vm = PackManagementViewModel(symbolPackCatalog = catalog, syncDispatch = dispatch)
             advanceUntilIdle()
 
             vm.onEvent(PackManagementEvent.Refresh)
             advanceUntilIdle()
 
-            assertNotNull(vm.state.value.error)
-            assertTrue(
-                vm.state.value.error!!
-                    .contains("network down"),
-            )
+            val error = vm.state.value.error
+            assertNotNull(error)
+            assertTrue(error.contains("network down"))
+            assertFalse(vm.state.value.isRefreshing)
+        }
+
+    @Test
+    fun `refresh surfaces manifest persist failure as error`() =
+        runTest {
+            val catalog = FakeSymbolPackCatalog(PackInventory(rows = listOf(row("free.a")), totalDownloadedBytes = 1024L))
+            val dispatch: PackSyncDispatch = {
+                SyncCycleResult.ManifestPersistFailed(cause = RuntimeException("disk full"))
+            }
+            val vm = PackManagementViewModel(symbolPackCatalog = catalog, syncDispatch = dispatch)
+            advanceUntilIdle()
+
+            vm.onEvent(PackManagementEvent.Refresh)
+            advanceUntilIdle()
+
+            val error = vm.state.value.error
+            assertNotNull(error)
+            assertTrue(error.contains("disk full"))
             assertFalse(vm.state.value.isRefreshing)
         }
 
@@ -354,15 +234,14 @@ class PackManagementViewModelTest {
             // back before the second tap is observable. This is the same
             // pattern as `concurrent refresh callers leave coherent
             // snapshot` in CompositeSymbolCatalogTest.
-            val local = localStore()
-            seed(local, pack("free.a"), downloadedVersion = 1)
+            val catalog = FakeSymbolPackCatalog(PackInventory(rows = listOf(row("free.a")), totalDownloadedBytes = 1024L))
             var syncCallCount = 0
             val gate = CompletableDeferred<SyncCycleResult>()
             val dispatch: PackSyncDispatch = {
                 syncCallCount++
                 gate.await()
             }
-            val vm = viewModel(local, syncDispatch = dispatch)
+            val vm = PackManagementViewModel(symbolPackCatalog = catalog, syncDispatch = dispatch)
             advanceUntilIdle()
 
             // First tap — suspends inside the dispatch.
@@ -386,12 +265,11 @@ class PackManagementViewModelTest {
     @Test
     fun `refresh surfaces unexpected exception as error and clears refreshing`() =
         runTest {
-            val local = localStore()
-            seed(local, pack("free.a"), downloadedVersion = 1)
+            val catalog = FakeSymbolPackCatalog(PackInventory(rows = listOf(row("free.a")), totalDownloadedBytes = 1024L))
             val dispatch: PackSyncDispatch = {
                 throw RuntimeException("boom")
             }
-            val vm = viewModel(local, syncDispatch = dispatch)
+            val vm = PackManagementViewModel(symbolPackCatalog = catalog, syncDispatch = dispatch)
             advanceUntilIdle()
 
             vm.onEvent(PackManagementEvent.Refresh)
@@ -402,14 +280,34 @@ class PackManagementViewModelTest {
         }
 
     @Test
+    fun `refresh after sync re-read failure surfaces error and clears refreshing`() =
+        runTest {
+            // The sync dispatch returned Completed (no error from the
+            // sync layer), but the post-sync catalog re-read raised —
+            // either a transient SQLDelight failure or a payload parse
+            // regression. Should land error + clear refreshing.
+            val catalog = FakeSymbolPackCatalog(PackInventory(rows = listOf(row("free.a")), totalDownloadedBytes = 1024L))
+            val dispatch: PackSyncDispatch = { SyncCycleResult.Completed(outcomes = emptyList()) }
+            val vm = PackManagementViewModel(symbolPackCatalog = catalog, syncDispatch = dispatch)
+            advanceUntilIdle()
+
+            catalog.nextError = RuntimeException("re-read failed")
+            vm.onEvent(PackManagementEvent.Refresh)
+            advanceUntilIdle()
+
+            assertEquals("re-read failed", vm.state.value.error)
+            assertFalse(vm.state.value.isRefreshing)
+        }
+
+    @Test
     fun `clear error nulls the error field without touching other state`() =
         runTest {
-            val local = localStore()
-            seed(local, pack("free.a"), downloadedVersion = 1)
+            val rows = listOf(row("free.a"))
+            val catalog = FakeSymbolPackCatalog(PackInventory(rows = rows, totalDownloadedBytes = 1024L))
             val dispatch: PackSyncDispatch = {
                 SyncCycleResult.ManifestFetchFailed(cause = RuntimeException("nope"))
             }
-            val vm = viewModel(local, syncDispatch = dispatch)
+            val vm = PackManagementViewModel(symbolPackCatalog = catalog, syncDispatch = dispatch)
             advanceUntilIdle()
             vm.onEvent(PackManagementEvent.Refresh)
             advanceUntilIdle()
@@ -421,44 +319,4 @@ class PackManagementViewModelTest {
             assertNull(vm.state.value.error)
             assertEquals(rowsBefore, vm.state.value.rows)
         }
-
-    @Test
-    fun `loaded pack carries description and symbol count and payload size`() =
-        runTest {
-            val local = localStore()
-            seed(
-                local,
-                pack(
-                    id = "free.beginner",
-                    displayName = "Beginner",
-                    description = "Starter knit symbols",
-                    payloadSize = 4096,
-                    symbolCount = 12,
-                ),
-                downloadedVersion = 1,
-            )
-            val vm = viewModel(local)
-            advanceUntilIdle()
-
-            val row =
-                vm.state.value.rows
-                    .first()
-            assertEquals("Beginner", row.displayName)
-            assertEquals("Starter knit symbols", row.description)
-            assertEquals(12, row.symbolCount)
-            assertEquals(4096, row.payloadSize)
-        }
-
-    private class StubSubscriptionRepository(
-        private val cachedFor: String?,
-        private val sub: Subscription?,
-    ) : SubscriptionRepository {
-        override fun cachedActiveSubscription(userId: String): Subscription? = if (userId == cachedFor) sub else null
-
-        override fun observeActiveSubscription(userId: String): Flow<Subscription?> = flowOf(if (userId == cachedFor) sub else null)
-
-        override suspend fun refresh(userId: String): Result<Subscription?> = Result.success(sub)
-
-        override suspend fun clearLocalCache(userId: String) = Unit
-    }
 }
