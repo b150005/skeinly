@@ -64,6 +64,17 @@ data class ChartEditorState(
     val selectedCategory: SymbolCategory = SymbolCategory.KNIT,
     val paletteSymbols: List<SymbolDefinition> = emptyList(),
     /**
+     * Phase 41.4 (ADR-016 §5.2) — Pro symbols in [selectedCategory] the
+     * current user lacks the entitlement to use. Rendered in a separate
+     * "locked" section of the palette strip with a lock badge; tapping
+     * routes through the existing [paywallRequests] channel to the
+     * paywall sheet.
+     *
+     * Disjoint from [paletteSymbols] by construction (see
+     * [SymbolCatalog.listLockedPro] KDoc) — never duplicate-render an id.
+     */
+    val lockedProPaletteSymbols: List<SymbolDefinition> = emptyList(),
+    /**
      * Phase 35.2f: id of the layer that receives placement and symmetry writes.
      * Null is a valid state (user removed every layer) — `PlaceCell` is a no-op
      * in that case rather than auto-creating, per the ADR-011 §5 addendum.
@@ -263,6 +274,7 @@ class ChartEditorViewModel(
             ChartEditorState(
                 patternId = patternId,
                 paletteSymbols = symbolCatalog.listByCategory(SymbolCategory.KNIT),
+                lockedProPaletteSymbols = symbolCatalog.listLockedPro(SymbolCategory.KNIT),
             ),
         )
     val state: StateFlow<ChartEditorState> = _state.asStateFlow()
@@ -313,6 +325,7 @@ class ChartEditorViewModel(
                     it.copy(
                         selectedCategory = event.category,
                         paletteSymbols = symbolCatalog.listByCategory(event.category),
+                        lockedProPaletteSymbols = symbolCatalog.listLockedPro(event.category),
                     )
                 }
             is ChartEditorEvent.SelectCraft -> selectCraft(event.craftType)

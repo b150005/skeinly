@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Star
@@ -77,6 +78,7 @@ import io.github.b150005.skeinly.generated.resources.label_danger_zone
 import io.github.b150005.skeinly.generated.resources.label_diagnostic_data_sharing
 import io.github.b150005.skeinly.generated.resources.label_new_email
 import io.github.b150005.skeinly.generated.resources.label_new_password
+import io.github.b150005.skeinly.generated.resources.label_pack_management
 import io.github.b150005.skeinly.generated.resources.label_paywall_section
 import io.github.b150005.skeinly.generated.resources.label_subscribe_to_pro
 import io.github.b150005.skeinly.generated.resources.message_email_change_pending
@@ -107,6 +109,10 @@ fun SettingsScreen(
     // production feature, not a beta-only experiment. NavGraph wires this
     // to the `Paywall(trigger = Settings)` route.
     onSubscribeToProClick: () -> Unit = {},
+    // Phase 41.4 (ADR-016 §5.2) — invoked when the user taps "Manage
+    // Symbol Packs". Always-on, NOT beta-gated. NavGraph wires this to
+    // the `PackManagement` route.
+    onManagePacksClick: () -> Unit = {},
     viewModel: SettingsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -297,6 +303,21 @@ fun SettingsScreen(
                                 viewModel.onEvent(SettingsEvent.SubscribeToProTapped)
                                 onSubscribeToProClick()
                             }.testTag("subscribeToProButton"),
+                )
+
+                // Phase 41.4 (ADR-016 §5.2) — Manage Symbol Packs entry.
+                // Always-on, NOT beta-gated. Sits inside the Skeinly Pro
+                // section because the pack-management surface is the
+                // primary place a non-Pro user discovers what subscribing
+                // would unlock.
+                ListItem(
+                    headlineContent = { Text(stringResource(Res.string.label_pack_management)) },
+                    leadingContent = { Icon(Icons.Filled.Download, contentDescription = null) },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable(role = Role.Button) { onManagePacksClick() }
+                            .testTag("managePacksButton"),
                 )
 
                 // Beta section — Phase 39.4 (ADR-015 §6). Holds diagnostic

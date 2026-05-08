@@ -26,6 +26,10 @@ enum Route: Hashable {
     /// case stays Codable / Hashable without forcing PaywallTrigger to
     /// adopt SwiftUI conformances (it is bridged from a Kotlin enum).
     case paywall(trigger: PaywallTrigger)
+    /// Phase 41.4 (ADR-016 §5.2 §6 §41.4) — pack management screen
+    /// reachable from Settings → "Manage Symbol Packs". Always-on, NOT
+    /// beta-gated.
+    case packManagement
 
     // Hashable conformance for sharedContent with optionals
     func hash(into hasher: inout Hasher) {
@@ -86,6 +90,8 @@ enum Route: Hashable {
             // deterministic hash component (NSObject identity is stable
             // for singletons but its hash combines unstably with strings).
             hasher.combine(trigger.wireValue)
+        case .packManagement:
+            hasher.combine("packManagement")
         }
     }
 }
@@ -226,6 +232,11 @@ struct AppRootView: View {
                 // beta-gated.
                 onSubscribeToProClick: {
                     path.append(Route.paywall(trigger: PaywallTrigger.settings))
+                },
+                // Phase 41.4 (ADR-016 §5.2) — Settings → "Manage Symbol
+                // Packs". Always-on, NOT beta-gated.
+                onManagePacksClick: {
+                    path.append(Route.packManagement)
                 }
             )
                 .trackScreen(.settings)
@@ -312,6 +323,10 @@ struct AppRootView: View {
                 onDismiss: { path.removeLast() }
             )
                 .trackScreen(.paywall)
+        case .packManagement:
+            // Phase 41.4 (ADR-016 §5.2) — pack management screen.
+            PackManagementScreen(path: $path)
+                .skeinlyBackButton(path: $path)
         }
     }
 

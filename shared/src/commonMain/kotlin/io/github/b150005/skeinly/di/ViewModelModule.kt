@@ -16,6 +16,7 @@ import io.github.b150005.skeinly.ui.chart.ChartViewerViewModel
 import io.github.b150005.skeinly.ui.comments.CommentSectionViewModel
 import io.github.b150005.skeinly.ui.discovery.DiscoveryViewModel
 import io.github.b150005.skeinly.ui.onboarding.OnboardingViewModel
+import io.github.b150005.skeinly.ui.packmanagement.PackManagementViewModel
 import io.github.b150005.skeinly.ui.patternedit.PatternEditViewModel
 import io.github.b150005.skeinly.ui.patternlibrary.PatternLibraryViewModel
 import io.github.b150005.skeinly.ui.profile.ProfileViewModel
@@ -289,6 +290,19 @@ val viewModelModule =
                         }
                     },
                 analyticsTracker = get(),
+            )
+        }
+        // Phase 41.4 (ADR-016 §5.2 §6 §41.4) — pack management screen.
+        // SymbolPackSyncManager is registered conditionally (only when
+        // Supabase is configured) so we use getOrNull. Local-only dev
+        // builds skip the sync dispatch and just re-read the local
+        // mirror on Refresh.
+        viewModel {
+            val syncManager: io.github.b150005.skeinly.data.sync.SymbolPackSyncManager? = getOrNull()
+            PackManagementViewModel(
+                localSymbolPackDataSource = get(),
+                entitlementResolver = get(),
+                syncDispatch = syncManager?.let { mgr -> suspend { mgr.sync() } },
             )
         }
     }

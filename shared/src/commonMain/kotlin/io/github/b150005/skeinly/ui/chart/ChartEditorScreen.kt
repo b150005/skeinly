@@ -318,6 +318,7 @@ fun ChartEditorScreen(
                     },
                     onSelectCategory = { viewModel.onEvent(ChartEditorEvent.SelectCategory(it)) },
                     onSelectSymbol = { viewModel.onEvent(ChartEditorEvent.SelectSymbol(it)) },
+                    onPaywallRequested = onPaywallRequested,
                 )
             }
         }
@@ -445,6 +446,10 @@ private fun EditorBody(
     onPlaceCell: (Int, Int) -> Unit,
     onSelectCategory: (SymbolCategory) -> Unit,
     onSelectSymbol: (String?) -> Unit,
+    // Phase 41.4 (ADR-016 §5.2) — invoked when the user taps a locked-Pro
+    // palette cell. The host (outer ChartEditorScreen) routes this to the
+    // existing paywall channel.
+    onPaywallRequested: () -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -576,6 +581,13 @@ private fun EditorBody(
                             selectedSymbolId = state.selectedSymbolId,
                             onCategorySelected = onSelectCategory,
                             onSymbolSelected = onSelectSymbol,
+                            // Phase 41.4 (ADR-016 §5.2) — Pro symbols the
+                            // user is not entitled to use are rendered with
+                            // a lock badge. Tap routes through the existing
+                            // paywall-request channel that 41.3b already
+                            // wired between ChartEditor and Paywall.
+                            lockedProSymbols = state.lockedProPaletteSymbols,
+                            onLockedSymbolTap = onPaywallRequested,
                         )
                     }
                 }

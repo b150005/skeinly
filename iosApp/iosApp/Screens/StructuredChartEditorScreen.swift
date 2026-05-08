@@ -71,23 +71,8 @@ struct StructuredChartEditorScreen: View {
 
                 Divider()
 
-                SymbolPaletteView(
-                    selectedCategory: state.selectedCategory,
-                    availableCategories: availableCategories,
-                    symbols: state.paletteSymbols,
-                    selectedSymbolId: state.selectedSymbolId,
-                    onCategorySelected: { category in
-                        viewModel.onEvent(
-                            event: ChartEditorEventSelectCategory(category: category)
-                        )
-                    },
-                    onSymbolSelected: { id in
-                        viewModel.onEvent(
-                            event: ChartEditorEventSelectSymbol(symbolId: id)
-                        )
-                    }
-                )
-                .frame(height: 110)
+                paletteSection(state: state)
+                    .frame(height: 110)
             }
         }
         .navigationTitle("Edit chart")
@@ -409,6 +394,38 @@ struct StructuredChartEditorScreen: View {
                 Int(layer.cells.count)
             ))
         }
+    }
+
+    /// Phase 41.4 (ADR-016 §5.2) — palette section extracted into its
+    /// own ViewBuilder. Without this the parent `var body` carries enough
+    /// closure-captured nested expressions for the Swift compiler to time
+    /// out type-checking the whole VStack on `EditorCanvasView` line.
+    @ViewBuilder
+    private func paletteSection(state: ChartEditorState) -> some View {
+        SymbolPaletteView(
+            selectedCategory: state.selectedCategory,
+            availableCategories: availableCategories,
+            symbols: state.paletteSymbols,
+            selectedSymbolId: state.selectedSymbolId,
+            lockedProSymbols: state.lockedProPaletteSymbols,
+            onCategorySelected: { category in
+                viewModel.onEvent(
+                    event: ChartEditorEventSelectCategory(category: category)
+                )
+            },
+            onSymbolSelected: { id in
+                viewModel.onEvent(
+                    event: ChartEditorEventSelectSymbol(symbolId: id)
+                )
+            },
+            onLockedSymbolTap: {
+                // Kotlin/Native ObjC bridging quirk: Kotlin's
+                // `AutoLockInEditor` lowercases as `.autolockineditor`.
+                path.append(
+                    Route.paywall(trigger: PaywallTrigger.autolockineditor)
+                )
+            }
+        )
     }
 
     /// Resolve the next auto-named layer name using the same id-prefix scan as
@@ -850,8 +867,13 @@ private struct SymbolPaletteView: View {
     let availableCategories: [SymbolCategory]
     let symbols: [SymbolDefinition]
     let selectedSymbolId: String?
+    /// Phase 41.4 (ADR-016 §5.2) — Pro symbols the user is not entitled
+    /// to use. Rendered with a lock badge; tap fires
+    /// [onLockedSymbolTap] which the host wires to the paywall.
+    let lockedProSymbols: [SymbolDefinition]
     let onCategorySelected: (SymbolCategory) -> Void
     let onSymbolSelected: (String?) -> Void
+    let onLockedSymbolTap: () -> Void
     @StateObject private var pathCache = PalettePathCache()
 
     var body: some View {
@@ -893,6 +915,13 @@ private struct SymbolPaletteView: View {
                         ) {
                             onSymbolSelected(def.id)
                         }
+                    }
+                    ForEach(lockedProSymbols, id: \.id) { def in
+                        LockedPaletteSymbolCell(
+                            def: def,
+                            pathCache: pathCache,
+                            action: onLockedSymbolTap
+                        )
                     }
                 }
                 .padding(.horizontal, 8)
@@ -991,6 +1020,90 @@ private struct PaletteSymbolCell: View {
             )
         }
         .accessibilityIdentifier("paletteSymbol_\(def.id)")
+    }
+}
+
+/// Phase 41.4 (ADR-016 §5.2) — locked-Pro palette cell. Visually distinct
+/// from [PaletteSymbolCell]: dimmed glyph alpha + lock-badge corner
+/// overlay, tap fires the paywall request rather than the selection
+/// event. SwiftUI mirror of `LockedPaletteSymbolCell` on Compose.
+private struct LockedPaletteSymbolCell: View {
+    let def: SymbolDefinition
+    let pathCache: PalettePathCache
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack(alignment: .bottomTrailing) {
+                Canvas { context, size in
+                    let bounds = CGRect(x: 8, y: 8, width: size.width - 16, height: size.height - 16)
+                    let cellBounds = CellBounds(
+                        left: Double(bounds.minX),
+                        top: Double(bounds.minY),
+                        right: Double(bounds.maxX),
+                        bottom: Double(bounds.maxY)
+                    )
+                    let commands = pathCache.get(id: def.id) {
+                        SvgPathParser.shared.parse(pathData: def.pathData)
+                    }
+                    var path = Path()
+                    for raw in commands {
+                        let mapped = SymbolRenderTransform.shared.mapCommand(
+                            command: raw,
+                            bounds: cellBounds,
+                            rotation: 0
+                        )
+                        switch mapped {
+                        case let move as PathCommandMoveTo:
+                            path.move(to: CGPoint(x: move.x, y: move.y))
+                        case let line as PathCommandLineTo:
+                            path.addLine(to: CGPoint(x: line.x, y: line.y))
+                        case let curve as PathCommandCurveTo:
+                            path.addCurve(
+                                to: CGPoint(x: curve.x, y: curve.y),
+                                control1: CGPoint(x: curve.c1x, y: curve.c1y),
+                                control2: CGPoint(x: curve.c2x, y: curve.c2y)
+                            )
+                        case let quad as PathCommandQuadTo:
+                            path.addQuadCurve(
+                                to: CGPoint(x: quad.x, y: quad.y),
+                                control: CGPoint(x: quad.c1x, y: quad.c1y)
+                            )
+                        case is PathCommandClosePath:
+                            path.closeSubpath()
+                        default:
+                            break
+                        }
+                    }
+                    let shading = GraphicsContext.Shading.color(.primary)
+                    if def.fill {
+                        context.fill(path, with: shading)
+                    } else {
+                        context.stroke(
+                            path,
+                            with: shading,
+                            style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
+                        )
+                    }
+                }
+                .opacity(0.45)
+                .frame(width: 56, height: 56)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color(.tertiarySystemFill)))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                )
+
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(Color.white)
+                    .frame(width: 18, height: 18)
+                    .background(Circle().fill(Color.accentColor))
+                    .padding(2)
+            }
+        }
+        .accessibilityIdentifier("paletteSymbolLocked_\(def.id)")
+        .accessibilityLabel(LocalizedStringKey("title_locked_symbol"))
     }
 }
 

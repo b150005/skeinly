@@ -27,6 +27,7 @@ import io.github.b150005.skeinly.ui.chart.ChartHistoryScreen
 import io.github.b150005.skeinly.ui.chart.ChartViewerScreen
 import io.github.b150005.skeinly.ui.discovery.DiscoveryScreen
 import io.github.b150005.skeinly.ui.onboarding.OnboardingScreen
+import io.github.b150005.skeinly.ui.packmanagement.PackManagementScreen
 import io.github.b150005.skeinly.ui.patternedit.PatternEditScreen
 import io.github.b150005.skeinly.ui.patternlibrary.PatternLibraryScreen
 import io.github.b150005.skeinly.ui.paywall.PaywallResult
@@ -198,6 +199,14 @@ data object BugReportPreview
 data class Paywall(
     val trigger: PaywallTrigger,
 )
+
+/**
+ * Phase 41.4 (ADR-016 §5.2 §6 §41.4) — pack management screen reachable
+ * from Settings → "Manage Symbol Packs". Always-on, NOT beta-gated
+ * (matching the Phase 41.3b "Subscribe to Pro" entry).
+ */
+@Serializable
+data object PackManagement
 
 @Composable
 fun SkeinlyNavHost(
@@ -374,6 +383,25 @@ fun SkeinlyNavHost(
                 // Phase 41.3b (ADR-016 §5.1) — Subscribe-to-Pro routes to
                 // the paywall sheet. Always-on, NOT beta-gated.
                 onSubscribeToProClick = {
+                    navController.navigate(
+                        Paywall(trigger = PaywallTrigger.Settings),
+                    )
+                },
+                // Phase 41.4 (ADR-016 §5.2) — Manage Symbol Packs routes
+                // to the pack-management screen. Always-on, NOT beta-gated.
+                onManagePacksClick = { navController.navigate(PackManagement) },
+            )
+        }
+        composable<PackManagement> {
+            PackManagementScreen(
+                onBack = { navController.popBackStack() },
+                // Phase 41.4 (ADR-016 §5.2) — locked-pack tap routes to
+                // the paywall with a Settings-equivalent entry trigger.
+                // Reusing PaywallTrigger.Settings keeps the funnel
+                // analytics simple; if pack-management conversions need
+                // their own discriminator, add a new PaywallTrigger
+                // variant in a follow-up.
+                onUnlockWithPro = {
                     navController.navigate(
                         Paywall(trigger = PaywallTrigger.Settings),
                     )

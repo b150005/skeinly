@@ -23,6 +23,7 @@ import io.github.b150005.skeinly.ui.chart.ChartHistoryViewModel
 import io.github.b150005.skeinly.ui.chart.ChartViewerViewModel
 import io.github.b150005.skeinly.ui.comments.CommentSectionViewModel
 import io.github.b150005.skeinly.ui.onboarding.OnboardingViewModel
+import io.github.b150005.skeinly.ui.packmanagement.PackManagementViewModel
 import io.github.b150005.skeinly.ui.patternedit.PatternEditViewModel
 import io.github.b150005.skeinly.ui.patternlibrary.PatternLibraryViewModel
 import io.github.b150005.skeinly.ui.paywall.PaywallNavEvent
@@ -250,6 +251,13 @@ fun getPaywallViewModel(trigger: PaywallTrigger): PaywallViewModel = KoinPlatfor
 fun wrapPaywallState(flow: kotlinx.coroutines.flow.StateFlow<PaywallState>): FlowWrapper<PaywallState> = FlowWrapper(flow)
 
 fun wrapPaywallNavEvents(flow: kotlinx.coroutines.flow.Flow<PaywallNavEvent>): EventFlowWrapper<PaywallNavEvent> = EventFlowWrapper(flow)
+
+// Phase 41.4 (ADR-016 §5.2 §6 §41.4) — pack management ViewModel + state.
+fun getPackManagementViewModel(): PackManagementViewModel = KoinPlatform.getKoin().get()
+
+fun wrapPackManagementState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.packmanagement.PackManagementState>,
+): FlowWrapper<io.github.b150005.skeinly.ui.packmanagement.PackManagementState> = FlowWrapper(flow)
 
 fun wrapSettingsAccountDeletedFlow(flow: kotlinx.coroutines.flow.Flow<kotlin.Unit>): EventFlowWrapper<kotlin.Unit> = EventFlowWrapper(flow)
 
