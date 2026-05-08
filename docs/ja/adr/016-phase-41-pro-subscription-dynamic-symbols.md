@@ -163,6 +163,31 @@ title_pack_management / title_paywall / label_pack_size_kb・mb / label_pack_sym
 
 各サブスライスは独立 ship 可能 + 巻き戻し可能。41.5 は明示的に「Pro tier をいくつかの**既存機能**に適用する」のではなく「将来の機能が `EntitlementResolver` を使う基盤を文書化する」ものであり、実コードは伴わない。各機能を Pro tier 化するかどうかは、その機能ごとのプロダクト判断 (別 PR / 別 ADR で)。
 
+### 6.1 §41.5 — `EntitlementResolver` 利用パターン (gate site vs call site)
+
+**ルール**: Pro entitlement に基づいて挙動を変える機能は、`EntitlementResolver` を **gate site** (Free vs Pro の判定が実際に発生する domain layer の表面 — catalog / use case / repository / coordinator) に注入する。**call site** (UI 層 — Composable / SwiftUI view / ViewModel) は `EntitlementResolver` を注入してはならず、`isPro()` を直接呼んではならない。call site は gate site が公開する Pro-policy-agnostic な interface (nullable 戻り値 / sealed `Available | Locked` / `_paywallRequests: Channel<Unit>` 等) のみを消費する。
+
+**理由**: (1) feature ごとに `isPro()` 呼出が 1 箇所に集約される (ポリシー変更が 1 ファイルで完結)、(2) UI 層が Pro-policy-agnostic になる (UI tests / screenshot tests / Maestro flows がポリシー変更で壊れない)、(3) Fake で gate-site interface を差し替えれば `EntitlementResolver` / `SubscriptionRepository` / `AuthRepository` の plumbing 抜きで ViewModel + UI tests が書ける。
+
+**Pro-affording UX 例外 (forward-looking)**: 「Pro 状態をユーザーに反映する」のが主目的の call site (Settings の "Pro 加入日" 表示行 / 将来の "サブスクリプション管理" 画面 / "あなたは既に Pro です" の paywall 分岐等) は `isPro()` を直接読んでも §41.5.1 違反にならない。判別: 「機能を表示/非表示」「アクションを enable/disable」「ロックバッジ vs 完全シンボル描画」は **gating** で gate-site 経由。「ユーザーに現状を伝える」「購入後 routing を決める」は **affording** で UI 直読 OK。**Phase 41.5 時点で本例外に該当する consumer は存在しない** — 将来の affording surface のための forward-looking carve-out。なお `PackManagementViewModel` の直接注入 (下表) は本例外に該当しない (`PackStatus.Locked` 導出は per-row download action を gating しているため、affording ではなく gating)。
+
+**現状 consumer (Phase 41.5 時点)**:
+
+| Consumer | Layer | `EntitlementResolver` 利用 | パターン適合 |
+|---|---|---|---|
+| `CompositeSymbolCatalog` | Domain (gate site) | resolver 注入。`get()` / `listByCategory()` / `all()` で `isPro()` を呼び Pro symbol gating (未 entitle 時は null / Pro entry 除外)。`listLockedPro()` は `isPro()` で「Pro user → 空リスト」分岐 — UI に「どの Pro symbol をロックバッジ表示するか」を伝える **observability surface** であり、access を制限する gating 呼出ではない (返したシンボルは UI が表示するために surface している) | ✅ 適合 gate site |
+| `ChartEditorViewModel` | UI (call site, gate-delegated) | `symbolCatalog.listLockedPro(category)` 経由で palette badge 描画。`EntitlementResolver` 注入なし、`isPro()` 直接呼出なし | ✅ 適合 call site (gate を `CompositeSymbolCatalog` に委譲) |
+| `PackManagementViewModel` | UI (call site) | `EntitlementResolver` を直接注入 (line 106)。`readSnapshot()` で `isPro()` を直接呼び (line 202) 未 entitle 時の Pro pack に `PackStatus.Locked` を導出 | ⚠ **非適合** (§41.5.1 deviation — `PackStatus.Locked` が per-row download action を gating しているので affording ではなく gating) |
+| `PaywallViewModel` | UI (現状 consumer ではない) | `EntitlementResolver` 注入なし、`isPro()` 直接呼出なし。購入後 routing は `RestoreResult.Success.proActive` + `PurchaseResult.Success` を `RevenueCatService` から読む。KDoc 内で `EntitlementResolver` に言及するのみ | n/a (consumer 関係なし) |
+
+`PackManagementViewModel` deviation は **Tech Debt Backlog** の新規 "ADR-016 §41.5 deviations" subsection に記録。推奨クリーンアップ: `SymbolCatalog` (または sibling `SymbolPackCatalog`) に `EntitlementResolver` で gate 済みの `PackRow.{Available, NeedsUpdate, Downloaded, Locked}` sealed を返すメソッドを追加し、`PackManagementViewModel` を delegate に refactor する。それまでは直接注入は容認された例外ではなく既知違反である。
+
+**将来の consumer (例)**: Phase 35.2 polar editing → `PolarEditorAvailability` が `EntitlementResolver` 注入、tri-state `Free | Pro | LockedPro` を expose、editor toolbar は tri-state を消費。post-v1 PR 承認ゲート → `PullRequestApprovalPolicy` が gating 対象、`PullRequestDetailViewModel` は `isPro()` 呼出なし。
+
+**新 Pro feature ランディング時のチェックリスト** (詳細は EN §41.5.4): (1) gate site を特定 (ViewModel / Composable に Pro logic が入りそうなら domain layer に押し出す)、(2) gate site のみに `EntitlementResolver` 注入、(3) Pro-policy-agnostic interface を expose (`Boolean isPro` を caller に漏らさない)、(4) gate-site test で 4 分岐カバー (Pro / 非 Pro / 未認証 / feature-specific edge)、(5) call-site reaction を Fake gate で test、(6) paywall trigger は 41.3b `_paywallRequests: Channel<Unit>(BUFFERED)` precedent に従う、(7) 新 gate site を ADR-016 §41.5.3 amendment か feature 自身の ADR に記録。
+
+**§41.5 のスコープ外**: 既存機能を Pro 化するかの product 判断 (別 ADR / PRD)、`EntitlementResolver` の API 変更 (将来 Pro Lite / Pro Plus 等を導入する場合は別 amendment)、「間違った layer に Pro logic を入れた既存コード」の migration discipline (Phase 41.5 時点で該当する site が 1 つ存在 — `PackManagementViewModel` (§41.5.3 reference table + Tech Debt Backlog "ADR-016 §41.5 deviations" 参照)。挙動は正しく layer のみが間違っているため、§41.5.3 cleanup 推奨に従い `SymbolCatalog` 拡張 / sibling `SymbolPackCatalog` 導入で対処。将来 code-review で追加違反が surface したら inline 対処、汎用 migration plan は不要)。
+
 ## 7. テレメトリ / 観測性
 
 PostHog `ClickAction` (ADR-015 §6 の taxonomy 拡張): `RequestPackDownload(pack_id)` / `OpenPaywall(trigger)` / `PurchaseSubscription(product_id)` / `RestorePurchases()` / `RequestSymbol()` / `FreeUpStorage(pack_id)`。
