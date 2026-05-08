@@ -93,6 +93,25 @@ export function extractWebhookEvent(payload: RevenueCatWebhookPayload): Extracte
 }
 
 /**
+ * Map RevenueCat `event.environment` → Skeinly's `subscriptions.environment`
+ * column. RevenueCat sends uppercase ("SANDBOX" / "PRODUCTION"); Postgres
+ * convention is lowercase (mirrors `platform` 'ios'/'android' +
+ * `pull_requests.status`). Defensive default: missing / unknown values
+ * map to 'production' so a future RevenueCat schema addition doesn't
+ * accidentally classify real production receipts as sandbox.
+ *
+ * The RPC's CHECK constraint will RAISE on any value other than
+ * 'production'/'sandbox', so this mapping is the single normalization
+ * point — every code path downstream sees one of those two literals.
+ */
+export function mapEnvironment(
+    environment: string | undefined,
+): "production" | "sandbox" {
+    if (environment === "SANDBOX") return "sandbox";
+    return "production";
+}
+
+/**
  * Map RevenueCat `store` enum → Skeinly's `platform` enum.
  * Returns null for unsupported stores (Amazon, RC_BILLING, etc.) so the
  * caller can skip the upsert.

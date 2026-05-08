@@ -15,20 +15,29 @@ RevenueCat (Apple/Google receipt validated server-side)
 revenuecat-webhook Edge Function
       │ 1. Verify Bearer matches REVENUECAT_WEBHOOK_SECRET
       │ 2. Parse + extract event fields
-      │ 3. Map event.type → subscription.status enum
-      │ 4. Map event.store → platform enum (ios/android)
-      │ 5. Filter: TEST, SUBSCRIBER_ALIAS, TRANSFER, anonymous app_user_id
+      │ 3. Map event.type     → subscription.status enum
+      │ 4. Map event.store    → platform enum (ios/android)
+      │ 5. Map event.environment → environment enum (production/sandbox)
+      │ 6. Filter: TEST, SUBSCRIBER_ALIAS, TRANSFER, anonymous app_user_id
       ▼
 upsert_subscription_from_webhook(...) RPC (SECURITY DEFINER)
-      │ 1. Re-validate platform/product_id/status closed enums
+      │ 1. Re-validate platform/product_id/status/environment closed enums
       │ 2. INSERT ... ON CONFLICT DO UPDATE (with last_verified_at ordering guard)
       ▼
-public.subscriptions row
+public.subscriptions row (carries `environment` for analytics filtering)
       │
       │ Realtime push (Supabase publication)
       ▼
 LocalSubscriptionDataSource (KMP shared)  →  PaywallViewModel  →  UI
 ```
+
+**Environment column** (added in migration 024): every row carries
+`environment IN ('production', 'sandbox')`. Sandbox rows from beta
+testers and production rows from real users coexist in the same table;
+analytics queries filter via `WHERE environment = 'production'` to
+exclude sandbox dev-noise post-Phase 40 GA. RevenueCat dashboard
+configuration stays single-webhook (`Both Production and Sandbox`) per
+[release-secrets.md EF-5](../../../docs/en/release-secrets.md#ef-5-revenuecat_webhook_secret).
 
 ## Required secrets
 

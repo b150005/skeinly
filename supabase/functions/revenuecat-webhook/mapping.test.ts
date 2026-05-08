@@ -8,6 +8,7 @@
 
 import {
     extractWebhookEvent,
+    mapEnvironment,
     mapEventToStatus,
     mapStoreToPlatform,
 } from "./mapping.ts";
@@ -130,6 +131,32 @@ Deno.test("extractWebhookEvent: full happy path preserves all fields", () => {
     assertEquals(result?.store, "APP_STORE");
     assertEquals(result?.environment, "SANDBOX");
     assertEquals(result?.expiration_at_ms, 1702592000000);
+});
+
+// ---------------------------------------------------------------------
+// mapEnvironment
+// ---------------------------------------------------------------------
+
+Deno.test("mapEnvironment: SANDBOX → sandbox", () => {
+    assertEquals(mapEnvironment("SANDBOX"), "sandbox");
+});
+
+Deno.test("mapEnvironment: PRODUCTION → production", () => {
+    assertEquals(mapEnvironment("PRODUCTION"), "production");
+});
+
+Deno.test("mapEnvironment: undefined defaults to production", () => {
+    assertEquals(mapEnvironment(undefined), "production");
+});
+
+Deno.test("mapEnvironment: unknown value defaults to production (defensive)", () => {
+    assertEquals(mapEnvironment("STAGING"), "production");
+});
+
+Deno.test("mapEnvironment: lowercase sandbox does NOT match (case-sensitive)", () => {
+    // RevenueCat always uppercases — we do not accept lowercase to keep
+    // the contract tight.
+    assertEquals(mapEnvironment("sandbox"), "production");
 });
 
 // ---------------------------------------------------------------------

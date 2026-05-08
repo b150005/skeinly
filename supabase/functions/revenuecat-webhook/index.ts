@@ -38,6 +38,7 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import {
     extractWebhookEvent,
+    mapEnvironment,
     mapEventToStatus,
     mapStoreToPlatform,
     type RevenueCatWebhookPayload,
@@ -178,6 +179,7 @@ Deno.serve(async (req: Request) => {
             ? new Date(event.expiration_at_ms).toISOString()
             : null;
     const eventTimestamp = new Date(event.event_timestamp_ms).toISOString();
+    const environment = mapEnvironment(event.environment);
 
     const { data: rowId, error: rpcError } = await supabase.rpc(
         "upsert_subscription_from_webhook",
@@ -192,6 +194,7 @@ Deno.serve(async (req: Request) => {
             p_is_in_trial: event.is_in_trial ?? false,
             p_auto_renew_status: event.auto_renew_status ?? true,
             p_latest_receipt: payload, // store the full webhook envelope as audit trail
+            p_environment: environment,
         },
     );
 
@@ -211,7 +214,7 @@ Deno.serve(async (req: Request) => {
     console.log("revenuecat-webhook: upsert succeeded", {
         event_id: event.id,
         event_type: event.type,
-        environment: event.environment ?? "unknown",
+        environment,
         app_user_id: appUserId,
         platform,
         status,
