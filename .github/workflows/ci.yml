@@ -37,6 +37,9 @@ jobs:
       - name: Verify i18n key sync (Android values/ + values-ja/ + iOS .xcstrings)
         run: ./gradlew verifyI18nKeys
 
+      - name: Verify iOS IS_BETA flag matches Android BuildFlags.isBeta codegen rule
+        run: ./gradlew verifyIosBetaFlag
+
       - name: Lint (ktlint)
         run: ./gradlew ktlintCheck
 

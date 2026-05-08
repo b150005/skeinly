@@ -172,7 +172,8 @@ ci-local:  ## Comprehensive pre-push verification — reproduces every CI check 
 		:shared:compileTestKotlinIosSimulatorArm64 \
 		:shared:testAndroidHostTest \
 		:shared:koverVerify \
-		verifyI18nKeys
+		verifyI18nKeys \
+		verifyIosBetaFlag
 	$(MAKE) ios-build
 	$(MAKE) ios-test
 	$(MAKE) e2e-android
