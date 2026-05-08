@@ -18,7 +18,10 @@
 //   - APP_STORE_CONNECT_KEY_ID
 //   - APP_STORE_CONNECT_ISSUER_ID
 //   - APPLE_TEAM_ID
-//   - GOOGLE_PLAY_SERVICE_ACCOUNT_JSON (raw JSON)
+//   - GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON (raw JSON of revenuecat@... SA;
+//     renamed from GOOGLE_PLAY_SERVICE_ACCOUNT_JSON on 2026-05-08 alongside
+//     the SA migration from google-play-publisher@... to revenuecat@... for
+//     PoLP separation — google-play-publisher is now exclusive to CI Release)
 //
 // Database writes use the SUPABASE_SERVICE_ROLE_KEY (auto-injected
 // into every Edge Function context) so RLS does not block the upsert.
@@ -183,8 +186,8 @@ async function verifyGoogleReceipt(
     receipt: { purchaseToken: string; productId: string },
 ): Promise<Response> {
     // TODO Phase H: implement Google Play Developer API verification.
-    // 1. Mint OAuth 2.0 access token from FIREBASE_SERVICE_ACCOUNT_JSON
-    //    (or GOOGLE_PLAY_SERVICE_ACCOUNT_JSON if separate service account).
+    // 1. Mint OAuth 2.0 access token from GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON
+    //    (revenuecat@... SA — see release-secrets.md EF-4).
     //    Scope: https://www.googleapis.com/auth/androidpublisher
     // 2. GET https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{packageName}/purchases/subscriptionsv2/tokens/{token}
     //    where packageName = "io.github.b150005.skeinly"

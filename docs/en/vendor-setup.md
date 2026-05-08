@@ -227,7 +227,7 @@ curl -I https://b150005.github.io/.well-known/assetlinks.json
 
 ## Phase A0d — RevenueCat Setup
 
-RevenueCat is the cross-platform IAP / subscription orchestration layer. It abstracts Apple StoreKit and Google Play Billing into one Public SDK Key per platform that the client passes to `Purchases.configure()`. **Prerequisites**: A0a-5 (App Store Connect API Key) + A0b-3 (IAP products created in App Store Connect) + Google Play Console app published with Service Account API access enabled (covered server-side via release-secrets EF-4 `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`).
+RevenueCat is the cross-platform IAP / subscription orchestration layer. It abstracts Apple StoreKit and Google Play Billing into one Public SDK Key per platform that the client passes to `Purchases.configure()`. **Prerequisites**: A0a-5 (App Store Connect API Key) + A0b-3 (IAP products created in App Store Connect) + Google Play Console app published with Service Account API access enabled (covered server-side via [release-secrets EF-4 `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON`](release-secrets.md#ef-4-google_play_iap_validator_sa_json), which uses the `revenuecat@...` SA — single source of truth).
 
 ### A0d-1: Create the RevenueCat Project
 
@@ -250,7 +250,7 @@ RevenueCat is the cross-platform IAP / subscription orchestration layer. It abst
 1. Same Project: **Project Settings** → **Apps** → **+ New** → **Play Store**.
 2. App name: `Skeinly Android`.
 3. Package name: `io.github.b150005.skeinly`.
-4. **Service Account Credentials**: upload the same JSON file used for `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` in [release-secrets EF-4](release-secrets.md#ef-4-google_play_service_account_json) (single source of truth — RevenueCat needs Play Developer API read access for product + receipt validation).
+4. **Service Account Credentials**: upload the `revenuecat@...` SA JSON file used for `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON` in [release-secrets EF-4](release-secrets.md#ef-4-google_play_iap_validator_sa_json) (single source of truth — RevenueCat needs Play Developer API read access for product + receipt validation).
 5. Save → wait for RevenueCat to fetch the Play Console product list.
 6. **API Keys** tab → copy the **Public Android SDK Key** (starts with `goog_`) — register as `REVENUECAT_API_KEY_ANDROID` per [release-secrets §20](release-secrets.md#20-revenuecat_api_key_android).
 
