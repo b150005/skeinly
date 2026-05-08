@@ -394,10 +394,64 @@ Total Phase 41.1 budget: **+15 commonTest** (was +10 in the original §6 estimat
 
 ### 41.5 — Pro tier feature gates beyond symbol packs (foundation only)
 
-Future Pro-only features (Phase 35.2 polar editing, PR approval gates, etc.) reuse the same `EntitlementResolver`. Phase 41.5 lays the foundation but does NOT gate any existing feature behind Pro — that's intentional separation between "wire the resolver" and "decide which features are Pro" (the latter is a product decision per feature).
+Future Pro-only features (Phase 35.2 polar editing, PR approval gates, etc.) reuse the same `EntitlementResolver`. Phase 41.5 lays the foundation but does NOT gate any existing feature behind Pro — that's intentional separation between "wire the resolver" and "decide which features are Pro" (the latter is a product decision per feature, captured in its own ADR or commit-level decision when it lands).
 
-- Documented `EntitlementResolver` consumer pattern (any feature gating Pro must inject it + call `isPro()` at the gate site).
-- No code beyond the doc + a couple of inline KDoc references at potential gate sites.
+This sub-slice ships **documentation only**: the consumer pattern below, no code, no test delta, no i18n delta. As of Phase 41.5 the codebase has one fully-compliant gate-site consumer (`CompositeSymbolCatalog` since 41.2c), one fully-compliant call site that delegates through that gate (`ChartEditorViewModel` reading `listLockedPro` since 41.4), and one non-compliant call site that injects the resolver directly (`PackManagementViewModel` since 41.4). 41.5 lifts the gate-site discipline out of "implicit precedent" into "load-bearing rule for any future Pro feature" AND honestly catalogues the existing deviation so a future cleanup PR can address it.
+
+#### 41.5.1 Consumer pattern — gate site, NOT call site
+
+**Rule.** Any feature that gates behavior on Pro entitlement MUST inject `EntitlementResolver` at the **gate site** — the domain-layer surface (catalog / use case / repository / coordinator) where the Free vs. Pro decision is actually made. The **call site** — the UI layer (Composable / SwiftUI view / ViewModel) that consumes the gated resource — MUST NOT inject `EntitlementResolver` and MUST NOT call `isPro()` directly. The call site reads only the gated interface's output (a nullable, a sealed-state, a one-shot paywall-trigger Channel, etc.) and reacts to it.
+
+**Why.** Three load-bearing reasons:
+
+1. **One `isPro()` call per feature.** If the UI layer scatters `isPro()` checks across `LaunchedEffect`s, `Composable` predicates, `SwiftUI .onAppear`, and ViewModel branches, future Pro-policy changes (e.g. "grace period extended from 14 → 30 days", "trial users get partial Pro", "a la carte unlocks bypass `isPro()` for this one symbol") have to be hunted down across N call sites. Gate-site discipline keeps all entitlement-policy code in one file per feature.
+
+2. **The UI layer becomes Pro-policy-agnostic.** A `ChartEditorScreen` Composable does not know what "Pro" means; it just renders whatever `SymbolCatalog.get(id)` returned. If the catalog says null, the renderer paints "?". If the catalog says a `SymbolDefinition`, the renderer draws it. This makes UI tests + screenshot tests + Maestro flows resilient to entitlement-policy changes — they exercise the rendering surface, not the policy.
+
+3. **Test isolation.** ViewModel + UI tests can use a `FakeSymbolCatalog` returning either the bundled symbol or null without ever touching `EntitlementResolver`, `SubscriptionRepository`, or `AuthRepository`. The `EntitlementResolver` itself is unit-tested at the gate-site test (`CompositeSymbolCatalogTest` since 41.2c covers the Pro-gate branches; future gate-site tests cover their own).
+
+**The flip side.** The call site is allowed to know **whether** something is gated (a `null` from `SymbolCatalog.get(id)` carries that signal, the lock badge in the palette reads `SymbolCatalog.listLockedPro(category)`), but never **why** (which subscription state, which expiresAt, which billing-retry stage). The "why" stays inside the gate.
+
+#### 41.5.2 Pro-affording UX exception (forward-looking)
+
+A future call site whose primary job is **reflecting** Pro state to the user — not gating behavior on it — MAY read `isPro()` directly without violating §41.5.1. Examples of legitimate affording surfaces: a "Subscription status" row in Settings showing "Pro since $date", a "Manage subscription" screen, a paywall sheet's "you are already Pro, dismissing..." path. The discriminator: if the code path is "show or hide a feature" / "enable or disable an action" / "render lock badge or full symbol", that is **gating** and goes through the gate site. If the code path is "tell the user what their current Pro state is" / "decide post-purchase routing", that is **affording** and the UI layer may read `isPro()` directly.
+
+As of Phase 41.5, **no current consumer matches this exception**. The §41.5.2 carve-out exists so that future affording surfaces have a documented place to land without watering down the gate-site rule. Note that `PackManagementViewModel`'s current direct injection (§41.5.3 below) does NOT qualify for this exception because its `isPro()` read derives `PackStatus.Locked` which gates the per-row download action — that's gating, not affording.
+
+#### 41.5.3 Reference: current consumers (as of Phase 41.5)
+
+| Consumer | Layer | Use of `EntitlementResolver` | Pattern compliance |
+|---|---|---|---|
+| [`CompositeSymbolCatalog`](../../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/domain/symbol/CompositeSymbolCatalog.kt) | Domain (gate site) | Injects resolver. `get()` / `listByCategory()` / `all()` use `isPro()` to gate Pro symbol access (return null / drop Pro entries when not entitled). `listLockedPro()` uses `isPro()` to early-return empty when user IS Pro — it is an observability surface that informs the UI which Pro symbols to render with a lock badge (NOT a gating call; the symbols it returns are intentionally surfaced for the call site to display). | ✅ Compliant gate site |
+| [`ChartEditorViewModel`](../../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/ui/chart/ChartEditorViewModel.kt) | UI (call site, gate-delegated) | Reads `symbolCatalog.listLockedPro(category)` for palette badge rendering. Does NOT inject `EntitlementResolver`. Does NOT call `isPro()` directly. | ✅ Compliant call site (gate delegated to `CompositeSymbolCatalog`) |
+| [`PackManagementViewModel`](../../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/ui/packmanagement/PackManagementViewModel.kt) | UI (call site) | Injects `EntitlementResolver` directly (line 106). Calls `isPro()` in `readSnapshot()` (line 202) to derive `PackStatus.Locked` for Pro packs when not entitled. | ⚠ **Non-compliant** (deviation from §41.5.1 — `PackStatus.Locked` gates the per-row download action, so this is gating, not affording per §41.5.2) |
+| [`PaywallViewModel`](../../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/ui/paywall/PaywallViewModel.kt) | UI (not currently a consumer) | Does NOT inject `EntitlementResolver`. Does NOT call `isPro()`. Post-purchase routing reads `RestoreResult.Success.proActive` and `PurchaseResult.Success` from `RevenueCatService`. The KDoc comment block at line 117 references `EntitlementResolver` only in passing. | n/a (no consumer relationship) |
+
+The `PackManagementViewModel` deviation is logged in the **Tech Debt Backlog** under a new "ADR-016 §41.5 deviations" subsection. Recommended cleanup: extend `SymbolCatalog` (or introduce a sibling `SymbolPackCatalog` interface) with a method that returns sealed `PackRow.{Available, NeedsUpdate, Downloaded, Locked}` already gated by `EntitlementResolver`, then refactor `PackManagementViewModel` to delegate. Until then, the direct injection is a known violation, NOT a sanctioned exception.
+
+Future consumers extending this table:
+
+- **Phase 35.2 polar editing**: a `PolarEditorAvailability` (or equivalent domain-layer object) injected with `EntitlementResolver` exposes a tri-state `Free | Pro | LockedPro`. The chart editor's "Switch to round mode" toolbar entry consumes the tri-state, not `isPro()`.
+- **PR approval gates** (post-v1): a `PullRequestApprovalPolicy` (or equivalent) injected with `EntitlementResolver` decides whether required-approval rules apply for the calling pattern. The `MergePullRequestUseCase` consults the policy; the `PullRequestDetailViewModel` does not call `isPro()`.
+- **Pack management free-up-storage / per-pack download** (Phase 41.5+ if user signal demands): a `PackDownloadCoordinator` (or equivalent) injected with `EntitlementResolver` decides whether the user can request a Pro pack download. The `PackManagementViewModel` consumes a `PackAction.AvailableForDownload` / `PackAction.LockedRequiresPro` sealed state.
+
+#### 41.5.4 Checklist for landing a new Pro feature
+
+When a future ADR or commit-level decision flips an existing feature (or ships a net-new feature) behind Pro:
+
+1. **Identify the gate site.** Where in the domain layer is the Free-vs-Pro decision actually made? If the answer is "in the ViewModel" or "in the Composable", redesign — push the gate into a new domain-layer surface (use case, repository extension, coordinator object).
+2. **Inject `EntitlementResolver` at the gate site only.** Prefer constructor injection via Koin. The `EntitlementResolver` singleton from `RepositoryModule` is already wired and ready to consume.
+3. **Expose a Pro-policy-agnostic interface to callers.** A nullable return, a sealed `Available | Locked` state, a separate `listLocked*` accessor, or a one-shot paywall-trigger Channel (per the 41.3b `_paywallRequests` precedent) are all valid. The interface MUST NOT leak `Boolean isPro` to its consumers.
+4. **Test the gate-site branches at the gate-site test.** Cover (a) Pro user → unlocked, (b) non-Pro user → locked, (c) unauthenticated → locked, (d) any feature-specific edge cases. The `CompositeSymbolCatalogTest` Pro-gate cases are the precedent.
+5. **Test the call-site reaction with a Fake gate.** ViewModel + UI tests inject a fake of the gate-site interface that returns whatever the test wants. The fake does NOT need `EntitlementResolver` / `SubscriptionRepository` / `AuthRepository` plumbing.
+6. **Surface paywall trigger via Channel, not `isPro()` check.** When the call site needs to push the user to the paywall on a Pro-locked action (e.g. Pro symbol tap in the palette), follow the Phase 41.3b `_paywallRequests: Channel<Unit>(BUFFERED)` precedent in `ChartEditorViewModel` — the Channel emits Unit when the gate site signals "this action requires Pro", and the UI host collects via `LaunchedEffect` (Compose) / `.task` (SwiftUI) and routes to the paywall sheet.
+7. **Document the new gate site in a §41.5.3 follow-up amendment** to ADR-016 OR in the feature's own ADR (preferred when the feature is independent enough to warrant its own ADR — e.g. Phase 35.2 polar editing).
+
+#### 41.5.5 Out of scope for §41.5
+
+- **Deciding which existing features become Pro.** That decision belongs in product / monetization-strategist deliberation, captured per-feature in its own ADR or PRD. §41.5 only describes how to wire entitlement gating once the decision is made.
+- **Refining `EntitlementResolver` itself.** No API changes ship in 41.5. If a future feature needs richer surface than `Boolean isPro()` (e.g. tier discrimination for Pro Lite vs. Pro Plus, partial-trial state), that's a separate ADR amendment.
+- **Migration discipline for "we shipped Pro-gating in the wrong layer and need to refactor".** One such site exists as of Phase 41.5: `PackManagementViewModel` (documented in §41.5.3 and the Tech Debt Backlog under "ADR-016 §41.5 deviations"). Its behavior is correct; only the layer is wrong. Address via the §41.5.3 cleanup recommendation (extend `SymbolCatalog` or introduce a sibling `SymbolPackCatalog` with a gated `PackRow.{Available, NeedsUpdate, Downloaded, Locked}` method, refactor the ViewModel to delegate). If a future code-review surfaces additional violations, address them inline; no general-purpose migration plan is needed.
 
 ## 7. Telemetry / observability
 
