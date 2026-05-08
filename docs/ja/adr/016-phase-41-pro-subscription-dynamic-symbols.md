@@ -176,17 +176,32 @@ title_pack_management / title_paywall / label_pack_size_kb・mb / label_pack_sym
 | Consumer | Layer | `EntitlementResolver` 利用 | パターン適合 |
 |---|---|---|---|
 | `CompositeSymbolCatalog` | Domain (gate site) | resolver 注入。`get()` / `listByCategory()` / `all()` で `isPro()` を呼び Pro symbol gating (未 entitle 時は null / Pro entry 除外)。`listLockedPro()` は `isPro()` で「Pro user → 空リスト」分岐 — UI に「どの Pro symbol をロックバッジ表示するか」を伝える **observability surface** であり、access を制限する gating 呼出ではない (返したシンボルは UI が表示するために surface している) | ✅ 適合 gate site |
+| `DefaultSymbolPackCatalog` | Domain (gate site) | resolver 注入。`listInventory()` で `isPro()` を per-call 1 回スナップショットし、未 entitle 時の Pro pack に `PackStatus.Locked` を導出。`CompositeSymbolCatalog` の sibling — pack はメタデータレベルの関心、symbol は描画 hot path で別 cadence。§41.5.6 cleanup で `PackManagementViewModel` deviation を解消する際に追加 | ✅ 適合 gate site |
 | `ChartEditorViewModel` | UI (call site, gate-delegated) | `symbolCatalog.listLockedPro(category)` 経由で palette badge 描画。`EntitlementResolver` 注入なし、`isPro()` 直接呼出なし | ✅ 適合 call site (gate を `CompositeSymbolCatalog` に委譲) |
-| `PackManagementViewModel` | UI (call site) | `EntitlementResolver` を直接注入 (line 106)。`readSnapshot()` で `isPro()` を直接呼び (line 202) 未 entitle 時の Pro pack に `PackStatus.Locked` を導出 | ⚠ **非適合** (§41.5.1 deviation — `PackStatus.Locked` が per-row download action を gating しているので affording ではなく gating) |
+| `PackManagementViewModel` | UI (call site, gate-delegated) | `SymbolPackCatalog.listInventory()` を消費し、解決済みの `PackRow` リストを state に転送。`EntitlementResolver` 注入なし、`isPro()` 直接呼出なし。(§41.5.6 cleanup 前: resolver を直接注入し `PackStatus.Locked` を inline で導出 — §41.5.3 が当初記録した deviation。§41.5.6 で解消) | ✅ 適合 call site (gate を `DefaultSymbolPackCatalog` に委譲) |
 | `PaywallViewModel` | UI (現状 consumer ではない) | `EntitlementResolver` 注入なし、`isPro()` 直接呼出なし。購入後 routing は `RestoreResult.Success.proActive` + `PurchaseResult.Success` を `RevenueCatService` から読む。KDoc 内で `EntitlementResolver` に言及するのみ | n/a (consumer 関係なし) |
 
-`PackManagementViewModel` deviation は **Tech Debt Backlog** の新規 "ADR-016 §41.5 deviations" subsection に記録。推奨クリーンアップ: `SymbolCatalog` (または sibling `SymbolPackCatalog`) に `EntitlementResolver` で gate 済みの `PackRow.{Available, NeedsUpdate, Downloaded, Locked}` sealed を返すメソッドを追加し、`PackManagementViewModel` を delegate に refactor する。それまでは直接注入は容認された例外ではなく既知違反である。
+§41.5.6 cleanup により、コードベースの **適合 gate site は 2 つ** (`CompositeSymbolCatalog`, `DefaultSymbolPackCatalog`)、**適合 call site は 2 つ** (`ChartEditorViewModel`, `PackManagementViewModel`)、**未解決の §41.5.1 deviation はゼロ**。当初の deviation 記録は §41.5.5 で「間違った layer に Pro logic を入れた既存コードを retire する worked example」として保存。
 
 **将来の consumer (例)**: Phase 35.2 polar editing → `PolarEditorAvailability` が `EntitlementResolver` 注入、tri-state `Free | Pro | LockedPro` を expose、editor toolbar は tri-state を消費。post-v1 PR 承認ゲート → `PullRequestApprovalPolicy` が gating 対象、`PullRequestDetailViewModel` は `isPro()` 呼出なし。
 
 **新 Pro feature ランディング時のチェックリスト** (詳細は EN §41.5.4): (1) gate site を特定 (ViewModel / Composable に Pro logic が入りそうなら domain layer に押し出す)、(2) gate site のみに `EntitlementResolver` 注入、(3) Pro-policy-agnostic interface を expose (`Boolean isPro` を caller に漏らさない)、(4) gate-site test で 4 分岐カバー (Pro / 非 Pro / 未認証 / feature-specific edge)、(5) call-site reaction を Fake gate で test、(6) paywall trigger は 41.3b `_paywallRequests: Channel<Unit>(BUFFERED)` precedent に従う、(7) 新 gate site を ADR-016 §41.5.3 amendment か feature 自身の ADR に記録。
 
-**§41.5 のスコープ外**: 既存機能を Pro 化するかの product 判断 (別 ADR / PRD)、`EntitlementResolver` の API 変更 (将来 Pro Lite / Pro Plus 等を導入する場合は別 amendment)、「間違った layer に Pro logic を入れた既存コード」の migration discipline (Phase 41.5 時点で該当する site が 1 つ存在 — `PackManagementViewModel` (§41.5.3 reference table + Tech Debt Backlog "ADR-016 §41.5 deviations" 参照)。挙動は正しく layer のみが間違っているため、§41.5.3 cleanup 推奨に従い `SymbolCatalog` 拡張 / sibling `SymbolPackCatalog` 導入で対処。将来 code-review で追加違反が surface したら inline 対処、汎用 migration plan は不要)。
+**§41.5 のスコープ外**: 既存機能を Pro 化するかの product 判断 (別 ADR / PRD)、`EntitlementResolver` の API 変更 (将来 Pro Lite / Pro Plus 等を導入する場合は別 amendment)、「間違った layer に Pro logic を入れた既存コード」の migration discipline (Phase 41.5 ドキュメント時点で該当 site が 1 つ存在 — `PackManagementViewModel` が `EntitlementResolver` 直接注入で `PackStatus.Locked` を inline 導出 — §41.5.6 cleanup で sibling `SymbolPackCatalog` interface を導入して解消。§41.5.6 が worked example。将来 code-review で追加違反が surface したら同じ shape で inline 対処、汎用 migration plan は不要)。
+
+#### §41.5.6 Update: `PackManagementViewModel` deviation 解消
+
+Phase 41.5 ドキュメント時点で唯一既知だった §41.5.1 deviation (`PackManagementViewModel` が `EntitlementResolver` を直接注入し `readSnapshot()` で `PackStatus.Locked` を inline 導出) を、§41.5 ドキュメント直後の follow-up slice で retire。§41.5.3 reference table は cleanup 後の状態を反映済。
+
+**変更の shape**: `domain/symbol/` に sibling interface `SymbolPackCatalog` を新設 (`suspend fun listInventory(): PackInventory`)。`PackRow` + `PackStatus` を `ui.packmanagement` から `domain.symbol` に移動 (Kotlin/Native ObjC bridge は package 非依存で simple class name を export するため iOS Swift 側の参照は無変更)。`DefaultSymbolPackCatalog` 実装が `LocalSymbolPackDataSource` + `EntitlementResolver` を注入し、status fold (Locked / NotDownloaded / UpdateAvailable / Downloaded) + 順序 (FREE → PRO 各昇順) + total bytes 計算をすべて gate 側で完結。`isPro()` を per-call 1 回スナップショットして 1 回の `listInventory()` 呼出内では coherent な gate view を返す。`PackManagementViewModel` は `SymbolPackCatalog` のみを注入する Pro-policy-agnostic な consumer になり、`load` / `refresh` は `catalog.listInventory()` を呼んで state に転送するだけのシン wrapper に。dead state だった `isProEntitled` フィールドも同 cleanup で削除。
+
+**sibling interface にした理由**: `SymbolCatalog` は palette + cell draw の render hot path consumer で `get(id)` がマイクロ秒スケールのシンクロナス lookup。inventory は per-screen-load の suspending な metadata mirror 読込で cadence が違う。1 つの bloated `SymbolCatalog` に統合すると render hot path が pack metadata を触る誘惑が生まれる。
+
+**テスト再編**: gate-fold tests は ViewModel から `DefaultSymbolPackCatalogTest` (12 ケース、real SQLDelight in-memory driver + `EntitlementResolver` test fakes) に移動。`PackManagementViewModelTest` は state machine の関心 (load + refresh + error + in-flight guard + clear-error) に narrow し、`FakeSymbolPackCatalog` で canned `PackInventory` を返す shape に。Pro-gate logic は所有層でテストされる。
+
+**前方互換**: Phase 41.6+ で ADR-016 §5.2 「Free up storage」 affordance / per-pack download dispatch が landing する際は `SymbolPackCatalog` を拡張 (または §41.5.3 forward-looking entry の `PackDownloadCoordinator` に昇格)。いずれの場合も gate 決定は domain layer に残り、ViewModel は user intent forward + 解決済 state 描画のみ。§41.5.4 checklist は変更なし。
+
+**完了**: 本 update により未解決の §41.5.1 deviation はゼロ。今後 Pro-gating コードが call site に landing したら rule 違反 (sanctioned exception ではない) — reviewer は §41.5.1 + §41.5.6 worked example を pointer に PR を reject。
 
 ## 7. テレメトリ / 観測性
 

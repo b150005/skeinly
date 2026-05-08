@@ -423,11 +423,12 @@ As of Phase 41.5, **no current consumer matches this exception**. The §41.5.2 c
 | Consumer | Layer | Use of `EntitlementResolver` | Pattern compliance |
 |---|---|---|---|
 | [`CompositeSymbolCatalog`](../../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/domain/symbol/CompositeSymbolCatalog.kt) | Domain (gate site) | Injects resolver. `get()` / `listByCategory()` / `all()` use `isPro()` to gate Pro symbol access (return null / drop Pro entries when not entitled). `listLockedPro()` uses `isPro()` to early-return empty when user IS Pro — it is an observability surface that informs the UI which Pro symbols to render with a lock badge (NOT a gating call; the symbols it returns are intentionally surfaced for the call site to display). | ✅ Compliant gate site |
+| [`DefaultSymbolPackCatalog`](../../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/domain/symbol/DefaultSymbolPackCatalog.kt) | Domain (gate site) | Injects resolver. `listInventory()` uses `isPro()` once per call to derive `PackStatus.Locked` for Pro packs when not entitled. Sibling to `CompositeSymbolCatalog` — packs are a metadata-level concern; symbols are render-path. Landed in the §41.5.3 cleanup that closed the `PackManagementViewModel` deviation (see §41.5.6). | ✅ Compliant gate site |
 | [`ChartEditorViewModel`](../../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/ui/chart/ChartEditorViewModel.kt) | UI (call site, gate-delegated) | Reads `symbolCatalog.listLockedPro(category)` for palette badge rendering. Does NOT inject `EntitlementResolver`. Does NOT call `isPro()` directly. | ✅ Compliant call site (gate delegated to `CompositeSymbolCatalog`) |
-| [`PackManagementViewModel`](../../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/ui/packmanagement/PackManagementViewModel.kt) | UI (call site) | Injects `EntitlementResolver` directly (line 106). Calls `isPro()` in `readSnapshot()` (line 202) to derive `PackStatus.Locked` for Pro packs when not entitled. | ⚠ **Non-compliant** (deviation from §41.5.1 — `PackStatus.Locked` gates the per-row download action, so this is gating, not affording per §41.5.2) |
+| [`PackManagementViewModel`](../../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/ui/packmanagement/PackManagementViewModel.kt) | UI (call site, gate-delegated) | Consumes `SymbolPackCatalog.listInventory()` and forwards the resolved `PackRow` list to state. Does NOT inject `EntitlementResolver`. Does NOT call `isPro()` directly. (Pre-§41.5.6: injected resolver and computed `PackStatus.Locked` inline — that was the deviation §41.5.3 originally documented; closed in the §41.5.6 cleanup.) | ✅ Compliant call site (gate delegated to `DefaultSymbolPackCatalog`) |
 | [`PaywallViewModel`](../../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/ui/paywall/PaywallViewModel.kt) | UI (not currently a consumer) | Does NOT inject `EntitlementResolver`. Does NOT call `isPro()`. Post-purchase routing reads `RestoreResult.Success.proActive` and `PurchaseResult.Success` from `RevenueCatService`. The KDoc comment block at line 117 references `EntitlementResolver` only in passing. | n/a (no consumer relationship) |
 
-The `PackManagementViewModel` deviation is logged in the **Tech Debt Backlog** under a new "ADR-016 §41.5 deviations" subsection. Recommended cleanup: extend `SymbolCatalog` (or introduce a sibling `SymbolPackCatalog` interface) with a method that returns sealed `PackRow.{Available, NeedsUpdate, Downloaded, Locked}` already gated by `EntitlementResolver`, then refactor `PackManagementViewModel` to delegate. Until then, the direct injection is a known violation, NOT a sanctioned exception.
+As of the §41.5.6 cleanup the codebase has **two fully-compliant gate-site consumers** (`CompositeSymbolCatalog`, `DefaultSymbolPackCatalog`), **two fully-compliant call sites** (`ChartEditorViewModel`, `PackManagementViewModel`), and **zero open §41.5.1 deviations**. The historical deviation entry is preserved in §41.5.5 as a worked example of how to retire a "shipped Pro-gating in the wrong layer" violation.
 
 Future consumers extending this table:
 
@@ -451,7 +452,40 @@ When a future ADR or commit-level decision flips an existing feature (or ships a
 
 - **Deciding which existing features become Pro.** That decision belongs in product / monetization-strategist deliberation, captured per-feature in its own ADR or PRD. §41.5 only describes how to wire entitlement gating once the decision is made.
 - **Refining `EntitlementResolver` itself.** No API changes ship in 41.5. If a future feature needs richer surface than `Boolean isPro()` (e.g. tier discrimination for Pro Lite vs. Pro Plus, partial-trial state), that's a separate ADR amendment.
-- **Migration discipline for "we shipped Pro-gating in the wrong layer and need to refactor".** One such site exists as of Phase 41.5: `PackManagementViewModel` (documented in §41.5.3 and the Tech Debt Backlog under "ADR-016 §41.5 deviations"). Its behavior is correct; only the layer is wrong. Address via the §41.5.3 cleanup recommendation (extend `SymbolCatalog` or introduce a sibling `SymbolPackCatalog` with a gated `PackRow.{Available, NeedsUpdate, Downloaded, Locked}` method, refactor the ViewModel to delegate). If a future code-review surfaces additional violations, address them inline; no general-purpose migration plan is needed.
+- **Migration discipline for "we shipped Pro-gating in the wrong layer and need to refactor".** One such site existed at Phase 41.5 documentation time (`PackManagementViewModel` injecting `EntitlementResolver` directly to compute `PackStatus.Locked` inline) and was retired in the §41.5.6 cleanup that introduced the sibling `SymbolPackCatalog` interface. The §41.5.6 entry below is the worked example. If a future code-review surfaces additional violations, address them inline using the same shape (introduce or extend the relevant gate-site interface; refactor the call site to delegate). No general-purpose migration plan is needed.
+
+#### 41.5.6 Update: closing the `PackManagementViewModel` deviation
+
+This subsection records the cleanup that retired the only known §41.5.1 deviation that existed at Phase 41.5 documentation time. The work landed as a follow-up slice after the Phase 41.5 doc-only commit; the §41.5.3 reference table above reflects the post-cleanup state.
+
+**Trigger.** The §41.5.3 row originally flagged `PackManagementViewModel` as ⚠ non-compliant: it injected `EntitlementResolver` directly and computed `PackStatus.Locked` inline in `readSnapshot()` to derive the Pro-pack lock badge. Per §41.5.1 the gate decision belongs at the gate site (a domain-layer surface), not the call site (UI / ViewModel). The deviation was bounded to one file and behaviorally correct, but it sat as the only counterexample to the rule at the moment §41.5 was published — closing it before any future Pro-feature work landed prevented copy-paste propagation.
+
+**Shape of the fix.** A new sibling interface `SymbolPackCatalog` lives alongside `SymbolCatalog` in `domain/symbol/`:
+
+```kotlin
+interface SymbolPackCatalog {
+    suspend fun listInventory(): PackInventory
+}
+
+data class PackInventory(
+    val rows: List<PackRow>,
+    val totalDownloadedBytes: Long,
+)
+```
+
+`PackRow` and `PackStatus` (the existing data class + 4-state enum from Phase 41.4) move from `ui.packmanagement` to `domain.symbol` so they are catalog-layer return shapes, not UI-layer state. Kotlin/Native ObjC bridge exports simple class names regardless of source package, so the iOS Swift consumers continue to reference `PackRow` / `PackStatus` unchanged.
+
+`DefaultSymbolPackCatalog` is the production impl — it injects `LocalSymbolPackDataSource` + `EntitlementResolver` and owns the entire status fold (Locked / NotDownloaded / UpdateAvailable / Downloaded). Snapshots `isPro()` once per `listInventory()` call so every row in a single call sees a coherent gate view. Stable ordering (FREE first, then PRO; alphabetical within tier) and the total-bytes math move with the gate.
+
+`PackManagementViewModel` becomes Pro-policy-agnostic — it injects only `SymbolPackCatalog` + the optional `PackSyncDispatch` lambda. `load()` and `refresh()` are thin wrappers: call `catalog.listInventory()`, forward the result to `_state`. The `isProEntitled` field on `PackManagementState` was found to be dead state (the screen never read it) and was deleted in the same cleanup.
+
+**Why a sibling interface, not extending `SymbolCatalog`.** `SymbolCatalog` is consumed on the Compose / SwiftUI render hot path — `get(id)` is a synchronous microsecond-scale lookup over individual symbols. Inventory is a slower per-screen-load read against the metadata mirror that's suspending and pulls a small bounded list. Different concerns, different cadences, different consumer sets. A single bloated `SymbolCatalog` interface would invite the render hot path to accidentally touch pack-level metadata.
+
+**Test reorganization.** Pre-cleanup, `PackManagementViewModelTest` carried the gate-fold tests because the ViewModel owned the gate. Post-cleanup the gate-fold tests moved to a new `DefaultSymbolPackCatalogTest` (12 cases against a real SQLDelight in-memory driver + the `EntitlementResolver` test fakes), and `PackManagementViewModelTest` narrowed to state-machine concerns (load + refresh + error paths + in-flight guard + clear-error) using a `FakeSymbolPackCatalog` that returns canned `PackInventory`. Net: the Pro-gate logic is tested where it lives.
+
+**Forward-compat.** When Phase 41.6+ lands the ADR-016 §5.2 "Free up storage" affordance or the per-pack download dispatch, those operations extend `SymbolPackCatalog` (or graduate to a new `PackDownloadCoordinator` per the §41.5.3 forward-looking entry). Either way, the gate decision stays in domain layer; the ViewModel forwards user intent + renders the resolved state. The §41.5.4 checklist applies unchanged.
+
+**Closure.** With this update the codebase has zero open §41.5.1 deviations. Any future Pro-gating work that lands at the call site (rather than the gate site) is a regression against the rule, not a sanctioned exception, and reviewers should reject the PR with a pointer back to §41.5.1 + this §41.5.6 worked example.
 
 ## 7. Telemetry / observability
 

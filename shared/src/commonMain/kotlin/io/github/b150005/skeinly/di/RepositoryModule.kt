@@ -68,8 +68,10 @@ import io.github.b150005.skeinly.domain.repository.StructuredChartRepository
 import io.github.b150005.skeinly.domain.repository.SubscriptionRepository
 import io.github.b150005.skeinly.domain.repository.UserRepository
 import io.github.b150005.skeinly.domain.symbol.CompositeSymbolCatalog
+import io.github.b150005.skeinly.domain.symbol.DefaultSymbolPackCatalog
 import io.github.b150005.skeinly.domain.symbol.EntitlementResolver
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
+import io.github.b150005.skeinly.domain.symbol.SymbolPackCatalog
 import io.github.b150005.skeinly.domain.symbol.catalog.DefaultSymbolCatalog
 import io.github.jan.supabase.SupabaseClient
 import io.ktor.client.HttpClient
@@ -283,6 +285,16 @@ val repositoryModule =
                 entitlementResolver = get(),
                 json = get(),
                 applicationScope = get<CoroutineScope>(applicationScopeQualifier),
+            )
+        }
+        // Phase 41.5.1 (ADR-016 §41.5.3 + §41.5.6) — pack-management
+        // catalog. Sibling to [SymbolCatalog]; owns the Pro entitlement
+        // gate so [PackManagementViewModel] stays Pro-policy-agnostic
+        // per §41.5.1.
+        single<SymbolPackCatalog> {
+            DefaultSymbolPackCatalog(
+                localSymbolPackDataSource = get(),
+                entitlementResolver = get(),
             )
         }
         // Phase 41.3 (ADR-016 §6 §41.3) — RevenueCat IAP service. Production

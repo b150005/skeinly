@@ -295,13 +295,17 @@ val viewModelModule =
         // Phase 41.4 (ADR-016 §5.2 §6 §41.4) — pack management screen.
         // SymbolPackSyncManager is registered conditionally (only when
         // Supabase is configured) so we use getOrNull. Local-only dev
-        // builds skip the sync dispatch and just re-read the local
-        // mirror on Refresh.
+        // builds skip the sync dispatch and just re-read the catalog on
+        // Refresh.
+        //
+        // Phase 41.5 (ADR-016 §41.5.3): consumes [SymbolPackCatalog]
+        // rather than injecting [EntitlementResolver] + the local data
+        // source directly — gate decision lives at the catalog (gate
+        // site), not the ViewModel (call site).
         viewModel {
             val syncManager: io.github.b150005.skeinly.data.sync.SymbolPackSyncManager? = getOrNull()
             PackManagementViewModel(
-                localSymbolPackDataSource = get(),
-                entitlementResolver = get(),
+                symbolPackCatalog = get(),
                 syncDispatch = syncManager?.let { mgr -> suspend { mgr.sync() } },
             )
         }

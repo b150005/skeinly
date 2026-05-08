@@ -40,6 +40,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.domain.model.SymbolPackTier
+import io.github.b150005.skeinly.domain.symbol.PackRow
+import io.github.b150005.skeinly.domain.symbol.PackStatus
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_back
 import io.github.b150005.skeinly.generated.resources.action_refresh_packs
