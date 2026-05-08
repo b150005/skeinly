@@ -754,4 +754,38 @@
     <string name="label_paywall_section">Skeinly Pro</string>
     <string name="action_close_paywall">Close</string>
     <string name="action_dismiss_paywall_error">Dismiss</string>
+
+    <!-- Phase 41.4 (ADR-016 §5.2 §6 §41.4) — pack management screen + the
+         editor palette lock badge. Settings entry is always-on (matching
+         label_subscribe_to_pro), NOT beta-gated.
+         - title_pack_management is the screen title.
+         - label_pack_management is the Settings entry label (separate role
+           from title_pack_management per the role-prefix discipline; JA
+           may diverge between the two).
+         - label_pack_size_kb / _mb format with `%1$s` carrying a localized
+           formatted decimal (e.g. "1.4 MB" / "256 KB"). `%1$s` not `%1$d`
+           because the decimal point + integer-vs-decimal split is locale-
+           dependent and we render the formatted number on the call site.
+         - label_pack_status_* are the per-row badge labels.
+         - body_pack_locked_inline is the inline disclosure under a locked
+           Pro pack row that explains why it's locked + how to unlock it. -->
+    <string name="title_pack_management">Symbol Packs</string>
+    <string name="label_pack_management">Manage Symbol Packs</string>
+    <string name="action_refresh_packs">Refresh</string>
+    <string name="label_pack_total_size">Total downloaded: %1$s</string>
+    <string name="label_pack_size_kb">%1$s KB</string>
+    <string name="label_pack_size_mb">%1$s MB</string>
+    <string name="label_pack_symbol_count">%1$d symbols</string>
+    <string name="label_pack_version_x">v%1$d</string>
+    <string name="label_pack_status_downloaded">Downloaded</string>
+    <string name="label_pack_status_update_available">Update available</string>
+    <string name="label_pack_status_not_downloaded">Not downloaded</string>
+    <string name="label_pack_status_locked">Pro — locked</string>
+    <string name="label_pack_tier_free">Free</string>
+    <string name="label_pack_tier_pro">Pro</string>
+    <string name="state_no_packs">No symbol packs available</string>
+    <string name="state_no_packs_body">Tap Refresh to fetch the catalog.</string>
+    <string name="body_pack_locked_inline">This pack is part of Skeinly Pro. Subscribe to unlock all symbols.</string>
+    <string name="action_unlock_with_pro">Unlock with Pro</string>
+    <string name="title_locked_symbol">Pro symbol</string>
 </resources>

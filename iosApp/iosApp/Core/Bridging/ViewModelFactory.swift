@@ -138,4 +138,9 @@ enum ViewModelFactory {
     static func paywallViewModel(trigger: PaywallTrigger) -> PaywallViewModel {
         KoinHelperKt.getPaywallViewModel(trigger: trigger)
     }
+
+    /// Phase 41.4 (ADR-016 §5.2) — pack management ViewModel.
+    static func packManagementViewModel() -> PackManagementViewModel {
+        KoinHelperKt.getPackManagementViewModel()
+    }
 }

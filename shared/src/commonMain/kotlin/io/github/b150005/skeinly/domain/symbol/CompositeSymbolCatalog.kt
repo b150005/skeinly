@@ -156,6 +156,37 @@ class CompositeSymbolCatalog(
     }
 
     /**
+     * Phase 41.4 (ADR-016 §5.2) — Pro-tier entries the current user lacks
+     * the entitlement to use, scoped to [category]. Empty list when the
+     * user IS Pro (every entry is reachable through [listByCategory]).
+     *
+     * Disjoint from [listByCategory] by construction: an id surfaces here
+     * only when the resolved [DownloadedEntry.tier] is PRO and the
+     * entitlement gate is closed. If a Pro pack shadows a bundled FREE
+     * entry of the same id, the bundled entry stays in [listByCategory]
+     * and this method does NOT also surface the locked Pro shadow — that
+     * would render two palette cells with the same id.
+     */
+    override fun listLockedPro(category: SymbolCategory): List<SymbolDefinition> {
+        val current = snapshotState.value
+        if (entitlementResolver.isPro()) return emptyList()
+        // Set of ids the bundled catalog already publishes for this category —
+        // [listByCategory] surfaces the bundled FREE entry whenever a PRO
+        // pack ships an override of the same id, so excluding those ids
+        // here keeps `listLockedPro` disjoint from `listByCategory` (the
+        // palette would otherwise render two cells for the same id).
+        val bundledIds = bundled.listByCategory(category).map { it.id }.toSet()
+        return current.byCategory[category]
+            .orEmpty()
+            .asSequence()
+            .filter { it.tier == SymbolPackTier.PRO }
+            .filter { it.definition.id !in bundledIds }
+            .map { it.definition }
+            .sortedBy { it.id }
+            .toList()
+    }
+
+    /**
      * Rebuilds the in-memory snapshot from the local mirror. Idempotent and
      * mutex-serialized — a second concurrent caller waits rather than
      * trampling the in-flight rebuild. Suspending; meant to be called from

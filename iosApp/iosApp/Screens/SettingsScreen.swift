@@ -20,15 +20,19 @@ struct SettingsScreen: View {
     /// gated on `BuildFlags.isBeta` because F1 monetization is a
     /// production feature.
     let onSubscribeToProClick: () -> Void
+    /// Phase 41.4 (ADR-016 §5.2) — Manage Symbol Packs entry. Always-on.
+    let onManagePacksClick: () -> Void
 
     private var viewModel: SettingsViewModel { holder.viewModel }
 
     init(
         onSendFeedback: @escaping () -> Void = {},
-        onSubscribeToProClick: @escaping () -> Void = {}
+        onSubscribeToProClick: @escaping () -> Void = {},
+        onManagePacksClick: @escaping () -> Void = {}
     ) {
         self.onSendFeedback = onSendFeedback
         self.onSubscribeToProClick = onSubscribeToProClick
+        self.onManagePacksClick = onManagePacksClick
         let vm = ViewModelFactory.settingsViewModel()
         let wrapper = KoinHelperKt.wrapSettingsState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
@@ -196,6 +200,15 @@ struct SettingsScreen: View {
                     Label("label_subscribe_to_pro", systemImage: "star.fill")
                 }
                 .accessibilityIdentifier("subscribeToProButton")
+
+                // Phase 41.4 (ADR-016 §5.2) — Manage Symbol Packs entry.
+                // Always-on, NOT beta-gated.
+                Button {
+                    onManagePacksClick()
+                } label: {
+                    Label("label_pack_management", systemImage: "square.and.arrow.down.on.square")
+                }
+                .accessibilityIdentifier("managePacksButton")
             }
 
             // Beta section — Phase 39.4 (ADR-015 §6). Holds diagnostic

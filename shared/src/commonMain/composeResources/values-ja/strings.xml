@@ -537,4 +537,30 @@
     <string name="label_paywall_section">Skeinly Pro</string>
     <string name="action_close_paywall">閉じる</string>
     <string name="action_dismiss_paywall_error">閉じる</string>
+
+    <!-- Phase 41.4 (ADR-016 §5.2 §6 §41.4) — シンボルパック管理画面 + エディタ
+         パレットのロックバッジ。
+         - label_pack_total_size: 「ダウンロード済み合計: %1$s」 (e.g. "1.4 MB")
+         - label_pack_symbol_count: 「シンボル %1$d 件」(JA は件数の後置接尾辞慣習)
+         - label_pack_status_locked: 「Pro — ロック中」
+         - body_pack_locked_inline: タップ先がペイウォールであることを明示。 -->
+    <string name="title_pack_management">シンボルパック</string>
+    <string name="label_pack_management">シンボルパックを管理</string>
+    <string name="action_refresh_packs">更新</string>
+    <string name="label_pack_total_size">ダウンロード済み合計: %1$s</string>
+    <string name="label_pack_size_kb">%1$s KB</string>
+    <string name="label_pack_size_mb">%1$s MB</string>
+    <string name="label_pack_symbol_count">シンボル %1$d 件</string>
+    <string name="label_pack_version_x">v%1$d</string>
+    <string name="label_pack_status_downloaded">ダウンロード済み</string>
+    <string name="label_pack_status_update_available">アップデートあり</string>
+    <string name="label_pack_status_not_downloaded">未ダウンロード</string>
+    <string name="label_pack_status_locked">Pro — ロック中</string>
+    <string name="label_pack_tier_free">無料</string>
+    <string name="label_pack_tier_pro">Pro</string>
+    <string name="state_no_packs">利用可能なシンボルパックがありません</string>
+    <string name="state_no_packs_body">「更新」をタップしてカタログを取得してください。</string>
+    <string name="body_pack_locked_inline">このパックは Skeinly Pro 専用です。すべてのシンボルを利用するにはサブスクリプションをご購入ください。</string>
+    <string name="action_unlock_with_pro">Pro で解除</string>
+    <string name="title_locked_symbol">Pro シンボル</string>
 </resources>

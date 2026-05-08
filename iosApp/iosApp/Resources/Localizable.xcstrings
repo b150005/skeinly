@@ -7190,6 +7190,139 @@
           }
         }
       }
+    },
+    "title_pack_management": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Symbol Packs" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "シンボルパック" } }
+      }
+    },
+    "label_pack_management": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Manage Symbol Packs" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "シンボルパックを管理" } }
+      }
+    },
+    "action_refresh_packs": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Refresh" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "更新" } }
+      }
+    },
+    "label_pack_total_size": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Total downloaded: %1$@" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ダウンロード済み合計: %1$@" } }
+      }
+    },
+    "label_pack_size_kb": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%1$@ KB" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "%1$@ KB" } }
+      }
+    },
+    "label_pack_size_mb": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%1$@ MB" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "%1$@ MB" } }
+      }
+    },
+    "label_pack_symbol_count": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%1$d symbols" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "シンボル %1$d 件" } }
+      }
+    },
+    "label_pack_version_x": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "v%1$d" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "v%1$d" } }
+      }
+    },
+    "label_pack_status_downloaded": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Downloaded" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ダウンロード済み" } }
+      }
+    },
+    "label_pack_status_update_available": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Update available" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "アップデートあり" } }
+      }
+    },
+    "label_pack_status_not_downloaded": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Not downloaded" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "未ダウンロード" } }
+      }
+    },
+    "label_pack_status_locked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Pro — locked" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "Pro — ロック中" } }
+      }
+    },
+    "label_pack_tier_free": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Free" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "無料" } }
+      }
+    },
+    "label_pack_tier_pro": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Pro" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "Pro" } }
+      }
+    },
+    "state_no_packs": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No symbol packs available" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "利用可能なシンボルパックがありません" } }
+      }
+    },
+    "state_no_packs_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Tap Refresh to fetch the catalog." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "「更新」をタップしてカタログを取得してください。" } }
+      }
+    },
+    "body_pack_locked_inline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "This pack is part of Skeinly Pro. Subscribe to unlock all symbols." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "このパックは Skeinly Pro 専用です。すべてのシンボルを利用するにはサブスクリプションをご購入ください。" } }
+      }
+    },
+    "action_unlock_with_pro": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Unlock with Pro" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "Pro で解除" } }
+      }
+    },
+    "title_locked_symbol": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Pro symbol" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "Pro シンボル" } }
+      }
     }
   },
   "version": "1.1"

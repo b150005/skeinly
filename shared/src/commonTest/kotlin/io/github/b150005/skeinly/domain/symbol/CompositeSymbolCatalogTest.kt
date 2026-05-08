@@ -582,6 +582,88 @@ class CompositeSymbolCatalogTest {
         assertEquals(listOf("jis.knit.a", "jis.knit.b", "jis.knit.c"), snap.byCategory[SymbolCategory.KNIT]!!.map { it.definition.id })
     }
 
+    // ----- listLockedPro (Phase 41.4) ---------------------------------------
+
+    @Test
+    fun `listLockedPro returns empty when user is pro`() =
+        runTest {
+            val local = localStore()
+            seed(
+                local,
+                pack("pack.pro.cables", tier = SymbolPackTier.PRO),
+                listOf(entry("jis.knit.cable.6st", tier = SymbolPackTier.PRO)),
+            )
+            val cat = composite(local = local, resolver = stubSub(sub = activeProSub()))
+            assertEquals(emptyList(), cat.listLockedPro(SymbolCategory.KNIT))
+        }
+
+    @Test
+    fun `listLockedPro excludes pro entry that shadows a bundled free symbol`() =
+        runTest {
+            // A Pro pack ships an entry with the same id as a bundled FREE
+            // symbol — listByCategory keeps the bundled FREE for non-Pro
+            // users (per the existing divergence test), so listLockedPro
+            // must NOT also surface the locked-Pro shadow. Otherwise the
+            // palette would render two cells for the same id.
+            val bundled = StaticBundledCatalog(listOf(symbolDef("jis.knit.k")))
+            val local = localStore()
+            seed(
+                local,
+                pack("pack.pro.cables", tier = SymbolPackTier.PRO),
+                listOf(entry("jis.knit.k", tier = SymbolPackTier.PRO)),
+            )
+            val cat = composite(local = local, bundled = bundled, resolver = stubSub(sub = null))
+            assertEquals(emptyList(), cat.listLockedPro(SymbolCategory.KNIT))
+        }
+
+    @Test
+    fun `listLockedPro includes novel pro entry with no bundled counterpart`() =
+        runTest {
+            val local = localStore()
+            seed(
+                local,
+                pack("pack.pro.cables", tier = SymbolPackTier.PRO),
+                listOf(entry("jis.knit.cable.6st", tier = SymbolPackTier.PRO)),
+            )
+            val cat = composite(local = local, resolver = stubSub(sub = null))
+            val locked = cat.listLockedPro(SymbolCategory.KNIT)
+            assertEquals(1, locked.size)
+            assertEquals("jis.knit.cable.6st", locked.first().id)
+        }
+
+    @Test
+    fun `listLockedPro excludes free downloaded entry`() =
+        runTest {
+            val local = localStore()
+            seed(
+                local,
+                pack("pack.free.beginner", tier = SymbolPackTier.FREE),
+                listOf(entry("jis.knit.k", tier = SymbolPackTier.FREE)),
+            )
+            val cat = composite(local = local, resolver = stubSub(sub = null))
+            assertEquals(emptyList(), cat.listLockedPro(SymbolCategory.KNIT))
+        }
+
+    @Test
+    fun `listLockedPro orders results by id`() =
+        runTest {
+            val local = localStore()
+            seed(
+                local,
+                pack("pack.pro.cables", tier = SymbolPackTier.PRO),
+                listOf(
+                    entry("jis.knit.zulu", tier = SymbolPackTier.PRO),
+                    entry("jis.knit.alpha", tier = SymbolPackTier.PRO),
+                    entry("jis.knit.bravo", tier = SymbolPackTier.PRO),
+                ),
+            )
+            val cat = composite(local = local, resolver = stubSub(sub = null))
+            assertEquals(
+                listOf("jis.knit.alpha", "jis.knit.bravo", "jis.knit.zulu"),
+                cat.listLockedPro(SymbolCategory.KNIT).map { it.id },
+            )
+        }
+
     // ----- Test fakes -------------------------------------------------------
 
     private class StaticBundledCatalog(
