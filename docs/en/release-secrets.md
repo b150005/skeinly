@@ -970,12 +970,31 @@ supabase secrets list | grep GOOGLE_PLAY
    supabase functions deploy revenuecat-webhook
    ```
 
+   > **JWT verification disabled (load-bearing)**: `supabase/config.toml`
+   > carries `[functions.revenuecat-webhook] verify_jwt = false` so the
+   > `supabase functions deploy` invocation picks it up automatically.
+   > If an older CLI ignores the flag, pass it explicitly:
+   >
+   > ```bash
+   > supabase functions deploy revenuecat-webhook --no-verify-jwt
+   > ```
+   >
+   > Without this, Supabase's API gateway 401-rejects every webhook
+   > request before our handler runs (`UNAUTHORIZED_INVALID_JWT_FORMAT`),
+   > because RevenueCat does not (and cannot) carry a Supabase JWT.
+
 4. Note the deploy URL (e.g. `https://<project-ref>.supabase.co/functions/v1/revenuecat-webhook`). Visible in Supabase Dashboard → Edge Functions → revenuecat-webhook → Details.
 
 5. [RevenueCat Dashboard](https://app.revenuecat.com) → Project (`Skeinly`) → **Integrations** → **Webhooks** → **Add Webhook**:
    - **Webhook URL**: paste the URL from step 4
-   - **Authorization header**: paste the value from step 1 (must match the Supabase secret in step 2 exactly)
-   - **Environment filter**: **leave empty** (sandbox + production both flow through; closed beta is sandbox-dominated, post-Phase 40 GA also takes production. The function logs `event.environment` but does not filter writes by it.)
+   - **Authorization header value**: paste **`Bearer <value-from-step-1>`**
+     (the literal word `Bearer`, a single space, then the hex secret).
+     RevenueCat sends this value verbatim as the `Authorization` HTTP
+     header; our handler strips the `Bearer ` prefix and compares the
+     remainder against the Supabase secret. **Pasting just the hex value
+     without the `Bearer ` prefix produces a 401** at our handler
+     (handler requires `startsWith("Bearer ")`).
+   - **Environment filter**: **leave empty** (sandbox + production both flow through; closed beta is sandbox-dominated, post-Phase 40 GA also takes production. The function writes `event.environment` to the `subscriptions.environment` column so downstream analytics filter via `WHERE environment = 'production'`.)
 6. **Save**.
 
 7. In the same row, click **"Send test event"**. A green checkmark (HTTP 200 + body `{"status":"ok","note":"test_event_acknowledged"}`) confirms end-to-end success.

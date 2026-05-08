@@ -59,15 +59,39 @@ EF-5 for the full setup steps.
 supabase functions deploy revenuecat-webhook
 ```
 
+> **JWT verification disabled (load-bearing)**: this function is configured
+> with `verify_jwt = false` in `supabase/config.toml`'s
+> `[functions.revenuecat-webhook]` block. RevenueCat webhook deliveries do
+> not carry a Supabase JWT, so the gateway's default JWT verification
+> would 401-reject every request before reaching our handler with
+> `UNAUTHORIZED_INVALID_JWT_FORMAT` ("Auth header is not 'Bearer
+> {token}'"). Auth is enforced inside the function via constant-time
+> comparison against `REVENUECAT_WEBHOOK_SECRET` (see
+> [`index.ts`](./index.ts) `Bearer` validation block).
+>
+> If `supabase functions deploy` ignores the config.toml flag (older CLI
+> versions), pass `--no-verify-jwt` explicitly:
+>
+> ```bash
+> supabase functions deploy revenuecat-webhook --no-verify-jwt
+> ```
+
 After deploy, configure the Webhook URL in RevenueCat Dashboard:
 
 1. https://app.revenuecat.com → Project (`Skeinly`) → **Integrations** →
    **Webhooks** → **Add Webhook**
 2. **Webhook URL**: `https://<project-ref>.supabase.co/functions/v1/revenuecat-webhook`
-3. **Authorization header**: same value as `REVENUECAT_WEBHOOK_SECRET`
+3. **Authorization header**: paste **`Bearer <REVENUECAT_WEBHOOK_SECRET>`**
+   (the literal word `Bearer`, a single space, then the hex secret value).
+   The dashboard sends this value verbatim as the `Authorization` HTTP
+   header; our handler strips the `Bearer ` prefix and compares the
+   remainder against the Supabase Edge Function secret. Putting just the
+   hex value (without the `Bearer ` prefix) makes our handler 401-reject
+   with `error: "unauthorized"`.
 4. **Environment filter**: leave unfiltered (sandbox + production both
-   flow through; the function distinguishes via `event.environment` in
-   logs only)
+   flow through; the function distinguishes via `event.environment` and
+   writes the value into `subscriptions.environment` for analytics-side
+   filtering)
 5. **Save**
 
 ## Smoke tests (post-deploy)
