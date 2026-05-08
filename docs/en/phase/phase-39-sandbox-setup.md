@@ -162,6 +162,7 @@ SELECT
   platform,
   product_id,
   status,
+  environment,    -- 'sandbox' for beta-tester rows, 'production' for real users
   expires_at,
   last_verified_at,
   is_in_trial,
@@ -170,6 +171,29 @@ FROM public.subscriptions
 WHERE user_id = '<tester_user_id>'
 ORDER BY last_verified_at DESC;
 ```
+
+### Filter analytics by environment (production-only metrics)
+
+The `environment` column (migration 024) lets analytics queries exclude
+sandbox dev-noise:
+
+```sql
+-- Total active production Pro subscriptions (excludes sandbox testers)
+SELECT COUNT(*) FROM public.subscriptions
+WHERE environment = 'production'
+  AND status IN ('active', 'in_grace_period')
+  AND (expires_at IS NULL OR expires_at > NOW());
+
+-- Sandbox tester activity during closed beta
+SELECT user_id, platform, product_id, status, last_verified_at
+FROM public.subscriptions
+WHERE environment = 'sandbox'
+ORDER BY last_verified_at DESC
+LIMIT 50;
+```
+
+Powered by `idx_subscriptions_active_production` (migration 024) so
+the production-active aggregate stays fast even at full GA scale.
 
 If no rows for the tester → webhook didn't fire OR didn't reach the
 function OR the event lacked a usable `app_user_id`. Check Edge
@@ -278,9 +302,8 @@ When Phase 39 closes and Phase 40 GA launches:
 - The `subscriptions` table will start receiving production
   `event.environment = "PRODUCTION"` events alongside any remaining
   sandbox events from continued internal testing. Both write to the
-  same table; the function logs `environment` for triage but does not
-  filter writes.
-- (Optional, post-GA polish) Add an `environment` column to
-  `subscriptions` if production / sandbox traffic needs to be reported
-  separately. Migration would be additive; backfill defaults to
-  `'production'` for existing rows.
+  same table; the `environment` column (migration 024, shipped with
+  Phase 39 prep) marks each row so analytics queries can filter out
+  sandbox dev-noise via `WHERE environment = 'production'`. The
+  `idx_subscriptions_active_production` partial index keeps these
+  filtered queries fast at GA scale.

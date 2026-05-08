@@ -99,6 +99,7 @@ SELECT
   platform,
   product_id,
   status,
+  environment,    -- ベータテスター行は 'sandbox'、実ユーザーは 'production'
   expires_at,
   last_verified_at,
   is_in_trial,
@@ -107,6 +108,27 @@ FROM public.subscriptions
 WHERE user_id = '<tester_user_id>'
 ORDER BY last_verified_at DESC;
 ```
+
+### 環境別の分析クエリ（production-only メトリクス）
+
+`environment` カラム (migration 024) により sandbox dev-noise を除外した分析が可能:
+
+```sql
+-- 本番アクティブ Pro 購読総数（sandbox テスター除外）
+SELECT COUNT(*) FROM public.subscriptions
+WHERE environment = 'production'
+  AND status IN ('active', 'in_grace_period')
+  AND (expires_at IS NULL OR expires_at > NOW());
+
+-- closed beta 中の sandbox テスター活動
+SELECT user_id, platform, product_id, status, last_verified_at
+FROM public.subscriptions
+WHERE environment = 'sandbox'
+ORDER BY last_verified_at DESC
+LIMIT 50;
+```
+
+`idx_subscriptions_active_production` (migration 024) により GA 規模でも production-active 集計クエリが高速。
 
 行が返らない → webhook が発火していない、または function に届いていない、または event の `app_user_id` が使えなかった。Edge Function ログ確認。
 
@@ -172,5 +194,4 @@ Phase 39 closed → Phase 40 GA launch 時:
 - App Store Connect: tester アカウントを Sandbox testers に残してよい（cleanup 不要、production ユーザーは自分の実 Apple ID を使うので衝突しない）
 - Play Console: License testers リストも残してよい（同様）
 - RevenueCat dashboard: Webhook URL + secret は同じまま。再設定不要
-- `subscriptions` テーブルには本番 `event.environment = "PRODUCTION"` イベントが流入し始める（継続中の internal testing からの sandbox イベントと併存）。両方とも同じテーブルに書き込み、function は `environment` をログ出力するが書き込みフィルタはしない
-- （任意、GA 後の polish）`subscriptions` に `environment` カラム追加で production / sandbox トラフィックを分けてレポートしたい場合は migration 追加。additive、既存行のデフォルトは `'production'` で backfill 可能
+- `subscriptions` テーブルには本番 `event.environment = "PRODUCTION"` イベントが流入し始める（継続中の internal testing からの sandbox イベントと併存）。両方とも同じテーブルに書き込まれるが、`environment` カラム (migration 024、Phase 39 prep でシップ済み) で各行が sandbox / production にマークされているので、分析クエリは `WHERE environment = 'production'` で sandbox dev-noise を除外可能。`idx_subscriptions_active_production` パーシャルインデックスにより GA 規模でもこの絞り込みが高速。
