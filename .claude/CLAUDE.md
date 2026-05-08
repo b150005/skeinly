@@ -386,6 +386,18 @@ Items deferred across phases. When reopening one, cut a dedicated PR — do not 
 ### Phase 40 GA release prep
 - **iOS `IS_BETA` xcconfig consistency check** (**CLOSED** 2026-05-08): `verifyIosBetaFlag` Gradle task added in `build.gradle.kts` (root) following the `verifyI18nKeys` pattern — reads `version.properties` `VERSION_NAME` major component + `iosApp/project.yml` `IS_BETA` value, asserts `(major == 0) <=> (IS_BETA == "YES")` with a clear remediation message naming both fix paths. Wired into `:shared:check` via `dependsOn(":verifyIosBetaFlag")` in `shared/build.gradle.kts`, into `ci.yml` `shared-checks` step (runs alongside `verifyI18nKeys`), and into `make ci-local`. Verified against current state (`VERSION_NAME=0.1.0` + `IS_BETA="YES"` → OK) and the mismatch path (temporarily flipped `IS_BETA="NO"` → fails with the expected coupled-edit-needed message + remediation). At Phase 40 GA, the task structurally guarantees the coupled `VERSION_NAME 0.X.Y → 1.0.0` + `IS_BETA YES → NO` flip cannot land in two separate commits — a one-sided commit fails CI immediately. Project convention pivoted from shell scripts to Gradle tasks when `verify-i18n-keys.sh` migrated; this implementation follows that pattern (the original Tech Debt entry mentioned `scripts/verify-ios-beta-flag.sh` predates the pivot).
 
+### Phase 39 closed-beta sandbox infrastructure (**CLOSED** 2026-05-08)
+- **`Purchases.logIn(userId)` 配線** (commit `e1088d1`): `RevenueCatService.identifyUser(userId)` / `logOutUser()` を interface に追加 + `RevenueCatServiceImpl` で `awaitLogInResult` / `awaitLogOutResult` ラップ + 新規 `RevenueCatAuthBridge` top-level fn が `AuthRepository.observeAuthState()` を購読して Authenticated → identify / Unauthenticated → logOut を distinct-until-changed で発火。Application init から `SkeinlyApplication.onCreate` (Android) と `KoinHelperKt.startRevenueCatAuthBridge()` (iOS, `iOSApp.init` 呼び出し) で起動。RevenueCat 失敗は best-effort (println + auth flow uncoupled)。+8 commonTest (1456 total)。
+- **`upsert_subscription_from_webhook` RPC** (commit `33c098f`, migration 023): SECURITY DEFINER + `last_verified_at` 順序ガード付き conditional upsert。out-of-order RevenueCat retry が新しい状態を古い状態で上書きできない。closed-enum 再検証 (platform / product_id / status) で defense-in-depth。Prod に `mcp__supabase__apply_migration` で適用済み。
+- **`revenuecat-webhook` Edge Function** (commit `2752a30`): `supabase/functions/revenuecat-webhook/{index,mapping,mapping.test}.ts` + README。constant-time Bearer 検証 + 11 種 RevenueCat event タイプの status マッピング (`INITIAL_PURCHASE` / `RENEWAL` / `CANCELLATION` + cancel_reason variants / `EXPIRATION` / `BILLING_ISSUE` / `REFUND` / etc.)。TEST / SUBSCRIBER_ALIAS / TRANSFER / anonymous app_user_id / 未対応 store / 未マッピング event は 200 で fast-acknowledge (RevenueCat retry を即終了)。+29 Deno tests (`deno test supabase/functions/revenuecat-webhook/`)。デプロイは user-side: `supabase functions deploy revenuecat-webhook`。
+- **Sandbox tester onboarding 手順** (commit `<docs-commit>`, [docs/{en,ja}/phase/phase-39-sandbox-setup.md](../docs/en/phase/phase-39-sandbox-setup.md)): Apple Sandbox tester / Google Play License tester 登録から sandbox accelerated-time での更新サイクル観測まで。closed beta テスター 5–10 名分の invite ワークフローを doc 化。
+- **HARD-GATE 残項目** (user-side actions only):
+  1. Edge Function deploy: `supabase functions deploy revenuecat-webhook`
+  2. RevenueCat dashboard で Webhook URL + Authorization header 設定 ([release-secrets.md EF-5](../docs/ja/release-secrets.md))
+  3. dashboard "Send test event" で end-to-end 検証
+  4. Apple Sandbox testers + Play License testers 登録 (テスター人数分)
+  5. TestFlight + Play Internal Testing への招待
+
 ### Phase H IAP receipt validation prep (sequencing pre-Phase H)
 - **`verifyGoogleReceipt` Edge Function 実装時の前提** (logged 2026-05-08): `supabase/functions/verify-receipt/index.ts:181-213` の `verifyGoogleReceipt` は現在 501 を返すスタブ。Phase H で実装する際:
   - **Secret 名**: `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON` (旧 `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` から 2026-05-08 に rename 済み — release-secrets.md EF-4 + `verify-receipt/index.ts:21` のコメントが新名前を反映)
@@ -393,7 +405,7 @@ Items deferred across phases. When reopening one, cut a dedicated PR — do not 
   - **OAuth scope**: `https://www.googleapis.com/auth/androidpublisher`
   - **API endpoint**: `androidpublisher.googleapis.com/.../subscriptionsv2/tokens/{token}`
   - **Bundle ID**: `io.github.b150005.skeinly`
-- **Phase H 着手のトリガー**: Phase 39 closed beta が完了し、IAP 周りで実 receipt validation 需要が発生したタイミング（RevenueCat の receipt validation で十分なケースが多いので、自前 Edge Function 実装は明確な動機が必要 — 例: RevenueCat 経由ではない receipt で検証する path、または subscription state 変更を webhook 以外で polling する path）。
+- **Phase H 着手のトリガー**: Phase 39 closed beta が完了し、IAP 周りで実 receipt validation 需要が発生したタイミング。RevenueCat receipt validation + `revenuecat-webhook` Edge Function (`2752a30`) で大半のケースは Phase 39 で十分カバーされたため、Phase H の必要性は post-beta フィードバック次第（例: RevenueCat 経由ではない受信パス、または webhook 以外で subscription state を polling する path が必要なら着手）。
 - **CI Release アップロード SA との分離 (PoLP)**: `google-play-publisher@...` SA は CI Release アップロード専用 (Skeinly アプリ単位で「テスト版トラックへのリリース」権限のみ)。Phase H 実装時に Edge Function 側でこの SA を消費しないよう注意（権限セットが直交するので、誤って使うと OAuth scope エラーで即失敗する — 構造的に防止される）。詳細は [docs/en/release-secrets.md EF-4](../docs/en/release-secrets.md#ef-4-google_play_iap_validator_sa_json) + #21 セクションを参照。
 
 ### Accessibility deferrals (post-Phase 39 beta)

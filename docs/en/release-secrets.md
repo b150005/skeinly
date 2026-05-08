@@ -944,9 +944,11 @@ supabase secrets list | grep GOOGLE_PLAY
 
 ### EF-5. `REVENUECAT_WEBHOOK_SECRET`
 
-**WHAT**: A shared secret used **server-side** to verify Webhook deliveries from RevenueCat to your Edge Function (e.g. `revenuecat-webhook`). The value entered into RevenueCat's **Webhooks → Authorization header** field is matched on the Edge Function side against the incoming `Authorization: Bearer <value>` header.
+**WHAT**: A shared secret used **server-side** to verify Webhook deliveries from RevenueCat to the `revenuecat-webhook` Edge Function. The value entered into RevenueCat's **Webhooks → Authorization header** field is matched on the Edge Function side against the incoming `Authorization: Bearer <value>` header (constant-time comparison).
 
-**OBTAIN:**
+**Consumed by**: [`supabase/functions/revenuecat-webhook/index.ts`](../../supabase/functions/revenuecat-webhook/index.ts) — activated at Phase 39 closed beta launch.
+
+**OBTAIN + Webhook URL setup (single end-to-end flow):**
 
 1. Generate a strong random value (**you choose this** — RevenueCat just stores and forwards whatever you give it):
 
@@ -955,32 +957,59 @@ supabase secrets list | grep GOOGLE_PLAY
    # e.g. 7f3a9c2d8e1b5a4f6c9d2e7b8a1f3c5d9e2b4a6c8f1d3e5a7b9c2d4e6f8a1b3c
    ```
 
-2. [RevenueCat Dashboard](https://app.revenuecat.com) → Project (`Skeinly`) → **Integrations** → **Webhooks** → **Add Webhook**:
-   - **Webhook URL**: your Edge Function URL (e.g. `https://<project-ref>.supabase.co/functions/v1/revenuecat-webhook`)
-   - **Authorization header**: paste the value generated in step 1
-   - **Environment filter**: optional (e.g. route Sandbox events to a different webhook)
-3. **Save**.
+2. **Register the secret in Supabase Edge Function secrets BEFORE configuring the dashboard webhook URL** (so any test event fired during deploy reaches a function that can already 401-reject mismatches):
 
-**VERIFY**: 64-char hex string. Confirm the value stored on the RevenueCat side matches the value registered as a Supabase secret exactly.
+   ```bash
+   supabase secrets set REVENUECAT_WEBHOOK_SECRET="<value-from-step-1>"
+   supabase secrets list | grep REVENUECAT
+   ```
 
-**REGISTER:**
+3. **Deploy the Edge Function**:
+
+   ```bash
+   supabase functions deploy revenuecat-webhook
+   ```
+
+4. Note the deploy URL (e.g. `https://<project-ref>.supabase.co/functions/v1/revenuecat-webhook`). Visible in Supabase Dashboard → Edge Functions → revenuecat-webhook → Details.
+
+5. [RevenueCat Dashboard](https://app.revenuecat.com) → Project (`Skeinly`) → **Integrations** → **Webhooks** → **Add Webhook**:
+   - **Webhook URL**: paste the URL from step 4
+   - **Authorization header**: paste the value from step 1 (must match the Supabase secret in step 2 exactly)
+   - **Environment filter**: **leave empty** (sandbox + production both flow through; closed beta is sandbox-dominated, post-Phase 40 GA also takes production. The function logs `event.environment` but does not filter writes by it.)
+6. **Save**.
+
+7. In the same row, click **"Send test event"**. A green checkmark (HTTP 200 + body `{"status":"ok","note":"test_event_acknowledged"}`) confirms end-to-end success.
+
+**VERIFY**: 64-char hex string. Confirm the value on the RevenueCat side matches the Supabase secret exactly. `Send test event` returns a green checkmark.
+
+**curl smoke tests** (alternative to dashboard button after step 6):
 
 ```bash
-supabase secrets set REVENUECAT_WEBHOOK_SECRET="<value-from-step-1>"
-supabase secrets list | grep REVENUECAT
+WEBHOOK_URL="https://<project-ref>.supabase.co/functions/v1/revenuecat-webhook"
+SECRET="<value-from-step-1>"
+
+curl -s -w '\nHTTP %{http_code}\n' -X POST "$WEBHOOK_URL" \
+  -H "Authorization: Bearer $SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"api_version":"1.0","event":{"id":"smoke-test-1","type":"TEST","event_timestamp_ms":1700000000000}}'
 ```
 
-Edge Function side:
+Expected: `HTTP 200` + body `{"status":"ok","note":"test_event_acknowledged"}`.
 
-```typescript
-const incomingAuth = req.headers.get("authorization") ?? "";
-const expected = `Bearer ${Deno.env.get("REVENUECAT_WEBHOOK_SECRET")}`;
-if (incomingAuth !== expected) {
-  return new Response("unauthorized", { status: 401 });
-}
+Verify 401 on bad auth:
+
+```bash
+curl -s -w '\nHTTP %{http_code}\n' -X POST "$WEBHOOK_URL" \
+  -H "Authorization: Bearer wrong-secret" \
+  -H "Content-Type: application/json" \
+  -d '{"event":{"id":"x","type":"TEST","event_timestamp_ms":1700000000000}}'
 ```
+
+Expected: `HTTP 401` + body `{"error":"unauthorized"}`.
 
 **ROTATE**: Edit the webhook in the RevenueCat dashboard → update the Authorization header to a new value → re-register the Supabase secret. RevenueCat retries failed webhook deliveries up to 5 times automatically, so the rotation window has built-in tolerance for missed events.
+
+> **Dependency chain**: this secret is one of three pieces that together make webhook-driven subscription state work: (a) the deployed Edge Function itself, (b) [migration 023 `upsert_subscription_from_webhook` RPC](../../supabase/migrations/023_revenuecat_webhook_helper.sql), (c) the KMP-side [`RevenueCatAuthBridge.kt`](../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/data/subscription/RevenueCatAuthBridge.kt) which calls `Purchases.logIn(userId)` so webhook events carry the Skeinly UUID as `app_user_id`. Full Phase 39 closed beta sandbox tester setup walkthrough: [docs/en/phase/phase-39-sandbox-setup.md](phase/phase-39-sandbox-setup.md).
 
 Reference: [RevenueCat Webhooks](https://www.revenuecat.com/docs/integrations/webhooks)
 

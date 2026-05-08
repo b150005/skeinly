@@ -949,9 +949,11 @@ supabase secrets list | grep GOOGLE_PLAY
 
 ### EF-5. `REVENUECAT_WEBHOOK_SECRET`
 
-**WHAT**: RevenueCat → 自前 Edge Function (`revenuecat-webhook` 等) への Webhook 配信を**サーバー側で署名検証**するための共有秘密値。RevenueCat ダッシュボードの **Webhooks → Authorization header** に設定した値そのもの。Edge Function 側で `Authorization: Bearer <値>` ヘッダを照合する。
+**WHAT**: RevenueCat → 自前 Edge Function `revenuecat-webhook` への Webhook 配信を**サーバー側で署名検証**するための共有秘密値。RevenueCat ダッシュボードの **Webhooks → Authorization header** に設定した値そのもの。Edge Function 側で `Authorization: Bearer <値>` ヘッダを定数時間比較で照合する。
 
-**OBTAIN:**
+**消費箇所**: [`supabase/functions/revenuecat-webhook/index.ts`](../../supabase/functions/revenuecat-webhook/index.ts) — Phase 39 closed beta launch 時に有効化。
+
+**OBTAIN + Webhook URL 設定（一連の手順）:**
 
 1. 強い乱数を生成（**自分で決める** — RevenueCat 側はこちらが指定した値を保管・送信するだけ）:
 
@@ -960,32 +962,60 @@ supabase secrets list | grep GOOGLE_PLAY
    # 例: 7f3a9c2d8e1b5a4f6c9d2e7b8a1f3c5d9e2b4a6c8f1d3e5a7b9c2d4e6f8a1b3c
    ```
 
-2. [RevenueCat Dashboard](https://app.revenuecat.com) → Project (`Skeinly`) → **Integrations** → **Webhooks** → **Add Webhook**:
-   - **Webhook URL**: 自前 Edge Function の URL（例: `https://<project-ref>.supabase.co/functions/v1/revenuecat-webhook`）
-   - **Authorization header**: 手順 1 で生成した値を貼り付け
-   - **Environment filter**: 必要に応じて（Sandbox イベントを別 Webhook に流すなど）
-3. **Save**
+2. **Supabase Edge Function secret に登録**（Webhook URL 登録より**先**に行う — RevenueCat の test event がデプロイ時点で届いても 401 でリジェクトされるよう）:
 
-**VERIFY**: 64 文字の hex 文字列。RevenueCat 側に保存された値と Supabase Edge Function に登録する値が完全一致することを確認。
+   ```bash
+   supabase secrets set REVENUECAT_WEBHOOK_SECRET="<手順1で生成した値>"
+   supabase secrets list | grep REVENUECAT
+   ```
 
-**REGISTER:**
+3. **Edge Function をデプロイ**:
+
+   ```bash
+   supabase functions deploy revenuecat-webhook
+   ```
+
+4. デプロイ URL を確認（例: `https://<project-ref>.supabase.co/functions/v1/revenuecat-webhook`）。Supabase Dashboard → Edge Functions → revenuecat-webhook → Details で確認可能。
+
+5. [RevenueCat Dashboard](https://app.revenuecat.com) → Project (`Skeinly`) → **Integrations** → **Webhooks** → **Add Webhook**:
+   - **Webhook URL**: 手順 4 の URL を貼り付け
+   - **Authorization header**: 手順 1 で生成した値を貼り付け（手順 2 で Supabase に登録した値と完全一致）
+   - **Environment filter**: **空のまま**（Sandbox + Production 両方を流す。closed beta 中は sandbox 購入が主、Phase 40 GA 後に production も追加流入。Edge Function 側で `event.environment` をログにのみ記録、テーブルには区別なく書き込む）
+
+6. **Save**
+
+7. RevenueCat Dashboard の同 Webhook 行で **"Send test event"** ボタンをクリック → ✅ 緑チェックマーク（HTTP 200 + body `{"status":"ok","note":"test_event_acknowledged"}`）が表示されれば end-to-end 成功。
+
+**VERIFY**: 64 文字の hex 文字列。RevenueCat 側 Authorization header と Supabase secret の値が完全一致。`Send test event` 緑チェック。
+
+**curl smoke test**（手順 6 完了後、ダッシュボードボタンを使わない場合）:
 
 ```bash
-supabase secrets set REVENUECAT_WEBHOOK_SECRET="<手順1で生成した値>"
-supabase secrets list | grep REVENUECAT
+WEBHOOK_URL="https://<project-ref>.supabase.co/functions/v1/revenuecat-webhook"
+SECRET="<手順1で生成した値>"
+
+curl -s -w '\nHTTP %{http_code}\n' -X POST "$WEBHOOK_URL" \
+  -H "Authorization: Bearer $SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"api_version":"1.0","event":{"id":"smoke-test-1","type":"TEST","event_timestamp_ms":1700000000000}}'
 ```
 
-Edge Function 側コード:
+期待値: `HTTP 200` + body `{"status":"ok","note":"test_event_acknowledged"}`。
 
-```typescript
-const incomingAuth = req.headers.get("authorization") ?? "";
-const expected = `Bearer ${Deno.env.get("REVENUECAT_WEBHOOK_SECRET")}`;
-if (incomingAuth !== expected) {
-  return new Response("unauthorized", { status: 401 });
-}
+不正な認証ヘッダで 401 を返すかも検証:
+
+```bash
+curl -s -w '\nHTTP %{http_code}\n' -X POST "$WEBHOOK_URL" \
+  -H "Authorization: Bearer wrong-secret" \
+  -H "Content-Type: application/json" \
+  -d '{"event":{"id":"x","type":"TEST","event_timestamp_ms":1700000000000}}'
 ```
+
+期待値: `HTTP 401` + body `{"error":"unauthorized"}`。
 
 **ROTATE**: RevenueCat ダッシュボードの Webhook 編集 → Authorization header を新しい値に更新 → Supabase secret を再登録。RevenueCat は Webhook 失敗時に最大 5 回まで自動リトライするため、ローテーション中の取りこぼし耐性は確保されている。
+
+> **依存リソース**: 本 secret は Edge Function 単体だけでなく、(a) Edge Function 自体のデプロイ、(b) [migration 023 `upsert_subscription_from_webhook` RPC](../../supabase/migrations/023_revenuecat_webhook_helper.sql)、(c) KMP 側の [`RevenueCatAuthBridge.kt`](../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/data/subscription/RevenueCatAuthBridge.kt) (`Purchases.logIn(userId)` を呼び webhook の `event.app_user_id` を Skeinly UUID にする) と組み合わさって完全機能する。Phase 39 closed beta sandbox tester 設定の全体手順は [docs/ja/phase/phase-39-sandbox-setup.md](phase/phase-39-sandbox-setup.md) を参照。
 
 参照: [RevenueCat Webhooks](https://www.revenuecat.com/docs/integrations/webhooks)
 
