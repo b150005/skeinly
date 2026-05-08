@@ -30,6 +30,9 @@ jobs:
     name: Build Android Release
     runs-on: ubuntu-latest
     needs: validate-tag
+    # `production` Environment scope unlocks GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64.
+    # Repository-scoped secrets (KEYSTORE_*, SUPABASE_*) remain accessible.
+    environment: production
     steps:
       - uses: actions/checkout@v6
 
@@ -50,7 +53,16 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/keystore.jks"
           echo "KEYSTORE_FILE=$RUNNER_TEMP/keystore.jks" >> "$GITHUB_ENV"
 
-      - name: Build release APK
+      - name: Build release App Bundle (AAB)
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: ./gradlew :androidApp:bundleRelease
+
+      - name: Build release APK (artifact-only fallback)
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -59,11 +71,61 @@ jobs:
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: ./gradlew :androidApp:assembleRelease
 
-      - name: Upload release APK
+      # Phase 39 closed beta — auto-upload the signed AAB to Google Play
+      # Internal track via gradle-play-publisher 4.0.0. Gated on the SA
+      # JSON secret being present so a half-configured release (e.g. a
+      # tag pushed before user finishes Play Console setup) just produces
+      # an APK + AAB artifact without touching Play Console. The plugin
+      # reads the credentials JSON from ANDROID_PUBLISHER_CREDENTIALS env
+      # var when serviceAccountCredentials is unset (per gradle-play-
+      # publisher 4.x README CI guidance — file-based path adds disk I/O
+      # and a temp-file cleanup edge case for no benefit). Decoded
+      # verbatim from the base64-stored GitHub secret.
+      #
+      # Track + releaseStatus are fixed in androidApp/build.gradle.kts
+      # `play { }` block: track="internal", status=DRAFT — user manually
+      # promotes Draft → Internal testers in Play Console after each
+      # tag push. The SA's Play Console permissions are scoped to
+      # "Release to testing tracks" only, so production rollout is
+      # structurally impossible regardless of releaseStatus.
+      - name: Check Play Publisher SA secret
+        id: play-publisher
+        env:
+          PLAY_SA_JSON_BASE64: ${{ secrets.GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64 }}
+        run: |
+          if [ -n "$PLAY_SA_JSON_BASE64" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "Play Publisher SA configured — will upload AAB to Internal track"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64 not configured — skipping Play upload"
+          fi
+
+      - name: Upload AAB to Google Play Internal track
+        if: steps.play-publisher.outputs.available == 'true'
+        env:
+          PLAY_SA_JSON_BASE64: ${{ secrets.GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          export ANDROID_PUBLISHER_CREDENTIALS="$(echo "$PLAY_SA_JSON_BASE64" | base64 -d)"
+          ./gradlew :androidApp:publishBundle
+
+      - name: Upload release APK artifact
         uses: actions/upload-artifact@v7
         with:
           name: android-release-apk
           path: androidApp/build/outputs/apk/release/*.apk
+          retention-days: 90
+
+      - name: Upload release AAB artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-release-aab
+          path: androidApp/build/outputs/bundle/release/*.aab
           retention-days: 90
 
   build-ios:

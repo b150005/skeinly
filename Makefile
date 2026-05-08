@@ -190,6 +190,16 @@ verify-xcode:  ## Verify Xcode 26+ is installed (Apple App Store Connect require
 release-ipa-local: verify-xcode  ## Build a Release IPA locally via fastlane (no TestFlight upload). For pre-tag verification.
 	cd iosApp && bundle exec fastlane build_ipa
 
+release-aab-local:  ## Build a Release AAB locally (no Play upload). For pre-tag verification of the Android signing chain.
+	./gradlew :androidApp:bundleRelease
+	@echo ""
+	@echo "AAB produced at:"
+	@find androidApp/build/outputs/bundle/release -name "*.aab" -print
+	@echo ""
+	@echo "To publish to Internal track manually:"
+	@echo "  export ANDROID_PUBLISHER_CREDENTIALS=\"\$$(cat ~/path/to/google-play-publisher-sa.json)\""
+	@echo "  ./gradlew :androidApp:publishBundle"
+
 ##@ Maintenance
 
 clean:  ## Remove Gradle and iOS build artifacts.

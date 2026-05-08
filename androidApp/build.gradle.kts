@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.playPublisher)
 }
 
 val versionProps =
@@ -221,4 +222,34 @@ dependencies {
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.test.espresso.core)
+}
+
+// Phase 39 closed beta — Google Play Internal track auto-publishing.
+//
+// Plugin: gradle-play-publisher 4.0.0 (Triple-T/gradle-play-publisher).
+// Triggered by `release.yml` on tag push via
+// `./gradlew :androidApp:publishBundleInternal`.
+//
+// Authentication: the plugin reads from the `ANDROID_PUBLISHER_CREDENTIALS`
+// env var when `serviceAccountCredentials` is unset (per upstream README's
+// CI guidance). `release.yml` decodes `GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64`
+// (production-Environment-scoped GitHub secret) and exports
+// ANDROID_PUBLISHER_CREDENTIALS for the gradle invocation. Without the
+// secret the plugin would fail at task execution time, but the plugin
+// itself loads at configuration time without credentials, so local-dev
+// + non-tag CI runs are unaffected.
+//
+// Why DRAFT release status: tag push triggers the AAB upload but parks
+// it in Internal track as "Draft" — the user manually clicks
+// "Send to testers" in the Play Console to actually distribute.
+// This is a structural defense against accidental rollouts from a stray
+// tag push during CI experimentation; flipping to COMPLETED
+// auto-distributes to internal testers immediately on tag push.
+// The `google-play-publisher@...` SA's Play Console permissions are
+// scoped to "Release to testing tracks" only, so production rollout
+// is structurally impossible regardless of releaseStatus value.
+play {
+    track.set("internal")
+    defaultToAppBundles.set(true)
+    releaseStatus.set(com.github.triplet.gradle.androidpublisher.ReleaseStatus.DRAFT)
 }

@@ -823,7 +823,7 @@ gh secret set GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64 \
 
 > Note `--env production` — this is an **Environment-scoped secret**. Do not register it at Repository scope or in the `development` Environment.
 
-**CONSUMED BY**: the `build-android` job in `.github/workflows/release.yml` (runs on tag push only). The `gradle-play-publisher` plugin Base64-decodes `${{ secrets.GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64 }}` to a JSON file path and `./gradlew :androidApp:publishBundleInternal` uploads the AAB to the Internal track.
+**CONSUMED BY**: the `build-android` job in `.github/workflows/release.yml` (runs on tag push only). The job decodes `${{ secrets.GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64 }}` and exports it via the `ANDROID_PUBLISHER_CREDENTIALS` env var (per gradle-play-publisher 4.x README), then `./gradlew :androidApp:publishBundle` uploads the AAB. The plugin's `play { }` block in `androidApp/build.gradle.kts` pins `track = "internal"` + `releaseStatus = DRAFT` — the AAB lands in Play Console as a Draft release on the Internal track, and the user manually clicks "Send to testers" to start distribution. Pre-tag local verification: `make release-aab-local` builds the AAB without uploading.
 
 **ROTATE**: Cloud Console → IAM → Service Accounts → `google-play-publisher@...` → Keys → revoke old + create new JSON → re-run the REGISTER step above. Play Console permissions persist across key rotations because they are scoped to the SA email, which is unchanged.
 

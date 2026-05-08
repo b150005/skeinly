@@ -828,7 +828,7 @@ gh secret set GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64 \
 
 > `--env production` で **Environment scope** に登録する点に注意。Repository scope や `development` Environment には登録しない。
 
-**CONSUMED BY**: `.github/workflows/release.yml` の `build-android` ジョブ（タグ push 時のみ実行）。`gradle-play-publisher` plugin が `${{ secrets.GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64 }}` を Base64 デコードして JSON file path を組み立て、`./gradlew :androidApp:publishBundleInternal` で Internal track にアップロード。
+**CONSUMED BY**: `.github/workflows/release.yml` の `build-android` ジョブ（タグ push 時のみ実行）。ジョブが `${{ secrets.GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64 }}` を base64 デコードして `ANDROID_PUBLISHER_CREDENTIALS` 環境変数に export（gradle-play-publisher 4.x README の CI ガイダンス通り）、`./gradlew :androidApp:publishBundle` で AAB をアップロード。`androidApp/build.gradle.kts` の `play { }` ブロックで `track = "internal"` + `releaseStatus = DRAFT` を固定 — AAB は Play Console 上で Internal track の Draft release として着地し、ユーザーが手動で「テスターに配信」をクリックして配信を開始する構造的安全装置（タグ push が誤ってテスターに自動 rollout する事故を防止）。タグ push 前のローカル検証: `make release-aab-local` で AAB ビルドのみ（アップロードなし）。
 
 **ROTATE**: Cloud Console → IAM → Service Accounts → `google-play-publisher@...` クリック → Keys → 古い key を revoke + 新規 JSON 作成 → 上記 REGISTER 手順を再実行。Play Console 権限は SA 識別子（email）が変わらない限り再設定不要。
 
