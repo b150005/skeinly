@@ -975,12 +975,20 @@ supabase secrets list | grep GOOGLE_PLAY
    supabase functions deploy revenuecat-webhook
    ```
 
+   > **JWT 検証 OFF が必須**: `supabase/config.toml` に `[functions.revenuecat-webhook] verify_jwt = false` が設定されているので、`supabase functions deploy` がこの flag を読み込めば自動で OFF になる。古い CLI で flag が読まれない場合は明示的に渡す:
+   >
+   > ```bash
+   > supabase functions deploy revenuecat-webhook --no-verify-jwt
+   > ```
+   >
+   > 検証 OFF を忘れると Supabase API gateway が webhook リクエストを受け取った時点で 401 `UNAUTHORIZED_INVALID_JWT_FORMAT` で reject し、私たちの function コードまで到達しない。
+
 4. デプロイ URL を確認（例: `https://<project-ref>.supabase.co/functions/v1/revenuecat-webhook`）。Supabase Dashboard → Edge Functions → revenuecat-webhook → Details で確認可能。
 
 5. [RevenueCat Dashboard](https://app.revenuecat.com) → Project (`Skeinly`) → **Integrations** → **Webhooks** → **Add Webhook**:
    - **Webhook URL**: 手順 4 の URL を貼り付け
-   - **Authorization header**: 手順 1 で生成した値を貼り付け（手順 2 で Supabase に登録した値と完全一致）
-   - **Environment filter**: **空のまま**（Sandbox + Production 両方を流す。closed beta 中は sandbox 購入が主、Phase 40 GA 後に production も追加流入。Edge Function 側で `event.environment` をログにのみ記録、テーブルには区別なく書き込む）
+   - **Authorization header value**: **`Bearer <手順1で生成した値>`** の形式で貼り付け（リテラル `Bearer` + 半角スペース 1 つ + hex 値）。RevenueCat はこの値を verbatim で `Authorization` ヘッダに乗せて送信する。私たちの function は `Bearer ` プレフィックスを strip して残りを Supabase secret と定数時間比較するので、**Bearer プレフィックス無しで hex 値だけ登録すると 401 で reject される**。
+   - **Environment filter**: **空のまま**（Sandbox + Production 両方を流す。closed beta 中は sandbox 購入が主、Phase 40 GA 後に production も追加流入。Edge Function 側で `event.environment` を `subscriptions.environment` カラムに書き込むので、後段の分析クエリで `WHERE environment = 'production'` 等で絞り込める）
 
 6. **Save**
 

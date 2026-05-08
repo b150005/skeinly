@@ -400,3 +400,26 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 # declarative_schema_path = "./declarative"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# ---------------------------------------------------------------------
+# Edge Functions — per-function JWT verification policy
+# ---------------------------------------------------------------------
+#
+# Default: Supabase's API gateway requires `Authorization: Bearer <valid
+# Supabase JWT>` on every Edge Function request and rejects with HTTP 401
+# `UNAUTHORIZED_INVALID_JWT_FORMAT` before the function code runs. This
+# is the correct default for client-invoked functions (`verify-receipt`
+# and `request-pack-download` both validate Supabase JWTs and read the
+# authenticated userId via `supabase.auth.getUser(jwt)`).
+#
+# RevenueCat webhook deliveries do NOT carry a Supabase JWT — RevenueCat
+# authenticates via the shared secret value configured in the dashboard's
+# "Authorization header" field. The Edge Function MUST disable Supabase's
+# default JWT verification so the request body reaches our handler,
+# which then performs constant-time comparison against
+# `REVENUECAT_WEBHOOK_SECRET`. See
+# `supabase/functions/revenuecat-webhook/index.ts` for the auth logic +
+# `docs/{en,ja}/release-secrets.md` EF-5 for the dashboard config.
+
+[functions.revenuecat-webhook]
+verify_jwt = false
