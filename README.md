@@ -73,13 +73,15 @@ The full step-by-step setup procedure is in [`docs/ja/vendor-setup.md`](docs/ja/
 | Tool | Version | Notes |
 |---|---|---|
 | macOS | 26.0+ (Tahoe) | iOS builds require macOS; Xcode 26.4+ requires macOS Tahoe 26.2+ |
-| JDK | 17+ | Temurin recommended; set via `JAVA_HOME` |
+| JDK | 25 (LTS) | Temurin recommended (`brew install --cask temurin`); set via `JAVA_HOME`. Bytecode targets stay at Java 17 for Android runtime compatibility — only the build-running JDK is upgraded. |
 | Xcode | 26.0+ | iOS 26 SDK; required for App Store Connect submissions since 2026-04-28 (see [Repo Policy](./docs/en/repo-policy.md#apple-app-store-sdk-requirements)) |
 | Ruby | 3.3+ | Drives fastlane for iOS releases (`brew install ruby`) |
 | Bundler | 2.x+ | `gem install bundler` if not present |
 | Android SDK | API 36+ | platform-tools (`adb`) required for installs |
 | xcodegen | latest | `brew install xcodegen` (regenerates `iosApp.xcodeproj`) |
 | maestro | latest | `brew install maestro` (E2E flows only) |
+
+> CI uses GitHub-hosted `macos-26-arm64` (Tahoe) runners with the same JDK 25 toolchain. `macos-latest` is intentionally NOT used because GitHub still aliases it to `macos-15-arm64` (Sequoia) as of 2026-05 — see the workflow file headers under [`.github/workflows/`](./.github/workflows/) for the full pinning rationale.
 
 #### Initial setup
 
@@ -117,7 +119,10 @@ Most-used targets:
 | `make coverage` | Generate Kover coverage report and verify 80% threshold |
 | `make i18n-verify` | Validate i18n key parity across 5 sources |
 | `make ci-local` | **Comprehensive pre-push verification.** Runs ktlint + KMP unit tests + coverage + i18n parity + iOS build + iOS XCUITest + Android & iOS Maestro flows. ~30-45 min, requires booted Android emulator + iOS Simulator before invocation. |
-| `make release-ipa-local` | Build a Release IPA via fastlane (no upload) |
+| `make release-ipa-local` | Build a Release IPA via fastlane (no upload) — local signing-chain verification |
+| `make release-aab-local` | Build a Release AAB locally (no Play upload) — local signing-chain verification |
+| `make release-tag-validate` | Pre-flight check for tag push (branch=main, clean tree, tag does not exist). No side effects. |
+| `make release-tag-publish` | Tag the current commit (`v$(VERSION_NAME)`) and push to trigger the Release workflow. Requires `CONFIRM=yes`. |
 | `make clean` | Remove Gradle + Xcode build artifacts |
 
 Recipes are thin wrappers over Gradle / xcodebuild / fastlane / Maestro — invoke those tools directly if preferred. The underlying command of every target is visible in [`Makefile`](./Makefile).
@@ -146,52 +151,68 @@ Runs in order (fail-fast):
 
 **Time cost: ~30-45 minutes.** **Prerequisites:** a running Android emulator (or connected device) and a booted iOS Simulator before invocation — steps 7–9 will fail fast with a clear error message if either is missing. For iterative dev work that doesn't need the full chain, invoke individual targets directly (`make lint`, `make shared-test`, `make ios-build`, `make ios-test`, etc.).
 
-#### Release pipeline (iOS)
+#### Release pipeline
 
-iOS releases are driven by fastlane ([`iosApp/fastlane/Fastfile`](./iosApp/fastlane/Fastfile)).
+Releases are tag-driven. Pushing a tag matching `v*` triggers [`.github/workflows/release.yml`](./.github/workflows/release.yml), which builds + signs both platforms in parallel and uploads to TestFlight + Play Console Internal Testing.
 
-Local verification (build a signed IPA without uploading):
-
-```bash
-make release-ipa-local
-```
-
-Production release (CI, on tag push):
+##### Local verification (recommended before first tag of a release)
 
 ```bash
-git tag v1.0.0-alpha1
-git push origin v1.0.0-alpha1
+make release-ipa-local   # signed IPA via fastlane, no upload
+make release-aab-local   # signed AAB via Gradle, no upload
 ```
 
-Tag push triggers [`.github/workflows/release.yml`](./.github/workflows/release.yml), which runs `bundle exec fastlane beta`. The lane:
-1. Sets up a temporary CI keychain via `setup_ci`
-2. Imports the `.p12` cert and `.mobileprovision` profile from GitHub Secrets
-3. Runs `build_app` (= `xcodebuild archive` + `xcodebuild -exportArchive`)
-4. Runs `upload_to_testflight` to push the IPA to App Store Connect
+Both verify the signing chain locally without exposing the store-side surface to a half-configured release.
 
-Required GitHub Secrets for the iOS release pipeline (7 of 19 total):
+##### Triggering a release
 
-| Secret | Source |
-|---|---|
-| `APPLE_DISTRIBUTION_CERT_BASE64` | Apple Distribution `.p12` (base64-encoded) |
-| `APPLE_DISTRIBUTION_CERT_PASSWORD` | `.p12` export password |
-| `APPLE_PROVISIONING_PROFILE_BASE64` | App Store provisioning profile (base64-encoded) |
-| `APPLE_TEAM_ID` | 10-char Team ID from Apple Developer |
-| `APP_STORE_CONNECT_API_KEY_BASE64` | `.p8` private key (base64-encoded) |
-| `APP_STORE_CONNECT_API_KEY_ID` | 10-char Key ID |
-| `APP_STORE_CONNECT_ISSUER_ID` | UUID Issuer ID |
+The single canonical entry point:
+
+```bash
+make release-tag-validate          # pre-flight: branch=main, clean tree, tag does not exist
+CONFIRM=yes make release-tag-publish   # tags v$(VERSION_NAME) on HEAD and pushes to origin
+```
+
+The `release-tag-publish` target derives the tag name from `version.properties` `VERSION_NAME`, so the only edit per release is bumping that file. The `CONFIRM=yes` env var is a defense against accidental tag pushes (a stray Tab-completion cannot trigger a production upload).
+
+If you prefer raw git:
+
+```bash
+# bump version.properties first, commit, then:
+git tag -a v0.1.0 -m "Release v0.1.0"
+git push origin v0.1.0
+```
+
+`VERSION_CODE` in [`version.properties`](./version.properties) MUST be strictly greater than the most recent successful Play Console upload (Play rejects duplicate codes). The first beta upload uses `VERSION_CODE=1`; bump it for every subsequent release. iOS build numbers are sourced from `github.run_number` of the Release workflow run, so they are automatic.
+
+##### What the workflow does
+
+The workflow runs three jobs in parallel on tag push:
+
+- **`build-android`** (Linux): Builds a signed AAB via `:androidApp:bundleRelease`, then `:androidApp:publishBundle` uploads it to Play Console Internal Testing track using [`gradle-play-publisher`](https://github.com/Triple-T/gradle-play-publisher) with `releaseStatus = DRAFT`. The Draft state is **load-bearing** — testers don't see the build until you manually click "Start rollout to Internal testing" in Play Console. The Service Account's Play Console permissions are scoped to "Release to testing tracks" only, so production rollout is structurally impossible. APK is also produced as a GitHub Actions artifact.
+- **`build-ios`** (macOS 26): Runs `bundle exec fastlane beta` ([`iosApp/fastlane/Fastfile`](./iosApp/fastlane/Fastfile)) which sets up an ephemeral CI keychain, imports the distribution cert + provisioning profile from secrets, runs `build_app` (= `xcodebuild archive` + `-exportArchive`), then `upload_to_testflight` pushes the IPA to App Store Connect with `skip_waiting_for_build_processing: true` (Apple processing continues asynchronously after the workflow finishes).
+- **`create-release`** (Linux): Creates a draft GitHub Release with the IPA + APK attached.
 
 Code-signing strategy is **manual** (not `match`). See ADR-007 for rationale.
 
-The full set covers 19 GitHub Secrets across 7 categories (iOS code signing + ASC API + Android signing + Android FCM client + Sentry + PostHog + Supabase) plus 4 Supabase Edge Function runtime secrets for Push and IAP server-side. For step-by-step instructions on **obtaining, verifying, and registering** every secret (`gh secret set` / `supabase secrets set` commands, verification with `openssl` / `security` / `keytool`, rotation procedures), see [docs/en/release-secrets.md](./docs/en/release-secrets.md). For the Apple-side vendor setup procedure (App ID + Capabilities + APNs key + App Store Connect IAP + Universal Links), see [docs/en/vendor-setup.md](./docs/en/vendor-setup.md).
+##### Post-upload manual steps
 
-#### Release pipeline (Android)
+- **Play Console**: Open Internal Testing, find the Draft release, fill release notes, click "Save → Review release → Start rollout".
+- **TestFlight**: Wait for Apple processing (typically 5–30 min). On the first build per app, App Store Connect prompts for export-compliance disclosure (Skeinly uses standard OS-provided HTTPS-only encryption — qualifies for the exemption). Then add the build to your Internal Testing group.
 
-Android releases produce a signed APK as a GitHub Actions artifact. Upload to Google Play Console → Internal Testing is **manual** (no auto-upload via API in v1).
+##### Required secrets
 
-Required signing secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Plus `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` for live-backend builds. See [docs/en/release-secrets.md](./docs/en/release-secrets.md) for full setup and verification.
+For step-by-step instructions on **obtaining, verifying, and registering** every secret (`gh secret set` / `supabase secrets set` commands, verification with `openssl` / `security` / `keytool`, rotation procedures), see [docs/en/release-secrets.md](./docs/en/release-secrets.md). For the Apple-side vendor setup procedure (App ID + Capabilities + APNs key + App Store Connect IAP + Universal Links), see [docs/en/vendor-setup.md](./docs/en/vendor-setup.md).
 
-`VERSION_CODE` in [`version.properties`](./version.properties) MUST be incremented before each Play Console upload (Play rejects duplicate codes).
+The high-level secret split:
+
+- **iOS code signing + ASC API**: 7 secrets in repository scope (cert, profile, team id, ASC API key id/issuer/p8)
+- **Android signing + Play Publisher**: 5 secrets (4 keystore + 1 SA JSON, the SA JSON in `production` Environment scope)
+- **Firebase config (Android)**: 1 secret registered into both `development` (Skeinly-Dev) and `production` (Skeinly Blaze) Environments
+- **Supabase runtime + observability + RevenueCat**: 7 secrets for Supabase URL/key, Sentry DSN/token, PostHog API key, RevenueCat keys
+- **Supabase Edge Function runtime**: 5 secrets managed via `supabase secrets set` (APNs `.p8`/key id, Firebase SA, RevenueCat webhook secret, Database webhook secret) — separate from GitHub Secrets
+
+The `release-tag-publish` Makefile target gracefully degrades when secrets are missing: each platform's upload step gates on the presence of its required secrets and emits a `::warning::` rather than failing, so a half-configured release still produces an artifact-only build.
 
 #### Troubleshooting
 
@@ -288,13 +309,15 @@ Required signing secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `
 | ツール | バージョン | 備考 |
 |---|---|---|
 | macOS | 26.0 以上 (Tahoe) | iOS ビルドには macOS が必要。Xcode 26.4+ は macOS Tahoe 26.2+ を要求 |
-| JDK | 17 以上 | Temurin 推奨。`JAVA_HOME` を設定 |
+| JDK | 25 (LTS) | Temurin 推奨（`brew install --cask temurin`）。`JAVA_HOME` を設定。Bytecode ターゲットは Android runtime 互換のため Java 17 のまま — ビルド実行用 JDK のみ最新化。 |
 | Xcode | 26.0 以上 | iOS 26 SDK。2026-04-28 以降 App Store Connect への申請に必須（[Repo Policy](./docs/ja/repo-policy.md#apple-app-store-sdk-要件)参照） |
 | Ruby | 3.3 以上 | iOS リリースの fastlane 駆動用（`brew install ruby`） |
 | Bundler | 2.x 以上 | 未インストールなら `gem install bundler` |
 | Android SDK | API 36 以上 | platform-tools (`adb`) がインストール時に必要 |
 | xcodegen | 最新 | `brew install xcodegen`（`iosApp.xcodeproj` を再生成） |
 | maestro | 最新 | `brew install maestro`（E2E フロー専用） |
+
+> CI も同じく `macos-26-arm64` (Tahoe) ランナー + JDK 25 toolchain で実行されます。`macos-latest` を意図的に避けているのは、2026-05 時点で GitHub のエイリアスが依然 `macos-15-arm64` (Sequoia) を指しており、本リポジトリの dev 環境（macOS 26）と乖離が生じるためです。詳細は [`.github/workflows/`](./.github/workflows/) 各ファイルのヘッダコメントを参照。
 
 #### 初回セットアップ
 
@@ -332,7 +355,10 @@ brew install xcodegen maestro
 | `make coverage` | Kover カバレッジレポート生成 + 80% 閾値検証 |
 | `make i18n-verify` | 5 ソースの i18n キー parity 検証 |
 | `make ci-local` | **包括的な pre-push 検証**。ktlint + KMP unit テスト + カバレッジ + i18n parity + iOS ビルド + iOS XCUITest + Android & iOS の Maestro フローを実行。所要時間 ~30-45 分。実行前に Android エミュレータと iOS Simulator が起動済みである必要がある。 |
-| `make release-ipa-local` | fastlane で Release IPA をローカルビルド（アップロードなし） |
+| `make release-ipa-local` | fastlane で Release IPA をローカルビルド（アップロードなし）— ローカル署名チェーン検証用 |
+| `make release-aab-local` | Release AAB をローカルビルド（アップロードなし）— ローカル署名チェーン検証用 |
+| `make release-tag-validate` | Tag push の事前チェック（branch=main、clean tree、tag 未存在）。副作用なし。 |
+| `make release-tag-publish` | 現在のコミットに `v$(VERSION_NAME)` で tag を打ち、push して Release workflow をトリガー。`CONFIRM=yes` 必須。 |
 | `make clean` | Gradle と Xcode のビルド成果物を削除 |
 
 各レシピは Gradle / xcodebuild / fastlane / Maestro の薄いラッパーです。実コマンドを直接叩きたい場合は [`Makefile`](./Makefile) を参照してください。
@@ -361,52 +387,68 @@ make ci-local
 
 **所要時間: ~30-45 分。** **前提条件:** 実行前に Android エミュレータ (または接続端末) と iOS Simulator が起動済みであること — 手順 7〜9 は端末がない場合に明確なエラーメッセージで即座に失敗します。フル chain が不要な反復開発では、個別ターゲット (`make lint`, `make shared-test`, `make ios-build`, `make ios-test` 等) を直接呼び出してください。
 
-#### リリースパイプライン (iOS)
+#### リリースパイプライン
 
-iOS リリースは fastlane ([`iosApp/fastlane/Fastfile`](./iosApp/fastlane/Fastfile)) で駆動します。
+リリースは tag 駆動です。`v*` パターンの tag を push すると [`.github/workflows/release.yml`](./.github/workflows/release.yml) がトリガーされ、両プラットフォームを並列でビルド・署名し、TestFlight + Play Console Internal Testing にアップロードします。
 
-ローカル検証（署名済み IPA をアップロードなしでビルド）:
-
-```bash
-make release-ipa-local
-```
-
-本番リリース（CI、タグ push トリガー）:
+##### ローカル検証（リリース前の初回には推奨）
 
 ```bash
-git tag v1.0.0-alpha1
-git push origin v1.0.0-alpha1
+make release-ipa-local   # fastlane で署名済み IPA、アップロードなし
+make release-aab-local   # Gradle で署名済み AAB、アップロードなし
 ```
 
-タグ push で [`.github/workflows/release.yml`](./.github/workflows/release.yml) がトリガーされ、`bundle exec fastlane beta` が走ります。lane の処理:
-1. `setup_ci` で一時 CI keychain を作成
-2. GitHub Secrets から `.p12` 証明書と `.mobileprovision` プロファイルをインポート
-3. `build_app`（= `xcodebuild archive` + `xcodebuild -exportArchive`）を実行
-4. `upload_to_testflight` で IPA を App Store Connect にアップロード
+両方ともローカルで署名チェーンを検証し、ストア側を half-configured な状態にさらしません。
 
-iOS リリースパイプライン用 GitHub Secrets（19 個中の 7 個）:
+##### リリースのトリガー
 
-| シークレット | 取得元 |
-|---|---|
-| `APPLE_DISTRIBUTION_CERT_BASE64` | Apple Distribution `.p12`（base64 エンコード） |
-| `APPLE_DISTRIBUTION_CERT_PASSWORD` | `.p12` エクスポート時のパスワード |
-| `APPLE_PROVISIONING_PROFILE_BASE64` | App Store プロビジョニングプロファイル（base64 エンコード） |
-| `APPLE_TEAM_ID` | Apple Developer の 10 文字 Team ID |
-| `APP_STORE_CONNECT_API_KEY_BASE64` | `.p8` 秘密鍵（base64 エンコード） |
-| `APP_STORE_CONNECT_API_KEY_ID` | 10 文字の Key ID |
-| `APP_STORE_CONNECT_ISSUER_ID` | UUID Issuer ID |
+唯一の正規エントリーポイント:
+
+```bash
+make release-tag-validate          # 事前チェック: branch=main, 未コミット無し, tag 未存在
+CONFIRM=yes make release-tag-publish   # HEAD に v$(VERSION_NAME) で tag を打ち origin に push
+```
+
+`release-tag-publish` ターゲットは `version.properties` の `VERSION_NAME` から tag 名を自動導出するため、リリース毎の編集は version 更新の 1 箇所のみ。`CONFIRM=yes` は誤 tag push に対する防御で、Tab completion の事故では本番アップロードが起動しません。
+
+raw git で行いたい場合:
+
+```bash
+# version.properties を bump して commit してから:
+git tag -a v0.1.0 -m "Release v0.1.0"
+git push origin v0.1.0
+```
+
+[`version.properties`](./version.properties) の `VERSION_CODE` は **直近の Play Console アップロード成功値より厳密に大きい** 必要があります（Play は重複 code を拒否）。初回 beta は `VERSION_CODE=1`、以降のリリース毎に増分。iOS build number は Release workflow run の `github.run_number` から自動採番されます。
+
+##### Workflow が行う処理
+
+Tag push で 3 ジョブが並列実行されます:
+
+- **`build-android`** (Linux): `:androidApp:bundleRelease` で署名済み AAB をビルド、`:androidApp:publishBundle` が [`gradle-play-publisher`](https://github.com/Triple-T/gradle-play-publisher) を使って Play Console Internal Testing track に `releaseStatus = DRAFT` でアップロード。Draft 状態は **load-bearing**: ユーザーが Play Console で「テスター用ロールアウトを開始」を手動クリックするまでテスターには見えません。Service Account の Play Console 権限は「テスト版トラックへのリリース」のみに絞られており、Production への昇格は構造的に不可能。APK も GitHub Actions アーティファクトとして生成。
+- **`build-ios`** (macOS 26): `bundle exec fastlane beta` ([`iosApp/fastlane/Fastfile`](./iosApp/fastlane/Fastfile)) を実行。一時 CI keychain を作成、distribution cert + provisioning profile を secrets からインポート、`build_app`（= `xcodebuild archive` + `-exportArchive`）→ `upload_to_testflight` で IPA を App Store Connect に push（`skip_waiting_for_build_processing: true` のため Apple processing は workflow 完了後も非同期で継続）。
+- **`create-release`** (Linux): IPA + APK 添付の Draft GitHub Release を作成。
 
 コード署名方針は **manual**（`match` 不採用）。理由は ADR-007 を参照。
 
-全体は GitHub Secrets 19 個を 7 カテゴリ（iOS コード署名 + ASC API + Android 署名 + Android FCM クライアント + Sentry + PostHog + Supabase）+ Push / IAP サーバー側用 Supabase Edge Function ランタイムシークレット 4 個でカバーします。各シークレットの**取得・検証・登録手順**（`gh secret set` / `supabase secrets set` コマンド、`openssl` / `security` / `keytool` での検証、ローテーション手順）は [docs/ja/release-secrets.md](./docs/ja/release-secrets.md) を参照。Apple 側ベンダーセットアップ手順（App ID + Capabilities + APNs key + App Store Connect IAP + Universal Links）は [docs/ja/vendor-setup.md](./docs/ja/vendor-setup.md) を参照。
+##### アップロード後の手動操作
 
-#### リリースパイプライン (Android)
+- **Play Console**: 内部テスト → Draft release を開く → リリースノート記入 → 「保存 → リリースをレビュー → ロールアウトを開始」をクリック。
+- **TestFlight**: Apple の処理待ち（通常 5〜30 分）。アプリ初回ビルドのみ App Store Connect が export compliance（暗号化輸出規制）の質問を表示 — Skeinly は標準 OS 提供の HTTPS-only 暗号化のみ使用 → 例外条件に該当。回答後、ビルドを Internal Testing グループに追加。
 
-Android リリースは署名済み APK を GitHub Actions のアーティファクトとして出力します。Google Play Console の Internal Testing へのアップロードは **手動**（v1 では API 経由の自動化なし）。
+##### 必要なシークレット
 
-必要な署名シークレット: `KEYSTORE_BASE64`、`KEYSTORE_PASSWORD`、`KEY_ALIAS`、`KEY_PASSWORD`。ライブバックエンドビルドには `SUPABASE_URL` と `SUPABASE_PUBLISHABLE_KEY` も必要。詳細なセットアップと検証手順は [docs/ja/release-secrets.md](./docs/ja/release-secrets.md) を参照。
+各シークレットの**取得・検証・登録手順**（`gh secret set` / `supabase secrets set` コマンド、`openssl` / `security` / `keytool` での検証、ローテーション手順）は [docs/ja/release-secrets.md](./docs/ja/release-secrets.md) を参照。Apple 側ベンダーセットアップ手順（App ID + Capabilities + APNs key + App Store Connect IAP + Universal Links）は [docs/ja/vendor-setup.md](./docs/ja/vendor-setup.md) を参照。
 
-[`version.properties`](./version.properties) の `VERSION_CODE` は Play Console アップロードのたびに必ず増加させてください（Play は重複コードを拒否します）。
+シークレット種別の概観:
+
+- **iOS コード署名 + ASC API**: リポジトリスコープの 7 個（cert, profile, team id, ASC API key id/issuer/p8）
+- **Android 署名 + Play Publisher**: 5 個（keystore 4 個 + SA JSON 1 個。SA JSON は `production` Environment スコープ）
+- **Firebase 設定 (Android)**: 1 個を `development`（Skeinly-Dev）と `production`（Skeinly Blaze）両方の Environment に登録
+- **Supabase ランタイム + 観測 + RevenueCat**: 7 個（Supabase URL/key, Sentry DSN/token, PostHog API key, RevenueCat keys）
+- **Supabase Edge Function ランタイム**: `supabase secrets set` で管理する 5 個（APNs `.p8`/key id, Firebase SA, RevenueCat webhook secret, Database webhook secret）— GitHub Secrets とは別管理
+
+`release-tag-publish` Makefile ターゲットはシークレット欠如時に graceful degrade します: 各プラットフォームのアップロード step が必要 secrets の存在をゲートし、欠けていれば `::warning::` を出してアーティファクトのみのビルドに収束します。
 
 #### トラブルシュート
 
