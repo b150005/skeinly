@@ -250,8 +250,8 @@ class PaywallViewModel(
         // Post-purchase callback chain. Each step is best-effort — a failure
         // in one link does not prevent the next from running. The user has
         // paid; we want Pro access surfaced ASAP. Server-side reconciliation
-        // (`verify-receipt` Edge Function + Realtime push) will patch any
-        // residual local-cache divergence.
+        // (RevenueCat → `revenuecat-webhook` Edge Function → `subscriptions`
+        // row → next refresh) will patch any residual local-cache divergence.
         val userId = authRepository.getCurrentUserId()
         if (userId != null) {
             try {

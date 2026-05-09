@@ -1,8 +1,10 @@
 -- Phase 41.2a (ADR-016 §3.1 + §4.2): client-side mirror of `public.subscriptions`
 -- (migration 017). Read-only at the client; writes happen exclusively via the
--- `verify-receipt` Edge Function with the service-role key. The local cache
--- exists so EntitlementResolver.isPro() can answer synchronously without
--- touching the network.
+-- `revenuecat-webhook` Edge Function (Phase 39 prep, 2026-05-08; calls the
+-- `upsert_subscription_from_webhook` SECURITY DEFINER RPC from migration 023)
+-- with the service-role key. The local cache exists so
+-- EntitlementResolver.isPro() can answer synchronously without touching the
+-- network.
 --
 -- Note (ADR-016 §10 Q2 resolution, 41.2a): the client refreshes this cache via
 -- app-foreground hooks + the post-purchase RevenueCat callback (Phase 41.3

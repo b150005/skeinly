@@ -47,10 +47,12 @@ ORDER BY updated_at DESC
 LIMIT 1;
 
 -- Idempotent INSERT-OR-REPLACE — refresh paths simply overwrite the row by
--- primary key. The `subscriptions` table is server-write-only (verify-receipt
--- Edge Function + service role) so the client never originates a write; the
--- only reason this is `INSERT OR REPLACE` rather than `INSERT OR IGNORE` is
--- to absorb refresh fetches that surface a newer row with the same id.
+-- primary key. The `subscriptions` table is server-write-only
+-- (`revenuecat-webhook` Edge Function + service role via the
+-- `upsert_subscription_from_webhook` RPC) so the client never originates a
+-- write; the only reason this is `INSERT OR REPLACE` rather than `INSERT
+-- OR IGNORE` is to absorb refresh fetches that surface a newer row with the
+-- same id.
 upsert:
 INSERT OR REPLACE INTO SubscriptionEntity(
     id,

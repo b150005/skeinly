@@ -408,9 +408,9 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 # Default: Supabase's API gateway requires `Authorization: Bearer <valid
 # Supabase JWT>` on every Edge Function request and rejects with HTTP 401
 # `UNAUTHORIZED_INVALID_JWT_FORMAT` before the function code runs. This
-# is the correct default for client-invoked functions (`verify-receipt`
-# and `request-pack-download` both validate Supabase JWTs and read the
-# authenticated userId via `supabase.auth.getUser(jwt)`).
+# is the correct default for client-invoked functions (`request-pack-download`
+# validates Supabase JWTs and reads the authenticated userId via
+# `supabase.auth.getUser(jwt)`).
 #
 # RevenueCat webhook deliveries do NOT carry a Supabase JWT — RevenueCat
 # authenticates via the shared secret value configured in the dashboard's

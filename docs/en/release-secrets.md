@@ -829,7 +829,7 @@ gh secret set GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64 \
 
 ## Supabase Edge Function Secrets (5 secrets)
 
-These secrets are consumed by Supabase Edge Functions (`notify-on-write` for Push, `verify-receipt` for IAP receipt validation). They are **not** GitHub Secrets — they are registered against the Supabase project via the Supabase CLI:
+These secrets are consumed by Supabase Edge Functions (`notify-on-write` for Push — Phase 24, deferred; `revenuecat-webhook` for IAP webhook ingestion — Phase 39 prep, 2026-05-08). They are **not** GitHub Secrets — they are registered against the Supabase project via the Supabase CLI:
 
 ```bash
 supabase login                                # one-time
@@ -890,9 +890,11 @@ supabase secrets set FIREBASE_SERVICE_ACCOUNT_JSON="$(cat firebase-admin-sdk.jso
 
 **ROTATE**: Firebase Console → Project Settings → Service Accounts → Manage all service accounts → click the SA → Keys tab → revoke old + add new JSON.
 
-### EF-4. `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON`
+### EF-4. `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON` (DEPRECATED 2026-05-09)
 
-**WHAT**: Service Account JSON for the Google Play Developer API, used to validate Android IAP receipts server-side and observe subscription state changes (renewal, cancellation, refund). **Consumed by `verifyGoogleReceipt` in `supabase/functions/verify-receipt/index.ts` at Phase H** (the function is currently a stub returning 501; the secret is registered but dormant).
+> **DEPRECATED 2026-05-09**: was registered for the now-deleted `verify-receipt` Edge Function (agent-team deliberation found no complementary role given RevenueCat's coverage of Apple/Google receipt validation; `revenuecat-webhook` Edge Function delegates to RevenueCat which validates server-side). The underlying SA `revenuecat@<project-ref>.iam.gserviceaccount.com` continues to be uploaded to RevenueCat dashboard for receipt validation — that registration is unaffected. The Supabase secret is no longer consumed by any Edge Function; safe to `supabase secrets unset GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON` to reduce credential surface. Section retained for rotation reference and in case Phase H' (or equivalent) needs an independent server-side validator post-beta.
+
+**WHAT**: Service Account JSON for the Google Play Developer API, intended for Android IAP receipts server-side validation and subscription state polling. Originally consumed by `verifyGoogleReceipt` in `supabase/functions/verify-receipt/index.ts` (deleted 2026-05-09).
 
 **SA**: `revenuecat@<project-ref>.iam.gserviceaccount.com` (same SA as the one uploaded to RevenueCat dashboard — single source of truth).
 
@@ -935,7 +937,7 @@ supabase secrets list | grep GOOGLE_PLAY
 # Only GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON should appear
 ```
 
-> The Edge Function code reference at `verify-receipt/index.ts:21` is updated to the new name. The `verifyGoogleReceipt` body itself ships in Phase H.
+> Edge Function `verify-receipt` was deleted on 2026-05-09. The migration steps above remain useful only if the secret was already registered under the legacy name — `unset` of either name is now equally valid.
 
 **ROTATE**: Cloud Console → IAM → Service Accounts → `revenuecat@...` → Keys → revoke old + create new JSON. **Re-register the secret in 3 places**:
 1. Supabase Edge Function: `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON`.
@@ -1032,18 +1034,19 @@ Expected: `HTTP 401` + body `{"error":"unauthorized"}`.
 
 Reference: [RevenueCat Webhooks](https://www.revenuecat.com/docs/integrations/webhooks)
 
-### Reused: App Store Connect API key
+### Reused: App Store Connect API key (DEPRECATED 2026-05-09 for Edge Functions)
 
-The Edge Function `verify-receipt` (iOS branch) calls the App Store Server API and needs the same App Store Connect API key already registered as GitHub Secrets §5–§7. Register it with Supabase too (single source of truth, two registration places):
+> **DEPRECATED 2026-05-09 for Edge Function consumption**: was registered for the now-deleted `verify-receipt` Edge Function (iOS branch, JWS signing for App Store Server API calls). RevenueCat handles iOS receipt validation server-side, so the Supabase-side registration of these three secrets is no longer consumed by any Edge Function. Safe to:
+>
+> ```bash
+> supabase secrets unset APP_STORE_CONNECT_API_KEY
+> supabase secrets unset APP_STORE_CONNECT_KEY_ID
+> supabase secrets unset APP_STORE_CONNECT_ISSUER_ID
+> ```
+>
+> The same App Store Connect API key remains REQUIRED as GitHub Secrets §5–§7 for the iOS release pipeline (TestFlight upload via `xcrun altool`).
 
-```bash
-# Same .p8 file as APP_STORE_CONNECT_API_KEY_BASE64 GitHub Secret, but raw not base64.
-supabase secrets set APP_STORE_CONNECT_API_KEY="$(cat AuthKey_XYZ1234567.p8)"
-supabase secrets set APP_STORE_CONNECT_KEY_ID=XYZ1234567
-supabase secrets set APP_STORE_CONNECT_ISSUER_ID=69a6de70-03db-47e3-e053-5b8c7c11a4d1
-```
-
-When you rotate the GitHub Secret per [§5 ROTATE](#5-app_store_connect_api_key_base64), also re-register the Supabase Edge Function secret with the new key.
+Historical: when `verify-receipt` was the IAP validation path, this Supabase Edge Function registration was required as a single source of truth alongside the GitHub Secret.
 
 ## Bulk verification
 
@@ -1113,19 +1116,17 @@ For Supabase Edge Function secrets (registered via `supabase secrets set`):
 supabase secrets list
 ```
 
-Expected (9 entries — 5 unique to Edge Function + 4 reused values from App Store Connect API):
+Expected (5 entries after the 2026-05-09 `verify-receipt` deletion + secret unset; 9 entries before):
 
 ```
-APP_STORE_CONNECT_API_KEY
-APP_STORE_CONNECT_ISSUER_ID
-APP_STORE_CONNECT_KEY_ID
-APPLE_APNS_KEY_ID
-APPLE_APNS_KEY_P8
-APPLE_TEAM_ID
-FIREBASE_SERVICE_ACCOUNT_JSON
-GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON
-REVENUECAT_WEBHOOK_SECRET
+APPLE_APNS_KEY_ID                           # for notify-on-write (Phase 24, deferred)
+APPLE_APNS_KEY_P8                           # for notify-on-write (Phase 24, deferred)
+APPLE_TEAM_ID                               # for notify-on-write (Phase 24, deferred)
+FIREBASE_SERVICE_ACCOUNT_JSON               # for notify-on-write (Phase 24, deferred)
+REVENUECAT_WEBHOOK_SECRET                   # for revenuecat-webhook (Phase 39 prep)
 ```
+
+If the legacy 4 secrets (`APP_STORE_CONNECT_API_KEY` + `APP_STORE_CONNECT_KEY_ID` + `APP_STORE_CONNECT_ISSUER_ID` + `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON`) are still registered, they are now dormant — see the deprecation notes in EF-4 + "Reused: App Store Connect API key" sections above for the `unset` commands.
 
 The first end-to-end verification of the iOS pipeline only happens at tag push — the iOS release job is gated on tag triggers, not regular pushes. Before the first alpha/beta tag push, you can:
 
@@ -1147,7 +1148,7 @@ Specifically:
 | `APPLE_DISTRIBUTION_CERT_BASE64` + password | Apple Developer → Certificates → revoke + create new + re-export `.p12` | Annual or on incident |
 | `APPLE_PROVISIONING_PROFILE_BASE64` | Apple Developer → Profiles → regenerate (same cert) | Forced annually by Apple |
 | `APPLE_TEAM_ID` | Cannot change without changing teams | N/A |
-| `APP_STORE_CONNECT_API_KEY_*` | App Store Connect → Team Keys → revoke + generate new (also re-register Supabase Edge Function secret) | Recommended every 12 months |
+| `APP_STORE_CONNECT_API_KEY_*` | App Store Connect → Team Keys → revoke + generate new (Supabase Edge Function side dormant since 2026-05-09 `verify-receipt` deletion — re-register only if Phase H' or equivalent revives a server-side validator) | Recommended every 12 months |
 | `KEYSTORE_*` | **Do NOT rotate**. Losing the keystore breaks Play Store updates. Use Google Play's "App Signing by Google Play" key reset only as a last resort. | Never (under normal conditions) |
 | `SUPABASE_PUBLISHABLE_KEY` | Supabase Dashboard → Project Settings → API Keys → Generate new Publishable key | On suspected leak |
 | `FIREBASE_GOOGLE_SERVICES_JSON_BASE64` (Environment scope) | Re-download from Firebase Console only on package or signing SHA-1 change (per environment) | Effectively never |
@@ -1158,7 +1159,7 @@ Specifically:
 | `REVENUECAT_API_KEY_*` | RevenueCat → Project Settings → Apps → Public SDK Key revoke + issue new | On suspected leak |
 | Edge Function `APPLE_APNS_KEY_*` | Apple Developer → Keys → revoke + generate new + re-register Supabase secret | Annual or on incident |
 | Edge Function `FIREBASE_SERVICE_ACCOUNT_JSON` | Firebase Console → Service Accounts → revoke + new key | Annual or on incident |
-| Edge Function `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON` | Cloud Console → IAM → Service Accounts → `revenuecat@...` → revoke + new key → re-register Supabase secret + re-upload to RevenueCat dashboard | Annual or on incident |
+| Edge Function `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON` (DEPRECATED 2026-05-09) | Supabase secret dormant since `verify-receipt` deletion. Cloud Console → IAM → Service Accounts → `revenuecat@...` → revoke + new key → re-upload to RevenueCat dashboard (the live consumer of this SA) | Annual or on incident |
 | Environment `GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64` | Cloud Console → IAM → Service Accounts → `google-play-publisher@...` → revoke + new key → re-run `gh secret set --env production` | Annual or on incident |
 | Edge Function `REVENUECAT_WEBHOOK_SECRET` | `openssl rand -hex 32` for new value → update RevenueCat Webhook Authorization header → re-register Supabase secret | Annual or on incident |
 
