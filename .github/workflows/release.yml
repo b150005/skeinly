@@ -13,8 +13,8 @@ permissions:
   contents: write
 
 # Runner + JDK pinning rationale (see ci.yml header for full reasoning):
-# - `macos-26-arm64`: matches dev environment (macOS 26 / Xcode 26.4+);
-#   `macos-latest` still resolves to `macos-15-arm64` as of 2026-05.
+# - `macos-26`: matches dev environment (macOS 26 / Xcode 26.4+);
+#   `macos-latest` still resolves to `macos-15` as of 2026-05.
 # - `java-version: 25`: latest LTS, fully supported by Gradle 9.5 + AGP 9.x.
 #   Bytecode targets remain at Java 17 (Android runtime requirement).
 
@@ -151,7 +151,7 @@ jobs:
 
   build-ios:
     name: Build iOS Release
-    runs-on: macos-26-arm64
+    runs-on: macos-26
     needs: validate-tag
     outputs:
       ipa-available: ${{ steps.ios-signing.outputs.available }}
