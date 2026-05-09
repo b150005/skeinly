@@ -285,6 +285,16 @@ dependencies {
     // module) because it emits Android string resources from
     // google-services.json that firebase-messaging reads at process
     // boot. See plugins {} block above for the apply-conditional logic.
+    //
+    // Phase 24.5 (ADR-017 §3.8) — `firebase-messaging` declared again
+    // here as a *direct* compile dep so `SkeinlyMessagingService` can
+    // subclass `FirebaseMessagingService` from the androidApp module
+    // (shared's `implementation` scope does NOT propagate the API to
+    // app-module call sites). androidx.core supplies
+    // NotificationCompat / NotificationManagerCompat / ContextCompat
+    // for the foreground notification builder.
+    implementation(libs.firebase.messaging)
+    implementation(libs.androidx.core.ktx)
     debugImplementation(compose.uiTooling)
 
     // Android UI Testing

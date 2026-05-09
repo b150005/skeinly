@@ -15,6 +15,7 @@ import {
     computePrCommentedDispatches,
     computePrOpenedDispatches,
     computePrStatusChangeDispatches,
+    pullRequestRoute,
     renderBody,
 } from "./mapping.ts";
 
@@ -116,6 +117,7 @@ Deno.test("computePrOpenedDispatches: notifies target owner with pr_opened templ
         recipientUserId: "bob-uuid",
         templateKey: "pr_opened",
         params: { actor: "Alice", pattern: "Granny Square" },
+        route: "pull-request/pr-1",
     }]);
 });
 
@@ -234,6 +236,7 @@ Deno.test("computePrStatusChangeDispatches: open → merged notifies author with
         recipientUserId: "alice-uuid",
         templateKey: "pr_merged_to_author",
         params: { actor: "Bob", pattern: "Granny Square" },
+        route: "pull-request/pr-1",
     }]);
 });
 
@@ -252,6 +255,7 @@ Deno.test("computePrStatusChangeDispatches: open → closed by author notifies t
         recipientUserId: "bob-uuid",
         templateKey: "pr_closed_to_owner",
         params: { actor: "Alice", pattern: "Granny Square" },
+        route: "pull-request/pr-1",
     }]);
 });
 
@@ -270,6 +274,7 @@ Deno.test("computePrStatusChangeDispatches: open → closed by target owner noti
         recipientUserId: "alice-uuid",
         templateKey: "pr_closed_to_author",
         params: { actor: "Bob", pattern: "Granny Square" },
+        route: "pull-request/pr-1",
     }]);
 });
 
@@ -346,4 +351,53 @@ Deno.test("computePrStatusChangeDispatches: ignores actor neither author nor tar
         "Granny Square",
     );
     assertEquals(dispatches, []);
+});
+
+// ---------------------------------------------------------------------
+// Phase 24.5 — deep-link route construction
+// ---------------------------------------------------------------------
+
+Deno.test("pullRequestRoute: produces host-relative pull-request/<prId>", () => {
+    assertEquals(pullRequestRoute("abc-123"), "pull-request/abc-123");
+});
+
+Deno.test("computePrCommentedDispatches: route is keyed off comment.pull_request_id, NOT comment.id", () => {
+    // Defensive against a future refactor that confuses the two id
+    // columns — the route MUST point at the parent PR, not the comment.
+    const comment: PullRequestCommentRow = {
+        id: "comment-7",
+        pull_request_id: "pr-99",
+        author_id: "carol-uuid",
+        body: "lgtm",
+    };
+    const dispatches = computePrCommentedDispatches(
+        comment,
+        "alice-uuid",
+        "bob-uuid",
+        "Carol",
+        "Granny Square",
+    );
+    for (const d of dispatches) {
+        assertEquals(d.route, "pull-request/pr-99");
+    }
+});
+
+Deno.test("computePrStatusChangeDispatches: route uses row.id (the PR id) on merge", () => {
+    const row: PullRequestRow = {
+        id: "pr-merged-42",
+        author_id: "alice-uuid",
+        target_pattern_id: "pattern-1",
+        status: "merged",
+    };
+    const oldRow: PullRequestRow = { ...row, status: "open" };
+    const dispatches = computePrStatusChangeDispatches(
+        row,
+        oldRow,
+        "bob-uuid",
+        "bob-uuid",
+        "Bob",
+        "Granny Square",
+    );
+    assertEquals(dispatches.length, 1);
+    assertEquals(dispatches[0].route, "pull-request/pr-merged-42");
 });

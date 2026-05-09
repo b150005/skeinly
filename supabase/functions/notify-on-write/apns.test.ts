@@ -131,6 +131,7 @@ Deno.test("sendApns: success path", async () => {
             deviceToken: "good-token",
             body: "Alice opened a pull request on Sweater",
             templateKey: "pr_opened",
+            route: "pull-request/pr-test",
         });
         assertEquals(outcome, { kind: "success" });
         // Verify the URL targeted production host.
@@ -153,6 +154,7 @@ Deno.test("sendApns: 410 Unregistered → delete_token outcome", async () => {
             deviceToken: "dead-token",
             body: "test",
             templateKey: "pr_commented",
+            route: "pull-request/pr-test",
         });
         assertEquals(outcome.kind, "delete_token");
     } finally {
@@ -171,6 +173,7 @@ Deno.test("sendApns: 400 BadDeviceToken → delete_token outcome", async () => {
             deviceToken: "malformed",
             body: "test",
             templateKey: "pr_opened",
+            route: "pull-request/pr-test",
         });
         assertEquals(outcome.kind, "delete_token");
     } finally {

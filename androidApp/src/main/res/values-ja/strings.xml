@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Phase 24.5 (ADR-017 §3.8) — Japanese variants of the collaboration
+  notification channel labels surfaced by Android's OS Settings →
+  Notifications → Skeinly screen. `app_name` intentionally does not
+  translate (Skeinly is the brand, not a localized term).
+-->
+<resources>
+    <string name="notification_channel_collaboration">コラボレーション</string>
+    <string name="notification_channel_collaboration_description">
+        プルリクエストのオープン・コメント・マージ・クローズ。
+    </string>
+</resources>

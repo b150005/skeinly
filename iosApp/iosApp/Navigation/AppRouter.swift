@@ -188,6 +188,40 @@ struct AppRootView: View {
             guard KoinHelperKt.analyticsOptInValue() else { return }
             path.append(Route.bugReportPreview)
         }
+        // Phase 24.5 (ADR-017 §3.8) — push-tap deep link. AppDelegate's
+        // `UNUserNotificationCenterDelegate` posts `.openPushRoute` with
+        // a `route: String` in userInfo when the user taps a push (warm
+        // start) OR when the cold-start launchOptions carry a remote
+        // notification (re-posted from `application(_:didFinishLaunchingWithOptions:)`).
+        // Either way, we parse the route here and append the matching
+        // typed `Route` to the navigation path.
+        .onReceive(NotificationCenter.default.publisher(for: .openPushRoute)) { notification in
+            guard
+                let route = notification.userInfo?[openPushRouteUserInfoKey] as? String,
+                let target = parsePushRoute(route)
+            else { return }
+            path.append(target)
+        }
+    }
+
+    /// Parse a host-relative push-route string into a typed `Route`
+    /// case. The Phase 24 wave only emits `pull-request/<prId>`; future
+    /// event sources extend the prefix table.
+    ///
+    /// Returns `nil` for unknown / malformed routes so the consumer at
+    /// the call site silently drops a hostile or stale push without
+    /// any user-visible navigation glitch. (Hostile = a Phase 24+ push
+    /// arriving on an older client that doesn't recognize the route
+    /// shape; stale = the OS delivered a cached push after the route
+    /// scheme changed.)
+    private func parsePushRoute(_ raw: String) -> Route? {
+        let pullRequestPrefix = "pull-request/"
+        if raw.hasPrefix(pullRequestPrefix) {
+            let prId = String(raw.dropFirst(pullRequestPrefix.count))
+            guard !prId.isEmpty else { return nil }
+            return .pullRequestDetail(prId: prId)
+        }
+        return nil
     }
 
     @ViewBuilder

@@ -45,8 +45,12 @@ export interface ServiceAccount {
 export interface FcmSendInput {
     deviceToken: string;
     body: string;
-    /** Carried for Phase 24.5 deep-link routing parity with APNs. */
     templateKey: TemplateKey;
+    /** Phase 24.5 — host-relative deep-link route, embedded in
+     * `message.data.route`. Android's `FirebaseMessagingService`
+     * (foreground) and the launcher activity intent extras
+     * (background tap) both surface this as the navigation target. */
+    route: string;
 }
 
 // ---------------------------------------------------------------------
@@ -195,6 +199,15 @@ async function trySendFcm(sa: ServiceAccount, input: FcmSendInput): Promise<Send
             notification: {
                 title: FCM_NOTIFICATION_TITLE,
                 body: input.body,
+            },
+            // Phase 24.5 — `data` is delivered as Android `RemoteMessage
+            // .data` (foreground via FirebaseMessagingService) AND as
+            // intent extras when the user taps the auto-displayed
+            // notification (background / killed). The launcher
+            // Activity reads `getStringExtra("route")` to route. FCM
+            // v1 requires `data` to be a string-only map.
+            data: {
+                route: input.route,
             },
         },
     };

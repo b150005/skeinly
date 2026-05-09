@@ -139,12 +139,28 @@ export function renderBody(
 
 /**
  * Per-recipient dispatch instruction. Phase 24.1 ships log-only;
- * Phase 24.3 wires the actual APNs / FCM call paths.
+ * Phase 24.3 wires the actual APNs / FCM call paths;
+ * Phase 24.5 adds [route] for tap-to-navigate deep linking.
+ *
+ * `route` follows the host-relative scheme `pull-request/<prId>`. All
+ * Phase 24 events are PR-scoped so the route family is uniform; future
+ * non-PR events (Phase 24+) can extend the scheme (`pattern/<patternId>`,
+ * `share/<shareId>` etc.) without restructuring this interface.
  */
 export interface NotificationDispatch {
     recipientUserId: string;
     templateKey: TemplateKey;
     params: TemplateParams;
+    route: string;
+}
+
+/**
+ * Phase 24.5 — build a deep-link route string for a PR-scoped event.
+ * All MVP events route to PR detail; future event sources extend the
+ * scheme.
+ */
+export function pullRequestRoute(prId: string): string {
+    return `pull-request/${prId}`;
 }
 
 /**
@@ -173,6 +189,7 @@ export function computePrOpenedDispatches(
         recipientUserId: targetOwnerId,
         templateKey: "pr_opened",
         params: { actor: actorDisplayName, pattern: patternTitle },
+        route: pullRequestRoute(row.id),
     }];
 }
 
@@ -199,10 +216,12 @@ export function computePrCommentedDispatches(
     recipients.add(targetOwnerId);
     if (comment.author_id !== null) recipients.delete(comment.author_id);
 
+    const route = pullRequestRoute(comment.pull_request_id);
     return Array.from(recipients).map((recipientUserId) => ({
         recipientUserId,
         templateKey: "pr_commented" as const,
         params: { actor: actorDisplayName, pr_title: prTitle },
+        route,
     }));
 }
 
@@ -232,6 +251,7 @@ export function computePrStatusChangeDispatches(
     if (oldRow?.status !== "open") return [];
     if (row.status !== "merged" && row.status !== "closed") return [];
 
+    const route = pullRequestRoute(row.id);
     if (row.status === "merged") {
         // Per ADR-014 §5: merge is performed by the target owner only.
         // Notify the PR author. Defense-in-depth: even if actorUserId is
@@ -242,6 +262,7 @@ export function computePrStatusChangeDispatches(
             recipientUserId: row.author_id,
             templateKey: "pr_merged_to_author",
             params: { actor: actorDisplayName, pattern: patternTitle },
+            route,
         }];
     }
 
@@ -254,6 +275,7 @@ export function computePrStatusChangeDispatches(
             recipientUserId: targetOwnerId,
             templateKey: "pr_closed_to_owner",
             params: { actor: actorDisplayName, pattern: patternTitle },
+            route,
         }];
     }
     if (actorUserId === targetOwnerId) {
@@ -264,6 +286,7 @@ export function computePrStatusChangeDispatches(
             recipientUserId: row.author_id,
             templateKey: "pr_closed_to_author",
             params: { actor: actorDisplayName, pattern: patternTitle },
+            route,
         }];
     }
 

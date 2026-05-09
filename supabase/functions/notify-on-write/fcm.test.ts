@@ -126,6 +126,7 @@ Deno.test("sendFcm: success path", async () => {
             deviceToken: "good-android-token",
             body: "test body",
             templateKey: "pr_opened",
+            route: "pull-request/pr-test",
         });
         assertEquals(outcome, { kind: "success" });
         // FCM URL targets the SA's project_id.
@@ -155,6 +156,7 @@ Deno.test("sendFcm: 404 UNREGISTERED → delete_token", async () => {
             deviceToken: "dead-token",
             body: "test",
             templateKey: "pr_commented",
+            route: "pull-request/pr-test",
         });
         assertEquals(outcome.kind, "delete_token");
     } finally {
@@ -187,6 +189,7 @@ Deno.test("sendFcm: 401 triggers single retry after cache reset", async () => {
             deviceToken: "retry-token",
             body: "test",
             templateKey: "pr_opened",
+            route: "pull-request/pr-test",
         });
         // After two 401s, the second attempt's classification still
         // returns transient (fcm_unauth_retry_pending sentinel).
