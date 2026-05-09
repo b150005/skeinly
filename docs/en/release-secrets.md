@@ -1055,7 +1055,7 @@ supabase secrets set SKEINLY_DATABASE_WEBHOOK_SECRET="$SKEINLY_DATABASE_WEBHOOK_
 supabase secrets list | grep SKEINLY_DATABASE_WEBHOOK_SECRET
 ```
 
-**REGISTER (Database Webhook side)**: open Dashboard → Database → Webhooks → for each of the 3 webhooks, add an HTTP Header row with name `Authorization` and value `Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET value>`. Full step-by-step walkthrough: [`supabase/webhooks.md`](../../supabase/webhooks.md).
+**REGISTER (Database Webhook side)**: open Dashboard → Database → Webhooks → for each of the 3 webhooks, select `Supabase Edge Functions` as the type (NOT `HTTP Request`) → pick `notify-on-write` from the function dropdown → in the HTTP Headers section **overwrite the auto-populated `Authorization` header value** (which is the project anon key — public, embedded in the mobile app) with `Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET value>`. The auto-populated anon key would let any app user spoof webhook deliveries directly to the Edge Function URL. Full step-by-step walkthrough including the rationale: [`supabase/webhooks.md`](../../supabase/webhooks.md).
 
 **ROTATE**: generate a new value with `openssl rand -hex 32`, re-register the Supabase secret, then update the `Authorization` HTTP header on each of the 3 Database Webhooks via Dashboard. The webhook system does not auto-retry on auth failure (the Edge Function returns 401 and Supabase records the failure but does NOT re-deliver), so plan rotation during a quiet window or briefly tolerate missed pushes.
 

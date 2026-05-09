@@ -1050,7 +1050,7 @@ supabase secrets set SKEINLY_DATABASE_WEBHOOK_SECRET="$SKEINLY_DATABASE_WEBHOOK_
 supabase secrets list | grep SKEINLY_DATABASE_WEBHOOK_SECRET
 ```
 
-**REGISTER (Database Webhook 側)**: Dashboard → Database → Webhooks → 3 つの webhook それぞれで HTTP Headers セクションに新規行を追加し、Header name `Authorization`、value `Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET の値>` を入力。step-by-step は [`supabase/webhooks.md`](../../supabase/webhooks.md) を参照。
+**REGISTER (Database Webhook 側)**: Dashboard → Database → Webhooks → 3 つの webhook それぞれで Type に `Supabase Edge Functions` を選択 (NOT `HTTP Request`) → function dropdown から `notify-on-write` を選択 → HTTP Headers セクションで **自動入力された `Authorization` ヘッダ値を上書き** (自動入力値はプロジェクトの anon key — public でアプリに埋め込み済み)、`Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET の値>` に置き換え。anon key を残すと、アプリの利用者なら誰でも Edge Function URL に直接 webhook payload を spoof 投稿できてしまう。手順詳細 + 根拠は [`supabase/webhooks.md`](../../supabase/webhooks.md) を参照。
 
 **ROTATE**: `openssl rand -hex 32` で新しい値を生成、Supabase secret を再登録、Dashboard 上の 3 つの Database Webhook 全部の `Authorization` HTTP ヘッダ値を更新。Webhook システムは認証失敗で auto-retry しない (Edge Function が 401 を返し Supabase は失敗を記録するが re-deliver しない) ため、ローテーション中は静かなタイミングで実施するか、瞬間的な push 取りこぼしを許容する。
 

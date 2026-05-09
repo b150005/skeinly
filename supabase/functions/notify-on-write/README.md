@@ -10,7 +10,9 @@ PR opened / commented / merged / closed
       │ INSERT or UPDATE on
       │   public.pull_requests / public.pull_request_comments
       ▼
-Supabase Database Webhook (custom HTTP Headers)
+Supabase Database Webhook
+  (Type: Supabase Edge Functions; function: notify-on-write)
+  (Auto-populated Authorization header overwritten with custom Bearer secret)
       │
       │ POST <project-url>/functions/v1/notify-on-write
       │ Header: Authorization: Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET>
@@ -31,7 +33,9 @@ device_tokens (per-user) ← Phase 24.2 client registers here via PushTokenRegis
 APNs / FCM v1 ← Phase 24.3
 ```
 
-> **Why Bearer rather than HMAC body signature**: per the [Supabase Database Webhooks doc](https://supabase.com/docs/guides/database/webhooks), Database Webhooks do NOT auto-sign payloads — the dashboard UI exposes only Method / URL / Timeout / HTTP Headers / HTTP Parameters, with no signing-secret field and no `x-supabase-webhook-signature` header. The Authorization header path is the supported authentication boundary. Mirrors the `revenuecat-webhook` Bearer pattern.
+> **Why Bearer rather than HMAC body signature**: per the [Supabase Database Webhooks doc](https://supabase.com/docs/guides/database/webhooks), Database Webhooks do NOT auto-sign payloads — the dashboard UI exposes only Method / URL or Edge Function / Timeout / HTTP Headers / HTTP Parameters, with no signing-secret field and no `x-supabase-webhook-signature` header. The Authorization header path is the supported authentication boundary. Mirrors the `revenuecat-webhook` Bearer pattern.
+
+> **Why `Supabase Edge Functions` type rather than `HTTP Request` type**: both types map to the same `supabase_functions.http_request()` Postgres trigger function (the trigger passes user-supplied HTTP Headers through to `net.http_post` unchanged), so the Edge Function code path is identical. The Edge Functions type is chosen for maintainability — function selection by dropdown eliminates URL typo risk and survives function rename, and the Dashboard webhook detail row clearly shows "→ Edge Function: notify-on-write" instead of an opaque URL string. The Dashboard pre-populates the `Authorization` header with `Bearer <project anon key>` when this type is selected; that value is overwritten with our project-internal `SKEINLY_DATABASE_WEBHOOK_SECRET` because the anon key is public (embedded in the Skeinly mobile app) and would let any app user POST hand-crafted payloads directly to this Edge Function URL. See [supabase/webhooks.md](../../webhooks.md) "Why we override the auto-populated Authorization" for the full rationale.
 
 ## Required secrets (release-secrets.md)
 
