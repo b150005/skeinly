@@ -146,7 +146,7 @@ Locale fallback: 不明 locale → `en-US`。template key 不明 → log warning
 
 ### 3.9 Edge Function `notify-on-write` シェイプ
 
-Database Webhook payload `{ type, table, record, old_record? }` を受信、`SUPABASE_DATABASE_WEBHOOK_SECRET` で HMAC-SHA256 verify、table+type で branch、recipient set 計算、各 recipient × device_token 行に対して APNs (ios) / FCM (android) dispatch。410/404 (BadDeviceToken / UNREGISTERED) で device_tokens DELETE、その他失敗は log + Sentry breadcrumb。Webhook 自体には 200 を unconditional 返却 (push 配信失敗は webhook 失敗ではない)。
+Database Webhook payload `{ type, table, record, old_record? }` を受信、`SKEINLY_DATABASE_WEBHOOK_SECRET` (`SUPABASE_*` プレフィックスは Supabase 予約のため `SKEINLY_` プレフィックスを採用、[Edge Function limits doc](https://supabase.com/docs/guides/functions/limits#secrets) 参照) で HMAC-SHA256 verify、table+type で branch、recipient set 計算、各 recipient × device_token 行に対して APNs (ios) / FCM (android) dispatch。410/404 (BadDeviceToken / UNREGISTERED) で device_tokens DELETE、その他失敗は log + Sentry breadcrumb。Webhook 自体には 200 を unconditional 返却 (push 配信失敗は webhook 失敗ではない)。
 
 Rate-limit: APNs ~9000 req/sec/team、FCM v1 ~600 req/min/project — Phase 39 closed-beta scale (5–10 testers × 数 PR event/day) に対し過剰、v1 では rate-limiter 不要。
 
@@ -203,7 +203,7 @@ push notification は opt-in surface — ユーザが OS permission 明示 grant
 
 **Positive**: closed beta テスターがリアルタイムコラボ awareness を獲得し PR turnaround time 大幅短縮。既存 vendor secret (EF-1/2/3) が本来用途で activate。Edge Function pattern 4 つ目に拡張 (`revenuecat-webhook`、`request-pack-download`、`notify-on-write`、削除済みの `verify-receipt`)。Database Webhooks pattern が introduce — 将来「table change → server-side action」flow で再利用可能。Privacy policy 拡張は 1 回のコスト、後続 push-using feature が disclosure 継承。
 
-**Negative**: 2-stack push transport (APNs + FCM) で 2 codepath 維持。Notification body strings が 2 場所 (in-app vs push) に分かれ、parity 検証は Deno test 任せ (§3.7)。pre-permission dialog が natural flow と競合する modal を追加、prompt timing PRD-style A/B test は post-MVP。Database Webhook config が migration に versioned されない、`supabase/webhooks.md` 維持に依存。新規 Edge Function secret (`SUPABASE_DATABASE_WEBHOOK_SECRET`) 1 個。新規 Postgres table (`device_tokens`) 1 個 + 4 RLS policy + 1 index。iOS Notification Service Extension 出荷せず (Phase 24+ で rich content の real demand が surface したら)。Token cleanup on uninstall は reactive (次回 push 試行失敗 → DELETE)、proactive ではない — 数週〜数ヶ月で stale row 自然発生、bounded。
+**Negative**: 2-stack push transport (APNs + FCM) で 2 codepath 維持。Notification body strings が 2 場所 (in-app vs push) に分かれ、parity 検証は Deno test 任せ (§3.7)。pre-permission dialog が natural flow と競合する modal を追加、prompt timing PRD-style A/B test は post-MVP。Database Webhook config が migration に versioned されない、`supabase/webhooks.md` 維持に依存。新規 Edge Function secret (`SKEINLY_DATABASE_WEBHOOK_SECRET`) 1 個。新規 Postgres table (`device_tokens`) 1 個 + 4 RLS policy + 1 index。iOS Notification Service Extension 出荷せず (Phase 24+ で rich content の real demand が surface したら)。Token cleanup on uninstall は reactive (次回 push 試行失敗 → DELETE)、proactive ではない — 数週〜数ヶ月で stale row 自然発生、bounded。
 
 ## 8. References
 
