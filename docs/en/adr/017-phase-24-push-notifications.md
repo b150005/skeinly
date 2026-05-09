@@ -252,7 +252,7 @@ Body (Database Webhook payload):
 ```
 
 **Function code path**:
-1. Verify webhook signature (HMAC-SHA256 of body using `SUPABASE_DATABASE_WEBHOOK_SECRET` — NEW Edge Function secret to be registered in Phase 24.1).
+1. Verify webhook signature (HMAC-SHA256 of body using `SKEINLY_DATABASE_WEBHOOK_SECRET` — NEW Edge Function secret to be registered in Phase 24.1; the `SKEINLY_` prefix is load-bearing because Supabase reserves `SUPABASE_*` for platform-injected env vars per [Edge Function limits doc](https://supabase.com/docs/guides/functions/limits#secrets), and `supabase secrets set` rejects names starting with that prefix).
 2. Branch on `table` + `type`:
    - `pull_requests` INSERT → resolve target owner via `patterns` JOIN → call `dispatchPush(recipientUserId, "pr_opened", { actor, pattern })`.
    - `pull_request_comments` INSERT → resolve PR participants via `pull_requests` JOIN → MINUS comment.author_id → for each remaining recipient call `dispatchPush(recipient, "pr_commented", { actor, pr_title })`.
@@ -309,7 +309,7 @@ These were considered + explicitly deferred to Phase 24+ or beyond. Listed so fu
 - Device tokens are anonymized by Apple / Google (not directly mappable to a person without OS-side cross-reference).
 - RLS on `device_tokens` ensures user A cannot read user B's tokens; service-role bypass scoped to the `notify-on-write` Edge Function.
 - Edge Function does NOT log token values (Sentry breadcrumb scrubbing — confirmed via test).
-- Database Webhook secret is registered as Edge Function env var (`SUPABASE_DATABASE_WEBHOOK_SECRET`); never echoed in response bodies.
+- Database Webhook secret is registered as Edge Function env var (`SKEINLY_DATABASE_WEBHOOK_SECRET`); never echoed in response bodies.
 - APNs `.p8` + FCM SA JSON live as Edge Function secrets only — no client-side exposure.
 - Pre-permission dialog explainer ensures users understand what they're consenting to BEFORE the OS prompt fires (avoids the "decontextualized denial" anti-pattern).
 - Account deletion (ADR-005) cascades device_token rows out via FK ON DELETE CASCADE.
@@ -321,7 +321,7 @@ These were considered + explicitly deferred to Phase 24+ or beyond. Listed so fu
 **24.1 — Data spine**:
 - Migration NNN: `device_tokens` table + RLS policies + indexes. Apply to prod.
 - Edge Function `notify-on-write` shell: webhook signature verification + body parse + table-type branch + log-only `dispatchPush` (no actual APNs/FCM calls yet) + Deno test for the parser + locale lookup.
-- New Edge Function secret `SUPABASE_DATABASE_WEBHOOK_SECRET` registration doc in release-secrets.md (EF-6).
+- New Edge Function secret `SKEINLY_DATABASE_WEBHOOK_SECRET` registration doc in release-secrets.md (EF-6).
 - Dashboard: Database Webhooks configured for the 3 event sources; documented in new `supabase/webhooks.md`.
 - KMP: NO client wiring this slice.
 - Tests: ~15 Deno tests for the Edge Function parser + locale resolver + recipient-set computation. NO commonTest delta.
@@ -415,7 +415,7 @@ Resolved at Phase 24.3 implementation when the actual APNs call lands. Lean towa
 - Notification body strings live in 2 places (Compose/SwiftUI for in-app, Edge Function for push). String parity gap mitigated via Deno test (§3.7).
 - Pre-permission dialog adds an extra modal that competes with the natural flow; PRD-style A/B test on prompt timing is post-MVP.
 - Database Webhook config is NOT versioned in migrations — relies on Dashboard UI + `supabase/webhooks.md` to stay accurate.
-- 1 new Edge Function secret to register (`SUPABASE_DATABASE_WEBHOOK_SECRET`).
+- 1 new Edge Function secret to register (`SKEINLY_DATABASE_WEBHOOK_SECRET`).
 - 1 new Postgres table (`device_tokens`) + 4 RLS policies + 1 index.
 - iOS Notification Service Extension NOT shipped (Phase 24+ if rich content surfaces real demand).
 - Token cleanup on uninstall is reactive (next push attempt fails → DELETE), not proactive. A user who uninstalls accumulates one stale row until their PR-related event fires; bounded by the lifetime of a typical token (~weeks to months).

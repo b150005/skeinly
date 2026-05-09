@@ -12,7 +12,7 @@ This file is the source of truth for the project's Database Webhook configuratio
 https://<project-ref>.supabase.co/functions/v1/notify-on-write
 ```
 
-with HMAC-SHA256 signature in the `x-supabase-webhook-signature` header. The signature secret is `SUPABASE_DATABASE_WEBHOOK_SECRET` (release-secrets EF-6, Phase 24.1).
+with HMAC-SHA256 signature in the `x-supabase-webhook-signature` header. The signature secret is `SKEINLY_DATABASE_WEBHOOK_SECRET` (release-secrets EF-6, Phase 24.1).
 
 | # | Name | Source table | Events | Conditions | Notes |
 |---|---|---|---|---|---|
@@ -36,7 +36,7 @@ For each row in the table above:
    - **HTTP Headers**:
      - `Content-Type: application/json`
    - **HTTP Params**: (leave empty)
-   - **Webhook Source** / **Secret** (signing key): paste the value of `SUPABASE_DATABASE_WEBHOOK_SECRET` from `supabase secrets list`. Supabase signs every delivery with this value.
+   - **Webhook Source** / **Secret** (signing key): paste the value of `SKEINLY_DATABASE_WEBHOOK_SECRET` from `supabase secrets list`. Supabase signs every delivery with this value.
 4. Click **Create webhook** / **Save**.
 
 > **Header name caveat**: Supabase has historically shipped the signature in different header names across CLI versions (`x-supabase-webhook-signature`, `x-webhook-signature`, etc.). The Edge Function reads BOTH `x-supabase-webhook-signature` AND `x-webhook-signature` per `notify-on-write/index.ts` for forward compatibility. Confirm the actual header name at the time of webhook creation by inspecting a delivery in the Dashboard's webhook delivery log.

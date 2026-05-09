@@ -16,7 +16,7 @@ Supabase Database Webhook (HMAC-SHA256 signed delivery)
       │ Header: x-supabase-webhook-signature: <base64 HMAC>
       ▼
 notify-on-write Edge Function (this)
-      │ 1. Verify HMAC against SUPABASE_DATABASE_WEBHOOK_SECRET (constant-time)
+      │ 1. Verify HMAC against SKEINLY_DATABASE_WEBHOOK_SECRET (constant-time)
       │ 2. Parse Database Webhook payload { type, table, record, old_record? }
       │ 3. Route by (table, type) → mapping.ts pure helpers compute
       │    NotificationDispatch[] per recipient
@@ -35,7 +35,7 @@ APNs / FCM v1 ← Phase 24.3
 
 - `SUPABASE_URL` — auto-injected
 - `SUPABASE_SERVICE_ROLE_KEY` — auto-injected
-- `SUPABASE_DATABASE_WEBHOOK_SECRET` — manual: `supabase secrets set` (release-secrets EF-6, Phase 24.1)
+- `SKEINLY_DATABASE_WEBHOOK_SECRET` — manual: `supabase secrets set` (release-secrets EF-6, Phase 24.1). The `SKEINLY_` prefix is load-bearing: Supabase reserves `SUPABASE_*` for platform-injected env vars and `supabase secrets set` rejects any name starting with that prefix.
 
 Phase 24.3 will additionally consume:
 - `APPLE_APNS_KEY_P8` (EF-1 — already registered)
@@ -49,7 +49,7 @@ Phase 24.3 will additionally consume:
 supabase functions deploy notify-on-write
 ```
 
-> **JWT verification disabled (load-bearing)**: like `revenuecat-webhook`, this function is invoked by Supabase's Database Webhook system which does NOT carry a Supabase JWT. The function must be deployed with `--no-verify-jwt` (or via `[functions.notify-on-write] verify_jwt = false` in `supabase/config.toml`). Auth is enforced inside the function via constant-time HMAC compare against `SUPABASE_DATABASE_WEBHOOK_SECRET`.
+> **JWT verification disabled (load-bearing)**: like `revenuecat-webhook`, this function is invoked by Supabase's Database Webhook system which does NOT carry a Supabase JWT. The function must be deployed with `--no-verify-jwt` (or via `[functions.notify-on-write] verify_jwt = false` in `supabase/config.toml`). Auth is enforced inside the function via constant-time HMAC compare against `SKEINLY_DATABASE_WEBHOOK_SECRET`.
 
 ## Database Webhook configuration (post-deploy)
 
@@ -85,7 +85,7 @@ After `supabase functions deploy notify-on-write` and Dashboard webhook wiring:
 
 ```bash
 WEBHOOK_URL="https://<project-ref>.supabase.co/functions/v1/notify-on-write"
-SECRET="<SUPABASE_DATABASE_WEBHOOK_SECRET value>"
+SECRET="<SKEINLY_DATABASE_WEBHOOK_SECRET value>"
 BODY='{"type":"INSERT","table":"pull_requests","schema":"public","record":{"id":"00000000-0000-0000-0000-000000000001","author_id":"00000000-0000-0000-0000-000000000002","target_pattern_id":"00000000-0000-0000-0000-000000000003","status":"open"}}'
 SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$SECRET" -binary | base64)
 

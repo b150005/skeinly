@@ -7,16 +7,18 @@
 // real send paths via `djwt` JSR import.
 //
 // Webhook auth: HMAC-SHA256 of the request body using the
-// SUPABASE_DATABASE_WEBHOOK_SECRET registered in Supabase Edge Function
-// secrets (release-secrets EF-6, Phase 24.1). The Supabase Database
-// Webhook UI signs every delivery with this secret in the
+// SKEINLY_DATABASE_WEBHOOK_SECRET registered in Supabase Edge Function
+// secrets (release-secrets EF-6, Phase 24.1). Supabase reserves the
+// `SUPABASE_` prefix for env-var names (Edge Function limits doc), so
+// this secret carries the `SKEINLY_` project prefix. The Supabase
+// Database Webhook UI signs every delivery with this secret in the
 // `x-supabase-webhook-signature` header (or similar — exact header name
 // per Supabase docs at deploy time; see supabase/webhooks.md).
 //
 // Required env vars (auto-injected by Supabase except where noted):
 //   - SUPABASE_URL                          (auto)
 //   - SUPABASE_SERVICE_ROLE_KEY             (auto)
-//   - SUPABASE_DATABASE_WEBHOOK_SECRET      (manual: supabase secrets set)
+//   - SKEINLY_DATABASE_WEBHOOK_SECRET       (manual: supabase secrets set)
 //
 // Database Webhook configuration is documented in supabase/webhooks.md
 // and configured via Supabase Dashboard → Database → Webhooks. Three
@@ -49,7 +51,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const webhookSecret = Deno.env.get("SUPABASE_DATABASE_WEBHOOK_SECRET");
+    const webhookSecret = Deno.env.get("SKEINLY_DATABASE_WEBHOOK_SECRET");
     if (!supabaseUrl || !serviceRoleKey || !webhookSecret) {
         console.error("notify-on-write: required env vars missing");
         return jsonResponse({ error: "edge_function_misconfigured" }, 500);
@@ -310,7 +312,7 @@ function inferStatusChangeActor(
 
 /**
  * Constant-time HMAC-SHA256 verification of the Database Webhook
- * delivery against `SUPABASE_DATABASE_WEBHOOK_SECRET`. Supabase ships
+ * delivery against `SKEINLY_DATABASE_WEBHOOK_SECRET`. Supabase ships
  * the signature as base64 in the `x-supabase-webhook-signature` header
  * (precise header name confirmed at deploy time per supabase/webhooks.md).
  */
