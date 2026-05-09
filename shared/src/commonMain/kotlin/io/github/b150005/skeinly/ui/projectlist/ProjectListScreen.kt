@@ -522,7 +522,7 @@ private fun SortDropdown(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SwipeToDismissProjectCard(
     project: Project,
