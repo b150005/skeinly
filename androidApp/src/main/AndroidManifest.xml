@@ -3,6 +3,12 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Phase 24.2d (ADR-017 §3.6) — runtime POST_NOTIFICATIONS gate
+         enforced from Android 13 (API 33). Below 33 the install-time grant
+         is implicit; the declaration here is required regardless because
+         the runtime request only fires once the manifest declares the
+         permission. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".SkeinlyApplication"
