@@ -17,7 +17,8 @@ IOS_SIM_DEST ?= platform=iOS Simulator,name=iPhone 16
         lint format coverage i18n-verify \
         ci-local \
         verify-xcode \
-        release-ipa-local \
+        release-ipa-local release-aab-local \
+        release-tag-validate release-tag-publish \
         clean
 
 help:  ## Show this help.
@@ -199,6 +200,73 @@ release-aab-local:  ## Build a Release AAB locally (no Play upload). For pre-tag
 	@echo "To publish to Internal track manually:"
 	@echo "  export ANDROID_PUBLISHER_CREDENTIALS=\"\$$(cat ~/path/to/google-play-publisher-sa.json)\""
 	@echo "  ./gradlew :androidApp:publishBundle"
+
+# Tag-driven release workflow.
+#
+# `release.yml` is wired to the `v*` tag pattern; pushing a tag like
+# `v0.1.0` triggers the full Release workflow (Android AAB build →
+# Play Internal track upload, iOS archive → TestFlight upload, GitHub
+# Release with IPA + APK artifacts attached). Secrets live only in CI;
+# tag push is the single user-facing entry point.
+#
+# `release-tag-validate` runs pre-flight checks WITHOUT side effects so
+# the user can verify branch / working-tree / tag uniqueness state before
+# committing to a push. `release-tag-publish` re-runs the same checks
+# then performs the tag + push, gated behind an explicit CONFIRM=yes
+# env var so a stray Tab-completion can't trigger a production upload.
+#
+# Tag derivation: `v$(VERSION_NAME)` from version.properties. Bump
+# version.properties + commit + push BEFORE running this. Tag re-use is
+# explicitly rejected (Play Console + App Store Connect both reject
+# duplicate version codes / build numbers from the server side too, but
+# we want the failure to surface locally before the push).
+
+release-tag-validate:  ## Pre-flight check for tag push (branch=main, clean tree, tag does not exist). No side effects.
+	@VERSION="$$(grep '^VERSION_NAME=' version.properties | cut -d= -f2)"; \
+	if [ -z "$$VERSION" ]; then \
+		echo "ERROR: could not read VERSION_NAME from version.properties"; exit 1; \
+	fi; \
+	TAG="v$$VERSION"; \
+	BRANCH="$$(git rev-parse --abbrev-ref HEAD)"; \
+	if [ "$$BRANCH" != "main" ]; then \
+		echo "ERROR: must be on main; currently on '$$BRANCH'"; exit 1; \
+	fi; \
+	if [ -n "$$(git status --porcelain)" ]; then \
+		echo "ERROR: working tree dirty — commit or stash before tagging"; \
+		git status --short; exit 1; \
+	fi; \
+	if git rev-parse "$$TAG" >/dev/null 2>&1; then \
+		echo "ERROR: tag $$TAG already exists locally — bump VERSION_NAME first"; exit 1; \
+	fi; \
+	if git ls-remote --tags origin "$$TAG" 2>/dev/null | grep -q "refs/tags/$$TAG$$"; then \
+		echo "ERROR: tag $$TAG already exists on origin — bump VERSION_NAME first"; exit 1; \
+	fi; \
+	echo "OK: ready to tag $$(git rev-parse --short HEAD) on main as $$TAG"; \
+	echo "    (run 'CONFIRM=yes make release-tag-publish' to push)"
+
+release-tag-publish: release-tag-validate  ## Tag the current commit and push to trigger Release workflow. Requires CONFIRM=yes.
+	@VERSION="$$(grep '^VERSION_NAME=' version.properties | cut -d= -f2)"; \
+	TAG="v$$VERSION"; \
+	echo ""; \
+	echo "About to tag $$(git rev-parse --short HEAD) on main as $$TAG and push to origin."; \
+	echo "This triggers the Release workflow:"; \
+	echo "  - Android AAB build + signed upload to Play Console Internal Testing track"; \
+	echo "  - iOS archive + signed upload to TestFlight (waits for Apple processing async)"; \
+	echo "  - GitHub Release (draft) with IPA + APK artifacts attached"; \
+	echo ""; \
+	if [ "$$CONFIRM" != "yes" ]; then \
+		echo "ERROR: re-run with CONFIRM=yes to proceed:"; \
+		echo "  CONFIRM=yes make release-tag-publish"; \
+		exit 1; \
+	fi; \
+	git tag -a "$$TAG" -m "Release $$TAG"; \
+	git push origin "$$TAG"; \
+	echo ""; \
+	echo "Tag $$TAG pushed. Watch the workflow:"; \
+	echo "  gh run watch --repo b150005/skeinly --workflow=release.yml"; \
+	echo ""; \
+	echo "Or list runs:"; \
+	echo "  gh run list --repo b150005/skeinly --workflow=release.yml --limit 3"
 
 ##@ Maintenance
 
