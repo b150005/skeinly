@@ -218,9 +218,12 @@ class RevenueCatServiceImpl : RevenueCatService {
     private companion object {
         /**
          * RevenueCat dashboard entitlement id that gates Pro packs.
-         * Configured per ADR-016 §1 / vendor-setup.md A0d-2; matches
-         * the `subscriptions.entitlement` value the `verify-receipt`
-         * Edge Function writes through to the `subscriptions` row.
+         * Configured per ADR-016 §1 / vendor-setup.md A0d-2. The
+         * `revenuecat-webhook` Edge Function (Phase 39 prep, 2026-05-08)
+         * derives the `subscriptions.status` value from RevenueCat event
+         * types (see `supabase/functions/revenuecat-webhook/mapping.ts`)
+         * and writes through to the `subscriptions` row via the
+         * `upsert_subscription_from_webhook` RPC.
          */
         const val PRO_ENTITLEMENT_ID = "pro"
     }

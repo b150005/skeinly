@@ -82,14 +82,18 @@ class EntitlementResolverTest {
 
     @Test
     fun `canceled sub with future expiresAt returns false - design contract anchor`() {
-        // Design contract (Subscription.kt isActiveAt KDoc): the verify-receipt
-        // Edge Function only writes status='canceled' AFTER the paid period
-        // ends. Apple StoreKit 2 keeps emitting 'subscribed' until expiry;
-        // Google Play keeps emitting 'ACTIVE' with autoRenewing=false. So a
-        // CANCELED row with future expiresAt should never legitimately appear
-        // in production — but if it ever does (Edge Function regression /
-        // direct admin SQL pass), this test pins the gate behavior: NO Pro.
-        // If this test ever needs to flip to assertTrue, the verify-receipt
+        // Design contract (Subscription.kt isActiveAt KDoc): the
+        // revenuecat-webhook Edge Function only writes status='canceled'
+        // AFTER the paid period ends. RevenueCat fires CANCELLATION at
+        // period-end only; mid-period user cancellations come through as
+        // RENEWAL events with auto_renew_status=false and stay ACTIVE
+        // (mapping.ts:165-180). Apple StoreKit 2 keeps emitting
+        // 'subscribed' until expiry; Google Play keeps emitting 'ACTIVE'
+        // with autoRenewing=false. So a CANCELED row with future
+        // expiresAt should never legitimately appear in production — but
+        // if it ever does (mapping.ts regression / direct admin SQL
+        // pass), this test pins the gate behavior: NO Pro. If this test
+        // ever needs to flip to assertTrue, the revenuecat-webhook
         // contract has changed and isActiveAt MUST move CANCELED into the
         // active allow-list to avoid silently revoking Pro mid-period.
         val futureExpiry = Instant.parse("2026-12-31T00:00:00Z")

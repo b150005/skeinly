@@ -28,10 +28,12 @@ interface SubscriptionRemoteOperations {
  *
  * **Read-only on purpose.** Migration 017 lines 83-86 deliberately omit
  * INSERT / UPDATE / DELETE policies for the public role; the
- * `verify-receipt` Edge Function with the service-role key is the sole
- * writer. Surfacing a write method here would compile but every call would
- * 401 with "new row violates row-level security policy" — better to have
- * no write surface at all.
+ * `revenuecat-webhook` Edge Function (Phase 39 prep, 2026-05-08) with the
+ * service-role key is the sole writer (via the
+ * `upsert_subscription_from_webhook` SECURITY DEFINER RPC, migration 023).
+ * Surfacing a write method here would compile but every call would 401
+ * with "new row violates row-level security policy" — better to have no
+ * write surface at all.
  *
  * The `eq("user_id", userId)` filter is defense-in-depth + diagnostic
  * clarity; RLS already scopes to `auth.uid()`. Most users have a single

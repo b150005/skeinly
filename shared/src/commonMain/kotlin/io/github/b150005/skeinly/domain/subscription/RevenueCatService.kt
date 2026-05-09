@@ -43,12 +43,13 @@ interface RevenueCatService {
      * or it fails (Failed).
      *
      * RevenueCat handles the receipt validation + entitlement grant
-     * server-side via the `verify-receipt` Edge Function (Phase A0d-3
-     * webhook). On Success the local `subscriptions` cache mirror updates
-     * via either (a) the post-purchase callback chain in
-     * [io.github.b150005.skeinly.ui.paywall.PaywallViewModel], or (b) the
-     * Realtime push from the `verify-receipt` Edge Function, whichever
-     * arrives first.
+     * server-side; the resulting subscription state lands in this row via
+     * the `revenuecat-webhook` Edge Function (Phase 39 prep, 2026-05-08).
+     * On Success the local `subscriptions` cache mirror updates via the
+     * post-purchase callback chain in
+     * [io.github.b150005.skeinly.ui.paywall.PaywallViewModel] (which calls
+     * `subscriptionRepository.refresh(userId)` to pull the
+     * webhook-written row).
      */
     suspend fun purchase(pkg: PaywallPackage): PurchaseResult
 

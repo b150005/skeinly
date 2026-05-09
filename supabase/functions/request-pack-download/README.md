@@ -89,11 +89,13 @@ look for the `pack_download_signed` structured log line.
 
 ## Refund-revocation semantics
 
-A `subscriptions.status='refunded'` write through `verify-receipt` causes
-the *next* invocation by that user to return 403, even if the user's
-local `EntitlementResolver` cache hasn't yet processed the Realtime
-push. The 5-minute signed-URL TTL bounds residual access through any
-in-flight URL the user already holds.
+A `subscriptions.status='refunded'` write through `revenuecat-webhook`
+(on a CANCELLATION event with `cancel_reason in ('REFUND',
+'REFUNDED_FOR_ISSUE')`) causes the *next* invocation by that user to
+return 403, even if the user's local `EntitlementResolver` cache hasn't
+yet processed the next `SubscriptionRepository.refresh`. The 5-minute
+signed-URL TTL bounds residual access through any in-flight URL the
+user already holds.
 
 ## Rate-limit caveat (v1 closed-beta scope)
 

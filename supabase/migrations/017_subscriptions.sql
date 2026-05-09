@@ -1,13 +1,23 @@
--- Phase H: IAP / Subscription state (alpha1 monetization)
+-- IAP / Subscription state (alpha1 monetization, Phase 41 dynamic symbol packs)
 -- Source of truth for "is user Pro" — written exclusively by the
--- `verify-receipt` Edge Function (server-side StoreKit 2 / Play Billing
--- receipt validation). Client reads via RLS (own row SELECT only) for
--- paywall enforcement; no client-side INSERT / UPDATE / DELETE.
+-- `revenuecat-webhook` Edge Function (Phase 39 prep, 2026-05-08; calls the
+-- `upsert_subscription_from_webhook` SECURITY DEFINER RPC from migration
+-- 023 which carries a `last_verified_at` ordering guard). Client reads via
+-- RLS (own row SELECT only) for paywall enforcement; no client-side
+-- INSERT / UPDATE / DELETE.
 --
--- Apple App Store Server Notifications V2 + Google Play Real-Time
--- Developer Notifications fan into the same Edge Function via webhook
--- endpoints, so renewal / cancellation / refund / billing-retry state
--- transitions update this table without a client round-trip.
+-- RevenueCat receives Apple App Store Server Notifications V2 + Google
+-- Play Real-Time Developer Notifications upstream and fans them into
+-- Skeinly via webhook, so renewal / cancellation / refund / billing-retry
+-- state transitions update this table without a client round-trip.
+--
+-- Historical note: the original design (when this migration was
+-- authored) had a single `verify-receipt` Edge Function that handled both
+-- client-initiated receipt verification AND Apple/Google webhooks. That
+-- design was superseded on 2026-05-08 by `revenuecat-webhook` (Phase 39
+-- prep) which delegates receipt validation to RevenueCat. The
+-- `verify-receipt` stub was deleted on 2026-05-09 (agent-team
+-- deliberation found no complementary role given RevenueCat's coverage).
 --
 -- alpha1 testers get auto-Pro via a sentinel row with platform =
 -- 'alpha-grant' and expires_at = NULL (perpetual until alpha closes).
@@ -81,9 +91,10 @@ CREATE POLICY "subscriptions_select_own"
     USING (auth.uid() = user_id);
 
 -- INTENTIONALLY NO INSERT / UPDATE / DELETE policies for the public role.
--- The Edge Function `verify-receipt` runs with the service-role key
--- and bypasses RLS for writes. Client apps cannot self-mint a Pro
--- subscription by inserting into this table.
+-- The Edge Function `revenuecat-webhook` runs with the service-role key
+-- (via the `upsert_subscription_from_webhook` SECURITY DEFINER RPC,
+-- migration 023) and bypasses RLS for writes. Client apps cannot
+-- self-mint a Pro subscription by inserting into this table.
 
 -- ---------------------------------------------------------------------
 -- Helper RPC: is_pro(uid) — single source of truth for paywall checks

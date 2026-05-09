@@ -26,17 +26,21 @@ import kotlin.time.Instant
  * - [CANCELED]: terminal mid-state — user has cancelled, the paid period
  *   has fully elapsed, and auto-renew is off. The client does NOT grant
  *   Pro on CANCELED regardless of [Subscription.expiresAt]. **Edge Function
- *   contract:** `verify-receipt` writes `canceled` only after the paid
- *   period ends; during the until-expiry window after a user cancellation
- *   the row remains [ACTIVE] (with `auto_renew_status = false`). Apple
- *   StoreKit 2 keeps emitting `subscribed` until expiry; Google Play
- *   keeps emitting `ACTIVE` with `autoRenewing = false`. Neither platform
- *   emits a "canceled-but-still-paid-for" status. The implementation
- *   trusts the verifier's status field rather than re-deriving Pro from
- *   [Subscription.expiresAt] alone — see [Subscription.isActiveAt].
+ *   contract:** `revenuecat-webhook` writes `canceled` only after the paid
+ *   period ends — RevenueCat fires the `CANCELLATION` event at period-end
+ *   and the webhook's `mapEventToStatus` (`supabase/functions/revenuecat-webhook/mapping.ts`)
+ *   maps it to `canceled`. Mid-period user cancellations come through as
+ *   `RENEWAL` events with `auto_renew_status = false` and stay [ACTIVE]
+ *   until expiry. Apple StoreKit 2 keeps emitting `subscribed` until
+ *   expiry; Google Play keeps emitting `ACTIVE` with `autoRenewing =
+ *   false`. Neither platform emits a "canceled-but-still-paid-for"
+ *   status. The implementation trusts the webhook-derived status field
+ *   rather than re-deriving Pro from [Subscription.expiresAt] alone —
+ *   see [Subscription.isActiveAt].
  * - [REFUNDED]: terminal. Apple / Google issued a refund. The
- *   `verify-receipt` webhook flips the row immediately; client revokes Pro
- *   on the next refresh.
+ *   `revenuecat-webhook` Edge Function flips the row immediately on the
+ *   inbound `CANCELLATION` event with `cancel_reason in ('REFUND',
+ *   'REFUNDED_FOR_ISSUE')`; client revokes Pro on the next refresh.
  */
 @Serializable
 enum class SubscriptionStatus {
@@ -63,8 +67,10 @@ enum class SubscriptionStatus {
  * Origin platform for a [Subscription] mirroring the Postgres CHECK constraint
  * in migration 017 (ADR-016 §3.1).
  *
- * - [IOS]: StoreKit 2 receipt validated by `verify-receipt`.
- * - [ANDROID]: Play Billing receipt validated by `verify-receipt`.
+ * - [IOS]: StoreKit 2 receipt validated by RevenueCat (server-side); the
+ *   resulting state lands in this row via `revenuecat-webhook`.
+ * - [ANDROID]: Play Billing receipt validated by RevenueCat (server-side);
+ *   the resulting state lands in this row via `revenuecat-webhook`.
  * - [ALPHA_GRANT]: sentinel platform for the alpha-tester auto-Pro grant
  *   minted via the `grant_alpha_pro(uid)` RPC. [Subscription.expiresAt] is
  *   `null` (perpetual until alpha closes).
@@ -85,12 +91,14 @@ enum class SubscriptionPlatform {
  * One subscription row mirroring `public.subscriptions` (migration 017,
  * ADR-016 §3.1 + §4.2).
  *
- * **Read-only at the client.** The only writer is the `verify-receipt` Edge
- * Function running with the service-role key — Apple App Store Server
- * Notifications V2 and Google Play Real-Time Developer Notifications fan
- * into the same function. The client mirrors active rows for offline
- * EntitlementResolver lookups; [Subscription] never originates from a
- * client write.
+ * **Read-only at the client.** The only writer is the `revenuecat-webhook`
+ * Edge Function (Phase 39 prep, 2026-05-08) which calls the
+ * `upsert_subscription_from_webhook` SECURITY DEFINER RPC (migration 023)
+ * with the `last_verified_at` ordering guard. RevenueCat receives Apple
+ * App Store Server Notifications V2 and Google Play Real-Time Developer
+ * Notifications upstream and fans them into Skeinly via webhook. The
+ * client mirrors active rows for offline EntitlementResolver lookups;
+ * [Subscription] never originates from a client write.
  *
  * **Refresh model (ADR-016 §10 Q2 resolution, 41.2a).** Migration 017
  * deliberately disables Realtime for `subscriptions` — the 8th-channel
@@ -139,18 +147,20 @@ data class Subscription(
      * - [SubscriptionStatus.ACTIVE] / [SubscriptionStatus.IN_GRACE_PERIOD]
      *   are the active billing states.
      * - [SubscriptionStatus.CANCELED] is intentionally NOT included.
-     *   **Contract assumed of `verify-receipt`:** `canceled` is only
+     *   **Contract assumed of `revenuecat-webhook`:** `canceled` is only
      *   written to the row after the paid period has fully elapsed —
      *   during the until-expiry window after a user cancellation the row
      *   remains [SubscriptionStatus.ACTIVE] (with `auto_renew_status =
-     *   false`). Apple StoreKit 2 emits `subscribed` until expiry; Google
-     *   Play emits `ACTIVE` with `autoRenewing = false`. Neither platform
-     *   ships a "canceled-but-still-paid-for" status. If a future Edge
-     *   Function change starts synthesizing `canceled` mid-period from
-     *   `autoRenewStatus = false`, this gate AND the
-     *   [SubscriptionStatusTest] coverage must move CANCELED into the
-     *   active allow-list — failure to do so would silently revoke Pro
-     *   for users still in their paid period.
+     *   false`). RevenueCat fires the `CANCELLATION` event at period-end
+     *   only; mid-period user cancellations come through as `RENEWAL`
+     *   events and stay ACTIVE. Apple StoreKit 2 emits `subscribed` until
+     *   expiry; Google Play emits `ACTIVE` with `autoRenewing = false`.
+     *   Neither platform ships a "canceled-but-still-paid-for" status. If
+     *   a future change to `mapEventToStatus` (`supabase/functions/revenuecat-webhook/mapping.ts`)
+     *   starts synthesizing `canceled` mid-period from `autoRenewStatus =
+     *   false`, this gate AND the [SubscriptionStatusTest] coverage must
+     *   move CANCELED into the active allow-list — failure to do so would
+     *   silently revoke Pro for users still in their paid period.
      * - [expiresAt] is `null` for the alpha-grant sentinel — perpetual until
      *   the alpha closes via an admin SQL pass.
      */

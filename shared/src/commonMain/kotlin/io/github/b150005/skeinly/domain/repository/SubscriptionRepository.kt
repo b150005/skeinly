@@ -7,11 +7,14 @@ import kotlinx.coroutines.flow.Flow
  * Phase 41.2a (ADR-016 §4.2) — read-only access to the per-user subscription
  * row that gates Pro entitlement.
  *
- * **Read-only at the client.** The `verify-receipt` Edge Function with the
- * service-role key is the only writer (migration 017). The repository
- * exposes [refresh] for caller-driven cache fills (app foreground, post-
- * purchase RevenueCat callback in Phase 41.3, cold launch) but not a write
- * method.
+ * **Read-only at the client.** The `revenuecat-webhook` Edge Function (Phase
+ * 39 prep, 2026-05-08) is the only writer — it calls the
+ * `upsert_subscription_from_webhook` SECURITY DEFINER RPC (migration 023)
+ * with the `last_verified_at` ordering guard. Migration 017 deliberately
+ * omits INSERT/UPDATE/DELETE policies for the public role so the
+ * service-role write surface is the only path. The repository exposes
+ * [refresh] for caller-driven cache fills (app foreground, post-purchase
+ * RevenueCat callback in Phase 41.3, cold launch) but not a write method.
  *
  * **No Realtime channel (ADR-016 §10 Q2 resolution, 41.2a).** Migration
  * 017 lines 154-165 deliberately disable Realtime for `subscriptions` —

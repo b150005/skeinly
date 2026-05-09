@@ -6,9 +6,9 @@
 // + Storage REST callback, or `pgjwt` + manual JWT signing with a
 // vault-stored secret) introduce extension dependencies + signing-key
 // custody surface that exceed what is justified for entitlement gating.
-// The Edge Function pattern matches the Phase H `verify-receipt`
-// precedent and Supabase's idiomatic recommendation for download
-// mediation.
+// The Edge Function pattern matches the `revenuecat-webhook` (Phase 39
+// prep, 2026-05-08) precedent and Supabase's idiomatic recommendation
+// for download mediation.
 //
 // Flow per ADR-016 §3.3:
 //   1. `verify_jwt: true` (deploy flag) — Supabase rejects requests
@@ -36,11 +36,12 @@
 // `Deno.env.get(...)` at request time.
 //
 // Refund-revocation semantics: a `subscriptions.status='refunded'`
-// write (via Phase H `verify-receipt`) causes the *next* invocation
-// by that user to return 403, even if the user's local
-// `EntitlementResolver` cache hasn't yet processed the Realtime push.
-// The 5-minute signed-URL TTL bounds residual access through any
-// in-flight URL the user already holds.
+// write (via `revenuecat-webhook` Edge Function on a CANCELLATION event
+// with `cancel_reason in ('REFUND','REFUNDED_FOR_ISSUE')`) causes the
+// *next* invocation by that user to return 403, even if the user's
+// local `EntitlementResolver` cache hasn't yet processed the next
+// `SubscriptionRepository.refresh`. The 5-minute signed-URL TTL bounds
+// residual access through any in-flight URL the user already holds.
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import {

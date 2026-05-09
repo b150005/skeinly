@@ -5,6 +5,8 @@
 > **関連**: ADR-005 (アカウント削除)、ADR-008 (構造化チャート データモデル)、ADR-009 (パラメトリックシンボル)、ADR-013 (コラボレーションコア)、ADR-014 (PR ワークフロー)
 > **追跡**: F1 = Phase 41 (Pro サブスクリプション + 動的シンボル)。Phase 41.1 データスパイン (migrations 020 / 021 / 022 + Edge Function `request-pack-download`) は出荷済み — [.claude/CLAUDE.md](../../../.claude/CLAUDE.md) `### Completed` 参照。Phase 41.2 (composite catalog + entitlement resolver + downloaded pack store + Realtime) が §6 サブスライス計画に従い次。Migration 017 (`subscriptions` テーブル) は prod 適用済み。RevenueCat ベンダー設定は [docs/ja/vendor-setup.md](../vendor-setup.md) Phase A0d 参照。
 
+> **2026-05-09 修正 — `verify-receipt` 削除**: 本 ADR 内の `verify-receipt` Edge Function 言及はすべて歴史的な記述。Agent team 協議の結果 (RevenueCat が Apple/Google レシート検証を server-side で完結している以上補完的役割が確立できない、クライアント呼び出し site が無い、defense-in-depth の追加価値が Apple `.p8` + Google SA キー custody surface 拡大コストを上回らない、post-beta で実 fail mode 観察してから判断する方が妥当)、2026-05-09 に削除しました。`subscriptions` テーブルの実 writer は `revenuecat-webhook` (Phase 39 prep, 2026-05-08; migration 023 の `upsert_subscription_from_webhook` SECURITY DEFINER RPC を `last_verified_at` ordering guard 付きで呼び出し)。アーキテクチャ契約 (service-role 書込, single writer, refund/cancellation を webhook 経由) は不変、関数 identity だけが変更。Apple App Store Server Notifications V2 + Google Play Real-Time Developer Notifications は Skeinly 自前 Edge Function ではなく RevenueCat に着地し、RevenueCat から `revenuecat-webhook` に fan-in する。CANCELED / REFUNDED 契約は `supabase/functions/revenuecat-webhook/mapping.ts` で保存。post-beta で独立 server-side validator (RevenueCat 障害時 fallback、audit trail 等) の実需要が surface した場合は別 ADR で「Phase H'」として起票する。
+
 英語版 (canonical): [../../en/adr/016-phase-41-pro-subscription-dynamic-symbols.md](../../en/adr/016-phase-41-pro-subscription-dynamic-symbols.md)
 
 ## 1. 背景

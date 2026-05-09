@@ -25,8 +25,10 @@ import kotlinx.coroutines.withContext
  *
  * Writes happen exclusively via [upsert] from
  * `SubscriptionRepositoryImpl.refresh` after a successful remote fetch. The
- * client never originates a subscription row — the `verify-receipt` Edge
- * Function is the sole authoritative writer (migration 017 lines 83-86).
+ * client never originates a subscription row — the `revenuecat-webhook`
+ * Edge Function (Phase 39 prep, 2026-05-08; calls `upsert_subscription_from_webhook`
+ * SECURITY DEFINER RPC from migration 023) is the sole authoritative
+ * writer (migration 017 lines 83-86 omit public-role write policies).
  */
 class LocalSubscriptionDataSource(
     private val db: SkeinlyDatabase,

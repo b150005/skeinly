@@ -34,12 +34,13 @@ import kotlin.time.Duration.Companion.hours
  * stops returning AND was last verified > 24h ago is treated as a real
  * removal.
  *
- * **Note on `verify-receipt` semantics.** The Edge Function uses upsert
- * for refund / status flips (`status = 'refunded'`) — it does NOT delete
- * the row. The eviction path therefore only matters for the auth.users
- * CASCADE deletion case + transient artifacts. A refunded row stays in
- * the cache and is correctly filtered out of "active" by the
- * `getActiveForUser` query.
+ * **Note on `revenuecat-webhook` semantics.** The Edge Function uses
+ * upsert for refund / status flips (`status = 'refunded'`) via the
+ * `upsert_subscription_from_webhook` RPC — it does NOT delete the row.
+ * The eviction path therefore only matters for the auth.users CASCADE
+ * deletion case + transient artifacts. A refunded row stays in the cache
+ * and is correctly filtered out of "active" by the `getActiveForUser`
+ * query.
  *
  * Constructor [remote] is nullable so local-only mode (no Supabase) keeps
  * [refresh] as a no-op returning the cached value.
