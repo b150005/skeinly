@@ -107,6 +107,38 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Phase 24.2 (ADR-017 §3.5) — full dev/prod separation between
+            // the `Skeinly` (Blaze, prod) and `Skeinly-Dev` (Spark, debug) Firebase
+            // projects. The `.dev` applicationIdSuffix changes the Android
+            // package name to `io.github.b150005.skeinly.dev` for debug builds,
+            // which:
+            //   1. Allows debug + release builds to coexist on the same device
+            //      (Android forbids two installed APKs with the same package).
+            //   2. Matches the `Skeinly-Dev` Firebase project's registered
+            //      Android client (package `io.github.b150005.skeinly.dev`),
+            //      so `androidApp/src/debug/google-services.json` (decoded from
+            //      the `development` GitHub Environment secret) wires through
+            //      cleanly without "package mismatch" Gradle errors.
+            //   3. Surfaces "0.1.0-dev" in the About row + system Settings,
+            //      making it visually obvious which build variant the device
+            //      is running. Avoids tester confusion during QA cycles.
+            //
+            // Maestro flows under `e2e/flows/android/` reference the runtime
+            // appId via `${APP_ID}` env-var substitution; `e2e/run-android.sh`
+            // exports `APP_ID=io.github.b150005.skeinly.dev` so all flows
+            // target the debug variant uniformly.
+            //
+            // Play Console: deliberately NOT registering a Skeinly-Dev app on
+            // Play Console — debug builds are local + CI Maestro only, never
+            // distributed via Play. `gradle-play-publisher` only handles the
+            // release variant (`publishBundleRelease`); skipping a Dev Play
+            // listing avoids duplicate keystore management + tester list
+            // maintenance + listing chrome. Reopen if internal-track tester
+            // distribution of debug builds becomes a real ask.
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true

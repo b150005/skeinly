@@ -1,4 +1,4 @@
-appId: io.github.b150005.skeinly
+appId: ${APP_ID}
 name: "Helper - Complete Onboarding"
 ---
 # Bypass onboarding by relaunching with NSUserDefaults launch argument.
@@ -7,9 +7,9 @@ name: "Helper - Complete Onboarding"
 # does not register in SwiftUI. This approach sets the preference via
 # iOS launch argument domain, which NSUserDefaults picks up with
 # higher precedence than the (cleared) persistent store.
-- stopApp: io.github.b150005.skeinly
+- stopApp: ${APP_ID}
 - launchApp:
-    appId: io.github.b150005.skeinly
+    appId: ${APP_ID}
     # NSUserDefaults launch-arg keys must include the leading "-" so iOS
     # registers them as defaults at app start. The map form previously used
     # here (without the dash) did not write to NSUserDefaults, leaving the

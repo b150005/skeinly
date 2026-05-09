@@ -1,13 +1,13 @@
-appId: io.github.b150005.skeinly
+appId: ${APP_ID}
 name: "P1 - Search & Filter Projects"
 tags:
   - p1
   - android
 ---
 # Pre-condition: clean state
-- clearState: io.github.b150005.skeinly
+- clearState: ${APP_ID}
 - launchApp:
-    appId: io.github.b150005.skeinly
+    appId: ${APP_ID}
 
 # Complete onboarding on fresh install
 - runFlow: ../../helpers/complete_onboarding_android.yaml

@@ -1,15 +1,15 @@
-appId: io.github.b150005.skeinly
+appId: ${APP_ID}
 name: "P0 - Onboarding Flow"
 tags:
   - p0
   - android
 ---
 # Pre-condition: clear app state for test isolation
-- clearState: io.github.b150005.skeinly
+- clearState: ${APP_ID}
 
 # Launch the app — first run shows onboarding
 - launchApp:
-    appId: io.github.b150005.skeinly
+    appId: ${APP_ID}
 
 # Verify page 1 via locale-independent testTag
 - assertVisible:
@@ -61,9 +61,9 @@ tags:
     id: "createProjectFab"
 
 # Relaunch the app — onboarding should NOT appear again
-- stopApp: io.github.b150005.skeinly
+- stopApp: ${APP_ID}
 - launchApp:
-    appId: io.github.b150005.skeinly
+    appId: ${APP_ID}
 
 # Should go directly to ProjectList — no onboarding page visible
 - assertVisible:

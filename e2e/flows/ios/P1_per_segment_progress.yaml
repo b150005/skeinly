@@ -1,4 +1,4 @@
-appId: io.github.b150005.skeinly
+appId: ${APP_ID}
 name: "P1 - Per-Segment Progress (Phase 34)"
 tags:
   - p1
@@ -11,9 +11,9 @@ tags:
 # at least one ProjectSegment row — unreachable from the onboarding path
 # without a Supabase round-trip.
 
-- clearState: io.github.b150005.skeinly
+- clearState: ${APP_ID}
 - launchApp:
-    appId: io.github.b150005.skeinly
+    appId: ${APP_ID}
     arguments:
       "-local_only_mode": "true"
 

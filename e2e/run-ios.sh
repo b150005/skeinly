@@ -5,6 +5,15 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DERIVED_DATA="$PROJECT_ROOT/build/ios-e2e"
 
+# Phase 24.2 (ADR-017 §3.5) — iOS Maestro flows reference appId via
+# `${APP_ID}` for symmetry with the Android side, even though iOS
+# currently uses a single `PRODUCT_BUNDLE_IDENTIFIER` across all build
+# configurations (no Bundle ID suffix split). If a future iOS dev/prod
+# split lands (e.g. `io.github.b150005.skeinly.dev` for Debug + a
+# matching APNs entitlement), update only this export to flip every
+# flow + helper at once.
+export APP_ID="io.github.b150005.skeinly"
+
 # Defensive cleanup on script exit (success, failure, or interrupt). See
 # the matching trap in run-android.sh for the rationale. `maestro mcp`
 # daemons are NOT killed here — handled by `make e2e-clean` with a 4h
