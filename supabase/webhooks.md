@@ -6,13 +6,7 @@ This file is the source of truth for the project's Database Webhook configuratio
 
 ## Active webhooks (Phase 24.1)
 
-3 webhooks fire `notify-on-write` for the collaboration push surface (per ADR-017 §3.4 + §3.9). All three POST to:
-
-```
-https://<project-ref>.supabase.co/functions/v1/notify-on-write
-```
-
-with `Authorization: Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET>` as a custom HTTP header (release-secrets EF-6, Phase 24.1). Per the [Supabase Database Webhooks doc](https://supabase.com/docs/guides/database/webhooks), Database Webhooks do NOT auto-sign payloads — the only authentication options exposed by the Dashboard UI are **HTTP Headers** (free-form key/value pairs) and **HTTP Parameters** (query string). The Authorization header is the supported boundary; the Edge Function does a constant-time Bearer compare against the same secret stored in Edge Function env. Mirrors the `revenuecat-webhook` Bearer pattern.
+3 webhooks fire `notify-on-write` for the collaboration push surface (per ADR-017 §3.4 + §3.9). All three are configured as **`Supabase Edge Functions` type** webhooks, which give the Dashboard a dropdown to pick the target Edge Function (vs. typing the URL manually). They authenticate via `Authorization: Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET>` as a custom HTTP header (release-secrets EF-6, Phase 24.1). The Edge Function does a constant-time Bearer compare against the same secret stored in Edge Function env. Mirrors the `revenuecat-webhook` Bearer pattern.
 
 | # | Name | Source table | Events | Conditions | Notes |
 |---|---|---|---|---|---|
@@ -30,17 +24,34 @@ For each row in the table above:
    - **Name**: as in the table above (e.g. `notify_on_pr_insert`).
    - **Table**: the source table (e.g. `pull_requests`).
    - **Events**: tick INSERT or UPDATE per the table.
-   - **Type of webhook**: `HTTP Request`.
+   - **Type of webhook**: select **`Supabase Edge Functions`** (NOT `HTTP Request`).
    - **Method**: `POST`.
-   - **URL**: `https://<project-ref>.supabase.co/functions/v1/notify-on-write`.
+   - **Select which edge function to trigger**: pick **`notify-on-write`** from the dropdown.
    - **Timeout**: `5000` ms (default; raise only if Phase 24.3 send paths show timeouts).
    - **HTTP Headers** (use `+ Add a new header` for each row):
-     - `Content-Type` → `application/json`
-     - `Authorization` → `Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET value>` (paste the actual value from `supabase secrets list` — there is no Dashboard-side secret store, so the literal value lives in the webhook config row)
+     - `Content-Type` → `application/json` (already pre-populated by Dashboard, leave as-is)
+     - `Authorization` → **OVERWRITE the auto-populated value** (`Bearer eyJhbGciOi...` — that is the project anon key) with `Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET value>`. Paste the actual secret value from `supabase secrets list` (or from your password manager if you saved it at generation time). See "Why we override the auto-populated Authorization" below.
    - **HTTP Parameters**: (leave empty)
 4. Click **Create webhook** / **Save**.
 
-> **No signing secret in this UI**: per the [Supabase Database Webhooks doc](https://supabase.com/docs/guides/database/webhooks), Database Webhooks do NOT have a built-in signing-secret field — the dashboard only exposes Method / URL / Timeout / HTTP Headers / HTTP Parameters. The Authorization header is the only authentication boundary. The literal secret value sits inside the webhook config row, which is itself protected by Dashboard ACLs and never exposed to public traffic — but it does mean rotating the secret requires updating the Authorization header on each of the 3 webhooks (in addition to re-running `supabase secrets set`).
+### Why `Supabase Edge Functions` type instead of `HTTP Request`
+
+Both types map to the same underlying Postgres trigger function (`supabase_functions.http_request()`); the only difference is which fields the Dashboard pre-populates. Choosing the Edge Functions type:
+
+- **Function selection by dropdown**: no full URL to type/copy → no typo risk and the binding survives a future function rename (the dropdown re-resolves the URL automatically).
+- **Dashboard discoverability**: the webhook detail row clearly shows "→ Edge Function: notify-on-write" instead of an opaque URL string, easing future maintenance audits.
+- **Zero runtime difference**: the trigger function passes our HTTP Headers through to `net.http_post` unchanged, so the Edge Function on the receiving side cannot tell whether the call came from `HTTP Request` or `Supabase Edge Functions` type. Same auth code, same payload shape.
+
+### Why we override the auto-populated `Authorization` header
+
+When you select `Supabase Edge Functions` type, the Dashboard pre-fills the `Authorization` header with `Bearer <project anon key>`. This is the **public** anon key — the same value embedded in the Skeinly mobile app and exposed to every end user. Keeping that value would mean:
+
+- Anyone who knows the anon key (anyone with the app installed) could POST a hand-crafted Database-Webhook-shaped payload directly to `https://<project-ref>.supabase.co/functions/v1/notify-on-write` and trigger fake push notifications to arbitrary recipients (Phase 24.3+ once APNs/FCM credentials are wired).
+- The Envoy gateway's `/functions/v1/` route bypasses API-key validation (per the [self-hosted Supabase Envoy gateway architecture doc](https://supabase.com/docs/guides/self-hosting/self-hosted-functions)) — the Edge Function runtime does its own JWT verification (when `verify_jwt = true`), but the anon key satisfies that check.
+
+By overriding with our project-internal `SKEINLY_DATABASE_WEBHOOK_SECRET` and keeping `verify_jwt = false` in `supabase/config.toml`, the auth boundary becomes "did this caller hold a secret that lives only in Edge Function env + 3 Dashboard webhook config rows" — which is structurally tighter than "is this an anon-key-bearing HTTPS request".
+
+> **No signing secret in this UI**: per the [Supabase Database Webhooks doc](https://supabase.com/docs/guides/database/webhooks), Database Webhooks do NOT have a built-in signing-secret field — the dashboard only exposes Method / URL or Edge Function / Timeout / HTTP Headers / HTTP Parameters. The Authorization header is the only authentication boundary. The literal secret value sits inside the webhook config row, which is itself protected by Dashboard ACLs and never exposed to public traffic — but it does mean rotating the secret requires updating the Authorization header on each of the 3 webhooks (in addition to re-running `supabase secrets set`).
 
 ## Verification (post-config)
 
