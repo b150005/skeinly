@@ -9,4 +9,16 @@
 -->
 <resources>
     <string name="app_name">Skeinly</string>
+    <!-- Phase 24.5 (ADR-017 §3.8) — collaboration notification channel.
+         User-visible name + description shown in the OS Settings →
+         Notifications → Skeinly screen, so the user can mute
+         collaboration pushes independently of any future channel.
+         English-only is acceptable here because this resource is read
+         by the Android system (NotificationChannel API) which always
+         resolves to the device's default Skeinly resource set;
+         per-locale variants live under values-ja/strings.xml. -->
+    <string name="notification_channel_collaboration">Collaboration</string>
+    <string name="notification_channel_collaboration_description">
+        Pull-request opens, comments, merges, and closes.
+    </string>
 </resources>

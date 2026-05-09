@@ -212,6 +212,18 @@ data object PackManagement
 fun SkeinlyNavHost(
     navController: NavHostController,
     deepLinkToken: String? = null,
+    /**
+     * Phase 24.5 (ADR-017 §3.8) — push-tap deep-link route. Format:
+     * host-relative `pull-request/<prId>` (Phase 24 only emits PR
+     * routes; future event sources extend the prefix table). Passed
+     * through from the host platform (Android `MainActivity` via
+     * intent extras; iOS `AppRootView` via `NotificationCenter`
+     * publisher → onReceive). The composable consumes the value once
+     * via `LaunchedEffect` and calls [onPushRouteConsumed] to clear
+     * the host-side state, preventing re-fire on recomposition.
+     */
+    pushRoute: String? = null,
+    onPushRouteConsumed: () -> Unit = {},
 ) {
     // Check onboarding state
     val getOnboardingCompleted: GetOnboardingCompletedUseCase = koinInject()
@@ -226,6 +238,24 @@ fun SkeinlyNavHost(
         if (deepLinkToken != null) {
             pendingDeepLinkToken = deepLinkToken
         }
+    }
+
+    // Phase 24.5 — consume the push route once. Keying the
+    // LaunchedEffect on the route string means a fresh tap with the
+    // same route while the listener is still mounted does NOT re-fire
+    // (the key is unchanged so the effect skips). This is acceptable
+    // because the existing nav stack already has the destination on
+    // top — re-pushing would just deepen the back stack pointlessly.
+    // A different route value triggers the effect normally.
+    LaunchedEffect(pushRoute) {
+        val route = pushRoute ?: return@LaunchedEffect
+        val target = parsePushRoute(route)
+        if (target != null) {
+            navController.navigate(target)
+        }
+        // Clear host state regardless of parse outcome — a malformed
+        // route should not stick around for the next foreground.
+        onPushRouteConsumed()
     }
 
     if (requiresAuth) {
@@ -601,4 +631,29 @@ fun SkeinlyNavHost(
             )
         }
     }
+}
+
+/**
+ * Phase 24.5 (ADR-017 §3.8) — parse a host-relative push-route string
+ * into a typed Compose Navigation route object.
+ *
+ * The Phase 24 wave only emits `pull-request/<prId>`; future event
+ * sources extend the prefix table. Returns `null` for unknown /
+ * malformed routes so [SkeinlyNavHost]'s [LaunchedEffect] silently
+ * drops a hostile or stale push without any user-visible navigation
+ * glitch. (Hostile = a Phase 24+ push arriving on an older client
+ * that doesn't recognize the route shape; stale = the OS delivered
+ * a cached push after the route scheme changed.)
+ *
+ * Internal visibility so unit tests in `commonTest` can reach it
+ * without exposing the helper to consumers of the navigation surface.
+ */
+internal fun parsePushRoute(raw: String): Any? {
+    val pullRequestPrefix = "pull-request/"
+    if (raw.startsWith(pullRequestPrefix)) {
+        val prId = raw.substring(pullRequestPrefix.length)
+        if (prId.isEmpty()) return null
+        return PullRequestDetail(prId = prId)
+    }
+    return null
 }

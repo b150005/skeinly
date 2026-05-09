@@ -105,6 +105,7 @@ Deno.test("dispatchAll: single recipient, single iOS token, success", async () =
             recipientUserId: "user-A",
             templateKey: "pr_commented",
             params: { actor: "Alice", pr_title: "Sweater PR" },
+            route: "pull-request/pr-A",
         }];
         const stats = await dispatchAll(supa.client, dispatches, apnsCreds, fcmSa);
         assertEquals(stats.success, 1);
@@ -134,6 +135,7 @@ Deno.test("dispatchAll: single recipient, two tokens, one bad → DELETE only th
             recipientUserId: "user-B",
             templateKey: "pr_opened",
             params: { actor: "Bob", pattern: "Hat" },
+            route: "pull-request/pr-B",
         }];
         const stats = await dispatchAll(supa.client, dispatches, apnsCreds, fcmSa);
         assertEquals(stats.success, 1);
@@ -163,11 +165,13 @@ Deno.test("dispatchAll: two recipients fan-out", async () => {
                 recipientUserId: "alice",
                 templateKey: "pr_commented",
                 params: { actor: "Carol", pr_title: "PR-1" },
+                route: "pull-request/pr-1",
             },
             {
                 recipientUserId: "bob",
                 templateKey: "pr_commented",
                 params: { actor: "Carol", pr_title: "PR-1" },
+                route: "pull-request/pr-1",
             },
         ];
         const stats = await dispatchAll(supa.client, dispatches, apnsCreds, fcmSa);
@@ -193,6 +197,7 @@ Deno.test("dispatchAll: missing APNs creds → config_error stats, no DELETE, no
             recipientUserId: "user-X",
             templateKey: "pr_opened",
             params: { actor: "Alice", pattern: "Hat" },
+            route: "pull-request/pr-X",
         }];
         const stats = await dispatchAll(supa.client, dispatches, null, fcmSa);
         assertEquals(stats.skipped_no_creds, 1);
@@ -223,12 +228,14 @@ Deno.test("dispatchAll: recipient with zero tokens skips silently", async () => 
                 recipientUserId: "alice",
                 templateKey: "pr_commented",
                 params: { actor: "Carol", pr_title: "PR-2" },
+                route: "pull-request/pr-2",
             },
             // ghost has no rows in device_tokens
             {
                 recipientUserId: "ghost",
                 templateKey: "pr_commented",
                 params: { actor: "Carol", pr_title: "PR-2" },
+                route: "pull-request/pr-2",
             },
         ];
         const stats = await dispatchAll(supa.client, dispatches, apnsCreds, fcmSa);

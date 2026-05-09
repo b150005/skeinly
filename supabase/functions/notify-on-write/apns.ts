@@ -66,9 +66,12 @@ export interface ApnsCredentials {
 export interface ApnsSendInput {
     deviceToken: string;
     body: string;
-    /** Carried so future Phase 24.5 deep-link routing can attach
-     * `data.route` payload without restructuring this signature. */
     templateKey: TemplateKey;
+    /** Phase 24.5 — host-relative deep-link route, embedded in the
+     * APNs payload's top-level `data` dict. iOS reads it from
+     * `notification.request.content.userInfo["data"]["route"]` in
+     * `UNUserNotificationCenterDelegate`. */
+    route: string;
 }
 
 // ---------------------------------------------------------------------
@@ -175,6 +178,16 @@ export async function sendApns(
                 body: input.body,
             },
             sound: "default",
+        },
+        // Phase 24.5 — top-level `data` dict carries the deep-link
+        // route. The `aps` key is reserved for system fields per
+        // Apple's APNs payload spec; custom keys live alongside it
+        // and are delivered in `userInfo` to UNUserNotificationCenter
+        // delegates. Symmetric with FCM's `message.data` field
+        // (fcm.ts) so the iOS / Android handlers each pluck `route`
+        // out of the same shape.
+        data: {
+            route: input.route,
         },
     };
 

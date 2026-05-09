@@ -34,6 +34,17 @@ import org.koin.android.ext.android.get
 class MainActivity : ComponentActivity() {
     private var deepLinkToken by mutableStateOf<String?>(null)
 
+    /**
+     * Phase 24.5 (ADR-017 §3.8) — host-relative push route from a
+     * notification tap. Set in [onCreate] (cold start with the
+     * notification's intent extras) and [onNewIntent] (warm start;
+     * `singleTop` launchMode reuses the existing Activity). The shared
+     * NavHost reads it via the `pushRoute` parameter and consumes it
+     * once via `LaunchedEffect`, calling [onPushRouteConsumed] to
+     * clear the state so a recomposition does not re-fire navigation.
+     */
+    private var pushRoute by mutableStateOf<String?>(null)
+
     // Phase 39.5 (ADR-015 §1) — 3-finger long-press detector state. The
     // detector watches `dispatchTouchEvent` (root-level) so it sees every
     // pointer event before any descendant Composable consumes it. We only
@@ -65,6 +76,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         deepLinkToken = extractShareToken(intent)
+        pushRoute = extractPushRoute(intent)
         // Phase 24.2e — wire the Activity-scoped permission launcher to the
         // shared `PushTokenRegistrar`. The closure fires the Activity's
         // `ActivityResultLauncher.launch(POST_NOTIFICATIONS)`; the registered
@@ -111,6 +123,8 @@ class MainActivity : ComponentActivity() {
                     SkeinlyNavHost(
                         navController = nc,
                         deepLinkToken = deepLinkToken,
+                        pushRoute = pushRoute,
+                        onPushRouteConsumed = { pushRoute = null },
                     )
                 }
             }
@@ -245,6 +259,27 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         deepLinkToken = extractShareToken(intent)
+        // Phase 24.5 — `singleTop` launchMode delivers FCM-tap intents
+        // here when the app is already in foreground/background.
+        // Re-extract on every fresh intent so the NavHost LaunchedEffect
+        // observes a state change and routes through.
+        val nextRoute = extractPushRoute(intent)
+        if (nextRoute != null) {
+            pushRoute = nextRoute
+        }
+    }
+
+    /**
+     * Phase 24.5 (ADR-017 §3.8) — extract the host-relative deep-link
+     * route from a notification-tap intent. FCM auto-fills `data`
+     * map entries as intent extras on the launcher Activity at tap
+     * time; the Edge Function sends `data.route = "pull-request/<prId>"`
+     * (see `supabase/functions/notify-on-write/fcm.ts`). Validate
+     * non-blank to avoid surfacing a bogus blank-extra navigation.
+     */
+    private fun extractPushRoute(intent: Intent?): String? {
+        val raw = intent?.getStringExtra(EXTRA_PUSH_ROUTE) ?: return null
+        return raw.takeIf { it.isNotBlank() }
     }
 
     private fun extractShareToken(intent: Intent?): String? {
@@ -257,7 +292,18 @@ class MainActivity : ComponentActivity() {
         return if (uuidPattern.matches(segment)) segment else null
     }
 
-    private companion object {
-        const val LONG_PRESS_THRESHOLD_MS: Long = 500L
+    companion object {
+        /**
+         * Phase 24.5 (ADR-017 §3.8) — intent-extra key carrying the
+         * push-tap route forwarded from
+         * [io.github.b150005.skeinly.notifications.SkeinlyMessagingService]
+         * (foreground delivery) or FCM's auto-displayed notification's
+         * tap intent (background / killed delivery; FCM populates
+         * intent extras from the `data` map verbatim, so the FCM
+         * payload's `data.route` field surfaces under this key).
+         */
+        const val EXTRA_PUSH_ROUTE: String = "route"
+
+        private const val LONG_PRESS_THRESHOLD_MS: Long = 500L
     }
 }

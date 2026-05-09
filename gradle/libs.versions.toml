@@ -113,6 +113,12 @@ posthog-android = { module = "com.posthog:posthog-android", version.ref = "posth
 # Pinned directly (no BOM) — see firebaseMessaging version comment.
 firebase-messaging = { module = "com.google.firebase:firebase-messaging", version.ref = "firebaseMessaging" }
 
+# Phase 24.5 (ADR-017 §3.8) — androidx.core supplies NotificationCompat,
+# NotificationManagerCompat, ContextCompat used by SkeinlyMessagingService
+# for foreground push display. Pinned to the latest 1.13.x at the time
+# of writing; bumps are dependabot-driven.
+androidx-core-ktx = { module = "androidx.core:core-ktx", version = "1.13.1" }
+
 # Subscription / IAP — RevenueCat KMP (Phase 41.3 / ADR-016 §4.3).
 # `purchases-kmp-core` carries the multi-platform Purchases.sharedInstance
 # API; `purchases-kmp-result` adds suspend Result<T> extensions used by the

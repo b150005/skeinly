@@ -477,6 +477,7 @@ async function sendOne(
             deviceToken: tokenRow.token,
             body,
             templateKey: dispatch.templateKey,
+            route: dispatch.route,
         });
     }
     if (tokenRow.platform === "android") {
@@ -487,6 +488,7 @@ async function sendOne(
             deviceToken: tokenRow.token,
             body,
             templateKey: dispatch.templateKey,
+            route: dispatch.route,
         });
     }
     return {
