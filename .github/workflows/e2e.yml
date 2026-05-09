@@ -80,14 +80,6 @@ jobs:
         # Pin to SHA per security audit C2 (third-party action, executes shell
         # via 'script:' input — high-impact supply chain target).
         uses: reactivecircus/android-emulator-runner@e89f39f1abbbd05b1113a29cf4db69e7540cae5a # v2
-        env:
-          # Phase 24.2 (ADR-017 §3.5) — Android debug builds carry
-          # `applicationIdSuffix = ".dev"`, so Maestro flows + helpers that
-          # reference `${APP_ID}` need the suffixed form here. Mirrors
-          # `e2e/run-android.sh`'s export so CI and local stay aligned.
-          # Without this, every flow fails with "Unable to launch app
-          # undefined" because Maestro substitutes empty for the unset var.
-          APP_ID: io.github.b150005.skeinly.dev
         with:
           api-level: 34
           target: google_apis
@@ -113,7 +105,16 @@ jobs:
             adb install -r androidApp/build/outputs/apk/debug/androidApp-debug.apk
             sleep 5
             adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
-            maestro test --exclude-tags requires-supabase e2e/flows/android/
+            # Phase 24.2 (ADR-017 §3.5) — Maestro flows reference appId via
+            # `${APP_ID}` (Android debug uses `applicationIdSuffix = ".dev"`).
+            # Pass the value explicitly via `--env` rather than relying on
+            # process-env auto-inheritance: (a) the env propagation from the
+            # action's step-level `env:` block into the `script:` subprocess
+            # is not contractually documented by reactivecircus/android-
+            # emulator-runner, and (b) Maestro's documented contract for
+            # flow-YAML variable substitution is `--env KEY=VALUE` per the
+            # CLI reference, not host-env. Mirrors `e2e/run-android.sh` shape.
+            maestro test --env APP_ID=io.github.b150005.skeinly.dev --exclude-tags requires-supabase e2e/flows/android/
 
       - name: Upload Maestro screenshots
         if: always()
@@ -223,14 +224,17 @@ jobs:
       - name: Run iOS E2E tests
         env:
           SIM_UDID: ${{ steps.sim.outputs.udid }}
-          # Phase 24.2 (ADR-017 §3.5) — Maestro flows reference appId via
-          # `${APP_ID}` for symmetry with the Android side. iOS keeps a
-          # single bundle id today (no debug suffix), but CI must still
-          # provide the env var or every flow fails with "Unable to launch
-          # app undefined". Mirrors `e2e/run-ios.sh`'s export.
-          APP_ID: io.github.b150005.skeinly
         run: |
+          # Phase 24.2 (ADR-017 §3.5) — Maestro flows reference appId via
+          # `${APP_ID}` for symmetry with the Android side. iOS uses a
+          # single bundle id today (no debug suffix). Pass via `--env`
+          # explicitly per Maestro's documented variable-substitution
+          # contract (CLI reference) — process-env auto-inheritance is
+          # not part of Maestro's documented behavior, and CI runs on
+          # a fresh simulator with no fallback state. Mirrors
+          # `e2e/run-ios.sh` shape.
           maestro --device "$SIM_UDID" test \
+            --env APP_ID=io.github.b150005.skeinly \
             --exclude-tags skip-ios26,requires-supabase \
             e2e/flows/ios/
 
