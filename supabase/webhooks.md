@@ -12,7 +12,7 @@ This file is the source of truth for the project's Database Webhook configuratio
 https://<project-ref>.supabase.co/functions/v1/notify-on-write
 ```
 
-with HMAC-SHA256 signature in the `x-supabase-webhook-signature` header. The signature secret is `SKEINLY_DATABASE_WEBHOOK_SECRET` (release-secrets EF-6, Phase 24.1).
+with `Authorization: Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET>` as a custom HTTP header (release-secrets EF-6, Phase 24.1). Per the [Supabase Database Webhooks doc](https://supabase.com/docs/guides/database/webhooks), Database Webhooks do NOT auto-sign payloads — the only authentication options exposed by the Dashboard UI are **HTTP Headers** (free-form key/value pairs) and **HTTP Parameters** (query string). The Authorization header is the supported boundary; the Edge Function does a constant-time Bearer compare against the same secret stored in Edge Function env. Mirrors the `revenuecat-webhook` Bearer pattern.
 
 | # | Name | Source table | Events | Conditions | Notes |
 |---|---|---|---|---|---|
@@ -30,16 +30,17 @@ For each row in the table above:
    - **Name**: as in the table above (e.g. `notify_on_pr_insert`).
    - **Table**: the source table (e.g. `pull_requests`).
    - **Events**: tick INSERT or UPDATE per the table.
-   - **Type**: `HTTP Request`.
+   - **Type of webhook**: `HTTP Request`.
    - **Method**: `POST`.
    - **URL**: `https://<project-ref>.supabase.co/functions/v1/notify-on-write`.
-   - **HTTP Headers**:
-     - `Content-Type: application/json`
-   - **HTTP Params**: (leave empty)
-   - **Webhook Source** / **Secret** (signing key): paste the value of `SKEINLY_DATABASE_WEBHOOK_SECRET` from `supabase secrets list`. Supabase signs every delivery with this value.
+   - **Timeout**: `5000` ms (default; raise only if Phase 24.3 send paths show timeouts).
+   - **HTTP Headers** (use `+ Add a new header` for each row):
+     - `Content-Type` → `application/json`
+     - `Authorization` → `Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET value>` (paste the actual value from `supabase secrets list` — there is no Dashboard-side secret store, so the literal value lives in the webhook config row)
+   - **HTTP Parameters**: (leave empty)
 4. Click **Create webhook** / **Save**.
 
-> **Header name caveat**: Supabase has historically shipped the signature in different header names across CLI versions (`x-supabase-webhook-signature`, `x-webhook-signature`, etc.). The Edge Function reads BOTH `x-supabase-webhook-signature` AND `x-webhook-signature` per `notify-on-write/index.ts` for forward compatibility. Confirm the actual header name at the time of webhook creation by inspecting a delivery in the Dashboard's webhook delivery log.
+> **No signing secret in this UI**: per the [Supabase Database Webhooks doc](https://supabase.com/docs/guides/database/webhooks), Database Webhooks do NOT have a built-in signing-secret field — the dashboard only exposes Method / URL / Timeout / HTTP Headers / HTTP Parameters. The Authorization header is the only authentication boundary. The literal secret value sits inside the webhook config row, which is itself protected by Dashboard ACLs and never exposed to public traffic — but it does mean rotating the secret requires updating the Authorization header on each of the 3 webhooks (in addition to re-running `supabase secrets set`).
 
 ## Verification (post-config)
 
@@ -58,7 +59,7 @@ Look for `notify_on_write_dispatched` + `notify_on_write_skipped_send` (Phase 24
 
 ## Phase 24.1 SHELL note
 
-In Phase 24.1, the webhook → Edge Function loop is wired end-to-end but **no actual push is sent** (the Edge Function logs each dispatch and returns 200). This is intentional — it lets the maintainer verify the wiring + signing path before Phase 24.3 introduces the live APNs / FCM HTTP calls. Once Phase 24.3 lands, the same webhooks fire the same Edge Function, but the function now sends real notifications to all rows in `device_tokens` for each computed recipient.
+In Phase 24.1, the webhook → Edge Function loop is wired end-to-end but **no actual push is sent** (the Edge Function logs each dispatch and returns 200). This is intentional — it lets the maintainer verify the wiring + Bearer-auth path before Phase 24.3 introduces the live APNs / FCM HTTP calls. Once Phase 24.3 lands, the same webhooks fire the same Edge Function, but the function now sends real notifications to all rows in `device_tokens` for each computed recipient.
 
 ## Removing a webhook
 

@@ -425,10 +425,13 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 verify_jwt = false
 
 # Supabase Database Webhook deliveries (Phase 24.1, ADR-017 §3.9) also do
-# NOT carry a Supabase JWT — Supabase signs each delivery with HMAC-SHA256
-# using `SKEINLY_DATABASE_WEBHOOK_SECRET` (release-secrets EF-6) in the
-# `x-supabase-webhook-signature` header. The Edge Function performs
-# constant-time HMAC verification before any further processing. See
+# NOT carry a Supabase JWT — and per the official docs
+# (https://supabase.com/docs/guides/database/webhooks) Database Webhooks
+# do NOT auto-sign payloads either. Authentication is implemented via a
+# custom `Authorization: Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET>` HTTP
+# header configured per-webhook in the Dashboard's HTTP Headers section
+# (release-secrets EF-6). The Edge Function performs constant-time
+# string comparison before any further processing. See
 # `supabase/functions/notify-on-write/index.ts` for the verify logic +
 # `supabase/webhooks.md` for the 3 Database Webhook configurations.
 [functions.notify-on-write]

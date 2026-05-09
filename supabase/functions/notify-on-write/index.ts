@@ -6,14 +6,24 @@
 // **log-only** — no APNs / FCM HTTP calls yet. Phase 24.3 wires the
 // real send paths via `djwt` JSR import.
 //
-// Webhook auth: HMAC-SHA256 of the request body using the
-// SKEINLY_DATABASE_WEBHOOK_SECRET registered in Supabase Edge Function
-// secrets (release-secrets EF-6, Phase 24.1). Supabase reserves the
-// `SUPABASE_` prefix for env-var names (Edge Function limits doc), so
-// this secret carries the `SKEINLY_` project prefix. The Supabase
-// Database Webhook UI signs every delivery with this secret in the
-// `x-supabase-webhook-signature` header (or similar — exact header name
-// per Supabase docs at deploy time; see supabase/webhooks.md).
+// Webhook auth: shared-secret Bearer token in the `Authorization`
+// header. The maintainer adds the header pair
+// `Authorization: Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET>` to each of
+// the 3 Database Webhooks via Dashboard → Database → Webhooks → HTTP
+// Headers, and the Edge Function constant-time-compares the incoming
+// header value against the same secret stored in Edge Function env.
+//
+// Why Bearer rather than HMAC body signature: per the Supabase official
+// Database Webhooks doc (https://supabase.com/docs/guides/database/webhooks),
+// Database Webhooks do NOT auto-sign payloads — the dashboard UI exposes
+// only Method / URL / Timeout / HTTP Headers / HTTP Parameters, with no
+// signing-secret field and no `x-supabase-webhook-signature` header.
+// The custom-header path is the supported authentication boundary.
+// Mirrors the `revenuecat-webhook` Bearer pattern (Phase 39 prep).
+//
+// `SKEINLY_` prefix is load-bearing — Supabase reserves `SUPABASE_*`
+// for platform-injected env vars and `supabase secrets set` rejects
+// names starting with that prefix (Edge Function limits doc).
 //
 // Required env vars (auto-injected by Supabase except where noted):
 //   - SUPABASE_URL                          (auto)
@@ -57,22 +67,24 @@ Deno.serve(async (req: Request): Promise<Response> => {
         return jsonResponse({ error: "edge_function_misconfigured" }, 500);
     }
 
-    // Supabase Database Webhook signs each delivery; we verify with
-    // constant-time HMAC compare. Read the body as text first (we need
-    // the raw bytes for the signature, then we re-parse as JSON).
-    const bodyText = await req.text();
-    const signature = req.headers.get("x-supabase-webhook-signature")
-        ?? req.headers.get("x-webhook-signature")
-        ?? "";
-    const valid = await verifyWebhookSignature(bodyText, signature, webhookSecret);
-    if (!valid) {
-        console.warn("notify-on-write: signature mismatch (rejected)");
+    // Bearer auth — see header comment block above. The Database Webhook
+    // delivery includes Authorization: Bearer <secret> as a custom header
+    // configured via Dashboard. Constant-time compare avoids leaking the
+    // secret length via timing side channel.
+    const authHeader = req.headers.get("authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ")) {
+        console.warn("notify-on-write: missing or malformed Authorization header (rejected)");
+        return jsonResponse({ error: "unauthorized" }, 401);
+    }
+    const incomingSecret = authHeader.slice("Bearer ".length);
+    if (!constantTimeEquals(incomingSecret, webhookSecret)) {
+        console.warn("notify-on-write: bearer mismatch (rejected)");
         return jsonResponse({ error: "unauthorized" }, 401);
     }
 
     let payload: WebhookPayload;
     try {
-        payload = JSON.parse(bodyText) as WebhookPayload;
+        payload = (await req.json()) as WebhookPayload;
     } catch {
         return jsonResponse({ error: "invalid_json" }, 400);
     }
@@ -307,46 +319,16 @@ function inferStatusChangeActor(
 }
 
 // ---------------------------------------------------------------------
-// Webhook signature verification
+// Authorization helper
 // ---------------------------------------------------------------------
 
 /**
- * Constant-time HMAC-SHA256 verification of the Database Webhook
- * delivery against `SKEINLY_DATABASE_WEBHOOK_SECRET`. Supabase ships
- * the signature as base64 in the `x-supabase-webhook-signature` header
- * (precise header name confirmed at deploy time per supabase/webhooks.md).
+ * Constant-time string equality. Avoids leaking the secret length /
+ * byte positions via timing side channel — JavaScript's `===`
+ * short-circuits on first divergent character, which a remote attacker
+ * could exploit. Returns false on length mismatch immediately (the
+ * length itself is not a secret — it's the byte positions that matter).
  */
-async function verifyWebhookSignature(
-    bodyText: string,
-    providedSignature: string,
-    secret: string,
-): Promise<boolean> {
-    if (!providedSignature) return false;
-    try {
-        const enc = new TextEncoder();
-        const key = await crypto.subtle.importKey(
-            "raw",
-            enc.encode(secret),
-            { name: "HMAC", hash: "SHA-256" },
-            false,
-            ["sign"],
-        );
-        const computed = await crypto.subtle.sign("HMAC", key, enc.encode(bodyText));
-        const computedB64 = arrayBufferToBase64(computed);
-        return constantTimeEquals(providedSignature, computedB64);
-    } catch (e) {
-        console.error("notify-on-write: signature verify error", e);
-        return false;
-    }
-}
-
-function arrayBufferToBase64(buf: ArrayBuffer): string {
-    const bytes = new Uint8Array(buf);
-    let s = "";
-    for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
-    return btoa(s);
-}
-
 function constantTimeEquals(a: string, b: string): boolean {
     if (a.length !== b.length) return false;
     let out = 0;
@@ -364,7 +346,7 @@ function jsonResponse(body: unknown, status = 200): Response {
         headers: {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "authorization, content-type, x-supabase-webhook-signature, x-webhook-signature",
+            "Access-Control-Allow-Headers": "authorization, content-type",
             "Access-Control-Allow-Methods": "POST, OPTIONS",
         },
     });
