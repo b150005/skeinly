@@ -48,9 +48,13 @@ import io.github.b150005.skeinly.generated.resources.label_someone
 import io.github.b150005.skeinly.generated.resources.state_no_pull_requests
 import io.github.b150005.skeinly.generated.resources.state_no_pull_requests_body
 import io.github.b150005.skeinly.generated.resources.title_pull_requests
+import io.github.b150005.skeinly.notifications.NotificationPromptTrigger
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.localized
 import io.github.b150005.skeinly.ui.components.selectedCheckmarkIcon
+import io.github.b150005.skeinly.ui.notifications.NotificationPermissionEvent
+import io.github.b150005.skeinly.ui.notifications.NotificationPermissionExplainerDialog
+import io.github.b150005.skeinly.ui.notifications.NotificationPermissionViewModel
 import io.github.b150005.skeinly.ui.util.formatFull
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -73,8 +77,15 @@ fun PullRequestListScreen(
     onBack: () -> Unit,
     onPullRequestClick: (String) -> Unit = {},
     viewModel: PullRequestListViewModel = koinViewModel { parametersOf(defaultFilter) },
+    // Phase 24.2c-3 (ADR-017 §3.6) — drives the in-app pre-permission
+    // explainer dispatched on first encounter of a non-empty Incoming list.
+    // Scoped via `koinViewModel()` so it shares lifecycle with this screen
+    // (re-reads OS status on each entry; explainer-shown state persists in
+    // NotificationPermissionPrompter).
+    notificationViewModel: NotificationPermissionViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val notificationState by notificationViewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     val errorText = state.error?.localized()
@@ -83,6 +94,22 @@ fun PullRequestListScreen(
         errorText?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.onEvent(PullRequestListEvent.ClearError)
+        }
+    }
+
+    // Phase 24.2c-3 (ADR-017 §3.6) — Incoming filter + non-empty PR list
+    // is the canonical "first collaboration moment" trigger. The keyed
+    // LaunchedEffect refires when either piece changes; the trigger
+    // dispatch is idempotent (the prompter records "asked" globally on
+    // first response) so a hypothetical refire after a SelectFilter →
+    // back-to-Incoming round trip stays safe.
+    LaunchedEffect(state.filter, state.pullRequests.isNotEmpty()) {
+        if (state.filter == PullRequestFilter.INCOMING && state.pullRequests.isNotEmpty()) {
+            notificationViewModel.onEvent(
+                NotificationPermissionEvent.TriggerEncountered(
+                    NotificationPromptTrigger.PR_LIST_INCOMING_WITH_PRS,
+                ),
+            )
         }
     }
 
@@ -158,6 +185,21 @@ fun PullRequestListScreen(
             }
         }
     }
+
+    // Phase 24.2c-3 (ADR-017 §3.6) — pre-permission explainer dialog.
+    // Mounted at the Scaffold sibling level so the AlertDialog floats
+    // above the screen content. Visibility binds to the notification VM
+    // state.
+    NotificationPermissionExplainerDialog(
+        isVisible = notificationState.isExplainerVisible,
+        isRequestingPermission = notificationState.isRequestingPermission,
+        onAccept = {
+            notificationViewModel.onEvent(NotificationPermissionEvent.UserAcceptedExplainer)
+        },
+        onDismiss = {
+            notificationViewModel.onEvent(NotificationPermissionEvent.UserDismissedExplainer)
+        },
+    )
 }
 
 private val STATUS_DISPLAY_ORDER =

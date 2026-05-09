@@ -11,9 +11,33 @@ struct PullRequestListScreen: View {
     let defaultFilter: PullRequestFilter
     @Binding var path: NavigationPath
     @StateObject private var holder: ScopedViewModel<PullRequestListViewModel, PullRequestListState>
+    /// Phase 24.2c-3 (ADR-017 §3.6) — drives the in-app pre-permission
+    /// explainer alert when the Incoming filter has at least one PR.
+    @StateObject private var notificationHolder: ScopedViewModel<
+        NotificationPermissionViewModel, NotificationPermissionState
+    >
     @State private var showError = false
 
     private var viewModel: PullRequestListViewModel { holder.viewModel }
+    private var notificationViewModel: NotificationPermissionViewModel { notificationHolder.viewModel }
+
+    /// Phase 24.2c-3 — bound to the alert presentation. Mirrors the
+    /// Settings → Notifications binding exactly: dismiss-without-button
+    /// route emits `UserDismissedExplainer` (defensive — alert button
+    /// closures fire synchronously before isPresented flips, so this path
+    /// is only reachable on iOS swipe-to-dismiss style interactions).
+    private var notificationExplainerBinding: Binding<Bool> {
+        Binding(
+            get: { notificationHolder.state.isExplainerVisible },
+            set: { newValue in
+                if !newValue && notificationHolder.state.isExplainerVisible {
+                    notificationViewModel.onEvent(
+                        event: NotificationPermissionEventUserDismissedExplainer.shared
+                    )
+                }
+            }
+        )
+    }
 
     init(defaultFilter: PullRequestFilter, path: Binding<NavigationPath>) {
         self.defaultFilter = defaultFilter
@@ -21,6 +45,11 @@ struct PullRequestListScreen: View {
         let vm = ViewModelFactory.pullRequestListViewModel(defaultFilter: defaultFilter)
         let wrapper = KoinHelperKt.wrapPullRequestListState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
+        let nvm = KoinHelperKt.getNotificationPermissionViewModel()
+        let nWrapper = KoinHelperKt.wrapNotificationPermissionState(flow: nvm.state)
+        _notificationHolder = StateObject(
+            wrappedValue: ScopedViewModel(viewModel: nvm, wrapper: nWrapper)
+        )
     }
 
     var body: some View {
@@ -39,6 +68,59 @@ struct PullRequestListScreen: View {
             } message: {
                 Text(holder.state.error?.localizedString ?? "")
             }
+            // Phase 24.2c-3 (ADR-017 §3.6) — Incoming + non-empty PRs is
+            // the canonical first-collaboration-moment trigger. The
+            // shouldDispatch derivation is observed via `.onChange` so
+            // SelectFilter / data refresh both refire the dispatch (the
+            // prompter's global "asked" bit makes it idempotent).
+            .onChange(of: shouldDispatchIncomingTrigger) { _, dispatch in
+                if dispatch {
+                    notificationViewModel.onEvent(
+                        event: NotificationPermissionEventTriggerEncountered(
+                            trigger: .prListIncomingWithPrs
+                        )
+                    )
+                }
+            }
+            .task {
+                if shouldDispatchIncomingTrigger {
+                    notificationViewModel.onEvent(
+                        event: NotificationPermissionEventTriggerEncountered(
+                            trigger: .prListIncomingWithPrs
+                        )
+                    )
+                }
+            }
+            // Phase 24.2c-3 — pre-permission explainer alert. Same shape
+            // as Settings → Notifications: native OS prompt fires only
+            // after the user taps Enable; Not now records a global dismiss
+            // so the alert never re-surfaces.
+            .alert(
+                LocalizedStringKey("title_notifications_explainer"),
+                isPresented: notificationExplainerBinding
+            ) {
+                Button("action_enable_notifications") {
+                    notificationViewModel.onEvent(
+                        event: NotificationPermissionEventUserAcceptedExplainer.shared
+                    )
+                }
+                .disabled(notificationHolder.state.isRequestingPermission)
+                Button("action_not_now_notifications", role: .cancel) {
+                    notificationViewModel.onEvent(
+                        event: NotificationPermissionEventUserDismissedExplainer.shared
+                    )
+                }
+                .disabled(notificationHolder.state.isRequestingPermission)
+            } message: {
+                Text("body_notifications_explainer")
+            }
+    }
+
+    /// Phase 24.2c-3 — derived flag: Incoming filter AND list is non-empty.
+    /// Computed inline so SwiftUI's diff layer compares a Bool, not the
+    /// full state object, when deciding whether to refire the trigger.
+    private var shouldDispatchIncomingTrigger: Bool {
+        holder.state.filter == .incoming && !holder.state.pullRequests.isEmpty
     }
 
     @ViewBuilder
