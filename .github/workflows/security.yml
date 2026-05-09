@@ -29,7 +29,10 @@ jobs:
             runner: ubuntu-latest
             build-mode: manual
           - language: swift
-            runner: macos-latest
+            # Pinned to macos-26-arm64 — see ci.yml header for full rationale.
+            # Project requires macOS 26 / Xcode 26.4+; macos-latest still aliases
+            # to macos-15-arm64 as of 2026-05.
+            runner: macos-26-arm64
             build-mode: manual
     runs-on: ${{ matrix.runner }}
     # java-kotlin build target uses `:shared:assembleAndroidMain
@@ -60,11 +63,14 @@ jobs:
         uses: actions/checkout@v6
 
       # --- Pre-CodeQL setup (before tracing starts) ---
-      - name: Set up JDK 17
+      # JDK 25 (latest LTS) — Gradle 9.5 supports it via toolchains. Bytecode
+      # targets stay at Java 17 (Android runtime requirement). See ci.yml
+      # header for full rationale.
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 25
 
       - name: Setup Gradle
         # Pin to SHA per security audit C2.
