@@ -168,6 +168,19 @@
     <p>You can revoke consent at any time in Settings &rarr; Beta &rarr; Diagnostic Data Sharing. Revocation takes effect immediately, stops all further collection, and clears the locally cached event buffer. Production releases of Skeinly do not include this functionality at all &mdash; the SDK is linked into the binary but never initialized.</p>
     <p>This functionality is opt-in by default (off) per GDPR and Japan's Act on the Protection of Personal Information (改正個人情報保護法).</p>
 
+    <h3>Push Notifications</h3>
+    <p>Skeinly sends push notifications for collaboration events on patterns you own or have forked &mdash; specifically: a pull request was opened on a pattern you own, a comment was added to a pull request you participate in, a pull request you opened was merged or closed, or a pull request on a pattern you own was closed.</p>
+    <p>Push notifications are <strong>opt-in</strong>. You explicitly grant the OS-level notification permission via the in-app prompt (the first time you encounter a pull-request related action) or via your device's Settings &rarr; Notifications &rarr; Skeinly screen. The OS-level permission grant is the consent &mdash; there is no separate in-app analytics-style toggle.</p>
+    <p>When you grant the permission, the App stores the following in our database (table: <code>device_tokens</code>):</p>
+    <ul>
+      <li>An anonymous device token issued by Apple Push Notification service (iOS) or Firebase Cloud Messaging (Android) &mdash; this is a per-device, per-app identifier rotated by the OS on app reinstall / OS reset; it is not directly mappable to your physical device or person without OS-side cross-reference held by Apple / Google</li>
+      <li>The device's locale (BCP-47 tag, e.g. <code>en-US</code> or <code>ja-JP</code>) so notification body text is localized server-side</li>
+      <li>The platform (<code>ios</code> or <code>android</code>) and your Skeinly user id, so we send notifications to the right person</li>
+    </ul>
+    <p>Notification body text includes the display name of the other Skeinly user who triggered the event (e.g. &ldquo;Alice opened a pull request on Granny Square&rdquo; or &ldquo;Bob commented on Add bobble row&rdquo;). This is data <strong>about other Skeinly users</strong> that you, the recipient, see on your lock screen &mdash; it is not data about you. Other users see your display name in the same way when they receive notifications about your actions.</p>
+    <p>You can revoke push notification permission at any time in your device's Settings &rarr; Notifications &rarr; Skeinly. Revocation is OS-level and takes effect immediately. When you delete your Skeinly account (Settings &rarr; Account &rarr; Delete account), all your <code>device_tokens</code> rows cascade-delete via foreign-key constraint and we stop sending you any notifications immediately.</p>
+    <p>Push notification delivery uses Apple Push Notification service (Apple's servers; see <a href="https://www.apple.com/legal/privacy/">Apple's privacy policy</a>) on iOS and Firebase Cloud Messaging (Google's servers; see <a href="https://policies.google.com/privacy">Google's privacy policy</a>) on Android. We do not control or have access to the routing infrastructure operated by Apple or Google &mdash; we hand them an opaque device token plus the notification payload, and they deliver to your device.</p>
+
     <h2>How We Use Your Information</h2>
     <ul>
       <li><strong>Provide the service</strong>: Store your projects, patterns, and progress so you can access them across devices</li>
