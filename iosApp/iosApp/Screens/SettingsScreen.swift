@@ -3,6 +3,13 @@ import Shared
 
 struct SettingsScreen: View {
     @StateObject private var holder: ScopedViewModel<SettingsViewModel, SettingsState>
+    // Phase 24.2c (ADR-017 §3.6) — push notification consent ViewModel.
+    // Drives the Beta → Notifications row + the in-app pre-permission
+    // explainer alert. Co-mounted with the SettingsViewModel so refresh
+    // happens once at screen entry alongside the other Settings state.
+    @StateObject private var notificationHolder: ScopedViewModel<
+        NotificationPermissionViewModel, NotificationPermissionState
+    >
     @State private var showDeleteConfirmation = false
     @State private var showError = false
     @State private var newPassword = ""
@@ -24,6 +31,38 @@ struct SettingsScreen: View {
     let onManagePacksClick: () -> Void
 
     private var viewModel: SettingsViewModel { holder.viewModel }
+    private var notificationViewModel: NotificationPermissionViewModel { notificationHolder.viewModel }
+
+    /// Phase 24.2c — bound to the alert presentation. Tapping outside
+    /// the alert (impossible on iOS — alerts are modal) or selecting a
+    /// button dismisses; the binding setter routes through
+    /// `UserDismissedExplainer` only when the alert is closing without
+    /// either button having fired (defensive — alert buttons always run
+    /// their action closures synchronously before isPresented flips).
+    private var notificationExplainerBinding: Binding<Bool> {
+        Binding(
+            get: { notificationHolder.state.isExplainerVisible },
+            set: { newValue in
+                if !newValue && notificationHolder.state.isExplainerVisible {
+                    notificationViewModel.onEvent(
+                        event: NotificationPermissionEventUserDismissedExplainer.shared
+                    )
+                }
+            }
+        )
+    }
+
+    /// Phase 24.2c — Settings row trailing label. iOS surfaces the same
+    /// 3-state mapping as Compose: GRANTED → Enabled, DENIED /
+    /// NOT_DETERMINED → Disabled. The `default:` arm prevents future
+    /// status additions from silently misrendering.
+    private var notificationStatusLabelKey: LocalizedStringKey {
+        switch notificationHolder.state.osStatus {
+        case .granted: return "state_notifications_enabled"
+        case .denied, .notDetermined: return "state_notifications_disabled"
+        default: return "state_notifications_disabled"
+        }
+    }
 
     init(
         onSendFeedback: @escaping () -> Void = {},
@@ -36,6 +75,11 @@ struct SettingsScreen: View {
         let vm = ViewModelFactory.settingsViewModel()
         let wrapper = KoinHelperKt.wrapSettingsState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
+        let nvm = KoinHelperKt.getNotificationPermissionViewModel()
+        let nWrapper = KoinHelperKt.wrapNotificationPermissionState(flow: nvm.state)
+        _notificationHolder = StateObject(
+            wrappedValue: ScopedViewModel(viewModel: nvm, wrapper: nWrapper)
+        )
     }
 
     var body: some View {
@@ -79,6 +123,30 @@ struct SettingsScreen: View {
         .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
             Button("action_ok") { viewModel.onEvent(event: SettingsEventClearError.shared) }
         } message: {            Text(state.error?.localizedString ?? "")
+        }
+        // Phase 24.2c (ADR-017 §3.6) — pre-permission explainer alert.
+        // SwiftUI alert mirrors the Compose AlertDialog. Native OS prompt
+        // fires only after the user taps Enable; Not now records a global
+        // dismiss in NotificationPermissionPrompter so the alert never
+        // re-surfaces.
+        .alert(
+            LocalizedStringKey("title_notifications_explainer"),
+            isPresented: notificationExplainerBinding
+        ) {
+            Button("action_enable_notifications") {
+                notificationViewModel.onEvent(
+                    event: NotificationPermissionEventUserAcceptedExplainer.shared
+                )
+            }
+            .disabled(notificationHolder.state.isRequestingPermission)
+            Button("action_not_now_notifications", role: .cancel) {
+                notificationViewModel.onEvent(
+                    event: NotificationPermissionEventUserDismissedExplainer.shared
+                )
+            }
+            .disabled(notificationHolder.state.isRequestingPermission)
+        } message: {
+            Text("body_notifications_explainer")
         }
         .sheet(isPresented: Binding(
             get: { state.pendingChangePasswordDialog },
@@ -232,6 +300,24 @@ struct SettingsScreen: View {
                     }
                     .accessibilityIdentifier("analyticsOptInSwitch")
 
+                    // Phase 24.2c (ADR-017 §3.6) — Notifications row.
+                    // Trailing label reflects current OS permission state.
+                    // Tap routes to OS settings via OsSettingsLauncher
+                    // (24.2c stub today, 24.2d wires real openURL).
+                    Button {
+                        notificationViewModel.onEvent(
+                            event: NotificationPermissionEventOpenOsSettingsRequested()
+                        )
+                    } label: {
+                        HStack {
+                            Text("label_notifications_settings_row")
+                            Spacer()
+                            Text(notificationStatusLabelKey)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .accessibilityIdentifier("notificationsSettingsRow")
+
                     Button {
                         onSendFeedback()
                     } label: {
@@ -241,11 +327,10 @@ struct SettingsScreen: View {
                 } header: {
                     Text("label_beta_section")
                 } footer: {
-                    // Two paragraphs joined; Section footer surfaces them
-                    // inline as a single block. Mirrors the Compose
-                    // sibling-Texts under the toggle.
+                    // Section footer surfaces three paragraphs inline.
                     VStack(alignment: .leading, spacing: 4) {
                         Text("body_diagnostic_data_explanation")
+                        Text("body_notifications_setting_explanation")
                         Text("body_send_feedback_explanation")
                     }
                 }

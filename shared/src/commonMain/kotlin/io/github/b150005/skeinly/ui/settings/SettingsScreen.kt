@@ -66,6 +66,8 @@ import io.github.b150005.skeinly.generated.resources.action_sign_out
 import io.github.b150005.skeinly.generated.resources.action_terms_of_service
 import io.github.b150005.skeinly.generated.resources.body_delete_account_warning
 import io.github.b150005.skeinly.generated.resources.body_diagnostic_data_explanation
+import io.github.b150005.skeinly.generated.resources.body_notifications_disabled_hint
+import io.github.b150005.skeinly.generated.resources.body_notifications_setting_explanation
 import io.github.b150005.skeinly.generated.resources.body_send_feedback_explanation
 import io.github.b150005.skeinly.generated.resources.dialog_change_email_title
 import io.github.b150005.skeinly.generated.resources.dialog_change_password_title
@@ -78,12 +80,15 @@ import io.github.b150005.skeinly.generated.resources.label_danger_zone
 import io.github.b150005.skeinly.generated.resources.label_diagnostic_data_sharing
 import io.github.b150005.skeinly.generated.resources.label_new_email
 import io.github.b150005.skeinly.generated.resources.label_new_password
+import io.github.b150005.skeinly.generated.resources.label_notifications_settings_row
 import io.github.b150005.skeinly.generated.resources.label_pack_management
 import io.github.b150005.skeinly.generated.resources.label_paywall_section
 import io.github.b150005.skeinly.generated.resources.label_subscribe_to_pro
 import io.github.b150005.skeinly.generated.resources.message_email_change_pending
 import io.github.b150005.skeinly.generated.resources.message_password_changed
 import io.github.b150005.skeinly.generated.resources.state_deleting_account
+import io.github.b150005.skeinly.generated.resources.state_notifications_disabled
+import io.github.b150005.skeinly.generated.resources.state_notifications_enabled
 import io.github.b150005.skeinly.generated.resources.title_settings
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.localized
@@ -114,8 +119,14 @@ fun SettingsScreen(
     // the `PackManagement` route.
     onManagePacksClick: () -> Unit = {},
     viewModel: SettingsViewModel = koinViewModel(),
+    // Phase 24.2c (ADR-017 §3.6) — push notification consent VM. Drives
+    // the Settings → Notifications row + the in-app pre-permission
+    // explainer dialog. Default-injected via Koin for production; tests
+    // can pass a stub via the parameter.
+    notificationViewModel: io.github.b150005.skeinly.ui.notifications.NotificationPermissionViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val notificationState by notificationViewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
 
@@ -373,6 +384,51 @@ fun SettingsScreen(
 
                     Spacer(Modifier.height(8.dp))
 
+                    // Phase 24.2c (ADR-017 §3.6) — Notifications row.
+                    // Trailing label reflects current OS permission state
+                    // (read on init via NotificationPermissionViewModel
+                    // refreshStatus). Tap routes to OS app-notification
+                    // settings so denied users can re-enable. The
+                    // pre-permission explainer dialog is wired below at
+                    // the screen scope; entry-point invocation lands in
+                    // 24.2c-3.
+                    val notificationStatusLabel =
+                        when (notificationState.osStatus) {
+                            io.github.b150005.skeinly.notifications.NotificationPermissionStatus.GRANTED ->
+                                stringResource(Res.string.state_notifications_enabled)
+                            io.github.b150005.skeinly.notifications.NotificationPermissionStatus.DENIED,
+                            io.github.b150005.skeinly.notifications.NotificationPermissionStatus.NOT_DETERMINED,
+                            ->
+                                stringResource(Res.string.state_notifications_disabled)
+                        }
+                    ListItem(
+                        headlineContent = {
+                            Text(stringResource(Res.string.label_notifications_settings_row))
+                        },
+                        supportingContent = {
+                            Text(stringResource(Res.string.body_notifications_setting_explanation))
+                        },
+                        trailingContent = { Text(notificationStatusLabel) },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable(role = Role.Button) {
+                                    notificationViewModel.onEvent(
+                                        io.github.b150005.skeinly.ui.notifications
+                                            .NotificationPermissionEvent
+                                            .OpenOsSettingsRequested,
+                                    )
+                                }.testTag("notificationsSettingsRow"),
+                    )
+                    Text(
+                        text = stringResource(Res.string.body_notifications_disabled_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
                     // Phase 39.5 wires this to the BugReportPreviewScreen
                     // + GitHub Issue prefill launcher. Today the callback
                     // is a no-op (default `onSendFeedback = {}` at the
@@ -450,6 +506,30 @@ fun SettingsScreen(
             }
         }
     }
+
+    // Phase 24.2c (ADR-017 §3.6) — pre-permission explainer. Surfaces
+    // when the ViewModel flips isExplainerVisible (entry-point trigger
+    // wires lands in 24.2c-3; today only mounted from this screen so
+    // no surface ever sets it true unless the entry-point screens
+    // dispatch TriggerEncountered explicitly).
+    io.github.b150005.skeinly.ui.notifications.NotificationPermissionExplainerDialog(
+        isVisible = notificationState.isExplainerVisible,
+        isRequestingPermission = notificationState.isRequestingPermission,
+        onAccept = {
+            notificationViewModel.onEvent(
+                io.github.b150005.skeinly.ui.notifications
+                    .NotificationPermissionEvent
+                    .UserAcceptedExplainer,
+            )
+        },
+        onDismiss = {
+            notificationViewModel.onEvent(
+                io.github.b150005.skeinly.ui.notifications
+                    .NotificationPermissionEvent
+                    .UserDismissedExplainer,
+            )
+        },
+    )
 
     if (state.pendingChangePasswordDialog) {
         ChangePasswordDialog(

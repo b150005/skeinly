@@ -16,6 +16,8 @@ import io.github.b150005.skeinly.domain.usecase.GetOnboardingCompletedUseCase
 import io.github.b150005.skeinly.ui.activityfeed.ActivityFeedViewModel
 import io.github.b150005.skeinly.ui.auth.AuthViewModel
 import io.github.b150005.skeinly.ui.bugreport.BugReportPreviewViewModel
+import io.github.b150005.skeinly.ui.notifications.NotificationPermissionState
+import io.github.b150005.skeinly.ui.notifications.NotificationPermissionViewModel
 import io.github.b150005.skeinly.ui.chart.ChartBranchPickerViewModel
 import io.github.b150005.skeinly.ui.chart.ChartDiffViewModel
 import io.github.b150005.skeinly.ui.chart.ChartEditorViewModel
@@ -272,6 +274,15 @@ fun getBugReportPreviewViewModel(): BugReportPreviewViewModel = KoinPlatform.get
 fun wrapBugReportPreviewState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.bugreport.BugReportPreviewState>,
 ): FlowWrapper<io.github.b150005.skeinly.ui.bugreport.BugReportPreviewState> = FlowWrapper(flow)
+
+// Phase 24.2c (ADR-017 §3.6) — push notification consent ViewModel +
+// state wrapper. Drives the iOS Settings → Notifications row + the
+// in-app pre-permission explainer sheet.
+fun getNotificationPermissionViewModel(): NotificationPermissionViewModel = KoinPlatform.getKoin().get()
+
+fun wrapNotificationPermissionState(
+    flow: kotlinx.coroutines.flow.StateFlow<NotificationPermissionState>,
+): FlowWrapper<NotificationPermissionState> = FlowWrapper(flow)
 
 // Phase 41.3b (ADR-016 §5.1) — paywall ViewModel + state / nav-event
 // wrappers. Parametric on `PaywallTrigger` so the entry point's
