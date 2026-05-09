@@ -56,6 +56,12 @@ EF-5 for the full setup steps.
 ## Deployment
 
 ```bash
+# CRITICAL: pull latest main BEFORE deploying so the deployed function
+# matches the source the project's docs / tests / commits describe.
+# See "Stale-source pitfall" note below.
+git checkout main && git pull origin main
+
+# Then deploy.
 supabase functions deploy revenuecat-webhook
 ```
 
@@ -70,11 +76,13 @@ supabase functions deploy revenuecat-webhook
 > [`index.ts`](./index.ts) `Bearer` validation block).
 >
 > If `supabase functions deploy` ignores the config.toml flag (older CLI
-> versions), pass `--no-verify-jwt` explicitly:
+> versions), pass the explicit flag (CLI form of the same setting):
 >
 > ```bash
 > supabase functions deploy revenuecat-webhook --no-verify-jwt
 > ```
+
+> **Stale-source pitfall**: `supabase functions deploy` packages whatever source is on the local filesystem at the moment of invocation. If the local repo is checked out to an older commit, the deployed function will mismatch the source the rest of the project describes — and any subsequent secret-name change / auth-shape change in main will silently fail at runtime (typically `HTTP 401 unauthorized`). Always `git pull origin main` first. After deploy, verify by comparing the function's `ezbr_sha256` (visible via `mcp__supabase__list_edge_functions`) — same source produces same hash, different source produces different hash. The 2026-05-09 `notify-on-write` incident (deployed against pre-Bearer-rewrite source while Database Webhooks were configured for Bearer auth) is the documented precedent.
 
 After deploy, configure the Webhook URL in RevenueCat Dashboard:
 

@@ -52,10 +52,17 @@ Phase 24.3 will additionally consume:
 ## Deployment
 
 ```bash
+# CRITICAL: pull latest main BEFORE deploying so the deployed function
+# matches the source that the project's docs / tests / commits describe.
+git checkout main && git pull origin main
+
+# Then deploy.
 supabase functions deploy notify-on-write
 ```
 
 > **JWT verification disabled (load-bearing)**: like `revenuecat-webhook`, this function is invoked by Supabase's Database Webhook system which does NOT carry a Supabase JWT. The deploy picks up `[functions.notify-on-write] verify_jwt = false` from `supabase/config.toml` automatically. Auth is enforced inside the function via constant-time Bearer-token compare against `SKEINLY_DATABASE_WEBHOOK_SECRET`.
+
+> **Stale-source pitfall (2026-05-09 incident)**: `supabase functions deploy` packages whatever source is on the local filesystem at the moment of invocation. If the local repo is checked out to an older commit, the deployed function will mismatch the source the rest of the project (docs, ADR-017, tests) describes — and any subsequent secret-name change / auth-shape change in main will silently fail at runtime (typically `HTTP 401 unauthorized` because the deployed function is checking against the old auth contract). The fix on incident was to redeploy via `mcp__supabase__deploy_edge_function` MCP tool with the worktree's current files; the structural prevention is the `git pull` step above. After deploy, verify by comparing the function's `ezbr_sha256` (visible via `mcp__supabase__list_edge_functions`) — a redeploy of the same source produces the same hash, a redeploy of a different source produces a different hash.
 
 ## Database Webhook configuration (post-deploy)
 
