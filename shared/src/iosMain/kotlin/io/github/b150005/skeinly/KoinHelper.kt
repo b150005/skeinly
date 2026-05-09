@@ -16,14 +16,14 @@ import io.github.b150005.skeinly.domain.usecase.GetOnboardingCompletedUseCase
 import io.github.b150005.skeinly.ui.activityfeed.ActivityFeedViewModel
 import io.github.b150005.skeinly.ui.auth.AuthViewModel
 import io.github.b150005.skeinly.ui.bugreport.BugReportPreviewViewModel
-import io.github.b150005.skeinly.ui.notifications.NotificationPermissionState
-import io.github.b150005.skeinly.ui.notifications.NotificationPermissionViewModel
 import io.github.b150005.skeinly.ui.chart.ChartBranchPickerViewModel
 import io.github.b150005.skeinly.ui.chart.ChartDiffViewModel
 import io.github.b150005.skeinly.ui.chart.ChartEditorViewModel
 import io.github.b150005.skeinly.ui.chart.ChartHistoryViewModel
 import io.github.b150005.skeinly.ui.chart.ChartViewerViewModel
 import io.github.b150005.skeinly.ui.comments.CommentSectionViewModel
+import io.github.b150005.skeinly.ui.notifications.NotificationPermissionState
+import io.github.b150005.skeinly.ui.notifications.NotificationPermissionViewModel
 import io.github.b150005.skeinly.ui.onboarding.OnboardingViewModel
 import io.github.b150005.skeinly.ui.packmanagement.PackManagementViewModel
 import io.github.b150005.skeinly.ui.patternedit.PatternEditViewModel

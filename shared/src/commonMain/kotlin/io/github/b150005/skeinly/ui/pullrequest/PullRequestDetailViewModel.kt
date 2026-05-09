@@ -157,6 +157,21 @@ sealed interface PullRequestDetailNavEvent {
     data class NavigateToConflictResolution(
         val prId: String,
     ) : PullRequestDetailNavEvent
+
+    /**
+     * Phase 24.2c-3 (ADR-017 §3.6) — fired on the success path of
+     * [PullRequestDetailEvent.PostComment]. The screen layer listens for
+     * this and dispatches
+     * [io.github.b150005.skeinly.ui.notifications.NotificationPermissionEvent.TriggerEncountered]
+     * with [io.github.b150005.skeinly.notifications.NotificationPromptTrigger.PR_COMMENT_POSTED]
+     * so the in-app pre-permission explainer surfaces the first time a user
+     * actively engages in collaboration. Keeping the dispatch at the screen
+     * layer (rather than wiring [NotificationPermissionPrompter] into this
+     * ViewModel) preserves the cross-cutting-concern boundary — the PR
+     * detail surface emits a domain signal, and the screen layer composes
+     * notification-permission UX on top of it.
+     */
+    data object CommentPosted : PullRequestDetailNavEvent
 }
 
 class PullRequestDetailViewModel(
@@ -423,6 +438,10 @@ class PullRequestDetailViewModel(
                     resolveUsersForComments(listOf(result.value))
                     // Phase F.4 — engagement signal; no properties (cardinality safe).
                     analyticsTracker?.track(AnalyticsEvent.PullRequestCommented)
+                    // Phase 24.2c-3 (ADR-017 §3.6) — engagement-moment signal
+                    // for the in-app pre-permission explainer. The screen
+                    // layer routes this to NotificationPermissionViewModel.
+                    _navEvents.trySend(PullRequestDetailNavEvent.CommentPosted)
                 }
                 is UseCaseResult.Failure ->
                     _state.update {

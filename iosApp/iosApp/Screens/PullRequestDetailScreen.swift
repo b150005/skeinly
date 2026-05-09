@@ -15,12 +15,34 @@ struct PullRequestDetailScreen: View {
     let prId: String
     @Binding var path: NavigationPath
     @StateObject private var holder: ScopedViewModel<PullRequestDetailViewModel, PullRequestDetailState>
+    /// Phase 24.2c-3 (ADR-017 §3.6) — drives the in-app pre-permission
+    /// explainer alert dispatched on first PR detail open + first comment
+    /// post on this PR.
+    @StateObject private var notificationHolder: ScopedViewModel<
+        NotificationPermissionViewModel, NotificationPermissionState
+    >
     @State private var showError = false
     @State private var navEventsCloseable: Closeable?
     @State private var pendingClosedToast: Bool = false
     @State private var pendingMergedToast: Bool = false
 
     private var viewModel: PullRequestDetailViewModel { holder.viewModel }
+    private var notificationViewModel: NotificationPermissionViewModel { notificationHolder.viewModel }
+
+    /// Phase 24.2c-3 — bound to the alert presentation; same shape as the
+    /// Settings → Notifications binding.
+    private var notificationExplainerBinding: Binding<Bool> {
+        Binding(
+            get: { notificationHolder.state.isExplainerVisible },
+            set: { newValue in
+                if !newValue && notificationHolder.state.isExplainerVisible {
+                    notificationViewModel.onEvent(
+                        event: NotificationPermissionEventUserDismissedExplainer.shared
+                    )
+                }
+            }
+        )
+    }
 
     init(prId: String, path: Binding<NavigationPath>) {
         self.prId = prId
@@ -28,6 +50,11 @@ struct PullRequestDetailScreen: View {
         let vm = ViewModelFactory.pullRequestDetailViewModel(prId: prId)
         let wrapper = KoinHelperKt.wrapPullRequestDetailState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
+        let nvm = KoinHelperKt.getNotificationPermissionViewModel()
+        let nWrapper = KoinHelperKt.wrapNotificationPermissionState(flow: nvm.state)
+        _notificationHolder = StateObject(
+            wrappedValue: ScopedViewModel(viewModel: nvm, wrapper: nWrapper)
+        )
     }
 
     var body: some View {
@@ -83,6 +110,14 @@ struct PullRequestDetailScreen: View {
                             withAnimation { pendingMergedToast = false }
                         case let nav as PullRequestDetailNavEventNavigateToConflictResolution:
                             path.append(Route.chartConflictResolution(prId: nav.prId))
+                        case is PullRequestDetailNavEventCommentPosted:
+                            // Phase 24.2c-3 — dispatch the third
+                            // collaboration-moment trigger.
+                            notificationViewModel.onEvent(
+                                event: NotificationPermissionEventTriggerEncountered(
+                                    trigger: .prCommentPosted
+                                )
+                            )
                         default:
                             break
                         }
@@ -125,6 +160,40 @@ struct PullRequestDetailScreen: View {
                 }
             } message: {
                 Text(LocalizedStringKey("dialog_merge_pr_body"))
+            }
+            // Phase 24.2c-3 (ADR-017 §3.6) — second collaboration-moment
+            // trigger: first time PR detail finishes loading. Keyed on the
+            // null→non-null transition so the dispatch fires after
+            // loadInitial resolves (not during the loading-spinner phase).
+            .onChange(of: holder.state.pullRequest != nil) { _, hasPr in
+                if hasPr {
+                    notificationViewModel.onEvent(
+                        event: NotificationPermissionEventTriggerEncountered(
+                            trigger: .prDetailOpened
+                        )
+                    )
+                }
+            }
+            // Phase 24.2c-3 — pre-permission explainer alert. Same shape
+            // as the Settings → Notifications binding.
+            .alert(
+                LocalizedStringKey("title_notifications_explainer"),
+                isPresented: notificationExplainerBinding
+            ) {
+                Button("action_enable_notifications") {
+                    notificationViewModel.onEvent(
+                        event: NotificationPermissionEventUserAcceptedExplainer.shared
+                    )
+                }
+                .disabled(notificationHolder.state.isRequestingPermission)
+                Button("action_not_now_notifications", role: .cancel) {
+                    notificationViewModel.onEvent(
+                        event: NotificationPermissionEventUserDismissedExplainer.shared
+                    )
+                }
+                .disabled(notificationHolder.state.isRequestingPermission)
+            } message: {
+                Text("body_notifications_explainer")
             }
     }
 

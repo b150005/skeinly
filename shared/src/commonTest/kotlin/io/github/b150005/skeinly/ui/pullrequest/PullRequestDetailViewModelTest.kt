@@ -252,6 +252,24 @@ class PullRequestDetailViewModelTest {
         }
 
     @Test
+    fun `PostComment success emits CommentPosted nav event for notification trigger`() =
+        runTest {
+            patternRepo.create(makeUpstreamPattern())
+            prRepo.seedById(makePr())
+            val vm = makeViewModel()
+            vm.onEvent(PullRequestDetailEvent.CommentDraftChanged("Nice work"))
+
+            vm.onEvent(PullRequestDetailEvent.PostComment)
+
+            // Phase 24.2c-3 — the screen layer routes this nav event to
+            // NotificationPermissionViewModel as the PR_COMMENT_POSTED
+            // engagement-moment trigger for the in-app pre-permission
+            // explainer.
+            val event = vm.navEvents.first()
+            assertEquals(PullRequestDetailNavEvent.CommentPosted, event)
+        }
+
+    @Test
     fun `RequestClose then ConfirmClose flips PR status to CLOSED and emits PrClosed nav event`() =
         runTest {
             patternRepo.create(makeUpstreamPattern())

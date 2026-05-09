@@ -66,8 +66,12 @@ import io.github.b150005.skeinly.generated.resources.message_pr_closed_successfu
 import io.github.b150005.skeinly.generated.resources.message_pr_merged_successfully
 import io.github.b150005.skeinly.generated.resources.state_pr_not_found
 import io.github.b150005.skeinly.generated.resources.title_pull_request_detail
+import io.github.b150005.skeinly.notifications.NotificationPromptTrigger
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.localized
+import io.github.b150005.skeinly.ui.notifications.NotificationPermissionEvent
+import io.github.b150005.skeinly.ui.notifications.NotificationPermissionExplainerDialog
+import io.github.b150005.skeinly.ui.notifications.NotificationPermissionViewModel
 import io.github.b150005.skeinly.ui.util.formatFull
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -99,8 +103,12 @@ fun PullRequestDetailScreen(
     onOpenDiff: (baseRevisionId: String, targetRevisionId: String) -> Unit = { _, _ -> },
     onResolveConflicts: (prId: String) -> Unit = { _ -> },
     viewModel: PullRequestDetailViewModel = koinViewModel { parametersOf(prId) },
+    // Phase 24.2c-3 (ADR-017 §3.6) — drives the in-app pre-permission
+    // explainer dispatched on first PR detail open + first comment post.
+    notificationViewModel: NotificationPermissionViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val notificationState by notificationViewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val closedMessage = stringResource(Res.string.message_pr_closed_successfully)
     val mergedMessage = stringResource(Res.string.message_pr_merged_successfully)
@@ -121,7 +129,28 @@ fun PullRequestDetailScreen(
                 is PullRequestDetailNavEvent.PrMerged -> snackbarHostState.showSnackbar(mergedMessage)
                 is PullRequestDetailNavEvent.NavigateToConflictResolution ->
                     onResolveConflicts(event.prId)
+                PullRequestDetailNavEvent.CommentPosted ->
+                    notificationViewModel.onEvent(
+                        NotificationPermissionEvent.TriggerEncountered(
+                            NotificationPromptTrigger.PR_COMMENT_POSTED,
+                        ),
+                    )
             }
+        }
+    }
+
+    // Phase 24.2c-3 (ADR-017 §3.6) — first PR detail open is the second
+    // collaboration moment trigger after the Incoming list. Keyed on
+    // `state.pullRequest != null` so the dispatch fires after `loadInitial`
+    // resolves rather than during the loading-spinner phase. The prompter's
+    // global "asked" bit makes a hypothetical refire idempotent.
+    LaunchedEffect(state.pullRequest != null) {
+        if (state.pullRequest != null) {
+            notificationViewModel.onEvent(
+                NotificationPermissionEvent.TriggerEncountered(
+                    NotificationPromptTrigger.PR_DETAIL_OPENED,
+                ),
+            )
         }
     }
 
@@ -230,6 +259,22 @@ fun PullRequestDetailScreen(
             modifier = Modifier.testTag("mergePrDialog"),
         )
     }
+
+    // Phase 24.2c-3 (ADR-017 §3.6) — pre-permission explainer dialog,
+    // mounted as a sibling to the Scaffold so it floats above. Visibility
+    // is driven by the notification VM, which decides whether to show the
+    // dialog based on (a) OS permission status (NOT_DETERMINED only) and
+    // (b) prompter state (have we asked before?).
+    NotificationPermissionExplainerDialog(
+        isVisible = notificationState.isExplainerVisible,
+        isRequestingPermission = notificationState.isRequestingPermission,
+        onAccept = {
+            notificationViewModel.onEvent(NotificationPermissionEvent.UserAcceptedExplainer)
+        },
+        onDismiss = {
+            notificationViewModel.onEvent(NotificationPermissionEvent.UserDismissedExplainer)
+        },
+    )
 }
 
 @Composable
