@@ -1,13 +1,13 @@
-appId: io.github.b150005.skeinly
+appId: ${APP_ID}
 name: "P0 - Create Project"
 tags:
   - p0
   - ios
 ---
 # Pre-condition: clean state
-- clearState: io.github.b150005.skeinly
+- clearState: ${APP_ID}
 - launchApp:
-    appId: io.github.b150005.skeinly
+    appId: ${APP_ID}
     arguments:
       "-local_only_mode": "true"
 

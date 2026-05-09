@@ -5,6 +5,16 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 APK_PATH="$PROJECT_ROOT/androidApp/build/outputs/apk/debug/androidApp-debug.apk"
 
+# Phase 24.2 (ADR-017 §3.5) — Android dev/prod separation. Debug builds
+# carry `applicationIdSuffix = ".dev"` (set in androidApp/build.gradle.kts
+# debug buildType), so the runtime package name is the suffixed form.
+# Maestro flows under flows/android/ + helpers/*_android.yaml reference
+# the appId via `${APP_ID}` — exported here so all flow runs target the
+# debug variant uniformly. The release variant keeps the unsuffixed
+# `io.github.b150005.skeinly` bundle id and is published only via
+# `gradle-play-publisher` (see androidApp/build.gradle.kts `play { … }`).
+export APP_ID="io.github.b150005.skeinly.dev"
+
 # Defensive cleanup on script exit (success, failure, or interrupt). Kills
 # any `maestro test` process this user owns — covers both the run we just
 # launched and any straggler from an interrupted prior invocation. Scope is

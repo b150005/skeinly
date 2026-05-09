@@ -106,6 +106,22 @@ iosApp/fastlane/README.md
 .env.local
 .env.*.local
 
+# Firebase client config — base64-encoded copies live as GitHub Secrets
+# (FIREBASE_GOOGLE_SERVICES_JSON_BASE64 in production / development envs);
+# the decoded JSON files MUST NEVER be committed. Per Phase 24.2 the
+# project uses dev/prod-split placement: `src/release/google-services.json`
+# (Skeinly Blaze project) and `src/debug/google-services.json` (Skeinly-Dev
+# Spark project). The legacy `src/main/` slot is also covered so a future
+# fallback placement does not accidentally land in git.
+androidApp/src/main/google-services.json
+androidApp/src/release/google-services.json
+androidApp/src/debug/google-services.json
+# iOS GoogleService-Info.plist is similarly secret; same dev/prod split is
+# possible via Configuration-conditional path in project.yml. Phase 24.2e
+# adds the actual wiring; ignore in advance to avoid accidental commits.
+iosApp/iosApp/GoogleService-Info.plist
+iosApp/iosApp/GoogleService-Info-*.plist
+
 # Coverage
 coverage/
 *.exec

@@ -538,7 +538,36 @@ gh secret set FIREBASE_GOOGLE_SERVICES_JSON_BASE64 \
 
 Workflow 側は `environment: production` / `environment: development` を Job レベルで宣言するだけで自動的に正しい値が解決される。
 
-Android Gradle ビルドはこれをビルド時に `androidApp/google-services.json` (git ignored) にデコードします。
+**ローカル配置** (デコード後): Gradle plugin (`com.google.gms.google-services`、Phase 24.2e で適用) は build type に応じて variant 固有の `google-services.json` を選択:
+
+```text
+androidApp/src/release/google-services.json   ← Skeinly project (Blaze, prod)
+                                                package: io.github.b150005.skeinly
+androidApp/src/debug/google-services.json     ← Skeinly-Dev project (Spark)
+                                                package: io.github.b150005.skeinly.dev
+                                                (.dev suffix は androidApp/
+                                                build.gradle.kts debug
+                                                buildType の applicationIdSuffix
+                                                による)
+```
+
+デコードコマンド:
+
+```bash
+# Production (release builds)
+gh secret list --env production    # FIREBASE_GOOGLE_SERVICES_JSON_BASE64 が登録済か確認
+# secret アクセス可能なマシンで (gh auth 後の自分の laptop):
+gh secret get FIREBASE_GOOGLE_SERVICES_JSON_BASE64 --env production \
+  | base64 -d > androidApp/src/release/google-services.json
+
+# Development (debug builds — ローカル開発 + Maestro E2E + ci.yml debug-build ジョブ)
+gh secret get FIREBASE_GOOGLE_SERVICES_JSON_BASE64 --env development \
+  | base64 -d > androidApp/src/debug/google-services.json
+```
+
+> **dev/prod 分離の理由**: dev push 配信を prod analytics から隔離、署名 SHA-1 (debug keystore vs release keystore) を分離、`.dev` `applicationIdSuffix` により debug + release ビルドを同一 Android 端末で共存可能にする。`Skeinly-Dev` Firebase project (Spark プラン) は意図的に **Play Console には別アプリ登録しない** — `gradle-play-publisher` は release variant しか publish しないため、dev ビルドは `adb install` (ローカル) + emulator install (CI Maestro) で配信、Play Internal track は経由しない。
+
+> **CI 自動デコード** (Phase 24.2e): `ci.yml` debug-build ジョブ + `e2e.yml` は `FIREBASE_GOOGLE_SERVICES_JSON_BASE64` を `development` 環境からデコードして `androidApp/src/debug/google-services.json` に配置。`release.yml` は同名 secret を `production` 環境からデコードして `androidApp/src/release/google-services.json` に配置。両ファイルは git ignored (project root `.gitignore` の Firebase ブロック参照)。
 
 **ROTATE**: パッケージ名変更または署名 SHA-1 変更時のみ Firebase Console から再ダウンロード。日常的なローテーションは不要。
 

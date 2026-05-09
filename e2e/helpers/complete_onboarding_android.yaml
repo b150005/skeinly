@@ -1,4 +1,4 @@
-appId: io.github.b150005.skeinly
+appId: ${APP_ID}
 name: "Helper - Complete Onboarding"
 ---
 # Complete onboarding carousel after clearState.

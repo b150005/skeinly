@@ -531,7 +531,36 @@ gh secret set FIREBASE_GOOGLE_SERVICES_JSON_BASE64 \
 
 The workflow only needs to declare `environment: production` / `environment: development` at the job level; the matching value resolves automatically.
 
-The Android Gradle build decodes this at build time into `androidApp/google-services.json` (git-ignored).
+**LOCAL PLACEMENT** (post-decode): the Gradle plugin (`com.google.gms.google-services`, applied in Phase 24.2e) selects the variant-specific `google-services.json` based on Android build type:
+
+```text
+androidApp/src/release/google-services.json   ← Skeinly project (Blaze, prod)
+                                                package: io.github.b150005.skeinly
+androidApp/src/debug/google-services.json     ← Skeinly-Dev project (Spark)
+                                                package: io.github.b150005.skeinly.dev
+                                                (the .dev suffix is added by
+                                                applicationIdSuffix in
+                                                androidApp/build.gradle.kts
+                                                debug buildType)
+```
+
+Decode commands:
+
+```bash
+# Production (release builds)
+gh secret list --env production    # confirm FIREBASE_GOOGLE_SERVICES_JSON_BASE64 is registered
+# Then on a machine with the secret available (your laptop after gh auth):
+gh secret get FIREBASE_GOOGLE_SERVICES_JSON_BASE64 --env production \
+  | base64 -d > androidApp/src/release/google-services.json
+
+# Development (debug builds — local dev + Maestro E2E + ci.yml debug-build job)
+gh secret get FIREBASE_GOOGLE_SERVICES_JSON_BASE64 --env development \
+  | base64 -d > androidApp/src/debug/google-services.json
+```
+
+> **Why dev/prod split**: separates dev push deliveries from prod analytics, isolates different SHA-1 signatures (debug keystore vs release keystore), and lets debug+release builds coexist on a single Android device thanks to the `.dev` `applicationIdSuffix`. The `Skeinly-Dev` Firebase project (Spark plan) is intentionally **not** registered as a separate Play Console app — `gradle-play-publisher` only publishes the release variant; dev builds reach devices via `adb install` (local) and emulator install (CI Maestro), never via the Play Internal track.
+
+> **CI auto-decode** (Phase 24.2e): `ci.yml` debug-build job + `e2e.yml` will decode `FIREBASE_GOOGLE_SERVICES_JSON_BASE64` from the `development` environment into `androidApp/src/debug/google-services.json`. `release.yml` will decode the same secret name from the `production` environment into `androidApp/src/release/google-services.json`. Both files are git-ignored (see project root `.gitignore` Firebase block).
 
 **ROTATE**: Re-download from the Firebase Console only if you change the package name or signing SHA-1. Day-to-day no rotation is needed.
 
