@@ -53,6 +53,21 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/keystore.jks"
           echo "KEYSTORE_FILE=$RUNNER_TEMP/keystore.jks" >> "$GITHUB_ENV"
 
+      # Phase 24.2e (ADR-017 §3.5) — Firebase config for the release
+      # variant (Skeinly Blaze project, package
+      # `io.github.b150005.skeinly`). Decoded from the
+      # `production`-Environment-scoped GitHub Secret. The file slot
+      # is `androidApp/src/release/` so AGP picks it up only for
+      # `bundleRelease` / `assembleRelease`. Without the secret, the
+      # google-services Gradle plugin fails at task graph configuration.
+      - name: Decode Firebase google-services.json (release)
+        if: env.FIREBASE_PROD_BASE64 != ''
+        env:
+          FIREBASE_PROD_BASE64: ${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          mkdir -p androidApp/src/release
+          echo "$FIREBASE_PROD_BASE64" | base64 -d > androidApp/src/release/google-services.json
+
       - name: Build release App Bundle (AAB)
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}

@@ -22,11 +22,13 @@ val platformModule =
         // parameterless `single { ... }`.
         single { BugSubmissionLauncher() }
         single { DeviceContextProvider() }
-        // Phase 24.2b (ADR-017 §3.6) — push-token + permission registrar.
-        // 24.2b ships a no-op stub; 24.2d swaps in UNUserNotificationCenter +
-        // registerForRemoteNotifications wiring behind the same expect/actual
-        // surface.
-        single { PushTokenRegistrar() }
+        // Phase 24.2e (ADR-017 §3.5, §3.6) — push-token + permission
+        // registrar. 24.2e wires UNUserNotificationCenter + APNs token
+        // acquisition via `UIApplication.registerForRemoteNotifications`
+        // + AppDelegate bridge + the commonMain `DeviceTokenRepository`
+        // upsert behind the same expect/actual surface that 24.2b
+        // shipped as a stub.
+        single { PushTokenRegistrar(get()) }
         // Phase 24.2c (ADR-017 §3.6) — opens the OS app-notification
         // Settings page so a denied user can re-enable.
         single { OsSettingsLauncher() }

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+        Phase 24.2e (ADR-017 §3.5) — Apple Push Notification service.
+
+        `aps-environment` value = "production":
+            TestFlight builds use the production APNs gateway even though
+            they are pre-release. The "development" value applies only to
+            debugger-attached local builds (Xcode → Run on device with
+            development provisioning profile). Hardcoding "production"
+            here matches the closed-beta TestFlight distribution path.
+            Local debugger push test is deferred to Phase 24.4+ if real
+            demand surfaces (would require a Configuration-conditional
+            xcconfig switch + per-config entitlements path).
+
+        Capability: ensure the App ID `io.github.b150005.skeinly`
+        registered in Apple Developer Portal has the "Push Notifications"
+        capability enabled, AND the Distribution Provisioning Profile
+        embedded in the IPA includes that capability. Both must align
+        with this entitlement value or `xcodebuild` reports a code-sign
+        mismatch at archive time.
+
+        **On-device debug push test is unsupported by design**: a
+        debug-signed local build on a physical device using the
+        development APNs gateway (`api.development.push.apple.com`)
+        will fail registration here with "No valid 'aps-environment'
+        entitlement string found" — the failure is handled gracefully
+        (nil token, 30s timeout) so there is no crash, but the token
+        callback will never fire. Tester push QA happens via TestFlight
+        only. Phase 24.4+ may revisit if a local-debug push iteration
+        path becomes necessary (would require xcconfig-conditional
+        APS_ENVIRONMENT + per-config entitlements paths).
+    -->
+    <key>aps-environment</key>
+    <string>production</string>
+</dict>
+</plist>

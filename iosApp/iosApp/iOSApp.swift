@@ -6,6 +6,16 @@ import os.log
 
 @main
 struct iOSApp: App {
+    /// Phase 24.2e (ADR-017 §3.5) — installs `AppDelegate` so iOS UIKit
+    /// surfaces `application(_:didRegisterForRemoteNotificationsWithDeviceToken:)`
+    /// + `application(_:didFailToRegisterForRemoteNotificationsWithError:)`
+    /// callbacks. SwiftUI App lifecycle does not expose UIApplicationDelegate
+    /// methods directly; the adaptor is the documented bridge. The
+    /// AppDelegate forwards the token (or nil on failure) to the shared
+    /// `PushTokenRegistrar` via `KoinHelperKt.handleApnsTokenReceived`,
+    /// which completes the `Channel<String?>` opened by
+    /// `registerForPushNotifications`. See `AppDelegate.swift` for details.
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
         if ProcessInfo.processInfo.arguments.contains("--reset-database") {

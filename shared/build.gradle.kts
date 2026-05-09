@@ -236,6 +236,19 @@ kotlin {
                 // Required for androidx.activity.compose.BackHandler used by
                 // ui/platform/SystemBackHandler.android.kt
                 implementation(libs.androidx.activity.compose)
+                // Phase 24.2e (ADR-017 §3.5) — FCM token acquisition.
+                // `PushTokenRegistrar.android.kt` calls
+                // `FirebaseMessaging.getInstance().token.await()`. The
+                // `kotlinx-coroutines-play-services` artifact provides
+                // the `await()` extension on `Task<T>` (Google Play
+                // Services Tasks API). `firebase-messaging` is pinned
+                // directly (no BOM) because the KMP DSL deprecates
+                // `platform(notation)` under Kotlin 2.3 (KT-58759).
+                // Without these declarations the AGP `compileAndroidMain`
+                // task fails because the shared module's classpath is
+                // independent from `androidApp`'s.
+                implementation(libs.firebase.messaging)
+                implementation(libs.kotlinx.coroutines.play.services)
             }
         }
         getByName("androidHostTest") {
