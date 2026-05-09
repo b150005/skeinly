@@ -29,10 +29,10 @@ jobs:
             runner: ubuntu-latest
             build-mode: manual
           - language: swift
-            # Pinned to macos-26-arm64 — see ci.yml header for full rationale.
+            # Pinned to macos-26 — see ci.yml header for full rationale.
             # Project requires macOS 26 / Xcode 26.4+; macos-latest still aliases
-            # to macos-15-arm64 as of 2026-05.
-            runner: macos-26-arm64
+            # to macos-15 as of 2026-05.
+            runner: macos-26
             build-mode: manual
     runs-on: ${{ matrix.runner }}
     # java-kotlin build target uses `:shared:assembleAndroidMain

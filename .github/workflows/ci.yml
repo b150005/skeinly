@@ -14,12 +14,12 @@ permissions:
 # Runner + JDK pinning rationale (applies to every macOS / setup-java step
 # in this file):
 #
-# - `macos-26-arm64`: project requires macOS 26 (Tahoe) + Xcode 26.4+
+# - `macos-26`: project requires macOS 26 (Tahoe) + Xcode 26.4+
 #   per docs/en/repo-policy.md. `macos-latest` currently aliases to
-#   `macos-15-arm64` (Sequoia) — GitHub promotes the alias ~6 months
+#   `macos-15` (Sequoia) — GitHub promotes the alias ~6 months
 #   after each macOS major lands. Until promotion, the explicit pin is
 #   the only way to keep dev/CI environments aligned. Bump to
-#   `macos-27-arm64` annually when the next macOS major ships.
+#   `macos-27` annually when the next macOS major ships.
 # - `java-version: 25`: latest LTS, fully supported by Gradle 9.5
 #   (toolchain support since 9.1.0) + AGP 9.x. Project bytecode targets
 #   stay at JVM_17 / JavaVersion.VERSION_17 (Android runtime requirement
@@ -131,7 +131,7 @@ jobs:
 
   ios:
     name: iOS (Build + Test)
-    runs-on: macos-26-arm64
+    runs-on: macos-26
     needs: shared-checks
     steps:
       - uses: actions/checkout@v6

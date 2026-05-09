@@ -81,7 +81,7 @@ The full step-by-step setup procedure is in [`docs/ja/vendor-setup.md`](docs/ja/
 | xcodegen | latest | `brew install xcodegen` (regenerates `iosApp.xcodeproj`) |
 | maestro | latest | `brew install maestro` (E2E flows only) |
 
-> CI uses GitHub-hosted `macos-26-arm64` (Tahoe) runners with the same JDK 25 toolchain. `macos-latest` is intentionally NOT used because GitHub still aliases it to `macos-15-arm64` (Sequoia) as of 2026-05 — see the workflow file headers under [`.github/workflows/`](./.github/workflows/) for the full pinning rationale.
+> CI uses GitHub-hosted `macos-26` (Tahoe) runners with the same JDK 25 toolchain. `macos-latest` is intentionally NOT used because GitHub still aliases it to `macos-15` (Sequoia) as of 2026-05 — see the workflow file headers under [`.github/workflows/`](./.github/workflows/) for the full pinning rationale.
 
 #### Initial setup
 
@@ -317,7 +317,7 @@ The `release-tag-publish` Makefile target gracefully degrades when secrets are m
 | xcodegen | 最新 | `brew install xcodegen`（`iosApp.xcodeproj` を再生成） |
 | maestro | 最新 | `brew install maestro`（E2E フロー専用） |
 
-> CI も同じく `macos-26-arm64` (Tahoe) ランナー + JDK 25 toolchain で実行されます。`macos-latest` を意図的に避けているのは、2026-05 時点で GitHub のエイリアスが依然 `macos-15-arm64` (Sequoia) を指しており、本リポジトリの dev 環境（macOS 26）と乖離が生じるためです。詳細は [`.github/workflows/`](./.github/workflows/) 各ファイルのヘッダコメントを参照。
+> CI も同じく `macos-26` (Tahoe) ランナー + JDK 25 toolchain で実行されます。`macos-latest` を意図的に避けているのは、2026-05 時点で GitHub のエイリアスが依然 `macos-15` (Sequoia) を指しており、本リポジトリの dev 環境（macOS 26）と乖離が生じるためです。詳細は [`.github/workflows/`](./.github/workflows/) 各ファイルのヘッダコメントを参照。
 
 #### 初回セットアップ
 
