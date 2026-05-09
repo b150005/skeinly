@@ -1,6 +1,6 @@
 # notify-on-write Edge Function
 
-Phase 24.1 (per [ADR-017](../../../docs/en/adr/017-phase-24-push-notifications.md)) — receives Supabase Database Webhook deliveries from collaboration tables and computes per-recipient push notification dispatches. **Phase 24.1 ships log-only**; Phase 24.3 wires the actual APNs / FCM HTTP send paths.
+Phase 24.1 (per [ADR-017](../../../docs/en/adr/017-phase-24-push-notifications.md)) shipped this as a log-only shell. Phase 24.3 (per [ADR-018](../../../docs/en/adr/018-phase-24-3-push-send-paths.md)) replaced the `notify_on_write_skipped_send` log lines with real APNs HTTP/2 + FCM HTTP v1 dispatch + token cleanup on the standard error codes.
 
 ## Architecture
 
@@ -23,14 +23,17 @@ notify-on-write Edge Function (this)
       │ 3. Route by (table, type) → mapping.ts pure helpers compute
       │    NotificationDispatch[] per recipient
       │ 4. Resolve display names + pattern title via service-role JOINs
-      │ 5. Phase 24.1: log dispatches; do NOT send to APNs / FCM
-      │    Phase 24.3: invoke APNs (ios) / FCM HTTP v1 (android) per row
-      │    in device_tokens
+      │ 5. dispatchAll(supabase, dispatches, apnsCreds, fcmSa) — Phase 24.3:
+      │    - SELECT device_tokens by recipient_user_id
+      │    - Promise.allSettled per token: sendApns / sendFcm
+      │    - On delete_token outcome: DELETE FROM device_tokens
+      │    - Stats { success, delete_token, transient_error, ... } returned
+      │      in the response body for triage.
       ▼
 device_tokens (per-user) ← Phase 24.2 client registers here via PushTokenRegistrar
       │
       ▼
-APNs / FCM v1 ← Phase 24.3
+APNs (api.push.apple.com) / FCM v1 (fcm.googleapis.com)
 ```
 
 > **Why Bearer rather than HMAC body signature**: per the [Supabase Database Webhooks doc](https://supabase.com/docs/guides/database/webhooks), Database Webhooks do NOT auto-sign payloads — the dashboard UI exposes only Method / URL or Edge Function / Timeout / HTTP Headers / HTTP Parameters, with no signing-secret field and no `x-supabase-webhook-signature` header. The Authorization header path is the supported authentication boundary. Mirrors the `revenuecat-webhook` Bearer pattern.
@@ -42,12 +45,12 @@ APNs / FCM v1 ← Phase 24.3
 - `SUPABASE_URL` — auto-injected
 - `SUPABASE_SERVICE_ROLE_KEY` — auto-injected
 - `SKEINLY_DATABASE_WEBHOOK_SECRET` — manual: `supabase secrets set` (release-secrets EF-6, Phase 24.1). The `SKEINLY_` prefix is load-bearing: Supabase reserves `SUPABASE_*` for platform-injected env vars and `supabase secrets set` rejects any name starting with that prefix.
+- `APPLE_APNS_KEY_P8` (EF-1) — APNs `.p8` PEM body. Required for iOS dispatch (Phase 24.3+).
+- `APPLE_APNS_KEY_ID` (EF-2) — 10-char APNs Key ID.
+- `APPLE_TEAM_ID` — 10-char Apple Developer Team ID.
+- `FIREBASE_SERVICE_ACCOUNT_JSON` (EF-3) — Firebase Admin SA JSON. Required for Android dispatch (Phase 24.3+).
 
-Phase 24.3 will additionally consume:
-- `APPLE_APNS_KEY_P8` (EF-1 — already registered)
-- `APPLE_APNS_KEY_ID` (EF-2 — already registered)
-- `APPLE_TEAM_ID` (reused — already registered)
-- `FIREBASE_SERVICE_ACCOUNT_JSON` (EF-3 — already registered)
+If APNs creds are missing, iOS dispatches gracefully degrade to `config_error` (skipped, logged, no DELETE). Same for missing FCM SA → Android dispatches skip. Half-configured deployments don't crash; the Edge Function's response body's `send_stats.skipped_no_creds` counter surfaces the omission.
 
 ## Deployment
 
@@ -70,29 +73,37 @@ Configure the 3 webhooks via Supabase Dashboard → Database → Webhooks. Full 
 
 ## Local unit tests
 
-`mapping.ts` is pure — no fetch, no DB, no env vars. Test suite runs offline:
+`mapping.ts` is pure (no fetch, no DB, no env vars). The Phase 24.3 send-path modules (`apns.ts` / `fcm.ts`) are exercised via `globalThis.fetch` monkey-patching from `_fakes.ts`. The whole suite runs offline:
 
 ```bash
-deno test supabase/functions/notify-on-write/
+deno test --allow-net --allow-env supabase/functions/notify-on-write/
 ```
 
-Coverage: 29 tests — template parity (EN/JA), `renderBody` locale resolution + null fallbacks, `computePrOpenedDispatches` / `computePrCommentedDispatches` / `computePrStatusChangeDispatches` exhaustive recipient matrix.
+Coverage (62 tests total):
+- 29 `mapping.test.ts` — template parity, locale fallbacks, recipient matrices (Phase 24.1 baseline, unchanged in 24.3).
+- 15 `apns.test.ts` — JWT signing + caching + ES256 round-trip + classifier matrix (200/410/400/403/429/503/unknown) + end-to-end sendApns under fake fetch.
+- 13 `fcm.test.ts` — OAuth caching + classifier matrix (UNREGISTERED/SENDER_ID_MISMATCH/UNAUTHENTICATED retry sentinel/etc.) + end-to-end sendFcm.
+- 5 `dispatch.test.ts` — integration: dispatchAll with fake Supabase + fake fetch covering single-success, mixed success/delete, two-recipient fan-out (verifies OAuth fetched once across pushes), missing-creds skip, ghost-recipient (zero tokens) skip.
 
-## Phase 24.1 SHELL contract
+`--allow-net` is needed because Deno requires it to import the JSR `@zaubrik/djwt@^3` module on first run (cached after that). `--allow-env` is needed because `index.ts` reads `Deno.env.get(...)` at startup-flow code paths exercised in dispatch tests.
 
-This slice intentionally:
-- Verifies the Bearer secret (so 24.2/24.3 can build atop a secured shell).
-- Parses the payload and routes to `mapping.ts` recipient computation.
-- Emits structured `console.log` lines per dispatch (`event: notify_on_write_skipped_send`).
-- Returns `200 { ok: true, dispatch_count: N }` for downstream observability.
+## Phase 24.3 send-path contract (per ADR-018)
 
-This slice intentionally does NOT:
-- Send any APNs request (Phase 24.3).
-- Send any FCM request (Phase 24.3).
-- Read from `device_tokens` (Phase 24.3 — meaningless until Phase 24.2 client wiring populates the table).
-- Cleanup invalid tokens via 410/404 handling (Phase 24.3 — no send path to fail).
+This slice:
+- Replaces the Phase 24.1 `notify_on_write_skipped_send` log lines with real APNs HTTP/2 + FCM HTTP v1 POSTs.
+- Mints APNs ES256 JWTs in-instance via `djwt` JSR, cached for 50 min with a 5-min refresh margin.
+- Mints FCM SA RS256 JWT → exchanges for OAuth access token → caches in-instance with the same 5-min margin.
+- Per-recipient `Promise.allSettled` over device_tokens; sequential across recipients.
+- DELETEs device_tokens rows on APNs `410 Unregistered` / `400 BadDeviceToken` / `400 DeviceTokenNotForTopic` / FCM `404 UNREGISTERED` / `403 SENDER_ID_MISMATCH`. Unknown reasons fall through to `transient_error` (fail-safe — never delete on unknown signal).
+- Production APNs only (`api.push.apple.com`); ADR-018 §3.5 documents the rationale + the Phase 24.4+ pivot to `device_tokens.environment` if local-debug push iteration becomes a need.
 
-## Smoke test (post-deploy, Phase 24.1)
+Out of scope (deferred to Phase 24.4+):
+- PR-opened / PR-merged / PR-closed dispatch (this slice ships PR-comment end-to-end; the Edge Function already routes the other event types via `mapping.ts`'s computePr*Dispatches but the call surfaces ship in 24.4 alongside their own E2E validation).
+- Deep-link routing payload (Phase 24.5 — `data.route` field).
+- iOS sandbox APNs server (Phase 24.4+ if local-debug push iteration becomes a need).
+- Sentry / external observability — structured `console.log` is the observability layer at closed-beta scale.
+
+## Smoke test (post-deploy)
 
 After `supabase functions deploy notify-on-write` and Dashboard webhook wiring:
 
@@ -107,7 +118,7 @@ curl -s -w '\nHTTP %{http_code}\n' -X POST "$WEBHOOK_URL" \
   -d "$BODY"
 ```
 
-Expected: `HTTP 200` with `{"ok":true,"dispatch_count":N}`. Pull function logs via `mcp__supabase__get_logs service=edge-function` and look for `notify_on_write_dispatched` + `notify_on_write_skipped_send` structured log lines.
+Expected: `HTTP 200` with `{"ok":true,"dispatch_count":N,"send_stats":{"success":...,"delete_token":...,"transient_error":...,"config_error":...,"skipped_no_creds":...}}`. Pull function logs via `mcp__supabase__get_logs service=edge-function` and look for `notify_on_write_dispatched` (high-level summary) + per-token `device_token_deleted` (token cleanup events) + `notify_on_write_transient_error` + `notify_on_write_config_error` (per-token outcomes) structured log lines. Phase 24.1's `notify_on_write_skipped_send` event is gone — Phase 24.3 events take its place.
 
 Bad-secret path:
 

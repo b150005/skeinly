@@ -1,10 +1,19 @@
-// Phase 24.1 (ADR-017 §3.9): notify-on-write Edge Function shell.
+// Phase 24.3 (ADR-018 §3.3, §3.4): notify-on-write Edge Function with
+// real APNs + FCM dispatch.
+//
+// Phase 24.1 shipped this as log-only shell; Phase 24.3 replaces the
+// `notify_on_write_skipped_send` log lines with actual HTTP/2 POSTs
+// against APNs (`api.push.apple.com`) and FCM HTTP v1
+// (`fcm.googleapis.com/v1/projects/<project>/messages:send`).
+//
+// Token cleanup: ADR-018 §3.4 classifies APNs / FCM error codes into
+// {success | delete_token | transient_error | config_error}. The
+// `delete_token` arm runs `DELETE FROM device_tokens WHERE token = $1`
+// to drain retired tokens (uninstall, OS reset, etc.).
 //
 // Receives Supabase Database Webhook deliveries from 3 source tables
 // (`pull_requests` INSERT/UPDATE, `pull_request_comments` INSERT) and
-// computes per-recipient notification dispatches. Phase 24.1 ships
-// **log-only** — no APNs / FCM HTTP calls yet. Phase 24.3 wires the
-// real send paths via `djwt` JSR import.
+// computes per-recipient notification dispatches.
 //
 // Webhook auth: shared-secret Bearer token in the `Authorization`
 // header. The maintainer adds the header pair
@@ -40,12 +49,19 @@ import {
     type NotificationDispatch,
     type PullRequestCommentRow,
     type PullRequestRow,
+    type SupportedLocale,
     type WebhookPayload,
     computePrCommentedDispatches,
     computePrOpenedDispatches,
     computePrStatusChangeDispatches,
     renderBody,
 } from "./mapping.ts";
+import {
+    type ApnsCredentials,
+    type SendOutcome,
+    sendApns,
+} from "./apns.ts";
+import { type ServiceAccount, sendFcm } from "./fcm.ts";
 
 // ---------------------------------------------------------------------
 // Entry point
@@ -101,21 +117,18 @@ Deno.serve(async (req: Request): Promise<Response> => {
             type: payload.type,
             dispatch_count: dispatches.length,
         }));
-        // Phase 24.1 SHELL: log-only. No APNs / FCM call. Phase 24.3
-        // wires the real send paths.
-        for (const dispatch of dispatches) {
-            console.log(JSON.stringify({
-                event: "notify_on_write_skipped_send",
-                recipient_user_id: dispatch.recipientUserId,
-                template_key: dispatch.templateKey,
-                phase: "24.1-shell",
-            }));
-        }
+        const apnsCreds = loadApnsCredentialsOrNull();
+        const fcmSa = loadFcmServiceAccountOrNull();
+        const sendStats = await dispatchAll(supabase, dispatches, apnsCreds, fcmSa);
         // Always return 200 to Supabase's webhook retry logic — push
-        // delivery failures (Phase 24.3+) MUST NOT trigger Database
-        // Webhook retries (which would re-fan-out to all recipients,
-        // not just the failed one).
-        return jsonResponse({ ok: true, dispatch_count: dispatches.length });
+        // delivery failures MUST NOT trigger Database Webhook retries
+        // (which would re-fan-out to all recipients, not just the
+        // failed one). Stats are returned in the body for triage.
+        return jsonResponse({
+            ok: true,
+            dispatch_count: dispatches.length,
+            send_stats: sendStats,
+        });
     } catch (e) {
         console.error("notify-on-write: routing failure", e);
         // Even on routing failure, return 200 so Supabase doesn't retry.
@@ -354,6 +367,236 @@ function jsonResponse(body: unknown, status = 200): Response {
 
 // renderBody is re-exported so the smoke-test path that the README
 // documents can demonstrate "what the body would look like" without
-// firing a real send. Phase 24.3 will use this directly when wiring
-// APNs / FCM payloads.
+// firing a real send. Phase 24.3 also consumes this directly inside
+// `dispatchAll` below.
 export { renderBody };
+
+// ---------------------------------------------------------------------
+// Dispatch (Phase 24.3 — ADR-018 §3.3, §3.4)
+// ---------------------------------------------------------------------
+
+interface DeviceTokenRow {
+    id: string;
+    user_id: string;
+    platform: "ios" | "android";
+    token: string;
+    locale: string;
+}
+
+export interface SendStats {
+    success: number;
+    delete_token: number;
+    transient_error: number;
+    config_error: number;
+    skipped_no_creds: number;
+}
+
+/**
+ * Phase 24.3 dispatch: for each dispatch's recipient, resolve their
+ * device tokens, fan out per token via Promise.allSettled, then
+ * sequentially process each result for token cleanup. ADR-018 §3.3.
+ */
+export async function dispatchAll(
+    supabase: SupabaseClient,
+    dispatches: NotificationDispatch[],
+    apnsCreds: ApnsCredentials | null,
+    fcmSa: ServiceAccount | null,
+): Promise<SendStats> {
+    const stats: SendStats = {
+        success: 0,
+        delete_token: 0,
+        transient_error: 0,
+        config_error: 0,
+        skipped_no_creds: 0,
+    };
+    for (const dispatch of dispatches) {
+        const tokens = await resolveTokens(supabase, dispatch.recipientUserId);
+        if (tokens.length === 0) {
+            console.log(JSON.stringify({
+                event: "notify_on_write_no_tokens",
+                recipient_user_id_prefix: dispatch.recipientUserId.substring(0, 8),
+                template_key: dispatch.templateKey,
+            }));
+            continue;
+        }
+        const results = await Promise.allSettled(
+            tokens.map((tokenRow) => sendOne(tokenRow, dispatch, apnsCreds, fcmSa)),
+        );
+        for (let i = 0; i < results.length; i++) {
+            const tokenRow = tokens[i];
+            const result = results[i];
+            if (result.status === "fulfilled") {
+                await processOutcome(supabase, tokenRow, result.value, stats);
+            } else {
+                // `Promise.allSettled` swallows the error inside the
+                // outer await, but `sendOne` itself wraps fetch errors
+                // into transient_error outcomes — a true rejection is
+                // unexpected. Surface as transient + log.
+                console.error(JSON.stringify({
+                    event: "notify_on_write_unexpected_rejection",
+                    platform: tokenRow.platform,
+                    user_id_prefix: tokenRow.user_id.substring(0, 8),
+                    error: stringifyError(result.reason),
+                }));
+                stats.transient_error += 1;
+            }
+        }
+    }
+    return stats;
+}
+
+async function resolveTokens(
+    supabase: SupabaseClient,
+    recipientUserId: string,
+): Promise<DeviceTokenRow[]> {
+    const { data, error } = await supabase
+        .from("device_tokens")
+        .select("id, user_id, platform, token, locale")
+        .eq("user_id", recipientUserId);
+    if (error) {
+        console.error("notify-on-write: device_tokens select failed", error.message);
+        return [];
+    }
+    return (data ?? []) as DeviceTokenRow[];
+}
+
+async function sendOne(
+    tokenRow: DeviceTokenRow,
+    dispatch: NotificationDispatch,
+    apnsCreds: ApnsCredentials | null,
+    fcmSa: ServiceAccount | null,
+): Promise<SendOutcome> {
+    const locale = normalizeLocale(tokenRow.locale);
+    const body = renderBody(locale, dispatch.templateKey, dispatch.params);
+
+    if (tokenRow.platform === "ios") {
+        if (!apnsCreds) {
+            return { kind: "config_error", reason: "apns_credentials_missing" };
+        }
+        return await sendApns(apnsCreds, {
+            deviceToken: tokenRow.token,
+            body,
+            templateKey: dispatch.templateKey,
+        });
+    }
+    if (tokenRow.platform === "android") {
+        if (!fcmSa) {
+            return { kind: "config_error", reason: "fcm_service_account_missing" };
+        }
+        return await sendFcm(fcmSa, {
+            deviceToken: tokenRow.token,
+            body,
+            templateKey: dispatch.templateKey,
+        });
+    }
+    return {
+        kind: "config_error",
+        reason: `unknown_platform: ${String(tokenRow.platform)}`,
+    };
+}
+
+async function processOutcome(
+    supabase: SupabaseClient,
+    tokenRow: DeviceTokenRow,
+    outcome: SendOutcome,
+    stats: SendStats,
+): Promise<void> {
+    if (outcome.kind === "success") {
+        stats.success += 1;
+        return;
+    }
+    if (outcome.kind === "delete_token") {
+        // ADR-018 §3.4 — DELETE WHERE token = $1; the row's user_id is
+        // informational. Token alone is the canonical identifier even
+        // across user_ids (per migration 025 unique constraint
+        // semantics + per-device token issuance).
+        const { error } = await supabase
+            .from("device_tokens")
+            .delete()
+            .eq("token", tokenRow.token);
+        if (error) {
+            console.error(JSON.stringify({
+                event: "device_token_delete_failed",
+                platform: tokenRow.platform,
+                user_id_prefix: tokenRow.user_id.substring(0, 8),
+                reason: outcome.reason,
+                error: error.message,
+            }));
+            stats.transient_error += 1;
+            return;
+        }
+        console.log(JSON.stringify({
+            event: "device_token_deleted",
+            platform: tokenRow.platform,
+            user_id_prefix: tokenRow.user_id.substring(0, 8),
+            reason: outcome.reason,
+        }));
+        stats.delete_token += 1;
+        return;
+    }
+    if (outcome.kind === "config_error") {
+        if (outcome.reason === "apns_credentials_missing"
+            || outcome.reason === "fcm_service_account_missing") {
+            stats.skipped_no_creds += 1;
+        } else {
+            stats.config_error += 1;
+        }
+        console.error(JSON.stringify({
+            event: "notify_on_write_config_error",
+            platform: tokenRow.platform,
+            user_id_prefix: tokenRow.user_id.substring(0, 8),
+            reason: outcome.reason,
+        }));
+        return;
+    }
+    // transient_error
+    stats.transient_error += 1;
+    console.log(JSON.stringify({
+        event: "notify_on_write_transient_error",
+        platform: tokenRow.platform,
+        user_id_prefix: tokenRow.user_id.substring(0, 8),
+        reason: outcome.reason,
+    }));
+}
+
+function loadApnsCredentialsOrNull(): ApnsCredentials | null {
+    const keyP8 = Deno.env.get("APPLE_APNS_KEY_P8");
+    const keyId = Deno.env.get("APPLE_APNS_KEY_ID");
+    const teamId = Deno.env.get("APPLE_TEAM_ID");
+    if (!keyP8 || !keyId || !teamId) {
+        return null;
+    }
+    return { keyP8Pem: keyP8, keyId, teamId };
+}
+
+function loadFcmServiceAccountOrNull(): ServiceAccount | null {
+    const raw = Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON");
+    if (!raw) return null;
+    try {
+        const parsed = JSON.parse(raw) as ServiceAccount;
+        if (!parsed.client_email || !parsed.private_key || !parsed.project_id) {
+            console.error("notify-on-write: FIREBASE_SERVICE_ACCOUNT_JSON malformed");
+            return null;
+        }
+        return parsed;
+    } catch (e) {
+        console.error("notify-on-write: FIREBASE_SERVICE_ACCOUNT_JSON parse failed", stringifyError(e));
+        return null;
+    }
+}
+
+/** Defensive locale normalization. The `device_tokens.locale` CHECK
+ * constraint pins the value to "en-US" or "ja-JP", but defense in
+ * depth matters when reading user-supplied data. Unknown locales fall
+ * back to en-US (the same fallback `renderBody` does internally —
+ * mirrored here so the type contract on `SupportedLocale` is honored
+ * before the call). */
+function normalizeLocale(raw: string | null | undefined): SupportedLocale {
+    if (raw === "en-US" || raw === "ja-JP") return raw;
+    return "en-US";
+}
+
+function stringifyError(e: unknown): string {
+    if (e instanceof Error) return e.message;
+    return String(e);
+}
