@@ -24,11 +24,12 @@ val platformModule =
         // layer beyond the modules being included.
         single { BugSubmissionLauncher(get()) }
         single { DeviceContextProvider(get()) }
-        // Phase 24.2b (ADR-017 §3.6) — push-token + permission registrar.
-        // 24.2b ships a no-op stub; 24.2d swaps in FirebaseMessaging +
-        // POST_NOTIFICATIONS runtime-permission wiring behind the same
-        // expect/actual surface.
-        single { PushTokenRegistrar(get()) }
+        // Phase 24.2e (ADR-017 §3.5, §3.6) — push-token + permission
+        // registrar. 24.2e swaps in FirebaseMessaging.getInstance().token
+        // + Activity-scoped POST_NOTIFICATIONS launcher wiring + the
+        // commonMain `DeviceTokenRepository` upsert path behind the same
+        // expect/actual surface that 24.2b shipped as a stub.
+        single { PushTokenRegistrar(get(), get()) }
         // Phase 24.2c (ADR-017 §3.6) — opens the OS app-notification
         // Settings page so a denied user can re-enable.
         single { OsSettingsLauncher(get()) }

@@ -13,6 +13,7 @@ import io.github.b150005.skeinly.di.sharedModules
 import io.github.b150005.skeinly.domain.model.CommentTargetType
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
 import io.github.b150005.skeinly.domain.usecase.GetOnboardingCompletedUseCase
+import io.github.b150005.skeinly.notifications.PushTokenRegistrar
 import io.github.b150005.skeinly.ui.activityfeed.ActivityFeedViewModel
 import io.github.b150005.skeinly.ui.auth.AuthViewModel
 import io.github.b150005.skeinly.ui.bugreport.BugReportPreviewViewModel
@@ -130,6 +131,28 @@ fun startEventRingBuffer() {
     val buffer: EventRingBuffer = KoinPlatform.getKoin().get()
     val scope: CoroutineScope = KoinPlatform.getKoin().get(applicationScopeQualifier)
     buffer.start(scope)
+}
+
+/**
+ * Phase 24.2e (ADR-017 §3.5) — bridges the Swift `AppDelegate`
+ * APNs callback into the shared `PushTokenRegistrar`. Swift call sites:
+ *
+ * ```swift
+ * // didRegisterForRemoteNotificationsWithDeviceToken
+ * KoinHelperKt.handleApnsTokenReceived(token: hex)
+ * // didFailToRegisterForRemoteNotificationsWithError
+ * KoinHelperKt.handleApnsTokenReceived(token: nil)
+ * ```
+ *
+ * Resolves the Koin-singleton `PushTokenRegistrar` and forwards the
+ * APNs token (or null on failure) into its in-flight
+ * `Channel<String?>`. Idempotent on a stale callback — a second call
+ * after the consumer already received its value replaces the
+ * CONFLATED slot with no observable effect.
+ */
+fun handleApnsTokenReceived(token: String?) {
+    val registrar: PushTokenRegistrar = KoinPlatform.getKoin().get()
+    registrar.handleApnsToken(token)
 }
 
 /**

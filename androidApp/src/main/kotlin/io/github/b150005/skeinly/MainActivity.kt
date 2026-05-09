@@ -1,5 +1,6 @@
 package io.github.b150005.skeinly
 
+import android.Manifest
 import android.content.Intent
 import android.os.Bundle
 import android.os.SystemClock
@@ -7,6 +8,7 @@ import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.DisposableEffect
@@ -24,6 +26,7 @@ import io.github.b150005.skeinly.data.analytics.AnalyticsEvent
 import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
 import io.github.b150005.skeinly.data.analytics.Screen
 import io.github.b150005.skeinly.data.preferences.AnalyticsPreferences
+import io.github.b150005.skeinly.notifications.PushTokenRegistrar
 import io.github.b150005.skeinly.ui.navigation.BugReportPreview
 import io.github.b150005.skeinly.ui.navigation.SkeinlyNavHost
 import org.koin.android.ext.android.get
@@ -45,10 +48,33 @@ class MainActivity : ComponentActivity() {
     // `onDestroy` so a configuration change rebinds cleanly.
     private var navController: NavHostController? = null
 
+    // Phase 24.2e (ADR-017 §3.6) — Activity-scoped runtime POST_NOTIFICATIONS
+    // prompt. The shared `PushTokenRegistrar` (Koin singleton, lives across
+    // configuration changes) holds a callback we wire here in `onCreate`
+    // and clear in `onDestroy` so the registrar never points at a destroyed
+    // Activity. The launcher MUST be created at field-init time per the
+    // ActivityResultLauncher contract — calling `registerForActivityResult`
+    // after `Activity.onCreate` completes throws.
+    private val pushTokenRegistrar: PushTokenRegistrar by lazy { get<PushTokenRegistrar>() }
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            pushTokenRegistrar.onPermissionResult(granted)
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         deepLinkToken = extractShareToken(intent)
+        // Phase 24.2e — wire the Activity-scoped permission launcher to the
+        // shared `PushTokenRegistrar`. The closure fires the Activity's
+        // `ActivityResultLauncher.launch(POST_NOTIFICATIONS)`; the registered
+        // callback at field-init forwards the result back via
+        // `pushTokenRegistrar.onPermissionResult`. Cleared in `onDestroy` so
+        // a re-created Activity rebinds cleanly without the registrar
+        // holding a destroyed Activity reference.
+        pushTokenRegistrar.attachLauncher {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
         // Phase 39.3 (ADR-015 §6) — resolve once at activity creation;
         // tracker is a Koin singleton so a second resolve from inside
         // the Composable would return the same instance, but pulling at
@@ -161,6 +187,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         navController = null
+        // Phase 24.2e — clear the Activity-scoped launcher reference so
+        // a config-change tear-down does not leave the registrar pointing
+        // at a destroyed Activity. `detachLauncher` also completes any
+        // in-flight `requestPermission` deferred with `false` so a
+        // user-tapped "Enable" suspended over the tear-down resolves
+        // cleanly rather than leaking a coroutine.
+        pushTokenRegistrar.detachLauncher()
         super.onDestroy()
     }
 

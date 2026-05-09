@@ -8,6 +8,20 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.playPublisher)
+    // Phase 24.2e (ADR-017 §3.5) — Firebase Gradle plugin declared but
+    // NOT applied here. Auto-applied below when a `google-services.json`
+    // exists in any variant slot. This guards against:
+    //   - Local dev builds without the secret decoded (the plugin
+    //     hard-fails configuration if the file is missing).
+    //   - CI builds where the `FIREBASE_GOOGLE_SERVICES_JSON_BASE64`
+    //     secret is not configured (e.g. external fork PRs without
+    //     access to GitHub Environment secrets).
+    // When the plugin is absent, `firebase-messaging` is still on the
+    // classpath but `FirebaseApp` is not initialized at process boot;
+    // `FirebaseMessaging.getInstance().token.await()` throws which
+    // `PushTokenRegistrar.android.kt`'s catch handler maps to a null
+    // return (graceful local-only mode).
+    alias(libs.plugins.googleServices) apply false
 }
 
 val versionProps =
@@ -15,6 +29,22 @@ val versionProps =
         val versionFile = rootProject.file("version.properties")
         if (versionFile.exists()) props.load(FileInputStream(versionFile))
     }
+
+// Phase 24.2e (ADR-017 §3.5) — apply the google-services plugin only
+// when a config file is present. See `plugins {}` block above for the
+// rationale. The check covers all 3 possible slots (debug variant
+// override, release variant override, project-level fallback) so any
+// of the three layouts works without extra wiring.
+val googleServicesConfigPresent =
+    listOf(
+        file("src/debug/google-services.json"),
+        file("src/release/google-services.json"),
+        file("google-services.json"),
+    ).any { it.exists() }
+
+if (googleServicesConfigPresent) {
+    apply(plugin = "com.google.gms.google-services")
+}
 
 val localProps =
     Properties().also { props ->
@@ -246,6 +276,15 @@ dependencies {
     implementation(libs.sentry.android)
     implementation(libs.posthog.android)
     implementation(projects.shared)
+    // Phase 24.2e (ADR-017 §3.5) — `firebase-messaging` and
+    // `kotlinx-coroutines-play-services` are declared on the shared
+    // module's androidMain dependencies (where `PushTokenRegistrar.android.kt`
+    // imports them). The shared module's runtime classpath propagates to
+    // the assembled APK, so the SDK is on the final binary. The
+    // google-services Gradle plugin still applies HERE (the application
+    // module) because it emits Android string resources from
+    // google-services.json that firebase-messaging reads at process
+    // boot. See plugins {} block above for the apply-conditional logic.
     debugImplementation(compose.uiTooling)
 
     // Android UI Testing

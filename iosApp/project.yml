@@ -153,6 +153,14 @@ targets:
         # primary actions (toolbar buttons, swipe-action accents, links,
         # focus rings) with this color across the entire app.
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        # Phase 24.2e (ADR-017 §3.5) — APNs entitlement. The bundled
+        # `iosApp/iosApp.entitlements` declares `aps-environment =
+        # production` so TestFlight + App Store builds attach to the
+        # production APNs gateway. The Distribution Provisioning Profile
+        # in `APPLE_PROVISIONING_PROFILE_BASE64` must include the Push
+        # Notifications capability for the App ID, otherwise
+        # `xcodebuild archive` reports a code-sign mismatch.
+        CODE_SIGN_ENTITLEMENTS: iosApp/iosApp.entitlements
     dependencies:
       - framework: "../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)/Shared.framework"
         embed: false

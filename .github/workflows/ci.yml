@@ -64,6 +64,10 @@ jobs:
     name: Android (Build + Test)
     runs-on: ubuntu-latest
     needs: shared-checks
+    # `development` Environment scope unlocks
+    # FIREBASE_GOOGLE_SERVICES_JSON_BASE64 (Skeinly-Dev project, debug
+    # variant). Repository-scoped secrets (SUPABASE_*) remain accessible.
+    environment: development
     steps:
       - uses: actions/checkout@v6
 
@@ -75,6 +79,24 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6
+
+      # Phase 24.2e (ADR-017 §3.5) — decode the Skeinly-Dev Firebase
+      # project's google-services.json into the debug variant slot. The
+      # secret is base64-encoded JSON registered against the
+      # `development` GitHub Environment per docs/en/release-secrets.md;
+      # the file slot is `androidApp/src/debug/` so AGP picks it up only
+      # for `assembleDebug` (the release variant uses `src/release/`,
+      # gated under the `production` Environment in release.yml). Both
+      # files are git-ignored. Without the secret, `:androidApp:assembleDebug`
+      # fails because the google-services Gradle plugin requires a
+      # config file.
+      - name: Decode Firebase google-services.json (debug)
+        if: env.FIREBASE_DEV_BASE64 != ''
+        env:
+          FIREBASE_DEV_BASE64: ${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          mkdir -p androidApp/src/debug
+          echo "$FIREBASE_DEV_BASE64" | base64 -d > androidApp/src/debug/google-services.json
 
       - name: Run Android unit tests
         run: ./gradlew :androidApp:testDebugUnitTest

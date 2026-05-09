@@ -15,11 +15,13 @@ import io.github.b150005.skeinly.data.realtime.SupabaseRealtimeChannelProvider
 import io.github.b150005.skeinly.data.remote.ActivityDataSourceOperations
 import io.github.b150005.skeinly.data.remote.CommentDataSourceOperations
 import io.github.b150005.skeinly.data.remote.ConnectivityMonitor
+import io.github.b150005.skeinly.data.remote.DeviceTokenRemoteOperations
 import io.github.b150005.skeinly.data.remote.PublicPatternDataSource
 import io.github.b150005.skeinly.data.remote.RemoteActivityDataSource
 import io.github.b150005.skeinly.data.remote.RemoteChartBranchDataSource
 import io.github.b150005.skeinly.data.remote.RemoteChartRevisionDataSource
 import io.github.b150005.skeinly.data.remote.RemoteCommentDataSource
+import io.github.b150005.skeinly.data.remote.RemoteDeviceTokenDataSource
 import io.github.b150005.skeinly.data.remote.RemotePatternDataSource
 import io.github.b150005.skeinly.data.remote.RemoteProgressDataSource
 import io.github.b150005.skeinly.data.remote.RemoteProjectDataSource
@@ -42,6 +44,7 @@ import io.github.b150005.skeinly.data.repository.AuthRepositoryImpl
 import io.github.b150005.skeinly.data.repository.ChartBranchRepositoryImpl
 import io.github.b150005.skeinly.data.repository.ChartRevisionRepositoryImpl
 import io.github.b150005.skeinly.data.repository.CommentRepositoryImpl
+import io.github.b150005.skeinly.data.repository.DeviceTokenRepositoryImpl
 import io.github.b150005.skeinly.data.repository.OfflineUserRepository
 import io.github.b150005.skeinly.data.repository.PatternRepositoryImpl
 import io.github.b150005.skeinly.data.repository.ProgressRepositoryImpl
@@ -57,6 +60,7 @@ import io.github.b150005.skeinly.domain.repository.AuthRepository
 import io.github.b150005.skeinly.domain.repository.ChartBranchRepository
 import io.github.b150005.skeinly.domain.repository.ChartRevisionRepository
 import io.github.b150005.skeinly.domain.repository.CommentRepository
+import io.github.b150005.skeinly.domain.repository.DeviceTokenRepository
 import io.github.b150005.skeinly.domain.repository.PatternRepository
 import io.github.b150005.skeinly.domain.repository.ProgressRepository
 import io.github.b150005.skeinly.domain.repository.ProjectRepository
@@ -84,6 +88,19 @@ val repositoryModule =
         // Auth
         single<AuthRepository> { AuthRepositoryImpl(getOrNull<SupabaseClient>()) }
 
+        // Phase 24.2e (ADR-017 §3.5) — push-token upsert. Registered
+        // unconditionally (not gated on SupabaseConfig.isConfigured)
+        // because the impl handles `remote = null` internally via the
+        // RequiresConnectivity short-circuit. Wiring it here keeps
+        // `PushTokenRegistrar` actuals' Koin `get<DeviceTokenRepository>()`
+        // resolution simple — there is always a binding.
+        single<DeviceTokenRepository> {
+            DeviceTokenRepositoryImpl(
+                remote = getOrNull<DeviceTokenRemoteOperations>(),
+                authRepository = get(),
+            )
+        }
+
         // Local data sources
         single { LocalProjectDataSource(get(), get(ioDispatcherQualifier)) }
         single { LocalProgressDataSource(get(), get(ioDispatcherQualifier)) }
@@ -109,6 +126,13 @@ val repositoryModule =
             single { RemoteChartBranchDataSource(get<SupabaseClient>()) }
             single { RemotePullRequestDataSource(get<SupabaseClient>()) }
             single { RemoteSubscriptionDataSource(get<SupabaseClient>()) }
+            // Phase 24.2e (ADR-017 §3.5) — device_tokens upsert
+            // adapter. Interface alias lets DeviceTokenRepositoryImpl
+            // be tested with an in-memory fake without standing up
+            // Supabase. Same shape as SubscriptionRemoteOperations
+            // above.
+            single { RemoteDeviceTokenDataSource(get<SupabaseClient>()) }
+            single<DeviceTokenRemoteOperations> { get<RemoteDeviceTokenDataSource>() }
             // Interface alias lets SubscriptionRepositoryImpl be tested
             // with an in-memory fake without standing up Supabase. Same
             // shape as PullRequestMergeOperations above.

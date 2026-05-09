@@ -27,6 +27,14 @@ purchasesKmp = "2.10.2+17.55.1"
 ktlint = "14.2.0"
 kover = "0.9.8"
 playPublisher = "4.0.0"
+googleServices = "4.4.2"
+# Phase 24.2e — Firebase Messaging pinned directly (no BOM). The KMP
+# `Project.platform(notation)` Gradle DSL is deprecated under Kotlin 2.3
+# (KT-58759) and breaks the shared/build.gradle.kts compile, so the BOM
+# convention isn't usable from the shared module's androidMain
+# dependency block. Direct pinning is the established workaround until
+# KMP exposes a non-deprecated BOM-style accessor.
+firebaseMessaging = "24.1.0"
 
 # AndroidX Testing
 androidx-test-runner = "1.7.0"
@@ -41,6 +49,9 @@ androidx-lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycl
 
 # Kotlinx
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+# Phase 24.2e — Tasks<T>.await() bridge for FirebaseMessaging.getInstance().token.
+# Lives only in androidMain because the Tasks API is Android-only.
+kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinx-coroutines" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 
@@ -91,6 +102,17 @@ sentry-android = { module = "io.sentry:sentry-android", version.ref = "sentry" }
 # Product analytics (Phase F2) — opt-in, default OFF.
 posthog-android = { module = "com.posthog:posthog-android", version.ref = "posthog" }
 
+# Firebase (Phase 24.2e / ADR-017 §3.5) — Firebase Cloud Messaging on
+# Android. `firebase-messaging` exposes
+# `FirebaseMessaging.getInstance().token` for FCM registration token
+# acquisition, which is upserted into the `device_tokens` table via the
+# new commonMain `DeviceTokenRepository`. google-services Gradle plugin
+# (registered in [plugins]) processes `google-services.json` at compile
+# time so the SDK auto-initializes from the bundled config — no
+# `FirebaseApp.initializeApp` call needed in Application.onCreate.
+# Pinned directly (no BOM) — see firebaseMessaging version comment.
+firebase-messaging = { module = "com.google.firebase:firebase-messaging", version.ref = "firebaseMessaging" }
+
 # Subscription / IAP — RevenueCat KMP (Phase 41.3 / ADR-016 §4.3).
 # `purchases-kmp-core` carries the multi-platform Purchases.sharedInstance
 # API; `purchases-kmp-result` adds suspend Result<T> extensions used by the
@@ -121,3 +143,4 @@ sqldelight = { id = "app.cash.sqldelight", version.ref = "sqlDelight" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 playPublisher = { id = "com.github.triplet.play", version.ref = "playPublisher" }
+googleServices = { id = "com.google.gms.google-services", version.ref = "googleServices" }
