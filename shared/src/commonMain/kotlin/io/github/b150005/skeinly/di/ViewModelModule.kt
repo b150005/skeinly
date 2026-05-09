@@ -1,6 +1,8 @@
 package io.github.b150005.skeinly.di
 
 import io.github.b150005.skeinly.config.BuildFlags
+import io.github.b150005.skeinly.notifications.OsSettingsLauncher
+import io.github.b150005.skeinly.notifications.PushTokenRegistrar
 import io.github.b150005.skeinly.platform.BugSubmissionLauncher
 import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.platform.snapshotContext
@@ -15,6 +17,7 @@ import io.github.b150005.skeinly.ui.chart.ChartHistoryViewModel
 import io.github.b150005.skeinly.ui.chart.ChartViewerViewModel
 import io.github.b150005.skeinly.ui.comments.CommentSectionViewModel
 import io.github.b150005.skeinly.ui.discovery.DiscoveryViewModel
+import io.github.b150005.skeinly.ui.notifications.NotificationPermissionViewModel
 import io.github.b150005.skeinly.ui.onboarding.OnboardingViewModel
 import io.github.b150005.skeinly.ui.packmanagement.PackManagementViewModel
 import io.github.b150005.skeinly.ui.patternedit.PatternEditViewModel
@@ -256,6 +259,26 @@ val viewModelModule =
                 ringBuffer = get(),
                 deviceContext = provider.snapshotContext(),
                 submit = { title, body -> launcher.launch(title, body) },
+            )
+        }
+        // Phase 24.2 (ADR-017 §3.6) — push notification consent ViewModel.
+        // Lambda seam pattern (mirrors BugReportPreviewViewModel above)
+        // because PushTokenRegistrar / OsSettingsLauncher are expect/actual
+        // classes that surface as `final class` to commonTest, blocking
+        // direct subclassing for fakes. The DI boundary owns the
+        // adaptation: bind each suspend method to a lambda the ViewModel
+        // can swap with a closure in tests.
+        viewModel {
+            val registrar: PushTokenRegistrar = get()
+            val osSettings: OsSettingsLauncher = get()
+            NotificationPermissionViewModel(
+                prompter = get(),
+                queryPermissionStatus = { registrar.queryPermissionStatus() },
+                requestPermission = { registrar.requestPermission() },
+                registerForPushNotifications = { locale ->
+                    registrar.registerForPushNotifications(locale)
+                },
+                openOsSettings = { osSettings.openAppNotificationSettings() },
             )
         }
         // Phase 41.3 (ADR-016 §6 §41.3) — paywall ViewModel. Parameterized

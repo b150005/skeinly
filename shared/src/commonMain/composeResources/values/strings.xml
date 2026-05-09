@@ -788,4 +788,16 @@
     <string name="body_pack_locked_inline">This pack is part of Skeinly Pro. Subscribe to unlock all symbols.</string>
     <string name="action_unlock_with_pro">Unlock with Pro</string>
     <string name="title_locked_symbol">Pro symbol</string>
+    <!-- Phase 24.2c (ADR-017 §3.6) — push notification consent UX. -->
+    <string name="label_notifications_settings_row">Notifications</string>
+    <string name="body_notifications_setting_explanation">Get notified when collaborators open pull requests, comment on yours, or merge your changes.</string>
+    <string name="state_notifications_enabled">Enabled</string>
+    <string name="state_notifications_disabled">Disabled</string>
+    <string name="body_notifications_disabled_hint">Open Settings to enable notifications.</string>
+    <string name="title_notifications_explainer">Stay in the loop</string>
+    <string name="body_notifications_explainer">Get notified when collaborators open pull requests, comment on yours, or merge your changes. You can change this anytime in Settings.</string>
+    <string name="action_enable_notifications">Enable</string>
+    <string name="action_not_now_notifications">Not now</string>
+    <string name="action_open_os_settings">Open Settings</string>
+    <string name="body_notifications_denied_explanation">You denied notifications. Open Settings to re-enable.</string>
 </resources>

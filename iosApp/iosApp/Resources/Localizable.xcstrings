@@ -7323,6 +7323,83 @@
         "en": { "stringUnit": { "state": "translated", "value": "Pro symbol" } },
         "ja": { "stringUnit": { "state": "translated", "value": "Pro シンボル" } }
       }
+    },
+    "label_notifications_settings_row": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Notifications" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "通知" } }
+      }
+    },
+    "body_notifications_setting_explanation": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Get notified when collaborators open pull requests, comment on yours, or merge your changes." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "プルリクエストの作成・コメント・マージなどコラボの動きをお知らせします。" } }
+      }
+    },
+    "state_notifications_enabled": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Enabled" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "オン" } }
+      }
+    },
+    "state_notifications_disabled": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Disabled" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "オフ" } }
+      }
+    },
+    "body_notifications_disabled_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open Settings to enable notifications." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "設定から通知をオンにできます。" } }
+      }
+    },
+    "title_notifications_explainer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Stay in the loop" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "コラボの動きを見逃さない" } }
+      }
+    },
+    "body_notifications_explainer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Get notified when collaborators open pull requests, comment on yours, or merge your changes. You can change this anytime in Settings." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "プルリクエストの作成・コメント・マージなどコラボの動きをお知らせします。設定からいつでも変更できます。" } }
+      }
+    },
+    "action_enable_notifications": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Enable" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "オンにする" } }
+      }
+    },
+    "action_not_now_notifications": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Not now" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "あとで" } }
+      }
+    },
+    "action_open_os_settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open Settings" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "設定を開く" } }
+      }
+    },
+    "body_notifications_denied_explanation": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "You denied notifications. Open Settings to re-enable." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "通知が許可されていません。設定から再度オンにできます。" } }
+      }
     }
   },
   "version": "1.1"
