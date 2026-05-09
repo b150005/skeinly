@@ -4,6 +4,7 @@ import com.russhwolf.settings.Settings
 import com.russhwolf.settings.SharedPreferencesSettings
 import io.github.b150005.skeinly.data.remote.ConnectivityMonitor
 import io.github.b150005.skeinly.db.DriverFactory
+import io.github.b150005.skeinly.notifications.OsSettingsLauncher
 import io.github.b150005.skeinly.notifications.PushTokenRegistrar
 import io.github.b150005.skeinly.platform.BugSubmissionLauncher
 import io.github.b150005.skeinly.platform.DeviceContextProvider
@@ -28,4 +29,7 @@ val platformModule =
         // POST_NOTIFICATIONS runtime-permission wiring behind the same
         // expect/actual surface.
         single { PushTokenRegistrar(get()) }
+        // Phase 24.2c (ADR-017 §3.6) — opens the OS app-notification
+        // Settings page so a denied user can re-enable.
+        single { OsSettingsLauncher(get()) }
     }

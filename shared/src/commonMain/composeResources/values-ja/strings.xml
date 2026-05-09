@@ -563,4 +563,16 @@
     <string name="body_pack_locked_inline">このパックは Skeinly Pro 専用です。すべてのシンボルを利用するにはサブスクリプションをご購入ください。</string>
     <string name="action_unlock_with_pro">Pro で解除</string>
     <string name="title_locked_symbol">Pro シンボル</string>
+    <!-- Phase 24.2c (ADR-017 §3.6) — プッシュ通知の許可 UX。 -->
+    <string name="label_notifications_settings_row">通知</string>
+    <string name="body_notifications_setting_explanation">プルリクエストの作成・コメント・マージなどコラボの動きをお知らせします。</string>
+    <string name="state_notifications_enabled">オン</string>
+    <string name="state_notifications_disabled">オフ</string>
+    <string name="body_notifications_disabled_hint">設定から通知をオンにできます。</string>
+    <string name="title_notifications_explainer">コラボの動きを見逃さない</string>
+    <string name="body_notifications_explainer">プルリクエストの作成・コメント・マージなどコラボの動きをお知らせします。設定からいつでも変更できます。</string>
+    <string name="action_enable_notifications">オンにする</string>
+    <string name="action_not_now_notifications">あとで</string>
+    <string name="action_open_os_settings">設定を開く</string>
+    <string name="body_notifications_denied_explanation">通知が許可されていません。設定から再度オンにできます。</string>
 </resources>
