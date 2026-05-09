@@ -203,6 +203,14 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.turbine)
+            // Phase 24.2 — Settings interface visibility for
+            // InMemorySettings (commonTest helper). multiplatform-settings is
+            // declared `implementation` in commonMain, which does not propagate
+            // to commonTest by default; explicit re-declaration is required so
+            // tests can implement the Settings interface directly without
+            // pulling in the multiplatform-settings-test artifact (which the
+            // project does not currently consume).
+            implementation(libs.multiplatform.settings)
         }
         androidMain {
             kotlin.srcDir(
