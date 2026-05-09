@@ -702,7 +702,7 @@ private fun CounterSection(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SwipeToDismissNoteItem(
     note: Progress,
