@@ -54,7 +54,11 @@ adb install -r "$APK_PATH"
 # Step 5: Run Maestro flows
 # Note: --exclude-tags requires-supabase skips flows that need a live backend.
 # Remove the flag when running against a Supabase-connected build.
+# Pass APP_ID explicitly via --env per Maestro's documented flow-variable
+# substitution contract; mirrors the CI workflow shape (.github/workflows/
+# e2e.yml). The earlier `export APP_ID=` form relied on process-env
+# auto-inheritance which is not part of Maestro's documented behavior.
 echo "[5/5] Running Maestro flows (P0 + P1 + P2)..."
-maestro test --exclude-tags requires-supabase "$SCRIPT_DIR/flows/android/"
+maestro test --env "APP_ID=$APP_ID" --exclude-tags requires-supabase "$SCRIPT_DIR/flows/android/"
 
 echo "All flows passed!"
