@@ -64,16 +64,20 @@ FCM legacy server key API (`https://fcm.googleapis.com/fcm/send` + `Authorizatio
 
 3 候補を比較:
 - **(A) Postgres triggers + pg_net**: extension surface 増 + trigger 管理が migration file に分散 + Dashboard UI から wiring 不可視。
-- **(B) Database Webhooks (Supabase 管理機能)**: Supabase Dashboard で UI 設定、auto-signed (HMAC-SHA256)、pg_net 不要、Dashboard で wiring 確認可能。
+- **(B) Database Webhooks (Supabase 管理機能)**: Supabase Dashboard で UI 設定 (Method / URL / Timeout / HTTP Headers / HTTP Parameters)、pg_net 不要、Dashboard で wiring 確認可能。
 - **(C) Realtime subscription**: Edge Function は request/response モデルなので不適。除外。
 
 **決定: (B) Database Webhooks**。理由:
 - Infrastructure surface が小さい (pg_net extension 管理不要)。
 - Supabase Dashboard UI で wiring 検証可能 — maintainer が SQL 実行せずに「webhook が実際に配線されているか」確認可。
-- Webhook を Edge Function 側で HMAC 定数時間比較するだけ (5 行)。
+- 認証は Dashboard の HTTP Headers セクションで `Authorization: Bearer <secret>` を設定、Edge Function 側で定数時間文字列比較 (`revenuecat-webhook` の Bearer パターンと同形)。
 - Supabase docs 推奨パスに従う (将来 maintainer の path of least surprise)。
 
-**Trade-off 認識**: Database Webhook 設定は `supabase/migrations/` に versioned されない。Mitigation: 新規 `supabase/webhooks.md` に 3 webhook 設定 + Dashboard navigation 手順を記載、Phase 24.x 各 slice で webhook 追加/削除時に refresh。
+> **2026-05-09 amendment**: ADR 当初は (B) の説明として「auto-signed (HMAC-SHA256)」と記載していた。これは誤り — [Supabase 公式 Database Webhooks doc](https://supabase.com/docs/guides/database/webhooks) と Dashboard UI を確認した結果、Database Webhook は payload を自動署名しない (Dashboard の設定項目は Method / URL / Timeout / HTTP Headers / HTTP Parameters のみ、signing-secret 欄も signature ヘッダもない)。認証は上記の通り custom HTTP header 経由 (Bearer) に変更。決定 (A/B/C のうち B) は変更なし、auth 詳細のみ修正。詳細は §3.9 参照。
+
+**Trade-off 認識**:
+- Database Webhook 設定は `supabase/migrations/` に versioned されない。Mitigation: 新規 `supabase/webhooks.md` に 3 webhook 設定 + Dashboard navigation 手順を記載、Phase 24.x 各 slice で webhook 追加/削除時に refresh。
+- Bearer secret 値は各 webhook の config row 内に literal として保存される (Dashboard が secret-store 参照構文を露出しない)。Mitigation: Dashboard ACL がプロジェクトメンバーに scoped、ローテーション時は 3 webhook の header 行を更新 (+ `supabase secrets set`)。Stripe-style HMAC-of-body は TLS downgrade シナリオに対する防御を提供するが (Supabase HTTPS 強制下で発生確率は極小)、v1 トレードオフとして許容。
 
 ### 3.4 イベントスコープ (3 MVP)
 
@@ -146,7 +150,9 @@ Locale fallback: 不明 locale → `en-US`。template key 不明 → log warning
 
 ### 3.9 Edge Function `notify-on-write` シェイプ
 
-Database Webhook payload `{ type, table, record, old_record? }` を受信、`SKEINLY_DATABASE_WEBHOOK_SECRET` (`SUPABASE_*` プレフィックスは Supabase 予約のため `SKEINLY_` プレフィックスを採用、[Edge Function limits doc](https://supabase.com/docs/guides/functions/limits#secrets) 参照) で HMAC-SHA256 verify、table+type で branch、recipient set 計算、各 recipient × device_token 行に対して APNs (ios) / FCM (android) dispatch。410/404 (BadDeviceToken / UNREGISTERED) で device_tokens DELETE、その他失敗は log + Sentry breadcrumb。Webhook 自体には 200 を unconditional 返却 (push 配信失敗は webhook 失敗ではない)。
+Database Webhook payload `{ type, table, record, old_record? }` を受信、`Authorization: Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET の値>` ヘッダを定数時間文字列比較で verify、table+type で branch、recipient set 計算、各 recipient × device_token 行に対して APNs (ios) / FCM (android) dispatch。410/404 (BadDeviceToken / UNREGISTERED) で device_tokens DELETE、その他失敗は log + Sentry breadcrumb。Webhook 自体には 200 を unconditional 返却 (push 配信失敗は webhook 失敗ではない)。
+
+> **2026-05-09 amendment**: ADR 当初は HMAC-SHA256 of body + `x-supabase-webhook-signature` ヘッダ検証として設計していた。[Supabase 公式 Database Webhooks doc](https://supabase.com/docs/guides/database/webhooks) と Dashboard UI を確認した結果、**Supabase Database Webhook は payload を自動署名しない** ことが判明 (Dashboard が露出する設定項目は Method / URL / Timeout / HTTP Headers / HTTP Parameters のみで、signing-secret 欄も signature ヘッダも存在しない)。認証は Dashboard の HTTP Headers セクションで `Authorization: Bearer <secret>` をペアごとに設定する形に変更、`revenuecat-webhook` の Bearer パターンと同形に揃えた。secret 名 `SKEINLY_DATABASE_WEBHOOK_SECRET` は変更なし。Edge Function 側は HMAC 計算なしで定数時間文字列比較のみ。`SKEINLY_` プレフィックスは load-bearing — Supabase が `SUPABASE_*` をプラットフォーム予約しているため ([Edge Function limits doc](https://supabase.com/docs/guides/functions/limits#secrets))。
 
 Rate-limit: APNs ~9000 req/sec/team、FCM v1 ~600 req/min/project — Phase 39 closed-beta scale (5–10 testers × 数 PR event/day) に対し過剰、v1 では rate-limiter 不要。
 

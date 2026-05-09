@@ -84,17 +84,21 @@ Three candidate mechanisms considered:
 
 **(A) Postgres triggers + `pg_net` extension**: a `BEFORE INSERT` trigger on `pull_request_comments` calls `net.http_post(url := 'https://<project-ref>.supabase.co/functions/v1/notify-on-write', body := jsonb_build_object(...))`. Requires `pg_net` extension enabled (extra extension surface), trigger management lives in migration files (versioned with migrations but separate from the Webhook config UI).
 
-**(B) Supabase Database Webhooks (managed feature)**: configured via Supabase Dashboard → Database → Webhooks → "Add a new hook" → select table + event types + Edge Function URL. Supabase auto-signs the request with `webhook-secret` header (HMAC-SHA256). No `pg_net` dependency. UI-driven configuration but the config can be exported via `supabase db dump` for reproducibility.
+**(B) Supabase Database Webhooks (managed feature)**: configured via Supabase Dashboard → Database → Webhooks → "Add a new hook" → select table + event types + Edge Function URL + free-form HTTP Headers. No `pg_net` dependency. UI-driven configuration but the config can be exported via `supabase db dump` for reproducibility.
 
 **(C) Realtime subscription within Edge Function**: not how Edge Functions work — they're request/response, not long-lived listeners. Excluded.
 
 **Decision: (B) Supabase Database Webhooks**. Rationale:
 - Less infrastructure surface (no pg_net extension to manage / patch).
 - Visible in Supabase Dashboard UI — easier for the maintainer to verify "is the webhook actually wired" without running SQL.
-- Supabase auto-signs the webhook with HMAC; verifying the signature in Edge Function is a 5-line constant-time HMAC compare.
+- Authentication via custom `Authorization: Bearer <secret>` HTTP header configured in the Dashboard's HTTP Headers section, verified by the Edge Function with constant-time string compare. Mirrors the `revenuecat-webhook` Bearer pattern for consistency.
 - Standard Supabase pattern (reference: <https://supabase.com/docs/guides/database/webhooks>); follows the path of least surprise for future maintainers.
 
-**Trade-off acknowledged**: Database Webhook configuration is NOT versioned in `supabase/migrations/`. Mitigation: add `supabase/webhooks.md` doc that describes the 3 webhook configurations + Dashboard navigation steps, refreshed at every Phase 24.x slice that adds/removes webhooks.
+> **2026-05-09 amendment**: the original ADR cut described option (B) as "Supabase auto-signs the request with `webhook-secret` header (HMAC-SHA256)". This was inaccurate — per the [Supabase Database Webhooks doc](https://supabase.com/docs/guides/database/webhooks) and verified against the Dashboard UI, Database Webhooks do NOT auto-sign payloads. The Dashboard exposes only Method / URL / Timeout / HTTP Headers / HTTP Parameters; there is no signing-secret field and no signature header. Authentication is implemented via the custom-header path described above, which is the supported boundary. The decision (option B over A or C) stands; only the auth-mechanism details changed. See §3.9 for the full amendment.
+
+**Trade-offs acknowledged**:
+- Database Webhook configuration is NOT versioned in `supabase/migrations/`. Mitigation: add `supabase/webhooks.md` doc that describes the 3 webhook configurations + Dashboard navigation steps, refreshed at every Phase 24.x slice that adds/removes webhooks.
+- The Bearer secret value sits as a plaintext literal inside each webhook config row (Dashboard does not expose a secret-store reference syntax). Mitigated by Dashboard ACLs scoped to project members; rotation requires updating 3 webhook header rows (in addition to the `supabase secrets set` call). Stripe-style HMAC-of-body would defend against TLS downgrade scenarios (vanishingly rare given Supabase HTTPS enforcement); accepted as v1 trade-off.
 
 ### 3.4 Event scope (3 MVP events)
 
@@ -239,7 +243,8 @@ Each push notification carries a `data` payload alongside the visible `notificat
 
 ```
 POST https://<project-ref>.supabase.co/functions/v1/notify-on-write
-Authorization: <Supabase Database Webhook auto-signed value>
+Authorization: Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET value>
+Content-Type: application/json
 
 Body (Database Webhook payload):
 {
@@ -251,8 +256,10 @@ Body (Database Webhook payload):
 }
 ```
 
+> **2026-05-09 amendment**: the original cut of this ADR specified HMAC-SHA256 body-signature verification against an `x-supabase-webhook-signature` header. Verification of the [Supabase Database Webhooks doc](https://supabase.com/docs/guides/database/webhooks) and the actual Dashboard UI revealed that **Supabase Database Webhooks do NOT auto-sign payloads** — the only configuration surface exposed is Method / URL / Timeout / HTTP Headers / HTTP Parameters, with no signing-secret field and no signature header. Authentication is therefore implemented as a custom `Authorization: Bearer <secret>` HTTP header, configured per-webhook in the Dashboard's HTTP Headers section, mirroring the `revenuecat-webhook` Bearer pattern (Phase 39 prep). The secret name `SKEINLY_DATABASE_WEBHOOK_SECRET` is unchanged. The Edge Function does constant-time string compare; no HMAC computation needed.
+
 **Function code path**:
-1. Verify webhook signature (HMAC-SHA256 of body using `SKEINLY_DATABASE_WEBHOOK_SECRET` — NEW Edge Function secret to be registered in Phase 24.1; the `SKEINLY_` prefix is load-bearing because Supabase reserves `SUPABASE_*` for platform-injected env vars per [Edge Function limits doc](https://supabase.com/docs/guides/functions/limits#secrets), and `supabase secrets set` rejects names starting with that prefix).
+1. Verify the `Authorization: Bearer <value>` header against `SKEINLY_DATABASE_WEBHOOK_SECRET` via constant-time string compare. Reject with HTTP 401 on missing / malformed / mismatched value. (`SKEINLY_` prefix is load-bearing — Supabase reserves `SUPABASE_*` for platform-injected env vars per [Edge Function limits doc](https://supabase.com/docs/guides/functions/limits#secrets), and `supabase secrets set` rejects names starting with that prefix.)
 2. Branch on `table` + `type`:
    - `pull_requests` INSERT → resolve target owner via `patterns` JOIN → call `dispatchPush(recipientUserId, "pr_opened", { actor, pattern })`.
    - `pull_request_comments` INSERT → resolve PR participants via `pull_requests` JOIN → MINUS comment.author_id → for each remaining recipient call `dispatchPush(recipient, "pr_commented", { actor, pr_title })`.
@@ -309,7 +316,7 @@ These were considered + explicitly deferred to Phase 24+ or beyond. Listed so fu
 - Device tokens are anonymized by Apple / Google (not directly mappable to a person without OS-side cross-reference).
 - RLS on `device_tokens` ensures user A cannot read user B's tokens; service-role bypass scoped to the `notify-on-write` Edge Function.
 - Edge Function does NOT log token values (Sentry breadcrumb scrubbing — confirmed via test).
-- Database Webhook secret is registered as Edge Function env var (`SKEINLY_DATABASE_WEBHOOK_SECRET`); never echoed in response bodies.
+- Database Webhook secret is registered as Edge Function env var (`SKEINLY_DATABASE_WEBHOOK_SECRET`) AND mirrored as the value of the `Authorization: Bearer <…>` HTTP header on each Database Webhook in Dashboard. Constant-time string compare in the Edge Function. Never echoed in response bodies. (The 2026-05-09 amendment in §3.9 documents why this is Bearer rather than HMAC-of-body.)
 - APNs `.p8` + FCM SA JSON live as Edge Function secrets only — no client-side exposure.
 - Pre-permission dialog explainer ensures users understand what they're consenting to BEFORE the OS prompt fires (avoids the "decontextualized denial" anti-pattern).
 - Account deletion (ADR-005) cascades device_token rows out via FK ON DELETE CASCADE.
@@ -320,7 +327,7 @@ These were considered + explicitly deferred to Phase 24+ or beyond. Listed so fu
 
 **24.1 — Data spine**:
 - Migration NNN: `device_tokens` table + RLS policies + indexes. Apply to prod.
-- Edge Function `notify-on-write` shell: webhook signature verification + body parse + table-type branch + log-only `dispatchPush` (no actual APNs/FCM calls yet) + Deno test for the parser + locale lookup.
+- Edge Function `notify-on-write` shell: webhook Bearer-auth verification + body parse + table-type branch + log-only `dispatchPush` (no actual APNs/FCM calls yet) + Deno test for the parser + locale lookup.
 - New Edge Function secret `SKEINLY_DATABASE_WEBHOOK_SECRET` registration doc in release-secrets.md (EF-6).
 - Dashboard: Database Webhooks configured for the 3 event sources; documented in new `supabase/webhooks.md`.
 - KMP: NO client wiring this slice.

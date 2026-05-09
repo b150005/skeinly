@@ -10,13 +10,13 @@ PR opened / commented / merged / closed
       │ INSERT or UPDATE on
       │   public.pull_requests / public.pull_request_comments
       ▼
-Supabase Database Webhook (HMAC-SHA256 signed delivery)
+Supabase Database Webhook (custom HTTP Headers)
       │
       │ POST <project-url>/functions/v1/notify-on-write
-      │ Header: x-supabase-webhook-signature: <base64 HMAC>
+      │ Header: Authorization: Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET>
       ▼
 notify-on-write Edge Function (this)
-      │ 1. Verify HMAC against SKEINLY_DATABASE_WEBHOOK_SECRET (constant-time)
+      │ 1. Verify Bearer secret (constant-time compare against env)
       │ 2. Parse Database Webhook payload { type, table, record, old_record? }
       │ 3. Route by (table, type) → mapping.ts pure helpers compute
       │    NotificationDispatch[] per recipient
@@ -30,6 +30,8 @@ device_tokens (per-user) ← Phase 24.2 client registers here via PushTokenRegis
       ▼
 APNs / FCM v1 ← Phase 24.3
 ```
+
+> **Why Bearer rather than HMAC body signature**: per the [Supabase Database Webhooks doc](https://supabase.com/docs/guides/database/webhooks), Database Webhooks do NOT auto-sign payloads — the dashboard UI exposes only Method / URL / Timeout / HTTP Headers / HTTP Parameters, with no signing-secret field and no `x-supabase-webhook-signature` header. The Authorization header path is the supported authentication boundary. Mirrors the `revenuecat-webhook` Bearer pattern.
 
 ## Required secrets (release-secrets.md)
 
@@ -49,7 +51,7 @@ Phase 24.3 will additionally consume:
 supabase functions deploy notify-on-write
 ```
 
-> **JWT verification disabled (load-bearing)**: like `revenuecat-webhook`, this function is invoked by Supabase's Database Webhook system which does NOT carry a Supabase JWT. The function must be deployed with `--no-verify-jwt` (or via `[functions.notify-on-write] verify_jwt = false` in `supabase/config.toml`). Auth is enforced inside the function via constant-time HMAC compare against `SKEINLY_DATABASE_WEBHOOK_SECRET`.
+> **JWT verification disabled (load-bearing)**: like `revenuecat-webhook`, this function is invoked by Supabase's Database Webhook system which does NOT carry a Supabase JWT. The deploy picks up `[functions.notify-on-write] verify_jwt = false` from `supabase/config.toml` automatically. Auth is enforced inside the function via constant-time Bearer-token compare against `SKEINLY_DATABASE_WEBHOOK_SECRET`.
 
 ## Database Webhook configuration (post-deploy)
 
@@ -68,7 +70,7 @@ Coverage: 29 tests — template parity (EN/JA), `renderBody` locale resolution +
 ## Phase 24.1 SHELL contract
 
 This slice intentionally:
-- Verifies the webhook signature (so 24.2/24.3 can build atop a secured shell).
+- Verifies the Bearer secret (so 24.2/24.3 can build atop a secured shell).
 - Parses the payload and routes to `mapping.ts` recipient computation.
 - Emits structured `console.log` lines per dispatch (`event: notify_on_write_skipped_send`).
 - Returns `200 { ok: true, dispatch_count: N }` for downstream observability.
@@ -87,26 +89,35 @@ After `supabase functions deploy notify-on-write` and Dashboard webhook wiring:
 WEBHOOK_URL="https://<project-ref>.supabase.co/functions/v1/notify-on-write"
 SECRET="<SKEINLY_DATABASE_WEBHOOK_SECRET value>"
 BODY='{"type":"INSERT","table":"pull_requests","schema":"public","record":{"id":"00000000-0000-0000-0000-000000000001","author_id":"00000000-0000-0000-0000-000000000002","target_pattern_id":"00000000-0000-0000-0000-000000000003","status":"open"}}'
-SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$SECRET" -binary | base64)
 
 curl -s -w '\nHTTP %{http_code}\n' -X POST "$WEBHOOK_URL" \
-  -H "x-supabase-webhook-signature: $SIG" \
+  -H "Authorization: Bearer $SECRET" \
   -H "Content-Type: application/json" \
   -d "$BODY"
 ```
 
 Expected: `HTTP 200` with `{"ok":true,"dispatch_count":N}`. Pull function logs via `mcp__supabase__get_logs service=edge-function` and look for `notify_on_write_dispatched` + `notify_on_write_skipped_send` structured log lines.
 
-Bad-signature path:
+Bad-secret path:
 
 ```bash
 curl -s -w '\nHTTP %{http_code}\n' -X POST "$WEBHOOK_URL" \
-  -H "x-supabase-webhook-signature: bogus" \
+  -H "Authorization: Bearer bogus" \
   -H "Content-Type: application/json" \
   -d "$BODY"
 ```
 
 Expected: `HTTP 401` with `{"error":"unauthorized"}`.
+
+Missing-header path:
+
+```bash
+curl -s -w '\nHTTP %{http_code}\n' -X POST "$WEBHOOK_URL" \
+  -H "Content-Type: application/json" \
+  -d "$BODY"
+```
+
+Expected: `HTTP 401` with `{"error":"unauthorized"}` (the function rejects before payload parse).
 
 ## Privacy (per ADR-017 §3.11)
 
