@@ -447,3 +447,30 @@ Resolved at Phase 24.3 implementation when the actual APNs call lands. Lean towa
 - ADR-013 (collaboration core)
 - ADR-014 (PR workflow — primary event source)
 - ADR-015 (Phase 39 beta bug reporting — consent + opt-in patterns Phase 24 reuses)
+
+---
+
+## Amendment — 2026-05-10 (Terminology audit, post-decision)
+
+This ADR's body references `pull_requests` / `pull_request_comments`
+tables + 'merged' status enum value as named at the time the design
+was cut. After the 2026-05-10 terminology audit
+(`audits/terminology-audit-2026-05-10.md`) + Migration 027:
+- Database tables now: `suggestions` / `suggestion_comments`
+- Status enum value: `'applied'` (was `'merged'`)
+- Edge Function `notify-on-write` dispatches on the new table names
+- Database Webhook source-table dropdown: `public.suggestions` /
+  `public.suggestion_comments` (followed by Postgres OID)
+- `webhooks.md` reflects the new names
+
+The push template strings (EN/JA) in the Edge Function were
+likewise rewritten ("opened a pull request" → "sent a suggestion",
+"merged your pull request" → "applied your suggestion",
+「プルリクエストを開きました」→「提案を送りました」 etc.) per ADR-014
+amendment + audit doc decisions.
+
+Internal Edge Function helper / TypeScript type names (e.g.
+`PullRequestRow`, `PullRequestCommentRow`, `pullRequestRoute`,
+`computePrOpenedDispatches`) intentionally retain their old labels
+as internal artifacts; the user-visible payoff is captured at the
+table-name + body-template level.

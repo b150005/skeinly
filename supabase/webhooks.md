@@ -10,9 +10,9 @@ This file is the source of truth for the project's Database Webhook configuratio
 
 | # | Name | Source table | Events | Conditions | Notes |
 |---|---|---|---|---|---|
-| 1 | `notify_on_pr_insert` | `public.pull_requests` | INSERT | (none) | Fires `pr_opened` push to target owner. |
-| 2 | `notify_on_pr_update` | `public.pull_requests` | UPDATE | (none — Edge Function filters via old.status='open' && new.status IN ('merged','closed')) | Fires `pr_merged_to_author` / `pr_closed_to_*` push to other party. |
-| 3 | `notify_on_pr_comment_insert` | `public.pull_request_comments` | INSERT | (none) | Fires `pr_commented` push to PR participants minus comment author. |
+| 1 | `notify_on_pr_insert` | `public.suggestions` | INSERT | (none) | Fires `pr_opened` push to target owner. (Pre-2026-05-10 terminology audit: `pull_requests` table.) |
+| 2 | `notify_on_pr_update` | `public.suggestions` | UPDATE | (none — Edge Function filters via old.status='open' && new.status IN ('applied','closed')) | Fires `pr_merged_to_author` / `pr_closed_to_*` push to other party. |
+| 3 | `notify_on_pr_comment_insert` | `public.suggestion_comments` | INSERT | (none) | Fires `pr_commented` push to PR participants minus comment author. (Pre-audit: `pull_request_comments`.) |
 
 ## Configuration steps (per webhook)
 
@@ -22,7 +22,7 @@ For each row in the table above:
 2. Click **Create a new hook** (or **Add a new hook**).
 3. Configuration:
    - **Name**: as in the table above (e.g. `notify_on_pr_insert`).
-   - **Table**: the source table (e.g. `pull_requests`).
+   - **Table**: the source table (e.g. `suggestions`).
    - **Events**: tick INSERT or UPDATE per the table.
    - **Type of webhook**: select **`Supabase Edge Functions`** (NOT `HTTP Request`).
    - **Method**: `POST`.
