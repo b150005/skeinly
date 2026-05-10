@@ -158,7 +158,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      # Check if all four signing secrets are configured.
+      # Check the cert + team ID secrets needed for signing. The
+      # provisioning profile is fetched from Apple Developer Portal
+      # at runtime via `sigh` (Fastfile), so APPLE_PROVISIONING_PROFILE_BASE64
+      # is no longer required (kept in repo Secrets for now until the
+      # first successful run on the new pipeline confirms removal-safe).
       # Uses env vars populated from secrets so that [ -n "$VAR" ] correctly
       # detects empty/absent values (the documented pattern for GitHub Actions).
       - name: Check iOS signing secrets
@@ -166,11 +170,9 @@ jobs:
         env:
           IOS_CERT: ${{ secrets.APPLE_DISTRIBUTION_CERT_BASE64 }}
           IOS_CERT_PW: ${{ secrets.APPLE_DISTRIBUTION_CERT_PASSWORD }}
-          IOS_PROFILE: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          if [ -n "$IOS_CERT" ] && [ -n "$IOS_CERT_PW" ] && \
-             [ -n "$IOS_PROFILE" ] && [ -n "$TEAM_ID" ]; then
+          if [ -n "$IOS_CERT" ] && [ -n "$IOS_CERT_PW" ] && [ -n "$TEAM_ID" ]; then
             echo "available=true" >> "$GITHUB_OUTPUT"
             echo "iOS signing secrets configured"
           else
@@ -227,10 +229,15 @@ jobs:
       - name: Generate Xcode project
         run: cd iosApp && xcodegen generate
 
-      # fastlane handles: setup_ci keychain → import .p12 cert →
-      # install .mobileprovision → build_app (archive + export IPA) →
-      # upload_to_testflight. Replaces the previous ~140 lines of inline
-      # xcodebuild + security + plist scripting (Phase 19c) with a single
+      # fastlane handles: setup_ci keychain → import .p12 cert → fetch
+      # provisioning profile from Apple Developer Portal via sigh + ASC
+      # API key (Phase 39 / 2026-05-10 Path Y refactor) → build_app
+      # (archive + export IPA) → upload_to_testflight. The
+      # APPLE_PROVISIONING_PROFILE_BASE64 secret is intentionally NOT
+      # passed — sigh fetches the profile by name ("Skeinly App Store")
+      # at runtime so capability changes propagate without a secret
+      # update. Replaces the previous ~140 lines of inline xcodebuild
+      # + security + plist scripting (Phase 19c) with a single
       # `bundle exec fastlane beta` invocation. Per ADR-007 / Phase 39.0.x.
       - name: Run fastlane beta (sign + archive + upload to TestFlight)
         if: steps.ios-signing.outputs.available == 'true' && steps.testflight.outputs.available == 'true'
@@ -238,7 +245,6 @@ jobs:
         env:
           APPLE_DISTRIBUTION_CERT_BASE64: ${{ secrets.APPLE_DISTRIBUTION_CERT_BASE64 }}
           APPLE_DISTRIBUTION_CERT_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERT_PASSWORD }}
-          APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
@@ -253,16 +259,17 @@ jobs:
         run: bundle exec fastlane beta
 
       # Build IPA without TestFlight upload — runs when signing is available
-      # but the App Store Connect API secrets are missing. Useful for
-      # signed-build verification without exposing TestFlight to a
-      # half-configured release.
+      # but the App Store Connect API secrets are missing. The build_ipa
+      # lane currently expects the developer's local keychain + manually-
+      # installed profile, so this CI branch is best-effort only. Skip
+      # path stays half-functional until ASC API secrets are configured,
+      # at which point the beta lane above is used instead.
       - name: Run fastlane build_ipa (sign + archive only, no upload)
         if: steps.ios-signing.outputs.available == 'true' && steps.testflight.outputs.available != 'true'
         working-directory: iosApp
         env:
           APPLE_DISTRIBUTION_CERT_BASE64: ${{ secrets.APPLE_DISTRIBUTION_CERT_BASE64 }}
           APPLE_DISTRIBUTION_CERT_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERT_PASSWORD }}
-          APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           MARKETING_VERSION: ${{ needs.validate-tag.outputs.version }}
           CURRENT_PROJECT_VERSION: ${{ github.run_number }}

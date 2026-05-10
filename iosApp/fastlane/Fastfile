@@ -5,27 +5,38 @@
 #   - build_ipa  : Local IPA build with no upload (verification before push)
 #
 # Code-signing strategy: manual (per ADR-007 / Phase 19c).
-#   - Distribution cert .p12 + provisioning .mobileprovision are passed via
-#     base64-encoded GitHub Secrets, decoded into a temporary CI keychain
-#     by `setup_ci` + `import_certificate`.
+#   - Distribution cert .p12 is passed via base64-encoded GitHub Secret,
+#     decoded into a temporary CI keychain by `setup_ci` + `import_certificate`.
+#   - **Provisioning profile is fetched from Apple Developer Portal at every
+#     CI run via the App Store Connect API key + `sigh` action** (Phase 39 /
+#     2026-05-10 refactor). The legacy `APPLE_PROVISIONING_PROFILE_BASE64`
+#     secret is no longer read — capability changes (Push Notifications,
+#     Associated Domains, etc.) propagate by re-Generating the profile in
+#     Apple Developer Portal once; the next CI run picks up the new
+#     profile automatically with no GitHub Secret update needed.
 #   - App Store Connect API authentication via .p8 + key ID + issuer ID,
-#     also from secrets.
+#     also from secrets. Reused for both `sigh` (profile fetch) and
+#     `upload_to_testflight` (IPA upload).
 #   - Local invocation: developer's own keychain + manually-installed profile.
 #
 # Required env vars (CI):
 #   APPLE_DISTRIBUTION_CERT_BASE64       — base64 of Apple Distribution .p12
 #   APPLE_DISTRIBUTION_CERT_PASSWORD     — password used when exporting .p12
-#   APPLE_PROVISIONING_PROFILE_BASE64    — base64 of .mobileprovision
 #   APPLE_TEAM_ID                      — 10-char Team ID
 #   APP_STORE_CONNECT_API_KEY_BASE64   — base64 of .p8 private key
 #   APP_STORE_CONNECT_API_KEY_ID       — 10-char Key ID
 #   APP_STORE_CONNECT_ISSUER_ID        — UUID Issuer ID
-#   MARKETING_VERSION                  — e.g. "1.0.0-alpha1" (from tag)
+#   MARKETING_VERSION                  — e.g. "0.1.0" (from tag)
 #   CURRENT_PROJECT_VERSION            — e.g. github.run_number
+#
+# Removed (no longer read; safe to delete from GitHub Secrets after the
+# first successful CI run on the new pipeline):
+#   APPLE_PROVISIONING_PROFILE_BASE64  — superseded by sigh + API key fetch
 
 default_platform(:ios)
 
 PRODUCT_BUNDLE_ID = "io.github.b150005.skeinly".freeze
+PROVISIONING_PROFILE_NAME = "Skeinly App Store".freeze
 
 platform :ios do
   before_all do
@@ -34,10 +45,14 @@ platform :ios do
 
   desc "Build IPA, sign with manual signing, and upload to TestFlight."
   lane :beta do
-    profile_path = install_signing_assets if ENV["CI"]
-
-    profile_name = resolve_profile_name(profile_path)
-    api_key_path = decode_asc_api_key
+    if ENV["CI"]
+      install_distribution_cert
+      api_key = setup_app_store_connect_api_key
+      profile_name = fetch_provisioning_profile(api_key)
+    else
+      profile_name = resolve_profile_name_from_local
+      api_key = nil
+    end
 
     build_app(
       project: "iosApp.xcodeproj",
@@ -56,7 +71,7 @@ platform :ios do
     )
 
     upload_to_testflight(
-      api_key_path: api_key_path,
+      api_key: api_key,
       skip_waiting_for_build_processing: true,
       skip_submission: true,
     )
@@ -78,9 +93,18 @@ end
 
 # ---------- helpers ----------
 
-# Decode base64-encoded .p12 + .mobileprovision from CI secrets and import
-# into the fastlane temp keychain set up by `setup_ci`.
-def install_signing_assets
+# Decode the Apple Distribution .p12 from APPLE_DISTRIBUTION_CERT_BASE64
+# and import it into the temp keychain set up by `setup_ci`. The cert's
+# private key is required for manual signing — sigh fetches the public
+# profile, but the private key for signing the IPA must already be in
+# the keychain when xcodebuild runs.
+#
+# Cert rotation cadence is once per year (Apple Distribution cert
+# 1-year expiry). When that happens, regenerate the .p12 locally and
+# update APPLE_DISTRIBUTION_CERT_BASE64. Profile changes (Push, App
+# Links, Sign In with Apple, etc.) do NOT require touching this secret
+# — only `sigh` re-fetches the matching profile on the next CI run.
+def install_distribution_cert
   require "base64"
   runner_temp = ENV["RUNNER_TEMP"] || Dir.mktmpdir
 
@@ -95,70 +119,97 @@ def install_signing_assets
     keychain_name: ENV["MATCH_KEYCHAIN_NAME"] || "fastlane_tmp_keychain",
     keychain_password: ENV["MATCH_KEYCHAIN_PASSWORD"] || "",
   )
-
-  profile_path = File.join(runner_temp, "distribution.mobileprovision")
-  profile_b64 = ENV["APPLE_PROVISIONING_PROFILE_BASE64"]
-  UI.user_error!("APPLE_PROVISIONING_PROFILE_BASE64 is required in CI") if profile_b64.to_s.empty?
-  File.binwrite(profile_path, Base64.decode64(profile_b64))
-  install_provisioning_profile(path: profile_path)
-  # Return the source path so the caller can read the Name directly without
-  # having to re-discover where `install_provisioning_profile` landed it.
-  # Xcode 16+ moved the install destination from
-  # ~/Library/MobileDevice/Provisioning Profiles to
-  # ~/Library/Developer/Xcode/UserData/Provisioning Profiles, and that
-  # path discovery (glob + UUID-named filename) is fragile across fastlane
-  # / Xcode versions. Reading the source bytes we just decoded sidesteps
-  # the whole path-discovery surface.
-  profile_path
 end
 
-# Read the human-readable Name field from a provisioning profile. xcodebuild's
-# manual-signing export options reference the profile by name, not file path.
-# Extracted via `security cms -D` (decode CMS envelope) then a regex over the
-# resulting plist XML — no plist gem dependency.
+# Build an `app_store_connect_api_key` token from the .p8 + key ID +
+# issuer ID secrets. The returned Hash is reusable for both `sigh`
+# (provisioning profile fetch) and `upload_to_testflight` (IPA upload),
+# so we set it up once per lane invocation.
 #
-# When `profile_path` is provided (CI path, from `install_signing_assets`),
-# read directly from that file. When not provided (local dev path, where the
-# user has already manually installed a profile), fall back to globbing both
-# the legacy and Xcode 16+ install dirs in priority order.
-def resolve_profile_name(profile_path = nil)
-  if profile_path.nil? || !File.exist?(profile_path)
-    legacy_dir = File.expand_path("~/Library/MobileDevice/Provisioning Profiles")
-    xcode16_dir = File.expand_path("~/Library/Developer/Xcode/UserData/Provisioning Profiles")
-    candidates = Dir.glob("#{xcode16_dir}/*.mobileprovision") +
-                 Dir.glob("#{legacy_dir}/*.mobileprovision")
-    if candidates.empty?
-      UI.user_error!(
-        "No provisioning profile found in #{xcode16_dir} or #{legacy_dir}",
-      )
-    end
-    profile_path = candidates.first
+# `is_key_content_base64: false` because we Base64.decode64 the secret
+# before passing — fastlane's own base64-decode path inside the action
+# is also valid but doing it here keeps the call site uniform with the
+# .p12 handling above.
+def setup_app_store_connect_api_key
+  require "base64"
+  key_id = ENV["APP_STORE_CONNECT_API_KEY_ID"]
+  issuer_id = ENV["APP_STORE_CONNECT_ISSUER_ID"]
+  key_b64 = ENV["APP_STORE_CONNECT_API_KEY_BASE64"]
+  UI.user_error!("APP_STORE_CONNECT_API_KEY_ID is required") if key_id.to_s.empty?
+  UI.user_error!("APP_STORE_CONNECT_ISSUER_ID is required") if issuer_id.to_s.empty?
+  UI.user_error!("APP_STORE_CONNECT_API_KEY_BASE64 is required") if key_b64.to_s.empty?
+
+  app_store_connect_api_key(
+    key_id: key_id,
+    issuer_id: issuer_id,
+    key_content: Base64.decode64(key_b64),
+    is_key_content_base64: false,
+    duration: 1200, # max 1200 (20 min). Both sigh + pilot calls fit well within.
+  )
+end
+
+# Fetch the App Store distribution provisioning profile from Apple
+# Developer Portal via the App Store Connect API key. Returns the
+# profile's Name field (xcodebuild needs the Name, not the file path,
+# in `provisioningProfiles` for manual signing export options).
+#
+# **`force: false` + `provisioning_name: "Skeinly App Store"` strategy:**
+# - Each CI run fetches the existing profile by name. No portal mutation.
+# - Capability changes (Push Notifications added, Associated Domains
+#   added, etc.) are absorbed by re-Generating the profile manually in
+#   Apple Developer Portal once (single click in the Portal UI).
+#   `sigh` reads the regenerated profile by name on the next CI run —
+#   GitHub Secrets do NOT need updating.
+# - Profile expiry (1-year on Apple Distribution profiles) similarly
+#   resolves with a Portal re-Generate; CI auto-pickup follows.
+# - We deliberately avoid `force: true` because that path creates a NEW
+#   profile every CI run — Apple Developer Portal accumulates them and
+#   eventually hits the per-app provisioning profile soft cap. Reading
+#   an existing-name profile keeps the Portal tidy.
+#
+# `output_path: runner_temp` writes the .mobileprovision so
+# `install_provisioning_profile` (called inside sigh) can place it
+# into the active keychain location for xcodebuild to find. The file
+# is also kept for diagnostic logs in case of a failure.
+def fetch_provisioning_profile(api_key)
+  runner_temp = ENV["RUNNER_TEMP"] || Dir.mktmpdir
+
+  sigh(
+    app_identifier: PRODUCT_BUNDLE_ID,
+    api_key: api_key,
+    adhoc: false,
+    development: false,
+    force: false,
+    provisioning_name: PROVISIONING_PROFILE_NAME,
+    ignore_profiles_with_different_name: true,
+    output_path: runner_temp,
+    filename: "distribution.mobileprovision",
+  )
+
+  profile_name = lane_context[SharedValues::SIGH_NAME]
+  UI.user_error!("sigh did not return a profile name") if profile_name.to_s.empty?
+  profile_name
+end
+
+# Local-dev path: read profile name from the user's manually-installed
+# profile under either the legacy or Xcode 16+ install dir. Unchanged
+# from the pre-Path-Y shape — only the CI path is automated.
+def resolve_profile_name_from_local
+  legacy_dir = File.expand_path("~/Library/MobileDevice/Provisioning Profiles")
+  xcode16_dir = File.expand_path("~/Library/Developer/Xcode/UserData/Provisioning Profiles")
+  candidates = Dir.glob("#{xcode16_dir}/*.mobileprovision") +
+               Dir.glob("#{legacy_dir}/*.mobileprovision")
+  if candidates.empty?
+    UI.user_error!(
+      "No provisioning profile found in #{xcode16_dir} or #{legacy_dir}",
+    )
   end
+  profile_path = candidates.first
 
   decoded_xml = `security cms -D -i "#{profile_path}" 2>/dev/null`
   match = decoded_xml.match(%r{<key>Name</key>\s*<string>([^<]+)</string>})
   UI.user_error!("Provisioning profile is missing the 'Name' field") if match.nil?
   match[1]
-end
-
-# Decode the App Store Connect API .p8 key from base64 to a file at
-# $RUNNER_TEMP. xcodebuild and fastlane's upload_to_testflight both
-# accept a file path; passing the raw key via a Hash is also supported
-# but writing to disk matches the current release.yml behavior more
-# closely and survives concurrent re-invocations.
-def decode_asc_api_key
-  return nil unless ENV["CI"]
-
-  require "base64"
-  runner_temp = ENV["RUNNER_TEMP"] || Dir.mktmpdir
-  key_id = ENV["APP_STORE_CONNECT_API_KEY_ID"]
-  key_b64 = ENV["APP_STORE_CONNECT_API_KEY_BASE64"]
-  UI.user_error!("APP_STORE_CONNECT_API_KEY_ID is required") if key_id.to_s.empty?
-  UI.user_error!("APP_STORE_CONNECT_API_KEY_BASE64 is required") if key_b64.to_s.empty?
-
-  key_path = File.join(runner_temp, "AuthKey_#{key_id}.p8")
-  File.write(key_path, Base64.decode64(key_b64))
-  key_path
 end
 
 # Build the xcargs string passed to xcodebuild via build_app. Versioning
