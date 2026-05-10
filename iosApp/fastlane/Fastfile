@@ -174,11 +174,16 @@ end
 def fetch_provisioning_profile(api_key)
   runner_temp = ENV["RUNNER_TEMP"] || Dir.mktmpdir
 
+  # `adhoc:` and `development:` are mutually exclusive in sigh — passing
+  # both (even when both `false`) trips its option-conflict validator
+  # ("Error resolving conflict between options: 'adhoc' and 'development'").
+  # The App Store distribution profile is sigh's default when NEITHER
+  # flag is passed, so we omit both. Only pass one of these explicitly
+  # if/when we add an `:adhoc` lane (e.g. for QA distribution outside
+  # TestFlight).
   sigh(
     app_identifier: PRODUCT_BUNDLE_ID,
     api_key: api_key,
-    adhoc: false,
-    development: false,
     force: false,
     provisioning_name: PROVISIONING_PROFILE_NAME,
     ignore_profiles_with_different_name: true,
