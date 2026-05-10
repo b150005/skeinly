@@ -45,12 +45,12 @@ Deno.test("template parity: every key produces non-empty body in both locales", 
 
 Deno.test("renderBody: pr_opened in EN substitutes actor + pattern", () => {
     const body = renderBody("en-US", "pr_opened", { actor: "Alice", pattern: "Granny Square" });
-    assertEquals(body, "Alice opened a pull request on Granny Square");
+    assertEquals(body, "Alice sent a suggestion on Granny Square");
 });
 
 Deno.test("renderBody: pr_opened in JA inserts さん + に around pattern", () => {
     const body = renderBody("ja-JP", "pr_opened", { actor: "Alice", pattern: "Granny Square" });
-    assertEquals(body, "AliceさんがGranny Squareにプルリクエストを開きました");
+    assertEquals(body, "AliceさんがGranny Squareに提案を送りました");
 });
 
 Deno.test("renderBody: pr_commented in EN substitutes actor + pr_title", () => {
@@ -60,28 +60,28 @@ Deno.test("renderBody: pr_commented in EN substitutes actor + pr_title", () => {
 
 Deno.test("renderBody: pr_merged_to_author in EN", () => {
     const body = renderBody("en-US", "pr_merged_to_author", { actor: "Alice", pattern: "Cardigan" });
-    assertEquals(body, "Alice merged your pull request on Cardigan");
+    assertEquals(body, "Alice applied your suggestion on Cardigan");
 });
 
 Deno.test("renderBody: pr_closed_to_author in EN", () => {
     const body = renderBody("en-US", "pr_closed_to_author", { actor: "Alice", pattern: "Cardigan" });
-    assertEquals(body, "Alice closed your pull request on Cardigan");
+    assertEquals(body, "Alice closed your suggestion on Cardigan");
 });
 
 Deno.test("renderBody: pr_closed_to_owner in EN", () => {
     const body = renderBody("en-US", "pr_closed_to_owner", { actor: "Bob", pattern: "Cardigan" });
-    assertEquals(body, "Bob closed their pull request on Cardigan");
+    assertEquals(body, "Bob closed their suggestion on Cardigan");
 });
 
 Deno.test("renderBody: unknown locale falls back to en-US", () => {
     const body = renderBody("fr-FR", "pr_opened", { actor: "Alice", pattern: "Square" });
     // fr-FR has no entry; falls back to EN_TEMPLATES.
-    assertEquals(body, "Alice opened a pull request on Square");
+    assertEquals(body, "Alice sent a suggestion on Square");
 });
 
 Deno.test("renderBody: null actor falls back to ACTOR_FALLBACK_EN in EN", () => {
     const body = renderBody("en-US", "pr_opened", { actor: null, pattern: "Square" });
-    assertEquals(body, `${ACTOR_FALLBACK_EN} opened a pull request on Square`);
+    assertEquals(body, `${ACTOR_FALLBACK_EN} sent a suggestion on Square`);
 });
 
 Deno.test("renderBody: null actor falls back to ACTOR_FALLBACK_JA in JA", () => {
@@ -91,7 +91,7 @@ Deno.test("renderBody: null actor falls back to ACTOR_FALLBACK_JA in JA", () => 
 
 Deno.test("renderBody: null pattern falls back to PATTERN_FALLBACK_EN in EN", () => {
     const body = renderBody("en-US", "pr_opened", { actor: "Alice", pattern: null });
-    assertEquals(body, `Alice opened a pull request on ${PATTERN_FALLBACK_EN}`);
+    assertEquals(body, `Alice sent a suggestion on ${PATTERN_FALLBACK_EN}`);
 });
 
 Deno.test("renderBody: null pr_title falls back to PR_TITLE_FALLBACK in JA", () => {
@@ -279,7 +279,7 @@ Deno.test("computePrStatusChangeDispatches: open → closed by target owner noti
 });
 
 Deno.test("computePrStatusChangeDispatches: silent no-op when oldRow.status was not 'open'", () => {
-    // E.g. a status flip from 'merged' to something else (defensive
+    // E.g. a status flip from 'applied' to something else (defensive
     // edge case — should not happen given the WITH CHECK on
     // pull_requests UPDATE policy + the merge_pull_request RPC's
     // FOR UPDATE lock, but if it does, no push).
