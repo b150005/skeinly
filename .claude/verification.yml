@@ -1,0 +1,82 @@
+# Verification Layer configuration (Skeinly).
+#
+# Skeinly opted in to the research domain only — the implementation
+# and design domains documented in the upstream ecc-base-template are
+# left off because the existing code-reviewer / architect agents
+# already cover those review surfaces, and adding a second adversarial
+# pass on those surfaces would double-count token cost without a
+# matching reduction in failure modes that the project has actually
+# encountered.
+#
+# The 2026-05-09 `macos-26-arm64` incident (a single WebFetch returned
+# a hallucinated runner label that was committed without verification,
+# costing ~2h CI queue time and a forced fix-forward commit) is the
+# canonical case the research domain is enabled to prevent. See
+# CLAUDE.md `## Output Quality Standard` for the project-side rule that
+# delegates to this layer.
+
+# --- Research domain (active) ---
+#
+# Generator: docs-researcher. Critic: research-critic.
+# When the Generator's research will inform a downstream decision
+# (architecture, library selection, API usage, version pin, runner
+# label, SDK identifier), the Critic re-verifies against primary
+# sources using a different tool family.
+research:
+  enabled: true
+
+  # GAN round cap. 2 is the standard (matches ADR-008): one Generator
+  # round + one Critic re-verification with bounded iteration on
+  # CRITICAL/HIGH findings. After the cap, escalate to the orchestrator.
+  max_iterations: 2
+
+  # Default Tier when the Generator does not declare one explicitly.
+  # T1 — breaking changes, auth, security-sensitive APIs, crypto, runner
+  #      labels (post-incident), SDK identifiers
+  # T2 — public API arguments, return types, defaults, version features
+  # T3 — idiomatic style, common usage, widely-known patterns
+  default_tier: T2
+
+  # Scope guard. The layer activates only when external research will
+  # inform a decision. Casual conversational lookups during pair-
+  # programming are skipped to keep the cost proportionate.
+  external_facts_only: true
+
+# --- Implementation domain (deliberately off) ---
+#
+# Skeinly already requires `code-reviewer` to do two passes per
+# CLAUDE.md `## Development Workflow §6` — re-implementing every
+# change with a deliberately different approach would triple-pay
+# without surfacing a class of bug the existing two-pass review
+# misses on this codebase's typical PR sizes. Reopen if a real
+# implementation-class regression that two-pass review missed surfaces.
+implementation:
+  enabled: false
+
+# --- Design domain (deliberately off) ---
+#
+# Skeinly's ADRs already follow a Context / Decision / Alternatives /
+# Consequences structure with the agent team deliberation pattern
+# (CLAUDE.md `## Development Workflow §10`). Adding a structured
+# counter-proposal Critic on every Proposed ADR would meaningfully
+# slow ADR cadence in the closed-beta + post-beta phase. Reopen
+# post-Phase-40 GA if multi-stakeholder review on shared infra
+# becomes a real need.
+design:
+  enabled: false
+
+# --- Citation discipline (cross-cutting, default-on) ---
+#
+# ADR / spec / README files in this repo carry the same primary-source-
+# only citation rule. The runtime cost is essentially zero per CI run
+# and the failure mode (silent secondary-source accumulation in load-
+# bearing documents) is severe. The allowlist lives in
+# .claude/skills/verification-layer/research/checklist.md as the single
+# source of truth for both the research-critic agent and any future
+# CI script.
+citation_discipline:
+  enabled: true
+
+  # Inline escape hatch — a per-link allow comment with a stated
+  # reason. Use sparingly. The escape is itself reviewable.
+  escape_comment_pattern: "<!-- cite-allow: <reason> -->"
