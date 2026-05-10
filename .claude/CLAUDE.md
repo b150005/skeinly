@@ -73,10 +73,30 @@ skeinly/
 
 ## Domain Model (Core Concepts)
 
-- **Pattern**: A knitting chart/pattern with metadata (name, difficulty, gauge, yarn info, chart image/data)
+- **Pattern**: A knitting pattern with metadata (name, difficulty, gauge, yarn info, chart/reference images)
+- **Chart** (内部実装名: `Chart`, formerly `StructuredChart`): The symbol-grid editor surface — cells × layers × symbols. JA UI: 「編み図」.
 - **Project**: An instance of working on a pattern (start date, current row/round, status)
 - **Progress**: Row-by-row or section-based progress tracking with timestamps
 - **Share**: Exported pattern or progress snapshot for sharing with others
+- **Variation** (model: `ChartVariation`, table: `chart_variations`, formerly `ChartBranch` / `chart_branches`): A named parallel design forked off a base chart. JA UI: 「アレンジ」.
+- **Version** (model: `ChartVersion`, table: `chart_versions`, formerly `ChartRevision` / `chart_revisions`): An append-only saved snapshot of a chart. JA UI: 「バージョン」.
+- **Suggestion** (model: `Suggestion`, table: `suggestions`, formerly `PullRequest` / `pull_requests`): A proposed change to another user's chart. JA UI: 「提案」.
+
+### Vocabulary mapping (Git mental model → user-facing language)
+
+The collaboration model is a Git-shaped DAG internally, but user-facing language is knitter-friendly per the 2026-05-10 terminology audit (`audits/terminology-audit-2026-05-10.md`). When extending these surfaces, prefer the knitter-friendly term in user-visible copy + ADR text, while feel free to use Git mental models in code comments + ADRs' technical sections.
+
+| Git concept | Skeinly user-facing (EN) | Skeinly user-facing (JA) | Internal class / table |
+|---|---|---|---|
+| fork (verb/noun) | Save a copy / Save to my library | コピーを保存 / マイライブラリに追加 | `SaveSharedPatternToLibraryUseCase` (no separate table; uses `Pattern.parentPatternId`) |
+| branch | Variation | アレンジ | `ChartVariation` / `chart_variations` |
+| commit / revision | Version | バージョン | `ChartVersion` / `chart_versions` |
+| merge | Apply changes | 変更を反映 | `ApplySuggestionUseCase` + RPC `apply_suggestion` |
+| pull request | Suggestion | 提案 | `Suggestion` / `suggestions` |
+| diff | Comparison | 比較 | `ChartComparison` |
+| upstream | original | 元の (e.g. 元のパターン) | (concept; no class) |
+
+See [README.md](../README.md) `## Vocabulary mapping (developer reference)` for the same table reproduced for human contributors.
 
 ## Agent Team
 
@@ -130,7 +150,7 @@ Agents detect this project as **Kotlin Multiplatform** by finding:
    - Re-run the code review after fixes
    - Repeat the review-fix cycle until no issues remain (APPROVED)
    - Only then proceed to commit
-7. **Documentation**: The technical-writer updates docs and changelog. **When the change touches a feature surface that has a spec under [`.claude/docs/spec/`](docs/spec/)** (e.g. chart-editor, pull-request-flow, collaboration-history), update the spec in the **same commit** so the "current shape" view stays accurate. Specs describe *what is* — defer *why decisions were made* to the relevant ADR.
+7. **Documentation**: The technical-writer updates docs and changelog. **When the change touches a feature surface that has a spec under [`.claude/docs/spec/`](docs/spec/)** (e.g. chart-editor, suggestion-flow, collaboration-history), update the spec in the **same commit** so the "current shape" view stays accurate. Specs describe *what is* — defer *why decisions were made* to the relevant ADR.
 8. **Release**: The devops-engineer manages deployment and release
 8.5. **Final pre-push re-verification (after ALL edits)**: Any edit made AFTER the invariant chain passed — including code-review fix-ups, ktlintFormat post-edits, single-line import reorders, default-arg additions, KDoc fixes — invalidates the prior `make ci-local` run. Before `git commit`, re-run the FULL invariant chain (`make ci-local` from project root) regardless of how trivial the last edit looked. **`make ci-local` is the single canonical pre-push entry point** — earlier session-only `make verify-all` / `make verify-ios` aliases were folded back in on 2026-05-02 after they shipped a runtime gap (XCUITest assertion failures + Maestro flow regressions) for three consecutive CI failures.
 
@@ -279,9 +299,9 @@ Feature-organized "current shape" docs. Loaded into agent context when extending
 
 | Spec | Covers | Key ADRs |
 |---|---|---|
-| [docs/spec/chart-editor.md](docs/spec/chart-editor.md) | Structured chart authoring (palette + canvas + history + save). Phase 32.x / 35.1a–d / metadata picker | ADR-007, 008, 009, 011, 013 |
-| [docs/spec/pull-request-flow.md](docs/spec/pull-request-flow.md) | PR open / list / detail / comment / close / merge / conflict resolution. Phase 38.x | ADR-012, 013, 014 |
-| [docs/spec/collaboration-history.md](docs/spec/collaboration-history.md) | `chart_revisions` append-only spine, history / branch / diff / restore. Phase 37.x | ADR-007, 013 |
+| [docs/spec/chart-editor.md](docs/spec/chart-editor.md) | Chart authoring (palette + canvas + history + save). Phase 32.x / 35.1a–d / metadata picker | ADR-007, 008, 009, 011, 013 |
+| [docs/spec/suggestion-flow.md](docs/spec/suggestion-flow.md) | Suggestion open / list / detail / comment / close / apply / conflict resolution. Phase 38.x (was `pull-request-flow.md` pre-2026-05-10 terminology audit) | ADR-012, 013, 014 |
+| [docs/spec/collaboration-history.md](docs/spec/collaboration-history.md) | `chart_versions` append-only spine, version history / variants / comparison / restore. Phase 37.x | ADR-007, 013 |
 
 Specs intentionally do NOT exist for: `i18n` (script-verified parity is the source of truth), `auth` (small surface, well-trodden), `realtime-sync` / `discovery-fork` / `segment-progress` / `symbol-catalog` (sufficiently captured by their respective ADRs).
 

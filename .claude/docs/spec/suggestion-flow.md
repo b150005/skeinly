@@ -1,4 +1,13 @@
-# Spec — Pull Request Flow
+# Spec — Suggestion Flow
+
+> Note: prior to the 2026-05-10 terminology audit this spec was titled
+> "Spec — Pull Request Flow" and lived at `pull-request-flow.md`.
+> User-facing renames: Pull request → Suggestion / 「提案」, Merge →
+> Apply changes / 「変更を反映」, status enum 'merged' → 'applied' /
+> 「反映済み」. Supabase Migrations 026 + 027 renamed `pull_requests` →
+> `suggestions` and `pull_request_comments` → `suggestion_comments` on
+> prod 2026-05-10. See `audits/terminology-audit-2026-05-10.md` and
+> ADR-014 amendment for full rationale.
 
 > **Purpose**: stable feature-organized view of the chart-pattern pull-request workflow as it exists in main today. Describes the *what*; ADR-014 carries the *why*.
 >

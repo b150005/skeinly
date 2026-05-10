@@ -1,4 +1,11 @@
-# Spec — Collaboration / History / Branch / Diff
+# Spec — Collaboration / Version History / Variants / Comparison
+
+> Note: prior to the 2026-05-10 terminology audit this spec was titled
+> "Spec — Collaboration / History / Branch / Diff". User-facing renames:
+> Branch → Variation / 「アレンジ」, Revision・Commit → Version / 「バージョン」,
+> Diff → Comparison / 「比較」. Internal column names + property names
+> retained per the audit's "table-rename only, columns stay" decision.
+> See `audits/terminology-audit-2026-05-10.md` and ADR-013 amendment.
 
 > **Purpose**: stable feature-organized view of the chart commit-history, branching, diff, and revision-restore surfaces as they exist in main today. Describes the *what*; ADR-013 carries the *why*.
 >

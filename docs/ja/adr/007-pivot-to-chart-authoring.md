@@ -61,3 +61,38 @@ Phase 1〜27b で行カウンタアプリとして機能完成。Supabase 同期
 | 共通 SVG レンダラ (Compose Multiplatform Canvas) | chart 描画を一本化できる | CMP のグラフィックレイヤは成熟途上 (CMP 1.10.x); SwiftUI ユーザにとって非ネイティブな違和感; 将来の記号インタラクション (tap-to-edit) がネイティブでない canvas では難しい | chart はアプリで最も目立つ表面であり、実装経済性よりネイティブ忠実度を優先 |
 | WebView + HTML Canvas (ammies 風) | コード再利用が最大化; 既存 web 実装を移植できる | モバイルでは非ネイティブなスクロール/ズーム、メモリフットプリント高、将来のオフラインファースト要件と相性悪 | ADR-001 で合意した "ネイティブ KMP" 戦略を骨抜きにする |
 | v1.0 から Git 風コラボレーションを外し、オーサリングのみで早期リリース | スコープ縮小で公開が早まる | Git モデルこそが Ammies + KnitCompanion に対する差別化の肝であり、これなしの公開は弱い製品ストーリー | コラボレーションはフェーズ分割可 (Phase 37〜38) だが v1.0 スコープからは外さない |
+
+---
+
+## Amendment — 2026-05-10 (用語監査、v0.1.0 直前)
+
+`audits/terminology-audit-2026-05-10.md` の決定に基づく用語ピボット。
+詳細は EN 版 ADR の Amendment ブロックを参照。
+
+**主要なリネーム** (本セッション 2026-05-10 適用):
+
+| 旧 | 新 |
+|---|---|
+| Structured Chart / 構造化チャート | Chart / 編み図 |
+| Fork / フォーク | Save a copy / コピーを保存 |
+| Branch / ブランチ | Variation / アレンジ |
+| Revision・Commit / リビジョン・コミット | Version / バージョン |
+| Pull request / プルリクエスト | Suggestion / 提案 |
+| Merge / マージ | Apply changes / 変更を反映 |
+| Diff / 差分 | Comparison / 比較 |
+| Discovery (EN) | Browse Patterns (EN); JA は既に「パターンを探す」で OK |
+
+**Supabase migrations 026 + 027** で `chart_revisions` → `chart_versions`、
+`chart_branches` → `chart_variations`、`pull_requests` → `suggestions`、
+`pull_request_comments` → `suggestion_comments`、status enum value
+`'merged'` → `'applied'`、`merge_pull_request` RPC → `apply_suggestion` を
+適用済 (prod 反映済 2026-05-10)。
+
+**検証ベース**: docs-researcher (T2) Round 1 + scoped Round 2 が
+Craft Yarn Council, 日本ヴォーグ社 (tezukuritown.com), Brooklyn
+Tweed, Stephen West, amu app 等の primary source で各リネームを
+裏付けた。research-critic agent が Round 1 を独立 tool family
+(WebFetch + GitHub) で再検証し 6/9 PASS を確認。
+
+事前 v1 破壊的変更ポリシー (CLAUDE.md `### Planned — Phase 39`
+HARD-GATE) により内部表名・status enum 値の変更を許容。

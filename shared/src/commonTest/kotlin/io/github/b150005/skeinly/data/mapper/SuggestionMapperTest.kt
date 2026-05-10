@@ -48,7 +48,7 @@ class SuggestionMapperTest {
     fun `entity with status=merged round-trips with mergedRevisionId and mergedAt`() {
         val pr =
             entity(
-                status = "merged",
+                status = "applied",
                 mergedRevisionId = "rev-merged",
                 mergedAt = "2026-04-26T15:30:00Z",
             ).toDomain()
@@ -81,7 +81,7 @@ class SuggestionMapperTest {
     @Test
     fun `enum to db string round-trip is exhaustive`() {
         assertEquals("open", SuggestionStatus.OPEN.toDbString())
-        assertEquals("merged", SuggestionStatus.APPLIED.toDbString())
+        assertEquals("applied", SuggestionStatus.APPLIED.toDbString())
         assertEquals("closed", SuggestionStatus.CLOSED.toDbString())
     }
 

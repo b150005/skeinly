@@ -693,3 +693,19 @@ viewer does not render-branch on these fields yet.
 - JIS L 0201:1995 編目記号 (reference corpus, not prescriptive)
 - Craft Yarn Council chart symbol reference (reserved under `std.cyc.*`)
 - 日本ヴォーグ社 / 文化出版局 house conventions (reserved under `std.<house>.*`)
+
+---
+
+## Amendment — 2026-05-10 (Terminology audit, pre-v0.1.0)
+
+Per `audits/terminology-audit-2026-05-10.md`: this ADR's "Structured
+Chart Data Model" content remains accurate — the data shape is
+unchanged. The ADR title retitles to "Chart Data Model" in subsequent
+doc-edit commit, dropping the "structured" qualifier per the
+chart vs reference-image dichotomy now expressed at the UI label
+level (not via type qualifier).
+
+The `chart_documents` table name is unchanged. The `chart_revisions`
+and `chart_branches` tables introduced by ADR-013 (Phase 37
+Collaboration Core) rename to `chart_versions` / `chart_variations`
+in Migration 026 — see the ADR-013 amendment for that rationale.

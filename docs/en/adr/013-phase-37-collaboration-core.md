@@ -799,3 +799,51 @@ right shape, not implicit Realtime fan-out via Phase 37 channel design.
   not persisted)
 - `supabase/migrations/012_structured_chart.sql`: existing chart_documents schema
   and RLS that Phase 37 chart_revisions mirrors
+
+---
+
+## Amendment — 2026-05-10 (Terminology audit, pre-v0.1.0)
+
+Per `audits/terminology-audit-2026-05-10.md`: this ADR's git-style
+"Branch" + "Revision" + "Commit" + "Diff" vocabulary renames to
+knitter-friendly equivalents across user-facing surfaces.
+
+**Mapping:**
+
+| Concept | EN (was → new) | JA (was → new) |
+|---|---|---|
+| Saved snapshot | Revision / Commit → Version | リビジョン / コミット → バージョン |
+| Named parallel design | Branch → Variation | ブランチ → アレンジ |
+| Comparison view | Diff → Comparison | 差分 → 比較 |
+
+EN "Variation" + JA 「アレンジ」 are HIGH-confidence primary-source-
+backed by Brooklyn Tweed Shapeshift / Norah Gaughan / Stephen West
+Boneyard Shawl / Tuttle (EN side) + 日本ヴォーグ社 (JA side).
+"Version" is the universal consumer-software idiom (Google Docs,
+Apple Pages, Figma).
+
+**Supabase Migration 026 (applied to prod 2026-05-10):**
+- `chart_revisions` → `chart_versions` (table rename only;
+  `revision_id` / `parent_revision_id` / `commit_message` columns
+  retained as internal artifacts)
+- `chart_branches` → `chart_variations` (table rename only;
+  `branch_name` / `tip_revision_id` columns retained)
+- `merge_pull_request` RPC body refreshed to reference renamed tables
+
+**Code:** `ChartRevision` → `ChartVersion`, `ChartBranch` →
+`ChartVariation`, `ChartDiff` → `ChartComparison` across
+`shared/src/commonMain/kotlin` + SQLDelight schema (.sq + .sqm
+files renamed + table identifiers updated). Property names
+(`revisionId`, `branchName`, `tipRevisionId`, etc.) retained to
+match unchanged column names.
+
+**i18n:** ~14 keys renamed (`title_branch_picker` → `title_variations`,
+`label_initial_commit` → `label_initial_version`,
+`title_chart_diff` → `title_chart_comparison`, etc.). Plus hidden
+git jargon "current tip" + "upstream" cleaned up — JA had untranslated
+"tip" in `dialog_restore_revision_body` (now `dialog_restore_version_body`).
+
+This ADR's title retitles to "Phase 37 Collaboration Core (Version
+History, Variants, Comparison View)" in subsequent doc-edit commit.
+The associated spec at `.claude/docs/spec/collaboration-history.md`
+is similarly retitled.
