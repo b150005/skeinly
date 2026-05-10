@@ -116,7 +116,7 @@ export async function getApnsJwt(creds: ApnsCredentials): Promise<string> {
     );
     apnsJwtCache = {
         value: jwt,
-        expiresAt: now + (APNS_JWT_TTL_SECONDS * 1000),
+        expiresAt: now + APNS_JWT_TTL_SECONDS * 1000,
     };
     return jwt;
 }
@@ -159,10 +159,7 @@ function base64DecodeToBuffer(input: string): ArrayBuffer {
  * `Promise.allSettled` so one bad token does not block other tokens
  * for the same recipient.
  */
-export async function sendApns(
-    creds: ApnsCredentials,
-    input: ApnsSendInput,
-): Promise<SendOutcome> {
+export async function sendApns(creds: ApnsCredentials, input: ApnsSendInput): Promise<SendOutcome> {
     let jwt: string;
     try {
         jwt = await getApnsJwt(creds);
@@ -196,7 +193,7 @@ export async function sendApns(
         response = await fetch(url, {
             method: "POST",
             headers: {
-                "authorization": `bearer ${jwt}`,
+                authorization: `bearer ${jwt}`,
                 "apns-topic": APNS_TOPIC,
                 "apns-push-type": "alert",
                 "content-type": "application/json",
@@ -215,7 +212,7 @@ export async function sendApns(
 
     let reason: string | null = null;
     try {
-        const errorBody = await response.json() as { reason?: string };
+        const errorBody = (await response.json()) as { reason?: string };
         reason = errorBody.reason ?? null;
     } catch {
         // Non-JSON body (5xx HTML pages from edge proxies, e.g. during

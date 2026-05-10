@@ -5,17 +5,13 @@
 // 401 retry shape.
 
 import { assertEquals, assertNotEquals, assertStringIncludes } from "jsr:@std/assert@^1";
-
+import { createFetchFake, generateTestServiceAccount } from "./_fakes.ts";
 import {
     _resetFcmAccessTokenCacheForTests,
     classifyFcmResponse,
     getFcmAccessToken,
     sendFcm,
 } from "./fcm.ts";
-import {
-    createFetchFake,
-    generateTestServiceAccount,
-} from "./_fakes.ts";
 
 // ---------------------------------------------------------------------
 // OAuth access token caching (§3.2)
@@ -130,9 +126,9 @@ Deno.test("sendFcm: success path", async () => {
         });
         assertEquals(outcome, { kind: "success" });
         // FCM URL targets the SA's project_id.
-        const fcmReqs = fake.snapshotRequests().filter((r) =>
-            r.url.startsWith("https://fcm.googleapis.com/")
-        );
+        const fcmReqs = fake
+            .snapshotRequests()
+            .filter((r) => r.url.startsWith("https://fcm.googleapis.com/"));
         assertEquals(fcmReqs.length, 1);
         assertStringIncludes(fcmReqs[0].url, "/projects/test-project/messages:send");
     } finally {

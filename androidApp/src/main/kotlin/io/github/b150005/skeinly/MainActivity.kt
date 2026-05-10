@@ -242,14 +242,14 @@ class MainActivity : ComponentActivity() {
             "ChartViewer" -> Screen.ChartViewer
             "ChartEditor" -> Screen.ChartEditor
             "ChartHistory" -> Screen.ChartHistory
-            "ChartDiff" -> Screen.ChartDiff
+            "ChartComparison" -> Screen.ChartComparison
             "ChartConflictResolution" -> Screen.ChartConflictResolution
             "SymbolGallery" -> Screen.SymbolGallery
             "ActivityFeed" -> Screen.ActivityFeed
             "SharedWithMe" -> Screen.SharedWithMe
             "SharedContent" -> Screen.SharedContent
-            "PullRequestList" -> Screen.PullRequestList
-            "PullRequestDetail" -> Screen.PullRequestDetail
+            "SuggestionList" -> Screen.SuggestionList
+            "SuggestionDetail" -> Screen.SuggestionDetail
             "BugReportPreview" -> Screen.BugReportPreview
             else -> null
         }

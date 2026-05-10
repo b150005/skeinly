@@ -53,7 +53,7 @@ class SkeinlyMessagingService : FirebaseMessagingService() {
      * clear / re-install / OS push reset. The shared
      * [io.github.b150005.skeinly.notifications.PushTokenRegistrar]
      * re-acquires + upserts on every app foreground via the standard
-     * Phase 24.2c-3 trigger paths (PullRequestList opened with PRs,
+     * Phase 24.2c-3 trigger paths (SuggestionList opened with PRs,
      * etc.), so the rotation lands on the next user-visible
      * collaboration moment without needing a service-side upsert
      * here. Logged for triage visibility only — emit `length` rather

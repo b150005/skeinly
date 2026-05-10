@@ -8,13 +8,13 @@
 // Kotlin client envelope tests live in Phase 41.2 alongside the
 // SymbolPackSyncManager that consumes the API.
 
+import { assertEquals, assertFalse, assert as assertTrue } from "jsr:@std/assert@1";
 import {
     checkAndRecordRateLimit,
-    rateLimitState,
     RATE_LIMIT_MAX_CALLS,
     RATE_LIMIT_WINDOW_MS,
+    rateLimitState,
 } from "./rate-limit.ts";
-import { assertEquals, assertFalse, assert as assertTrue } from "jsr:@std/assert@1";
 
 function reset(): void {
     rateLimitState.clear();
@@ -48,7 +48,7 @@ Deno.test("rate limiter rejects the call that exceeds the cap and persists windo
     const persisted = rateLimitState.get("user-B");
     assertTrue(persisted !== undefined, "rejected call still persists previous-window state");
     assertEquals(
-        persisted!.length,
+        persisted?.length,
         RATE_LIMIT_MAX_CALLS,
         "rejected call must NOT add itself to the persisted timestamps",
     );

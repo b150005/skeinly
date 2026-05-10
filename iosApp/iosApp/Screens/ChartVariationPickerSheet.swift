@@ -1,8 +1,8 @@
 import SwiftUI
 import Shared
 
-/// SwiftUI mirror of the shared Compose `ChartBranchPickerSheet` (Phase 37.4,
-/// ADR-013 §7). Owns a Koin-resolved `ChartBranchPickerViewModel` via
+/// SwiftUI mirror of the shared Compose `ChartVariationPickerSheet` (Phase 37.4,
+/// ADR-013 §7). Owns a Koin-resolved `ChartVariationPickerViewModel` via
 /// `ScopedViewModel` so the observed state survives sheet open/close cycles.
 ///
 /// Body: live branch list + a "New branch" CTA. The row matching the chart's
@@ -12,12 +12,12 @@ import Shared
 /// On a successful switch the picker closes via `BranchSwitchedEvent` and the
 /// caller receives `onBranchSwitched(branchName:)` so it can surface a
 /// transient toast (the SwiftUI parity with Compose's Snackbar).
-struct ChartBranchPickerSheet: View {
+struct ChartVariationPickerSheet: View {
     let patternId: String
     let onDismiss: () -> Void
     let onBranchSwitched: (String) -> Void
 
-    @StateObject private var holder: ScopedViewModel<ChartBranchPickerViewModel, ChartBranchPickerState>
+    @StateObject private var holder: ScopedViewModel<ChartVariationPickerViewModel, ChartVariationPickerState>
     @State private var branchSwitchedCloseable: Closeable?
     @State private var showCreateDialog = false
 
@@ -29,12 +29,12 @@ struct ChartBranchPickerSheet: View {
         self.patternId = patternId
         self.onDismiss = onDismiss
         self.onBranchSwitched = onBranchSwitched
-        let vm = ViewModelFactory.chartBranchPickerViewModel(patternId: patternId)
-        let wrapper = KoinHelperKt.wrapChartBranchPickerState(flow: vm.state)
+        let vm = ViewModelFactory.chartVariationPickerViewModel(patternId: patternId)
+        let wrapper = KoinHelperKt.wrapChartVariationPickerState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
     }
 
-    private var viewModel: ChartBranchPickerViewModel { holder.viewModel }
+    private var viewModel: ChartVariationPickerViewModel { holder.viewModel }
 
     var body: some View {
         NavigationStack {
@@ -60,7 +60,7 @@ struct ChartBranchPickerSheet: View {
         .sheet(isPresented: $showCreateDialog) {
             CreateBranchDialog(
                 onConfirm: { name in
-                    viewModel.onEvent(event: ChartBranchPickerEventCreateBranch(branchName: name))
+                    viewModel.onEvent(event: ChartVariationPickerEventCreateBranch(branchName: name))
                     showCreateDialog = false
                 },
                 onDismiss: { showCreateDialog = false }
@@ -84,7 +84,7 @@ struct ChartBranchPickerSheet: View {
                     isCurrent: branch.tipRevisionId == state.currentRevisionId,
                     onSwitch: {
                         viewModel.onEvent(
-                            event: ChartBranchPickerEventSwitchBranch(branchName: branch.branchName)
+                            event: ChartVariationPickerEventSwitchBranch(branchName: branch.branchName)
                         )
                     }
                 )
@@ -95,7 +95,7 @@ struct ChartBranchPickerSheet: View {
     private func observeBranchSwitched() {
         branchSwitchedCloseable?.close()
         branchSwitchedCloseable = nil
-        let wrapper = KoinHelperKt.wrapChartBranchSwitchedFlow(flow: viewModel.branchSwitched)
+        let wrapper = KoinHelperKt.wrapChartVariationSwitchedFlow(flow: viewModel.branchSwitched)
         branchSwitchedCloseable = wrapper.collect { event in
             // The branch name comes from the event envelope so the consumer
             // is independent of the timing race between `_branchSwitched.trySend`
@@ -108,7 +108,7 @@ struct ChartBranchPickerSheet: View {
 }
 
 private struct BranchRow: View {
-    let branch: ChartBranch
+    let branch: ChartVariation
     let isCurrent: Bool
     let onSwitch: () -> Void
 

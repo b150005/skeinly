@@ -89,6 +89,13 @@ xcuserdata/
 # Supabase local
 supabase/.branches
 supabase/.temp
+supabase/.supabase/
+
+# TLS certificates (local dev only, never commit)
+*.pem
+*.key
+*.p12
+*.pfx
 
 # fastlane (iOS release pipeline)
 ## Fastfile + Appfile + Gemfile + Gemfile.lock are committed; everything

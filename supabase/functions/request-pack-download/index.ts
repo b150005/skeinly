@@ -44,10 +44,7 @@
 // residual access through any in-flight URL the user already holds.
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import {
-    checkAndRecordRateLimit,
-    RATE_LIMIT_WINDOW_MS,
-} from "./rate-limit.ts";
+import { checkAndRecordRateLimit, RATE_LIMIT_WINDOW_MS } from "./rate-limit.ts";
 
 // ---------------------------------------------------------------------
 // Request / response types
@@ -134,11 +131,21 @@ Deno.serve(async (req: Request) => {
     }
 
     try {
-        return await handleDownloadRequest(supabase, supabaseUrl, serviceRoleKey, userId, body.pack_id);
+        return await handleDownloadRequest(
+            supabase,
+            supabaseUrl,
+            serviceRoleKey,
+            userId,
+            body.pack_id,
+        );
     } catch (e) {
         // Stack trace stays in the Edge Function logs for triage but
         // never surfaces to the client — error envelope is closed-set.
-        console.error("request-pack-download failed", { user_id: userId, pack_id: body.pack_id, err: e });
+        console.error("request-pack-download failed", {
+            user_id: userId,
+            pack_id: body.pack_id,
+            err: e,
+        });
         return jsonResponse({ error: "internal_error" }, 500);
     }
 });
@@ -162,7 +169,11 @@ async function handleDownloadRequest(
         .maybeSingle();
 
     if (packError) {
-        console.error("symbol_packs lookup failed", { user_id: userId, pack_id: packId, err: packError });
+        console.error("symbol_packs lookup failed", {
+            user_id: userId,
+            pack_id: packId,
+            err: packError,
+        });
         return jsonResponse({ error: "internal_error" }, 500);
     }
     if (!packRow) {
@@ -188,7 +199,11 @@ async function handleDownloadRequest(
             .maybeSingle();
 
         if (subError) {
-            console.error("subscriptions lookup failed", { user_id: userId, pack_id: packId, err: subError });
+            console.error("subscriptions lookup failed", {
+                user_id: userId,
+                pack_id: packId,
+                err: subError,
+            });
             return jsonResponse({ error: "internal_error" }, 500);
         }
         if (!subRow) {
@@ -202,7 +217,7 @@ async function handleDownloadRequest(
         {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${serviceRoleKey}`,
+                Authorization: `Bearer ${serviceRoleKey}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({ expiresIn: 300 }),
@@ -223,7 +238,11 @@ async function handleDownloadRequest(
 
     const signed: { signedURL?: string } = await signResponse.json();
     if (typeof signed.signedURL !== "string") {
-        console.error("storage sign returned no signedURL", { user_id: userId, pack_id: packId, signed });
+        console.error("storage sign returned no signedURL", {
+            user_id: userId,
+            pack_id: packId,
+            signed,
+        });
         return jsonResponse({ error: "internal_error" }, 500);
     }
 

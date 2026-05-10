@@ -45,23 +45,19 @@
 // event matrix.
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import { type ApnsCredentials, type SendOutcome, sendApns } from "./apns.ts";
+import { type ServiceAccount, sendFcm } from "./fcm.ts";
 import {
-    type NotificationDispatch,
-    type PullRequestCommentRow,
-    type PullRequestRow,
-    type SupportedLocale,
-    type WebhookPayload,
     computePrCommentedDispatches,
     computePrOpenedDispatches,
     computePrStatusChangeDispatches,
+    type NotificationDispatch,
+    type PullRequestCommentRow,
+    type PullRequestRow,
     renderBody,
+    type SupportedLocale,
+    type WebhookPayload,
 } from "./mapping.ts";
-import {
-    type ApnsCredentials,
-    type SendOutcome,
-    sendApns,
-} from "./apns.ts";
-import { type ServiceAccount, sendFcm } from "./fcm.ts";
 
 // ---------------------------------------------------------------------
 // Entry point
@@ -111,12 +107,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     try {
         const dispatches = await routePayload(supabase, payload);
-        console.log(JSON.stringify({
-            event: "notify_on_write_dispatched",
-            table: payload.table,
-            type: payload.type,
-            dispatch_count: dispatches.length,
-        }));
+        console.log(
+            JSON.stringify({
+                event: "notify_on_write_dispatched",
+                table: payload.table,
+                type: payload.type,
+                dispatch_count: dispatches.length,
+            }),
+        );
         const apnsCreds = loadApnsCredentialsOrNull();
         const fcmSa = loadFcmServiceAccountOrNull();
         const sendStats = await dispatchAll(supabase, dispatches, apnsCreds, fcmSa);
@@ -412,11 +410,13 @@ export async function dispatchAll(
     for (const dispatch of dispatches) {
         const tokens = await resolveTokens(supabase, dispatch.recipientUserId);
         if (tokens.length === 0) {
-            console.log(JSON.stringify({
-                event: "notify_on_write_no_tokens",
-                recipient_user_id_prefix: dispatch.recipientUserId.substring(0, 8),
-                template_key: dispatch.templateKey,
-            }));
+            console.log(
+                JSON.stringify({
+                    event: "notify_on_write_no_tokens",
+                    recipient_user_id_prefix: dispatch.recipientUserId.substring(0, 8),
+                    template_key: dispatch.templateKey,
+                }),
+            );
             continue;
         }
         const results = await Promise.allSettled(
@@ -432,12 +432,14 @@ export async function dispatchAll(
                 // outer await, but `sendOne` itself wraps fetch errors
                 // into transient_error outcomes — a true rejection is
                 // unexpected. Surface as transient + log.
-                console.error(JSON.stringify({
-                    event: "notify_on_write_unexpected_rejection",
-                    platform: tokenRow.platform,
-                    user_id_prefix: tokenRow.user_id.substring(0, 8),
-                    error: stringifyError(result.reason),
-                }));
+                console.error(
+                    JSON.stringify({
+                        event: "notify_on_write_unexpected_rejection",
+                        platform: tokenRow.platform,
+                        user_id_prefix: tokenRow.user_id.substring(0, 8),
+                        error: stringifyError(result.reason),
+                    }),
+                );
                 stats.transient_error += 1;
             }
         }
@@ -512,53 +514,60 @@ async function processOutcome(
         // informational. Token alone is the canonical identifier even
         // across user_ids (per migration 025 unique constraint
         // semantics + per-device token issuance).
-        const { error } = await supabase
-            .from("device_tokens")
-            .delete()
-            .eq("token", tokenRow.token);
+        const { error } = await supabase.from("device_tokens").delete().eq("token", tokenRow.token);
         if (error) {
-            console.error(JSON.stringify({
-                event: "device_token_delete_failed",
-                platform: tokenRow.platform,
-                user_id_prefix: tokenRow.user_id.substring(0, 8),
-                reason: outcome.reason,
-                error: error.message,
-            }));
+            console.error(
+                JSON.stringify({
+                    event: "device_token_delete_failed",
+                    platform: tokenRow.platform,
+                    user_id_prefix: tokenRow.user_id.substring(0, 8),
+                    reason: outcome.reason,
+                    error: error.message,
+                }),
+            );
             stats.transient_error += 1;
             return;
         }
-        console.log(JSON.stringify({
-            event: "device_token_deleted",
-            platform: tokenRow.platform,
-            user_id_prefix: tokenRow.user_id.substring(0, 8),
-            reason: outcome.reason,
-        }));
+        console.log(
+            JSON.stringify({
+                event: "device_token_deleted",
+                platform: tokenRow.platform,
+                user_id_prefix: tokenRow.user_id.substring(0, 8),
+                reason: outcome.reason,
+            }),
+        );
         stats.delete_token += 1;
         return;
     }
     if (outcome.kind === "config_error") {
-        if (outcome.reason === "apns_credentials_missing"
-            || outcome.reason === "fcm_service_account_missing") {
+        if (
+            outcome.reason === "apns_credentials_missing" ||
+            outcome.reason === "fcm_service_account_missing"
+        ) {
             stats.skipped_no_creds += 1;
         } else {
             stats.config_error += 1;
         }
-        console.error(JSON.stringify({
-            event: "notify_on_write_config_error",
-            platform: tokenRow.platform,
-            user_id_prefix: tokenRow.user_id.substring(0, 8),
-            reason: outcome.reason,
-        }));
+        console.error(
+            JSON.stringify({
+                event: "notify_on_write_config_error",
+                platform: tokenRow.platform,
+                user_id_prefix: tokenRow.user_id.substring(0, 8),
+                reason: outcome.reason,
+            }),
+        );
         return;
     }
     // transient_error
     stats.transient_error += 1;
-    console.log(JSON.stringify({
-        event: "notify_on_write_transient_error",
-        platform: tokenRow.platform,
-        user_id_prefix: tokenRow.user_id.substring(0, 8),
-        reason: outcome.reason,
-    }));
+    console.log(
+        JSON.stringify({
+            event: "notify_on_write_transient_error",
+            platform: tokenRow.platform,
+            user_id_prefix: tokenRow.user_id.substring(0, 8),
+            reason: outcome.reason,
+        }),
+    );
 }
 
 function loadApnsCredentialsOrNull(): ApnsCredentials | null {
@@ -582,7 +591,10 @@ function loadFcmServiceAccountOrNull(): ServiceAccount | null {
         }
         return parsed;
     } catch (e) {
-        console.error("notify-on-write: FIREBASE_SERVICE_ACCOUNT_JSON parse failed", stringifyError(e));
+        console.error(
+            "notify-on-write: FIREBASE_SERVICE_ACCOUNT_JSON parse failed",
+            stringifyError(e),
+        );
         return null;
     }
 }

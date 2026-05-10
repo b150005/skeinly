@@ -66,17 +66,13 @@ export function createFetchFake(): FetchFake {
     // deno-lint-ignore require-await
     const fakeFetch: typeof fetch = async (input, init) => {
         totalCalls += 1;
-        const url = typeof input === "string"
-            ? input
-            : input instanceof URL
-                ? input.toString()
-                : input.url;
+        const url =
+            typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
         // Cast — RequestInit's method/body are universally available across
         // Deno's overloaded fetch signature, but TS can't always prove the
         // intersection at the union type level.
         const initShape = (init ?? {}) as { method?: string; body?: BodyInit | null };
-        const method = initShape.method
-            ?? (input instanceof Request ? input.method : "GET");
+        const method = initShape.method ?? (input instanceof Request ? input.method : "GET");
         requests.push({ url, method });
 
         if (url === "https://oauth2.googleapis.com/token") {
@@ -104,10 +100,7 @@ export function createFetchFake(): FetchFake {
                 throw new Error(`fetch fake: no APNs response arranged for token=${token}`);
             }
             if (fake.status === 200) return new Response(null, { status: 200 });
-            return jsonResponse(
-                fake.reason ? { reason: fake.reason } : {},
-                fake.status,
-            );
+            return jsonResponse(fake.reason ? { reason: fake.reason } : {}, fake.status);
         }
 
         if (url.startsWith("https://fcm.googleapis.com/v1/projects/")) {
@@ -123,10 +116,7 @@ export function createFetchFake(): FetchFake {
             if (fake.status === 200) {
                 return jsonResponse({ name: `projects/_/messages/${token}` }, 200);
             }
-            return jsonResponse(
-                buildFcmErrorBody(fake),
-                fake.status,
-            );
+            return jsonResponse(buildFcmErrorBody(fake), fake.status);
         }
 
         // Unknown URL — fall through to the real fetch only if explicitly
@@ -179,7 +169,12 @@ function buildFcmErrorBody(fake: FakeFcmResponse): unknown {
             message: fake.errorCode ?? fake.statusName ?? "unknown",
             status: fake.statusName ?? fake.errorCode ?? "UNKNOWN",
             details: fake.errorCode
-                ? [{ "@type": "type.googleapis.com/google.firebase.fcm.v1.FcmError", errorCode: fake.errorCode }]
+                ? [
+                      {
+                          "@type": "type.googleapis.com/google.firebase.fcm.v1.FcmError",
+                          errorCode: fake.errorCode,
+                      },
+                  ]
                 : undefined,
         },
     };

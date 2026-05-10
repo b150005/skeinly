@@ -2,10 +2,10 @@ import SwiftUI
 import Shared
 
 /// Shared rendering primitives for SwiftUI Canvas-based chart drawing. Extracted
-/// from `ChartCanvasView` (StructuredChartViewerScreen) and `DiffCanvas`
-/// (ChartDiffScreen) which previously held identical inline copies; the third
+/// from `ChartCanvasView` (ChartViewerScreen) and `DiffCanvas`
+/// (ChartComparisonScreen) which previously held identical inline copies; the third
 /// consumer (Phase 36.4.1 `ChartThumbnailView`) triggered the extraction per
-/// the in-code "if a third consumer surfaces" comment that ChartDiffScreen
+/// the in-code "if a third consumer surfaces" comment that ChartComparisonScreen
 /// landed in Phase 37.3.
 ///
 /// All helpers are pure (no SwiftUI state, no GraphicsContext capture) except
