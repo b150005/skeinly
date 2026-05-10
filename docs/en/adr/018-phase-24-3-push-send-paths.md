@@ -369,3 +369,18 @@ Beyond the per-decision alternatives listed in §3.1–§3.5:
 - `supabase/functions/notify-on-write/index.ts` (Phase 24.1 shell — the integration point this slice extends)
 - `supabase/functions/notify-on-write/mapping.ts` (Phase 24.1 — recipient + body computation, unchanged in 24.3)
 - `supabase/functions/revenuecat-webhook/index.ts` (Phase 39 prep — Bearer-auth + JSON-log precedent)
+
+---
+
+## Amendment — 2026-05-10 (Terminology audit, post-decision)
+
+This ADR's body references `pull_requests` / `pull_request_comments`
+tables + the 'merged' status as named at the time the design was
+cut. Post Migration 027: tables renamed to `suggestions` /
+`suggestion_comments`; status enum value renamed to `'applied'`.
+The dispatch path in `dispatchAll()` is unchanged — it switches on
+the per-template-key body that `mapping.ts` `renderBody()` returns,
+which now produces the renamed copy ("applied your suggestion" etc.)
+per ADR-014 amendment.
+
+See `audits/terminology-audit-2026-05-10.md` for full mapping.

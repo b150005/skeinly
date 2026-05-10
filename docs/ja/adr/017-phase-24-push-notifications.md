@@ -218,3 +218,25 @@ push notification は opt-in surface — ユーザが OS permission 明示 grant
 ## 8. References
 
 EN canonical の §10 References を参照。
+
+---
+
+## Amendment — 2026-05-10 (用語監査、決定後)
+
+本 ADR 本文で `pull_requests` / `pull_request_comments` テーブル名 +
+status enum 値 `'merged'` を参照している箇所は、設計時点での名称。
+2026-05-10 の用語監査 (`audits/terminology-audit-2026-05-10.md`) +
+Migration 027 適用後、以下に置換済:
+- テーブル名: `suggestions` / `suggestion_comments`
+- status enum 値: `'applied'` (旧 `'merged'`)
+- Edge Function `notify-on-write` は新テーブル名で dispatch
+- Database Webhook の source-table 設定も新テーブル名 (Postgres OID
+  経由で自動追従)
+- `webhooks.md` も新名に更新済
+
+push 通知テンプレート (EN/JA) も ADR-014 amendment + 監査 doc 決定に
+従い書き換え (「プルリクエストを開きました」→「提案を送りました」、
+「マージしました」→「反映しました」 等)。
+
+Edge Function 内部の TypeScript 型名 (`PullRequestRow` など) は内部
+アーティファクトとして旧表記を保持。

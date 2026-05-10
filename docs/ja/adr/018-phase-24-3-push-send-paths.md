@@ -366,3 +366,15 @@ User-side アクション (autonomous 不可):
 - `supabase/functions/notify-on-write/index.ts` (Phase 24.1 shell — 本 slice が拡張する統合点)
 - `supabase/functions/notify-on-write/mapping.ts` (Phase 24.1 — recipient + body 計算、24.3 で不変)
 - `supabase/functions/revenuecat-webhook/index.ts` (Phase 39 prep — Bearer auth + JSON-log 先例)
+
+---
+
+## Amendment — 2026-05-10 (用語監査、決定後)
+
+本 ADR 本文の `pull_requests` / `pull_request_comments` + 'merged'
+status 参照は設計時点での名称。Migration 027 適用後、テーブルは
+`suggestions` / `suggestion_comments`、status は `'applied'` に
+リネーム済。dispatch path 自体は変更なし — `mapping.ts` の
+`renderBody()` が返すリネーム後 body をそのまま push に乗せる。
+
+詳細: `audits/terminology-audit-2026-05-10.md`。

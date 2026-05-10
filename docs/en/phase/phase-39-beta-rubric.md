@@ -7,7 +7,7 @@ Related: [ADR-007 — Pivot to Chart Authoring](../adr/007-pivot-to-chart-author
 Closed beta validates the Phase 32→38 collaboration loop with knitters
 outside the design conversation. Every design decision since Phase 32
 has been informed by knitter advisory plus the agent team — beta is the
-first non-author signal we get on whether the merge / open-PR / branch
+first non-author signal we get on whether the apply / open-suggestion / variation
 flows read as "knitter editing" or as foreign Git ceremony.
 
 Data-migration compatibility does NOT freeze at Phase 39. Per the
@@ -23,7 +23,7 @@ closes regardless.
 Target 5–10 invitees covering at least:
 
 - 1 round-chart author (amigurumi / doily) — Phase 35.x signal source.
-  Must use a forked public pattern at least once to exercise the
+  Must use a copied public pattern at least once to exercise the
   Phase 36 + 37 + 38 chain end-to-end.
 - 1 collaborative knitter (works on patterns shared by friends) —
   exercises the receive side of share + comment + activity feed.
@@ -58,13 +58,18 @@ gate is satisfied will produce false bug reports or non-functional
 test paths. Verify in the same session that pushes
 `v0.1.0` so the state is observably current.
 
-1. **HARD GATE: Migration 016 applied to prod Supabase.** Run
-   `supabase migration list --linked` and confirm `016_pull_requests`
-   appears in the `Remote` column. Without this, `merge_pull_request`
-   RPC and `pull_requests` / `pull_request_comments` tables do not
-   exist server-side — every Phase 38 test path in this rubric
-   becomes a systemic crash that is not a real regression. Do not
-   send invites until this is verified. If the CLI times out (as
+1. **HARD GATE: Migrations 016 + 026 + 027 applied to prod Supabase.**
+   Run `supabase migration list --linked` and confirm
+   `016_pull_requests` + `026_terminology_audit_collaboration_core`
+   + `027_terminology_audit_suggestion_workflow` appear in the
+   `Remote` column. Migration 016 created the original
+   `pull_requests` / `pull_request_comments` tables; 026 + 027
+   renamed them to `chart_versions` / `chart_variations` /
+   `suggestions` / `suggestion_comments` + replaced the
+   `merge_pull_request` RPC with `apply_suggestion`. Without all
+   three applied, Phase 38 test paths in this rubric become a
+   systemic crash that is not a real regression. Do not send
+   invites until verified. If the CLI times out (as
    happened during the version-bump session), retry from a stable
    network or run `gh run list` against the Supabase deploy workflow.
 2. **HARD GATE: Tag CI green.** The workflow run triggered by
@@ -103,7 +108,7 @@ test paths. Verify in the same session that pushes
 Group flows by phase so feedback can be triaged by subsystem.
 
 ### Phase 32 — Chart editor (flat / rect)
-- Open a public pattern from Discover, fork it, edit the structured
+- Open a public pattern from Discover, save a copy of it, edit the
   chart by tapping cells.
 - Use the parametric symbol input (e.g. `ch-space` chain count) and
   re-edit a parametric cell.
@@ -112,7 +117,7 @@ Group flows by phase so feedback can be triaged by subsystem.
 - Save a chart with no symbol changes — should not flag dirty.
 
 ### Phase 34 — Per-segment progress
-- On a forked chart, tap cells to cycle todo → wip → done → todo.
+- On a copied chart, tap cells to cycle todo → wip → done → todo.
 - Long-press a cell to mark done directly. Haptic feedback should
   fire on both platforms.
 - Tap "Reset progress" in the project detail; confirm the dialog
@@ -122,17 +127,17 @@ Group flows by phase so feedback can be triaged by subsystem.
   Confirm haptic feedback fires on both platforms. The "ships in
   Phase 35" deferred notice has been removed.
 
-### Phase 36 — Discovery + fork
+### Phase 36 — Discovery + Save-to-Library
 - Toggle the "Charts only" filter in Discover and verify thumbnails
   render on Android (iOS shows static placeholder by design).
-- Fork a chartful public pattern; verify Snackbar reads
-  "Forked successfully" (not the fallback "chart copy failed"
+- Save a copy of a chartful public pattern; verify Snackbar reads
+  "Copy saved!" (not the fallback "chart copy failed"
   message) when the source has a chart.
-- On the forked project's detail view, verify the "Forked from
+- On the copied project's detail view, verify the "Copied from
   [title] by [author]" row tappable when the source is still public.
 
 ### Phase 37 — Collaboration core
-- View chart history (overflow → "View history") on a forked chart.
+- View chart history (overflow → "View history") on a copied chart.
 - Open the diff view by tapping a past revision; pan and zoom one
   pane and verify the other pane stays in sync.
 - Long-press a past revision and "Restore as new commit" — the
@@ -141,22 +146,22 @@ Group flows by phase so feedback can be triaged by subsystem.
 - Create a branch via the branch picker. Switch branches; the
   rendered chart should swap atomically.
 
-### Phase 38 — Pull request
-- From a forked chart's overflow → "Open pull request", fill in
+### Phase 38 — Suggestion workflow
+- From a copied chart's overflow → "Suggest a change", fill in
   title and description, submit. Verify the success Snackbar.
 - On the upstream pattern's owner device, open Pull Requests
   (toolbar icon), verify the incoming PR appears, post a comment.
 - On the original PR detail, verify the comment appears in real
   time without manual refresh.
-- **Merge happy path**: as the upstream owner, tap Merge on a
-  conflict-free PR. The merged revision should appear in the
-  upstream's history; the PR status should flip to MERGED.
-- **Conflict resolution**: open a PR where both upstream and source
-  edited the same cell (set up by editing on both sides between
-  fork and PR-open). Tap Merge → conflict screen. Pick Take theirs
-  / Keep mine / Skip per cell. Apply and merge.
-- Close a PR (either party). Verify the closed state echoes through
-  Realtime to the other party's device.
+- **Apply happy path**: as the original owner, tap Apply changes on a
+  conflict-free Suggestion. The applied version should appear in the
+  original's history; the Suggestion status should flip to APPLIED.
+- **Conflict resolution**: open a Suggestion where both original and
+  source edited the same cell (set up by editing on both sides between
+  copy and Suggestion-send). Tap Apply changes → conflict screen. Pick
+  Use contributor's / Use mine / Skip per cell. Apply changes.
+- Close a Suggestion (either party). Verify the closed state echoes
+  through Realtime to the other party's device.
 
 ## What's known-broken — testers should NOT report these
 
@@ -210,7 +215,7 @@ filing URL once GitHub indexes the template:
 
 ### Severity classes (testers self-tag)
 
-- **Crash / data loss / incorrect merge result** → CRITICAL. Stop
+- **Crash / data loss / incorrect apply result** → CRITICAL. Stop
   testing the affected flow until acknowledged.
 - **UX confusion / unclear copy / missing affordance** → HIGH.
 - **Visual polish / typography / spacing** → MEDIUM.
