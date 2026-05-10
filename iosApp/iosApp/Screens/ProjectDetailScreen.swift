@@ -823,7 +823,7 @@ private extension View {
             // being copied. Both keys exist in all 5 i18n sources.
             Button(LocalizedStringKey("action_copy")) {
                 if let link = state.shareLink, let token = link.shareToken {
-                    UIPasteboard.general.string = "skeinly://share/\(token)"
+                    UIPasteboard.general.string = "https://b150005.github.io/skeinly/patterns/shared/\(token)"
                 }
                 viewModel.onEvent(event: ProjectDetailEventDismissShareDialog.shared)
             }
@@ -832,7 +832,7 @@ private extension View {
             }
         } message: {
             if let link = state.shareLink, let token = link.shareToken {
-                Text(verbatim: "skeinly://share/\(token)")
+                Text(verbatim: "https://b150005.github.io/skeinly/patterns/shared/\(token)")
             }
         }
     }

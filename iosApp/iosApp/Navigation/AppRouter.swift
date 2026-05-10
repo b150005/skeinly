@@ -100,7 +100,16 @@ enum Route: Hashable {
 struct AppRootView: View {
     @StateObject private var authHolder: ScopedViewModel<AuthViewModel, AuthUiState>
     @State private var path = NavigationPath()
-    @State private var pendingDeepLinkToken: String?
+    /// Phase 39 (W3 / 2026-05-11) — typed deep-link Route, parsed at
+    /// receive time via `parseExternalRoute(url:)` (Swift mirror of the
+    /// commonMain helper in `NavGraph.kt`). Stashed here when the deep
+    /// link arrives before auth completes; replayed in the
+    /// `AuthStateAuthenticated` branch's `.onAppear`. Renamed from the
+    /// pre-W3 `pendingDeepLinkToken: String?` (which carried only a
+    /// share-token UUID extracted from the legacy `skeinly://share/<token>`
+    /// custom scheme — that scheme was deleted in this slice, no Tech
+    /// Debt fallback per pre-v1 breaking changes accepted policy).
+    @State private var pendingDeepLinkRoute: Route?
     @State private var hasSeenOnboarding: Bool
     // Tests inject `-local_only_mode true` via NSUserDefaults launch
     // arguments (mirroring `-has_seen_onboarding`) so ProjectListScreen
@@ -155,9 +164,9 @@ struct AppRootView: View {
                         }
                 }
                 .onAppear {
-                    if let token = pendingDeepLinkToken {
-                        pendingDeepLinkToken = nil
-                        path.append(Route.sharedContent(token: token, shareId: nil))
+                    if let route = pendingDeepLinkRoute {
+                        pendingDeepLinkRoute = nil
+                        path.append(route)
                     }
                 }
             } else if authState is AuthStateLoading {
@@ -364,20 +373,64 @@ struct AppRootView: View {
         }
     }
 
+    /// Phase 39 (W3 / 2026-05-11) — handle a Universal Link arriving via
+    /// `.onOpenURL`. Parses the URL via [parseExternalRoute] and routes
+    /// to the typed [Route] case. Authenticated path appends to the nav
+    /// path immediately; unauthenticated path stashes the route in
+    /// `pendingDeepLinkRoute` for the post-login `.onAppear` replay.
     func handleDeepLink(url: URL) {
-        guard url.scheme == "skeinly",
-              url.host == "share",
-              let token = url.pathComponents.dropFirst().first,
-              isValidShareToken(token) else {
-            return
-        }
-
+        guard let route = parseExternalRoute(url: url) else { return }
         let authState = authHolder.state.authState
         if authState is AuthStateAuthenticated {
-            path.append(Route.sharedContent(token: token, shareId: nil))
+            path.append(route)
         } else {
-            pendingDeepLinkToken = token
+            pendingDeepLinkRoute = route
         }
+    }
+
+    /// Swift mirror of the Kotlin commonMain `parseExternalRoute` (see
+    /// `shared/src/commonMain/.../NavGraph.kt`). Two implementations
+    /// because Compose Navigation routes (`SharedContent`, `SuggestionDetail`)
+    /// are Kotlin-side types that don't bridge to Swift, and SwiftUI
+    /// uses its own [Route] enum. The format contract is identical:
+    /// any URL recognized here is also recognized by the Kotlin helper
+    /// for the equivalent Compose route, and vice versa.
+    ///
+    /// Recognized URL family (alpha scope):
+    ///   https://b150005.github.io/skeinly/patterns/shared/<token>
+    ///     → .sharedContent(token: <token>, shareId: nil)
+    ///   https://b150005.github.io/skeinly/pull-requests/<prId>
+    ///     → .pullRequestDetail(prId: <prId>)
+    ///
+    /// Returns nil for any URL outside the family, with empty
+    /// identifier segment, or with an invalid share-token shape (UUID
+    /// v4 only — guards against hand-crafted URLs reaching the
+    /// SharedContent fetch with garbage tokens).
+    func parseExternalRoute(url: URL) -> Route? {
+        guard url.scheme == "https" else { return nil }
+        guard url.host == "b150005.github.io" else { return nil }
+        // pathComponents includes a leading "/" entry; drop it. Then we
+        // expect "skeinly" as the first real segment, and the
+        // resource/identifier segments after.
+        let segments = url.pathComponents.filter { $0 != "/" }
+        guard segments.first == "skeinly" else { return nil }
+        let rest = Array(segments.dropFirst())
+
+        // /skeinly/patterns/shared/<token>
+        if rest.count == 3, rest[0] == "patterns", rest[1] == "shared" {
+            let token = rest[2]
+            guard !token.isEmpty, isValidShareToken(token) else { return nil }
+            return .sharedContent(token: token, shareId: nil)
+        }
+
+        // /skeinly/pull-requests/<prId>
+        if rest.count == 2, rest[0] == "pull-requests" {
+            let prId = rest[1]
+            guard !prId.isEmpty else { return nil }
+            return .pullRequestDetail(prId: prId)
+        }
+
+        return nil
     }
 
 }

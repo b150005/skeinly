@@ -211,7 +211,19 @@ data object PackManagement
 @Composable
 fun SkeinlyNavHost(
     navController: NavHostController,
-    deepLinkToken: String? = null,
+    /**
+     * Phase 39 (W3 / 2026-05-11) — full Universal Link / App Link URL
+     * captured by the host (Android `MainActivity` via Intent.data;
+     * iOS `AppRouter.swift` via `.onOpenURL`). Parsed via
+     * [parseExternalRoute] into a typed Compose Navigation route at
+     * mount time and replayed through the auth flow so a deep-link
+     * launch on a logged-out client routes through Login → target
+     * destination correctly. Renamed from the Phase 24.5 era
+     * `deepLinkToken: String?` (which carried only the bare share-token
+     * UUID) — the URL form covers both share tokens and pull-request
+     * URLs and any post-alpha public URL surfaces under one parameter.
+     */
+    deepLinkUrl: String? = null,
     /**
      * Phase 24.5 (ADR-017 §3.8) — push-tap deep-link route. Format:
      * host-relative `pull-request/<prId>` (Phase 24 only emits PR
@@ -221,6 +233,12 @@ fun SkeinlyNavHost(
      * publisher → onReceive). The composable consumes the value once
      * via `LaunchedEffect` and calls [onPushRouteConsumed] to clear
      * the host-side state, preventing re-fire on recomposition.
+     *
+     * Distinct from [deepLinkUrl] above: push payloads come from the
+     * Edge Function via FCM/APNs and use a host-relative path format,
+     * while external links arrive via OS Universal Link / App Link
+     * dispatch and use full https URLs. Two formats, two parsers,
+     * shared route output.
      */
     pushRoute: String? = null,
     onPushRouteConsumed: () -> Unit = {},
@@ -231,12 +249,21 @@ fun SkeinlyNavHost(
 
     // If Supabase is not configured, skip auth entirely (local-only mode)
     val requiresAuth = SupabaseConfig.isConfigured
-    var pendingDeepLinkToken by remember { mutableStateOf(deepLinkToken) }
 
-    // Sync parameter changes (e.g., from onNewIntent) into local state
-    LaunchedEffect(deepLinkToken) {
-        if (deepLinkToken != null) {
-            pendingDeepLinkToken = deepLinkToken
+    // Parse the deep-link URL once and stash the typed Route so the
+    // post-auth replay below can navigate without re-parsing. `null`
+    // covers both "no deep link present" and "deep link present but
+    // unrecognized URL family" — silent drop in the latter case (cf.
+    // parseExternalRoute KDoc).
+    var pendingDeepLinkRoute by remember {
+        mutableStateOf(deepLinkUrl?.let { parseExternalRoute(it) })
+    }
+
+    // Sync parameter changes (e.g., from onNewIntent) into local state.
+    // Re-parsing on each new URL keeps the typed route fresh.
+    LaunchedEffect(deepLinkUrl) {
+        if (deepLinkUrl != null) {
+            pendingDeepLinkRoute = parseExternalRoute(deepLinkUrl)
         }
     }
 
@@ -268,10 +295,13 @@ fun SkeinlyNavHost(
                     navController.navigate(ProjectList) {
                         popUpTo(Login) { inclusive = true }
                     }
-                    // Navigate to deep link after authentication
-                    pendingDeepLinkToken?.let { token ->
-                        navController.navigate(SharedContent(token = token))
-                        pendingDeepLinkToken = null
+                    // Navigate to deep link after authentication. Phase 39 W3:
+                    // pendingDeepLinkRoute is already parsed (URL → typed Route)
+                    // so this branch is route-shape-agnostic — extends to any
+                    // future URL family without modifying the auth flow.
+                    pendingDeepLinkRoute?.let { route ->
+                        navController.navigate(route)
+                        pendingDeepLinkRoute = null
                     }
                 }
                 is AuthState.Unauthenticated -> {
@@ -283,11 +313,11 @@ fun SkeinlyNavHost(
             }
         }
     } else {
-        // No auth required — handle deep link immediately
-        LaunchedEffect(pendingDeepLinkToken) {
-            pendingDeepLinkToken?.let { token ->
-                navController.navigate(SharedContent(token = token))
-                pendingDeepLinkToken = null
+        // No auth required — handle deep link immediately.
+        LaunchedEffect(pendingDeepLinkRoute) {
+            pendingDeepLinkRoute?.let { route ->
+                navController.navigate(route)
+                pendingDeepLinkRoute = null
             }
         }
     }
@@ -657,3 +687,78 @@ internal fun parsePushRoute(raw: String): Any? {
     }
     return null
 }
+
+/**
+ * Phase 39 (W3 / 2026-05-11) — parse an external Universal Link (iOS)
+ * or Android App Link URL into a typed Compose Navigation route.
+ *
+ * Recognized URL family (alpha scope; expand post-alpha as new public
+ * URL surfaces are added):
+ *
+ *   https://b150005.github.io/skeinly/patterns/shared/<token>
+ *     → [SharedContent](token = `<token>`, shareId = null)
+ *     where `<token>` is a UUID v4 share token.
+ *
+ *   https://b150005.github.io/skeinly/pull-requests/<prId>
+ *     → [SuggestionDetail](prId = `<prId>`)
+ *
+ * Returns `null` for any URL that:
+ *   - Is not under https://b150005.github.io/skeinly/ — defensive even
+ *     though Manifest intent-filter + AASA `components` already restrict
+ *     the surface; an attacker who tricks the OS into sending an
+ *     out-of-spec URL still cannot navigate the app.
+ *   - Has an unknown route shape (forward-compat for new URL families
+ *     added in later phases).
+ *   - Has an empty identifier segment.
+ *   - Has an invalid share-token shape (UUID v4 only — guards against
+ *     hand-crafted URLs reaching the SharedContent fetch with garbage
+ *     tokens).
+ *
+ * Query string and URL fragment are stripped before route matching so
+ * adversarial trailing data (`?utm_source=...`, `#anchor`) does not
+ * corrupt the identifier extraction.
+ *
+ * Internal visibility so unit tests in `commonTest` can reach it
+ * without exposing the helper to consumers of the navigation surface.
+ */
+internal fun parseExternalRoute(url: String): Any? {
+    val expectedPrefix = "https://b150005.github.io/skeinly/"
+    if (!url.startsWith(expectedPrefix)) return null
+    // Strip query and fragment so adversarial appended data cannot
+    // corrupt the identifier extraction below. `substringBefore` returns
+    // the full string when the delimiter is absent, so this is a no-op
+    // for clean URLs.
+    val pathPart =
+        url
+            .substring(expectedPrefix.length)
+            .substringBefore('?')
+            .substringBefore('#')
+
+    val sharedPatternPrefix = "patterns/shared/"
+    if (pathPart.startsWith(sharedPatternPrefix)) {
+        val token = pathPart.substring(sharedPatternPrefix.length).substringBefore('/')
+        if (token.isEmpty()) return null
+        if (!isShareTokenShape(token)) return null
+        return SharedContent(token = token, shareId = null)
+    }
+
+    val pullRequestPrefix = "pull-requests/"
+    if (pathPart.startsWith(pullRequestPrefix)) {
+        val prId = pathPart.substring(pullRequestPrefix.length).substringBefore('/')
+        if (prId.isEmpty()) return null
+        return SuggestionDetail(prId = prId)
+    }
+
+    return null
+}
+
+/**
+ * UUID v4 lowercase-hex shape check, mirroring the regex used in
+ * `iosApp/iosApp/Core/DeepLinkValidator.swift` (iOS). Single source of
+ * truth for share-token format on the Kotlin side — if the format
+ * ever changes (e.g. to base62 or hyphen-less), update both in sync.
+ */
+private val SHARE_TOKEN_REGEX =
+    Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+
+private fun isShareTokenShape(token: String): Boolean = SHARE_TOKEN_REGEX.matches(token)
