@@ -320,17 +320,39 @@ dependencies {
 // itself loads at configuration time without credentials, so local-dev
 // + non-tag CI runs are unaffected.
 //
-// Why DRAFT release status: tag push triggers the AAB upload but parks
-// it in Internal track as "Draft" — the user manually clicks
-// "Send to testers" in the Play Console to actually distribute.
-// This is a structural defense against accidental rollouts from a stray
-// tag push during CI experimentation; flipping to COMPLETED
-// auto-distributes to internal testers immediately on tag push.
-// The `google-play-publisher@...` SA's Play Console permissions are
-// scoped to "Release to testing tracks" only, so production rollout
-// is structurally impossible regardless of releaseStatus value.
+// Why COMPLETED release status (full auto-distribution to Internal
+// testers on tag push): for closed beta we want the user's only
+// post-tag-push role to be observing tester feedback — no manual
+// "Send to testers" click in Play Console. Pivoted from DRAFT on
+// 2026-05-10 once the wave of pre-tag-push verification (CI hardening,
+// version-code reset, README cleanup, JDK upgrade) settled, exposing
+// the manual gate as the last source of unattended-release friction.
+//
+// The previous DRAFT setting parked AABs as "Draft" so the user
+// manually clicked "Send to testers" before any tester saw the build.
+// At ≤10 closed beta testers who already opted in, the manual gate's
+// value (a ~30-second review window before tester visibility) is
+// outweighed by the loss of full automation: the user has to interrupt
+// other work for every tag push.
+//
+// Defense in depth (preserves "no accidental production rollout"):
+// the `google-play-publisher@...` Service Account's Play Console
+// permissions are scoped to "Release to testing tracks" only.
+// Production rollout is structurally impossible regardless of
+// releaseStatus value here. The `track = "internal"` line and the
+// SA permission boundary are both load-bearing — neither alone
+// suffices.
+//
+// Trade-off accepted: with COMPLETED, a stray tag push or accidental
+// `git push --tags` directly distributes a build to Internal testers.
+// Mitigations: (a) `make release-tag-validate` + `release-tag-publish`
+// pre-flight rejects unclean state, (b) `CONFIRM=yes` env var gates
+// the actual tag command, (c) Internal testers are humans who can
+// surface "huh, that's not a real release" through the bug-report
+// channel, (d) version_code is mandatorily strictly increasing so a
+// re-pushed tag cannot collide.
 play {
     track.set("internal")
     defaultToAppBundles.set(true)
-    releaseStatus.set(com.github.triplet.gradle.androidpublisher.ReleaseStatus.DRAFT)
+    releaseStatus.set(com.github.triplet.gradle.androidpublisher.ReleaseStatus.COMPLETED)
 }
