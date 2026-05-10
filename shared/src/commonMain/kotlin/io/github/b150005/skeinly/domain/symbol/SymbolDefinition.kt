@@ -9,7 +9,7 @@ package io.github.b150005.skeinly.domain.symbol
  * @see io.github.b150005.skeinly.domain.symbol.SymbolCatalog
  */
 data class SymbolDefinition(
-    /** Stable id matching [io.github.b150005.skeinly.domain.model.StructuredChart.isValidSymbolId]. */
+    /** Stable id matching [io.github.b150005.skeinly.domain.model.Chart.isValidSymbolId]. */
     val id: String,
     val category: SymbolCategory,
     /** SVG path `d` attribute. Parsed by [SvgPathParser]. */

@@ -56,7 +56,7 @@ struct DiscoveryScreen: View {
             } message: {
                 Text(holder.state.error?.localizedString ?? "")
             }
-            .navigationTitle(LocalizedStringKey("title_discover_patterns"))
+            .navigationTitle(LocalizedStringKey("title_browse_patterns"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { sortToolbarItem }
             .overlay { forkingOverlay }
@@ -126,7 +126,7 @@ struct DiscoveryScreen: View {
                         Button {
                             viewModel.onEvent(event: DiscoveryEventForkPattern(patternId: pattern.id))
                         } label: {
-                            Label("action_fork", systemImage: "doc.on.doc")
+                            Label("action_save_copy", systemImage: "doc.on.doc")
                         }
                         // Brand accent (#7B61FF) — Sprint A unified the app's primary
                         // action color via Assets.xcassets/AccentColor; previously the
@@ -162,7 +162,7 @@ struct DiscoveryScreen: View {
     @ViewBuilder
     private var forkingOverlay: some View {
         if holder.state.forkingPatternId != nil {
-            ProgressView("state_forking_pattern")
+            ProgressView("state_saving_pattern_copy")
                 .padding()
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         }
@@ -220,8 +220,8 @@ struct DiscoveryScreen: View {
             forkTask?.cancel()
             forkTask = Task { @MainActor in
                 let key = result.chartCloneFailed
-                    ? "message_forked_chart_failed"
-                    : "message_forked_successfully"
+                    ? "message_copy_chart_failed"
+                    : "message_copy_saved_successfully"
                 forkResultToast = NSLocalizedString(key, comment: "")
                 announceToVoiceOver(messageKey: key)
                 do {

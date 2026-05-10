@@ -9,7 +9,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
-class StructuredChartTest {
+class ChartTest {
     private val json = testJson
     private val now = Instant.parse("2026-04-17T10:00:00Z")
 
@@ -29,11 +29,11 @@ class StructuredChartTest {
     private fun sampleChart(
         extents: ChartExtents = ChartExtents.Rect(minX = 0, maxX = 1, minY = 0, maxY = 0),
         coordinateSystem: CoordinateSystem = CoordinateSystem.RECT_GRID,
-    ) = StructuredChart(
+    ) = Chart(
         id = "chart-1",
         patternId = "pat-1",
         ownerId = "user-1",
-        schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+        schemaVersion = Chart.CURRENT_SCHEMA_VERSION,
         storageVariant = StorageVariant.INLINE,
         coordinateSystem = coordinateSystem,
         extents = extents,
@@ -73,8 +73,8 @@ class StructuredChartTest {
     @Test
     fun `rect extents round-trip through json`() {
         val chart = sampleChart(extents = ChartExtents.Rect(0, 9, 0, 14))
-        val encoded = json.encodeToString(StructuredChart.serializer(), chart)
-        val decoded = json.decodeFromString(StructuredChart.serializer(), encoded)
+        val encoded = json.encodeToString(Chart.serializer(), chart)
+        val decoded = json.decodeFromString(Chart.serializer(), encoded)
 
         assertEquals(chart, decoded)
         assertTrue(decoded.extents is ChartExtents.Rect)
@@ -87,8 +87,8 @@ class StructuredChartTest {
                 coordinateSystem = CoordinateSystem.POLAR_ROUND,
                 extents = ChartExtents.Polar(rings = 3, stitchesPerRing = listOf(6, 12, 18)),
             )
-        val encoded = json.encodeToString(StructuredChart.serializer(), chart)
-        val decoded = json.decodeFromString(StructuredChart.serializer(), encoded)
+        val encoded = json.encodeToString(Chart.serializer(), chart)
+        val decoded = json.decodeFromString(Chart.serializer(), encoded)
 
         assertEquals(chart, decoded)
         assertTrue(decoded.extents is ChartExtents.Polar)
@@ -129,22 +129,22 @@ class StructuredChartTest {
 
     @Test
     fun `symbol id validator accepts namespaced ids`() {
-        assertTrue(StructuredChart.isValidSymbolId("jis.k1"))
-        assertTrue(StructuredChart.isValidSymbolId("std.yo"))
-        assertTrue(StructuredChart.isValidSymbolId("user.abc123.cable_6f"))
-        assertTrue(StructuredChart.isValidSymbolId("ext.custom.shape"))
+        assertTrue(Chart.isValidSymbolId("jis.k1"))
+        assertTrue(Chart.isValidSymbolId("std.yo"))
+        assertTrue(Chart.isValidSymbolId("user.abc123.cable_6f"))
+        assertTrue(Chart.isValidSymbolId("ext.custom.shape"))
     }
 
     @Test
     fun `symbol id validator rejects malformed ids`() {
-        assertFalse(StructuredChart.isValidSymbolId(""))
-        assertFalse(StructuredChart.isValidSymbolId("jis"))
-        assertFalse(StructuredChart.isValidSymbolId("JIS.k1"))
-        assertFalse(StructuredChart.isValidSymbolId("jis..k1"))
-        assertFalse(StructuredChart.isValidSymbolId(".jis.k1"))
-        assertFalse(StructuredChart.isValidSymbolId("jis.k1."))
-        assertFalse(StructuredChart.isValidSymbolId("jis.k 1"))
-        assertFalse(StructuredChart.isValidSymbolId("jis-k1"))
+        assertFalse(Chart.isValidSymbolId(""))
+        assertFalse(Chart.isValidSymbolId("jis"))
+        assertFalse(Chart.isValidSymbolId("JIS.k1"))
+        assertFalse(Chart.isValidSymbolId("jis..k1"))
+        assertFalse(Chart.isValidSymbolId(".jis.k1"))
+        assertFalse(Chart.isValidSymbolId("jis.k1."))
+        assertFalse(Chart.isValidSymbolId("jis.k 1"))
+        assertFalse(Chart.isValidSymbolId("jis-k1"))
     }
 
     @Test
@@ -163,7 +163,7 @@ class StructuredChartTest {
     @Test
     fun `serialized chart carries snake case keys for multi word fields`() {
         val chart = sampleChart()
-        val encoded = json.encodeToString(StructuredChart.serializer(), chart)
+        val encoded = json.encodeToString(Chart.serializer(), chart)
 
         assertTrue(encoded.contains("\"pattern_id\""))
         assertTrue(encoded.contains("\"owner_id\""))
@@ -178,7 +178,7 @@ class StructuredChartTest {
 
     @Test
     fun `current schema version is 2`() {
-        assertEquals(2, StructuredChart.CURRENT_SCHEMA_VERSION)
+        assertEquals(2, Chart.CURRENT_SCHEMA_VERSION)
     }
 
     @Test
@@ -196,8 +196,8 @@ class StructuredChartTest {
                 craftType = CraftType.CROCHET,
                 readingConvention = ReadingConvention.ROUND,
             )
-        val encoded = json.encodeToString(StructuredChart.serializer(), chart)
-        val decoded = json.decodeFromString(StructuredChart.serializer(), encoded)
+        val encoded = json.encodeToString(Chart.serializer(), chart)
+        val decoded = json.decodeFromString(Chart.serializer(), encoded)
 
         assertEquals(chart, decoded)
         assertEquals(CraftType.CROCHET, decoded.craftType)
@@ -249,7 +249,7 @@ class StructuredChartTest {
               "updated_at": "2026-04-17T10:00:00Z"
             }
             """.trimIndent()
-        val decoded = json.decodeFromString(StructuredChart.serializer(), v1Json)
+        val decoded = json.decodeFromString(Chart.serializer(), v1Json)
 
         assertEquals(1, decoded.schemaVersion)
         assertEquals(CraftType.KNIT, decoded.craftType)
@@ -261,8 +261,8 @@ class StructuredChartTest {
         val extents = ChartExtents.Rect(0, 1, 0, 0)
         val layers = listOf(sampleLayer())
 
-        val hashKnit = StructuredChart.computeContentHash(extents, layers, json)
-        val hashCrochet = StructuredChart.computeContentHash(extents, layers, json)
+        val hashKnit = Chart.computeContentHash(extents, layers, json)
+        val hashCrochet = Chart.computeContentHash(extents, layers, json)
 
         assertEquals(
             hashKnit,

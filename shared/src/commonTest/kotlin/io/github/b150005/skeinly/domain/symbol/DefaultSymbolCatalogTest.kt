@@ -1,6 +1,6 @@
 package io.github.b150005.skeinly.domain.symbol
 
-import io.github.b150005.skeinly.domain.model.StructuredChart
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.symbol.catalog.DefaultSymbolCatalog
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -14,7 +14,7 @@ class DefaultSymbolCatalogTest {
 
     @Test
     fun `all bundled ids pass the symbol id regex`() {
-        val invalid = catalog.all().filterNot { StructuredChart.isValidSymbolId(it.id) }
+        val invalid = catalog.all().filterNot { Chart.isValidSymbolId(it.id) }
         assertTrue(invalid.isEmpty(), "invalid ids: ${invalid.map { it.id }}")
     }
 

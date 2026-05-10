@@ -7,7 +7,7 @@ import kotlin.time.Instant
 /**
  * One immutable point in a chart's commit history (ADR-013 §1, §3).
  *
- * Mirrors [StructuredChart] in shape but is conceptually the inverse of the
+ * Mirrors [Chart] in shape but is conceptually the inverse of the
  * tip pointer: every save appends one of these, and the most recent row's
  * `revisionId` is what `chart_documents.revision_id` reflects.
  *
@@ -29,7 +29,7 @@ import kotlin.time.Instant
  *   where they diverge.
  */
 @Serializable
-data class ChartRevision(
+data class ChartVersion(
     val id: String,
     @SerialName("pattern_id") val patternId: String,
     @SerialName("owner_id") val ownerId: String,
@@ -49,7 +49,7 @@ data class ChartRevision(
 )
 
 /**
- * Reconstruct a tip-shaped [StructuredChart] from this revision so the
+ * Reconstruct a tip-shaped [Chart] from this revision so the
  * existing `ChartCanvas` renderers (Phase 31, 35) can render historical
  * revisions without a separate render path.
  *
@@ -57,8 +57,8 @@ data class ChartRevision(
  * the timestamp at which the historical row was authored serves both
  * roles for tip-shaped consumption.
  */
-fun ChartRevision.toStructuredChart(): StructuredChart =
-    StructuredChart(
+fun ChartVersion.toChart(): Chart =
+    Chart(
         id = id,
         patternId = patternId,
         ownerId = ownerId,

@@ -7,33 +7,33 @@
 -- though no caller exercises PR delete in v1 (CASCADE on pattern delete is
 -- the only cleanup path for PRs themselves).
 
-CREATE TABLE PullRequestCommentEntity (
+CREATE TABLE SuggestionCommentEntity (
     id TEXT NOT NULL PRIMARY KEY,
     pull_request_id TEXT NOT NULL,
     author_id TEXT,
     body TEXT NOT NULL,
     created_at TEXT NOT NULL,
-    FOREIGN KEY (pull_request_id) REFERENCES PullRequestEntity(id) ON DELETE CASCADE
+    FOREIGN KEY (pull_request_id) REFERENCES SuggestionEntity(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_pr_comments_pr_id_created
-    ON PullRequestCommentEntity(pull_request_id, created_at);
+    ON SuggestionCommentEntity(pull_request_id, created_at);
 
 getById:
-SELECT * FROM PullRequestCommentEntity WHERE id = ?;
+SELECT * FROM SuggestionCommentEntity WHERE id = ?;
 
-getByPullRequestId:
-SELECT * FROM PullRequestCommentEntity
+getBySuggestionId:
+SELECT * FROM SuggestionCommentEntity
 WHERE pull_request_id = ?
 ORDER BY created_at ASC;
 
-observeByPullRequestId:
-SELECT * FROM PullRequestCommentEntity
+observeBySuggestionId:
+SELECT * FROM SuggestionCommentEntity
 WHERE pull_request_id = ?
 ORDER BY created_at ASC;
 
-countByPullRequestId:
-SELECT COUNT(*) FROM PullRequestCommentEntity WHERE pull_request_id = ?;
+countBySuggestionId:
+SELECT COUNT(*) FROM SuggestionCommentEntity WHERE pull_request_id = ?;
 
 -- INSERT OR IGNORE for idempotent re-application of a Realtime INSERT echo
 -- on a row already inserted locally (self-authored append echoes back through
@@ -42,7 +42,7 @@ SELECT COUNT(*) FROM PullRequestCommentEntity WHERE pull_request_id = ?;
 -- (vs INSERT OR REPLACE which would overwrite a slightly-different copy
 -- silently if one ever appeared).
 upsert:
-INSERT OR IGNORE INTO PullRequestCommentEntity(
+INSERT OR IGNORE INTO SuggestionCommentEntity(
     id,
     pull_request_id,
     author_id,
@@ -50,5 +50,5 @@ INSERT OR IGNORE INTO PullRequestCommentEntity(
     created_at
 ) VALUES (?, ?, ?, ?, ?);
 
-deleteByPullRequestId:
-DELETE FROM PullRequestCommentEntity WHERE pull_request_id = ?;
+deleteBySuggestionId:
+DELETE FROM SuggestionCommentEntity WHERE pull_request_id = ?;

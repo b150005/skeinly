@@ -223,7 +223,7 @@ Deno.test("computePrCommentedDispatches: deduplicates when pr.author == target o
 
 Deno.test("computePrStatusChangeDispatches: open → merged notifies author with pr_merged_to_author", () => {
     const oldRow: PullRequestRow = { ...samplePr, status: "open" };
-    const newRow: PullRequestRow = { ...samplePr, status: "merged" };
+    const newRow: PullRequestRow = { ...samplePr, status: "applied" };
     const dispatches = computePrStatusChangeDispatches(
         newRow,
         oldRow,
@@ -283,7 +283,7 @@ Deno.test("computePrStatusChangeDispatches: silent no-op when oldRow.status was 
     // edge case — should not happen given the WITH CHECK on
     // pull_requests UPDATE policy + the merge_pull_request RPC's
     // FOR UPDATE lock, but if it does, no push).
-    const oldRow: PullRequestRow = { ...samplePr, status: "merged" };
+    const oldRow: PullRequestRow = { ...samplePr, status: "applied" };
     const newRow: PullRequestRow = { ...samplePr, status: "closed" };
     const dispatches = computePrStatusChangeDispatches(
         newRow,
@@ -312,7 +312,7 @@ Deno.test("computePrStatusChangeDispatches: silent no-op for non-status UPDATE",
 });
 
 Deno.test("computePrStatusChangeDispatches: silent no-op when oldRow is null", () => {
-    const newRow: PullRequestRow = { ...samplePr, status: "merged" };
+    const newRow: PullRequestRow = { ...samplePr, status: "applied" };
     const dispatches = computePrStatusChangeDispatches(
         newRow,
         null,
@@ -326,7 +326,7 @@ Deno.test("computePrStatusChangeDispatches: silent no-op when oldRow is null", (
 
 Deno.test("computePrStatusChangeDispatches: skips merge when author_id is null (account deleted)", () => {
     const oldRow: PullRequestRow = { ...samplePr, status: "open", author_id: null };
-    const newRow: PullRequestRow = { ...samplePr, status: "merged", author_id: null };
+    const newRow: PullRequestRow = { ...samplePr, status: "applied", author_id: null };
     const dispatches = computePrStatusChangeDispatches(
         newRow,
         oldRow,
@@ -387,7 +387,7 @@ Deno.test("computePrStatusChangeDispatches: route uses row.id (the PR id) on mer
         id: "pr-merged-42",
         author_id: "alice-uuid",
         target_pattern_id: "pattern-1",
-        status: "merged",
+        status: "applied",
     };
     const oldRow: PullRequestRow = { ...row, status: "open" };
     const dispatches = computePrStatusChangeDispatches(

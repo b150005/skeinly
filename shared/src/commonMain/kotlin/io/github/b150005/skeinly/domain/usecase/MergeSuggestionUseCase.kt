@@ -1,14 +1,14 @@
 package io.github.b150005.skeinly.domain.usecase
 
 import io.github.b150005.skeinly.data.mapper.toDocumentJson
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestStatus
-import io.github.b150005.skeinly.domain.model.StructuredChart
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionStatus
 import io.github.b150005.skeinly.domain.repository.AuthRepository
 import io.github.b150005.skeinly.domain.repository.PatternRepository
-import io.github.b150005.skeinly.domain.repository.PullRequestMergeOperations
+import io.github.b150005.skeinly.domain.repository.SuggestionMergeOperations
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlin.coroutines.cancellation.CancellationException
@@ -51,8 +51,8 @@ import kotlin.uuid.Uuid
  * additional code paths in this use case.
  */
 @OptIn(ExperimentalUuidApi::class)
-class MergePullRequestUseCase(
-    private val mergeOperations: PullRequestMergeOperations?,
+class ApplySuggestionUseCase(
+    private val mergeOperations: SuggestionMergeOperations?,
     private val patternRepository: PatternRepository,
     private val authRepository: AuthRepository,
     private val json: Json,
@@ -69,14 +69,14 @@ class MergePullRequestUseCase(
      * paragraph).
      */
     suspend operator fun invoke(
-        pullRequest: PullRequest,
-        resolvedChart: StructuredChart,
+        suggestion: Suggestion,
+        resolvedChart: Chart,
         strategy: MergeStrategy = MergeStrategy.SQUASH,
     ): UseCaseResult<MergeResult> {
         // Client-side preconditions before the round trip. The RPC re-validates
         // server-side; these reject stale UI state without paying the network
         // cost.
-        if (pullRequest.status != PullRequestStatus.OPEN) {
+        if (suggestion.status != SuggestionStatus.OPEN) {
             return UseCaseResult.Failure(
                 UseCaseError.OperationNotAllowed,
             )
@@ -91,7 +91,7 @@ class MergePullRequestUseCase(
         // this is just UX.
         val targetPattern =
             try {
-                patternRepository.getById(pullRequest.targetPatternId)
+                patternRepository.getById(suggestion.targetPatternId)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
@@ -112,7 +112,7 @@ class MergePullRequestUseCase(
         val mergedDocument: JsonElement =
             json.parseToJsonElement(resolvedChart.toDocumentJson(json))
         val mergedContentHash =
-            StructuredChart.computeContentHash(
+            Chart.computeContentHash(
                 extents = resolvedChart.extents,
                 layers = resolvedChart.layers,
                 json = json,
@@ -121,7 +121,7 @@ class MergePullRequestUseCase(
         return try {
             val returnedRevisionId =
                 merge.merge(
-                    pullRequestId = pullRequest.id,
+                    suggestionId = suggestion.id,
                     strategy = strategy.wireValue,
                     mergedDocument = mergedDocument,
                     mergedContentHash = mergedContentHash,
@@ -129,7 +129,7 @@ class MergePullRequestUseCase(
                 )
             UseCaseResult.Success(
                 MergeResult(
-                    pullRequestId = pullRequest.id,
+                    suggestionId = suggestion.id,
                     mergedRevisionId = returnedRevisionId,
                     mergedContentHash = mergedContentHash,
                 ),
@@ -183,7 +183,7 @@ enum class MergeStrategy(
  * id the use case minted — the RPC echoes it back as confirmation.
  */
 data class MergeResult(
-    val pullRequestId: String,
+    val suggestionId: String,
     val mergedRevisionId: String,
     val mergedContentHash: String,
 )
@@ -197,20 +197,20 @@ data class MergeResult(
  * mechanical part — `mine` is preserved by default, `autoFromTheirs` lands
  * regardless, and the [conflictPicks] map decides the contested cells.
  *
- * Returns a fresh [StructuredChart] with the resolved cells; row-level fields
+ * Returns a fresh [Chart] with the resolved cells; row-level fields
  * (id, owner, revisionId, etc.) are inherited from [mine] so the RPC sees a
  * structurally-valid envelope (the RPC ignores them — only the document
  * payload + content hash matter).
  */
 fun applyResolutions(
-    mine: StructuredChart,
+    mine: Chart,
     autoFromTheirs: List<io.github.b150005.skeinly.domain.model.CellChange>,
     conflictPicks: Map<io.github.b150005.skeinly.domain.chart.CellCoordinate, ConflictResolution>,
     autoLayerFromTheirs: List<io.github.b150005.skeinly.domain.model.LayerChange>,
     layerConflictPicks: Map<String, ConflictResolution>,
-    theirs: StructuredChart,
-    ancestor: StructuredChart,
-): StructuredChart {
+    theirs: Chart,
+    ancestor: Chart,
+): Chart {
     val layersById: MutableMap<String, ChartLayer> =
         mine.layers.associateBy { it.id }.toMutableMap()
 

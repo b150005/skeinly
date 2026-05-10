@@ -41,7 +41,7 @@ struct StructuredChartViewerScreen: View {
                 content(chart: chart)
             } else {
                 ContentUnavailableView(
-                    LocalizedStringKey("state_no_structured_chart"),
+                    LocalizedStringKey("state_no_chart"),
                     systemImage: "square.grid.3x3"
                 )
             }
@@ -63,7 +63,7 @@ struct StructuredChartViewerScreen: View {
                     Button {
                         showBranchPicker = true
                     } label: {
-                        Label(LocalizedStringKey("title_branch_picker"), systemImage: "arrow.triangle.branch")
+                        Label(LocalizedStringKey("title_variations"), systemImage: "arrow.triangle.branch")
                     }
                     .accessibilityIdentifier("openBranchPickerMenuItem")
 
@@ -78,7 +78,7 @@ struct StructuredChartViewerScreen: View {
                             viewModel.onEvent(event: ChartViewerEventRequestOpenPullRequest())
                         } label: {
                             Label(
-                                LocalizedStringKey("action_open_pull_request"),
+                                LocalizedStringKey("action_send_suggestion"),
                                 systemImage: "bubble.left.and.bubble.right"
                             )
                         }
@@ -96,7 +96,7 @@ struct StructuredChartViewerScreen: View {
                 patternId: patternId,
                 onDismiss: { showBranchPicker = false },
                 onBranchSwitched: { branchName in
-                    let template = NSLocalizedString("message_switched_to_branch", comment: "")
+                    let template = NSLocalizedString("message_switched_to_variation", comment: "")
                     let message = String(format: template, branchName)
                     switchedToast = message
                     announceToVoiceOver(message: message)
@@ -173,7 +173,7 @@ struct StructuredChartViewerScreen: View {
             navEventsCloseable = wrapper.collect { event in
                 Task { @MainActor in
                     if let created = event as? ChartViewerNavEventPullRequestCreated {
-                        let message = NSLocalizedString("message_pr_opened_successfully", comment: "")
+                        let message = NSLocalizedString("message_suggestion_sent_successfully", comment: "")
                         prOpenedToast = message
                         announceToVoiceOver(message: message)
                         path.append(Route.pullRequestDetail(prId: created.prId))
@@ -263,18 +263,18 @@ private struct OpenPullRequestSheet: View {
             Form {
                 Section {
                     TextField(
-                        LocalizedStringKey("hint_pr_title"),
+                        LocalizedStringKey("hint_suggestion_title"),
                         text: Binding(get: { titleDraft }, set: onTitleChange)
                     )
                     .accessibilityIdentifier("openPrTitleInput")
                     .disabled(isSubmitting)
                 } header: {
-                    Text(LocalizedStringKey("label_pr_title"))
+                    Text(LocalizedStringKey("label_suggestion_title"))
                 }
 
                 Section {
                     TextField(
-                        LocalizedStringKey("hint_pr_description_optional"),
+                        LocalizedStringKey("hint_suggestion_description_optional"),
                         text: Binding(get: { descriptionDraft }, set: onDescriptionChange),
                         axis: .vertical
                     )
@@ -282,7 +282,7 @@ private struct OpenPullRequestSheet: View {
                     .accessibilityIdentifier("openPrDescriptionInput")
                     .disabled(isSubmitting)
                 } header: {
-                    Text(LocalizedStringKey("label_pr_description"))
+                    Text(LocalizedStringKey("label_suggestion_description"))
                 }
 
                 if let errorMessage {
@@ -294,7 +294,7 @@ private struct OpenPullRequestSheet: View {
                     }
                 }
             }
-            .navigationTitle(LocalizedStringKey("dialog_open_pull_request_title"))
+            .navigationTitle(LocalizedStringKey("dialog_send_suggestion_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -302,7 +302,7 @@ private struct OpenPullRequestSheet: View {
                         .disabled(isSubmitting)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(LocalizedStringKey("action_open_pr"), action: onConfirm)
+                    Button(LocalizedStringKey("action_send"), action: onConfirm)
                         .disabled(isSubmitting || titleDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         .accessibilityIdentifier("confirmOpenPullRequestButton")
                 }

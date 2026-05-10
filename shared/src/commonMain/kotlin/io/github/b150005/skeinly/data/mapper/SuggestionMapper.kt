@@ -1,14 +1,14 @@
 package io.github.b150005.skeinly.data.mapper
 
-import io.github.b150005.skeinly.db.PullRequestCommentEntity
-import io.github.b150005.skeinly.db.PullRequestEntity
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestComment
-import io.github.b150005.skeinly.domain.model.PullRequestStatus
+import io.github.b150005.skeinly.db.SuggestionCommentEntity
+import io.github.b150005.skeinly.db.SuggestionEntity
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionComment
+import io.github.b150005.skeinly.domain.model.SuggestionStatus
 import kotlin.time.Instant
 
-internal fun PullRequestEntity.toDomain(): PullRequest =
-    PullRequest(
+internal fun SuggestionEntity.toDomain(): Suggestion =
+    Suggestion(
         id = id,
         sourcePatternId = source_pattern_id,
         sourceBranchId = source_branch_id,
@@ -19,7 +19,7 @@ internal fun PullRequestEntity.toDomain(): PullRequest =
         authorId = author_id,
         title = title,
         description = description,
-        status = status.toPullRequestStatus(),
+        status = status.toSuggestionStatus(),
         mergedRevisionId = merged_revision_id,
         mergedAt = merged_at?.let { Instant.parse(it) },
         closedAt = closed_at?.let { Instant.parse(it) },
@@ -27,26 +27,26 @@ internal fun PullRequestEntity.toDomain(): PullRequest =
         updatedAt = Instant.parse(updated_at),
     )
 
-internal fun PullRequestCommentEntity.toDomain(): PullRequestComment =
-    PullRequestComment(
+internal fun SuggestionCommentEntity.toDomain(): SuggestionComment =
+    SuggestionComment(
         id = id,
-        pullRequestId = pull_request_id,
+        suggestionId = pull_request_id,
         authorId = author_id,
         body = body,
         createdAt = Instant.parse(created_at),
     )
 
-internal fun String.toPullRequestStatus(): PullRequestStatus =
+internal fun String.toSuggestionStatus(): SuggestionStatus =
     when (this) {
-        "open" -> PullRequestStatus.OPEN
-        "merged" -> PullRequestStatus.MERGED
-        "closed" -> PullRequestStatus.CLOSED
-        else -> error("Unknown PullRequestStatus wire value: '$this'")
+        "open" -> SuggestionStatus.OPEN
+        "applied" -> SuggestionStatus.APPLIED
+        "closed" -> SuggestionStatus.CLOSED
+        else -> error("Unknown SuggestionStatus wire value: '$this'")
     }
 
-internal fun PullRequestStatus.toDbString(): String =
+internal fun SuggestionStatus.toDbString(): String =
     when (this) {
-        PullRequestStatus.OPEN -> "open"
-        PullRequestStatus.MERGED -> "merged"
-        PullRequestStatus.CLOSED -> "closed"
+        SuggestionStatus.OPEN -> "open"
+        SuggestionStatus.APPLIED -> "applied"
+        SuggestionStatus.CLOSED -> "closed"
     }

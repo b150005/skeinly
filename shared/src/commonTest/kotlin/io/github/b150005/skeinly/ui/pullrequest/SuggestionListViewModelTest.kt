@@ -1,14 +1,14 @@
 package io.github.b150005.skeinly.ui.pullrequest
 
 import io.github.b150005.skeinly.domain.model.AuthState
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestStatus
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionStatus
 import io.github.b150005.skeinly.domain.model.User
 import io.github.b150005.skeinly.domain.usecase.FakeAuthRepository
-import io.github.b150005.skeinly.domain.usecase.FakePullRequestRepository
+import io.github.b150005.skeinly.domain.usecase.FakeSuggestionRepository
 import io.github.b150005.skeinly.domain.usecase.FakeUserRepository
-import io.github.b150005.skeinly.domain.usecase.GetIncomingPullRequestsUseCase
-import io.github.b150005.skeinly.domain.usecase.GetOutgoingPullRequestsUseCase
+import io.github.b150005.skeinly.domain.usecase.GetIncomingSuggestionsUseCase
+import io.github.b150005.skeinly.domain.usecase.GetOutgoingSuggestionsUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -26,16 +26,16 @@ import kotlin.test.assertTrue
 import kotlin.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class PullRequestListViewModelTest {
+class SuggestionListViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
-    private lateinit var prRepo: FakePullRequestRepository
+    private lateinit var prRepo: FakeSuggestionRepository
     private lateinit var authRepo: FakeAuthRepository
     private lateinit var userRepo: FakeUserRepository
 
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        prRepo = FakePullRequestRepository()
+        prRepo = FakeSuggestionRepository()
         authRepo = FakeAuthRepository()
         userRepo = FakeUserRepository()
         authRepo.setAuthState(AuthState.Authenticated(userId = "owner-1", email = "o@example.com"))
@@ -50,9 +50,9 @@ class PullRequestListViewModelTest {
         id: String,
         authorId: String? = "user-1",
         targetPatternId: String = "pat-upstream",
-        status: PullRequestStatus = PullRequestStatus.OPEN,
+        status: SuggestionStatus = SuggestionStatus.OPEN,
         createdAtIso: String = "2026-04-25T10:00:00Z",
-    ) = PullRequest(
+    ) = Suggestion(
         id = id,
         sourcePatternId = "pat-fork",
         sourceBranchId = "br-source-main",
@@ -71,11 +71,11 @@ class PullRequestListViewModelTest {
         updatedAt = Instant.parse(createdAtIso),
     )
 
-    private fun makeViewModel(defaultFilter: PullRequestFilter = PullRequestFilter.INCOMING) =
-        PullRequestListViewModel(
+    private fun makeViewModel(defaultFilter: SuggestionFilter = SuggestionFilter.INCOMING) =
+        SuggestionListViewModel(
             defaultFilter = defaultFilter,
-            getIncoming = GetIncomingPullRequestsUseCase(prRepo),
-            getOutgoing = GetOutgoingPullRequestsUseCase(prRepo),
+            getIncoming = GetIncomingSuggestionsUseCase(prRepo),
+            getOutgoing = GetOutgoingSuggestionsUseCase(prRepo),
             authRepository = authRepo,
             userRepository = userRepo,
         )
@@ -85,11 +85,11 @@ class PullRequestListViewModelTest {
         runTest {
             prRepo.setIncoming("owner-1", listOf(makePr("pr-in-1"), makePr("pr-in-2")))
 
-            val vm = makeViewModel(PullRequestFilter.INCOMING)
+            val vm = makeViewModel(SuggestionFilter.INCOMING)
             val state = vm.state.value
 
-            assertEquals(PullRequestFilter.INCOMING, state.filter)
-            assertEquals(listOf("pr-in-1", "pr-in-2"), state.pullRequests.map { it.id })
+            assertEquals(SuggestionFilter.INCOMING, state.filter)
+            assertEquals(listOf("pr-in-1", "pr-in-2"), state.suggestions.map { it.id })
             assertFalse(state.isLoading)
             assertNull(state.error)
         }
@@ -99,11 +99,11 @@ class PullRequestListViewModelTest {
         runTest {
             prRepo.setOutgoing("owner-1", listOf(makePr("pr-out-1")))
 
-            val vm = makeViewModel(PullRequestFilter.OUTGOING)
+            val vm = makeViewModel(SuggestionFilter.OUTGOING)
             val state = vm.state.value
 
-            assertEquals(PullRequestFilter.OUTGOING, state.filter)
-            assertEquals(listOf("pr-out-1"), state.pullRequests.map { it.id })
+            assertEquals(SuggestionFilter.OUTGOING, state.filter)
+            assertEquals(listOf("pr-out-1"), state.suggestions.map { it.id })
         }
 
     @Test
@@ -111,35 +111,35 @@ class PullRequestListViewModelTest {
         runTest {
             prRepo.setIncoming("owner-1", listOf(makePr("pr-in-1")))
             prRepo.setOutgoing("owner-1", listOf(makePr("pr-out-1")))
-            val vm = makeViewModel(PullRequestFilter.INCOMING)
+            val vm = makeViewModel(SuggestionFilter.INCOMING)
 
-            vm.onEvent(PullRequestListEvent.SelectFilter(PullRequestFilter.OUTGOING))
+            vm.onEvent(SuggestionListEvent.SelectFilter(SuggestionFilter.OUTGOING))
 
             val state = vm.state.value
-            assertEquals(PullRequestFilter.OUTGOING, state.filter)
-            assertEquals(listOf("pr-out-1"), state.pullRequests.map { it.id })
+            assertEquals(SuggestionFilter.OUTGOING, state.filter)
+            assertEquals(listOf("pr-out-1"), state.suggestions.map { it.id })
         }
 
     @Test
     fun `SelectFilter to current filter is no-op`() =
         runTest {
             prRepo.setIncoming("owner-1", listOf(makePr("pr-in-1")))
-            val vm = makeViewModel(PullRequestFilter.INCOMING)
+            val vm = makeViewModel(SuggestionFilter.INCOMING)
 
             // Same filter — should not retrigger isLoading
-            vm.onEvent(PullRequestListEvent.SelectFilter(PullRequestFilter.INCOMING))
+            vm.onEvent(SuggestionListEvent.SelectFilter(SuggestionFilter.INCOMING))
 
             val state = vm.state.value
-            assertEquals(PullRequestFilter.INCOMING, state.filter)
+            assertEquals(SuggestionFilter.INCOMING, state.filter)
             assertFalse(state.isLoading)
         }
 
     @Test
     fun `repository flow emission updates list live without re-init`() =
         runTest {
-            val vm = makeViewModel(PullRequestFilter.INCOMING)
+            val vm = makeViewModel(SuggestionFilter.INCOMING)
             assertTrue(
-                vm.state.value.pullRequests
+                vm.state.value.suggestions
                     .isEmpty(),
             )
 
@@ -149,7 +149,7 @@ class PullRequestListViewModelTest {
 
             assertEquals(
                 "pr-late",
-                vm.state.value.pullRequests
+                vm.state.value.suggestions
                     .first()
                     .id,
             )
@@ -181,7 +181,7 @@ class PullRequestListViewModelTest {
             )
             prRepo.setIncoming("owner-1", listOf(makePr("pr-1", authorId = "user-fork")))
 
-            val vm = makeViewModel(PullRequestFilter.INCOMING)
+            val vm = makeViewModel(SuggestionFilter.INCOMING)
             val state = vm.state.value
 
             assertEquals("Forker Frances", state.users["user-fork"]?.displayName)
@@ -192,7 +192,7 @@ class PullRequestListViewModelTest {
         runTest {
             prRepo.setIncoming("owner-1", listOf(makePr("pr-orphan", authorId = null)))
 
-            val vm = makeViewModel(PullRequestFilter.INCOMING)
+            val vm = makeViewModel(SuggestionFilter.INCOMING)
 
             assertTrue(
                 vm.state.value.users
@@ -207,7 +207,7 @@ class PullRequestListViewModelTest {
             val vm = makeViewModel()
             assertNotNull(vm.state.value.error)
 
-            vm.onEvent(PullRequestListEvent.ClearError)
+            vm.onEvent(SuggestionListEvent.ClearError)
 
             assertNull(vm.state.value.error)
         }
@@ -218,9 +218,9 @@ class PullRequestListViewModelTest {
             prRepo.setIncoming("owner-1", listOf(makePr("pr-mine")))
             prRepo.setIncoming("owner-other", listOf(makePr("pr-not-mine")))
 
-            val vm = makeViewModel(PullRequestFilter.INCOMING)
+            val vm = makeViewModel(SuggestionFilter.INCOMING)
             val ids =
-                vm.state.value.pullRequests
+                vm.state.value.suggestions
                     .map { it.id }
 
             assertEquals(listOf("pr-mine"), ids)
@@ -234,7 +234,7 @@ class PullRequestListViewModelTest {
             // on _state.error before the live observe takes over.
             prRepo.nextGetIncomingError = IllegalStateException("seed boom")
 
-            val vm = makeViewModel(PullRequestFilter.INCOMING)
+            val vm = makeViewModel(SuggestionFilter.INCOMING)
 
             assertNotNull(vm.state.value.error)
         }
@@ -254,7 +254,7 @@ class PullRequestListViewModelTest {
             )
             prRepo.setIncoming("owner-1", listOf(makePr("pr-1", authorId = "user-incoming")))
 
-            val vm = makeViewModel(PullRequestFilter.INCOMING)
+            val vm = makeViewModel(SuggestionFilter.INCOMING)
             assertEquals(
                 "Incoming Ivy",
                 vm.state.value.users["user-incoming"]
@@ -263,7 +263,7 @@ class PullRequestListViewModelTest {
 
             // Seed OUTGOING with no rows so resolveUsers does not refresh.
             prRepo.setOutgoing("owner-1", emptyList())
-            vm.onEvent(PullRequestListEvent.SelectFilter(PullRequestFilter.OUTGOING))
+            vm.onEvent(SuggestionListEvent.SelectFilter(SuggestionFilter.OUTGOING))
 
             // The old INCOMING author entry must NOT survive the filter switch
             // — that would let a same-id collision render the wrong display

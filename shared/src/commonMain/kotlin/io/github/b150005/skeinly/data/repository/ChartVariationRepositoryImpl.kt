@@ -1,37 +1,37 @@
 package io.github.b150005.skeinly.data.repository
 
-import io.github.b150005.skeinly.data.local.LocalChartBranchDataSource
+import io.github.b150005.skeinly.data.local.LocalChartVariationDataSource
 import io.github.b150005.skeinly.data.sync.SyncEntityType
 import io.github.b150005.skeinly.data.sync.SyncManagerOperations
 import io.github.b150005.skeinly.data.sync.SyncOperation
-import io.github.b150005.skeinly.domain.model.ChartBranch
-import io.github.b150005.skeinly.domain.repository.ChartBranchRepository
+import io.github.b150005.skeinly.domain.model.ChartVariation
+import io.github.b150005.skeinly.domain.repository.ChartVariationRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.time.Clock
 
-class ChartBranchRepositoryImpl(
-    private val local: LocalChartBranchDataSource,
+class ChartVariationRepositoryImpl(
+    private val local: LocalChartVariationDataSource,
     private val syncManager: SyncManagerOperations,
     private val json: Json,
-) : ChartBranchRepository {
+) : ChartVariationRepository {
     override suspend fun getByPatternIdAndName(
         patternId: String,
         branchName: String,
-    ): ChartBranch? = local.getByPatternIdAndName(patternId, branchName)
+    ): ChartVariation? = local.getByPatternIdAndName(patternId, branchName)
 
-    override suspend fun getByPatternId(patternId: String): List<ChartBranch> = local.getByPatternId(patternId)
+    override suspend fun getByPatternId(patternId: String): List<ChartVariation> = local.getByPatternId(patternId)
 
-    override fun observeBranchesForPattern(patternId: String): Flow<List<ChartBranch>> = local.observeByPatternId(patternId)
+    override fun observeBranchesForPattern(patternId: String): Flow<List<ChartVariation>> = local.observeByPatternId(patternId)
 
-    override suspend fun createBranch(branch: ChartBranch): ChartBranch {
+    override suspend fun createBranch(branch: ChartVariation): ChartVariation {
         // Idempotent re-create: if a branch with the same (pattern_id,
         // branch_name) already exists, return it unchanged. The local
         // upsert is INSERT OR IGNORE so it would silently no-op anyway,
         // but reading first keeps us from enqueuing a duplicate INSERT
         // through the sync layer (same defense as `ensureDefaultBranch`
-        // in StructuredChartRepositoryImpl).
+        // in ChartRepositoryImpl).
         val existing = local.getByPatternIdAndName(branch.patternId, branch.branchName)
         if (existing != null) return existing
 

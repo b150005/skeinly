@@ -65,31 +65,31 @@ import androidx.compose.ui.unit.sp
 import io.github.b150005.skeinly.domain.chart.CellBounds
 import io.github.b150005.skeinly.domain.chart.GridHitTest
 import io.github.b150005.skeinly.domain.chart.SymbolRenderTransform
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartCell
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
 import io.github.b150005.skeinly.domain.model.SegmentState
-import io.github.b150005.skeinly.domain.model.StructuredChart
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
 import io.github.b150005.skeinly.domain.usecase.ErrorMessage
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_back
 import io.github.b150005.skeinly.generated.resources.action_cancel
 import io.github.b150005.skeinly.generated.resources.action_more_options
-import io.github.b150005.skeinly.generated.resources.action_open_pr
-import io.github.b150005.skeinly.generated.resources.action_open_pull_request
-import io.github.b150005.skeinly.generated.resources.dialog_open_pull_request_title
-import io.github.b150005.skeinly.generated.resources.hint_pr_description_optional
-import io.github.b150005.skeinly.generated.resources.hint_pr_title
-import io.github.b150005.skeinly.generated.resources.label_pr_description
-import io.github.b150005.skeinly.generated.resources.label_pr_title
-import io.github.b150005.skeinly.generated.resources.message_pr_opened_successfully
-import io.github.b150005.skeinly.generated.resources.message_switched_to_branch
+import io.github.b150005.skeinly.generated.resources.action_send
+import io.github.b150005.skeinly.generated.resources.action_send_suggestion
+import io.github.b150005.skeinly.generated.resources.dialog_send_suggestion_title
+import io.github.b150005.skeinly.generated.resources.hint_suggestion_description_optional
+import io.github.b150005.skeinly.generated.resources.hint_suggestion_title
+import io.github.b150005.skeinly.generated.resources.label_suggestion_description
+import io.github.b150005.skeinly.generated.resources.label_suggestion_title
+import io.github.b150005.skeinly.generated.resources.message_suggestion_sent_successfully
+import io.github.b150005.skeinly.generated.resources.message_switched_to_variation
 import io.github.b150005.skeinly.generated.resources.state_empty_chart
-import io.github.b150005.skeinly.generated.resources.state_no_structured_chart
-import io.github.b150005.skeinly.generated.resources.title_branch_picker
+import io.github.b150005.skeinly.generated.resources.state_no_chart
 import io.github.b150005.skeinly.generated.resources.title_chart_history
 import io.github.b150005.skeinly.generated.resources.title_chart_viewer
+import io.github.b150005.skeinly.generated.resources.title_variations
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.localized
 import org.jetbrains.compose.resources.stringResource
@@ -125,7 +125,7 @@ fun ChartViewerScreen(
     onBack: () -> Unit,
     projectId: String? = null,
     onHistoryClick: () -> Unit = {},
-    onOpenPullRequestNavigate: (prId: String) -> Unit = {},
+    onOpenSuggestionNavigate: (prId: String) -> Unit = {},
     viewModel: ChartViewerViewModel =
         koinViewModel { parametersOf(patternId, projectId) },
     catalog: SymbolCatalog = koinInject(),
@@ -135,8 +135,8 @@ fun ChartViewerScreen(
     var showBranchPicker by remember { mutableStateOf(false) }
     var pendingSnackbar by remember { mutableStateOf<String?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
-    val switchedTemplate = stringResource(Res.string.message_switched_to_branch)
-    val prOpenedMessage = stringResource(Res.string.message_pr_opened_successfully)
+    val switchedTemplate = stringResource(Res.string.message_switched_to_variation)
+    val prOpenedMessage = stringResource(Res.string.message_suggestion_sent_successfully)
 
     LaunchedEffect(pendingSnackbar) {
         pendingSnackbar?.let {
@@ -151,9 +151,9 @@ fun ChartViewerScreen(
     LaunchedEffect(viewModel) {
         viewModel.navEvents.collect { event ->
             when (event) {
-                is ChartViewerNavEvent.PullRequestCreated -> {
+                is ChartViewerNavEvent.SuggestionCreated -> {
                     pendingSnackbar = prOpenedMessage
-                    onOpenPullRequestNavigate(event.prId)
+                    onOpenSuggestionNavigate(event.prId)
                 }
             }
         }
@@ -198,7 +198,7 @@ fun ChartViewerScreen(
                             modifier = Modifier.testTag("viewHistoryMenuItem"),
                         )
                         DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.title_branch_picker)) },
+                            text = { Text(stringResource(Res.string.title_variations)) },
                             leadingIcon = {
                                 Icon(Icons.Default.AccountTree, contentDescription = null)
                             },
@@ -209,22 +209,22 @@ fun ChartViewerScreen(
                             modifier = Modifier.testTag("openBranchPickerMenuItem"),
                         )
                         // Phase 38.4.1 — Open PR entry. Visibility gated on the
-                        // ViewModel-side derived `canOpenPullRequest` (fork +
+                        // ViewModel-side derived `canOpenSuggestion` (fork +
                         // ownership + branches resolved); the menu item is
                         // simply not rendered when the gate is false rather
                         // than rendered-disabled to keep the menu length
                         // tight on non-fork patterns.
-                        if (state.canOpenPullRequest) {
+                        if (state.canOpenSuggestion) {
                             DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.action_open_pull_request)) },
+                                text = { Text(stringResource(Res.string.action_send_suggestion)) },
                                 leadingIcon = {
                                     Icon(Icons.Default.Forum, contentDescription = null)
                                 },
                                 onClick = {
                                     showOverflowMenu = false
-                                    viewModel.onEvent(ChartViewerEvent.RequestOpenPullRequest)
+                                    viewModel.onEvent(ChartViewerEvent.RequestOpenSuggestion)
                                 },
-                                modifier = Modifier.testTag("openPullRequestMenuItem"),
+                                modifier = Modifier.testTag("openSuggestionMenuItem"),
                             )
                         }
                     }
@@ -255,7 +255,7 @@ fun ChartViewerScreen(
 
                 chart == null ->
                     Text(
-                        text = stringResource(Res.string.state_no_structured_chart),
+                        text = stringResource(Res.string.state_no_chart),
                         modifier = Modifier.align(Alignment.Center),
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -294,7 +294,7 @@ fun ChartViewerScreen(
     }
 
     if (showBranchPicker) {
-        ChartBranchPickerSheet(
+        ChartVariationPickerSheet(
             patternId = patternId,
             onDismiss = { showBranchPicker = false },
             onBranchSwitched = { branchName ->
@@ -307,17 +307,17 @@ fun ChartViewerScreen(
     }
 
     if (state.pendingOpenPrSheet) {
-        OpenPullRequestDialog(
+        OpenSuggestionDialog(
             titleDraft = state.openPrTitleDraft,
             descriptionDraft = state.openPrDescriptionDraft,
-            isSubmitting = state.isOpeningPullRequest,
+            isSubmitting = state.isOpeningSuggestion,
             errorMessage = state.openPrError,
             onTitleChange = { viewModel.onEvent(ChartViewerEvent.OpenPrTitleChanged(it)) },
             onDescriptionChange = {
                 viewModel.onEvent(ChartViewerEvent.OpenPrDescriptionChanged(it))
             },
-            onConfirm = { viewModel.onEvent(ChartViewerEvent.ConfirmOpenPullRequest) },
-            onDismiss = { viewModel.onEvent(ChartViewerEvent.DismissOpenPullRequestSheet) },
+            onConfirm = { viewModel.onEvent(ChartViewerEvent.ConfirmOpenSuggestion) },
+            onDismiss = { viewModel.onEvent(ChartViewerEvent.DismissOpenSuggestionSheet) },
         )
     }
 }
@@ -330,7 +330,7 @@ fun ChartViewerScreen(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun OpenPullRequestDialog(
+private fun OpenSuggestionDialog(
     titleDraft: String,
     descriptionDraft: String,
     isSubmitting: Boolean,
@@ -342,15 +342,15 @@ private fun OpenPullRequestDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        modifier = Modifier.testTag("openPullRequestDialog"),
-        title = { Text(stringResource(Res.string.dialog_open_pull_request_title)) },
+        modifier = Modifier.testTag("openSuggestionDialog"),
+        title = { Text(stringResource(Res.string.dialog_send_suggestion_title)) },
         text = {
             Column {
                 OutlinedTextField(
                     value = titleDraft,
                     onValueChange = onTitleChange,
-                    label = { Text(stringResource(Res.string.label_pr_title)) },
-                    placeholder = { Text(stringResource(Res.string.hint_pr_title)) },
+                    label = { Text(stringResource(Res.string.label_suggestion_title)) },
+                    placeholder = { Text(stringResource(Res.string.hint_suggestion_title)) },
                     singleLine = true,
                     enabled = !isSubmitting,
                     modifier =
@@ -362,9 +362,9 @@ private fun OpenPullRequestDialog(
                 OutlinedTextField(
                     value = descriptionDraft,
                     onValueChange = onDescriptionChange,
-                    label = { Text(stringResource(Res.string.label_pr_description)) },
+                    label = { Text(stringResource(Res.string.label_suggestion_description)) },
                     placeholder = {
-                        Text(stringResource(Res.string.hint_pr_description_optional))
+                        Text(stringResource(Res.string.hint_suggestion_description_optional))
                     },
                     enabled = !isSubmitting,
                     minLines = 3,
@@ -388,9 +388,9 @@ private fun OpenPullRequestDialog(
             TextButton(
                 onClick = onConfirm,
                 enabled = !isSubmitting && titleDraft.isNotBlank(),
-                modifier = Modifier.testTag("confirmOpenPullRequestButton"),
+                modifier = Modifier.testTag("confirmOpenSuggestionButton"),
             ) {
-                Text(stringResource(Res.string.action_open_pr))
+                Text(stringResource(Res.string.action_send))
             }
         },
         dismissButton = {
@@ -428,7 +428,7 @@ private fun LayerChips(
 
 @Composable
 private fun ChartCanvas(
-    chart: StructuredChart,
+    chart: Chart,
     catalog: SymbolCatalog,
     hiddenLayerIds: Set<String>,
     segments: Map<SegmentKey, SegmentState>,
@@ -614,7 +614,7 @@ private fun ChartCanvas(
 @Suppress("LongParameterList")
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawRectChart(
     rect: ChartExtents.Rect,
-    chart: StructuredChart,
+    chart: Chart,
     catalog: SymbolCatalog,
     hiddenLayerIds: Set<String>,
     segments: Map<SegmentKey, SegmentState>,

@@ -1,9 +1,9 @@
 package io.github.b150005.skeinly.data.mapper
 
-import io.github.b150005.skeinly.db.ChartRevisionEntity
+import io.github.b150005.skeinly.db.ChartVersionEntity
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
-import io.github.b150005.skeinly.domain.model.ChartRevision
+import io.github.b150005.skeinly.domain.model.ChartVersion
 import io.github.b150005.skeinly.domain.model.CraftType
 import io.github.b150005.skeinly.domain.model.ReadingConvention
 import kotlinx.serialization.KSerializer
@@ -15,7 +15,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlin.time.Instant
 
 /**
- * Document envelope shared with [StructuredChartMapper] — same shape lives
+ * Document envelope shared with [ChartMapper] — same shape lives
  * inside `chart_revisions.document` jsonb. Kept private to this file so the
  * two mappers can evolve independently if envelope semantics ever diverge
  * (none today; ADR-013 §3 preserves the shape on purpose).
@@ -40,14 +40,14 @@ private fun <T> JsonElement?.decodeOrDefault(
     default: T,
 ): T = if (this == null || this is JsonNull) default else json.decodeFromJsonElement(serializer, this)
 
-internal fun ChartRevisionEntity.toDomain(json: Json): ChartRevision {
+internal fun ChartVersionEntity.toDomain(json: Json): ChartVersion {
     val envelope =
         json.parseToJsonElement(document).let { element ->
             val obj =
                 element as? JsonObject
-                    ?: error("ChartRevision.document is not a JSON object")
-            val extentsElement = obj["extents"] ?: error("ChartRevision.document missing 'extents'")
-            val layersElement = obj["layers"] ?: error("ChartRevision.document missing 'layers'")
+                    ?: error("ChartVersion.document is not a JSON object")
+            val extentsElement = obj["extents"] ?: error("ChartVersion.document missing 'extents'")
+            val layersElement = obj["layers"] ?: error("ChartVersion.document missing 'layers'")
             val extents = json.decodeFromJsonElement(RevisionEnvelope.extentsSerializer, extentsElement)
             val layers = json.decodeFromJsonElement(RevisionEnvelope.layersSerializer, layersElement)
             val craftType =
@@ -64,7 +64,7 @@ internal fun ChartRevisionEntity.toDomain(json: Json): ChartRevision {
                 )
             RevisionEnvelopeValues(extents, layers, craftType, readingConvention)
         }
-    return ChartRevision(
+    return ChartVersion(
         id = id,
         patternId = pattern_id,
         ownerId = owner_id,
@@ -84,7 +84,7 @@ internal fun ChartRevisionEntity.toDomain(json: Json): ChartRevision {
     )
 }
 
-internal fun ChartRevision.toDocumentJson(json: Json): String {
+internal fun ChartVersion.toDocumentJson(json: Json): String {
     val obj =
         buildMap<String, JsonElement> {
             put("extents", json.encodeToJsonElement(RevisionEnvelope.extentsSerializer, extents))

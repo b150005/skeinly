@@ -103,19 +103,19 @@
         }
       }
     },
-    "action_apply_and_merge": {
+    "action_apply_changes": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apply and merge"
+            "value": "Apply changes"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "適用してマージ"
+            "value": "変更を反映"
           }
         }
       }
@@ -239,7 +239,7 @@
         }
       }
     },
-    "action_close_pr": {
+    "action_close_suggestion": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -341,19 +341,19 @@
         }
       }
     },
-    "action_create_branch": {
+    "action_create_variation": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "New branch"
+            "value": "New variation"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "新しいブランチ"
+            "value": "新しいアレンジ"
           }
         }
       }
@@ -392,19 +392,19 @@
         }
       }
     },
-    "action_create_structured_chart": {
+    "action_create_chart": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Create structured chart"
+            "value": "Create chart"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "構造化チャートを作成"
+            "value": "編み図を作成"
           }
         }
       }
@@ -545,13 +545,13 @@
         }
       }
     },
-    "action_discover_patterns": {
+    "action_browse_patterns": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Discover Patterns"
+            "value": "Browse Patterns"
           }
         },
         "ja": {
@@ -613,19 +613,19 @@
         }
       }
     },
-    "action_edit_structured_chart": {
+    "action_edit_chart": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Edit structured chart"
+            "value": "Edit chart"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "構造化チャートを編集"
+            "value": "編み図を編集"
           }
         }
       }
@@ -647,53 +647,53 @@
         }
       }
     },
-    "action_fork": {
+    "action_save_copy": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fork"
+            "value": "Save a copy"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "フォーク"
+            "value": "コピーを保存"
           }
         }
       }
     },
-    "action_fork_pattern": {
+    "action_save_pattern_copy": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fork pattern"
+            "value": "Save a copy"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "パターンをフォーク"
+            "value": "コピーを保存"
           }
         }
       }
     },
-    "action_fork_to_projects": {
+    "action_save_copy_to_projects": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fork to My Projects"
+            "value": "Save a copy to my projects"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "マイプロジェクトにフォーク"
+            "value": "マイプロジェクトにコピーを保存"
           }
         }
       }
@@ -749,13 +749,13 @@
         }
       }
     },
-    "action_keep_mine": {
+    "action_use_mine": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Keep mine"
+            "value": "Use mine"
           }
         },
         "ja": {
@@ -800,19 +800,19 @@
         }
       }
     },
-    "action_merge_pr": {
+    "action_apply_suggestion": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Merge"
+            "value": "Apply changes"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "マージ"
+            "value": "変更を反映"
           }
         }
       }
@@ -902,36 +902,36 @@
         }
       }
     },
-    "action_open_pr": {
+    "action_send": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open"
+            "value": "Send"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "作成"
+            "value": "送信"
           }
         }
       }
     },
-    "action_open_pull_request": {
+    "action_send_suggestion": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open pull request"
+            "value": "Suggest a change"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "プルリクエストを作成"
+            "value": "変更を提案"
           }
         }
       }
@@ -1004,19 +1004,19 @@
         }
       }
     },
-    "action_pull_requests": {
+    "action_suggestions": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pull requests"
+            "value": "Suggestions"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "プルリクエストを開く"
+            "value": "提案を表示"
           }
         }
       }
@@ -1157,19 +1157,19 @@
         }
       }
     },
-    "action_restore_revision": {
+    "action_restore_version": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Restore as new commit"
+            "value": "Save as new version"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "新しいコミットとして復元"
+            "value": "新しいバージョンとして保存"
           }
         }
       }
@@ -1531,13 +1531,13 @@
         }
       }
     },
-    "action_take_theirs": {
+    "action_use_contributors": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Take theirs"
+            "value": "Use contributor's"
           }
         },
         "ja": {
@@ -1662,24 +1662,24 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "チャートプレビューを表示"
+            "value": "編み図プレビューを表示"
           }
         }
       }
     },
-    "action_view_structured_chart": {
+    "action_view_chart": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "View structured chart"
+            "value": "View chart"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "構造化チャートを表示"
+            "value": "編み図を表示"
           }
         }
       }
@@ -1922,53 +1922,53 @@
         }
       }
     },
-    "dialog_close_pr_body": {
+    "dialog_close_suggestion_body": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Closing keeps the comment history but the changes will not land on the upstream chart. The author can open a new pull request later."
+            "value": "Closing keeps the comment history but the changes will not land on the original chart. The author can send a new suggestion later."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "クローズしてもコメントは残りますが、変更は上流のチャートには反映されません。投稿者は後で新しいプルリクエストを開くことができます。"
+            "value": "クローズしてもコメントは残りますが、変更は元の編み図には反映されません。投稿者は後で新しい提案を送ることができます。"
           }
         }
       }
     },
-    "dialog_close_pr_title": {
+    "dialog_close_suggestion_title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Close this pull request?"
+            "value": "Close this suggestion?"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "このプルリクエストをクローズしますか？"
+            "value": "この提案をクローズしますか?"
           }
         }
       }
     },
-    "dialog_create_branch_title": {
+    "dialog_create_variation_title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Create branch"
+            "value": "Create variation"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ブランチを作成"
+            "value": "アレンジを作成"
           }
         }
       }
@@ -2212,36 +2212,36 @@
         }
       }
     },
-    "dialog_merge_pr_body": {
+    "dialog_apply_suggestion_body": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The contributor's changes will land on your branch as a new commit. Conflict resolution ships in Phase 38.4."
+            "value": "The contributor's changes will land on your variation as a new version. Conflict resolution ships in Phase 38.4."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "投稿者の変更が新しいコミットとしてブランチに反映されます。コンフリクト解決はPhase 38.4で対応予定です。"
+            "value": "投稿者の変更が新しいバージョンとしてアレンジに反映されます。コンフリクト解決はPhase 38.4で対応予定です。"
           }
         }
       }
     },
-    "dialog_merge_pr_title": {
+    "dialog_apply_suggestion_title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Merge this pull request?"
+            "value": "Apply this suggestion?"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "このプルリクエストをマージしますか？"
+            "value": "この提案を反映しますか?"
           }
         }
       }
@@ -2263,19 +2263,19 @@
         }
       }
     },
-    "dialog_open_pull_request_title": {
+    "dialog_send_suggestion_title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open pull request"
+            "value": "Suggest a change"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "プルリクエストを作成"
+            "value": "変更を提案"
           }
         }
       }
@@ -2326,41 +2326,41 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "円形チャート"
+            "value": "円形の編み図"
           }
         }
       }
     },
-    "dialog_remove_chart_image_body": {
+    "dialog_remove_reference_image_body": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Are you sure you want to remove this chart image?"
+            "value": "Are you sure you want to remove this reference image?"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "このチャート画像を削除してもよろしいですか？"
+            "value": "この参考画像を削除してもよろしいですか?"
           }
         }
       }
     },
-    "dialog_remove_chart_image_title": {
+    "dialog_remove_reference_image_title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remove Chart Image?"
+            "value": "Remove reference image?"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "チャート画像を削除しますか？"
+            "value": "参考画像を削除しますか?"
           }
         }
       }
@@ -2411,41 +2411,41 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "チャートのサイズ変更"
+            "value": "編み図のサイズ変更"
           }
         }
       }
     },
-    "dialog_restore_revision_body": {
+    "dialog_restore_version_body": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This appends a new commit on top of the current tip with the contents of this revision. Nothing in your history is overwritten."
+            "value": "This adds a new version on top of the current version with the contents of this older version. Nothing in your history is overwritten."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "現在のtipの上にこのリビジョンの内容で新しいコミットを追加します。履歴は上書きされません。"
+            "value": "現在のバージョンの上にこのバージョンの内容で新しいバージョンを追加します。履歴は上書きされません。"
           }
         }
       }
     },
-    "dialog_restore_revision_title": {
+    "dialog_restore_version_title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Restore this revision?"
+            "value": "Restore this version?"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "このリビジョンを復元しますか？"
+            "value": "このバージョンを復元しますか?"
           }
         }
       }
@@ -2926,7 +2926,7 @@
         }
       }
     },
-    "hint_add_comment_to_pr": {
+    "hint_add_comment_to_suggestion": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -3011,7 +3011,7 @@
         }
       }
     },
-    "hint_pr_description_optional": {
+    "hint_suggestion_description_optional": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -3023,12 +3023,12 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "パターンオーナーへの補足メモ（任意）…"
+            "value": "パターンオーナーへの補足メモ(任意)…"
           }
         }
       }
     },
-    "hint_pr_title": {
+    "hint_suggestion_title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -3040,7 +3040,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "チャートへの変更を提案…"
+            "value": "編み図への変更を提案…"
           }
         }
       }
@@ -3198,19 +3198,19 @@
         }
       }
     },
-    "label_activity_forked_by": {
+    "label_activity_copied_by": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ forked a pattern"
+            "value": "%1$s saved a copy of a pattern"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@がパターンをフォークしました"
+            "value": "%1$sがパターンのコピーを保存しました"
           }
         }
       }
@@ -3317,19 +3317,19 @@
         }
       }
     },
-    "label_branch_name": {
+    "label_variation_name": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Branch name"
+            "value": "Variation name"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ブランチ名"
+            "value": "アレンジ名"
           }
         }
       }
@@ -3368,19 +3368,19 @@
         }
       }
     },
-    "label_chart_images_section": {
+    "label_reference_images_section": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chart Images"
+            "value": "Reference Images"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "チャート画像"
+            "value": "参考画像"
           }
         }
       }
@@ -3522,7 +3522,7 @@
         }
       }
     },
-    "label_current_branch": {
+    "label_current_variation": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -3607,7 +3607,7 @@
         }
       }
     },
-    "label_diff_added": {
+    "label_comparison_added": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -3642,7 +3642,7 @@
         }
       }
     },
-    "label_diff_modified": {
+    "label_comparison_modified": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -3677,7 +3677,7 @@
         }
       }
     },
-    "label_diff_removed": {
+    "label_comparison_removed": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -3928,58 +3928,58 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "チャートのみ"
+            "value": "編み図のみ"
           }
         }
       }
     },
-    "label_filter_incoming": {
+    "label_filter_received": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Incoming"
+            "value": "Received"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "受信"
+            "value": "受け取った"
           }
         }
       }
     },
-    "label_filter_outgoing": {
+    "label_filter_sent": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Outgoing"
+            "value": "Sent"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "送信"
+            "value": "送った"
           }
         }
       }
     },
-    "label_forked_from": {
+    "label_copied_from": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Forked from: %1$@ by %2$@"
+            "value": "Copied from: %1$s by %2$s"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@（%2$@）からフォーク"
+            "value": "%1$s(%2$s)からコピー"
           }
         }
       }
@@ -4069,19 +4069,19 @@
         }
       }
     },
-    "label_initial_commit": {
+    "label_initial_version": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Initial commit"
+            "value": "Initial version"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "最初のコミット"
+            "value": "最初のバージョン"
           }
         }
       }
@@ -4529,19 +4529,19 @@
         }
       }
     },
-    "label_permission_fork": {
+    "label_permission_save_copy": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fork"
+            "value": "Save copy"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "フォーク"
+            "value": "コピー"
           }
         }
       }
@@ -4631,24 +4631,24 @@
         }
       }
     },
-    "label_pr_authored_by": {
+    "label_suggestion_authored_by": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Authored by %1$@"
+            "value": "Authored by %1$s"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@が作成"
+            "value": "%1$sが作成"
           }
         }
       }
     },
-    "label_pr_comments": {
+    "label_suggestion_comments": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -4665,7 +4665,7 @@
         }
       }
     },
-    "label_pr_description": {
+    "label_suggestion_description": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -4682,7 +4682,7 @@
         }
       }
     },
-    "label_pr_diff_preview": {
+    "label_suggestion_changes_preview": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -4699,7 +4699,7 @@
         }
       }
     },
-    "label_pr_status_closed": {
+    "label_suggestion_status_closed": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -4716,24 +4716,24 @@
         }
       }
     },
-    "label_pr_status_merged": {
+    "label_suggestion_status_applied": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Merged"
+            "value": "Applied"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "マージ済み"
+            "value": "反映済み"
           }
         }
       }
     },
-    "label_pr_status_open": {
+    "label_suggestion_status_open": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -4745,12 +4745,12 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "オープン"
+            "value": "未対応"
           }
         }
       }
     },
-    "label_pr_title": {
+    "label_suggestion_title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -5542,36 +5542,36 @@
         }
       }
     },
-    "message_forked_chart_failed": {
+    "message_copy_chart_failed": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Forked (chart copy failed — try re-forking from project detail)"
+            "value": "Copy saved (chart copy failed — try saving again from project detail)"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "フォークしました（チャートのコピーに失敗しました — プロジェクト詳細から再フォークしてください）"
+            "value": "コピーを保存しました(編み図のコピーに失敗しました — プロジェクト詳細からもう一度お試しください)"
           }
         }
       }
     },
-    "message_forked_successfully": {
+    "message_copy_saved_successfully": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Forked successfully!"
+            "value": "Copy saved!"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "フォークしました！"
+            "value": "コピーを保存しました!"
           }
         }
       }
@@ -5610,53 +5610,53 @@
         }
       }
     },
-    "message_pr_closed_successfully": {
+    "message_suggestion_closed_successfully": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pull request closed"
+            "value": "Suggestion closed"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "プルリクエストをクローズしました"
+            "value": "提案をクローズしました"
           }
         }
       }
     },
-    "message_pr_merged_successfully": {
+    "message_suggestion_applied_successfully": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pull request merged"
+            "value": "Suggestion applied"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "プルリクエストをマージしました"
+            "value": "提案を反映しました"
           }
         }
       }
     },
-    "message_pr_opened_successfully": {
+    "message_suggestion_sent_successfully": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pull request opened"
+            "value": "Suggestion sent"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "プルリクエストを作成しました"
+            "value": "提案を送信しました"
           }
         }
       }
@@ -5729,19 +5729,19 @@
         }
       }
     },
-    "message_switched_to_branch": {
+    "message_switched_to_variation": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Switched to %1$@"
+            "value": "Switched to %1$s"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@に切り替えました"
+            "value": "%1$sに切り替えました"
           }
         }
       }
@@ -5758,7 +5758,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "すべてのコンフリクトが解決されました"
+            "value": "すべての重複が解決されました"
           }
         }
       }
@@ -5809,41 +5809,41 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "空のチャート"
+            "value": "空の編み図"
           }
         }
       }
     },
-    "state_forked_from_deleted": {
+    "state_copied_from_deleted": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Forked from a deleted pattern"
+            "value": "Copied from a deleted pattern"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "削除されたパターンからフォーク"
+            "value": "削除されたパターンからのコピー"
           }
         }
       }
     },
-    "state_forking_pattern": {
+    "state_saving_pattern_copy": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Forking pattern…"
+            "value": "Saving a copy…"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "パターンをフォーク中…"
+            "value": "コピーを保存中…"
           }
         }
       }
@@ -5882,19 +5882,19 @@
         }
       }
     },
-    "state_no_branches": {
+    "state_no_variations": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No branches yet"
+            "value": "No variations yet"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ブランチがまだありません"
+            "value": "アレンジがまだありません"
           }
         }
       }
@@ -5905,13 +5905,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No changes between these revisions"
+            "value": "No changes between these versions"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "これらのリビジョン間に変更はありません"
+            "value": "これらのバージョン間に変更はありません"
           }
         }
       }
@@ -5939,30 +5939,30 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Saved chart revisions will appear here"
+            "value": "Saved chart versions will appear here"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "保存したチャートのリビジョンがここに表示されます"
+            "value": "保存した編み図のバージョンがここに表示されます"
           }
         }
       }
     },
-    "state_no_chart_images": {
+    "state_no_reference_images": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No chart images yet"
+            "value": "No reference images yet"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "チャート画像はまだありません"
+            "value": "参考画像はまだありません"
           }
         }
       }
@@ -6188,36 +6188,36 @@
         }
       }
     },
-    "state_no_pull_requests": {
+    "state_no_suggestions": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No pull requests yet"
+            "value": "No suggestions yet"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "プルリクエストがまだありません"
+            "value": "提案がまだありません"
           }
         }
       }
     },
-    "state_no_pull_requests_body": {
+    "state_no_suggestions_body": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Suggestions from forks and to upstream patterns will appear here"
+            "value": "Suggestions from copies and to original patterns will appear here"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "フォークからの提案や上流パターンへの提案がここに表示されます"
+            "value": "あなたへの提案、あなたが送った提案がここに表示されます"
           }
         }
       }
@@ -6256,19 +6256,19 @@
         }
       }
     },
-    "state_no_structured_chart": {
+    "state_no_chart": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No structured chart available"
+            "value": "No chart yet"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "構造化チャートがありません"
+            "value": "編み図がありません"
           }
         }
       }
@@ -6290,19 +6290,19 @@
         }
       }
     },
-    "state_pr_not_found": {
+    "state_suggestion_not_found": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pull request not found"
+            "value": "Suggestion not found"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "プルリクエストが見つかりません"
+            "value": "提案が見つかりません"
           }
         }
       }
@@ -6381,13 +6381,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "View only — forking is not permitted for this share"
+            "value": "View only — saving a copy is not permitted for this share"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "閲覧のみ — このシェアではフォークが許可されていません"
+            "value": "閲覧のみ — このシェアではコピーの保存が許可されていません"
           }
         }
       }
@@ -6409,19 +6409,19 @@
         }
       }
     },
-    "title_branch_picker": {
+    "title_variations": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Branches"
+            "value": "Variations"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ブランチ"
+            "value": "アレンジ"
           }
         }
       }
@@ -6443,19 +6443,19 @@
         }
       }
     },
-    "title_chart_diff": {
+    "title_chart_comparison": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chart Diff"
+            "value": "Chart comparison"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "チャート差分"
+            "value": "編み図の比較"
           }
         }
       }
@@ -6472,7 +6472,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "チャート履歴"
+            "value": "編み図の履歴"
           }
         }
       }
@@ -6489,7 +6489,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "チャート"
+            "value": "編み図"
           }
         }
       }
@@ -6528,13 +6528,13 @@
         }
       }
     },
-    "title_discover_patterns": {
+    "title_browse_patterns": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Discover Patterns"
+            "value": "Browse Patterns"
           }
         },
         "ja": {
@@ -6557,7 +6557,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "チャートを編集"
+            "value": "編み図を編集"
           }
         }
       }
@@ -6732,36 +6732,36 @@
         }
       }
     },
-    "title_pull_request_detail": {
+    "title_suggestion_detail": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pull request"
+            "value": "Suggestion"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "プルリクエスト"
+            "value": "提案"
           }
         }
       }
     },
-    "title_pull_requests": {
+    "title_suggestions": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pull Requests"
+            "value": "Suggestions"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "プルリクエスト"
+            "value": "提案"
           }
         }
       }
@@ -6778,7 +6778,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "コンフリクトの解決"
+            "value": "重複の解決"
           }
         }
       }
@@ -7194,211 +7194,511 @@
     "title_pack_management": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Symbol Packs" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "シンボルパック" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Symbol Packs"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シンボルパック"
+          }
+        }
       }
     },
     "label_pack_management": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Manage Symbol Packs" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "シンボルパックを管理" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage Symbol Packs"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シンボルパックを管理"
+          }
+        }
       }
     },
     "action_refresh_packs": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Refresh" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "更新" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新"
+          }
+        }
       }
     },
     "label_pack_total_size": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Total downloaded: %1$@" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "ダウンロード済み合計: %1$@" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total downloaded: %1$@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ダウンロード済み合計: %1$@"
+          }
+        }
       }
     },
     "label_pack_size_kb": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "%1$@ KB" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "%1$@ KB" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ KB"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ KB"
+          }
+        }
       }
     },
     "label_pack_size_mb": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "%1$@ MB" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "%1$@ MB" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ MB"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ MB"
+          }
+        }
       }
     },
     "label_pack_symbol_count": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "%1$d symbols" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "シンボル %1$d 件" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$d symbols"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シンボル %1$d 件"
+          }
+        }
       }
     },
     "label_pack_version_x": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "v%1$d" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "v%1$d" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "v%1$d"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "v%1$d"
+          }
+        }
       }
     },
     "label_pack_status_downloaded": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Downloaded" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "ダウンロード済み" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloaded"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ダウンロード済み"
+          }
+        }
       }
     },
     "label_pack_status_update_available": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Update available" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "アップデートあり" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update available"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アップデートあり"
+          }
+        }
       }
     },
     "label_pack_status_not_downloaded": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Not downloaded" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "未ダウンロード" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not downloaded"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未ダウンロード"
+          }
+        }
       }
     },
     "label_pack_status_locked": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Pro — locked" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "Pro — ロック中" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro — locked"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro — ロック中"
+          }
+        }
       }
     },
     "label_pack_tier_free": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Free" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "無料" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無料"
+          }
+        }
       }
     },
     "label_pack_tier_pro": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Pro" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "Pro" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro"
+          }
+        }
       }
     },
     "state_no_packs": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "No symbol packs available" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "利用可能なシンボルパックがありません" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No symbol packs available"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "利用可能なシンボルパックがありません"
+          }
+        }
       }
     },
     "state_no_packs_body": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Tap Refresh to fetch the catalog." } },
-        "ja": { "stringUnit": { "state": "translated", "value": "「更新」をタップしてカタログを取得してください。" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap Refresh to fetch the catalog."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「更新」をタップしてカタログを取得してください。"
+          }
+        }
       }
     },
     "body_pack_locked_inline": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "This pack is part of Skeinly Pro. Subscribe to unlock all symbols." } },
-        "ja": { "stringUnit": { "state": "translated", "value": "このパックは Skeinly Pro 専用です。すべてのシンボルを利用するにはサブスクリプションをご購入ください。" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This pack is part of Skeinly Pro. Subscribe to unlock all symbols."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このパックは Skeinly Pro 専用です。すべてのシンボルを利用するにはサブスクリプションをご購入ください。"
+          }
+        }
       }
     },
     "action_unlock_with_pro": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Unlock with Pro" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "Pro で解除" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock with Pro"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro で解除"
+          }
+        }
       }
     },
     "title_locked_symbol": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Pro symbol" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "Pro シンボル" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro symbol"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro シンボル"
+          }
+        }
       }
     },
     "label_notifications_settings_row": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Notifications" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "通知" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通知"
+          }
+        }
       }
     },
     "body_notifications_setting_explanation": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Get notified when collaborators open pull requests, comment on yours, or merge your changes." } },
-        "ja": { "stringUnit": { "state": "translated", "value": "プルリクエストの作成・コメント・マージなどコラボの動きをお知らせします。" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get notified when collaborators send suggestions, comment on yours, or apply your changes."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "提案の送信・コメント・反映などコラボの動きをお知らせします。"
+          }
+        }
       }
     },
     "state_notifications_enabled": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Enabled" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "オン" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enabled"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オン"
+          }
+        }
       }
     },
     "state_notifications_disabled": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Disabled" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "オフ" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disabled"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オフ"
+          }
+        }
       }
     },
     "body_notifications_disabled_hint": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Open Settings to enable notifications." } },
-        "ja": { "stringUnit": { "state": "translated", "value": "設定から通知をオンにできます。" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings to enable notifications."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定から通知をオンにできます。"
+          }
+        }
       }
     },
     "title_notifications_explainer": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Stay in the loop" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "コラボの動きを見逃さない" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stay in the loop"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コラボの動きを見逃さない"
+          }
+        }
       }
     },
     "body_notifications_explainer": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Get notified when collaborators open pull requests, comment on yours, or merge your changes. You can change this anytime in Settings." } },
-        "ja": { "stringUnit": { "state": "translated", "value": "プルリクエストの作成・コメント・マージなどコラボの動きをお知らせします。設定からいつでも変更できます。" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get notified when collaborators send suggestions, comment on yours, or apply your changes. You can change this anytime in Settings."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "提案の送信・コメント・反映などコラボの動きをお知らせします。設定からいつでも変更できます。"
+          }
+        }
       }
     },
     "action_enable_notifications": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Enable" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "オンにする" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オンにする"
+          }
+        }
       }
     },
     "action_not_now_notifications": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Not now" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "あとで" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not now"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あとで"
+          }
+        }
       }
     },
     "action_open_os_settings": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Open Settings" } },
-        "ja": { "stringUnit": { "state": "translated", "value": "設定を開く" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定を開く"
+          }
+        }
       }
     },
     "body_notifications_denied_explanation": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "You denied notifications. Open Settings to re-enable." } },
-        "ja": { "stringUnit": { "state": "translated", "value": "通知が許可されていません。設定から再度オンにできます。" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You denied notifications. Open Settings to re-enable."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通知が許可されていません。設定から再度オンにできます。"
+          }
+        }
       }
     }
   },

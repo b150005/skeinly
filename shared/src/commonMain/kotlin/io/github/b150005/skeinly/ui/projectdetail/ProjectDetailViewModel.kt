@@ -27,8 +27,8 @@ import io.github.b150005.skeinly.domain.usecase.DeleteProgressPhotoUseCase
 import io.github.b150005.skeinly.domain.usecase.ErrorMessage
 import io.github.b150005.skeinly.domain.usecase.GetProgressNotesUseCase
 import io.github.b150005.skeinly.domain.usecase.IncrementRowUseCase
+import io.github.b150005.skeinly.domain.usecase.ObserveChartUseCase
 import io.github.b150005.skeinly.domain.usecase.ObserveProjectSegmentsUseCase
-import io.github.b150005.skeinly.domain.usecase.ObserveStructuredChartUseCase
 import io.github.b150005.skeinly.domain.usecase.ReopenProjectUseCase
 import io.github.b150005.skeinly.domain.usecase.ResetProjectProgressUseCase
 import io.github.b150005.skeinly.domain.usecase.ShareProjectUseCase
@@ -70,7 +70,7 @@ data class ProjectDetailState(
     val selectedChartImageIndex: Int? = null,
     val photoSignedUrls: Map<String, String> = emptyMap(),
     val isUploadingPhoto: Boolean = false,
-    val hasStructuredChart: Boolean = false,
+    val hasChart: Boolean = false,
     /**
      * True when the linked chart has at least one marked segment. Gates the
      * Reset progress action per PRD AC-4.1.
@@ -186,7 +186,7 @@ class ProjectDetailViewModel(
     private val uploadProgressPhoto: UploadProgressPhotoUseCase,
     private val deleteProgressPhoto: DeleteProgressPhotoUseCase,
     private val progressPhotoStorage: StorageOperations?,
-    private val observeStructuredChart: ObserveStructuredChartUseCase,
+    private val observeChart: ObserveChartUseCase,
     private val observeProjectSegments: ObserveProjectSegmentsUseCase,
     private val resetProjectProgress: ResetProjectProgressUseCase,
     // Phase F.3 — nullable + default null preserves existing test compat.
@@ -224,10 +224,10 @@ class ProjectDetailViewModel(
         }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val structuredChartFlow =
+    private val chartFlow =
         projectFlow.flatMapLatest { project ->
             if (project != null && project.patternId != LocalUser.DEFAULT_PATTERN_ID) {
-                observeStructuredChart(project.patternId)
+                observeChart(project.patternId)
             } else {
                 flowOf(null)
             }
@@ -237,17 +237,17 @@ class ProjectDetailViewModel(
         combine(
             projectFlow,
             patternFlow,
-            structuredChartFlow,
+            chartFlow,
             _uiOverlay,
             segmentsFlow,
-        ) { project, pattern, structuredChart, overlay, segments ->
+        ) { project, pattern, chart, overlay, segments ->
             // `segments` is pre-filtered to this projectId by observeProjectSegments —
             // no per-project guard needed here. See ProjectSegmentRepository contract.
             // Each ChartCell counts as 1 toward `total` regardless of `width`: a
             // `widthUnits=2` symbol (cable crossing, widthUnits=2 picot) counts as 1
             // segment since ProjectSegment is keyed by (layerId, cellX, cellY) — one
             // row per placed ChartCell, not per physical stitch column. AC-7.1.
-            val visibleLayers = structuredChart?.layers?.filter { it.visible }.orEmpty()
+            val visibleLayers = chart?.layers?.filter { it.visible }.orEmpty()
             // Build a set of valid (layerId, x, y) triples so orphan segments from a
             // chart edit that deleted the cell don't inflate `done > total`. The
             // set is built only from visible layers, so membership implicitly
@@ -278,10 +278,10 @@ class ProjectDetailViewModel(
                 selectedChartImageIndex = overlay.selectedChartImageIndex,
                 photoSignedUrls = overlay.photoSignedUrls,
                 isUploadingPhoto = overlay.isUploadingPhoto,
-                hasStructuredChart = structuredChart != null,
+                hasChart = chart != null,
                 hasSegmentProgress = segments.isNotEmpty(),
-                segmentsDone = if (structuredChart != null && total > 0) done else null,
-                segmentsTotal = if (structuredChart != null && total > 0) total else null,
+                segmentsDone = if (chart != null && total > 0) done else null,
+                segmentsTotal = if (chart != null && total > 0) total else null,
                 parentPattern = overlay.parentPattern,
                 parentPatternAuthor = overlay.parentPatternAuthor,
             )
@@ -326,7 +326,7 @@ class ProjectDetailViewModel(
      * Repository-call try/catch explicitly rethrows CancellationException so
      * coroutine cancellation propagates correctly when the viewModelScope is
      * torn down mid-fetch. Same pattern as Phase 36.3's
-     * `ForkPublicPatternUseCase` chart-clone wrapper.
+     * `SavePublicPatternToLibraryUseCase` chart-clone wrapper.
      */
     private fun observeParentAttribution() {
         viewModelScope.launch {

@@ -41,7 +41,7 @@ struct ChartDiffScreen: View {
         contentView
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("chartDiffScreen")
-            .navigationTitle(LocalizedStringKey("title_chart_diff"))
+            .navigationTitle(LocalizedStringKey("title_chart_comparison"))
             .navigationBarTitleDisplayMode(.inline)
             .onChange(of: holder.state.error != nil) { _, hasError in
             showError = hasError
@@ -121,15 +121,15 @@ private struct DiffSummaryRow: View {
 
     var body: some View {
         let added = String.localizedStringWithFormat(
-            NSLocalizedString("label_diff_added", comment: ""),
+            NSLocalizedString("label_comparison_added", comment: ""),
             Int(diff.addedCellCount)
         )
         let modified = String.localizedStringWithFormat(
-            NSLocalizedString("label_diff_modified", comment: ""),
+            NSLocalizedString("label_comparison_modified", comment: ""),
             Int(diff.modifiedCellCount)
         )
         let removed = String.localizedStringWithFormat(
-            NSLocalizedString("label_diff_removed", comment: ""),
+            NSLocalizedString("label_comparison_removed", comment: ""),
             Int(diff.removedCellCount)
         )
         return HStack {
@@ -241,7 +241,7 @@ private struct DualCanvasPanel: View {
                     .scaleEffect(scale)
                     .offset(offset)
                 } else {
-                    Text(LocalizedStringKey("label_initial_commit"))
+                    Text(LocalizedStringKey("label_initial_version"))
                         .font(.body)
                 }
             }

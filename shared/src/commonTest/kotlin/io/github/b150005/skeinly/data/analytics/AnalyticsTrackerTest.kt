@@ -167,7 +167,7 @@ class AnalyticsTrackerTest {
     fun `ChartFormat polar wire value matches storage taxonomy`() {
         assertEquals(
             mapOf("chart_format" to "polar"),
-            AnalyticsEvent.PullRequestOpened(ChartFormat.Polar).properties,
+            AnalyticsEvent.SuggestionOpened(ChartFormat.Polar).properties,
         )
     }
 }

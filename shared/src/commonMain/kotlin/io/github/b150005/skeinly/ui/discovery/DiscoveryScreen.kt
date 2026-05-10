@@ -57,7 +57,7 @@ import io.github.b150005.skeinly.domain.model.SortOrder
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_back
 import io.github.b150005.skeinly.generated.resources.action_clear_search
-import io.github.b150005.skeinly.generated.resources.action_fork_pattern
+import io.github.b150005.skeinly.generated.resources.action_save_pattern_copy
 import io.github.b150005.skeinly.generated.resources.action_sort
 import io.github.b150005.skeinly.generated.resources.hint_search_public_patterns
 import io.github.b150005.skeinly.generated.resources.label_difficulty_all
@@ -67,13 +67,13 @@ import io.github.b150005.skeinly.generated.resources.label_needle_value
 import io.github.b150005.skeinly.generated.resources.label_sort_alphabetical_detail
 import io.github.b150005.skeinly.generated.resources.label_sort_recent
 import io.github.b150005.skeinly.generated.resources.label_yarn_value
-import io.github.b150005.skeinly.generated.resources.message_forked_chart_failed
-import io.github.b150005.skeinly.generated.resources.message_forked_successfully
+import io.github.b150005.skeinly.generated.resources.message_copy_chart_failed
+import io.github.b150005.skeinly.generated.resources.message_copy_saved_successfully
 import io.github.b150005.skeinly.generated.resources.state_no_matching_patterns
 import io.github.b150005.skeinly.generated.resources.state_no_matching_patterns_body
 import io.github.b150005.skeinly.generated.resources.state_no_public_patterns
 import io.github.b150005.skeinly.generated.resources.state_no_public_patterns_body
-import io.github.b150005.skeinly.generated.resources.title_discover_patterns
+import io.github.b150005.skeinly.generated.resources.title_browse_patterns
 import io.github.b150005.skeinly.ui.chart.ChartThumbnail
 import io.github.b150005.skeinly.ui.components.EmptyStateView
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
@@ -104,8 +104,8 @@ fun DiscoveryScreen(
         }
     }
 
-    val forkSuccessMessage = stringResource(Res.string.message_forked_successfully)
-    val forkChartFailedMessage = stringResource(Res.string.message_forked_chart_failed)
+    val forkSuccessMessage = stringResource(Res.string.message_copy_saved_successfully)
+    val forkChartFailedMessage = stringResource(Res.string.message_copy_chart_failed)
 
     LaunchedEffect(Unit) {
         viewModel.forkedProject.collect { result ->
@@ -135,7 +135,7 @@ fun DiscoveryScreen(
         modifier = Modifier.testTag("discoveryScreen"),
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.title_discover_patterns)) },
+                title = { Text(stringResource(Res.string.title_browse_patterns)) },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag("backButton")) {
                         Icon(
@@ -507,7 +507,7 @@ private fun DiscoveryPatternCard(
                         ) {
                             Icon(
                                 Icons.Default.ContentCopy,
-                                contentDescription = stringResource(Res.string.action_fork_pattern),
+                                contentDescription = stringResource(Res.string.action_save_pattern_copy),
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         }

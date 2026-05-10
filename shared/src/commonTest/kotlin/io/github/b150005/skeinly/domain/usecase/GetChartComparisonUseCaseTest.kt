@@ -4,11 +4,11 @@ import io.github.b150005.skeinly.domain.model.CellChange
 import io.github.b150005.skeinly.domain.model.ChartCell
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
-import io.github.b150005.skeinly.domain.model.ChartRevision
+import io.github.b150005.skeinly.domain.model.ChartVersion
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.LayerChange
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import io.github.b150005.skeinly.domain.repository.ChartRevisionRepository
+import io.github.b150005.skeinly.domain.repository.ChartVersionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -20,7 +20,7 @@ import kotlin.test.assertTrue
 import kotlin.time.Instant
 
 /**
- * Coverage matrix for [GetChartDiffUseCase] + [io.github.b150005.skeinly.domain.chart.ChartDiffAlgorithm]:
+ * Coverage matrix for [GetChartComparisonUseCase] + [io.github.b150005.skeinly.domain.chart.ChartComparisonAlgorithm]:
  *
  * Repository plumbing:
  *  1. target lookup miss → NotFound
@@ -48,15 +48,15 @@ import kotlin.time.Instant
  * 15. polar revisions diff identically (cell.x = stitch, cell.y = ring)
  * 16. multi-layer with mixed change types in one diff
  */
-class GetChartDiffUseCaseTest {
+class GetChartComparisonUseCaseTest {
     private fun makeRevision(
         revisionId: String,
         layers: List<ChartLayer>,
         coordinateSystem: CoordinateSystem = CoordinateSystem.RECT_GRID,
         extents: ChartExtents = ChartExtents.Rect(minX = 0, maxX = 4, minY = 0, maxY = 4),
         parentRevisionId: String? = null,
-    ): ChartRevision =
-        ChartRevision(
+    ): ChartVersion =
+        ChartVersion(
             id = revisionId,
             patternId = "pat-1",
             ownerId = "user-1",
@@ -77,7 +77,7 @@ class GetChartDiffUseCaseTest {
     fun `target lookup miss returns NotFound`() =
         runTest {
             val repo = FakeRepo()
-            val result = GetChartDiffUseCase(repo).invoke(baseRevisionId = null, targetRevisionId = "missing")
+            val result = GetChartComparisonUseCase(repo).invoke(baseRevisionId = null, targetRevisionId = "missing")
 
             assertTrue(result is UseCaseResult.Failure)
             assertTrue(result.error is UseCaseError.ResourceNotFound)
@@ -89,7 +89,7 @@ class GetChartDiffUseCaseTest {
             val repo = FakeRepo()
             repo.add(makeRevision("target", layers = listOf(ChartLayer(id = "L1", name = "Main"))))
             val result =
-                GetChartDiffUseCase(repo).invoke(baseRevisionId = "missing-base", targetRevisionId = "target")
+                GetChartComparisonUseCase(repo).invoke(baseRevisionId = "missing-base", targetRevisionId = "target")
 
             // Distinct from baseRevisionId == null case which would succeed with isInitialCommit.
             assertTrue(result is UseCaseResult.Failure)
@@ -111,7 +111,7 @@ class GetChartDiffUseCaseTest {
                 )
             repo.add(target)
 
-            val result = GetChartDiffUseCase(repo).invoke(baseRevisionId = null, targetRevisionId = "target")
+            val result = GetChartComparisonUseCase(repo).invoke(baseRevisionId = null, targetRevisionId = "target")
             assertTrue(result is UseCaseResult.Success)
             val diff = result.value
 
@@ -134,7 +134,7 @@ class GetChartDiffUseCaseTest {
             repo.add(makeRevision("base", layers = layers))
             repo.add(makeRevision("target", layers = layers, parentRevisionId = "base"))
 
-            val result = GetChartDiffUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
+            val result = GetChartComparisonUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
             assertTrue(result is UseCaseResult.Success)
             val diff = result.value
 
@@ -171,7 +171,7 @@ class GetChartDiffUseCaseTest {
                 ),
             )
 
-            val result = GetChartDiffUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
+            val result = GetChartComparisonUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
             assertTrue(result is UseCaseResult.Success)
             val diff = result.value
 
@@ -212,7 +212,7 @@ class GetChartDiffUseCaseTest {
                 ),
             )
 
-            val result = GetChartDiffUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
+            val result = GetChartComparisonUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
             assertTrue(result is UseCaseResult.Success)
             val diff = result.value
 
@@ -238,7 +238,7 @@ class GetChartDiffUseCaseTest {
                 ),
             )
 
-            val result = GetChartDiffUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
+            val result = GetChartComparisonUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
             assertTrue(result is UseCaseResult.Success)
             val diff = result.value
 
@@ -281,7 +281,7 @@ class GetChartDiffUseCaseTest {
                 ),
             )
 
-            val result = GetChartDiffUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
+            val result = GetChartComparisonUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
             assertTrue(result is UseCaseResult.Success)
             val diff = result.value
 
@@ -307,7 +307,7 @@ class GetChartDiffUseCaseTest {
                 ),
             )
 
-            val result = GetChartDiffUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
+            val result = GetChartComparisonUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
             assertTrue(result is UseCaseResult.Success)
             val diff = result.value
 
@@ -341,7 +341,7 @@ class GetChartDiffUseCaseTest {
                 ),
             )
 
-            val result = GetChartDiffUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
+            val result = GetChartComparisonUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
             assertTrue(result is UseCaseResult.Success)
             val diff = result.value
 
@@ -377,7 +377,7 @@ class GetChartDiffUseCaseTest {
                 ),
             )
 
-            val result = GetChartDiffUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
+            val result = GetChartComparisonUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
             assertTrue(result is UseCaseResult.Success)
             val diff = result.value
 
@@ -409,7 +409,7 @@ class GetChartDiffUseCaseTest {
                 ),
             )
 
-            val result = GetChartDiffUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
+            val result = GetChartComparisonUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
             assertTrue(result is UseCaseResult.Success)
             val diff = result.value
 
@@ -438,7 +438,7 @@ class GetChartDiffUseCaseTest {
                 ),
             )
 
-            val result = GetChartDiffUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
+            val result = GetChartComparisonUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
             assertTrue(result is UseCaseResult.Success)
             val diff = result.value
 
@@ -486,7 +486,7 @@ class GetChartDiffUseCaseTest {
                 ),
             )
 
-            val result = GetChartDiffUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
+            val result = GetChartComparisonUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
             assertTrue(result is UseCaseResult.Success)
             val diff = result.value
 
@@ -531,7 +531,7 @@ class GetChartDiffUseCaseTest {
                 ),
             )
 
-            val result = GetChartDiffUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
+            val result = GetChartComparisonUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
             assertTrue(result is UseCaseResult.Success)
             val diff = result.value
 
@@ -555,7 +555,7 @@ class GetChartDiffUseCaseTest {
             repo.add(makeRevision("base", layers = listOf(ChartLayer(id = "L1", name = "Main"))))
             repo.add(makeRevision("target", layers = listOf(ChartLayer(id = "L1", name = "Main"))))
 
-            val result = GetChartDiffUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
+            val result = GetChartComparisonUseCase(repo).invoke(baseRevisionId = "base", targetRevisionId = "target")
             assertTrue(result is UseCaseResult.Success)
             val diff = result.value
 
@@ -571,22 +571,22 @@ class GetChartDiffUseCaseTest {
  * paths surface as `error()` to fail loudly if a future refactor accidentally
  * reaches them through this fake.
  */
-private class FakeRepo : ChartRevisionRepository {
-    private val store = mutableMapOf<String, ChartRevision>()
+private class FakeRepo : ChartVersionRepository {
+    private val store = mutableMapOf<String, ChartVersion>()
 
-    fun add(revision: ChartRevision) {
+    fun add(revision: ChartVersion) {
         store[revision.revisionId] = revision
     }
 
-    override suspend fun getRevision(revisionId: String): ChartRevision? = store[revisionId]
+    override suspend fun getRevision(revisionId: String): ChartVersion? = store[revisionId]
 
     override suspend fun getHistoryForPattern(
         patternId: String,
         limit: Int,
         offset: Int,
-    ): List<ChartRevision> = error("Not used by GetChartDiffUseCase")
+    ): List<ChartVersion> = error("Not used by GetChartComparisonUseCase")
 
-    override fun observeHistoryForPattern(patternId: String): Flow<List<ChartRevision>> = flowOf(emptyList())
+    override fun observeHistoryForPattern(patternId: String): Flow<List<ChartVersion>> = flowOf(emptyList())
 
-    override suspend fun append(revision: ChartRevision): ChartRevision = error("Not used by GetChartDiffUseCase")
+    override suspend fun append(revision: ChartVersion): ChartVersion = error("Not used by GetChartComparisonUseCase")
 }

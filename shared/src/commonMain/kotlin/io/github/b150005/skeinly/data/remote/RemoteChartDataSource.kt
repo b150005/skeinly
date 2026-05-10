@@ -1,13 +1,13 @@
 package io.github.b150005.skeinly.data.remote
 
-import io.github.b150005.skeinly.data.sync.RemoteStructuredChartSyncOperations
+import io.github.b150005.skeinly.data.sync.RemoteChartSyncOperations
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.CraftType
 import io.github.b150005.skeinly.domain.model.ReadingConvention
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import io.github.b150005.skeinly.domain.model.StructuredChart
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
@@ -50,8 +50,8 @@ private data class ChartDocumentRecord(
     @SerialName("created_at") val createdAt: Instant,
     @SerialName("updated_at") val updatedAt: Instant,
 ) {
-    fun toDomain(): StructuredChart =
-        StructuredChart(
+    fun toDomain(): Chart =
+        Chart(
             id = id,
             patternId = patternId,
             ownerId = ownerId,
@@ -70,7 +70,7 @@ private data class ChartDocumentRecord(
         )
 }
 
-private fun StructuredChart.toRecord(): ChartDocumentRecord =
+private fun Chart.toRecord(): ChartDocumentRecord =
     ChartDocumentRecord(
         id = id,
         patternId = patternId,
@@ -92,33 +92,33 @@ private fun StructuredChart.toRecord(): ChartDocumentRecord =
         updatedAt = updatedAt,
     )
 
-class RemoteStructuredChartDataSource(
+class RemoteChartDataSource(
     private val supabaseClient: SupabaseClient,
-) : RemoteStructuredChartSyncOperations {
+) : RemoteChartSyncOperations {
     private val table get() = supabaseClient.postgrest["chart_documents"]
 
-    suspend fun getById(id: String): StructuredChart? =
+    suspend fun getById(id: String): Chart? =
         table
             .select {
                 filter { eq("id", id) }
             }.decodeSingleOrNull<ChartDocumentRecord>()
             ?.toDomain()
 
-    suspend fun getByPatternId(patternId: String): StructuredChart? =
+    suspend fun getByPatternId(patternId: String): Chart? =
         table
             .select {
                 filter { eq("pattern_id", patternId) }
             }.decodeSingleOrNull<ChartDocumentRecord>()
             ?.toDomain()
 
-    override suspend fun upsert(chart: StructuredChart): StructuredChart =
+    override suspend fun upsert(chart: Chart): Chart =
         table
             .upsert(chart.toRecord()) {
                 select()
             }.decodeSingle<ChartDocumentRecord>()
             .toDomain()
 
-    override suspend fun update(chart: StructuredChart): StructuredChart =
+    override suspend fun update(chart: Chart): Chart =
         table
             .update(chart.toRecord()) {
                 select()

@@ -39,11 +39,11 @@ struct ChartBranchPickerSheet: View {
     var body: some View {
         NavigationStack {
             content
-                .navigationTitle(LocalizedStringKey("title_branch_picker"))
+                .navigationTitle(LocalizedStringKey("title_variations"))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button(LocalizedStringKey("action_create_branch")) {
+                        Button(LocalizedStringKey("action_create_variation")) {
                             showCreateDialog = true
                         }
                         .accessibilityIdentifier("createBranchCta")
@@ -74,7 +74,7 @@ struct ChartBranchPickerSheet: View {
         let state = holder.state
         if state.branches.isEmpty && !state.isLoading {
             ContentUnavailableView(
-                LocalizedStringKey("state_no_branches"),
+                LocalizedStringKey("state_no_variations"),
                 systemImage: "arrow.triangle.branch"
             )
         } else {
@@ -118,7 +118,7 @@ private struct BranchRow: View {
                 .font(.body)
             Spacer()
             if isCurrent {
-                Label(LocalizedStringKey("label_current_branch"), systemImage: "checkmark")
+                Label(LocalizedStringKey("label_current_variation"), systemImage: "checkmark")
                     .labelStyle(.titleAndIcon)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -143,19 +143,19 @@ private struct CreateBranchDialog: View {
         NavigationStack {
             Form {
                 TextField(
-                    LocalizedStringKey("label_branch_name"),
+                    LocalizedStringKey("label_variation_name"),
                     text: $name
                 )
                 .accessibilityIdentifier("branchNameInput")
             }
-            .navigationTitle(LocalizedStringKey("dialog_create_branch_title"))
+            .navigationTitle(LocalizedStringKey("dialog_create_variation_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(LocalizedStringKey("action_cancel"), action: onDismiss)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(LocalizedStringKey("action_create_branch")) {
+                    Button(LocalizedStringKey("action_create_variation")) {
                         onConfirm(name)
                     }
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)

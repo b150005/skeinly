@@ -1,16 +1,16 @@
 package io.github.b150005.skeinly.domain.usecase
 
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestComment
-import io.github.b150005.skeinly.domain.model.PullRequestStatus
-import io.github.b150005.skeinly.domain.repository.PullRequestRepository
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionComment
+import io.github.b150005.skeinly.domain.model.SuggestionStatus
+import io.github.b150005.skeinly.domain.repository.SuggestionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.time.Clock
 import kotlin.time.Instant
 
 /**
- * In-memory fake of [PullRequestRepository] keyed per ownerId. Each
+ * In-memory fake of [SuggestionRepository] keyed per ownerId. Each
  * `MutableStateFlow` is the live source the observe() use case subscribes to,
  * so test-side calls to [setIncoming] / [setOutgoing] simulate Realtime peer
  * appends landing through the repository's local cache.
@@ -21,11 +21,11 @@ import kotlin.time.Instant
  * accidental cross-test reach surfaces immediately rather than silently
  * passing through a stub.
  */
-class FakePullRequestRepository : PullRequestRepository {
-    private val incoming = mutableMapOf<String, MutableStateFlow<List<PullRequest>>>()
-    private val outgoing = mutableMapOf<String, MutableStateFlow<List<PullRequest>>>()
-    private val byId = mutableMapOf<String, PullRequest>()
-    private val commentFlows = mutableMapOf<String, MutableStateFlow<List<PullRequestComment>>>()
+class FakeSuggestionRepository : SuggestionRepository {
+    private val incoming = mutableMapOf<String, MutableStateFlow<List<Suggestion>>>()
+    private val outgoing = mutableMapOf<String, MutableStateFlow<List<Suggestion>>>()
+    private val byId = mutableMapOf<String, Suggestion>()
+    private val commentFlows = mutableMapOf<String, MutableStateFlow<List<SuggestionComment>>>()
 
     var nextGetIncomingError: Throwable? = null
     var nextGetOutgoingError: Throwable? = null
@@ -36,17 +36,17 @@ class FakePullRequestRepository : PullRequestRepository {
     var nextGetCommentsError: Throwable? = null
 
     /**
-     * Last argument received by [openPullRequest]. Lets tests assert that the
+     * Last argument received by [openSuggestion]. Lets tests assert that the
      * use case computed `commonAncestorRevisionId` correctly without reading
      * a return-only field.
      */
-    var lastOpened: PullRequest? = null
+    var lastOpened: Suggestion? = null
         private set
 
-    var lastClosed: PullRequest? = null
+    var lastClosed: Suggestion? = null
         private set
 
-    var lastPosted: PullRequestComment? = null
+    var lastPosted: SuggestionComment? = null
         private set
 
     var subscribeCount: Int = 0
@@ -60,7 +60,7 @@ class FakePullRequestRepository : PullRequestRepository {
 
     fun setIncoming(
         ownerId: String,
-        prs: List<PullRequest>,
+        prs: List<Suggestion>,
     ) {
         incoming.getOrPut(ownerId) { MutableStateFlow(emptyList()) }.value = prs
         prs.forEach { byId[it.id] = it }
@@ -68,24 +68,24 @@ class FakePullRequestRepository : PullRequestRepository {
 
     fun setOutgoing(
         ownerId: String,
-        prs: List<PullRequest>,
+        prs: List<Suggestion>,
     ) {
         outgoing.getOrPut(ownerId) { MutableStateFlow(emptyList()) }.value = prs
         prs.forEach { byId[it.id] = it }
     }
 
-    fun seedById(pullRequest: PullRequest) {
-        byId[pullRequest.id] = pullRequest
+    fun seedById(suggestion: Suggestion) {
+        byId[suggestion.id] = suggestion
     }
 
     fun setComments(
         prId: String,
-        comments: List<PullRequestComment>,
+        comments: List<SuggestionComment>,
     ) {
         commentFlows.getOrPut(prId) { MutableStateFlow(emptyList()) }.value = comments
     }
 
-    override suspend fun getById(id: String): PullRequest? {
+    override suspend fun getById(id: String): Suggestion? {
         nextGetByIdError?.let {
             nextGetByIdError = null
             throw it
@@ -93,7 +93,7 @@ class FakePullRequestRepository : PullRequestRepository {
         return byId[id]
     }
 
-    override suspend fun getIncomingForOwner(ownerId: String): List<PullRequest> {
+    override suspend fun getIncomingForOwner(ownerId: String): List<Suggestion> {
         nextGetIncomingError?.let {
             nextGetIncomingError = null
             throw it
@@ -101,7 +101,7 @@ class FakePullRequestRepository : PullRequestRepository {
         return incoming[ownerId]?.value.orEmpty()
     }
 
-    override suspend fun getOutgoingForOwner(ownerId: String): List<PullRequest> {
+    override suspend fun getOutgoingForOwner(ownerId: String): List<Suggestion> {
         nextGetOutgoingError?.let {
             nextGetOutgoingError = null
             throw it
@@ -109,43 +109,43 @@ class FakePullRequestRepository : PullRequestRepository {
         return outgoing[ownerId]?.value.orEmpty()
     }
 
-    override fun observeIncomingForOwner(ownerId: String): Flow<List<PullRequest>> =
+    override fun observeIncomingForOwner(ownerId: String): Flow<List<Suggestion>> =
         incoming.getOrPut(ownerId) { MutableStateFlow(emptyList()) }
 
-    override fun observeOutgoingForOwner(ownerId: String): Flow<List<PullRequest>> =
+    override fun observeOutgoingForOwner(ownerId: String): Flow<List<Suggestion>> =
         outgoing.getOrPut(ownerId) { MutableStateFlow(emptyList()) }
 
-    override suspend fun getCommentsForPullRequest(pullRequestId: String): List<PullRequestComment> {
+    override suspend fun getCommentsForSuggestion(suggestionId: String): List<SuggestionComment> {
         nextGetCommentsError?.let {
             nextGetCommentsError = null
             throw it
         }
-        return commentFlows[pullRequestId]?.value.orEmpty()
+        return commentFlows[suggestionId]?.value.orEmpty()
     }
 
-    override fun observeCommentsForPullRequest(pullRequestId: String): Flow<List<PullRequestComment>> =
-        commentFlows.getOrPut(pullRequestId) { MutableStateFlow(emptyList()) }
+    override fun observeCommentsForSuggestion(suggestionId: String): Flow<List<SuggestionComment>> =
+        commentFlows.getOrPut(suggestionId) { MutableStateFlow(emptyList()) }
 
-    override suspend fun openPullRequest(pullRequest: PullRequest): PullRequest {
+    override suspend fun openSuggestion(suggestion: Suggestion): Suggestion {
         nextOpenError?.let {
             nextOpenError = null
             throw it
         }
-        lastOpened = pullRequest
-        byId[pullRequest.id] = pullRequest
-        return pullRequest
+        lastOpened = suggestion
+        byId[suggestion.id] = suggestion
+        return suggestion
     }
 
-    override suspend fun closePullRequest(pullRequest: PullRequest): PullRequest {
+    override suspend fun closeSuggestion(suggestion: Suggestion): Suggestion {
         nextCloseError?.let {
             nextCloseError = null
             throw it
         }
         val now: Instant = Clock.System.now()
         val closed =
-            pullRequest.copy(
-                status = PullRequestStatus.CLOSED,
-                closedAt = pullRequest.closedAt ?: now,
+            suggestion.copy(
+                status = SuggestionStatus.CLOSED,
+                closedAt = suggestion.closedAt ?: now,
                 updatedAt = now,
             )
         lastClosed = closed
@@ -153,20 +153,20 @@ class FakePullRequestRepository : PullRequestRepository {
         return closed
     }
 
-    override suspend fun postComment(comment: PullRequestComment): PullRequestComment {
+    override suspend fun postComment(comment: SuggestionComment): SuggestionComment {
         nextPostCommentError?.let {
             nextPostCommentError = null
             throw it
         }
         lastPosted = comment
-        val flow = commentFlows.getOrPut(comment.pullRequestId) { MutableStateFlow(emptyList()) }
+        val flow = commentFlows.getOrPut(comment.suggestionId) { MutableStateFlow(emptyList()) }
         flow.value = flow.value + comment
         return comment
     }
 
-    override suspend fun subscribeToCommentsChannel(pullRequestId: String) {
+    override suspend fun subscribeToCommentsChannel(suggestionId: String) {
         subscribeCount += 1
-        lastSubscribedPrId = pullRequestId
+        lastSubscribedPrId = suggestionId
     }
 
     override suspend fun closeCommentsChannel() {

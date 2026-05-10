@@ -1,13 +1,13 @@
 -- Phase 37.1: Chart branches (ADR-013 §7). Schema reserved here; UI in 37.4.
 --
--- "main" auto-created by StructuredChartRepository.create on the first save
+-- "main" auto-created by ChartRepository.create on the first save
 -- and again by forkFor on a clone. tip_revision_id mirrors
--- ChartRevisionEntity.revision_id but no FK is declared at the SQLite layer
+-- ChartVersionEntity.revision_id but no FK is declared at the SQLite layer
 -- (Postgres-side has the hard FK; locally we tolerate the brief append-then-
 -- update window where the tip points at a revision that has not yet been
 -- inserted via the Realtime backfill path).
 
-CREATE TABLE ChartBranchEntity (
+CREATE TABLE ChartVariationEntity (
     id TEXT NOT NULL PRIMARY KEY,
     pattern_id TEXT NOT NULL,
     owner_id TEXT NOT NULL,
@@ -19,22 +19,22 @@ CREATE TABLE ChartBranchEntity (
     UNIQUE (pattern_id, branch_name)
 );
 
-CREATE INDEX IF NOT EXISTS idx_chart_branches_pattern_id ON ChartBranchEntity(pattern_id);
+CREATE INDEX IF NOT EXISTS idx_chart_branches_pattern_id ON ChartVariationEntity(pattern_id);
 
 getById:
-SELECT * FROM ChartBranchEntity WHERE id = ?;
+SELECT * FROM ChartVariationEntity WHERE id = ?;
 
 getByPatternIdAndName:
-SELECT * FROM ChartBranchEntity WHERE pattern_id = ? AND branch_name = ?;
+SELECT * FROM ChartVariationEntity WHERE pattern_id = ? AND branch_name = ?;
 
 getByPatternId:
-SELECT * FROM ChartBranchEntity WHERE pattern_id = ? ORDER BY branch_name ASC;
+SELECT * FROM ChartVariationEntity WHERE pattern_id = ? ORDER BY branch_name ASC;
 
 observeByPatternId:
-SELECT * FROM ChartBranchEntity WHERE pattern_id = ? ORDER BY branch_name ASC;
+SELECT * FROM ChartVariationEntity WHERE pattern_id = ? ORDER BY branch_name ASC;
 
 insert:
-INSERT INTO ChartBranchEntity(
+INSERT INTO ChartVariationEntity(
     id,
     pattern_id,
     owner_id,
@@ -48,7 +48,7 @@ INSERT INTO ChartBranchEntity(
 -- two devices race ensureDefaultBranch on the same pattern, INSERT OR IGNORE
 -- preserves the row that landed first without surfacing a constraint error.
 upsert:
-INSERT OR IGNORE INTO ChartBranchEntity(
+INSERT OR IGNORE INTO ChartVariationEntity(
     id,
     pattern_id,
     owner_id,
@@ -59,13 +59,13 @@ INSERT OR IGNORE INTO ChartBranchEntity(
 ) VALUES (?, ?, ?, ?, ?, ?, ?);
 
 updateTip:
-UPDATE ChartBranchEntity
+UPDATE ChartVariationEntity
 SET tip_revision_id = ?,
     updated_at = ?
 WHERE pattern_id = ? AND branch_name = ?;
 
 deleteById:
-DELETE FROM ChartBranchEntity WHERE id = ?;
+DELETE FROM ChartVariationEntity WHERE id = ?;
 
 deleteByPatternId:
-DELETE FROM ChartBranchEntity WHERE pattern_id = ?;
+DELETE FROM ChartVariationEntity WHERE pattern_id = ?;

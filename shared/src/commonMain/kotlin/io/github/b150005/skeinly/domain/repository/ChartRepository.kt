@@ -1,19 +1,19 @@
 package io.github.b150005.skeinly.domain.repository
 
-import io.github.b150005.skeinly.domain.model.ChartRevision
-import io.github.b150005.skeinly.domain.model.StructuredChart
+import io.github.b150005.skeinly.domain.model.Chart
+import io.github.b150005.skeinly.domain.model.ChartVersion
 import kotlinx.coroutines.flow.Flow
 
-interface StructuredChartRepository {
-    suspend fun getByPatternId(patternId: String): StructuredChart?
+interface ChartRepository {
+    suspend fun getByPatternId(patternId: String): Chart?
 
-    fun observeByPatternId(patternId: String): Flow<StructuredChart?>
+    fun observeByPatternId(patternId: String): Flow<Chart?>
 
     suspend fun existsByPatternId(patternId: String): Boolean
 
-    suspend fun create(chart: StructuredChart): StructuredChart
+    suspend fun create(chart: Chart): Chart
 
-    suspend fun update(chart: StructuredChart): StructuredChart
+    suspend fun update(chart: Chart): Chart
 
     suspend fun delete(id: String)
 
@@ -30,14 +30,14 @@ interface StructuredChartRepository {
      *
      * Returns null if the source pattern has no structured chart attached.
      * Throws on storage failure (caller is expected to surface the error
-     * via [io.github.b150005.skeinly.domain.usecase.ForkPublicPatternUseCase]'s
+     * via [io.github.b150005.skeinly.domain.usecase.SavePublicPatternToLibraryUseCase]'s
      * best-effort wrapper per ADR-012 §7).
      */
     suspend fun forkFor(
         sourcePatternId: String,
         newPatternId: String,
         newOwnerId: String,
-    ): StructuredChart?
+    ): Chart?
 
     /**
      * Materialize [targetRevision] as the new tip pointer for [patternId]
@@ -62,6 +62,6 @@ interface StructuredChartRepository {
      */
     suspend fun setTip(
         patternId: String,
-        targetRevision: ChartRevision,
-    ): StructuredChart?
+        targetRevision: ChartVersion,
+    ): Chart?
 }

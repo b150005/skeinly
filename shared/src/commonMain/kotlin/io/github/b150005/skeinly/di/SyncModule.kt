@@ -1,37 +1,37 @@
 package io.github.b150005.skeinly.di
 
-import io.github.b150005.skeinly.data.local.LocalChartRevisionDataSource
+import io.github.b150005.skeinly.data.local.LocalChartVersionDataSource
 import io.github.b150005.skeinly.data.local.LocalPatternDataSource
 import io.github.b150005.skeinly.data.local.LocalPendingSyncDataSource
 import io.github.b150005.skeinly.data.local.LocalProgressDataSource
 import io.github.b150005.skeinly.data.local.LocalProjectDataSource
 import io.github.b150005.skeinly.data.local.LocalProjectSegmentDataSource
-import io.github.b150005.skeinly.data.local.LocalPullRequestDataSource
+import io.github.b150005.skeinly.data.local.LocalSuggestionDataSource
 import io.github.b150005.skeinly.data.local.LocalSymbolPackDataSource
 import io.github.b150005.skeinly.data.realtime.RealtimeChannelProvider
 import io.github.b150005.skeinly.data.remote.ConnectivityMonitor
-import io.github.b150005.skeinly.data.remote.RemoteChartBranchDataSource
-import io.github.b150005.skeinly.data.remote.RemoteChartRevisionDataSource
+import io.github.b150005.skeinly.data.remote.RemoteChartDataSource
+import io.github.b150005.skeinly.data.remote.RemoteChartVariationDataSource
+import io.github.b150005.skeinly.data.remote.RemoteChartVersionDataSource
 import io.github.b150005.skeinly.data.remote.RemotePatternDataSource
 import io.github.b150005.skeinly.data.remote.RemoteProgressDataSource
 import io.github.b150005.skeinly.data.remote.RemoteProjectDataSource
 import io.github.b150005.skeinly.data.remote.RemoteProjectSegmentDataSource
-import io.github.b150005.skeinly.data.remote.RemotePullRequestDataSource
-import io.github.b150005.skeinly.data.remote.RemoteStructuredChartDataSource
+import io.github.b150005.skeinly.data.remote.RemoteSuggestionDataSource
 import io.github.b150005.skeinly.data.remote.SupabaseConfig
 import io.github.b150005.skeinly.data.remote.SymbolPackRemoteOperations
 import io.github.b150005.skeinly.data.remote.isConfigured
 import io.github.b150005.skeinly.data.sync.PendingSyncDataSource
 import io.github.b150005.skeinly.data.sync.RealtimeSyncManager
-import io.github.b150005.skeinly.data.sync.RemoteChartBranchSyncOperations
-import io.github.b150005.skeinly.data.sync.RemoteChartRevisionSyncOperations
+import io.github.b150005.skeinly.data.sync.RemoteChartSyncOperations
+import io.github.b150005.skeinly.data.sync.RemoteChartVariationSyncOperations
+import io.github.b150005.skeinly.data.sync.RemoteChartVersionSyncOperations
 import io.github.b150005.skeinly.data.sync.RemotePatternSyncOperations
 import io.github.b150005.skeinly.data.sync.RemoteProgressSyncOperations
 import io.github.b150005.skeinly.data.sync.RemoteProjectSegmentSyncOperations
 import io.github.b150005.skeinly.data.sync.RemoteProjectSyncOperations
-import io.github.b150005.skeinly.data.sync.RemotePullRequestCommentSyncOperations
-import io.github.b150005.skeinly.data.sync.RemotePullRequestSyncOperations
-import io.github.b150005.skeinly.data.sync.RemoteStructuredChartSyncOperations
+import io.github.b150005.skeinly.data.sync.RemoteSuggestionCommentSyncOperations
+import io.github.b150005.skeinly.data.sync.RemoteSuggestionSyncOperations
 import io.github.b150005.skeinly.data.sync.SymbolPackSyncManager
 import io.github.b150005.skeinly.data.sync.SyncExecutor
 import io.github.b150005.skeinly.data.sync.SyncManager
@@ -53,12 +53,12 @@ val syncModule =
             single<RemoteProjectSyncOperations> { get<RemoteProjectDataSource>() }
             single<RemoteProgressSyncOperations> { get<RemoteProgressDataSource>() }
             single<RemotePatternSyncOperations> { get<RemotePatternDataSource>() }
-            single<RemoteStructuredChartSyncOperations> { get<RemoteStructuredChartDataSource>() }
+            single<RemoteChartSyncOperations> { get<RemoteChartDataSource>() }
             single<RemoteProjectSegmentSyncOperations> { get<RemoteProjectSegmentDataSource>() }
-            single<RemoteChartRevisionSyncOperations> { get<RemoteChartRevisionDataSource>() }
-            single<RemoteChartBranchSyncOperations> { get<RemoteChartBranchDataSource>() }
-            single<RemotePullRequestSyncOperations> { get<RemotePullRequestDataSource>() }
-            single<RemotePullRequestCommentSyncOperations> { get<RemotePullRequestDataSource>() }
+            single<RemoteChartVersionSyncOperations> { get<RemoteChartVersionDataSource>() }
+            single<RemoteChartVariationSyncOperations> { get<RemoteChartVariationDataSource>() }
+            single<RemoteSuggestionSyncOperations> { get<RemoteSuggestionDataSource>() }
+            single<RemoteSuggestionCommentSyncOperations> { get<RemoteSuggestionDataSource>() }
         }
 
         single {
@@ -66,13 +66,13 @@ val syncModule =
                 remoteProject = getOrNull(),
                 remoteProgress = getOrNull(),
                 remotePattern = getOrNull(),
-                remoteStructuredChart = getOrNull(),
+                remoteChart = getOrNull(),
                 json = get(),
                 remoteProjectSegment = getOrNull(),
-                remoteChartRevision = getOrNull(),
-                remoteChartBranch = getOrNull(),
-                remotePullRequest = getOrNull(),
-                remotePullRequestComment = getOrNull(),
+                remoteChartVersion = getOrNull(),
+                remoteChartVariation = getOrNull(),
+                remoteSuggestion = getOrNull(),
+                remoteSuggestionComment = getOrNull(),
             )
         }
 
@@ -111,8 +111,8 @@ val syncModule =
                     authRepository = get<AuthRepository>(),
                     scope = get<CoroutineScope>(applicationScopeQualifier),
                     isOnline = get<ConnectivityMonitor>().isOnline,
-                    localChartRevision = get<LocalChartRevisionDataSource>(),
-                    localPullRequest = get<LocalPullRequestDataSource>(),
+                    localChartVersion = get<LocalChartVersionDataSource>(),
+                    localSuggestion = get<LocalSuggestionDataSource>(),
                 ).also { it.start() }
             }
         }

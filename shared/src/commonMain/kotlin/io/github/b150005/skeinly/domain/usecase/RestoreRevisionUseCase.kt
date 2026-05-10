@@ -1,8 +1,8 @@
 package io.github.b150005.skeinly.domain.usecase
 
-import io.github.b150005.skeinly.domain.model.StructuredChart
-import io.github.b150005.skeinly.domain.repository.ChartRevisionRepository
-import io.github.b150005.skeinly.domain.repository.StructuredChartRepository
+import io.github.b150005.skeinly.domain.model.Chart
+import io.github.b150005.skeinly.domain.repository.ChartRepository
+import io.github.b150005.skeinly.domain.repository.ChartVersionRepository
 import kotlinx.coroutines.CancellationException
 import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
@@ -21,17 +21,17 @@ import kotlin.uuid.Uuid
  * This is the same shape as a regular `update`: append a new revision +
  * advance the tip + advance the current branch. The use case constructs the
  * new chart from the restored revision's drawing fields and calls
- * `StructuredChartRepository.update(...)`, which handles all three.
+ * `ChartRepository.update(...)`, which handles all three.
  */
 @OptIn(ExperimentalUuidApi::class)
 class RestoreRevisionUseCase(
-    private val revisionRepository: ChartRevisionRepository,
-    private val chartRepository: StructuredChartRepository,
+    private val revisionRepository: ChartVersionRepository,
+    private val chartRepository: ChartRepository,
 ) {
     suspend operator fun invoke(
         patternId: String,
         revisionIdToRestore: String,
-    ): UseCaseResult<StructuredChart> =
+    ): UseCaseResult<Chart> =
         try {
             val toRestore = revisionRepository.getRevision(revisionIdToRestore)
             if (toRestore == null) {

@@ -61,7 +61,7 @@ struct PullRequestDetailScreen: View {
         contentView
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("pullRequestDetailScreen")
-            .navigationTitle(LocalizedStringKey("title_pull_request_detail"))
+            .navigationTitle(LocalizedStringKey("title_suggestion_detail"))
             .navigationBarTitleDisplayMode(.inline)
             .onChange(of: holder.state.error != nil) { _, hasError in
             showError = hasError
@@ -75,7 +75,7 @@ struct PullRequestDetailScreen: View {
             }
             .overlay(alignment: .bottom) {
                 if pendingClosedToast {
-                    Text(LocalizedStringKey("message_pr_closed_successfully"))
+                    Text(LocalizedStringKey("message_suggestion_closed_successfully"))
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
                         .background(.regularMaterial)
@@ -83,7 +83,7 @@ struct PullRequestDetailScreen: View {
                         .padding(.bottom, 32)
                         .transition(.opacity)
                 } else if pendingMergedToast {
-                    Text(LocalizedStringKey("message_pr_merged_successfully"))
+                    Text(LocalizedStringKey("message_suggestion_applied_successfully"))
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
                         .background(.regularMaterial)
@@ -100,12 +100,12 @@ struct PullRequestDetailScreen: View {
                         switch event {
                         case is PullRequestDetailNavEventPrClosed:
                             withAnimation { pendingClosedToast = true }
-                            announceToVoiceOver(messageKey: "message_pr_closed_successfully")
+                            announceToVoiceOver(messageKey: "message_suggestion_closed_successfully")
                             try? await Task.sleep(nanoseconds: 2_000_000_000)
                             withAnimation { pendingClosedToast = false }
                         case is PullRequestDetailNavEventPrMerged:
                             withAnimation { pendingMergedToast = true }
-                            announceToVoiceOver(messageKey: "message_pr_merged_successfully")
+                            announceToVoiceOver(messageKey: "message_suggestion_applied_successfully")
                             try? await Task.sleep(nanoseconds: 2_000_000_000)
                             withAnimation { pendingMergedToast = false }
                         case let nav as PullRequestDetailNavEventNavigateToConflictResolution:
@@ -129,21 +129,21 @@ struct PullRequestDetailScreen: View {
                 navEventsCloseable = nil
             }
             .confirmationDialog(
-                LocalizedStringKey("dialog_close_pr_title"),
+                LocalizedStringKey("dialog_close_suggestion_title"),
                 isPresented: closeDialogBinding,
                 titleVisibility: .visible
             ) {
-                Button(LocalizedStringKey("action_close_pr"), role: .destructive) {
+                Button(LocalizedStringKey("action_close_suggestion"), role: .destructive) {
                     viewModel.onEvent(event: PullRequestDetailEventConfirmClose.shared)
                 }
                 Button(LocalizedStringKey("action_cancel"), role: .cancel) {
                     viewModel.onEvent(event: PullRequestDetailEventDismissCloseConfirmation.shared)
                 }
             } message: {
-                Text(LocalizedStringKey("dialog_close_pr_body"))
+                Text(LocalizedStringKey("dialog_close_suggestion_body"))
             }
             .confirmationDialog(
-                LocalizedStringKey("dialog_merge_pr_title"),
+                LocalizedStringKey("dialog_apply_suggestion_title"),
                 isPresented: mergeDialogBinding,
                 titleVisibility: .visible
             ) {
@@ -151,7 +151,7 @@ struct PullRequestDetailScreen: View {
                 // conflict detection → either direct RPC merge (auto-clean)
                 // or push ChartConflictResolutionScreen via the navEvent
                 // collector above.
-                Button(LocalizedStringKey("action_merge_pr")) {
+                Button(LocalizedStringKey("action_apply_suggestion")) {
                     viewModel.onEvent(event: PullRequestDetailEventConfirmMerge.shared)
                 }
                 .disabled(holder.state.isMerging)
@@ -159,7 +159,7 @@ struct PullRequestDetailScreen: View {
                     viewModel.onEvent(event: PullRequestDetailEventDismissMergeConfirmation.shared)
                 }
             } message: {
-                Text(LocalizedStringKey("dialog_merge_pr_body"))
+                Text(LocalizedStringKey("dialog_apply_suggestion_body"))
             }
             // Phase 24.2c-3 (ADR-017 §3.6) — second collaboration-moment
             // trigger: first time PR detail finishes loading. Keyed on the
@@ -247,7 +247,7 @@ struct PullRequestDetailScreen: View {
             }
         } else {
             ContentUnavailableView(
-                LocalizedStringKey("state_pr_not_found"),
+                LocalizedStringKey("state_suggestion_not_found"),
                 systemImage: "questionmark.circle"
             )
         }
@@ -278,7 +278,7 @@ struct PullRequestDetailScreen: View {
     private func descriptionSection(pr: PullRequest) -> some View {
         if let description = pr.description_, !description.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
-                Text(LocalizedStringKey("label_pr_description"))
+                Text(LocalizedStringKey("label_suggestion_description"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Text(verbatim: description)
@@ -296,7 +296,7 @@ struct PullRequestDetailScreen: View {
     @ViewBuilder
     private func diffPreviewSection(pr: PullRequest) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(LocalizedStringKey("label_pr_diff_preview"))
+            Text(LocalizedStringKey("label_suggestion_changes_preview"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Button {
@@ -307,7 +307,7 @@ struct PullRequestDetailScreen: View {
                     )
                 )
             } label: {
-                Text(LocalizedStringKey("label_pr_diff_preview"))
+                Text(LocalizedStringKey("label_suggestion_changes_preview"))
             }
             .buttonStyle(.borderedProminent)
             .accessibilityIdentifier("openDiffButton")
@@ -324,7 +324,7 @@ struct PullRequestDetailScreen: View {
     @ViewBuilder
     private func commentsSection(pr: PullRequest, state: PullRequestDetailState) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(LocalizedStringKey("label_pr_comments"))
+            Text(LocalizedStringKey("label_suggestion_comments"))
                 .font(.headline)
                 .padding(.horizontal, 16)
             ForEach(state.comments, id: \.id) { comment in
@@ -364,7 +364,7 @@ struct PullRequestDetailScreen: View {
     private func commentComposeBox(state: PullRequestDetailState) -> some View {
         HStack(alignment: .center, spacing: 8) {
             TextField(
-                LocalizedStringKey("hint_add_comment_to_pr"),
+                LocalizedStringKey("hint_add_comment_to_suggestion"),
                 text: Binding(
                     get: { state.commentDraft },
                     set: { newValue in
@@ -378,7 +378,7 @@ struct PullRequestDetailScreen: View {
             .lineLimit(1...4)
             .textFieldStyle(.roundedBorder)
             .disabled(state.isSendingComment)
-            .accessibilityLabel(LocalizedStringKey("hint_add_comment_to_pr"))
+            .accessibilityLabel(LocalizedStringKey("hint_add_comment_to_suggestion"))
             .accessibilityIdentifier("commentInputField")
 
             Button(LocalizedStringKey("action_post_comment")) {
@@ -398,14 +398,14 @@ struct PullRequestDetailScreen: View {
         HStack(spacing: 8) {
             Spacer()
             if canClose {
-                Button(LocalizedStringKey("action_close_pr"), role: .destructive) {
+                Button(LocalizedStringKey("action_close_suggestion"), role: .destructive) {
                     viewModel.onEvent(event: PullRequestDetailEventRequestClose.shared)
                 }
                 .buttonStyle(.bordered)
                 .accessibilityIdentifier("closeButton")
             }
             if canMerge {
-                Button(LocalizedStringKey("action_merge_pr")) {
+                Button(LocalizedStringKey("action_apply_suggestion")) {
                     viewModel.onEvent(event: PullRequestDetailEventRequestMerge.shared)
                 }
                 .buttonStyle(.borderedProminent)
@@ -420,7 +420,7 @@ struct PullRequestDetailScreen: View {
     private func authorLine(pr: PullRequest, state: PullRequestDetailState) -> String {
         let resolved = pr.authorId.flatMap { state.users[$0] }?.displayName
             ?? NSLocalizedString("label_someone", comment: "")
-        return String(format: NSLocalizedString("label_pr_authored_by", comment: ""), resolved)
+        return String(format: NSLocalizedString("label_suggestion_authored_by", comment: ""), resolved)
     }
 
     private func formattedTimestamp(_ epochSeconds: Int64) -> String {
@@ -440,9 +440,9 @@ struct PullRequestDetailScreen: View {
 
     private func statusKey(_ status: PullRequestStatus) -> String {
         switch status {
-        case .open: return "label_pr_status_open"
-        case .merged: return "label_pr_status_merged"
-        case .closed: return "label_pr_status_closed"
+        case .open: return "label_suggestion_status_open"
+        case .merged: return "label_suggestion_status_applied"
+        case .closed: return "label_suggestion_status_closed"
         // `default` forced by Kotlin enum→ObjC bridging — same idiom as
         // PullRequestListScreen.swift.
         default: return status.name

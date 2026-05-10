@@ -14,8 +14,8 @@ import io.github.b150005.skeinly.domain.usecase.FakeAuthRepository
 import io.github.b150005.skeinly.domain.usecase.FakePatternRepository
 import io.github.b150005.skeinly.domain.usecase.FakeProjectRepository
 import io.github.b150005.skeinly.domain.usecase.FakeShareRepository
-import io.github.b150005.skeinly.domain.usecase.ForkSharedPatternUseCase
 import io.github.b150005.skeinly.domain.usecase.ResolveShareTokenUseCase
+import io.github.b150005.skeinly.domain.usecase.SaveSharedPatternToLibraryUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -109,12 +109,12 @@ class SharedContentViewModelTest {
         shareId: String? = null,
     ): SharedContentViewModel {
         val resolveShareToken = ResolveShareTokenUseCase(shareRepo, patternRepo, projectRepo)
-        val forkSharedPattern = ForkSharedPatternUseCase(shareRepo, patternRepo, projectRepo, authRepo)
+        val saveSharedPatternToLibrary = SaveSharedPatternToLibraryUseCase(shareRepo, patternRepo, projectRepo, authRepo)
         return SharedContentViewModel(
             token = token,
             shareId = shareId,
             resolveShareToken = resolveShareToken,
-            forkSharedPattern = forkSharedPattern,
+            saveSharedPatternToLibrary = saveSharedPatternToLibrary,
         )
     }
 
@@ -215,12 +215,12 @@ class SharedContentViewModelTest {
     fun `handles null share repository gracefully`() =
         runTest {
             val resolveShareToken = ResolveShareTokenUseCase(null, patternRepo, projectRepo)
-            val forkSharedPattern = ForkSharedPatternUseCase(null, patternRepo, projectRepo, authRepo)
+            val saveSharedPatternToLibrary = SaveSharedPatternToLibraryUseCase(null, patternRepo, projectRepo, authRepo)
             val viewModel =
                 SharedContentViewModel(
                     token = "some-token",
                     resolveShareToken = resolveShareToken,
-                    forkSharedPattern = forkSharedPattern,
+                    saveSharedPatternToLibrary = saveSharedPatternToLibrary,
                 )
 
             val state = viewModel.state.value

@@ -6,12 +6,12 @@ import kotlin.time.Instant
 
 /**
  * A named pointer to a tip revision within a chart's history (ADR-013 §7).
- * "main" is auto-created by [io.github.b150005.skeinly.domain.repository.StructuredChartRepository.create]
+ * "main" is auto-created by [io.github.b150005.skeinly.domain.repository.ChartRepository.create]
  * on first save and again by `forkFor` on a clone. UI for additional
  * branches lands in Phase 37.4.
  */
 @Serializable
-data class ChartBranch(
+data class ChartVariation(
     val id: String,
     @SerialName("pattern_id") val patternId: String,
     @SerialName("owner_id") val ownerId: String,

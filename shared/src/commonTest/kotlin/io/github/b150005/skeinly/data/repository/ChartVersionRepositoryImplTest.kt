@@ -1,6 +1,6 @@
 package io.github.b150005.skeinly.data.repository
 
-import io.github.b150005.skeinly.data.local.LocalChartRevisionDataSource
+import io.github.b150005.skeinly.data.local.LocalChartVersionDataSource
 import io.github.b150005.skeinly.data.sync.FakeSyncManager
 import io.github.b150005.skeinly.data.sync.SyncEntityType
 import io.github.b150005.skeinly.data.sync.SyncOperation
@@ -9,7 +9,7 @@ import io.github.b150005.skeinly.db.createTestDriver
 import io.github.b150005.skeinly.domain.model.ChartCell
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
-import io.github.b150005.skeinly.domain.model.ChartRevision
+import io.github.b150005.skeinly.domain.model.ChartVersion
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.StorageVariant
 import io.github.b150005.skeinly.testJson
@@ -25,10 +25,10 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
-class ChartRevisionRepositoryImplTest {
+class ChartVersionRepositoryImplTest {
     private lateinit var db: SkeinlyDatabase
-    private lateinit var local: LocalChartRevisionDataSource
-    private lateinit var repository: ChartRevisionRepositoryImpl
+    private lateinit var local: LocalChartVersionDataSource
+    private lateinit var repository: ChartVersionRepositoryImpl
     private lateinit var fakeSyncManager: FakeSyncManager
     private val isOnline = MutableStateFlow(false)
 
@@ -36,10 +36,10 @@ class ChartRevisionRepositoryImplTest {
     fun setUp() {
         val driver = createTestDriver()
         db = SkeinlyDatabase(driver)
-        local = LocalChartRevisionDataSource(db, Dispatchers.Unconfined, testJson)
+        local = LocalChartVersionDataSource(db, Dispatchers.Unconfined, testJson)
         fakeSyncManager = FakeSyncManager()
         repository =
-            ChartRevisionRepositoryImpl(
+            ChartVersionRepositoryImpl(
                 local = local,
                 remote = null,
                 isOnline = isOnline,
@@ -56,11 +56,11 @@ class ChartRevisionRepositoryImplTest {
         commitMessage: String? = null,
         createdAtIso: String = "2026-04-25T10:00:00Z",
         cells: List<ChartCell> = listOf(ChartCell(symbolId = "jis.k1", x = 0, y = 0)),
-    ): ChartRevision {
+    ): ChartVersion {
         val createdAt = Instant.parse(createdAtIso)
         val extents = ChartExtents.Rect(0, 0, 0, 0)
         val layers = listOf(ChartLayer(id = "L1", name = "Main", cells = cells))
-        return ChartRevision(
+        return ChartVersion(
             id = id,
             patternId = patternId,
             ownerId = "user-1",
@@ -269,7 +269,7 @@ class ChartRevisionRepositoryImplTest {
             repository.append(revision)
             // Simulate the Realtime backfill arriving with the same revision_id
             // after the local insert already landed. INSERT OR IGNORE in
-            // ChartRevisionEntity makes this a silent no-op rather than a
+            // ChartVersionEntity makes this a silent no-op rather than a
             // constraint violation.
             local.upsert(revision)
 
@@ -291,7 +291,7 @@ class ChartRevisionRepositoryImplTest {
             val revision = testRevision()
             repository.append(revision)
             // Pretend the remote round-trip echoes the same revision back through
-            // the LocalChartRevisionDataSource.upsert path used by RealtimeSyncManager.
+            // the LocalChartVersionDataSource.upsert path used by RealtimeSyncManager.
             local.upsert(revision)
 
             assertEquals(1, local.countForPattern("pat-1"))

@@ -1,9 +1,9 @@
 package io.github.b150005.skeinly.data.remote
 
-import io.github.b150005.skeinly.data.sync.RemoteChartRevisionSyncOperations
+import io.github.b150005.skeinly.data.sync.RemoteChartVersionSyncOperations
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
-import io.github.b150005.skeinly.domain.model.ChartRevision
+import io.github.b150005.skeinly.domain.model.ChartVersion
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.CraftType
 import io.github.b150005.skeinly.domain.model.ReadingConvention
@@ -29,7 +29,7 @@ private data class RevisionDocumentPayload(
 )
 
 @Serializable
-private data class ChartRevisionRecord(
+private data class ChartVersionRecord(
     val id: String,
     @SerialName("pattern_id") val patternId: String,
     @SerialName("owner_id") val ownerId: String,
@@ -44,8 +44,8 @@ private data class ChartRevisionRecord(
     @SerialName("commit_message") val commitMessage: String?,
     @SerialName("created_at") val createdAt: Instant,
 ) {
-    fun toDomain(): ChartRevision =
-        ChartRevision(
+    fun toDomain(): ChartVersion =
+        ChartVersion(
             id = id,
             patternId = patternId,
             ownerId = ownerId,
@@ -65,8 +65,8 @@ private data class ChartRevisionRecord(
         )
 }
 
-private fun ChartRevision.toRecord(): ChartRevisionRecord =
-    ChartRevisionRecord(
+private fun ChartVersion.toRecord(): ChartVersionRecord =
+    ChartVersionRecord(
         id = id,
         patternId = patternId,
         ownerId = ownerId,
@@ -88,29 +88,29 @@ private fun ChartRevision.toRecord(): ChartRevisionRecord =
         createdAt = createdAt,
     )
 
-class RemoteChartRevisionDataSource(
+class RemoteChartVersionDataSource(
     private val supabaseClient: SupabaseClient,
-) : RemoteChartRevisionSyncOperations {
-    private val table get() = supabaseClient.postgrest["chart_revisions"]
+) : RemoteChartVersionSyncOperations {
+    private val table get() = supabaseClient.postgrest["chart_versions"]
 
-    suspend fun getByRevisionId(revisionId: String): ChartRevision? =
+    suspend fun getByRevisionId(revisionId: String): ChartVersion? =
         table
             .select {
                 filter { eq("revision_id", revisionId) }
-            }.decodeSingleOrNull<ChartRevisionRecord>()
+            }.decodeSingleOrNull<ChartVersionRecord>()
             ?.toDomain()
 
     suspend fun getHistoryForPattern(
         patternId: String,
         limit: Int,
         offset: Int,
-    ): List<ChartRevision> =
+    ): List<ChartVersion> =
         table
             .select {
                 filter { eq("pattern_id", patternId) }
                 order("created_at", Order.DESCENDING)
                 range(offset.toLong(), (offset + limit - 1).toLong())
-            }.decodeList<ChartRevisionRecord>()
+            }.decodeList<ChartVersionRecord>()
             .map { it.toDomain() }
 
     /**
@@ -131,14 +131,14 @@ class RemoteChartRevisionDataSource(
      * back to the input revision since the on-disk row is byte-identical
      * to it by virtue of being the same revision_id.
      */
-    override suspend fun append(revision: ChartRevision): ChartRevision {
+    override suspend fun append(revision: ChartVersion): ChartVersion {
         val result =
             table
                 .upsert(revision.toRecord()) {
                     onConflict = "revision_id"
                     ignoreDuplicates = true
                     select()
-                }.decodeSingleOrNull<ChartRevisionRecord>()
+                }.decodeSingleOrNull<ChartVersionRecord>()
         return result?.toDomain() ?: revision
     }
 }

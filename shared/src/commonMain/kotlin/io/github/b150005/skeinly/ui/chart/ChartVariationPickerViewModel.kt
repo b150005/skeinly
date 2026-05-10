@@ -2,12 +2,12 @@ package io.github.b150005.skeinly.ui.chart
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.b150005.skeinly.domain.model.ChartBranch
+import io.github.b150005.skeinly.domain.model.ChartVariation
 import io.github.b150005.skeinly.domain.repository.AuthRepository
-import io.github.b150005.skeinly.domain.repository.StructuredChartRepository
+import io.github.b150005.skeinly.domain.repository.ChartRepository
 import io.github.b150005.skeinly.domain.usecase.CreateBranchUseCase
 import io.github.b150005.skeinly.domain.usecase.ErrorMessage
-import io.github.b150005.skeinly.domain.usecase.GetChartBranchesUseCase
+import io.github.b150005.skeinly.domain.usecase.GetChartVariationesUseCase
 import io.github.b150005.skeinly.domain.usecase.SwitchBranchUseCase
 import io.github.b150005.skeinly.domain.usecase.UseCaseResult
 import io.github.b150005.skeinly.domain.usecase.toErrorMessage
@@ -34,25 +34,25 @@ import kotlinx.coroutines.launch
  * The "current branch" is derived from the materialized chart's `revisionId`:
  * a branch whose `tipRevisionId` matches is "current". When two branches share
  * a tip (immediately after `createBranch`), the picker highlights both — same
- * model as `StructuredChartRepositoryImpl.advanceCurrentBranchTip`.
+ * model as `ChartRepositoryImpl.advanceCurrentBranchTip`.
  */
-data class ChartBranchPickerState(
-    val branches: List<ChartBranch> = emptyList(),
+data class ChartVariationPickerState(
+    val branches: List<ChartVariation> = emptyList(),
     val currentRevisionId: String? = null,
     val isLoading: Boolean = true,
     val error: ErrorMessage? = null,
 )
 
-sealed interface ChartBranchPickerEvent {
+sealed interface ChartVariationPickerEvent {
     data class CreateBranch(
         val branchName: String,
-    ) : ChartBranchPickerEvent
+    ) : ChartVariationPickerEvent
 
     data class SwitchBranch(
         val branchName: String,
-    ) : ChartBranchPickerEvent
+    ) : ChartVariationPickerEvent
 
-    data object ClearError : ChartBranchPickerEvent
+    data object ClearError : ChartVariationPickerEvent
 }
 
 /**
@@ -69,16 +69,16 @@ data class BranchSwitchedEvent(
     val branchName: String,
 )
 
-class ChartBranchPickerViewModel(
+class ChartVariationPickerViewModel(
     private val patternId: String,
-    private val getBranches: GetChartBranchesUseCase,
+    private val getBranches: GetChartVariationesUseCase,
     private val createBranch: CreateBranchUseCase,
     private val switchBranch: SwitchBranchUseCase,
-    private val chartRepository: StructuredChartRepository,
+    private val chartRepository: ChartRepository,
     private val authRepository: AuthRepository,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(ChartBranchPickerState())
-    val state: StateFlow<ChartBranchPickerState> = _state.asStateFlow()
+    private val _state = MutableStateFlow(ChartVariationPickerState())
+    val state: StateFlow<ChartVariationPickerState> = _state.asStateFlow()
 
     private val _branchSwitched = Channel<BranchSwitchedEvent>(Channel.BUFFERED)
     val branchSwitched: Flow<BranchSwitchedEvent> = _branchSwitched.receiveAsFlow()
@@ -93,7 +93,7 @@ class ChartBranchPickerViewModel(
             getBranches.observe(patternId),
             chartRepository.observeByPatternId(patternId),
         ) { branches, chart ->
-            ChartBranchPickerState(
+            ChartVariationPickerState(
                 branches = branches,
                 currentRevisionId = chart?.revisionId,
                 isLoading = false,
@@ -108,11 +108,11 @@ class ChartBranchPickerViewModel(
         }.launchIn(viewModelScope)
     }
 
-    fun onEvent(event: ChartBranchPickerEvent) {
+    fun onEvent(event: ChartVariationPickerEvent) {
         when (event) {
-            is ChartBranchPickerEvent.CreateBranch -> handleCreateBranch(event.branchName)
-            is ChartBranchPickerEvent.SwitchBranch -> handleSwitchBranch(event.branchName)
-            ChartBranchPickerEvent.ClearError -> _state.update { it.copy(error = null) }
+            is ChartVariationPickerEvent.CreateBranch -> handleCreateBranch(event.branchName)
+            is ChartVariationPickerEvent.SwitchBranch -> handleSwitchBranch(event.branchName)
+            ChartVariationPickerEvent.ClearError -> _state.update { it.copy(error = null) }
         }
     }
 

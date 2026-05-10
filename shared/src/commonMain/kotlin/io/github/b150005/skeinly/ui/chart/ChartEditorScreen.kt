@@ -1090,20 +1090,20 @@ private fun PolarEditorCanvas(
 
     // Minimal viewer-style chart for the renderers' drawPolarCells signature.
     // drawPolarCells only reads `chart.layers` (for the iteration + visible /
-    // hiddenLayerIds filter) — the rest of StructuredChart is unused. We feed
+    // hiddenLayerIds filter) — the rest of Chart is unused. We feed
     // stub values for id/patternId/ownerId/revision/hash and DISTANT_PAST
     // timestamps so the editor does not need the full chart construction path
     // during tap-to-place authoring. If a future drawPolarCells refactor starts
-    // reading any other StructuredChart field (coordinateSystem, revisionId,
+    // reading any other Chart field (coordinateSystem, revisionId,
     // contentHash, createdAt, updatedAt, ...), update this stub accordingly.
     val draftChart =
         remember(layers, extents) {
             io.github.b150005.skeinly.domain.model
-                .StructuredChart(
+                .Chart(
                     id = "editor-draft",
                     patternId = "",
                     ownerId = "",
-                    schemaVersion = io.github.b150005.skeinly.domain.model.StructuredChart.CURRENT_SCHEMA_VERSION,
+                    schemaVersion = io.github.b150005.skeinly.domain.model.Chart.CURRENT_SCHEMA_VERSION,
                     storageVariant = io.github.b150005.skeinly.domain.model.StorageVariant.INLINE,
                     coordinateSystem = io.github.b150005.skeinly.domain.model.CoordinateSystem.POLAR_ROUND,
                     extents = extents,

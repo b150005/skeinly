@@ -1,20 +1,20 @@
 package io.github.b150005.skeinly.data.repository
 
-import io.github.b150005.skeinly.data.local.LocalChartBranchDataSource
-import io.github.b150005.skeinly.data.local.LocalChartRevisionDataSource
-import io.github.b150005.skeinly.data.local.LocalStructuredChartDataSource
+import io.github.b150005.skeinly.data.local.LocalChartDataSource
+import io.github.b150005.skeinly.data.local.LocalChartVariationDataSource
+import io.github.b150005.skeinly.data.local.LocalChartVersionDataSource
 import io.github.b150005.skeinly.data.sync.FakeSyncManager
 import io.github.b150005.skeinly.data.sync.SyncEntityType
 import io.github.b150005.skeinly.data.sync.SyncOperation
 import io.github.b150005.skeinly.db.SkeinlyDatabase
 import io.github.b150005.skeinly.db.createTestDriver
-import io.github.b150005.skeinly.domain.model.ChartBranch
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartCell
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
+import io.github.b150005.skeinly.domain.model.ChartVariation
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import io.github.b150005.skeinly.domain.model.StructuredChart
 import io.github.b150005.skeinly.testJson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,9 +30,9 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
-class StructuredChartRepositoryImplTest {
+class ChartRepositoryImplTest {
     private lateinit var db: SkeinlyDatabase
-    private lateinit var repository: StructuredChartRepositoryImpl
+    private lateinit var repository: ChartRepositoryImpl
     private lateinit var fakeSyncManager: FakeSyncManager
     private val isOnline = MutableStateFlow(false)
 
@@ -42,8 +42,8 @@ class StructuredChartRepositoryImplTest {
         db = SkeinlyDatabase(driver)
         fakeSyncManager = FakeSyncManager()
         repository =
-            StructuredChartRepositoryImpl(
-                local = LocalStructuredChartDataSource(db, Dispatchers.Unconfined, testJson),
+            ChartRepositoryImpl(
+                local = LocalChartDataSource(db, Dispatchers.Unconfined, testJson),
                 remote = null,
                 isOnline = isOnline,
                 syncManager = fakeSyncManager,
@@ -62,21 +62,21 @@ class StructuredChartRepositoryImplTest {
                     cells = listOf(ChartCell(symbolId = "jis.k1", x = 0, y = 0)),
                 ),
             ),
-    ): StructuredChart {
+    ): Chart {
         val now = Instant.parse("2026-04-17T10:00:00Z")
         val extents = ChartExtents.Rect(0, 0, 0, 0)
-        return StructuredChart(
+        return Chart(
             id = id,
             patternId = patternId,
             ownerId = "user-1",
-            schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+            schemaVersion = Chart.CURRENT_SCHEMA_VERSION,
             storageVariant = StorageVariant.INLINE,
             coordinateSystem = CoordinateSystem.RECT_GRID,
             extents = extents,
             layers = layers,
             revisionId = "rev-a",
             parentRevisionId = null,
-            contentHash = StructuredChart.computeContentHash(extents, layers, testJson),
+            contentHash = Chart.computeContentHash(extents, layers, testJson),
             createdAt = now,
             updatedAt = now,
         )
@@ -197,7 +197,7 @@ class StructuredChartRepositoryImplTest {
             val chart = testChart()
             repository.create(chart)
             // Simulate a corrupt document column by direct SQLite update
-            db.structuredChartQueries.update(
+            db.chartQueries.update(
                 schema_version = 1L,
                 storage_variant = "inline",
                 coordinate_system = "rect_grid",
@@ -224,7 +224,7 @@ class StructuredChartRepositoryImplTest {
             // Remote returns the same logical chart with a different id
             val remoteChart = testChart(id = "remote-uuid", patternId = "pat-1")
             // upsert is an internal DS method — exercise via the local DS directly
-            LocalStructuredChartDataSource(db, Dispatchers.Unconfined, testJson).upsert(remoteChart)
+            LocalChartDataSource(db, Dispatchers.Unconfined, testJson).upsert(remoteChart)
 
             val retrieved = repository.getByPatternId("pat-1")
             assertNotNull(retrieved)
@@ -390,18 +390,18 @@ class StructuredChartRepositoryImplTest {
             val extents = ChartExtents.Polar(rings = 3, stitchesPerRing = listOf(6, 12, 18))
             val layers = listOf(ChartLayer(id = "L", name = "L"))
             val chart =
-                StructuredChart(
+                Chart(
                     id = "chart-polar",
                     patternId = "pat-polar",
                     ownerId = "user-1",
-                    schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+                    schemaVersion = Chart.CURRENT_SCHEMA_VERSION,
                     storageVariant = StorageVariant.INLINE,
                     coordinateSystem = CoordinateSystem.POLAR_ROUND,
                     extents = extents,
                     layers = layers,
                     revisionId = "rev-polar",
                     parentRevisionId = null,
-                    contentHash = StructuredChart.computeContentHash(extents, layers, testJson),
+                    contentHash = Chart.computeContentHash(extents, layers, testJson),
                     createdAt = now,
                     updatedAt = now,
                 )
@@ -420,11 +420,11 @@ class StructuredChartRepositoryImplTest {
     // repo with the new dependencies wired so the append + branch behavior
     // surfaces in isolation.
 
-    private fun setUpWithHistory(): Triple<StructuredChartRepositoryImpl, LocalChartRevisionDataSource, LocalChartBranchDataSource> {
-        val revisionLocal = LocalChartRevisionDataSource(db, Dispatchers.Unconfined, testJson)
-        val branchLocal = LocalChartBranchDataSource(db, Dispatchers.Unconfined)
+    private fun setUpWithHistory(): Triple<ChartRepositoryImpl, LocalChartVersionDataSource, LocalChartVariationDataSource> {
+        val revisionLocal = LocalChartVersionDataSource(db, Dispatchers.Unconfined, testJson)
+        val branchLocal = LocalChartVariationDataSource(db, Dispatchers.Unconfined)
         val revisionRepo =
-            ChartRevisionRepositoryImpl(
+            ChartVersionRepositoryImpl(
                 local = revisionLocal,
                 remote = null,
                 isOnline = isOnline,
@@ -432,14 +432,14 @@ class StructuredChartRepositoryImplTest {
                 json = testJson,
             )
         val repoWithHistory =
-            StructuredChartRepositoryImpl(
-                local = LocalStructuredChartDataSource(db, Dispatchers.Unconfined, testJson),
+            ChartRepositoryImpl(
+                local = LocalChartDataSource(db, Dispatchers.Unconfined, testJson),
                 remote = null,
                 isOnline = isOnline,
                 syncManager = fakeSyncManager,
                 json = testJson,
-                chartRevisionRepository = revisionRepo,
-                localChartBranch = branchLocal,
+                chartVersionRepository = revisionRepo,
+                localChartVariation = branchLocal,
             )
         return Triple(repoWithHistory, revisionLocal, branchLocal)
     }
@@ -473,7 +473,7 @@ class StructuredChartRepositoryImplTest {
             val branches = branchLocal.getByPatternId(chart.patternId)
             assertEquals(1, branches.size)
             val main = branches.first()
-            assertEquals(ChartBranch.DEFAULT_BRANCH_NAME, main.branchName)
+            assertEquals(ChartVariation.DEFAULT_BRANCH_NAME, main.branchName)
             assertEquals(chart.revisionId, main.tipRevisionId)
             assertEquals(chart.ownerId, main.ownerId)
         }
@@ -576,7 +576,7 @@ class StructuredChartRepositoryImplTest {
             // Fork's main branch points at the cloned revision.
             val forkBranches = branchLocal.getByPatternId("pat-fork")
             assertEquals(1, forkBranches.size)
-            assertEquals(ChartBranch.DEFAULT_BRANCH_NAME, forkBranches.first().branchName)
+            assertEquals(ChartVariation.DEFAULT_BRANCH_NAME, forkBranches.first().branchName)
             assertEquals(cloned.revisionId, forkBranches.first().tipRevisionId)
         }
 
@@ -595,11 +595,11 @@ class StructuredChartRepositoryImplTest {
 
     // ---- Phase 37.4 (ADR-013 §7): branch tip advance + setTip ----
 
-    private fun setUpWithBranches(): Triple<StructuredChartRepositoryImpl, LocalChartBranchDataSource, ChartBranchRepositoryImpl> {
-        val revisionLocal = LocalChartRevisionDataSource(db, Dispatchers.Unconfined, testJson)
-        val branchLocal = LocalChartBranchDataSource(db, Dispatchers.Unconfined)
+    private fun setUpWithBranches(): Triple<ChartRepositoryImpl, LocalChartVariationDataSource, ChartVariationRepositoryImpl> {
+        val revisionLocal = LocalChartVersionDataSource(db, Dispatchers.Unconfined, testJson)
+        val branchLocal = LocalChartVariationDataSource(db, Dispatchers.Unconfined)
         val revisionRepo =
-            ChartRevisionRepositoryImpl(
+            ChartVersionRepositoryImpl(
                 local = revisionLocal,
                 remote = null,
                 isOnline = isOnline,
@@ -607,21 +607,21 @@ class StructuredChartRepositoryImplTest {
                 json = testJson,
             )
         val branchRepo =
-            ChartBranchRepositoryImpl(
+            ChartVariationRepositoryImpl(
                 local = branchLocal,
                 syncManager = fakeSyncManager,
                 json = testJson,
             )
         val repoWithBranches =
-            StructuredChartRepositoryImpl(
-                local = LocalStructuredChartDataSource(db, Dispatchers.Unconfined, testJson),
+            ChartRepositoryImpl(
+                local = LocalChartDataSource(db, Dispatchers.Unconfined, testJson),
                 remote = null,
                 isOnline = isOnline,
                 syncManager = fakeSyncManager,
                 json = testJson,
-                chartRevisionRepository = revisionRepo,
-                localChartBranch = branchLocal,
-                chartBranchRepository = branchRepo,
+                chartVersionRepository = revisionRepo,
+                localChartVariation = branchLocal,
+                chartVariationRepository = branchRepo,
             )
         return Triple(repoWithBranches, branchLocal, branchRepo)
     }
@@ -642,7 +642,7 @@ class StructuredChartRepositoryImplTest {
             repo.update(edited)
 
             val main =
-                branchLocal.getByPatternIdAndName(initial.patternId, ChartBranch.DEFAULT_BRANCH_NAME)
+                branchLocal.getByPatternIdAndName(initial.patternId, ChartVariation.DEFAULT_BRANCH_NAME)
             assertNotNull(main)
             assertEquals("rev-b", main.tipRevisionId)
         }
@@ -656,7 +656,7 @@ class StructuredChartRepositoryImplTest {
             // Branch off main at the same tip.
             val mintedAt = Instant.parse("2026-04-18T09:00:00Z")
             val featureBranch =
-                ChartBranch(
+                ChartVariation(
                     id = "branch-feature",
                     patternId = initial.patternId,
                     ownerId = initial.ownerId,
@@ -677,7 +677,7 @@ class StructuredChartRepositoryImplTest {
             repo.update(edited)
 
             val main =
-                branchLocal.getByPatternIdAndName(initial.patternId, ChartBranch.DEFAULT_BRANCH_NAME)
+                branchLocal.getByPatternIdAndName(initial.patternId, ChartVariation.DEFAULT_BRANCH_NAME)
             val feature =
                 branchLocal.getByPatternIdAndName(initial.patternId, "feature")
             assertNotNull(main)
@@ -701,7 +701,7 @@ class StructuredChartRepositoryImplTest {
             // its mutex and rewrites it from this revision, preserving the
             // current row's `id`.
             val targetRevision =
-                io.github.b150005.skeinly.domain.model.ChartRevision(
+                io.github.b150005.skeinly.domain.model.ChartVersion(
                     id = "rev-row-other",
                     patternId = initial.patternId,
                     ownerId = initial.ownerId,

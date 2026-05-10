@@ -125,7 +125,7 @@ struct SharedContentScreen: View {
                             if state.isForkInProgress {
                                 ProgressView()
                             }
-                            Text(LocalizedStringKey("action_fork_to_projects"))
+                            Text(LocalizedStringKey("action_save_copy_to_projects"))
                         }
                         .frame(maxWidth: .infinity)
                     }

@@ -1,9 +1,9 @@
 package io.github.b150005.skeinly.domain.usecase
 
-import io.github.b150005.skeinly.domain.chart.ChartDiffAlgorithm
-import io.github.b150005.skeinly.domain.model.ChartDiff
-import io.github.b150005.skeinly.domain.model.toStructuredChart
-import io.github.b150005.skeinly.domain.repository.ChartRevisionRepository
+import io.github.b150005.skeinly.domain.chart.ChartComparisonAlgorithm
+import io.github.b150005.skeinly.domain.model.ChartComparison
+import io.github.b150005.skeinly.domain.model.toChart
+import io.github.b150005.skeinly.domain.repository.ChartVersionRepository
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
@@ -20,13 +20,13 @@ import kotlin.coroutines.cancellation.CancellationException
  *   than silently degrading to "initial commit" treatment (the two are
  *   semantically distinct — degrading would hide a sync drift).
  */
-class GetChartDiffUseCase(
-    private val repository: ChartRevisionRepository,
+class GetChartComparisonUseCase(
+    private val repository: ChartVersionRepository,
 ) {
     suspend operator fun invoke(
         baseRevisionId: String?,
         targetRevisionId: String,
-    ): UseCaseResult<ChartDiff> =
+    ): UseCaseResult<ChartComparison> =
         try {
             val target =
                 repository.getRevision(targetRevisionId)
@@ -43,14 +43,14 @@ class GetChartDiffUseCase(
                         )
                 }
             UseCaseResult.Success(
-                ChartDiffAlgorithm.diff(
-                    base = base?.toStructuredChart(),
-                    target = target.toStructuredChart(),
+                ChartComparisonAlgorithm.diff(
+                    base = base?.toChart(),
+                    target = target.toChart(),
                 ),
             )
         } catch (e: CancellationException) {
             // Codebase-wide invariant — never swallow CancellationException.
-            // Same precedent as ForkPublicPatternUseCase. Without this, navigating
+            // Same precedent as SavePublicPatternToLibraryUseCase. Without this, navigating
             // away mid-load surfaces a stale Snackbar on the next destination.
             throw e
         } catch (e: Exception) {

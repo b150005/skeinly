@@ -28,7 +28,7 @@ import kotlin.time.Clock
  */
 class MarkRowSegmentsDoneUseCase(
     private val repository: ProjectSegmentRepository,
-    private val getStructuredChart: GetStructuredChartByPatternIdUseCase,
+    private val getChart: GetChartByPatternIdUseCase,
     private val authRepository: AuthRepository?,
     private val clock: Clock = Clock.System,
 ) {
@@ -39,7 +39,7 @@ class MarkRowSegmentsDoneUseCase(
         hiddenLayerIds: Set<String> = emptySet(),
     ): UseCaseResult<Unit> =
         try {
-            when (val chartResult = getStructuredChart(patternId)) {
+            when (val chartResult = getChart(patternId)) {
                 is UseCaseResult.Failure -> chartResult
                 is UseCaseResult.Success -> {
                     val chart = chartResult.value

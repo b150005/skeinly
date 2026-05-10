@@ -7,16 +7,16 @@ import kotlinx.serialization.json.JsonElement
  * `merge_pull_request` RPC.
  *
  * Lives in the domain layer so
- * [io.github.b150005.skeinly.domain.usecase.MergePullRequestUseCase] can be
+ * [io.github.b150005.skeinly.domain.usecase.ApplySuggestionUseCase] can be
  * unit tested without standing up a Supabase client. Production wiring is
- * `RemotePullRequestDataSource.merge` which routes through
+ * `RemoteSuggestionDataSource.merge` which routes through
  * `supabaseClient.postgrest.rpc(...)`; tests provide an in-memory fake.
  *
  * Same layering convention as the other ports under this package
- * ([ChartRevisionRepository], [StructuredChartRepository], etc.) — the
+ * ([ChartVersionRepository], [ChartRepository], etc.) — the
  * domain layer defines the contract; data-layer adapters implement it.
  */
-interface PullRequestMergeOperations {
+interface SuggestionMergeOperations {
     /**
      * Invoke the merge RPC. Returns the new revision id the RPC minted
      * (matches [resolvedRevisionId] on success). Throws on RPC errors which
@@ -24,7 +24,7 @@ interface PullRequestMergeOperations {
      * [io.github.b150005.skeinly.domain.usecase.UseCaseError] subtypes.
      */
     suspend fun merge(
-        pullRequestId: String,
+        suggestionId: String,
         strategy: String,
         mergedDocument: JsonElement,
         mergedContentHash: String,

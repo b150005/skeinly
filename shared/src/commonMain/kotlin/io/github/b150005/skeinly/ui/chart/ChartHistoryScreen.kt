@@ -34,15 +34,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import io.github.b150005.skeinly.domain.model.ChartRevision
+import io.github.b150005.skeinly.domain.model.ChartVersion
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_back
 import io.github.b150005.skeinly.generated.resources.action_cancel
-import io.github.b150005.skeinly.generated.resources.action_restore_revision
-import io.github.b150005.skeinly.generated.resources.dialog_restore_revision_body
-import io.github.b150005.skeinly.generated.resources.dialog_restore_revision_title
+import io.github.b150005.skeinly.generated.resources.action_restore_version
+import io.github.b150005.skeinly.generated.resources.dialog_restore_version_body
+import io.github.b150005.skeinly.generated.resources.dialog_restore_version_title
 import io.github.b150005.skeinly.generated.resources.label_auto_save
-import io.github.b150005.skeinly.generated.resources.label_initial_commit
+import io.github.b150005.skeinly.generated.resources.label_initial_version
 import io.github.b150005.skeinly.generated.resources.state_no_chart_history
 import io.github.b150005.skeinly.generated.resources.state_no_chart_history_body
 import io.github.b150005.skeinly.generated.resources.title_chart_history
@@ -56,7 +56,7 @@ import org.koin.core.parameter.parametersOf
 /**
  * Phase 37.2 (ADR-013 §6) — newest-first commit history for a chart.
  *
- * `onRevisionClick(baseRevisionId, targetRevisionId)` routes to `ChartDiffScreen`.
+ * `onRevisionClick(baseRevisionId, targetRevisionId)` routes to `ChartComparisonScreen`.
  * The ViewModel resolves `baseRevisionId` from the tapped row's
  * `parentRevisionId` so this callback is forwarded straight through with no
  * lookup at the screen layer; iOS mirror reuses the identical contract.
@@ -168,14 +168,14 @@ private fun RestoreRevisionDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         modifier = Modifier.testTag("restoreRevisionDialog"),
-        title = { Text(stringResource(Res.string.dialog_restore_revision_title)) },
-        text = { Text(stringResource(Res.string.dialog_restore_revision_body)) },
+        title = { Text(stringResource(Res.string.dialog_restore_version_title)) },
+        text = { Text(stringResource(Res.string.dialog_restore_version_body)) },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
                 modifier = Modifier.testTag("confirmRestoreRevisionButton"),
             ) {
-                Text(stringResource(Res.string.action_restore_revision))
+                Text(stringResource(Res.string.action_restore_version))
             }
         },
         dismissButton = {
@@ -189,7 +189,7 @@ private fun RestoreRevisionDialog(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun RevisionRow(
-    revision: ChartRevision,
+    revision: ChartVersion,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
@@ -198,7 +198,7 @@ private fun RevisionRow(
     val headline =
         authorMessage
             ?: stringResource(
-                if (isInitialCommit) Res.string.label_initial_commit else Res.string.label_auto_save,
+                if (isInitialCommit) Res.string.label_initial_version else Res.string.label_auto_save,
             )
     val timestamp = revision.createdAt.formatFull()
 
@@ -210,7 +210,7 @@ private fun RevisionRow(
                     role = Role.Button,
                     onClick = onClick,
                     onLongClick = onLongClick,
-                    onLongClickLabel = stringResource(Res.string.action_restore_revision),
+                    onLongClickLabel = stringResource(Res.string.action_restore_version),
                 ).testTag("revisionRow_${revision.revisionId}")
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),

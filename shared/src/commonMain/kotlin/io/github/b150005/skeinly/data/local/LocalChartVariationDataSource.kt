@@ -4,19 +4,19 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import io.github.b150005.skeinly.data.mapper.toDomain
 import io.github.b150005.skeinly.db.SkeinlyDatabase
-import io.github.b150005.skeinly.domain.model.ChartBranch
+import io.github.b150005.skeinly.domain.model.ChartVariation
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
-class LocalChartBranchDataSource(
+class LocalChartVariationDataSource(
     private val db: SkeinlyDatabase,
     private val ioDispatcher: CoroutineDispatcher,
 ) {
-    private val queries get() = db.chartBranchQueries
+    private val queries get() = db.chartVariationQueries
 
-    suspend fun getById(id: String): ChartBranch? =
+    suspend fun getById(id: String): ChartVariation? =
         withContext(ioDispatcher) {
             queries.getById(id).executeAsOneOrNull()?.toDomain()
         }
@@ -24,24 +24,24 @@ class LocalChartBranchDataSource(
     suspend fun getByPatternIdAndName(
         patternId: String,
         branchName: String,
-    ): ChartBranch? =
+    ): ChartVariation? =
         withContext(ioDispatcher) {
             queries.getByPatternIdAndName(patternId, branchName).executeAsOneOrNull()?.toDomain()
         }
 
-    suspend fun getByPatternId(patternId: String): List<ChartBranch> =
+    suspend fun getByPatternId(patternId: String): List<ChartVariation> =
         withContext(ioDispatcher) {
             queries.getByPatternId(patternId).executeAsList().map { it.toDomain() }
         }
 
-    fun observeByPatternId(patternId: String): Flow<List<ChartBranch>> =
+    fun observeByPatternId(patternId: String): Flow<List<ChartVariation>> =
         queries
             .observeByPatternId(patternId)
             .asFlow()
             .mapToList(ioDispatcher)
             .map { rows -> rows.map { it.toDomain() } }
 
-    suspend fun upsert(branch: ChartBranch): ChartBranch =
+    suspend fun upsert(branch: ChartVariation): ChartVariation =
         withContext(ioDispatcher) {
             queries.upsert(
                 id = branch.id,

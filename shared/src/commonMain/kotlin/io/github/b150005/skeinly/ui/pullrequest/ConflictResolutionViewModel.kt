@@ -9,15 +9,15 @@ import io.github.b150005.skeinly.domain.chart.CellCoordinate
 import io.github.b150005.skeinly.domain.chart.ConflictDetector
 import io.github.b150005.skeinly.domain.chart.ConflictReport
 import io.github.b150005.skeinly.domain.chart.LayerConflict
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.StructuredChart
-import io.github.b150005.skeinly.domain.model.toStructuredChart
-import io.github.b150005.skeinly.domain.repository.ChartRevisionRepository
-import io.github.b150005.skeinly.domain.repository.StructuredChartRepository
+import io.github.b150005.skeinly.domain.model.Chart
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.toChart
+import io.github.b150005.skeinly.domain.repository.ChartRepository
+import io.github.b150005.skeinly.domain.repository.ChartVersionRepository
+import io.github.b150005.skeinly.domain.usecase.ApplySuggestionUseCase
 import io.github.b150005.skeinly.domain.usecase.ConflictResolution
 import io.github.b150005.skeinly.domain.usecase.ErrorMessage
-import io.github.b150005.skeinly.domain.usecase.GetPullRequestUseCase
-import io.github.b150005.skeinly.domain.usecase.MergePullRequestUseCase
+import io.github.b150005.skeinly.domain.usecase.GetSuggestionUseCase
 import io.github.b150005.skeinly.domain.usecase.UseCaseResult
 import io.github.b150005.skeinly.domain.usecase.applyResolutions
 import io.github.b150005.skeinly.domain.usecase.toErrorMessage
@@ -44,10 +44,10 @@ import kotlinx.coroutines.launch
  * conflict; an empty resolution map keeps the merge button disabled.
  */
 data class ChartConflictResolutionState(
-    val pullRequest: PullRequest? = null,
-    val ancestor: StructuredChart? = null,
-    val theirs: StructuredChart? = null,
-    val mine: StructuredChart? = null,
+    val suggestion: Suggestion? = null,
+    val ancestor: Chart? = null,
+    val theirs: Chart? = null,
+    val mine: Chart? = null,
     val report: ConflictReport? = null,
     val cellResolutions: Map<CellCoordinate, ConflictResolution> = emptyMap(),
     val layerResolutions: Map<String, ConflictResolution> = emptyMap(),
@@ -59,7 +59,7 @@ data class ChartConflictResolutionState(
         get() {
             val r = report ?: return false
             if (isMerging) return false
-            if (pullRequest == null || ancestor == null || theirs == null || mine == null) return false
+            if (suggestion == null || ancestor == null || theirs == null || mine == null) return false
             // Every cell conflict must have a pick.
             val cellsResolved = r.conflicts.all { cellResolutions.containsKey(CellCoordinate(it.layerId, it.x, it.y)) }
             // Every layer conflict must have a pick.
@@ -97,10 +97,10 @@ sealed interface ChartConflictResolutionNavEvent {
  */
 class ChartConflictResolutionViewModel(
     private val prId: String,
-    private val getPullRequest: GetPullRequestUseCase,
-    private val chartRevisionRepository: ChartRevisionRepository,
-    private val structuredChartRepository: StructuredChartRepository,
-    private val mergePullRequest: MergePullRequestUseCase,
+    private val getSuggestion: GetSuggestionUseCase,
+    private val chartVersionRepository: ChartVersionRepository,
+    private val chartRepository: ChartRepository,
+    private val applySuggestion: ApplySuggestionUseCase,
     private val analyticsTracker: AnalyticsTracker? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ChartConflictResolutionState())
@@ -130,7 +130,7 @@ class ChartConflictResolutionViewModel(
     }
 
     private suspend fun loadInitial() {
-        when (val prResult = getPullRequest(prId)) {
+        when (val prResult = getSuggestion(prId)) {
             is UseCaseResult.Failure -> {
                 _state.update { it.copy(isLoading = false, error = prResult.error.toErrorMessage()) }
                 return
@@ -149,7 +149,7 @@ class ChartConflictResolutionViewModel(
                     safeFetchRevision(pr.sourceTipRevisionId)
                 val mine =
                     try {
-                        structuredChartRepository.getByPatternId(pr.targetPatternId)
+                        chartRepository.getByPatternId(pr.targetPatternId)
                     } catch (e: CancellationException) {
                         throw e
                     } catch (_: Exception) {
@@ -160,7 +160,7 @@ class ChartConflictResolutionViewModel(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            pullRequest = pr,
+                            suggestion = pr,
                             error = ErrorMessage.LoadFailed,
                         )
                     }
@@ -176,7 +176,7 @@ class ChartConflictResolutionViewModel(
 
                 _state.update {
                     it.copy(
-                        pullRequest = pr,
+                        suggestion = pr,
                         ancestor = ancestor,
                         theirs = theirs,
                         mine = mine,
@@ -188,9 +188,9 @@ class ChartConflictResolutionViewModel(
         }
     }
 
-    private suspend fun safeFetchRevision(revisionId: String): StructuredChart? =
+    private suspend fun safeFetchRevision(revisionId: String): Chart? =
         try {
-            chartRevisionRepository.getRevision(revisionId)?.toStructuredChart()
+            chartVersionRepository.getRevision(revisionId)?.toChart()
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
@@ -199,7 +199,7 @@ class ChartConflictResolutionViewModel(
 
     private fun applyAndMerge() {
         val snapshot = _state.value
-        val pr = snapshot.pullRequest ?: return
+        val pr = snapshot.suggestion ?: return
         val ancestor = snapshot.ancestor ?: return
         val theirs = snapshot.theirs ?: return
         val mine = snapshot.mine ?: return
@@ -218,16 +218,16 @@ class ChartConflictResolutionViewModel(
                     theirs = theirs,
                     ancestor = ancestor,
                 )
-            when (val result = mergePullRequest(pr, resolved)) {
+            when (val result = applySuggestion(pr, resolved)) {
                 is UseCaseResult.Success -> {
                     _state.update { it.copy(isMerging = false) }
                     // Phase F.5 — closes the F.4 deferral. Conflict-resolution
                     // path always reports had_conflicts=true; the auto-clean
-                    // counterpart in PullRequestDetailViewModel reports
+                    // counterpart in SuggestionDetailViewModel reports
                     // had_conflicts=false. Together the two ViewModels cover
                     // every successful merge transition.
                     analyticsTracker?.track(
-                        AnalyticsEvent.PullRequestMerged(hadConflicts = true),
+                        AnalyticsEvent.SuggestionMerged(hadConflicts = true),
                     )
                     _navEvents.trySend(
                         ChartConflictResolutionNavEvent.MergeApplied(

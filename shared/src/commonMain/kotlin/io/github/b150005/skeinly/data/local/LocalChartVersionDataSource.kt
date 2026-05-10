@@ -6,26 +6,26 @@ import io.github.b150005.skeinly.data.mapper.toDbString
 import io.github.b150005.skeinly.data.mapper.toDocumentJson
 import io.github.b150005.skeinly.data.mapper.toDomain
 import io.github.b150005.skeinly.db.SkeinlyDatabase
-import io.github.b150005.skeinly.domain.model.ChartRevision
+import io.github.b150005.skeinly.domain.model.ChartVersion
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
-class LocalChartRevisionDataSource(
+class LocalChartVersionDataSource(
     private val db: SkeinlyDatabase,
     private val ioDispatcher: CoroutineDispatcher,
     private val json: Json,
 ) {
-    private val queries get() = db.chartRevisionQueries
+    private val queries get() = db.chartVersionQueries
 
-    suspend fun getById(id: String): ChartRevision? =
+    suspend fun getById(id: String): ChartVersion? =
         withContext(ioDispatcher) {
             queries.getById(id).executeAsOneOrNull()?.safeToDomain()
         }
 
-    suspend fun getByRevisionId(revisionId: String): ChartRevision? =
+    suspend fun getByRevisionId(revisionId: String): ChartVersion? =
         withContext(ioDispatcher) {
             queries.getByRevisionId(revisionId).executeAsOneOrNull()?.safeToDomain()
         }
@@ -34,7 +34,7 @@ class LocalChartRevisionDataSource(
         patternId: String,
         limit: Int,
         offset: Int,
-    ): List<ChartRevision> =
+    ): List<ChartVersion> =
         withContext(ioDispatcher) {
             queries
                 .getHistoryForPattern(patternId, limit.toLong(), offset.toLong())
@@ -42,7 +42,7 @@ class LocalChartRevisionDataSource(
                 .mapNotNull { it.safeToDomain() }
         }
 
-    fun observeHistoryForPattern(patternId: String): Flow<List<ChartRevision>> =
+    fun observeHistoryForPattern(patternId: String): Flow<List<ChartVersion>> =
         queries
             .observeHistoryForPattern(patternId)
             .asFlow()
@@ -52,12 +52,12 @@ class LocalChartRevisionDataSource(
     /**
      * One bad row must not kill the flow — downstream callers read this as
      * "revision unrecoverable" and the next remote sync round can re-decode
-     * a fresh copy. Mirrors the [LocalStructuredChartDataSource.safeToDomain]
+     * a fresh copy. Mirrors the [LocalChartDataSource.safeToDomain]
      * idiom.
      */
-    private fun io.github.b150005.skeinly.db.ChartRevisionEntity.safeToDomain(): ChartRevision? = runCatching { toDomain(json) }.getOrNull()
+    private fun io.github.b150005.skeinly.db.ChartVersionEntity.safeToDomain(): ChartVersion? = runCatching { toDomain(json) }.getOrNull()
 
-    suspend fun insert(revision: ChartRevision): ChartRevision =
+    suspend fun insert(revision: ChartVersion): ChartVersion =
         withContext(ioDispatcher) {
             queries.insert(
                 id = revision.id,
@@ -83,7 +83,7 @@ class LocalChartRevisionDataSource(
      * a moment later. UNIQUE(pattern_id, revision_id) is the dedup key, so
      * INSERT OR IGNORE silently no-ops on the second arrival.
      */
-    suspend fun upsert(revision: ChartRevision): Unit =
+    suspend fun upsert(revision: ChartVersion): Unit =
         withContext(ioDispatcher) {
             queries.upsert(
                 id = revision.id,

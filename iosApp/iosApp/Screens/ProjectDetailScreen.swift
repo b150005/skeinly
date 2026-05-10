@@ -411,7 +411,7 @@ struct ProjectDetailScreen: View {
 
         if hasStructuredChart {
             Button(action: onChartViewerTap) {
-                Label(LocalizedStringKey("action_view_structured_chart"), systemImage: "square.grid.3x3")
+                Label(LocalizedStringKey("action_view_chart"), systemImage: "square.grid.3x3")
                     .font(.caption)
             }
             .accessibilityIdentifier("openChartViewerLink")
@@ -429,8 +429,8 @@ struct ProjectDetailScreen: View {
         Button(action: onChartEditorTap) {
             Label(
                 hasStructuredChart
-                    ? LocalizedStringKey("action_edit_structured_chart")
-                    : LocalizedStringKey("action_create_structured_chart"),
+                    ? LocalizedStringKey("action_edit_chart")
+                    : LocalizedStringKey("action_create_chart"),
                 systemImage: "square.and.pencil"
             )
             .font(.caption)
@@ -442,7 +442,7 @@ struct ProjectDetailScreen: View {
         // filter via `pattern.parentPatternId` so upstream owners default to
         // Incoming and forkers default to Outgoing.
         Button(action: onSuggestionsTap) {
-            Label(LocalizedStringKey("title_pull_requests"), systemImage: "bubble.left.and.bubble.right")
+            Label(LocalizedStringKey("title_suggestions"), systemImage: "bubble.left.and.bubble.right")
                 .font(.caption)
         }
         .accessibilityIdentifier("openPullRequestsLink")
@@ -484,7 +484,7 @@ struct ProjectDetailScreen: View {
             let authorName = parentPatternAuthor?.displayName
                 ?? NSLocalizedString("label_someone", comment: "")
             let attribution = String(
-                format: NSLocalizedString("label_forked_from", comment: ""),
+                format: NSLocalizedString("label_copied_from", comment: ""),
                 source.title,
                 authorName
             )
@@ -507,7 +507,7 @@ struct ProjectDetailScreen: View {
                     .accessibilityIdentifier("forkedFromLabel")
             }
         } else {
-            Text(LocalizedStringKey("state_forked_from_deleted"))
+            Text(LocalizedStringKey("state_copied_from_deleted"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("forkedFromDeletedLabel")
@@ -522,7 +522,7 @@ struct ProjectDetailScreen: View {
         let storagePaths = state.chartImagePaths
 
         HStack {
-            Text(LocalizedStringKey("label_chart_images_section"))
+            Text(LocalizedStringKey("label_reference_images_section"))
                 .font(.headline)
             Spacer()
             PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
@@ -540,7 +540,7 @@ struct ProjectDetailScreen: View {
         }
 
         if signedUrls.isEmpty && !state.isUploadingImage {
-            Text(LocalizedStringKey("state_no_chart_images"))
+            Text(LocalizedStringKey("state_no_reference_images"))
                 .foregroundStyle(.secondary)
                 .font(.subheadline)
         } else {
@@ -842,7 +842,7 @@ private extension View {
         chartImageToDelete: String?,
         viewModel: ProjectDetailViewModel
     ) -> some View {
-        self.alert(LocalizedStringKey("dialog_remove_chart_image_title"), isPresented: isPresented) {
+        self.alert(LocalizedStringKey("dialog_remove_reference_image_title"), isPresented: isPresented) {
             Button(LocalizedStringKey("action_remove"), role: .destructive) {
                 if let path = chartImageToDelete {
                     viewModel.onEvent(event: ProjectDetailEventDeleteChartImage(imagePath: path))

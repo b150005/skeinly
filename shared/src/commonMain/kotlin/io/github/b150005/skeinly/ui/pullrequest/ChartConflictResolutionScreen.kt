@@ -42,15 +42,15 @@ import io.github.b150005.skeinly.domain.chart.CellCoordinate
 import io.github.b150005.skeinly.domain.chart.LayerConflict
 import io.github.b150005.skeinly.domain.usecase.ConflictResolution
 import io.github.b150005.skeinly.generated.resources.Res
-import io.github.b150005.skeinly.generated.resources.action_apply_and_merge
+import io.github.b150005.skeinly.generated.resources.action_apply_changes
 import io.github.b150005.skeinly.generated.resources.action_back
-import io.github.b150005.skeinly.generated.resources.action_keep_mine
 import io.github.b150005.skeinly.generated.resources.action_skip_conflict
-import io.github.b150005.skeinly.generated.resources.action_take_theirs
+import io.github.b150005.skeinly.generated.resources.action_use_contributors
+import io.github.b150005.skeinly.generated.resources.action_use_mine
 import io.github.b150005.skeinly.generated.resources.label_conflict_cell
 import io.github.b150005.skeinly.generated.resources.label_conflict_layer
 import io.github.b150005.skeinly.generated.resources.label_conflict_summary
-import io.github.b150005.skeinly.generated.resources.message_pr_merged_successfully
+import io.github.b150005.skeinly.generated.resources.message_suggestion_applied_successfully
 import io.github.b150005.skeinly.generated.resources.state_all_conflicts_resolved
 import io.github.b150005.skeinly.generated.resources.title_resolve_conflicts
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
@@ -62,9 +62,9 @@ import org.koin.core.parameter.parametersOf
 
 /**
  * Phase 38.4 (ADR-014 §6) — three-pane conflict resolver. Reached from
- * [PullRequestDetailScreen]'s merge button when [ConflictDetector.detect]
+ * [SuggestionDetailScreen]'s merge button when [ConflictDetector.detect]
  * returns at least one conflict; auto-clean merges bypass this screen and
- * invoke `MergePullRequestUseCase` directly.
+ * invoke `ApplySuggestionUseCase` directly.
  *
  * Layout (phone-first stack — three-pane canvas is post-MVP polish):
  *  - TopAppBar with back + title + summary chip ("3 conflicts to resolve")
@@ -76,7 +76,7 @@ import org.koin.core.parameter.parametersOf
  *
  * The three-pane canvas (ancestor pinned center, theirs/mine side-by-side)
  * named in ADR-014 §6 is intentionally deferred: the existing
- * `DualCanvasPanel` extracted from `ChartDiffScreen` is gestural and tightly
+ * `DualCanvasPanel` extracted from `ChartComparisonScreen` is gestural and tightly
  * bound, refactoring it for a 3-pane layout is a meaningful follow-up. The
  * row-based picker UI alone closes the merge loop end-to-end; the canvas
  * preview is a polish item that can land independently against the
@@ -93,7 +93,7 @@ fun ChartConflictResolutionScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val mergedMessage = stringResource(Res.string.message_pr_merged_successfully)
+    val mergedMessage = stringResource(Res.string.message_suggestion_applied_successfully)
 
     val errorText = state.error?.localized()
 
@@ -262,7 +262,7 @@ private fun ResolutionContent(
                     enabled = canApplyAndMerge && !isMerging,
                     modifier = Modifier.testTag("applyAndMergeButton"),
                 ) {
-                    Text(stringResource(Res.string.action_apply_and_merge))
+                    Text(stringResource(Res.string.action_apply_changes))
                 }
             }
         }
@@ -364,13 +364,13 @@ private fun ResolutionPickerRow(
         PickerButton(
             isSelected = pick == ConflictResolution.TAKE_THEIRS,
             onClick = { onPick(ConflictResolution.TAKE_THEIRS) },
-            label = stringResource(Res.string.action_take_theirs),
+            label = stringResource(Res.string.action_use_contributors),
             modifier = Modifier.testTag(takeTheirsTag),
         )
         PickerButton(
             isSelected = pick == ConflictResolution.KEEP_MINE,
             onClick = { onPick(ConflictResolution.KEEP_MINE) },
-            label = stringResource(Res.string.action_keep_mine),
+            label = stringResource(Res.string.action_use_mine),
             modifier = Modifier.testTag(keepMineTag),
         )
         PickerButton(

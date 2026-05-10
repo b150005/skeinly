@@ -6,6 +6,7 @@ import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
 import io.github.b150005.skeinly.data.analytics.ChartFormat
 import io.github.b150005.skeinly.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartCell
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
@@ -13,16 +14,15 @@ import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.CraftType
 import io.github.b150005.skeinly.domain.model.ReadingConvention
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import io.github.b150005.skeinly.domain.model.StructuredChart
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
 import io.github.b150005.skeinly.domain.symbol.SymbolCategory
 import io.github.b150005.skeinly.domain.symbol.SymbolDefinition
 import io.github.b150005.skeinly.domain.symbol.catalog.DefaultSymbolCatalog
-import io.github.b150005.skeinly.domain.usecase.CreateStructuredChartUseCase
+import io.github.b150005.skeinly.domain.usecase.CreateChartUseCase
 import io.github.b150005.skeinly.domain.usecase.FakeAuthRepository
-import io.github.b150005.skeinly.domain.usecase.FakeStructuredChartRepository
-import io.github.b150005.skeinly.domain.usecase.GetStructuredChartByPatternIdUseCase
-import io.github.b150005.skeinly.domain.usecase.UpdateStructuredChartUseCase
+import io.github.b150005.skeinly.domain.usecase.FakeChartRepository
+import io.github.b150005.skeinly.domain.usecase.GetChartByPatternIdUseCase
+import io.github.b150005.skeinly.domain.usecase.UpdateChartUseCase
 import io.github.b150005.skeinly.testJson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -44,14 +44,14 @@ import kotlin.time.Instant
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChartEditorViewModelTest {
     private val now = Instant.parse("2026-04-20T00:00:00Z")
-    private lateinit var repo: FakeStructuredChartRepository
+    private lateinit var repo: FakeChartRepository
     private lateinit var auth: FakeAuthRepository
     private val catalog = DefaultSymbolCatalog.INSTANCE
 
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        repo = FakeStructuredChartRepository()
+        repo = FakeChartRepository()
         auth = FakeAuthRepository()
         auth.setAuthState(AuthState.Authenticated(userId = "user-1", email = "t@example.com"))
     }
@@ -66,12 +66,12 @@ class ChartEditorViewModelTest {
         layers: List<ChartLayer> = listOf(ChartLayer(id = "L1", name = "Main")),
         craftType: CraftType = CraftType.KNIT,
         readingConvention: ReadingConvention = ReadingConvention.KNIT_FLAT,
-    ): StructuredChart =
-        StructuredChart(
+    ): Chart =
+        Chart(
             id = "chart-seed",
             patternId = patternId,
             ownerId = "user-1",
-            schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+            schemaVersion = Chart.CURRENT_SCHEMA_VERSION,
             storageVariant = StorageVariant.INLINE,
             coordinateSystem = CoordinateSystem.RECT_GRID,
             extents = ChartExtents.Rect(minX = 0, maxX = 7, minY = 0, maxY = 7),
@@ -79,7 +79,7 @@ class ChartEditorViewModelTest {
             revisionId = "rev-0",
             parentRevisionId = null,
             contentHash =
-                StructuredChart.computeContentHash(
+                Chart.computeContentHash(
                     ChartExtents.Rect(minX = 0, maxX = 7, minY = 0, maxY = 7),
                     layers,
                     testJson,
@@ -97,9 +97,9 @@ class ChartEditorViewModelTest {
     ): ChartEditorViewModel =
         ChartEditorViewModel(
             patternId = patternId,
-            getStructuredChart = GetStructuredChartByPatternIdUseCase(repo),
-            createStructuredChart = CreateStructuredChartUseCase(repo, auth, testJson),
-            updateStructuredChart = UpdateStructuredChartUseCase(repo, testJson),
+            getChart = GetChartByPatternIdUseCase(repo),
+            createChart = CreateChartUseCase(repo, auth, testJson),
+            updateChart = UpdateChartUseCase(repo, testJson),
             symbolCatalog = symbolCatalog,
             analyticsTracker = analyticsTracker,
         )

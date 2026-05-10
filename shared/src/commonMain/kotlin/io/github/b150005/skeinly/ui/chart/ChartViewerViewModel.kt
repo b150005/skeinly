@@ -8,21 +8,21 @@ import io.github.b150005.skeinly.data.analytics.ChartFormat
 import io.github.b150005.skeinly.data.analytics.ClickActionId
 import io.github.b150005.skeinly.data.analytics.Screen
 import io.github.b150005.skeinly.data.analytics.SegmentVia
-import io.github.b150005.skeinly.domain.model.ChartBranch
+import io.github.b150005.skeinly.domain.model.Chart
+import io.github.b150005.skeinly.domain.model.ChartVariation
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.Pattern
 import io.github.b150005.skeinly.domain.model.ProjectSegment
 import io.github.b150005.skeinly.domain.model.SegmentState
-import io.github.b150005.skeinly.domain.model.StructuredChart
 import io.github.b150005.skeinly.domain.repository.AuthRepository
-import io.github.b150005.skeinly.domain.repository.ChartBranchRepository
+import io.github.b150005.skeinly.domain.repository.ChartVariationRepository
 import io.github.b150005.skeinly.domain.repository.PatternRepository
 import io.github.b150005.skeinly.domain.usecase.ErrorMessage
 import io.github.b150005.skeinly.domain.usecase.MarkRowSegmentsDoneUseCase
 import io.github.b150005.skeinly.domain.usecase.MarkSegmentDoneUseCase
+import io.github.b150005.skeinly.domain.usecase.ObserveChartUseCase
 import io.github.b150005.skeinly.domain.usecase.ObserveProjectSegmentsUseCase
-import io.github.b150005.skeinly.domain.usecase.ObserveStructuredChartUseCase
-import io.github.b150005.skeinly.domain.usecase.OpenPullRequestUseCase
+import io.github.b150005.skeinly.domain.usecase.OpenSuggestionUseCase
 import io.github.b150005.skeinly.domain.usecase.ToggleSegmentStateUseCase
 import io.github.b150005.skeinly.domain.usecase.UseCaseResult
 import io.github.b150005.skeinly.domain.usecase.toErrorMessage
@@ -48,7 +48,7 @@ data class SegmentKey(
 )
 
 data class ChartViewerState(
-    val chart: StructuredChart? = null,
+    val chart: Chart? = null,
     val isLoading: Boolean = true,
     val hiddenLayerIds: Set<String> = emptySet(),
     val errorMessage: ErrorMessage? = null,
@@ -74,18 +74,18 @@ data class ChartViewerState(
      * back to the `"main"` branch if no match (covers the case where a user
      * has switched branches but the local cache hasn't echoed the tip move yet).
      */
-    val currentBranch: ChartBranch? = null,
+    val currentBranch: ChartVariation? = null,
     /**
      * Target's `"main"` branch on the upstream pattern (`pattern.parentPatternId`).
      * v1 routes PRs only against upstream/main per ADR-014 §1; if the upstream
      * lacks a "main" row the gate stays closed.
      */
-    val targetMainBranch: ChartBranch? = null,
+    val targetMainBranch: ChartVariation? = null,
     val currentUserId: String? = null,
     val openPrTitleDraft: String = "",
     val openPrDescriptionDraft: String = "",
     val pendingOpenPrSheet: Boolean = false,
-    val isOpeningPullRequest: Boolean = false,
+    val isOpeningSuggestion: Boolean = false,
     /**
      * Inline error surfaced inside the open-PR sheet. Kept distinct from the
      * top-level [errorMessage] (which displaces the chart with a centered
@@ -112,9 +112,9 @@ data class ChartViewerState(
      *
      * Routed through a derived property (not a top-level extension) so the
      * Swift bridge reads it as a plain `Bool` getter — same pattern as
-     * `PullRequestDetailState.canMerge` / `canClose`.
+     * `SuggestionDetailState.canMerge` / `canClose`.
      */
-    val canOpenPullRequest: Boolean
+    val canOpenSuggestion: Boolean
         get() {
             val p = pattern ?: return false
             val owner = currentUserId ?: return false
@@ -157,7 +157,7 @@ sealed interface ChartViewerEvent {
     ) : ChartViewerEvent
 
     // Phase 38.4.1 (ADR-014 §6) — Open pull request flow.
-    data object RequestOpenPullRequest : ChartViewerEvent
+    data object RequestOpenSuggestion : ChartViewerEvent
 
     data class OpenPrTitleChanged(
         val value: String,
@@ -167,20 +167,20 @@ sealed interface ChartViewerEvent {
         val value: String,
     ) : ChartViewerEvent
 
-    data object ConfirmOpenPullRequest : ChartViewerEvent
+    data object ConfirmOpenSuggestion : ChartViewerEvent
 
-    data object DismissOpenPullRequestSheet : ChartViewerEvent
+    data object DismissOpenSuggestionSheet : ChartViewerEvent
 
     data object ClearOpenPrError : ChartViewerEvent
 }
 
 /**
  * One-shot navigation events surfaced to the screen layer. Phase 38.4.1
- * adds [PullRequestCreated] so the screen can navigate to the new PR's
+ * adds [SuggestionCreated] so the screen can navigate to the new PR's
  * detail surface after a successful open.
  */
 sealed interface ChartViewerNavEvent {
-    data class PullRequestCreated(
+    data class SuggestionCreated(
         val prId: String,
     ) : ChartViewerNavEvent
 }
@@ -188,7 +188,7 @@ sealed interface ChartViewerNavEvent {
 class ChartViewerViewModel(
     private val patternId: String,
     private val projectId: String?,
-    private val observeStructuredChart: ObserveStructuredChartUseCase,
+    private val observeChart: ObserveChartUseCase,
     private val observeProjectSegments: ObserveProjectSegmentsUseCase,
     private val toggleSegmentState: ToggleSegmentStateUseCase,
     private val markSegmentDone: MarkSegmentDoneUseCase,
@@ -198,9 +198,9 @@ class ChartViewerViewModel(
     // supplying them; the gate stays false when any required dep is absent
     // (also covers local-only / offline mode where Supabase isn't configured).
     private val patternRepository: PatternRepository? = null,
-    private val chartBranchRepository: ChartBranchRepository? = null,
+    private val chartVariationRepository: ChartVariationRepository? = null,
     private val authRepository: AuthRepository? = null,
-    private val openPullRequest: OpenPullRequestUseCase? = null,
+    private val openSuggestion: OpenSuggestionUseCase? = null,
     // Phase F.4 — nullable + default null preserves existing test compat.
     private val analyticsTracker: AnalyticsTracker? = null,
 ) : ViewModel() {
@@ -223,7 +223,7 @@ class ChartViewerViewModel(
         // `distinctUntilChanged` (Phase 36.5).
         var lastResolvedRevisionId: String? = null
         viewModelScope.launch {
-            observeStructuredChart(patternId)
+            observeChart(patternId)
                 .catch { throwable ->
                     _state.update {
                         it.copy(
@@ -264,9 +264,9 @@ class ChartViewerViewModel(
             is ChartViewerEvent.TapCell -> tapCell(event.layerId, event.x, event.y)
             is ChartViewerEvent.LongPressCell -> longPressCell(event.layerId, event.x, event.y)
             is ChartViewerEvent.MarkRowDone -> markRowDone(event.row)
-            is ChartViewerEvent.RequestOpenPullRequest -> {
+            is ChartViewerEvent.RequestOpenSuggestion -> {
                 analyticsTracker?.track(
-                    AnalyticsEvent.ClickAction(ClickActionId.OpenPullRequest, Screen.ChartViewer),
+                    AnalyticsEvent.ClickAction(ClickActionId.OpenSuggestion, Screen.ChartViewer),
                 )
                 _state.update {
                     it.copy(pendingOpenPrSheet = true, openPrError = null)
@@ -276,8 +276,8 @@ class ChartViewerViewModel(
                 _state.update { it.copy(openPrTitleDraft = event.value) }
             is ChartViewerEvent.OpenPrDescriptionChanged ->
                 _state.update { it.copy(openPrDescriptionDraft = event.value) }
-            is ChartViewerEvent.ConfirmOpenPullRequest -> openPullRequestInternal()
-            is ChartViewerEvent.DismissOpenPullRequestSheet ->
+            is ChartViewerEvent.ConfirmOpenSuggestion -> openSuggestionInternal()
+            is ChartViewerEvent.DismissOpenSuggestionSheet ->
                 _state.update {
                     it.copy(
                         pendingOpenPrSheet = false,
@@ -428,9 +428,9 @@ class ChartViewerViewModel(
      * convention — `runCatching` would swallow it and silently leave the gate
      * deactivated for the session.
      */
-    private suspend fun resolveOpenPrContext(chart: StructuredChart) {
+    private suspend fun resolveOpenPrContext(chart: Chart) {
         val patternRepo = patternRepository ?: return
-        val branchRepo = chartBranchRepository ?: return
+        val branchRepo = chartVariationRepository ?: return
         val pattern =
             try {
                 patternRepo.getById(patternId)
@@ -451,7 +451,7 @@ class ChartViewerViewModel(
         val targetMain =
             pattern?.parentPatternId?.let { parentId ->
                 try {
-                    branchRepo.getByPatternIdAndName(parentId, ChartBranch.DEFAULT_BRANCH_NAME)
+                    branchRepo.getByPatternIdAndName(parentId, ChartVariation.DEFAULT_BRANCH_NAME)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
@@ -473,36 +473,36 @@ class ChartViewerViewModel(
      * null if "main" itself is missing, which deactivates the gate.
      */
     private fun resolveCurrentBranch(
-        branches: List<ChartBranch>,
+        branches: List<ChartVariation>,
         tipRevisionId: String,
-    ): ChartBranch? =
+    ): ChartVariation? =
         branches.firstOrNull { it.tipRevisionId == tipRevisionId }
-            ?: branches.firstOrNull { it.branchName == ChartBranch.DEFAULT_BRANCH_NAME }
+            ?: branches.firstOrNull { it.branchName == ChartVariation.DEFAULT_BRANCH_NAME }
 
-    private fun openPullRequestInternal() {
+    private fun openSuggestionInternal() {
         val current = _state.value
-        if (!current.canOpenPullRequest || current.isOpeningPullRequest) return
+        if (!current.canOpenSuggestion || current.isOpeningSuggestion) return
         val openPr =
-            openPullRequest ?: run {
+            openSuggestion ?: run {
                 _state.update {
                     it.copy(openPrError = ErrorMessage.RequiresConnectivity)
                 }
                 return
             }
-        // The `canOpenPullRequest` gate snapshot above guarantees these are
+        // The `canOpenSuggestion` gate snapshot above guarantees these are
         // non-null. Use `requireNotNull` per project Kotlin coding-style rule
         // (no `!!`) — surfaces a meaningful exception if a future refactor
         // invalidates the gate.
-        val pattern = requireNotNull(current.pattern) { "canOpenPullRequest gate: pattern is null" }
-        val sourceBranch = requireNotNull(current.currentBranch) { "canOpenPullRequest gate: currentBranch is null" }
-        val targetBranch = requireNotNull(current.targetMainBranch) { "canOpenPullRequest gate: targetMainBranch is null" }
-        val chart = requireNotNull(current.chart) { "canOpenPullRequest gate: chart is null" }
+        val pattern = requireNotNull(current.pattern) { "canOpenSuggestion gate: pattern is null" }
+        val sourceBranch = requireNotNull(current.currentBranch) { "canOpenSuggestion gate: currentBranch is null" }
+        val targetBranch = requireNotNull(current.targetMainBranch) { "canOpenSuggestion gate: targetMainBranch is null" }
+        val chart = requireNotNull(current.chart) { "canOpenSuggestion gate: chart is null" }
         val parentPatternId =
-            requireNotNull(pattern.parentPatternId) { "canOpenPullRequest gate: parentPatternId is null" }
+            requireNotNull(pattern.parentPatternId) { "canOpenSuggestion gate: parentPatternId is null" }
         val title = current.openPrTitleDraft.trim()
         val description = current.openPrDescriptionDraft.trim().takeIf { it.isNotEmpty() }
         viewModelScope.launch {
-            _state.update { it.copy(isOpeningPullRequest = true, openPrError = null) }
+            _state.update { it.copy(isOpeningSuggestion = true, openPrError = null) }
             try {
                 val result =
                     openPr(
@@ -528,7 +528,7 @@ class ChartViewerViewModel(
                         // grid (rect / polar) so PostHog can segment PR-open
                         // adoption by chart type.
                         analyticsTracker?.track(
-                            AnalyticsEvent.PullRequestOpened(
+                            AnalyticsEvent.SuggestionOpened(
                                 chartFormat =
                                     when (chart.coordinateSystem) {
                                         CoordinateSystem.RECT_GRID -> ChartFormat.Rect
@@ -537,7 +537,7 @@ class ChartViewerViewModel(
                             ),
                         )
                         _navEvents.trySend(
-                            ChartViewerNavEvent.PullRequestCreated(prId = result.value.id),
+                            ChartViewerNavEvent.SuggestionCreated(prId = result.value.id),
                         )
                     }
                     is UseCaseResult.Failure ->
@@ -548,9 +548,9 @@ class ChartViewerViewModel(
             } finally {
                 // Single source of truth for clearing the spinner: success,
                 // failure, AND cancellation (e.g., user navigates away mid-
-                // submit) all converge here so isOpeningPullRequest never
+                // submit) all converge here so isOpeningSuggestion never
                 // sticks at true (B2 — 2026-05-01 fix).
-                _state.update { it.copy(isOpeningPullRequest = false) }
+                _state.update { it.copy(isOpeningSuggestion = false) }
             }
         }
     }

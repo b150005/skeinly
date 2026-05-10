@@ -120,7 +120,7 @@ data class ChartLayer(
 )
 
 @Serializable
-data class StructuredChart(
+data class Chart(
     val id: String,
     @SerialName("pattern_id") val patternId: String,
     @SerialName("owner_id") val ownerId: String,
@@ -135,7 +135,7 @@ data class StructuredChart(
     // structurally protects against the silent-overwrite-to-null footgun that
     // Phase 36.1 fixed on `Pattern.parentPatternId` via `@EncodeDefault(NEVER)`
     // — `Pattern` had `= null` as a backward-compat default for legacy clients,
-    // `StructuredChart.parentRevisionId` has been a required field since
+    // `Chart.parentRevisionId` has been a required field since
     // Phase 29 so legacy clients always carried it. Do NOT add a default here.
     //
     // Asymmetry note for the next reader: the neighboring `craftType` /

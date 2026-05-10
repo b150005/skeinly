@@ -48,17 +48,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.b150005.skeinly.domain.chart.PolarCellLayout
 import io.github.b150005.skeinly.domain.model.CellChange
-import io.github.b150005.skeinly.domain.model.ChartDiff
+import io.github.b150005.skeinly.domain.model.Chart
+import io.github.b150005.skeinly.domain.model.ChartComparison
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.LayerChange
-import io.github.b150005.skeinly.domain.model.StructuredChart
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_back
-import io.github.b150005.skeinly.generated.resources.label_diff_added
-import io.github.b150005.skeinly.generated.resources.label_diff_modified
-import io.github.b150005.skeinly.generated.resources.label_diff_removed
-import io.github.b150005.skeinly.generated.resources.label_initial_commit
+import io.github.b150005.skeinly.generated.resources.label_comparison_added
+import io.github.b150005.skeinly.generated.resources.label_comparison_modified
+import io.github.b150005.skeinly.generated.resources.label_comparison_removed
+import io.github.b150005.skeinly.generated.resources.label_initial_version
 import io.github.b150005.skeinly.generated.resources.label_layer_added
 import io.github.b150005.skeinly.generated.resources.label_layer_hidden
 import io.github.b150005.skeinly.generated.resources.label_layer_locked
@@ -67,7 +67,7 @@ import io.github.b150005.skeinly.generated.resources.label_layer_renamed
 import io.github.b150005.skeinly.generated.resources.label_layer_shown
 import io.github.b150005.skeinly.generated.resources.label_layer_unlocked
 import io.github.b150005.skeinly.generated.resources.state_no_changes
-import io.github.b150005.skeinly.generated.resources.title_chart_diff
+import io.github.b150005.skeinly.generated.resources.title_chart_comparison
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.localized
 import org.jetbrains.compose.resources.pluralStringResource
@@ -101,11 +101,11 @@ private const val MAX_SCALE = 8f
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChartDiffScreen(
+fun ChartComparisonScreen(
     baseRevisionId: String?,
     targetRevisionId: String,
     onBack: () -> Unit,
-    viewModel: ChartDiffViewModel =
+    viewModel: ChartComparisonViewModel =
         koinViewModel { parametersOf(baseRevisionId, targetRevisionId) },
     catalog: SymbolCatalog = koinInject(),
 ) {
@@ -117,14 +117,14 @@ fun ChartDiffScreen(
     LaunchedEffect(errorText) {
         errorText?.let {
             snackbarHostState.showSnackbar(it)
-            viewModel.onEvent(ChartDiffEvent.ClearError)
+            viewModel.onEvent(ChartComparisonEvent.ClearError)
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.title_chart_diff)) },
+                title = { Text(stringResource(Res.string.title_chart_comparison)) },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag("backButton")) {
                         Icon(
@@ -142,7 +142,7 @@ fun ChartDiffScreen(
                 Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .testTag("chartDiffScreen"),
+                    .testTag("chartComparisonScreen"),
         ) {
             when {
                 state.isLoading ->
@@ -174,7 +174,7 @@ fun ChartDiffScreen(
 
 @Composable
 private fun DiffContent(
-    diff: ChartDiff,
+    diff: ChartComparison,
     catalog: SymbolCatalog,
     modifier: Modifier = Modifier,
 ) {
@@ -205,7 +205,7 @@ private fun DiffContent(
 }
 
 @Composable
-private fun DiffSummaryRow(diff: ChartDiff) {
+private fun DiffSummaryRow(diff: ChartComparison) {
     Row(
         modifier =
             Modifier
@@ -214,11 +214,11 @@ private fun DiffSummaryRow(diff: ChartDiff) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         val addedText =
-            pluralStringResource(Res.plurals.label_diff_added, diff.addedCellCount, diff.addedCellCount)
+            pluralStringResource(Res.plurals.label_comparison_added, diff.addedCellCount, diff.addedCellCount)
         val modifiedText =
-            pluralStringResource(Res.plurals.label_diff_modified, diff.modifiedCellCount, diff.modifiedCellCount)
+            pluralStringResource(Res.plurals.label_comparison_modified, diff.modifiedCellCount, diff.modifiedCellCount)
         val removedText =
-            pluralStringResource(Res.plurals.label_diff_removed, diff.removedCellCount, diff.removedCellCount)
+            pluralStringResource(Res.plurals.label_comparison_removed, diff.removedCellCount, diff.removedCellCount)
         // Decorative summary; not tappable. Wrapped in Surface (not AssistChip)
         // so screen readers do not announce a phantom button — the iOS mirror
         // uses a plain Capsule+Text for the same reason. Setting role=null
@@ -276,7 +276,7 @@ private fun describeLayerChange(change: LayerChange): String =
             // priority because it carries the layer's identity in both before
             // and after; visibility / locked toggles are secondary.
             //
-            // Algorithm invariant: ChartDiffAlgorithm only emits PropertyChanged
+            // Algorithm invariant: ChartComparisonAlgorithm only emits PropertyChanged
             // when at least one of name / visible / locked differs, so the final
             // `else` is structurally unreachable. Surface it as `error(...)` so
             // any future algorithm bug fails loudly instead of rendering a
@@ -303,7 +303,7 @@ private fun describeLayerChange(change: LayerChange): String =
 
 @Composable
 private fun DualCanvasPanel(
-    diff: ChartDiff,
+    diff: ChartComparison,
     catalog: SymbolCatalog,
     modifier: Modifier = Modifier,
 ) {
@@ -353,11 +353,11 @@ private fun DualCanvasPanel(
         ) {
             if (baseChart == null) {
                 Text(
-                    text = stringResource(Res.string.label_initial_commit),
+                    text = stringResource(Res.string.label_initial_version),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             } else {
-                ChartDiffCanvas(
+                ChartComparisonCanvas(
                     chart = baseChart,
                     catalog = catalog,
                     side = DiffSide.BASE,
@@ -384,7 +384,7 @@ private fun DualCanvasPanel(
                     .padding(4.dp)
                     .testTag("targetChartCanvas"),
         ) {
-            ChartDiffCanvas(
+            ChartComparisonCanvas(
                 chart = targetChart,
                 catalog = catalog,
                 side = DiffSide.TARGET,
@@ -425,7 +425,7 @@ private data class DiffClassification(
     val targetHighlights: Map<CellKey, CellHighlight>,
 )
 
-private fun classifyCells(diff: ChartDiff): DiffClassification {
+private fun classifyCells(diff: ChartComparison): DiffClassification {
     val base = mutableMapOf<CellKey, CellHighlight>()
     val target = mutableMapOf<CellKey, CellHighlight>()
 
@@ -461,8 +461,8 @@ private fun classifyCells(diff: ChartDiff): DiffClassification {
 
 @Suppress("LongParameterList")
 @Composable
-private fun ChartDiffCanvas(
-    chart: StructuredChart,
+private fun ChartComparisonCanvas(
+    chart: Chart,
     catalog: SymbolCatalog,
     side: DiffSide,
     classification: DiffClassification,
@@ -559,7 +559,7 @@ private fun ChartDiffCanvas(
 @Suppress("LongParameterList")
 private fun DrawScope.drawRectDiff(
     rect: ChartExtents.Rect,
-    chart: StructuredChart,
+    chart: Chart,
     catalog: SymbolCatalog,
     highlights: Map<CellKey, CellHighlight>,
     textMeasurer: androidx.compose.ui.text.TextMeasurer,
@@ -679,7 +679,7 @@ private fun computeDiffLayout(
 @Suppress("LongParameterList")
 private fun DrawScope.drawPolarDiffOverlay(
     polar: ChartExtents.Polar,
-    chart: StructuredChart,
+    chart: Chart,
     highlights: Map<CellKey, CellHighlight>,
     layout: PolarCellLayout.Layout,
     addedColor: Color,

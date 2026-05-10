@@ -1,4 +1,4 @@
-CREATE TABLE StructuredChartEntity (
+CREATE TABLE ChartEntity (
     id TEXT NOT NULL PRIMARY KEY,
     pattern_id TEXT NOT NULL UNIQUE,
     owner_id TEXT NOT NULL,
@@ -13,23 +13,23 @@ CREATE TABLE StructuredChartEntity (
     updated_at TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_structured_chart_pattern_id ON StructuredChartEntity(pattern_id);
-CREATE INDEX IF NOT EXISTS idx_structured_chart_owner_id ON StructuredChartEntity(owner_id);
+CREATE INDEX IF NOT EXISTS idx_structured_chart_pattern_id ON ChartEntity(pattern_id);
+CREATE INDEX IF NOT EXISTS idx_structured_chart_owner_id ON ChartEntity(owner_id);
 
 getById:
-SELECT * FROM StructuredChartEntity WHERE id = ?;
+SELECT * FROM ChartEntity WHERE id = ?;
 
 getByPatternId:
-SELECT * FROM StructuredChartEntity WHERE pattern_id = ?;
+SELECT * FROM ChartEntity WHERE pattern_id = ?;
 
 observeByPatternId:
-SELECT * FROM StructuredChartEntity WHERE pattern_id = ?;
+SELECT * FROM ChartEntity WHERE pattern_id = ?;
 
 existsByPatternId:
-SELECT COUNT(*) > 0 FROM StructuredChartEntity WHERE pattern_id = ?;
+SELECT COUNT(*) > 0 FROM ChartEntity WHERE pattern_id = ?;
 
 insert:
-INSERT INTO StructuredChartEntity(
+INSERT INTO ChartEntity(
     id,
     pattern_id,
     owner_id,
@@ -45,7 +45,7 @@ INSERT INTO StructuredChartEntity(
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 update:
-UPDATE StructuredChartEntity
+UPDATE ChartEntity
 SET schema_version = ?,
     storage_variant = ?,
     coordinate_system = ?,
@@ -57,7 +57,7 @@ SET schema_version = ?,
 WHERE id = ?;
 
 deleteById:
-DELETE FROM StructuredChartEntity WHERE id = ?;
+DELETE FROM ChartEntity WHERE id = ?;
 
 deleteByPatternId:
-DELETE FROM StructuredChartEntity WHERE pattern_id = ?;
+DELETE FROM ChartEntity WHERE pattern_id = ?;

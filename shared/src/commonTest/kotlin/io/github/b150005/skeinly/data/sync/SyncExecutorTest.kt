@@ -1,5 +1,6 @@
 package io.github.b150005.skeinly.data.sync
 
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
@@ -8,12 +9,11 @@ import io.github.b150005.skeinly.domain.model.Progress
 import io.github.b150005.skeinly.domain.model.Project
 import io.github.b150005.skeinly.domain.model.ProjectSegment
 import io.github.b150005.skeinly.domain.model.ProjectStatus
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestComment
-import io.github.b150005.skeinly.domain.model.PullRequestStatus
 import io.github.b150005.skeinly.domain.model.SegmentState
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import io.github.b150005.skeinly.domain.model.StructuredChart
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionComment
+import io.github.b150005.skeinly.domain.model.SuggestionStatus
 import io.github.b150005.skeinly.domain.model.Visibility
 import io.github.b150005.skeinly.testJson
 import kotlinx.coroutines.test.runTest
@@ -74,7 +74,7 @@ class SyncExecutorTest {
     fun `null remoteProject returns true`() =
         runTest {
             val executor =
-                SyncExecutor(remoteProject = null, remoteProgress = null, remotePattern = null, remoteStructuredChart = null, json = json)
+                SyncExecutor(remoteProject = null, remoteProgress = null, remotePattern = null, remoteChart = null, json = json)
             val result = executor.execute(entry(SyncEntityType.PROJECT, "p-1", SyncOperation.INSERT, json.encodeToString(testProject)))
             assertTrue(result)
         }
@@ -83,7 +83,7 @@ class SyncExecutorTest {
     fun `null remoteProgress returns true`() =
         runTest {
             val executor =
-                SyncExecutor(remoteProject = null, remoteProgress = null, remotePattern = null, remoteStructuredChart = null, json = json)
+                SyncExecutor(remoteProject = null, remoteProgress = null, remotePattern = null, remoteChart = null, json = json)
             val result = executor.execute(entry(SyncEntityType.PROGRESS, "pr-1", SyncOperation.INSERT, json.encodeToString(testProgress)))
             assertTrue(result)
         }
@@ -99,7 +99,7 @@ class SyncExecutorTest {
                     remoteProject = fakeRemote,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
                 )
 
@@ -122,7 +122,7 @@ class SyncExecutorTest {
                     remoteProject = fakeRemote,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
                 )
 
@@ -144,7 +144,7 @@ class SyncExecutorTest {
                     remoteProject = fakeRemote,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
                 )
 
@@ -165,7 +165,7 @@ class SyncExecutorTest {
                     remoteProject = fakeRemote,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
                 )
 
@@ -190,7 +190,7 @@ class SyncExecutorTest {
                     remoteProject = null,
                     remoteProgress = fakeRemote,
                     remotePattern = null,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
                 )
 
@@ -213,7 +213,7 @@ class SyncExecutorTest {
                     remoteProject = null,
                     remoteProgress = fakeRemote,
                     remotePattern = null,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
                 )
 
@@ -246,7 +246,7 @@ class SyncExecutorTest {
     fun `null remotePattern returns true`() =
         runTest {
             val executor =
-                SyncExecutor(remoteProject = null, remoteProgress = null, remotePattern = null, remoteStructuredChart = null, json = json)
+                SyncExecutor(remoteProject = null, remoteProgress = null, remotePattern = null, remoteChart = null, json = json)
             val result = executor.execute(entry(SyncEntityType.PATTERN, "pat-1", SyncOperation.INSERT, json.encodeToString(testPattern)))
             assertTrue(result)
         }
@@ -260,7 +260,7 @@ class SyncExecutorTest {
                     remoteProject = null,
                     remoteProgress = null,
                     remotePattern = fakeRemote,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
                 )
 
@@ -283,7 +283,7 @@ class SyncExecutorTest {
                     remoteProject = null,
                     remoteProgress = null,
                     remotePattern = fakeRemote,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
                 )
 
@@ -305,7 +305,7 @@ class SyncExecutorTest {
                     remoteProject = null,
                     remoteProgress = null,
                     remotePattern = fakeRemote,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
                 )
 
@@ -318,12 +318,12 @@ class SyncExecutorTest {
 
     // --- Structured chart dispatch tests ---
 
-    private val testStructuredChart =
-        StructuredChart(
+    private val testChart =
+        Chart(
             id = "chart-1",
             patternId = "pat-1",
             ownerId = "user-1",
-            schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+            schemaVersion = Chart.CURRENT_SCHEMA_VERSION,
             storageVariant = StorageVariant.INLINE,
             coordinateSystem = CoordinateSystem.RECT_GRID,
             extents = ChartExtents.Rect.EMPTY,
@@ -336,13 +336,13 @@ class SyncExecutorTest {
         )
 
     @Test
-    fun `null remoteStructuredChart returns true`() =
+    fun `null remoteChart returns true`() =
         runTest {
             val executor =
-                SyncExecutor(remoteProject = null, remoteProgress = null, remotePattern = null, remoteStructuredChart = null, json = json)
+                SyncExecutor(remoteProject = null, remoteProgress = null, remotePattern = null, remoteChart = null, json = json)
             val result =
                 executor.execute(
-                    entry(SyncEntityType.STRUCTURED_CHART, "chart-1", SyncOperation.INSERT, json.encodeToString(testStructuredChart)),
+                    entry(SyncEntityType.STRUCTURED_CHART, "chart-1", SyncOperation.INSERT, json.encodeToString(testChart)),
                 )
             assertTrue(result)
         }
@@ -350,19 +350,19 @@ class SyncExecutorTest {
     @Test
     fun `structured chart insert dispatches to remote`() =
         runTest {
-            val fakeRemote = FakeRemoteStructuredChartDataSource()
+            val fakeRemote = FakeRemoteChartDataSource()
             val executor =
                 SyncExecutor(
                     remoteProject = null,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = fakeRemote,
+                    remoteChart = fakeRemote,
                     json = json,
                 )
 
             val result =
                 executor.execute(
-                    entry(SyncEntityType.STRUCTURED_CHART, "chart-1", SyncOperation.INSERT, json.encodeToString(testStructuredChart)),
+                    entry(SyncEntityType.STRUCTURED_CHART, "chart-1", SyncOperation.INSERT, json.encodeToString(testChart)),
                 )
 
             assertTrue(result)
@@ -373,19 +373,19 @@ class SyncExecutorTest {
     @Test
     fun `structured chart update dispatches to remote`() =
         runTest {
-            val fakeRemote = FakeRemoteStructuredChartDataSource()
+            val fakeRemote = FakeRemoteChartDataSource()
             val executor =
                 SyncExecutor(
                     remoteProject = null,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = fakeRemote,
+                    remoteChart = fakeRemote,
                     json = json,
                 )
 
             val result =
                 executor.execute(
-                    entry(SyncEntityType.STRUCTURED_CHART, "chart-1", SyncOperation.UPDATE, json.encodeToString(testStructuredChart)),
+                    entry(SyncEntityType.STRUCTURED_CHART, "chart-1", SyncOperation.UPDATE, json.encodeToString(testChart)),
                 )
 
             assertTrue(result)
@@ -395,13 +395,13 @@ class SyncExecutorTest {
     @Test
     fun `structured chart delete dispatches to remote`() =
         runTest {
-            val fakeRemote = FakeRemoteStructuredChartDataSource()
+            val fakeRemote = FakeRemoteChartDataSource()
             val executor =
                 SyncExecutor(
                     remoteProject = null,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = fakeRemote,
+                    remoteChart = fakeRemote,
                     json = json,
                 )
 
@@ -415,19 +415,19 @@ class SyncExecutorTest {
     @Test
     fun `structured chart remote failure propagates for retry`() =
         runTest {
-            val fakeRemote = FakeRemoteStructuredChartDataSource().apply { shouldFail = true }
+            val fakeRemote = FakeRemoteChartDataSource().apply { shouldFail = true }
             val executor =
                 SyncExecutor(
                     remoteProject = null,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = fakeRemote,
+                    remoteChart = fakeRemote,
                     json = json,
                 )
             var threw = false
             try {
                 executor.execute(
-                    entry(SyncEntityType.STRUCTURED_CHART, "chart-1", SyncOperation.INSERT, json.encodeToString(testStructuredChart)),
+                    entry(SyncEntityType.STRUCTURED_CHART, "chart-1", SyncOperation.INSERT, json.encodeToString(testChart)),
                 )
             } catch (_: Exception) {
                 threw = true
@@ -457,7 +457,7 @@ class SyncExecutorTest {
                     remoteProject = null,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
                 )
             val result =
@@ -476,7 +476,7 @@ class SyncExecutorTest {
                     remoteProject = null,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
                     remoteProjectSegment = fakeRemote,
                 )
@@ -501,7 +501,7 @@ class SyncExecutorTest {
                     remoteProject = null,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
                     remoteProjectSegment = fakeRemote,
                 )
@@ -527,7 +527,7 @@ class SyncExecutorTest {
                     remoteProject = null,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
                     remoteProjectSegment = fakeRemote,
                 )
@@ -548,7 +548,7 @@ class SyncExecutorTest {
                     remoteProject = null,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
                     remoteProjectSegment = fakeRemote,
                 )
@@ -566,7 +566,7 @@ class SyncExecutorTest {
     // --- Pull request dispatch tests (Phase 38.1, ADR-014 §7) ---
 
     private val testPr =
-        PullRequest(
+        Suggestion(
             id = "pr-1",
             sourcePatternId = "pat-fork",
             sourceBranchId = "branch-fork",
@@ -577,7 +577,7 @@ class SyncExecutorTest {
             authorId = "user-fork",
             title = "Reworked rows 12-20",
             description = null,
-            status = PullRequestStatus.OPEN,
+            status = SuggestionStatus.OPEN,
             mergedRevisionId = null,
             mergedAt = null,
             closedAt = null,
@@ -586,23 +586,23 @@ class SyncExecutorTest {
         )
 
     private val testPrComment =
-        PullRequestComment(
+        SuggestionComment(
             id = "cmt-1",
-            pullRequestId = "pr-1",
+            suggestionId = "pr-1",
             authorId = "user-1",
             body = "Looks good",
             createdAt = Instant.fromEpochMilliseconds(2000),
         )
 
     @Test
-    fun `null remotePullRequest returns true`() =
+    fun `null remoteSuggestion returns true`() =
         runTest {
             val executor =
                 SyncExecutor(
                     remoteProject = null,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
                 )
             val result =
@@ -615,15 +615,15 @@ class SyncExecutorTest {
     @Test
     fun `pull request insert dispatches upsert to remote`() =
         runTest {
-            val fakeRemote = FakeRemotePullRequestDataSource()
+            val fakeRemote = FakeRemoteSuggestionDataSource()
             val executor =
                 SyncExecutor(
                     remoteProject = null,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
-                    remotePullRequest = fakeRemote,
+                    remoteSuggestion = fakeRemote,
                 )
 
             val result =
@@ -632,70 +632,70 @@ class SyncExecutorTest {
                 )
 
             assertTrue(result)
-            assertEquals(1, fakeRemote.upsertedPullRequests.size)
-            assertEquals("pr-1", fakeRemote.upsertedPullRequests[0].id)
+            assertEquals(1, fakeRemote.upsertedSuggestions.size)
+            assertEquals("pr-1", fakeRemote.upsertedSuggestions[0].id)
         }
 
     @Test
     fun `pull request update dispatches upsert to remote`() =
         runTest {
-            val fakeRemote = FakeRemotePullRequestDataSource()
+            val fakeRemote = FakeRemoteSuggestionDataSource()
             val executor =
                 SyncExecutor(
                     remoteProject = null,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
-                    remotePullRequest = fakeRemote,
+                    remoteSuggestion = fakeRemote,
                 )
 
-            val closed = testPr.copy(status = PullRequestStatus.CLOSED, closedAt = Instant.fromEpochMilliseconds(3000))
+            val closed = testPr.copy(status = SuggestionStatus.CLOSED, closedAt = Instant.fromEpochMilliseconds(3000))
             val result =
                 executor.execute(
                     entry(SyncEntityType.PULL_REQUEST, "pr-1", SyncOperation.UPDATE, json.encodeToString(closed)),
                 )
 
             assertTrue(result)
-            assertEquals(1, fakeRemote.upsertedPullRequests.size)
-            assertEquals(PullRequestStatus.CLOSED, fakeRemote.upsertedPullRequests[0].status)
+            assertEquals(1, fakeRemote.upsertedSuggestions.size)
+            assertEquals(SuggestionStatus.CLOSED, fakeRemote.upsertedSuggestions[0].status)
         }
 
     @Test
     fun `pull request delete is silent no-op without surfacing to remote`() =
         runTest {
-            val fakeRemote = FakeRemotePullRequestDataSource()
+            val fakeRemote = FakeRemoteSuggestionDataSource()
             val executor =
                 SyncExecutor(
                     remoteProject = null,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
-                    remotePullRequest = fakeRemote,
+                    remoteSuggestion = fakeRemote,
                 )
 
             val result = executor.execute(entry(SyncEntityType.PULL_REQUEST, "pr-1", SyncOperation.DELETE))
 
             // ADR-014 §7: PRs are kept as audit trail; SyncManager never enqueues
             // DELETE. Defensive silent-success consumes a stray entry once and
-            // lets the queue move on (matches executeChartRevision's pattern).
+            // lets the queue move on (matches executeChartVersion's pattern).
             assertTrue(result)
-            assertEquals(0, fakeRemote.upsertedPullRequests.size)
+            assertEquals(0, fakeRemote.upsertedSuggestions.size)
         }
 
     @Test
     fun `pull request remote failure propagates for retry`() =
         runTest {
-            val fakeRemote = FakeRemotePullRequestDataSource().apply { shouldFailUpsert = true }
+            val fakeRemote = FakeRemoteSuggestionDataSource().apply { shouldFailUpsert = true }
             val executor =
                 SyncExecutor(
                     remoteProject = null,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
-                    remotePullRequest = fakeRemote,
+                    remoteSuggestion = fakeRemote,
                 )
             var threw = false
             try {
@@ -711,15 +711,15 @@ class SyncExecutorTest {
     @Test
     fun `pull request comment insert dispatches append to remote`() =
         runTest {
-            val fakeRemote = FakeRemotePullRequestDataSource()
+            val fakeRemote = FakeRemoteSuggestionDataSource()
             val executor =
                 SyncExecutor(
                     remoteProject = null,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
-                    remotePullRequestComment = fakeRemote,
+                    remoteSuggestionComment = fakeRemote,
                 )
 
             val result =
@@ -742,16 +742,16 @@ class SyncExecutorTest {
         runTest {
             // Comments are append-only at RLS — UPDATE/DELETE are structurally
             // forbidden. SyncManager never enqueues them; defensive silent
-            // success matches executeChartRevision.
-            val fakeRemote = FakeRemotePullRequestDataSource()
+            // success matches executeChartVersion.
+            val fakeRemote = FakeRemoteSuggestionDataSource()
             val executor =
                 SyncExecutor(
                     remoteProject = null,
                     remoteProgress = null,
                     remotePattern = null,
-                    remoteStructuredChart = null,
+                    remoteChart = null,
                     json = json,
-                    remotePullRequestComment = fakeRemote,
+                    remoteSuggestionComment = fakeRemote,
                 )
 
             val updateResult =

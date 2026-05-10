@@ -1,13 +1,13 @@
 package io.github.b150005.skeinly.data.sync
 
-import io.github.b150005.skeinly.domain.model.ChartBranch
+import io.github.b150005.skeinly.domain.model.ChartVariation
 
-class FakeRemoteChartBranchDataSource : RemoteChartBranchSyncOperations {
-    val upsertedBranches = mutableListOf<ChartBranch>()
+class FakeRemoteChartVariationDataSource : RemoteChartVariationSyncOperations {
+    val upsertedBranches = mutableListOf<ChartVariation>()
     val deletedIds = mutableListOf<String>()
     var shouldFail = false
 
-    override suspend fun upsert(branch: ChartBranch): ChartBranch {
+    override suspend fun upsert(branch: ChartVariation): ChartVariation {
         if (shouldFail) throw RuntimeException("Fake remote branch upsert failure")
         upsertedBranches.add(branch)
         return branch

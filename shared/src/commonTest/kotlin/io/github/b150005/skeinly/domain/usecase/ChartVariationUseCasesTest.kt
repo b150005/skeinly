@@ -1,14 +1,14 @@
 package io.github.b150005.skeinly.domain.usecase
 
-import io.github.b150005.skeinly.domain.model.ChartBranch
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartCell
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
-import io.github.b150005.skeinly.domain.model.ChartRevision
+import io.github.b150005.skeinly.domain.model.ChartVariation
+import io.github.b150005.skeinly.domain.model.ChartVersion
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import io.github.b150005.skeinly.domain.model.StructuredChart
-import io.github.b150005.skeinly.domain.repository.ChartRevisionRepository
+import io.github.b150005.skeinly.domain.repository.ChartVersionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -21,7 +21,7 @@ import kotlin.time.Instant
 /**
  * Coverage matrix for the Phase 37.4 use cases (ADR-013 §6, §7):
  *
- * GetChartBranchesUseCase:
+ * GetChartVariationesUseCase:
  *  1. observe surfaces seeded branches in alphabetical order
  *  2. invoke returns success on a populated repo
  *
@@ -41,7 +41,7 @@ import kotlin.time.Instant
  * 11. unknown revision returns NotFound
  * 12. happy path appends new commit with restored payload, parent = old tip
  */
-class ChartBranchUseCasesTest {
+class ChartVariationUseCasesTest {
     private val now = Instant.parse("2026-04-26T10:00:00Z")
 
     private fun chart(
@@ -49,12 +49,12 @@ class ChartBranchUseCasesTest {
         revisionId: String = "rev-a",
         layers: List<ChartLayer> = listOf(ChartLayer(id = "L1", name = "Main", cells = listOf(ChartCell("jis.k1", 0, 0)))),
         contentHash: String = "h-a",
-    ): StructuredChart =
-        StructuredChart(
+    ): Chart =
+        Chart(
             id = "chart-row-1",
             patternId = patternId,
             ownerId = "user-1",
-            schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+            schemaVersion = Chart.CURRENT_SCHEMA_VERSION,
             storageVariant = StorageVariant.INLINE,
             coordinateSystem = CoordinateSystem.RECT_GRID,
             extents = ChartExtents.Rect(0, 0, 4, 4),
@@ -69,10 +69,10 @@ class ChartBranchUseCasesTest {
     private fun branch(
         id: String = "branch-row-1",
         patternId: String = "pat-1",
-        branchName: String = ChartBranch.DEFAULT_BRANCH_NAME,
+        branchName: String = ChartVariation.DEFAULT_BRANCH_NAME,
         tipRevisionId: String = "rev-a",
-    ): ChartBranch =
-        ChartBranch(
+    ): ChartVariation =
+        ChartVariation(
             id = id,
             patternId = patternId,
             ownerId = "user-1",
@@ -87,13 +87,13 @@ class ChartBranchUseCasesTest {
         patternId: String = "pat-1",
         layers: List<ChartLayer> = listOf(ChartLayer(id = "L1", name = "Main", cells = listOf(ChartCell("jis.p1", 0, 0)))),
         contentHash: String = "h-restored",
-    ): ChartRevision =
-        ChartRevision(
+    ): ChartVersion =
+        ChartVersion(
             id = "rev-row-$revisionId",
             patternId = patternId,
             ownerId = "user-1",
             authorId = "user-1",
-            schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+            schemaVersion = Chart.CURRENT_SCHEMA_VERSION,
             storageVariant = StorageVariant.INLINE,
             coordinateSystem = CoordinateSystem.RECT_GRID,
             extents = ChartExtents.Rect(0, 0, 4, 4),
@@ -105,15 +105,15 @@ class ChartBranchUseCasesTest {
             createdAt = now,
         )
 
-    // ---- GetChartBranchesUseCase ----
+    // ---- GetChartVariationesUseCase ----
 
     @Test
-    fun `GetChartBranchesUseCase invoke returns Success with seeded branches`() =
+    fun `GetChartVariationesUseCase invoke returns Success with seeded branches`() =
         runTest {
-            val branchRepo = FakeChartBranchRepository()
+            val branchRepo = FakeChartVariationRepository()
             branchRepo.seed(branch(branchName = "main"))
             branchRepo.seed(branch(id = "branch-row-2", branchName = "feature"))
-            val useCase = GetChartBranchesUseCase(branchRepo)
+            val useCase = GetChartVariationesUseCase(branchRepo)
 
             val result = useCase("pat-1")
 
@@ -126,8 +126,8 @@ class ChartBranchUseCasesTest {
     @Test
     fun `CreateBranchUseCase rejects blank branch name`() =
         runTest {
-            val branchRepo = FakeChartBranchRepository()
-            val chartRepo = FakeStructuredChartRepository().apply { seed(chart()) }
+            val branchRepo = FakeChartVariationRepository()
+            val chartRepo = FakeChartRepository().apply { seed(chart()) }
             val useCase = CreateBranchUseCase(branchRepo, chartRepo)
 
             val result = useCase("pat-1", "   ", ownerId = "user-1")
@@ -139,8 +139,8 @@ class ChartBranchUseCasesTest {
     @Test
     fun `CreateBranchUseCase rejects reserved name main case-insensitively`() =
         runTest {
-            val branchRepo = FakeChartBranchRepository()
-            val chartRepo = FakeStructuredChartRepository().apply { seed(chart()) }
+            val branchRepo = FakeChartVariationRepository()
+            val chartRepo = FakeChartRepository().apply { seed(chart()) }
             val useCase = CreateBranchUseCase(branchRepo, chartRepo)
 
             val result = useCase("pat-1", "MAIN", ownerId = "user-1")
@@ -153,10 +153,10 @@ class ChartBranchUseCasesTest {
     fun `CreateBranchUseCase rejects duplicate branch name`() =
         runTest {
             val branchRepo =
-                FakeChartBranchRepository().apply {
+                FakeChartVariationRepository().apply {
                     seed(branch(branchName = "feature"))
                 }
-            val chartRepo = FakeStructuredChartRepository().apply { seed(chart()) }
+            val chartRepo = FakeChartRepository().apply { seed(chart()) }
             val useCase = CreateBranchUseCase(branchRepo, chartRepo)
 
             val result = useCase("pat-1", "feature", ownerId = "user-1")
@@ -168,8 +168,8 @@ class ChartBranchUseCasesTest {
     @Test
     fun `CreateBranchUseCase returns NotFound when chart is absent`() =
         runTest {
-            val branchRepo = FakeChartBranchRepository()
-            val chartRepo = FakeStructuredChartRepository()
+            val branchRepo = FakeChartVariationRepository()
+            val chartRepo = FakeChartRepository()
             val useCase = CreateBranchUseCase(branchRepo, chartRepo)
 
             val result = useCase("pat-1", "feature", ownerId = "user-1")
@@ -181,8 +181,8 @@ class ChartBranchUseCasesTest {
     @Test
     fun `CreateBranchUseCase happy path mints branch tip at current chart revision`() =
         runTest {
-            val branchRepo = FakeChartBranchRepository()
-            val chartRepo = FakeStructuredChartRepository().apply { seed(chart(revisionId = "rev-current")) }
+            val branchRepo = FakeChartVariationRepository()
+            val chartRepo = FakeChartRepository().apply { seed(chart(revisionId = "rev-current")) }
             val useCase = CreateBranchUseCase(branchRepo, chartRepo)
 
             val result = useCase("pat-1", " feature ", ownerId = "user-1")
@@ -200,9 +200,9 @@ class ChartBranchUseCasesTest {
     @Test
     fun `SwitchBranchUseCase returns NotFound for unknown branch`() =
         runTest {
-            val branchRepo = FakeChartBranchRepository()
+            val branchRepo = FakeChartVariationRepository()
             val revisionRepo = InMemoryRevisionRepo()
-            val chartRepo = FakeStructuredChartRepository().apply { seed(chart()) }
+            val chartRepo = FakeChartRepository().apply { seed(chart()) }
             val useCase = SwitchBranchUseCase(branchRepo, revisionRepo, chartRepo)
 
             val result = useCase("pat-1", "feature")
@@ -215,11 +215,11 @@ class ChartBranchUseCasesTest {
     fun `SwitchBranchUseCase returns NotFound when branch tip revision is missing`() =
         runTest {
             val branchRepo =
-                FakeChartBranchRepository().apply {
+                FakeChartVariationRepository().apply {
                     seed(branch(branchName = "feature", tipRevisionId = "rev-dangling"))
                 }
             val revisionRepo = InMemoryRevisionRepo()
-            val chartRepo = FakeStructuredChartRepository().apply { seed(chart()) }
+            val chartRepo = FakeChartRepository().apply { seed(chart()) }
             val useCase = SwitchBranchUseCase(branchRepo, revisionRepo, chartRepo)
 
             val result = useCase("pat-1", "feature")
@@ -238,12 +238,12 @@ class ChartBranchUseCasesTest {
                     contentHash = "h-feature",
                 )
             val branchRepo =
-                FakeChartBranchRepository().apply {
+                FakeChartVariationRepository().apply {
                     seed(branch(branchName = "feature", tipRevisionId = "rev-feature-tip"))
                 }
             val revisionRepo = InMemoryRevisionRepo().apply { add(targetRev) }
             val current = chart(revisionId = "rev-main")
-            val chartRepo = FakeStructuredChartRepository().apply { seed(current) }
+            val chartRepo = FakeChartRepository().apply { seed(current) }
             val useCase = SwitchBranchUseCase(branchRepo, revisionRepo, chartRepo)
 
             val result = useCase("pat-1", "feature")
@@ -267,12 +267,12 @@ class ChartBranchUseCasesTest {
         runTest {
             val targetRev = revision(revisionId = "rev-feature-tip")
             val branchRepo =
-                FakeChartBranchRepository().apply {
+                FakeChartVariationRepository().apply {
                     seed(branch(branchName = "feature", tipRevisionId = "rev-feature-tip"))
                 }
             val revisionRepo = InMemoryRevisionRepo().apply { add(targetRev) }
             // No chart seeded — setTip returns null.
-            val chartRepo = FakeStructuredChartRepository()
+            val chartRepo = FakeChartRepository()
             val useCase = SwitchBranchUseCase(branchRepo, revisionRepo, chartRepo)
 
             val result = useCase("pat-1", "feature")
@@ -287,7 +287,7 @@ class ChartBranchUseCasesTest {
     fun `RestoreRevisionUseCase returns NotFound for unknown revision`() =
         runTest {
             val revisionRepo = InMemoryRevisionRepo()
-            val chartRepo = FakeStructuredChartRepository().apply { seed(chart()) }
+            val chartRepo = FakeChartRepository().apply { seed(chart()) }
             val useCase = RestoreRevisionUseCase(revisionRepo, chartRepo)
 
             val result = useCase("pat-1", "rev-ghost")
@@ -307,7 +307,7 @@ class ChartBranchUseCasesTest {
                 )
             val current = chart(revisionId = "rev-current")
             val revisionRepo = InMemoryRevisionRepo().apply { add(oldRev) }
-            val chartRepo = FakeStructuredChartRepository().apply { seed(current) }
+            val chartRepo = FakeChartRepository().apply { seed(current) }
             val useCase = RestoreRevisionUseCase(revisionRepo, chartRepo)
 
             val result = useCase("pat-1", "rev-old")
@@ -331,22 +331,22 @@ class ChartBranchUseCasesTest {
  * call `getRevision`; the other methods are unused and surface an `error()`
  * to fail loudly if a future refactor reaches them through this fake.
  */
-private class InMemoryRevisionRepo : ChartRevisionRepository {
-    private val store = mutableMapOf<String, ChartRevision>()
+private class InMemoryRevisionRepo : ChartVersionRepository {
+    private val store = mutableMapOf<String, ChartVersion>()
 
-    fun add(revision: ChartRevision) {
+    fun add(revision: ChartVersion) {
         store[revision.revisionId] = revision
     }
 
-    override suspend fun getRevision(revisionId: String): ChartRevision? = store[revisionId]
+    override suspend fun getRevision(revisionId: String): ChartVersion? = store[revisionId]
 
     override suspend fun getHistoryForPattern(
         patternId: String,
         limit: Int,
         offset: Int,
-    ): List<ChartRevision> = error("Not used by branch / restore use cases")
+    ): List<ChartVersion> = error("Not used by branch / restore use cases")
 
-    override fun observeHistoryForPattern(patternId: String): Flow<List<ChartRevision>> = flowOf(emptyList())
+    override fun observeHistoryForPattern(patternId: String): Flow<List<ChartVersion>> = flowOf(emptyList())
 
-    override suspend fun append(revision: ChartRevision): ChartRevision = error("Not used by branch / restore use cases")
+    override suspend fun append(revision: ChartVersion): ChartVersion = error("Not used by branch / restore use cases")
 }

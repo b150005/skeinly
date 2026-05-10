@@ -1,34 +1,34 @@
 package io.github.b150005.skeinly.domain.usecase
 
-import io.github.b150005.skeinly.domain.model.ChartBranch
-import io.github.b150005.skeinly.domain.repository.ChartBranchRepository
+import io.github.b150005.skeinly.domain.model.ChartVariation
+import io.github.b150005.skeinly.domain.repository.ChartVariationRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlin.time.Clock
 
-class FakeChartBranchRepository : ChartBranchRepository {
-    private val branches = MutableStateFlow<List<ChartBranch>>(emptyList())
+class FakeChartVariationRepository : ChartVariationRepository {
+    private val branches = MutableStateFlow<List<ChartVariation>>(emptyList())
 
     var failNext: Throwable? = null
 
     override suspend fun getByPatternIdAndName(
         patternId: String,
         branchName: String,
-    ): ChartBranch? {
+    ): ChartVariation? {
         failNext?.let { throw it.also { failNext = null } }
         return branches.value.firstOrNull { it.patternId == patternId && it.branchName == branchName }
     }
 
-    override suspend fun getByPatternId(patternId: String): List<ChartBranch> {
+    override suspend fun getByPatternId(patternId: String): List<ChartVariation> {
         failNext?.let { throw it.also { failNext = null } }
         return branches.value.filter { it.patternId == patternId }
     }
 
-    override fun observeBranchesForPattern(patternId: String): Flow<List<ChartBranch>> =
+    override fun observeBranchesForPattern(patternId: String): Flow<List<ChartVariation>> =
         branches.map { list -> list.filter { it.patternId == patternId } }
 
-    override suspend fun createBranch(branch: ChartBranch): ChartBranch {
+    override suspend fun createBranch(branch: ChartVariation): ChartVariation {
         failNext?.let { throw it.also { failNext = null } }
         // Idempotent on (patternId, branchName) — mirrors the production
         // SQLDelight `INSERT OR IGNORE` semantics. CreateBranchUseCase
@@ -66,7 +66,7 @@ class FakeChartBranchRepository : ChartBranchRepository {
         branches.value = branches.value.filter { it.id != branchId }
     }
 
-    fun seed(branch: ChartBranch) {
+    fun seed(branch: ChartVariation) {
         branches.value = branches.value + branch
     }
 }

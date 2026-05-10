@@ -14,10 +14,10 @@ import com.russhwolf.settings.Settings
  * sites if Phase 24+ ever needs it.
  */
 enum class NotificationPromptTrigger {
-    /** First time PullRequestListScreen (Incoming filter) opens AND the list is non-empty. */
+    /** First time SuggestionListScreen (Incoming filter) opens AND the list is non-empty. */
     PR_LIST_INCOMING_WITH_PRS,
 
-    /** First time PullRequestDetailScreen opens. */
+    /** First time SuggestionDetailScreen opens. */
     PR_DETAIL_OPENED,
 
     /** First time the user posts a comment on a PR. */

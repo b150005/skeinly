@@ -1,8 +1,8 @@
 package io.github.b150005.skeinly.domain.usecase
 
-import io.github.b150005.skeinly.domain.model.PullRequestComment
+import io.github.b150005.skeinly.domain.model.SuggestionComment
 import io.github.b150005.skeinly.domain.repository.AuthRepository
-import io.github.b150005.skeinly.domain.repository.PullRequestRepository
+import io.github.b150005.skeinly.domain.repository.SuggestionRepository
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
@@ -16,19 +16,19 @@ import kotlin.uuid.Uuid
  * + createdAt locally; the remote upsert path tolerates either side
  * generating these (idempotent on `id`).
  *
- * Caller (PullRequestDetailViewModel) is responsible for ensuring the PR is
+ * Caller (SuggestionDetailViewModel) is responsible for ensuring the PR is
  * still OPEN — the RLS policy permits comment INSERTs by either party while
  * a PR is OPEN, MERGED, or CLOSED, but the UX gates the input on OPEN.
  */
 @OptIn(ExperimentalUuidApi::class)
-class PostPullRequestCommentUseCase(
-    private val repository: PullRequestRepository,
+class PostSuggestionCommentUseCase(
+    private val repository: SuggestionRepository,
     private val authRepository: AuthRepository,
 ) {
     suspend operator fun invoke(
-        pullRequestId: String,
+        suggestionId: String,
         body: String,
-    ): UseCaseResult<PullRequestComment> {
+    ): UseCaseResult<SuggestionComment> {
         val trimmed = body.trim()
         if (trimmed.isEmpty()) {
             return UseCaseResult.Failure(UseCaseError.FieldRequired)
@@ -46,9 +46,9 @@ class PostPullRequestCommentUseCase(
 
         return try {
             val comment =
-                PullRequestComment(
+                SuggestionComment(
                     id = Uuid.random().toString(),
-                    pullRequestId = pullRequestId,
+                    suggestionId = suggestionId,
                     authorId = authorId,
                     body = trimmed,
                     createdAt = Clock.System.now(),

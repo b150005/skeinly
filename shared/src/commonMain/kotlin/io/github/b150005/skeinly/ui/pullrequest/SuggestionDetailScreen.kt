@@ -40,32 +40,32 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestComment
-import io.github.b150005.skeinly.domain.model.PullRequestStatus
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionComment
+import io.github.b150005.skeinly.domain.model.SuggestionStatus
 import io.github.b150005.skeinly.generated.resources.Res
+import io.github.b150005.skeinly.generated.resources.action_apply_suggestion
 import io.github.b150005.skeinly.generated.resources.action_back
 import io.github.b150005.skeinly.generated.resources.action_cancel
-import io.github.b150005.skeinly.generated.resources.action_close_pr
-import io.github.b150005.skeinly.generated.resources.action_merge_pr
+import io.github.b150005.skeinly.generated.resources.action_close_suggestion
 import io.github.b150005.skeinly.generated.resources.action_post_comment
-import io.github.b150005.skeinly.generated.resources.dialog_close_pr_body
-import io.github.b150005.skeinly.generated.resources.dialog_close_pr_title
-import io.github.b150005.skeinly.generated.resources.dialog_merge_pr_body
-import io.github.b150005.skeinly.generated.resources.dialog_merge_pr_title
-import io.github.b150005.skeinly.generated.resources.hint_add_comment_to_pr
-import io.github.b150005.skeinly.generated.resources.label_pr_authored_by
-import io.github.b150005.skeinly.generated.resources.label_pr_comments
-import io.github.b150005.skeinly.generated.resources.label_pr_description
-import io.github.b150005.skeinly.generated.resources.label_pr_diff_preview
-import io.github.b150005.skeinly.generated.resources.label_pr_status_closed
-import io.github.b150005.skeinly.generated.resources.label_pr_status_merged
-import io.github.b150005.skeinly.generated.resources.label_pr_status_open
+import io.github.b150005.skeinly.generated.resources.dialog_apply_suggestion_body
+import io.github.b150005.skeinly.generated.resources.dialog_apply_suggestion_title
+import io.github.b150005.skeinly.generated.resources.dialog_close_suggestion_body
+import io.github.b150005.skeinly.generated.resources.dialog_close_suggestion_title
+import io.github.b150005.skeinly.generated.resources.hint_add_comment_to_suggestion
 import io.github.b150005.skeinly.generated.resources.label_someone
-import io.github.b150005.skeinly.generated.resources.message_pr_closed_successfully
-import io.github.b150005.skeinly.generated.resources.message_pr_merged_successfully
-import io.github.b150005.skeinly.generated.resources.state_pr_not_found
-import io.github.b150005.skeinly.generated.resources.title_pull_request_detail
+import io.github.b150005.skeinly.generated.resources.label_suggestion_authored_by
+import io.github.b150005.skeinly.generated.resources.label_suggestion_changes_preview
+import io.github.b150005.skeinly.generated.resources.label_suggestion_comments
+import io.github.b150005.skeinly.generated.resources.label_suggestion_description
+import io.github.b150005.skeinly.generated.resources.label_suggestion_status_applied
+import io.github.b150005.skeinly.generated.resources.label_suggestion_status_closed
+import io.github.b150005.skeinly.generated.resources.label_suggestion_status_open
+import io.github.b150005.skeinly.generated.resources.message_suggestion_applied_successfully
+import io.github.b150005.skeinly.generated.resources.message_suggestion_closed_successfully
+import io.github.b150005.skeinly.generated.resources.state_suggestion_not_found
+import io.github.b150005.skeinly.generated.resources.title_suggestion_detail
 import io.github.b150005.skeinly.notifications.NotificationPromptTrigger
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.localized
@@ -84,9 +84,9 @@ import org.koin.core.parameter.parametersOf
  * Layout:
  *  - TopAppBar with back + title + status chip
  *  - Description card (plain text, multi-line)
- *  - Diff preview tap-out card linking to the existing Phase 37.3 ChartDiffScreen
+ *  - Diff preview tap-out card linking to the existing Phase 37.3 ChartComparisonScreen
  *    (between commonAncestorRevisionId and sourceTipRevisionId). Inline canvas
- *    rendering is deferred — extracting `DualCanvasPanel` from ChartDiffScreen
+ *    rendering is deferred — extracting `DualCanvasPanel` from ChartComparisonScreen
  *    into a smaller reusable thumbnail-sized component is a meaningful refactor
  *    of the gestural Compose Canvas, same scope-cut precedent as Phase 36.4's
  *    iOS Discovery thumbnail (live render shipped on Compose, deferred on iOS).
@@ -97,12 +97,12 @@ import org.koin.core.parameter.parametersOf
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PullRequestDetailScreen(
+fun SuggestionDetailScreen(
     prId: String,
     onBack: () -> Unit,
     onOpenDiff: (baseRevisionId: String, targetRevisionId: String) -> Unit = { _, _ -> },
     onResolveConflicts: (prId: String) -> Unit = { _ -> },
-    viewModel: PullRequestDetailViewModel = koinViewModel { parametersOf(prId) },
+    viewModel: SuggestionDetailViewModel = koinViewModel { parametersOf(prId) },
     // Phase 24.2c-3 (ADR-017 §3.6) — drives the in-app pre-permission
     // explainer dispatched on first PR detail open + first comment post.
     notificationViewModel: NotificationPermissionViewModel = koinViewModel(),
@@ -110,26 +110,26 @@ fun PullRequestDetailScreen(
     val state by viewModel.state.collectAsState()
     val notificationState by notificationViewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val closedMessage = stringResource(Res.string.message_pr_closed_successfully)
-    val mergedMessage = stringResource(Res.string.message_pr_merged_successfully)
+    val closedMessage = stringResource(Res.string.message_suggestion_closed_successfully)
+    val mergedMessage = stringResource(Res.string.message_suggestion_applied_successfully)
 
     val errorText = state.error?.localized()
 
     LaunchedEffect(errorText) {
         errorText?.let {
             snackbarHostState.showSnackbar(it)
-            viewModel.onEvent(PullRequestDetailEvent.ClearError)
+            viewModel.onEvent(SuggestionDetailEvent.ClearError)
         }
     }
 
     LaunchedEffect(viewModel) {
         viewModel.navEvents.collect { event ->
             when (event) {
-                PullRequestDetailNavEvent.PrClosed -> snackbarHostState.showSnackbar(closedMessage)
-                is PullRequestDetailNavEvent.PrMerged -> snackbarHostState.showSnackbar(mergedMessage)
-                is PullRequestDetailNavEvent.NavigateToConflictResolution ->
+                SuggestionDetailNavEvent.PrClosed -> snackbarHostState.showSnackbar(closedMessage)
+                is SuggestionDetailNavEvent.PrMerged -> snackbarHostState.showSnackbar(mergedMessage)
+                is SuggestionDetailNavEvent.NavigateToConflictResolution ->
                     onResolveConflicts(event.prId)
-                PullRequestDetailNavEvent.CommentPosted ->
+                SuggestionDetailNavEvent.CommentPosted ->
                     notificationViewModel.onEvent(
                         NotificationPermissionEvent.TriggerEncountered(
                             NotificationPromptTrigger.PR_COMMENT_POSTED,
@@ -141,11 +141,11 @@ fun PullRequestDetailScreen(
 
     // Phase 24.2c-3 (ADR-017 §3.6) — first PR detail open is the second
     // collaboration moment trigger after the Incoming list. Keyed on
-    // `state.pullRequest != null` so the dispatch fires after `loadInitial`
+    // `state.suggestion != null` so the dispatch fires after `loadInitial`
     // resolves rather than during the loading-spinner phase. The prompter's
     // global "asked" bit makes a hypothetical refire idempotent.
-    LaunchedEffect(state.pullRequest != null) {
-        if (state.pullRequest != null) {
+    LaunchedEffect(state.suggestion != null) {
+        if (state.suggestion != null) {
             notificationViewModel.onEvent(
                 NotificationPermissionEvent.TriggerEncountered(
                     NotificationPromptTrigger.PR_DETAIL_OPENED,
@@ -159,7 +159,7 @@ fun PullRequestDetailScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = stringResource(Res.string.title_pull_request_detail),
+                        text = stringResource(Res.string.title_suggestion_detail),
                         modifier = Modifier.testTag("prDetailTitle"),
                     )
                 },
@@ -180,22 +180,22 @@ fun PullRequestDetailScreen(
                 Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .testTag("pullRequestDetailScreen"),
+                    .testTag("suggestionDetailScreen"),
         ) {
             when {
                 state.isLoading ->
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
 
-                state.pullRequest == null ->
+                state.suggestion == null ->
                     Text(
-                        text = stringResource(Res.string.state_pr_not_found),
+                        text = stringResource(Res.string.state_suggestion_not_found),
                         modifier = Modifier.align(Alignment.Center),
                         style = MaterialTheme.typography.bodyMedium,
                     )
 
                 else ->
                     DetailContent(
-                        pr = state.pullRequest!!,
+                        pr = state.suggestion!!,
                         comments = state.comments,
                         users = state.users,
                         commentDraft = state.commentDraft,
@@ -203,11 +203,11 @@ fun PullRequestDetailScreen(
                         canMerge = state.canMerge,
                         canClose = state.canClose,
                         onCommentDraftChanged = {
-                            viewModel.onEvent(PullRequestDetailEvent.CommentDraftChanged(it))
+                            viewModel.onEvent(SuggestionDetailEvent.CommentDraftChanged(it))
                         },
-                        onPostComment = { viewModel.onEvent(PullRequestDetailEvent.PostComment) },
-                        onCloseClick = { viewModel.onEvent(PullRequestDetailEvent.RequestClose) },
-                        onMergeClick = { viewModel.onEvent(PullRequestDetailEvent.RequestMerge) },
+                        onPostComment = { viewModel.onEvent(SuggestionDetailEvent.PostComment) },
+                        onCloseClick = { viewModel.onEvent(SuggestionDetailEvent.RequestClose) },
+                        onMergeClick = { viewModel.onEvent(SuggestionDetailEvent.RequestMerge) },
                         onOpenDiff = onOpenDiff,
                     )
             }
@@ -216,18 +216,18 @@ fun PullRequestDetailScreen(
 
     if (state.pendingCloseConfirmation) {
         AlertDialog(
-            onDismissRequest = { viewModel.onEvent(PullRequestDetailEvent.DismissCloseConfirmation) },
-            title = { Text(stringResource(Res.string.dialog_close_pr_title)) },
-            text = { Text(stringResource(Res.string.dialog_close_pr_body)) },
+            onDismissRequest = { viewModel.onEvent(SuggestionDetailEvent.DismissCloseConfirmation) },
+            title = { Text(stringResource(Res.string.dialog_close_suggestion_title)) },
+            text = { Text(stringResource(Res.string.dialog_close_suggestion_body)) },
             confirmButton = {
                 TextButton(
-                    onClick = { viewModel.onEvent(PullRequestDetailEvent.ConfirmClose) },
+                    onClick = { viewModel.onEvent(SuggestionDetailEvent.ConfirmClose) },
                     modifier = Modifier.testTag("confirmClosePrButton"),
-                ) { Text(stringResource(Res.string.action_close_pr)) }
+                ) { Text(stringResource(Res.string.action_close_suggestion)) }
             },
             dismissButton = {
                 TextButton(
-                    onClick = { viewModel.onEvent(PullRequestDetailEvent.DismissCloseConfirmation) },
+                    onClick = { viewModel.onEvent(SuggestionDetailEvent.DismissCloseConfirmation) },
                 ) { Text(stringResource(Res.string.action_cancel)) }
             },
             modifier = Modifier.testTag("closePrDialog"),
@@ -241,19 +241,19 @@ fun PullRequestDetailScreen(
         // directly, conflicts navigate to ChartConflictResolutionScreen via
         // the navEvent collector above.
         AlertDialog(
-            onDismissRequest = { viewModel.onEvent(PullRequestDetailEvent.DismissMergeConfirmation) },
-            title = { Text(stringResource(Res.string.dialog_merge_pr_title)) },
-            text = { Text(stringResource(Res.string.dialog_merge_pr_body)) },
+            onDismissRequest = { viewModel.onEvent(SuggestionDetailEvent.DismissMergeConfirmation) },
+            title = { Text(stringResource(Res.string.dialog_apply_suggestion_title)) },
+            text = { Text(stringResource(Res.string.dialog_apply_suggestion_body)) },
             confirmButton = {
                 TextButton(
-                    onClick = { viewModel.onEvent(PullRequestDetailEvent.ConfirmMerge) },
+                    onClick = { viewModel.onEvent(SuggestionDetailEvent.ConfirmMerge) },
                     enabled = !state.isMerging,
                     modifier = Modifier.testTag("confirmMergePrButton"),
-                ) { Text(stringResource(Res.string.action_merge_pr)) }
+                ) { Text(stringResource(Res.string.action_apply_suggestion)) }
             },
             dismissButton = {
                 TextButton(
-                    onClick = { viewModel.onEvent(PullRequestDetailEvent.DismissMergeConfirmation) },
+                    onClick = { viewModel.onEvent(SuggestionDetailEvent.DismissMergeConfirmation) },
                 ) { Text(stringResource(Res.string.action_cancel)) }
             },
             modifier = Modifier.testTag("mergePrDialog"),
@@ -279,8 +279,8 @@ fun PullRequestDetailScreen(
 
 @Composable
 private fun DetailContent(
-    pr: PullRequest,
-    comments: List<PullRequestComment>,
+    pr: Suggestion,
+    comments: List<SuggestionComment>,
     users: Map<String, io.github.b150005.skeinly.domain.model.User>,
     commentDraft: String,
     isSendingComment: Boolean,
@@ -302,7 +302,7 @@ private fun DetailContent(
             item { DiffPreviewCard(pr, onOpenDiff) }
             item {
                 Text(
-                    text = stringResource(Res.string.label_pr_comments),
+                    text = stringResource(Res.string.label_suggestion_comments),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
@@ -313,7 +313,7 @@ private fun DetailContent(
             item { Spacer(Modifier.height(8.dp)) }
         }
 
-        if (pr.status == PullRequestStatus.OPEN) {
+        if (pr.status == SuggestionStatus.OPEN) {
             CommentComposeBox(
                 draft = commentDraft,
                 isSending = isSendingComment,
@@ -336,12 +336,12 @@ private fun DetailContent(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TitleAndStatus(
-    pr: PullRequest,
+    pr: Suggestion,
     users: Map<String, io.github.b150005.skeinly.domain.model.User>,
 ) {
     val authorName = pr.authorId?.let { users[it]?.displayName }
     val resolvedName = authorName ?: stringResource(Res.string.label_someone)
-    val authorLine = stringResource(Res.string.label_pr_authored_by, resolvedName)
+    val authorLine = stringResource(Res.string.label_suggestion_authored_by, resolvedName)
 
     Column(
         modifier =
@@ -388,7 +388,7 @@ private fun TitleAndStatus(
 }
 
 @Composable
-private fun DescriptionCard(pr: PullRequest) {
+private fun DescriptionCard(pr: Suggestion) {
     val description = pr.description?.takeIf { it.isNotBlank() } ?: return
     Surface(
         modifier =
@@ -403,7 +403,7 @@ private fun DescriptionCard(pr: PullRequest) {
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
-                text = stringResource(Res.string.label_pr_description),
+                text = stringResource(Res.string.label_suggestion_description),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -418,7 +418,7 @@ private fun DescriptionCard(pr: PullRequest) {
 
 @Composable
 private fun DiffPreviewCard(
-    pr: PullRequest,
+    pr: Suggestion,
     onOpenDiff: (baseRevisionId: String, targetRevisionId: String) -> Unit,
 ) {
     Surface(
@@ -435,7 +435,7 @@ private fun DiffPreviewCard(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = stringResource(Res.string.label_pr_diff_preview),
+                text = stringResource(Res.string.label_suggestion_changes_preview),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -443,7 +443,7 @@ private fun DiffPreviewCard(
                 onClick = { onOpenDiff(pr.commonAncestorRevisionId, pr.sourceTipRevisionId) },
                 modifier = Modifier.testTag("openDiffButton"),
             ) {
-                Text(stringResource(Res.string.label_pr_diff_preview))
+                Text(stringResource(Res.string.label_suggestion_changes_preview))
             }
         }
     }
@@ -451,7 +451,7 @@ private fun DiffPreviewCard(
 
 @Composable
 private fun CommentRow(
-    comment: PullRequestComment,
+    comment: SuggestionComment,
     users: Map<String, io.github.b150005.skeinly.domain.model.User>,
 ) {
     val authorName = comment.authorId?.let { users[it]?.displayName }
@@ -518,7 +518,7 @@ private fun CommentComposeBox(
             OutlinedTextField(
                 value = draft,
                 onValueChange = onChange,
-                label = { Text(stringResource(Res.string.hint_add_comment_to_pr)) },
+                label = { Text(stringResource(Res.string.hint_add_comment_to_suggestion)) },
                 modifier =
                     Modifier
                         .weight(1f, fill = true)
@@ -555,7 +555,7 @@ private fun ActionBar(
             TextButton(
                 onClick = onClose,
                 modifier = Modifier.testTag("closeButton"),
-            ) { Text(stringResource(Res.string.action_close_pr)) }
+            ) { Text(stringResource(Res.string.action_close_suggestion)) }
         }
         if (canMerge) {
             // Phase 38.4: merge active. Tap → confirmation dialog → ConfirmMerge
@@ -564,15 +564,15 @@ private fun ActionBar(
             Button(
                 onClick = onMerge,
                 modifier = Modifier.testTag("mergeButton"),
-            ) { Text(stringResource(Res.string.action_merge_pr)) }
+            ) { Text(stringResource(Res.string.action_apply_suggestion)) }
         }
     }
 }
 
-private val PullRequestStatus.labelKey: StringResource
+private val SuggestionStatus.labelKey: StringResource
     get() =
         when (this) {
-            PullRequestStatus.OPEN -> Res.string.label_pr_status_open
-            PullRequestStatus.MERGED -> Res.string.label_pr_status_merged
-            PullRequestStatus.CLOSED -> Res.string.label_pr_status_closed
+            SuggestionStatus.OPEN -> Res.string.label_suggestion_status_open
+            SuggestionStatus.APPLIED -> Res.string.label_suggestion_status_applied
+            SuggestionStatus.CLOSED -> Res.string.label_suggestion_status_closed
         }

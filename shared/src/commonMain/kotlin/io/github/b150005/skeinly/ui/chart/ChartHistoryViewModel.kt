@@ -2,7 +2,7 @@ package io.github.b150005.skeinly.ui.chart
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.b150005.skeinly.domain.model.ChartRevision
+import io.github.b150005.skeinly.domain.model.ChartVersion
 import io.github.b150005.skeinly.domain.usecase.ErrorMessage
 import io.github.b150005.skeinly.domain.usecase.GetChartHistoryUseCase
 import io.github.b150005.skeinly.domain.usecase.RestoreRevisionUseCase
@@ -30,7 +30,7 @@ import kotlinx.coroutines.launch
  * Tech Debt deferral.
  */
 data class ChartHistoryState(
-    val revisions: List<ChartRevision> = emptyList(),
+    val revisions: List<ChartVersion> = emptyList(),
     val isLoading: Boolean = true,
     val error: ErrorMessage? = null,
     /**
@@ -38,7 +38,7 @@ data class ChartHistoryState(
      * asked to confirm restoration of. Non-null while the confirmation dialog
      * is visible; cleared on confirm or dismiss.
      */
-    val pendingRestoreRevision: ChartRevision? = null,
+    val pendingRestoreRevision: ChartVersion? = null,
 )
 
 sealed interface ChartHistoryEvent {
@@ -46,7 +46,7 @@ sealed interface ChartHistoryEvent {
      * Tap a revision row → ViewModel emits a [RevisionTapTarget] on the
      * navigation channel carrying both the tapped (target) revision id and
      * its parent revision id (base). Phase 37.3 routes that payload to
-     * `ChartDiff(baseRevisionId = parent, targetRevisionId = tapped)`.
+     * `ChartComparison(baseRevisionId = parent, targetRevisionId = tapped)`.
      */
     data class TapRevision(
         val revisionId: String,
@@ -73,8 +73,8 @@ sealed interface ChartHistoryEvent {
 
 /**
  * Channel payload for a tapped revision: the resolved (target, base) pair the
- * `ChartDiffScreen` needs. `baseRevisionId` is null when the tap target has no
- * parent (initial commit) — `ChartDiffScreen` then renders the initial-commit
+ * `ChartComparisonScreen` needs. `baseRevisionId` is null when the tap target has no
+ * parent (initial commit) — `ChartComparisonScreen` then renders the initial-commit
  * view per ADR-013 §6 instead of a side-by-side diff.
  *
  * The lookup happens in the ViewModel because it owns the revision graph; the
@@ -123,7 +123,7 @@ class ChartHistoryViewModel(
             is ChartHistoryEvent.TapRevision -> {
                 // Look up the tapped revision to derive its parent for the diff
                 // base. Unknown revisionId (race against an in-flight Realtime
-                // delete, or a malformed call) emits null base — `ChartDiffScreen`
+                // delete, or a malformed call) emits null base — `ChartComparisonScreen`
                 // then surfaces an "Initial commit" view rather than crashing the
                 // navigation channel.
                 val target = _state.value.revisions.firstOrNull { it.revisionId == event.revisionId }

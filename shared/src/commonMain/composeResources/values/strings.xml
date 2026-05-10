@@ -32,7 +32,7 @@
     <!-- Load / empty states -->
     <string name="state_loading">Loading\u2026</string>
     <string name="state_empty_chart">Empty chart</string>
-    <string name="state_no_structured_chart">No structured chart available</string>
+    <string name="state_no_chart">No chart yet</string>
 
     <!-- Error messages -->
     <string name="error_generic">Something went wrong</string>
@@ -148,7 +148,7 @@
     </plurals>
 
     <!-- Project list screen -->
-    <string name="action_discover_patterns">Discover Patterns</string>
+    <string name="action_browse_patterns">Browse Patterns</string>
     <string name="action_pattern_library">Pattern Library</string>
     <string name="action_symbol_dictionary">Symbol Dictionary</string>
     <string name="action_profile">Profile</string>
@@ -228,7 +228,7 @@
     <string name="dialog_delete_account_body">This will permanently delete your account and all associated data. This action cannot be undone.</string>
 
     <!-- Discovery screen -->
-    <string name="title_discover_patterns">Discover Patterns</string>
+    <string name="title_browse_patterns">Browse Patterns</string>
     <string name="hint_search_public_patterns">Search public patterns\u2026</string>
     <string name="label_difficulty_all">All</string>
     <string name="label_difficulty_beginner">Beginner</string>
@@ -241,9 +241,9 @@
     <string name="state_no_matching_patterns_body">Try adjusting your search or filters</string>
     <string name="state_no_public_patterns">No public patterns yet</string>
     <string name="state_no_public_patterns_body">Public patterns from other knitters will appear here</string>
-    <string name="action_fork_pattern">Fork pattern</string>
-    <string name="action_fork">Fork</string>
-    <string name="state_forking_pattern">Forking pattern\u2026</string>
+    <string name="action_save_pattern_copy">Save a copy</string>
+    <string name="action_save_copy">Save a copy</string>
+    <string name="state_saving_pattern_copy">Saving a copy\u2026</string>
     <string name="label_gauge_value">Gauge: %1$s</string>
     <string name="label_yarn_value">Yarn: %1$s</string>
     <string name="label_needle_value">Needle: %1$s</string>
@@ -344,9 +344,9 @@
     <string name="state_uploading_image">Uploading\u2026</string>
     <string name="action_add">Add</string>
     <string name="label_pattern_value">Pattern: %1$s</string>
-    <string name="action_view_structured_chart">View structured chart</string>
-    <string name="action_edit_structured_chart">Edit structured chart</string>
-    <string name="action_create_structured_chart">Create structured chart</string>
+    <string name="action_view_chart">View chart</string>
+    <string name="action_edit_chart">Edit chart</string>
+    <string name="action_create_chart">Create chart</string>
     <!-- Phase 36.5 (ADR-012 §6) "Forked from" attribution shown in the pattern-info
          section of ProjectDetailScreen when `pattern.parentPatternId != null`.
          `label_forked_from` is parametric: %1$s = source pattern title, %2$s =
@@ -356,14 +356,14 @@
          Japanese for "forked from <title> (by <author>)". `state_forked_from_deleted`
          is the non-parametric fallback when the source pattern fetch returns null
          (deleted, made private, or transient lookup error). -->
-    <string name="label_forked_from">Forked from: %1$s by %2$s</string>
-    <string name="state_forked_from_deleted">Forked from a deleted pattern</string>
+    <string name="label_copied_from">Copied from: %1$s by %2$s</string>
+    <string name="state_copied_from_deleted">Copied from a deleted pattern</string>
     <string name="label_yarn">Yarn</string>
-    <string name="label_chart_images_section">Chart Images</string>
-    <string name="state_no_chart_images">No chart images yet</string>
+    <string name="label_reference_images_section">Reference Images</string>
+    <string name="state_no_reference_images">No reference images yet</string>
     <string name="action_remove">Remove</string>
-    <string name="dialog_remove_chart_image_title">Remove Chart Image?</string>
-    <string name="dialog_remove_chart_image_body">Are you sure you want to remove this chart image?</string>
+    <string name="dialog_remove_reference_image_title">Remove reference image?</string>
+    <string name="dialog_remove_reference_image_body">Are you sure you want to remove this reference image?</string>
     <string name="dialog_delete_note_title">Delete Note?</string>
     <string name="dialog_delete_note_body">Are you sure you want to delete this note?</string>
     <string name="action_copy">Copy</string>
@@ -376,8 +376,8 @@
     <!-- Phase 36.3 (ADR-012 §3) Discovery fork-success snackbar copy. The
          _chart_failed variant uses "from project detail" because the user has
          already navigated past Discovery by the time the snackbar surfaces. -->
-    <string name="message_forked_successfully">Forked successfully!</string>
-    <string name="message_forked_chart_failed">Forked (chart copy failed — try re-forking from project detail)</string>
+    <string name="message_copy_saved_successfully">Copy saved!</string>
+    <string name="message_copy_chart_failed">Copy saved (chart copy failed — try saving again from project detail)</string>
     <string name="action_decrement_row">Decrement row</string>
     <string name="action_increment_row">Increment row</string>
 
@@ -393,8 +393,8 @@
     <string name="title_shared_pattern">Shared Pattern</string>
     <string name="state_pattern_not_found">Pattern not found</string>
     <string name="state_could_not_load">Could not load</string>
-    <string name="state_view_only_share">View only \u2014 forking is not permitted for this share</string>
-    <string name="action_fork_to_projects">Fork to My Projects</string>
+    <string name="state_view_only_share">View only \u2014 saving a copy is not permitted for this share</string>
+    <string name="action_save_copy_to_projects">Save a copy to my projects</string>
     <string name="label_projects">Projects</string>
 
     <!-- Shared with me screen (list of shares received by the current user).
@@ -415,7 +415,7 @@
     <string name="label_from_user">From %1$s</string>
     <string name="label_shared_on">Shared on %1$s</string>
     <string name="label_permission_view">View</string>
-    <string name="label_permission_fork">Fork</string>
+    <string name="label_permission_save_copy">Save copy</string>
     <string name="label_share_status_pending">Pending</string>
     <string name="label_share_status_declined">Declined</string>
     <string name="action_accept">Accept</string>
@@ -430,7 +430,7 @@
     <string name="label_activity_completed_by">%1$s completed a project</string>
     <string name="label_activity_shared_by">%1$s shared a pattern</string>
     <string name="label_activity_commented_by">%1$s commented on a project</string>
-    <string name="label_activity_forked_by">%1$s forked a pattern</string>
+    <string name="label_activity_copied_by">%1$s saved a copy of a pattern</string>
     <string name="label_activity_created_by">%1$s created a new pattern</string>
 
     <!-- Comment section (embedded component consumed by ProjectDetailScreen +
@@ -542,12 +542,12 @@
          lands later). -->
     <string name="title_chart_history">Chart History</string>
     <string name="state_no_chart_history">No history yet</string>
-    <string name="state_no_chart_history_body">Saved chart revisions will appear here</string>
+    <string name="state_no_chart_history_body">Saved chart versions will appear here</string>
     <string name="label_auto_save">Auto-save</string>
-    <string name="label_initial_commit">Initial commit</string>
-    <string name="action_restore_revision">Restore as new commit</string>
-    <string name="dialog_restore_revision_title">Restore this revision?</string>
-    <string name="dialog_restore_revision_body">This appends a new commit on top of the current tip with the contents of this revision. Nothing in your history is overwritten.</string>
+    <string name="label_initial_version">Initial version</string>
+    <string name="action_restore_version">Save as new version</string>
+    <string name="dialog_restore_version_title">Restore this version?</string>
+    <string name="dialog_restore_version_body">This adds a new version on top of the current version with the contents of this older version. Nothing in your history is overwritten.</string>
 
     <!-- Phase 37.3 chart diff view (ADR-013 §5 §6). `title_chart_diff` is the
          screen title. `label_diff_summary` is the parametric chip at the top of
@@ -560,16 +560,16 @@
          is the empty-state body when two revisions are byte-identical (common
          when comparing a content_hash collision). `label_initial_commit` is
          reused from 37.2 for the base-pane label when `baseRevisionId == null`. -->
-    <string name="title_chart_diff">Chart Diff</string>
-    <plurals name="label_diff_added">
+    <string name="title_chart_comparison">Chart comparison</string>
+    <plurals name="label_comparison_added">
         <item quantity="one">%1$d added</item>
         <item quantity="other">%1$d added</item>
     </plurals>
-    <plurals name="label_diff_modified">
+    <plurals name="label_comparison_modified">
         <item quantity="one">%1$d modified</item>
         <item quantity="other">%1$d modified</item>
     </plurals>
-    <plurals name="label_diff_removed">
+    <plurals name="label_comparison_removed">
         <item quantity="one">%1$d removed</item>
         <item quantity="other">%1$d removed</item>
     </plurals>
@@ -580,7 +580,7 @@
     <string name="label_layer_unlocked">Layer unlocked</string>
     <string name="label_layer_added">Layer added</string>
     <string name="label_layer_removed">Layer removed</string>
-    <string name="state_no_changes">No changes between these revisions</string>
+    <string name="state_no_changes">No changes between these versions</string>
 
     <!-- Phase 37.4 branch picker + restore (ADR-013 §6 §7). The picker is a
          ModalBottomSheet on Compose / .sheet on SwiftUI listing every branch
@@ -594,14 +594,14 @@
          `action_switch` is the per-row switch button. `message_switched_to_branch`
          is the parametric Snackbar / toast confirmation after a successful
          switch (`%1$s` resolves to the branch name). -->
-    <string name="title_branch_picker">Branches</string>
-    <string name="action_create_branch">New branch</string>
-    <string name="dialog_create_branch_title">Create branch</string>
-    <string name="label_branch_name">Branch name</string>
-    <string name="label_current_branch">Current</string>
-    <string name="state_no_branches">No branches yet</string>
+    <string name="title_variations">Variations</string>
+    <string name="action_create_variation">New variation</string>
+    <string name="dialog_create_variation_title">Create variation</string>
+    <string name="label_variation_name">Variation name</string>
+    <string name="label_current_variation">Current</string>
+    <string name="state_no_variations">No variations yet</string>
     <string name="action_switch">Switch</string>
-    <string name="message_switched_to_branch">Switched to %1$s</string>
+    <string name="message_switched_to_variation">Switched to %1$s</string>
 
     <!-- Phase 38.2 pull request list (ADR-014 §6 §8). `title_pull_requests` is
          the screen title. `label_filter_incoming` / `label_filter_outgoing` are
@@ -611,20 +611,20 @@
          (`%1$s` resolves to the author's display name) and renders alongside
          the row's title + timestamp; JA reads `<name>が作成` for natural grammar
          (the verb suffix carries the subject role rather than EN-spaced layout). -->
-    <string name="title_pull_requests">Pull Requests</string>
-    <!-- Distinct from `title_pull_requests` per role-prefix discipline:
+    <string name="title_suggestions">Suggestions</string>
+    <!-- Distinct from `title_suggestions` per role-prefix discipline:
          the screen title and the toolbar IconButton contentDescription /
          a11y label are different roles and can diverge in JA (verb suffix
          for action announcement vs. noun for the screen header). -->
-    <string name="action_pull_requests">Pull requests</string>
-    <string name="label_filter_incoming">Incoming</string>
-    <string name="label_filter_outgoing">Outgoing</string>
-    <string name="state_no_pull_requests">No pull requests yet</string>
-    <string name="state_no_pull_requests_body">Suggestions from forks and to upstream patterns will appear here</string>
-    <string name="label_pr_status_open">Open</string>
-    <string name="label_pr_status_merged">Merged</string>
-    <string name="label_pr_status_closed">Closed</string>
-    <string name="label_pr_authored_by">Authored by %1$s</string>
+    <string name="action_suggestions">Suggestions</string>
+    <string name="label_filter_received">Received</string>
+    <string name="label_filter_sent">Sent</string>
+    <string name="state_no_suggestions">No suggestions yet</string>
+    <string name="state_no_suggestions_body">Suggestions from copies and to original patterns will appear here</string>
+    <string name="label_suggestion_status_open">Open</string>
+    <string name="label_suggestion_status_applied">Applied</string>
+    <string name="label_suggestion_status_closed">Closed</string>
+    <string name="label_suggestion_authored_by">Authored by %1$s</string>
 
     <!-- Phase 38.3 pull request detail (ADR-014 §6 §8). 14-key set covering
          the detail screen, the inline diff-preview link, the comment thread,
@@ -634,20 +634,20 @@
          `message_pr_merged_successfully` key is deferred to 38.4 because
          that's where the merge UX lands; 38.3 only ships the close
          feedback message. -->
-    <string name="title_pull_request_detail">Pull request</string>
-    <string name="label_pr_description">Description</string>
-    <string name="label_pr_diff_preview">Proposed changes</string>
-    <string name="label_pr_comments">Comments</string>
-    <string name="hint_add_comment_to_pr">Add a comment…</string>
+    <string name="title_suggestion_detail">Suggestion</string>
+    <string name="label_suggestion_description">Description</string>
+    <string name="label_suggestion_changes_preview">Proposed changes</string>
+    <string name="label_suggestion_comments">Comments</string>
+    <string name="hint_add_comment_to_suggestion">Add a comment…</string>
     <string name="action_post_comment">Post</string>
-    <string name="action_merge_pr">Merge</string>
-    <string name="action_close_pr">Close</string>
-    <string name="dialog_merge_pr_title">Merge this pull request?</string>
-    <string name="dialog_merge_pr_body">The contributor\'s changes will land on your branch as a new commit. Conflict resolution ships in Phase 38.4.</string>
-    <string name="dialog_close_pr_title">Close this pull request?</string>
-    <string name="dialog_close_pr_body">Closing keeps the comment history but the changes will not land on the upstream chart. The author can open a new pull request later.</string>
-    <string name="state_pr_not_found">Pull request not found</string>
-    <string name="message_pr_closed_successfully">Pull request closed</string>
+    <string name="action_apply_suggestion">Apply changes</string>
+    <string name="action_close_suggestion">Close</string>
+    <string name="dialog_apply_suggestion_title">Apply this suggestion?</string>
+    <string name="dialog_apply_suggestion_body">The contributor\'s changes will land on your variation as a new version. Conflict resolution ships in Phase 38.4.</string>
+    <string name="dialog_close_suggestion_title">Close this suggestion?</string>
+    <string name="dialog_close_suggestion_body">Closing keeps the comment history but the changes will not land on the original chart. The author can send a new suggestion later.</string>
+    <string name="state_suggestion_not_found">Suggestion not found</string>
+    <string name="message_suggestion_closed_successfully">Suggestion closed</string>
 
     <!-- Phase 38.4 conflict resolution + merge (ADR-014 §4 §5 §6 §8). 10-key
          set covering the conflict resolution screen and the merge success
@@ -664,12 +664,12 @@
     </plurals>
     <string name="label_conflict_layer">Layer: %1$s</string>
     <string name="label_conflict_cell">Cell (%1$d, %2$d)</string>
-    <string name="action_take_theirs">Take theirs</string>
-    <string name="action_keep_mine">Keep mine</string>
+    <string name="action_use_contributors">Use contributor\'s</string>
+    <string name="action_use_mine">Use mine</string>
     <string name="action_skip_conflict">Skip</string>
-    <string name="action_apply_and_merge">Apply and merge</string>
+    <string name="action_apply_changes">Apply changes</string>
     <string name="state_all_conflicts_resolved">All conflicts resolved</string>
-    <string name="message_pr_merged_successfully">Pull request merged</string>
+    <string name="message_suggestion_applied_successfully">Suggestion applied</string>
 
     <!-- Phase 38.4.1 (ADR-014 §6) — Open pull request entry from `ChartViewerScreen`
          overflow menu. Surfaces only on a forked pattern owned by the current
@@ -690,13 +690,13 @@
          `hint_pr_title` and `hint_pr_description_optional` follow the
          `hint_*` placeholder convention with U+2026 ellipsis ("…") per the
          Phase 33.1.3 placeholder convention. -->
-    <string name="action_open_pull_request">Open pull request</string>
-    <string name="dialog_open_pull_request_title">Open pull request</string>
-    <string name="label_pr_title">Title</string>
-    <string name="hint_pr_title">Suggest a chart change…</string>
-    <string name="hint_pr_description_optional">Optional notes for the pattern owner…</string>
-    <string name="action_open_pr">Open</string>
-    <string name="message_pr_opened_successfully">Pull request opened</string>
+    <string name="action_send_suggestion">Suggest a change</string>
+    <string name="dialog_send_suggestion_title">Suggest a change</string>
+    <string name="label_suggestion_title">Title</string>
+    <string name="hint_suggestion_title">Suggest a chart change…</string>
+    <string name="hint_suggestion_description_optional">Optional notes for the pattern owner…</string>
+    <string name="action_send">Send</string>
+    <string name="message_suggestion_sent_successfully">Suggestion sent</string>
 
     <!-- Phase 41.3b (ADR-016 §5.1) — paywall sheet copy. Surfaces from
          Settings → "Subscribe to Pro" (always-on entry, NOT beta-gated)
@@ -790,12 +790,12 @@
     <string name="title_locked_symbol">Pro symbol</string>
     <!-- Phase 24.2c (ADR-017 §3.6) — push notification consent UX. -->
     <string name="label_notifications_settings_row">Notifications</string>
-    <string name="body_notifications_setting_explanation">Get notified when collaborators open pull requests, comment on yours, or merge your changes.</string>
+    <string name="body_notifications_setting_explanation">Get notified when collaborators send suggestions, comment on yours, or apply your changes.</string>
     <string name="state_notifications_enabled">Enabled</string>
     <string name="state_notifications_disabled">Disabled</string>
     <string name="body_notifications_disabled_hint">Open Settings to enable notifications.</string>
     <string name="title_notifications_explainer">Stay in the loop</string>
-    <string name="body_notifications_explainer">Get notified when collaborators open pull requests, comment on yours, or merge your changes. You can change this anytime in Settings.</string>
+    <string name="body_notifications_explainer">Get notified when collaborators send suggestions, comment on yours, or apply your changes. You can change this anytime in Settings.</string>
     <string name="action_enable_notifications">Enable</string>
     <string name="action_not_now_notifications">Not now</string>
     <string name="action_open_os_settings">Open Settings</string>

@@ -1,25 +1,25 @@
 package io.github.b150005.skeinly.data.repository
 
-import io.github.b150005.skeinly.data.local.LocalChartRevisionDataSource
-import io.github.b150005.skeinly.data.remote.RemoteChartRevisionDataSource
+import io.github.b150005.skeinly.data.local.LocalChartVersionDataSource
+import io.github.b150005.skeinly.data.remote.RemoteChartVersionDataSource
 import io.github.b150005.skeinly.data.sync.SyncEntityType
 import io.github.b150005.skeinly.data.sync.SyncManagerOperations
 import io.github.b150005.skeinly.data.sync.SyncOperation
-import io.github.b150005.skeinly.domain.model.ChartRevision
-import io.github.b150005.skeinly.domain.repository.ChartRevisionRepository
+import io.github.b150005.skeinly.domain.model.ChartVersion
+import io.github.b150005.skeinly.domain.repository.ChartVersionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-class ChartRevisionRepositoryImpl(
-    private val local: LocalChartRevisionDataSource,
-    private val remote: RemoteChartRevisionDataSource?,
+class ChartVersionRepositoryImpl(
+    private val local: LocalChartVersionDataSource,
+    private val remote: RemoteChartVersionDataSource?,
     private val isOnline: StateFlow<Boolean>,
     private val syncManager: SyncManagerOperations,
     private val json: Json,
-) : ChartRevisionRepository {
-    override suspend fun getRevision(revisionId: String): ChartRevision? {
+) : ChartVersionRepository {
+    override suspend fun getRevision(revisionId: String): ChartVersion? {
         val localRow = local.getByRevisionId(revisionId)
         if (localRow != null || remote == null || !isOnline.value) return localRow
 
@@ -36,12 +36,12 @@ class ChartRevisionRepositoryImpl(
         patternId: String,
         limit: Int,
         offset: Int,
-    ): List<ChartRevision> {
+    ): List<ChartVersion> {
         val localRows = local.getHistoryForPattern(patternId, limit, offset)
         // Trust the local cache when it has data: Realtime keeps it warm
         // (chart-revisions-<ownerId>) so a hit here is the freshest read.
         // Only reach for the remote when local is empty AND we're online —
-        // matches StructuredChartRepositoryImpl.getByPatternId's fallback.
+        // matches ChartRepositoryImpl.getByPatternId's fallback.
         if (localRows.isNotEmpty() || remote == null || !isOnline.value) return localRows
 
         return try {
@@ -55,9 +55,9 @@ class ChartRevisionRepositoryImpl(
         }
     }
 
-    override fun observeHistoryForPattern(patternId: String): Flow<List<ChartRevision>> = local.observeHistoryForPattern(patternId)
+    override fun observeHistoryForPattern(patternId: String): Flow<List<ChartVersion>> = local.observeHistoryForPattern(patternId)
 
-    override suspend fun append(revision: ChartRevision): ChartRevision {
+    override suspend fun append(revision: ChartVersion): ChartVersion {
         local.insert(revision)
         // Enqueue INSERT — append-only per ADR-013 §1. SyncExecutor maps INSERT
         // to remote.append(...). UNIQUE(pattern_id, revision_id) makes retries

@@ -1,27 +1,27 @@
 package io.github.b150005.skeinly.data.sync
 
-import io.github.b150005.skeinly.domain.model.ChartBranch
-import io.github.b150005.skeinly.domain.model.ChartRevision
+import io.github.b150005.skeinly.domain.model.Chart
+import io.github.b150005.skeinly.domain.model.ChartVariation
+import io.github.b150005.skeinly.domain.model.ChartVersion
 import io.github.b150005.skeinly.domain.model.Pattern
 import io.github.b150005.skeinly.domain.model.Progress
 import io.github.b150005.skeinly.domain.model.Project
 import io.github.b150005.skeinly.domain.model.ProjectSegment
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestComment
-import io.github.b150005.skeinly.domain.model.StructuredChart
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionComment
 import kotlinx.serialization.json.Json
 
 class SyncExecutor(
     private val remoteProject: RemoteProjectSyncOperations?,
     private val remoteProgress: RemoteProgressSyncOperations?,
     private val remotePattern: RemotePatternSyncOperations?,
-    private val remoteStructuredChart: RemoteStructuredChartSyncOperations?,
+    private val remoteChart: RemoteChartSyncOperations?,
     private val json: Json,
     private val remoteProjectSegment: RemoteProjectSegmentSyncOperations? = null,
-    private val remoteChartRevision: RemoteChartRevisionSyncOperations? = null,
-    private val remoteChartBranch: RemoteChartBranchSyncOperations? = null,
-    private val remotePullRequest: RemotePullRequestSyncOperations? = null,
-    private val remotePullRequestComment: RemotePullRequestCommentSyncOperations? = null,
+    private val remoteChartVersion: RemoteChartVersionSyncOperations? = null,
+    private val remoteChartVariation: RemoteChartVariationSyncOperations? = null,
+    private val remoteSuggestion: RemoteSuggestionSyncOperations? = null,
+    private val remoteSuggestionComment: RemoteSuggestionCommentSyncOperations? = null,
 ) {
     /**
      * Execute a pending sync entry against the remote data source.
@@ -33,12 +33,12 @@ class SyncExecutor(
             SyncEntityType.PROJECT -> executeProject(entry)
             SyncEntityType.PROGRESS -> executeProgress(entry)
             SyncEntityType.PATTERN -> executePattern(entry)
-            SyncEntityType.STRUCTURED_CHART -> executeStructuredChart(entry)
+            SyncEntityType.STRUCTURED_CHART -> executeChart(entry)
             SyncEntityType.PROJECT_SEGMENT -> executeProjectSegment(entry)
-            SyncEntityType.CHART_REVISION -> executeChartRevision(entry)
-            SyncEntityType.CHART_BRANCH -> executeChartBranch(entry)
-            SyncEntityType.PULL_REQUEST -> executePullRequest(entry)
-            SyncEntityType.PULL_REQUEST_COMMENT -> executePullRequestComment(entry)
+            SyncEntityType.CHART_REVISION -> executeChartVersion(entry)
+            SyncEntityType.CHART_BRANCH -> executeChartVariation(entry)
+            SyncEntityType.PULL_REQUEST -> executeSuggestion(entry)
+            SyncEntityType.PULL_REQUEST_COMMENT -> executeSuggestionComment(entry)
         }
 
     private suspend fun executeProject(entry: PendingSyncEntry): Boolean {
@@ -71,11 +71,11 @@ class SyncExecutor(
         return true
     }
 
-    private suspend fun executeStructuredChart(entry: PendingSyncEntry): Boolean {
-        val remote = remoteStructuredChart ?: return true
+    private suspend fun executeChart(entry: PendingSyncEntry): Boolean {
+        val remote = remoteChart ?: return true
         when (entry.operation) {
-            SyncOperation.INSERT -> remote.upsert(json.decodeFromString<StructuredChart>(entry.payload)) // idempotent create
-            SyncOperation.UPDATE -> remote.update(json.decodeFromString<StructuredChart>(entry.payload))
+            SyncOperation.INSERT -> remote.upsert(json.decodeFromString<Chart>(entry.payload)) // idempotent create
+            SyncOperation.UPDATE -> remote.update(json.decodeFromString<Chart>(entry.payload))
             SyncOperation.DELETE -> remote.delete(entry.entityId)
         }
         return true
@@ -92,8 +92,8 @@ class SyncExecutor(
         return true
     }
 
-    private suspend fun executeChartRevision(entry: PendingSyncEntry): Boolean {
-        val remote = remoteChartRevision ?: return true
+    private suspend fun executeChartVersion(entry: PendingSyncEntry): Boolean {
+        val remote = remoteChartVersion ?: return true
         when (entry.operation) {
             // Append-only per ADR-013 §1. INSERT is the only write path; UPDATE
             // and DELETE are structurally forbidden (no RLS policy permits them
@@ -103,9 +103,9 @@ class SyncExecutor(
             // FAILED and trigger a retry storm on a row that can never succeed;
             // returning success consumes the impossible entry once and lets the
             // queue move on. If a non-INSERT ever lands here it indicates a bug
-            // upstream (SyncManager enqueued an op that ChartRevisionRepository
+            // upstream (SyncManager enqueued an op that ChartVersionRepository
             // can never produce) — surfaceable via PendingSync log inspection.
-            SyncOperation.INSERT -> remote.append(json.decodeFromString<ChartRevision>(entry.payload))
+            SyncOperation.INSERT -> remote.append(json.decodeFromString<ChartVersion>(entry.payload))
             SyncOperation.UPDATE,
             SyncOperation.DELETE,
             -> return true
@@ -113,45 +113,45 @@ class SyncExecutor(
         return true
     }
 
-    private suspend fun executeChartBranch(entry: PendingSyncEntry): Boolean {
-        val remote = remoteChartBranch ?: return true
+    private suspend fun executeChartVariation(entry: PendingSyncEntry): Boolean {
+        val remote = remoteChartVariation ?: return true
         when (entry.operation) {
             // INSERT and UPDATE both map to upsert: branch creation is idempotent
             // on (pattern_id, branch_name); tip movement is an idempotent re-write
             // of `tip_revision_id`. Phase 37.4 will start enqueuing UPDATE on
             // every save (tip advance) — already wired here.
-            SyncOperation.INSERT -> remote.upsert(json.decodeFromString<ChartBranch>(entry.payload))
-            SyncOperation.UPDATE -> remote.upsert(json.decodeFromString<ChartBranch>(entry.payload))
+            SyncOperation.INSERT -> remote.upsert(json.decodeFromString<ChartVariation>(entry.payload))
+            SyncOperation.UPDATE -> remote.upsert(json.decodeFromString<ChartVariation>(entry.payload))
             SyncOperation.DELETE -> remote.delete(entry.entityId)
         }
         return true
     }
 
-    private suspend fun executePullRequest(entry: PendingSyncEntry): Boolean {
-        val remote = remotePullRequest ?: return true
+    private suspend fun executeSuggestion(entry: PendingSyncEntry): Boolean {
+        val remote = remoteSuggestion ?: return true
         when (entry.operation) {
             // INSERT (open PR) and UPDATE (close PR) both map to upsert per
             // ADR-014 §7. Idempotent on `id`. Status → MERGED is NOT enqueued
             // here — it transitions via the merge_pull_request RPC and Realtime
             // echoes the merged row back through the local data source.
-            SyncOperation.INSERT -> remote.upsert(json.decodeFromString<PullRequest>(entry.payload))
-            SyncOperation.UPDATE -> remote.upsert(json.decodeFromString<PullRequest>(entry.payload))
+            SyncOperation.INSERT -> remote.upsert(json.decodeFromString<Suggestion>(entry.payload))
+            SyncOperation.UPDATE -> remote.upsert(json.decodeFromString<Suggestion>(entry.payload))
             // DELETE is structurally forbidden (PRs are kept as audit trail).
             // SyncManager never enqueues this; defensive silent no-op same as
-            // executeChartRevision's UPDATE/DELETE branches.
+            // executeChartVersion's UPDATE/DELETE branches.
             SyncOperation.DELETE -> return true
         }
         return true
     }
 
-    private suspend fun executePullRequestComment(entry: PendingSyncEntry): Boolean {
-        val remote = remotePullRequestComment ?: return true
+    private suspend fun executeSuggestionComment(entry: PendingSyncEntry): Boolean {
+        val remote = remoteSuggestionComment ?: return true
         when (entry.operation) {
             // Append-only per ADR-014 §1 — INSERT is the only write path.
             // UPDATE/DELETE are structurally forbidden (no RLS policy permits
             // them and SyncManager never enqueues them). Silent no-op same
-            // pattern as executeChartRevision (Phase 37.1 precedent).
-            SyncOperation.INSERT -> remote.appendComment(json.decodeFromString<PullRequestComment>(entry.payload))
+            // pattern as executeChartVersion (Phase 37.1 precedent).
+            SyncOperation.INSERT -> remote.appendComment(json.decodeFromString<SuggestionComment>(entry.payload))
             SyncOperation.UPDATE,
             SyncOperation.DELETE,
             -> return true

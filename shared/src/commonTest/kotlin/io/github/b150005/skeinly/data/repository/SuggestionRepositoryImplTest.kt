@@ -1,7 +1,7 @@
 package io.github.b150005.skeinly.data.repository
 
 import io.github.b150005.skeinly.data.local.LocalPatternDataSource
-import io.github.b150005.skeinly.data.local.LocalPullRequestDataSource
+import io.github.b150005.skeinly.data.local.LocalSuggestionDataSource
 import io.github.b150005.skeinly.data.sync.FakeSyncManager
 import io.github.b150005.skeinly.data.sync.SyncEntityType
 import io.github.b150005.skeinly.data.sync.SyncOperation
@@ -9,9 +9,9 @@ import io.github.b150005.skeinly.db.SkeinlyDatabase
 import io.github.b150005.skeinly.db.createTestDriver
 import io.github.b150005.skeinly.domain.model.Difficulty
 import io.github.b150005.skeinly.domain.model.Pattern
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestComment
-import io.github.b150005.skeinly.domain.model.PullRequestStatus
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionComment
+import io.github.b150005.skeinly.domain.model.SuggestionStatus
 import io.github.b150005.skeinly.domain.model.Visibility
 import io.github.b150005.skeinly.testJson
 import kotlinx.coroutines.Dispatchers
@@ -26,11 +26,11 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
-class PullRequestRepositoryImplTest {
+class SuggestionRepositoryImplTest {
     private lateinit var db: SkeinlyDatabase
-    private lateinit var local: LocalPullRequestDataSource
+    private lateinit var local: LocalSuggestionDataSource
     private lateinit var localPattern: LocalPatternDataSource
-    private lateinit var repository: PullRequestRepositoryImpl
+    private lateinit var repository: SuggestionRepositoryImpl
     private lateinit var fakeSyncManager: FakeSyncManager
     private val isOnline = MutableStateFlow(false)
 
@@ -38,11 +38,11 @@ class PullRequestRepositoryImplTest {
     fun setUp() {
         val driver = createTestDriver()
         db = SkeinlyDatabase(driver)
-        local = LocalPullRequestDataSource(db, Dispatchers.Unconfined)
+        local = LocalSuggestionDataSource(db, Dispatchers.Unconfined)
         localPattern = LocalPatternDataSource(db, Dispatchers.Unconfined)
         fakeSyncManager = FakeSyncManager()
         repository =
-            PullRequestRepositoryImpl(
+            SuggestionRepositoryImpl(
                 local = local,
                 remote = null,
                 isOnline = isOnline,
@@ -77,13 +77,13 @@ class PullRequestRepositoryImplTest {
         authorId: String? = "user-fork",
         title: String = "Reworked the cuff",
         description: String? = null,
-        status: PullRequestStatus = PullRequestStatus.OPEN,
+        status: SuggestionStatus = SuggestionStatus.OPEN,
         createdAtIso: String = "2026-04-25T10:00:00Z",
         mergedRevisionId: String? = null,
         mergedAtIso: String? = null,
         closedAtIso: String? = null,
-    ): PullRequest =
-        PullRequest(
+    ): Suggestion =
+        Suggestion(
             id = id,
             sourcePatternId = sourcePatternId,
             sourceBranchId = "branch-fork-main",
@@ -104,26 +104,26 @@ class PullRequestRepositoryImplTest {
 
     private fun testComment(
         id: String = "cmt-1",
-        pullRequestId: String = "pr-1",
+        suggestionId: String = "pr-1",
         authorId: String? = "user-1",
         body: String = "Looks great",
         createdAtIso: String = "2026-04-25T11:00:00Z",
-    ): PullRequestComment =
-        PullRequestComment(
+    ): SuggestionComment =
+        SuggestionComment(
             id = id,
-            pullRequestId = pullRequestId,
+            suggestionId = suggestionId,
             authorId = authorId,
             body = body,
             createdAt = Instant.parse(createdAtIso),
         )
 
-    // ---- openPullRequest ----
+    // ---- openSuggestion ----
 
     @Test
-    fun `openPullRequest persists locally and enqueues INSERT sync`() =
+    fun `openSuggestion persists locally and enqueues INSERT sync`() =
         runTest {
             val pr = testPr()
-            val returned = repository.openPullRequest(pr)
+            val returned = repository.openSuggestion(pr)
 
             assertEquals(pr, returned)
             assertEquals(pr, repository.getById(pr.id))
@@ -137,10 +137,10 @@ class PullRequestRepositoryImplTest {
         }
 
     @Test
-    fun `openPullRequest preserves description and authorId round-trip`() =
+    fun `openSuggestion preserves description and authorId round-trip`() =
         runTest {
             val pr = testPr(description = "I rewrote rows 12-20 to use jis.k1 instead of jis.p1")
-            repository.openPullRequest(pr)
+            repository.openSuggestion(pr)
 
             val retrieved = repository.getById(pr.id)
             assertNotNull(retrieved)
@@ -149,27 +149,27 @@ class PullRequestRepositoryImplTest {
         }
 
     @Test
-    fun `openPullRequest preserves null description for blank PR opens`() =
+    fun `openSuggestion preserves null description for blank PR opens`() =
         runTest {
             val pr = testPr(description = null)
-            repository.openPullRequest(pr)
+            repository.openSuggestion(pr)
 
             val retrieved = repository.getById(pr.id)
             assertNotNull(retrieved)
             assertNull(retrieved.description)
         }
 
-    // ---- closePullRequest ----
+    // ---- closeSuggestion ----
 
     @Test
-    fun `closePullRequest flips status to CLOSED and stamps closedAt`() =
+    fun `closeSuggestion flips status to CLOSED and stamps closedAt`() =
         runTest {
             val open = testPr()
-            repository.openPullRequest(open)
+            repository.openSuggestion(open)
 
-            val closed = repository.closePullRequest(open)
+            val closed = repository.closeSuggestion(open)
 
-            assertEquals(PullRequestStatus.CLOSED, closed.status)
+            assertEquals(SuggestionStatus.CLOSED, closed.status)
             assertNotNull(closed.closedAt)
             // updatedAt advances on close — must not equal the createdAt of the
             // original row (closedAt and updatedAt both stamped at close time).
@@ -177,14 +177,14 @@ class PullRequestRepositoryImplTest {
         }
 
     @Test
-    fun `closePullRequest enqueues an UPDATE sync entry`() =
+    fun `closeSuggestion enqueues an UPDATE sync entry`() =
         runTest {
             val open = testPr()
-            repository.openPullRequest(open)
-            // First call is the INSERT from openPullRequest above
+            repository.openSuggestion(open)
+            // First call is the INSERT from openSuggestion above
             assertEquals(1, fakeSyncManager.calls.size)
 
-            repository.closePullRequest(open)
+            repository.closeSuggestion(open)
 
             assertEquals(2, fakeSyncManager.calls.size)
             val closeCall = fakeSyncManager.calls.last()
@@ -194,13 +194,13 @@ class PullRequestRepositoryImplTest {
         }
 
     @Test
-    fun `closePullRequest preserves caller-supplied closedAt when present`() =
+    fun `closeSuggestion preserves caller-supplied closedAt when present`() =
         runTest {
             val open = testPr()
-            repository.openPullRequest(open)
+            repository.openSuggestion(open)
             val explicitCloseTime = Instant.parse("2026-04-26T08:00:00Z")
 
-            val closed = repository.closePullRequest(open.copy(closedAt = explicitCloseTime))
+            val closed = repository.closeSuggestion(open.copy(closedAt = explicitCloseTime))
 
             assertEquals(explicitCloseTime, closed.closedAt)
         }
@@ -216,7 +216,7 @@ class PullRequestRepositoryImplTest {
     @Test
     fun `getById is case-sensitive on id`() =
         runTest {
-            repository.openPullRequest(testPr(id = "pr-CaseSensitive"))
+            repository.openSuggestion(testPr(id = "pr-CaseSensitive"))
             assertNull(repository.getById("PR-CASESENSITIVE"))
             assertNotNull(repository.getById("pr-CaseSensitive"))
         }
@@ -229,12 +229,12 @@ class PullRequestRepositoryImplTest {
             // Seed pattern owned by upstream-owner.
             localPattern.upsert(testPattern(id = "pat-upstream", ownerId = "upstream-owner"))
             // Seed PR targeting the upstream pattern.
-            repository.openPullRequest(
+            repository.openSuggestion(
                 testPr(id = "pr-incoming", targetPatternId = "pat-upstream", authorId = "fork-author"),
             )
             // Seed unrelated PR targeting a different upstream.
             localPattern.upsert(testPattern(id = "pat-other", ownerId = "stranger"))
-            repository.openPullRequest(
+            repository.openSuggestion(
                 testPr(id = "pr-other", targetPatternId = "pat-other", authorId = "fork-author"),
             )
 
@@ -246,9 +246,9 @@ class PullRequestRepositoryImplTest {
     @Test
     fun `getOutgoingForOwner returns PRs the owner authored regardless of target`() =
         runTest {
-            repository.openPullRequest(testPr(id = "pr-1", authorId = "fork-author"))
-            repository.openPullRequest(testPr(id = "pr-2", authorId = "fork-author", createdAtIso = "2026-04-26T10:00:00Z"))
-            repository.openPullRequest(testPr(id = "pr-3", authorId = "stranger"))
+            repository.openSuggestion(testPr(id = "pr-1", authorId = "fork-author"))
+            repository.openSuggestion(testPr(id = "pr-2", authorId = "fork-author", createdAtIso = "2026-04-26T10:00:00Z"))
+            repository.openSuggestion(testPr(id = "pr-3", authorId = "stranger"))
 
             val outgoing = repository.getOutgoingForOwner("fork-author")
 
@@ -259,8 +259,8 @@ class PullRequestRepositoryImplTest {
     fun `observeIncomingForOwner emits current snapshot from local`() =
         runTest {
             localPattern.upsert(testPattern(id = "pat-upstream", ownerId = "upstream-owner"))
-            repository.openPullRequest(testPr(id = "pr-1", targetPatternId = "pat-upstream"))
-            repository.openPullRequest(
+            repository.openSuggestion(testPr(id = "pr-1", targetPatternId = "pat-upstream"))
+            repository.openSuggestion(
                 testPr(
                     id = "pr-2",
                     targetPatternId = "pat-upstream",
@@ -283,7 +283,7 @@ class PullRequestRepositoryImplTest {
             val returned = repository.postComment(comment)
 
             assertEquals(comment, returned)
-            val cached = repository.getCommentsForPullRequest(comment.pullRequestId)
+            val cached = repository.getCommentsForSuggestion(comment.suggestionId)
             assertEquals(1, cached.size)
             assertEquals(comment, cached.first())
 
@@ -295,14 +295,14 @@ class PullRequestRepositoryImplTest {
         }
 
     @Test
-    fun `getCommentsForPullRequest scopes results to the requested pullRequestId and orders ascending`() =
+    fun `getCommentsForSuggestion scopes results to the requested suggestionId and orders ascending`() =
         runTest {
-            repository.postComment(testComment(id = "c1", pullRequestId = "pr-1", createdAtIso = "2026-04-25T11:00:00Z"))
-            repository.postComment(testComment(id = "c2", pullRequestId = "pr-1", createdAtIso = "2026-04-25T12:00:00Z"))
-            repository.postComment(testComment(id = "c3", pullRequestId = "pr-2", createdAtIso = "2026-04-25T11:30:00Z"))
+            repository.postComment(testComment(id = "c1", suggestionId = "pr-1", createdAtIso = "2026-04-25T11:00:00Z"))
+            repository.postComment(testComment(id = "c2", suggestionId = "pr-1", createdAtIso = "2026-04-25T12:00:00Z"))
+            repository.postComment(testComment(id = "c3", suggestionId = "pr-2", createdAtIso = "2026-04-25T11:30:00Z"))
 
-            val pr1Comments = repository.getCommentsForPullRequest("pr-1")
-            val pr2Comments = repository.getCommentsForPullRequest("pr-2")
+            val pr1Comments = repository.getCommentsForSuggestion("pr-1")
+            val pr2Comments = repository.getCommentsForSuggestion("pr-2")
 
             assertEquals(listOf("c1", "c2"), pr1Comments.map { it.id })
             assertEquals(listOf("c3"), pr2Comments.map { it.id })
@@ -319,7 +319,7 @@ class PullRequestRepositoryImplTest {
             // copy or surfacing a constraint violation.
             local.upsertComment(comment)
 
-            assertEquals(1, local.countCommentsForPullRequest(comment.pullRequestId))
+            assertEquals(1, local.countCommentsForSuggestion(comment.suggestionId))
         }
 
     // ---- merged-PR round-trip via local upsert (Realtime echo simulation) ----
@@ -334,7 +334,7 @@ class PullRequestRepositoryImplTest {
             // is no client-side write path to MERGED.
             val merged =
                 testPr(
-                    status = PullRequestStatus.MERGED,
+                    status = SuggestionStatus.APPLIED,
                     mergedRevisionId = "rev-merged",
                     mergedAtIso = mergedAt,
                 )
@@ -342,7 +342,7 @@ class PullRequestRepositoryImplTest {
 
             val retrieved = repository.getById(merged.id)
             assertNotNull(retrieved)
-            assertEquals(PullRequestStatus.MERGED, retrieved.status)
+            assertEquals(SuggestionStatus.APPLIED, retrieved.status)
             assertEquals("rev-merged", retrieved.mergedRevisionId)
             assertEquals(Instant.parse(mergedAt), retrieved.mergedAt)
         }

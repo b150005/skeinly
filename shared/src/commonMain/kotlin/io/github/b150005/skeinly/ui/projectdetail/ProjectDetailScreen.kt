@@ -81,11 +81,11 @@ import io.github.b150005.skeinly.generated.resources.action_add_note
 import io.github.b150005.skeinly.generated.resources.action_add_photo
 import io.github.b150005.skeinly.generated.resources.action_back
 import io.github.b150005.skeinly.generated.resources.action_cancel
-import io.github.b150005.skeinly.generated.resources.action_create_structured_chart
+import io.github.b150005.skeinly.generated.resources.action_create_chart
 import io.github.b150005.skeinly.generated.resources.action_delete
 import io.github.b150005.skeinly.generated.resources.action_delete_note
+import io.github.b150005.skeinly.generated.resources.action_edit_chart
 import io.github.b150005.skeinly.generated.resources.action_edit_project
-import io.github.b150005.skeinly.generated.resources.action_edit_structured_chart
 import io.github.b150005.skeinly.generated.resources.action_mark_complete
 import io.github.b150005.skeinly.generated.resources.action_remove
 import io.github.b150005.skeinly.generated.resources.action_remove_photo
@@ -94,17 +94,17 @@ import io.github.b150005.skeinly.generated.resources.action_reset_progress
 import io.github.b150005.skeinly.generated.resources.action_save
 import io.github.b150005.skeinly.generated.resources.action_share_link
 import io.github.b150005.skeinly.generated.resources.action_share_with_user
-import io.github.b150005.skeinly.generated.resources.action_view_structured_chart
+import io.github.b150005.skeinly.generated.resources.action_view_chart
 import io.github.b150005.skeinly.generated.resources.dialog_add_note_title
 import io.github.b150005.skeinly.generated.resources.dialog_delete_note_body
 import io.github.b150005.skeinly.generated.resources.dialog_delete_note_title
 import io.github.b150005.skeinly.generated.resources.dialog_edit_project_title
-import io.github.b150005.skeinly.generated.resources.dialog_remove_chart_image_body
-import io.github.b150005.skeinly.generated.resources.dialog_remove_chart_image_title
+import io.github.b150005.skeinly.generated.resources.dialog_remove_reference_image_body
+import io.github.b150005.skeinly.generated.resources.dialog_remove_reference_image_title
 import io.github.b150005.skeinly.generated.resources.dialog_reset_progress_body
 import io.github.b150005.skeinly.generated.resources.dialog_reset_progress_title
 import io.github.b150005.skeinly.generated.resources.hint_note_example
-import io.github.b150005.skeinly.generated.resources.label_forked_from
+import io.github.b150005.skeinly.generated.resources.label_copied_from
 import io.github.b150005.skeinly.generated.resources.label_gauge_value
 import io.github.b150005.skeinly.generated.resources.label_needle_value
 import io.github.b150005.skeinly.generated.resources.label_note
@@ -125,12 +125,12 @@ import io.github.b150005.skeinly.generated.resources.label_total_rows_optional
 import io.github.b150005.skeinly.generated.resources.label_yarn_value
 import io.github.b150005.skeinly.generated.resources.message_reset_progress_done
 import io.github.b150005.skeinly.generated.resources.message_shared_successfully
-import io.github.b150005.skeinly.generated.resources.state_forked_from_deleted
+import io.github.b150005.skeinly.generated.resources.state_copied_from_deleted
 import io.github.b150005.skeinly.generated.resources.state_no_notes
 import io.github.b150005.skeinly.generated.resources.state_project_not_found
 import io.github.b150005.skeinly.generated.resources.state_uploading_photo
 import io.github.b150005.skeinly.generated.resources.title_chart_history
-import io.github.b150005.skeinly.generated.resources.title_pull_requests
+import io.github.b150005.skeinly.generated.resources.title_suggestions
 import io.github.b150005.skeinly.ui.chartviewer.ChartImageGrid
 import io.github.b150005.skeinly.ui.chartviewer.ChartImageViewer
 import io.github.b150005.skeinly.ui.comments.CommentSection
@@ -288,8 +288,8 @@ fun ProjectDetailScreen(
     chartImageToDelete?.let { imagePath ->
         AlertDialog(
             onDismissRequest = { chartImageToDelete = null },
-            title = { Text(stringResource(Res.string.dialog_remove_chart_image_title)) },
-            text = { Text(stringResource(Res.string.dialog_remove_chart_image_body)) },
+            title = { Text(stringResource(Res.string.dialog_remove_reference_image_title)) },
+            text = { Text(stringResource(Res.string.dialog_remove_reference_image_body)) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.onEvent(ProjectDetailEvent.DeleteChartImage(imagePath))
@@ -443,7 +443,7 @@ fun ProjectDetailScreen(
                         // Phase 34 US-4: Reset segment progress. Enabled only when
                         // the project has a linked structured chart AND at least one
                         // segment row exists — matches PRD AC-4.1.
-                        if (state.hasStructuredChart && state.hasSegmentProgress) {
+                        if (state.hasChart && state.hasSegmentProgress) {
                             item {
                                 ResetProgressButton(
                                     onClick = { showResetProgressDialog = true },
@@ -457,11 +457,11 @@ fun ProjectDetailScreen(
                                 Spacer(modifier = Modifier.height(16.dp))
                                 PatternInfoSection(
                                     pattern = pattern,
-                                    hasStructuredChart = state.hasStructuredChart,
+                                    hasChart = state.hasChart,
                                     parentPattern = state.parentPattern,
                                     parentPatternAuthor = state.parentPatternAuthor,
                                     onChartViewerClick = {
-                                        if (state.hasStructuredChart) {
+                                        if (state.hasChart) {
                                             onChartViewerClick(pattern.id)
                                         }
                                     },
@@ -1093,7 +1093,7 @@ private fun EditProjectDialog(
 @Composable
 private fun PatternInfoSection(
     pattern: Pattern,
-    hasStructuredChart: Boolean,
+    hasChart: Boolean,
     parentPattern: Pattern?,
     parentPatternAuthor: User?,
     onChartViewerClick: () -> Unit = {},
@@ -1122,7 +1122,7 @@ private fun PatternInfoSection(
         if (pattern.parentPatternId != null) {
             if (parentPattern == null) {
                 Text(
-                    text = stringResource(Res.string.state_forked_from_deleted),
+                    text = stringResource(Res.string.state_copied_from_deleted),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.testTag("forkedFromDeletedLabel"),
@@ -1133,7 +1133,7 @@ private fun PatternInfoSection(
                         ?: stringResource(Res.string.label_someone)
                 val text =
                     stringResource(
-                        Res.string.label_forked_from,
+                        Res.string.label_copied_from,
                         parentPattern.title,
                         authorName,
                     )
@@ -1160,9 +1160,9 @@ private fun PatternInfoSection(
                 }
             }
         }
-        if (hasStructuredChart) {
+        if (hasChart) {
             Text(
-                text = stringResource(Res.string.action_view_structured_chart),
+                text = stringResource(Res.string.action_view_chart),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier =
@@ -1189,21 +1189,21 @@ private fun PatternInfoSection(
         // ProjectDetail. The default-filter selection is decided at the
         // outer screen level via `pattern.parentPatternId`.
         Text(
-            text = stringResource(Res.string.title_pull_requests),
+            text = stringResource(Res.string.title_suggestions),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.primary,
             modifier =
                 Modifier
                     .clickable(role = Role.Button, onClick = onSuggestionsClick)
-                    .testTag("openPullRequestsLink"),
+                    .testTag("openSuggestionsLink"),
         )
         Text(
             text =
                 stringResource(
-                    if (hasStructuredChart) {
-                        Res.string.action_edit_structured_chart
+                    if (hasChart) {
+                        Res.string.action_edit_chart
                     } else {
-                        Res.string.action_create_structured_chart
+                        Res.string.action_create_chart
                     },
                 ),
             style = MaterialTheme.typography.bodySmall,

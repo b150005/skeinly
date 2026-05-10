@@ -6,31 +6,31 @@ import io.github.b150005.skeinly.data.mapper.toDbString
 import io.github.b150005.skeinly.data.mapper.toDocumentJson
 import io.github.b150005.skeinly.data.mapper.toDomain
 import io.github.b150005.skeinly.db.SkeinlyDatabase
-import io.github.b150005.skeinly.domain.model.StructuredChart
+import io.github.b150005.skeinly.domain.model.Chart
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
-class LocalStructuredChartDataSource(
+class LocalChartDataSource(
     private val db: SkeinlyDatabase,
     private val ioDispatcher: CoroutineDispatcher,
     private val json: Json,
 ) {
-    private val queries get() = db.structuredChartQueries
+    private val queries get() = db.chartQueries
 
-    suspend fun getById(id: String): StructuredChart? =
+    suspend fun getById(id: String): Chart? =
         withContext(ioDispatcher) {
             queries.getById(id).executeAsOneOrNull()?.safeToDomain()
         }
 
-    suspend fun getByPatternId(patternId: String): StructuredChart? =
+    suspend fun getByPatternId(patternId: String): Chart? =
         withContext(ioDispatcher) {
             queries.getByPatternId(patternId).executeAsOneOrNull()?.safeToDomain()
         }
 
-    fun observeByPatternId(patternId: String): Flow<StructuredChart?> =
+    fun observeByPatternId(patternId: String): Flow<Chart?> =
         queries
             .observeByPatternId(patternId)
             .asFlow()
@@ -43,15 +43,14 @@ class LocalStructuredChartDataSource(
      * flow — downstream callers read this as "no chart" and will heal on next
      * remote sync.
      */
-    private fun io.github.b150005.skeinly.db.StructuredChartEntity.safeToDomain(): StructuredChart? =
-        runCatching { toDomain(json) }.getOrNull()
+    private fun io.github.b150005.skeinly.db.ChartEntity.safeToDomain(): Chart? = runCatching { toDomain(json) }.getOrNull()
 
     suspend fun existsByPatternId(patternId: String): Boolean =
         withContext(ioDispatcher) {
             queries.existsByPatternId(patternId).executeAsOne()
         }
 
-    suspend fun insert(chart: StructuredChart): StructuredChart =
+    suspend fun insert(chart: Chart): Chart =
         withContext(ioDispatcher) {
             queries.insert(
                 id = chart.id,
@@ -70,7 +69,7 @@ class LocalStructuredChartDataSource(
             chart
         }
 
-    suspend fun update(chart: StructuredChart): StructuredChart =
+    suspend fun update(chart: Chart): Chart =
         withContext(ioDispatcher) {
             queries.update(
                 schema_version = chart.schemaVersion.toLong(),
@@ -92,7 +91,7 @@ class LocalStructuredChartDataSource(
      * the same pattern, so we key the reconciliation on the UNIQUE `pattern_id`
      * column rather than on `id`.
      */
-    suspend fun upsert(chart: StructuredChart): Unit =
+    suspend fun upsert(chart: Chart): Unit =
         withContext(ioDispatcher) {
             db.transaction {
                 queries.deleteByPatternId(chart.patternId)

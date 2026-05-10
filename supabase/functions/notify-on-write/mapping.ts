@@ -33,7 +33,7 @@ export interface PullRequestRow {
     author_id: string | null;
     target_pattern_id: string;
     source_pattern_id?: string;
-    status: "open" | "merged" | "closed";
+    status: "open" | "applied" | "closed";
 }
 
 /** Minimal projection of `public.pull_request_comments` row. */
@@ -71,34 +71,34 @@ export const ACTOR_FALLBACK_JA = "誰か";
 export const PATTERN_FALLBACK_EN = "a pattern";
 export const PATTERN_FALLBACK_JA = "パターン";
 
-/** PR-title fallback. */
-export const PR_TITLE_FALLBACK_EN = "a pull request";
-export const PR_TITLE_FALLBACK_JA = "プルリクエスト";
+/** Suggestion-title fallback. */
+export const PR_TITLE_FALLBACK_EN = "a suggestion";
+export const PR_TITLE_FALLBACK_JA = "提案";
 
 const EN_TEMPLATES: Record<TemplateKey, (params: TemplateParams) => string> = {
     pr_opened: (p) =>
-        `${p.actor ?? ACTOR_FALLBACK_EN} opened a pull request on ${p.pattern ?? PATTERN_FALLBACK_EN}`,
+        `${p.actor ?? ACTOR_FALLBACK_EN} sent a suggestion on ${p.pattern ?? PATTERN_FALLBACK_EN}`,
     pr_commented: (p) =>
         `${p.actor ?? ACTOR_FALLBACK_EN} commented on ${p.pr_title ?? PR_TITLE_FALLBACK_EN}`,
     pr_merged_to_author: (p) =>
-        `${p.actor ?? ACTOR_FALLBACK_EN} merged your pull request on ${p.pattern ?? PATTERN_FALLBACK_EN}`,
+        `${p.actor ?? ACTOR_FALLBACK_EN} applied your suggestion on ${p.pattern ?? PATTERN_FALLBACK_EN}`,
     pr_closed_to_author: (p) =>
-        `${p.actor ?? ACTOR_FALLBACK_EN} closed your pull request on ${p.pattern ?? PATTERN_FALLBACK_EN}`,
+        `${p.actor ?? ACTOR_FALLBACK_EN} closed your suggestion on ${p.pattern ?? PATTERN_FALLBACK_EN}`,
     pr_closed_to_owner: (p) =>
-        `${p.actor ?? ACTOR_FALLBACK_EN} closed their pull request on ${p.pattern ?? PATTERN_FALLBACK_EN}`,
+        `${p.actor ?? ACTOR_FALLBACK_EN} closed their suggestion on ${p.pattern ?? PATTERN_FALLBACK_EN}`,
 };
 
 const JA_TEMPLATES: Record<TemplateKey, (params: TemplateParams) => string> = {
     pr_opened: (p) =>
-        `${p.actor ?? ACTOR_FALLBACK_JA}さんが${p.pattern ?? PATTERN_FALLBACK_JA}にプルリクエストを開きました`,
+        `${p.actor ?? ACTOR_FALLBACK_JA}さんが${p.pattern ?? PATTERN_FALLBACK_JA}に提案を送りました`,
     pr_commented: (p) =>
         `${p.actor ?? ACTOR_FALLBACK_JA}さんが${p.pr_title ?? PR_TITLE_FALLBACK_JA}にコメントしました`,
     pr_merged_to_author: (p) =>
-        `${p.actor ?? ACTOR_FALLBACK_JA}さんがあなたの${p.pattern ?? PATTERN_FALLBACK_JA}へのプルリクエストをマージしました`,
+        `${p.actor ?? ACTOR_FALLBACK_JA}さんがあなたの${p.pattern ?? PATTERN_FALLBACK_JA}への提案を反映しました`,
     pr_closed_to_author: (p) =>
-        `${p.actor ?? ACTOR_FALLBACK_JA}さんがあなたの${p.pattern ?? PATTERN_FALLBACK_JA}へのプルリクエストをクローズしました`,
+        `${p.actor ?? ACTOR_FALLBACK_JA}さんがあなたの${p.pattern ?? PATTERN_FALLBACK_JA}への提案をクローズしました`,
     pr_closed_to_owner: (p) =>
-        `${p.actor ?? ACTOR_FALLBACK_JA}さんが${p.pattern ?? PATTERN_FALLBACK_JA}へのプルリクエストをクローズしました`,
+        `${p.actor ?? ACTOR_FALLBACK_JA}さんが${p.pattern ?? PATTERN_FALLBACK_JA}への提案をクローズしました`,
 };
 
 /** Locale-keyed registry. Keep parity between EN + JA tables — enforced
@@ -227,7 +227,7 @@ export function computePrCommentedDispatches(
 
 /**
  * Compute dispatches for a `pull_requests` UPDATE where status flipped
- * from 'open' → 'merged' or 'closed'. Branches on actor vs participant
+ * from 'open' → 'applied' or 'closed'. Branches on actor vs participant
  * to pick the correct template.
  *
  * @param row the updated PR row (post-update state)
@@ -249,10 +249,10 @@ export function computePrStatusChangeDispatches(
     // updated_at touch, future status flips like draft → open) silently
     // no-op.
     if (oldRow?.status !== "open") return [];
-    if (row.status !== "merged" && row.status !== "closed") return [];
+    if (row.status !== "applied" && row.status !== "closed") return [];
 
     const route = pullRequestRoute(row.id);
-    if (row.status === "merged") {
+    if (row.status === "applied") {
         // Per ADR-014 §5: merge is performed by the target owner only.
         // Notify the PR author. Defense-in-depth: even if actorUserId is
         // somehow the author (would indicate RPC bypass), still notify.

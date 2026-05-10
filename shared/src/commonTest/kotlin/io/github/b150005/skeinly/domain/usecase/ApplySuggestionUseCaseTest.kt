@@ -1,16 +1,16 @@
 package io.github.b150005.skeinly.domain.usecase
 
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartCell
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.Pattern
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestStatus
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import io.github.b150005.skeinly.domain.model.StructuredChart
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionStatus
 import io.github.b150005.skeinly.domain.model.Visibility
-import io.github.b150005.skeinly.domain.repository.PullRequestMergeOperations
+import io.github.b150005.skeinly.domain.repository.SuggestionMergeOperations
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -20,7 +20,7 @@ import kotlin.test.assertTrue
 import kotlin.time.Instant
 
 /**
- * Phase 38.4 (ADR-014 §5) coverage matrix for [MergePullRequestUseCase]:
+ * Phase 38.4 (ADR-014 §5) coverage matrix for [ApplySuggestionUseCase]:
  *
  *  1. status not OPEN → Validation
  *  2. unauthenticated → Authentication
@@ -34,12 +34,12 @@ import kotlin.time.Instant
  * 10. generic RPC failure → Unknown via toUseCaseError
  * 11. fresh revision id minted per call (idempotent across retries)
  */
-class MergePullRequestUseCaseTest {
+class ApplySuggestionUseCaseTest {
     private val now = Instant.parse("2026-04-26T10:00:00Z")
     private val json = Json { ignoreUnknownKeys = true }
 
-    private fun openPr(): PullRequest =
-        PullRequest(
+    private fun openPr(): Suggestion =
+        Suggestion(
             id = "pr-1",
             sourcePatternId = "pat-fork",
             sourceBranchId = "branch-source",
@@ -50,7 +50,7 @@ class MergePullRequestUseCaseTest {
             authorId = "contributor-id",
             title = "Add cable section",
             description = null,
-            status = PullRequestStatus.OPEN,
+            status = SuggestionStatus.OPEN,
             mergedRevisionId = null,
             mergedAt = null,
             closedAt = null,
@@ -74,8 +74,8 @@ class MergePullRequestUseCaseTest {
             updatedAt = now,
         )
 
-    private fun resolvedChart(): StructuredChart =
-        StructuredChart(
+    private fun resolvedChart(): Chart =
+        Chart(
             id = "chart-1",
             patternId = "pat-upstream",
             ownerId = "owner-id",
@@ -93,7 +93,7 @@ class MergePullRequestUseCaseTest {
 
     private class FakeMergeOps(
         var nextError: Throwable? = null,
-    ) : PullRequestMergeOperations {
+    ) : SuggestionMergeOperations {
         var lastPrId: String? = null
             private set
         var lastStrategy: String? = null
@@ -108,14 +108,14 @@ class MergePullRequestUseCaseTest {
             private set
 
         override suspend fun merge(
-            pullRequestId: String,
+            suggestionId: String,
             strategy: String,
             mergedDocument: JsonElement,
             mergedContentHash: String,
             resolvedRevisionId: String,
         ): String {
             callCount += 1
-            lastPrId = pullRequestId
+            lastPrId = suggestionId
             lastStrategy = strategy
             lastRevisionId = resolvedRevisionId
             lastContentHash = mergedContentHash
@@ -140,8 +140,8 @@ class MergePullRequestUseCaseTest {
                 }
             val patterns = FakePatternRepository().apply { seed(targetPattern("owner-id")) }
             val ops = FakeMergeOps()
-            val useCase = MergePullRequestUseCase(ops, patterns, auth, json)
-            val merged = openPr().copy(status = PullRequestStatus.MERGED)
+            val useCase = ApplySuggestionUseCase(ops, patterns, auth, json)
+            val merged = openPr().copy(status = SuggestionStatus.APPLIED)
 
             val result = useCase(merged, resolvedChart())
 
@@ -156,7 +156,7 @@ class MergePullRequestUseCaseTest {
             val auth = FakeAuthRepository() // unauthenticated by default
             val patterns = FakePatternRepository().apply { seed(targetPattern("owner-id")) }
             val ops = FakeMergeOps()
-            val useCase = MergePullRequestUseCase(ops, patterns, auth, json)
+            val useCase = ApplySuggestionUseCase(ops, patterns, auth, json)
 
             val result = useCase(openPr(), resolvedChart())
 
@@ -177,7 +177,7 @@ class MergePullRequestUseCaseTest {
                 }
             val patterns = FakePatternRepository().apply { seed(targetPattern("owner-id")) }
             val ops = FakeMergeOps()
-            val useCase = MergePullRequestUseCase(ops, patterns, auth, json)
+            val useCase = ApplySuggestionUseCase(ops, patterns, auth, json)
 
             val result = useCase(openPr(), resolvedChart())
 
@@ -197,7 +197,7 @@ class MergePullRequestUseCaseTest {
                     )
                 }
             val patterns = FakePatternRepository().apply { seed(targetPattern("owner-id")) }
-            val useCase = MergePullRequestUseCase(null, patterns, auth, json)
+            val useCase = ApplySuggestionUseCase(null, patterns, auth, json)
 
             val result = useCase(openPr(), resolvedChart())
 
@@ -217,12 +217,12 @@ class MergePullRequestUseCaseTest {
                 }
             val patterns = FakePatternRepository().apply { seed(targetPattern("owner-id")) }
             val ops = FakeMergeOps()
-            val useCase = MergePullRequestUseCase(ops, patterns, auth, json)
+            val useCase = ApplySuggestionUseCase(ops, patterns, auth, json)
 
             val result = useCase(openPr(), resolvedChart())
 
             assertTrue(result is UseCaseResult.Success)
-            assertEquals("pr-1", result.value.pullRequestId)
+            assertEquals("pr-1", result.value.suggestionId)
             assertEquals("squash", ops.lastStrategy)
             assertEquals(ops.lastRevisionId, result.value.mergedRevisionId)
             assertEquals(1, ops.callCount)
@@ -240,7 +240,7 @@ class MergePullRequestUseCaseTest {
                 }
             val patterns = FakePatternRepository().apply { seed(targetPattern("owner-id")) }
             val ops = FakeMergeOps(nextError = RuntimeException("Source tip drifted; re-resolve required"))
-            val useCase = MergePullRequestUseCase(ops, patterns, auth, json)
+            val useCase = ApplySuggestionUseCase(ops, patterns, auth, json)
 
             val result = useCase(openPr(), resolvedChart())
 
@@ -260,7 +260,7 @@ class MergePullRequestUseCaseTest {
                 }
             val patterns = FakePatternRepository().apply { seed(targetPattern("owner-id")) }
             val ops = FakeMergeOps(nextError = RuntimeException("PR not open"))
-            val useCase = MergePullRequestUseCase(ops, patterns, auth, json)
+            val useCase = ApplySuggestionUseCase(ops, patterns, auth, json)
 
             val result = useCase(openPr(), resolvedChart())
 
@@ -280,7 +280,7 @@ class MergePullRequestUseCaseTest {
                 }
             val patterns = FakePatternRepository().apply { seed(targetPattern("owner-id")) }
             val ops = FakeMergeOps(nextError = RuntimeException("Caller is not target owner"))
-            val useCase = MergePullRequestUseCase(ops, patterns, auth, json)
+            val useCase = ApplySuggestionUseCase(ops, patterns, auth, json)
 
             val result = useCase(openPr(), resolvedChart())
 
@@ -300,7 +300,7 @@ class MergePullRequestUseCaseTest {
                 }
             val patterns = FakePatternRepository().apply { seed(targetPattern("owner-id")) }
             val ops = FakeMergeOps(nextError = RuntimeException("PR not found"))
-            val useCase = MergePullRequestUseCase(ops, patterns, auth, json)
+            val useCase = ApplySuggestionUseCase(ops, patterns, auth, json)
 
             val result = useCase(openPr(), resolvedChart())
 
@@ -320,7 +320,7 @@ class MergePullRequestUseCaseTest {
                 }
             val patterns = FakePatternRepository().apply { seed(targetPattern("owner-id")) }
             val ops = FakeMergeOps(nextError = RuntimeException("totally unrelated database error"))
-            val useCase = MergePullRequestUseCase(ops, patterns, auth, json)
+            val useCase = ApplySuggestionUseCase(ops, patterns, auth, json)
 
             val result = useCase(openPr(), resolvedChart())
 
@@ -335,7 +335,7 @@ class MergePullRequestUseCaseTest {
             // target-only edits AND theirs made source-only edits must
             // produce a document carrying BOTH sets of changes.
             val ancestor =
-                StructuredChart(
+                Chart(
                     id = "a",
                     patternId = "pat",
                     ownerId = "owner",
@@ -412,7 +412,7 @@ class MergePullRequestUseCaseTest {
             // SKIP picker option (restore ancestor) must NOT silently
             // recreate an orphan cell — the layer is gone, the cell is gone.
             val ancestor =
-                StructuredChart(
+                Chart(
                     id = "a",
                     patternId = "pat",
                     ownerId = "owner",
@@ -486,7 +486,7 @@ class MergePullRequestUseCaseTest {
                 }
             val patterns = FakePatternRepository().apply { seed(targetPattern("owner-id")) }
             val ops = FakeMergeOps()
-            val useCase = MergePullRequestUseCase(ops, patterns, auth, json)
+            val useCase = ApplySuggestionUseCase(ops, patterns, auth, json)
 
             val r1 = useCase(openPr(), resolvedChart())
             val firstId = (r1 as UseCaseResult.Success).value.mergedRevisionId

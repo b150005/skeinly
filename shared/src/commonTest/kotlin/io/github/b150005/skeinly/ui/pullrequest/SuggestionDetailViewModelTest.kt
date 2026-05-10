@@ -6,19 +6,19 @@ import io.github.b150005.skeinly.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.skeinly.domain.model.AuthState
 import io.github.b150005.skeinly.domain.model.Difficulty
 import io.github.b150005.skeinly.domain.model.Pattern
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestComment
-import io.github.b150005.skeinly.domain.model.PullRequestStatus
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionComment
+import io.github.b150005.skeinly.domain.model.SuggestionStatus
 import io.github.b150005.skeinly.domain.model.User
 import io.github.b150005.skeinly.domain.model.Visibility
-import io.github.b150005.skeinly.domain.usecase.ClosePullRequestUseCase
+import io.github.b150005.skeinly.domain.usecase.CloseSuggestionUseCase
 import io.github.b150005.skeinly.domain.usecase.FakeAuthRepository
 import io.github.b150005.skeinly.domain.usecase.FakePatternRepository
-import io.github.b150005.skeinly.domain.usecase.FakePullRequestRepository
+import io.github.b150005.skeinly.domain.usecase.FakeSuggestionRepository
 import io.github.b150005.skeinly.domain.usecase.FakeUserRepository
-import io.github.b150005.skeinly.domain.usecase.GetPullRequestCommentsUseCase
-import io.github.b150005.skeinly.domain.usecase.GetPullRequestUseCase
-import io.github.b150005.skeinly.domain.usecase.PostPullRequestCommentUseCase
+import io.github.b150005.skeinly.domain.usecase.GetSuggestionCommentsUseCase
+import io.github.b150005.skeinly.domain.usecase.GetSuggestionUseCase
+import io.github.b150005.skeinly.domain.usecase.PostSuggestionCommentUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -37,9 +37,9 @@ import kotlin.test.assertTrue
 import kotlin.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class PullRequestDetailViewModelTest {
+class SuggestionDetailViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
-    private lateinit var prRepo: FakePullRequestRepository
+    private lateinit var prRepo: FakeSuggestionRepository
     private lateinit var patternRepo: FakePatternRepository
     private lateinit var userRepo: FakeUserRepository
     private lateinit var authRepo: FakeAuthRepository
@@ -47,7 +47,7 @@ class PullRequestDetailViewModelTest {
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        prRepo = FakePullRequestRepository()
+        prRepo = FakeSuggestionRepository()
         patternRepo = FakePatternRepository()
         userRepo = FakeUserRepository()
         authRepo = FakeAuthRepository()
@@ -79,8 +79,8 @@ class PullRequestDetailViewModelTest {
     private fun makePr(
         id: String = "pr-1",
         authorId: String? = "user-fork",
-        status: PullRequestStatus = PullRequestStatus.OPEN,
-    ) = PullRequest(
+        status: SuggestionStatus = SuggestionStatus.OPEN,
+    ) = Suggestion(
         id = id,
         sourcePatternId = "pat-fork",
         sourceBranchId = "br-source-main",
@@ -103,9 +103,9 @@ class PullRequestDetailViewModelTest {
         id: String,
         authorId: String? = "user-fork",
         body: String = "Looks good",
-    ) = PullRequestComment(
+    ) = SuggestionComment(
         id = id,
-        pullRequestId = "pr-1",
+        suggestionId = "pr-1",
         authorId = authorId,
         body = body,
         createdAt = Instant.parse("2026-04-25T11:00:00Z"),
@@ -114,13 +114,13 @@ class PullRequestDetailViewModelTest {
     private fun makeViewModel(
         prId: String = "pr-1",
         analyticsTracker: AnalyticsTracker? = null,
-    ) = PullRequestDetailViewModel(
+    ) = SuggestionDetailViewModel(
         prId = prId,
-        getPullRequest = GetPullRequestUseCase(prRepo),
-        getComments = GetPullRequestCommentsUseCase(prRepo),
-        postComment = PostPullRequestCommentUseCase(prRepo, authRepo),
-        closePullRequest = ClosePullRequestUseCase(prRepo, authRepo),
-        pullRequestRepository = prRepo,
+        getSuggestion = GetSuggestionUseCase(prRepo),
+        getComments = GetSuggestionCommentsUseCase(prRepo),
+        postComment = PostSuggestionCommentUseCase(prRepo, authRepo),
+        closeSuggestion = CloseSuggestionUseCase(prRepo, authRepo),
+        suggestionRepository = prRepo,
         patternRepository = patternRepo,
         userRepository = userRepo,
         authRepository = authRepo,
@@ -137,7 +137,7 @@ class PullRequestDetailViewModelTest {
             val vm = makeViewModel()
             val state = vm.state.value
 
-            assertEquals("pr-1", state.pullRequest?.id)
+            assertEquals("pr-1", state.suggestion?.id)
             assertEquals("owner-upstream", state.targetOwnerId)
             assertEquals(listOf("c1"), state.comments.map { it.id })
             assertFalse(state.isLoading)
@@ -151,7 +151,7 @@ class PullRequestDetailViewModelTest {
             val state = vm.state.value
 
             assertNotNull(state.error)
-            assertNull(state.pullRequest)
+            assertNull(state.suggestion)
         }
 
     @Test
@@ -217,7 +217,7 @@ class PullRequestDetailViewModelTest {
     fun `canClose is false on a merged PR even for a participant`() =
         runTest {
             patternRepo.create(makeUpstreamPattern())
-            prRepo.seedById(makePr(status = PullRequestStatus.MERGED))
+            prRepo.seedById(makePr(status = SuggestionStatus.APPLIED))
 
             val vm = makeViewModel()
 
@@ -231,7 +231,7 @@ class PullRequestDetailViewModelTest {
             prRepo.seedById(makePr())
             val vm = makeViewModel()
 
-            vm.onEvent(PullRequestDetailEvent.CommentDraftChanged("Draft text"))
+            vm.onEvent(SuggestionDetailEvent.CommentDraftChanged("Draft text"))
 
             assertEquals("Draft text", vm.state.value.commentDraft)
         }
@@ -242,9 +242,9 @@ class PullRequestDetailViewModelTest {
             patternRepo.create(makeUpstreamPattern())
             prRepo.seedById(makePr())
             val vm = makeViewModel()
-            vm.onEvent(PullRequestDetailEvent.CommentDraftChanged("Looks good"))
+            vm.onEvent(SuggestionDetailEvent.CommentDraftChanged("Looks good"))
 
-            vm.onEvent(PullRequestDetailEvent.PostComment)
+            vm.onEvent(SuggestionDetailEvent.PostComment)
 
             val state = vm.state.value
             assertEquals("", state.commentDraft)
@@ -257,16 +257,16 @@ class PullRequestDetailViewModelTest {
             patternRepo.create(makeUpstreamPattern())
             prRepo.seedById(makePr())
             val vm = makeViewModel()
-            vm.onEvent(PullRequestDetailEvent.CommentDraftChanged("Nice work"))
+            vm.onEvent(SuggestionDetailEvent.CommentDraftChanged("Nice work"))
 
-            vm.onEvent(PullRequestDetailEvent.PostComment)
+            vm.onEvent(SuggestionDetailEvent.PostComment)
 
             // Phase 24.2c-3 — the screen layer routes this nav event to
             // NotificationPermissionViewModel as the PR_COMMENT_POSTED
             // engagement-moment trigger for the in-app pre-permission
             // explainer.
             val event = vm.navEvents.first()
-            assertEquals(PullRequestDetailNavEvent.CommentPosted, event)
+            assertEquals(SuggestionDetailNavEvent.CommentPosted, event)
         }
 
     @Test
@@ -276,18 +276,18 @@ class PullRequestDetailViewModelTest {
             prRepo.seedById(makePr())
             val vm = makeViewModel()
 
-            vm.onEvent(PullRequestDetailEvent.RequestClose)
+            vm.onEvent(SuggestionDetailEvent.RequestClose)
             assertTrue(vm.state.value.pendingCloseConfirmation)
-            vm.onEvent(PullRequestDetailEvent.ConfirmClose)
+            vm.onEvent(SuggestionDetailEvent.ConfirmClose)
 
             assertEquals(
-                PullRequestStatus.CLOSED,
-                vm.state.value.pullRequest
+                SuggestionStatus.CLOSED,
+                vm.state.value.suggestion
                     ?.status,
             )
             // Channel emits the PrClosed event.
             val event = vm.navEvents.first()
-            assertEquals(PullRequestDetailNavEvent.PrClosed, event)
+            assertEquals(SuggestionDetailNavEvent.PrClosed, event)
         }
 
     @Test
@@ -297,13 +297,13 @@ class PullRequestDetailViewModelTest {
             prRepo.seedById(makePr())
             val vm = makeViewModel()
 
-            vm.onEvent(PullRequestDetailEvent.RequestClose)
-            vm.onEvent(PullRequestDetailEvent.DismissCloseConfirmation)
+            vm.onEvent(SuggestionDetailEvent.RequestClose)
+            vm.onEvent(SuggestionDetailEvent.DismissCloseConfirmation)
 
             assertFalse(vm.state.value.pendingCloseConfirmation)
             assertEquals(
-                PullRequestStatus.OPEN,
-                vm.state.value.pullRequest
+                SuggestionStatus.OPEN,
+                vm.state.value.suggestion
                     ?.status,
             )
         }
@@ -314,7 +314,7 @@ class PullRequestDetailViewModelTest {
             val vm = makeViewModel(prId = "missing")
             assertNotNull(vm.state.value.error)
 
-            vm.onEvent(PullRequestDetailEvent.ClearError)
+            vm.onEvent(SuggestionDetailEvent.ClearError)
 
             assertNull(vm.state.value.error)
         }
@@ -351,10 +351,10 @@ class PullRequestDetailViewModelTest {
             prRepo.seedById(makePr())
             val tracker = RecordingAnalyticsTracker()
             val vm = makeViewModel(analyticsTracker = tracker)
-            vm.onEvent(PullRequestDetailEvent.CommentDraftChanged("Looks good"))
-            vm.onEvent(PullRequestDetailEvent.PostComment)
+            vm.onEvent(SuggestionDetailEvent.CommentDraftChanged("Looks good"))
+            vm.onEvent(SuggestionDetailEvent.PostComment)
 
-            assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.PullRequestCommented), tracker.outcomeEvents)
+            assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.SuggestionCommented), tracker.outcomeEvents)
         }
 
     @Test
@@ -364,9 +364,9 @@ class PullRequestDetailViewModelTest {
             prRepo.seedById(makePr())
             val tracker = RecordingAnalyticsTracker()
             val vm = makeViewModel(analyticsTracker = tracker)
-            vm.onEvent(PullRequestDetailEvent.RequestClose)
-            vm.onEvent(PullRequestDetailEvent.ConfirmClose)
+            vm.onEvent(SuggestionDetailEvent.RequestClose)
+            vm.onEvent(SuggestionDetailEvent.ConfirmClose)
 
-            assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.PullRequestClosed), tracker.outcomeEvents)
+            assertEquals(listOf<AnalyticsEvent>(AnalyticsEvent.SuggestionClosed), tracker.outcomeEvents)
         }
 }

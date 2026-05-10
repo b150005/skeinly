@@ -2,9 +2,9 @@ package io.github.b150005.skeinly.ui.chart
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.b150005.skeinly.domain.model.ChartDiff
+import io.github.b150005.skeinly.domain.model.ChartComparison
 import io.github.b150005.skeinly.domain.usecase.ErrorMessage
-import io.github.b150005.skeinly.domain.usecase.GetChartDiffUseCase
+import io.github.b150005.skeinly.domain.usecase.GetChartComparisonUseCase
 import io.github.b150005.skeinly.domain.usecase.UseCaseResult
 import io.github.b150005.skeinly.domain.usecase.toErrorMessage
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * State rendered by [ChartDiffScreen] (Phase 37.3, ADR-013 §6).
+ * State rendered by [ChartComparisonScreen] (Phase 37.3, ADR-013 §6).
  *
  * `diff` holds both source revisions plus the cell + layer change lists. The
  * screen reads `diff.base` and `diff.target` directly to drive the side-by-side
@@ -26,38 +26,38 @@ import kotlinx.coroutines.launch
  * layer yet so the raw message is shown verbatim per the project-wide
  * "ViewModel error-message localization" Tech Debt deferral.
  */
-data class ChartDiffState(
-    val diff: ChartDiff? = null,
+data class ChartComparisonState(
+    val diff: ChartComparison? = null,
     val isLoading: Boolean = true,
     val error: ErrorMessage? = null,
 )
 
-sealed interface ChartDiffEvent {
-    data object ClearError : ChartDiffEvent
+sealed interface ChartComparisonEvent {
+    data object ClearError : ChartComparisonEvent
 }
 
-class ChartDiffViewModel(
+class ChartComparisonViewModel(
     private val baseRevisionId: String?,
     private val targetRevisionId: String,
-    private val getChartDiff: GetChartDiffUseCase,
+    private val getChartComparison: GetChartComparisonUseCase,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(ChartDiffState())
-    val state: StateFlow<ChartDiffState> = _state.asStateFlow()
+    private val _state = MutableStateFlow(ChartComparisonState())
+    val state: StateFlow<ChartComparisonState> = _state.asStateFlow()
 
     init {
         load()
     }
 
-    fun onEvent(event: ChartDiffEvent) {
+    fun onEvent(event: ChartComparisonEvent) {
         when (event) {
-            ChartDiffEvent.ClearError -> _state.update { it.copy(error = null) }
+            ChartComparisonEvent.ClearError -> _state.update { it.copy(error = null) }
         }
     }
 
     private fun load() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            when (val result = getChartDiff(baseRevisionId, targetRevisionId)) {
+            when (val result = getChartComparison(baseRevisionId, targetRevisionId)) {
                 is UseCaseResult.Success ->
                     _state.update { it.copy(diff = result.value, isLoading = false, error = null) }
                 is UseCaseResult.Failure ->

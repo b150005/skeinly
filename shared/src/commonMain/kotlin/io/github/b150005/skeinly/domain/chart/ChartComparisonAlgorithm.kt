@@ -1,9 +1,9 @@
 package io.github.b150005.skeinly.domain.chart
 
 import io.github.b150005.skeinly.domain.model.CellChange
-import io.github.b150005.skeinly.domain.model.ChartDiff
+import io.github.b150005.skeinly.domain.model.Chart
+import io.github.b150005.skeinly.domain.model.ChartComparison
 import io.github.b150005.skeinly.domain.model.LayerChange
-import io.github.b150005.skeinly.domain.model.StructuredChart
 
 /**
  * Pure cell-level + layer-property diff per ADR-013 §5.
@@ -24,11 +24,11 @@ import io.github.b150005.skeinly.domain.model.StructuredChart
  * target layer surfaces as [LayerChange.Added] and `cellChanges` is empty
  * (the algorithm intersects layer ids; an empty base intersects with nothing).
  */
-object ChartDiffAlgorithm {
+object ChartComparisonAlgorithm {
     fun diff(
-        base: StructuredChart?,
-        target: StructuredChart,
-    ): ChartDiff {
+        base: Chart?,
+        target: Chart,
+    ): ChartComparison {
         val baseLayers = base?.layers.orEmpty()
         val baseLayersById = baseLayers.associateBy { it.id }
         val targetLayersById = target.layers.associateBy { it.id }
@@ -66,7 +66,7 @@ object ChartDiffAlgorithm {
             }
         }
 
-        return ChartDiff(
+        return ChartComparison(
             base = base,
             target = target,
             cellChanges = cellChanges,

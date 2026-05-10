@@ -2,13 +2,13 @@ package io.github.b150005.skeinly.domain.usecase
 
 import io.github.b150005.skeinly.domain.model.AuthState
 import io.github.b150005.skeinly.domain.model.ChartExtents
-import io.github.b150005.skeinly.domain.model.ChartRevision
+import io.github.b150005.skeinly.domain.model.ChartVersion
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.CraftType
-import io.github.b150005.skeinly.domain.model.PullRequest
 import io.github.b150005.skeinly.domain.model.ReadingConvention
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import io.github.b150005.skeinly.domain.repository.ChartRevisionRepository
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.repository.ChartVersionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -19,26 +19,26 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.time.Instant
 
-class OpenPullRequestUseCaseTest {
-    private lateinit var prRepo: FakePullRequestRepository
+class OpenSuggestionUseCaseTest {
+    private lateinit var prRepo: FakeSuggestionRepository
     private lateinit var revRepo: FakeRevisionRepoForOpenPr
     private lateinit var authRepo: FakeAuthRepository
-    private lateinit var useCase: OpenPullRequestUseCase
+    private lateinit var useCase: OpenSuggestionUseCase
 
     @BeforeTest
     fun setUp() {
-        prRepo = FakePullRequestRepository()
+        prRepo = FakeSuggestionRepository()
         revRepo = FakeRevisionRepoForOpenPr()
         authRepo = FakeAuthRepository()
         authRepo.setAuthState(AuthState.Authenticated(userId = "user-fork", email = "f@example.com"))
-        useCase = OpenPullRequestUseCase(prRepo, revRepo, authRepo)
+        useCase = OpenSuggestionUseCase(prRepo, revRepo, authRepo)
     }
 
     private fun makeRevision(
         id: String,
         patternId: String,
         parentId: String?,
-    ) = ChartRevision(
+    ) = ChartVersion(
         id = "$id-row",
         revisionId = id,
         patternId = patternId,
@@ -83,7 +83,7 @@ class OpenPullRequestUseCaseTest {
                     description = null,
                 )
 
-            assertIs<UseCaseResult.Success<PullRequest>>(result)
+            assertIs<UseCaseResult.Success<Suggestion>>(result)
             assertEquals("t2", result.value.commonAncestorRevisionId)
             assertEquals("user-fork", result.value.authorId)
         }
@@ -111,7 +111,7 @@ class OpenPullRequestUseCaseTest {
                     description = "with notes",
                 )
 
-            assertIs<UseCaseResult.Success<PullRequest>>(result)
+            assertIs<UseCaseResult.Success<Suggestion>>(result)
             assertEquals("t2", result.value.commonAncestorRevisionId)
             assertEquals("with notes", result.value.description)
         }
@@ -185,7 +185,7 @@ class OpenPullRequestUseCaseTest {
     @Test
     fun `invoke rejects a title longer than the 200 char limit`() =
         runTest {
-            val tooLong = "t".repeat(OpenPullRequestUseCase.MAX_TITLE_LENGTH + 1)
+            val tooLong = "t".repeat(OpenSuggestionUseCase.MAX_TITLE_LENGTH + 1)
 
             val result =
                 useCase(
@@ -277,33 +277,33 @@ class OpenPullRequestUseCaseTest {
 
 /**
  * Local fake — only `getRevision` and `getHistoryForPattern` are exercised by
- * `OpenPullRequestUseCase`. Other methods throw to surface accidental reach.
+ * `OpenSuggestionUseCase`. Other methods throw to surface accidental reach.
  */
-private class FakeRevisionRepoForOpenPr : ChartRevisionRepository {
-    private val history = mutableMapOf<String, List<ChartRevision>>()
-    private val byRevisionId = mutableMapOf<String, ChartRevision>()
+private class FakeRevisionRepoForOpenPr : ChartVersionRepository {
+    private val history = mutableMapOf<String, List<ChartVersion>>()
+    private val byRevisionId = mutableMapOf<String, ChartVersion>()
 
     fun setHistory(
         patternId: String,
-        revisions: List<ChartRevision>,
+        revisions: List<ChartVersion>,
     ) {
         history[patternId] = revisions
         revisions.forEach { byRevisionId[it.revisionId] = it }
     }
 
-    fun put(revision: ChartRevision) {
+    fun put(revision: ChartVersion) {
         byRevisionId[revision.revisionId] = revision
     }
 
-    override suspend fun getRevision(revisionId: String): ChartRevision? = byRevisionId[revisionId]
+    override suspend fun getRevision(revisionId: String): ChartVersion? = byRevisionId[revisionId]
 
     override suspend fun getHistoryForPattern(
         patternId: String,
         limit: Int,
         offset: Int,
-    ): List<ChartRevision> = history[patternId].orEmpty()
+    ): List<ChartVersion> = history[patternId].orEmpty()
 
-    override fun observeHistoryForPattern(patternId: String): Flow<List<ChartRevision>> = flowOf(emptyList())
+    override fun observeHistoryForPattern(patternId: String): Flow<List<ChartVersion>> = flowOf(emptyList())
 
-    override suspend fun append(revision: ChartRevision): ChartRevision = error("Not used by OpenPullRequestUseCase")
+    override suspend fun append(revision: ChartVersion): ChartVersion = error("Not used by OpenSuggestionUseCase")
 }

@@ -1,18 +1,18 @@
 package io.github.b150005.skeinly.data.repository
 
-import io.github.b150005.skeinly.data.local.LocalChartBranchDataSource
-import io.github.b150005.skeinly.data.local.LocalStructuredChartDataSource
-import io.github.b150005.skeinly.data.remote.RemoteStructuredChartDataSource
+import io.github.b150005.skeinly.data.local.LocalChartDataSource
+import io.github.b150005.skeinly.data.local.LocalChartVariationDataSource
+import io.github.b150005.skeinly.data.remote.RemoteChartDataSource
 import io.github.b150005.skeinly.data.sync.SyncEntityType
 import io.github.b150005.skeinly.data.sync.SyncManagerOperations
 import io.github.b150005.skeinly.data.sync.SyncOperation
-import io.github.b150005.skeinly.domain.model.ChartBranch
-import io.github.b150005.skeinly.domain.model.ChartRevision
-import io.github.b150005.skeinly.domain.model.StructuredChart
-import io.github.b150005.skeinly.domain.model.toStructuredChart
-import io.github.b150005.skeinly.domain.repository.ChartBranchRepository
-import io.github.b150005.skeinly.domain.repository.ChartRevisionRepository
-import io.github.b150005.skeinly.domain.repository.StructuredChartRepository
+import io.github.b150005.skeinly.domain.model.Chart
+import io.github.b150005.skeinly.domain.model.ChartVariation
+import io.github.b150005.skeinly.domain.model.ChartVersion
+import io.github.b150005.skeinly.domain.model.toChart
+import io.github.b150005.skeinly.domain.repository.ChartRepository
+import io.github.b150005.skeinly.domain.repository.ChartVariationRepository
+import io.github.b150005.skeinly.domain.repository.ChartVersionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Mutex
@@ -24,9 +24,9 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
-class StructuredChartRepositoryImpl(
-    private val local: LocalStructuredChartDataSource,
-    private val remote: RemoteStructuredChartDataSource?,
+class ChartRepositoryImpl(
+    private val local: LocalChartDataSource,
+    private val remote: RemoteChartDataSource?,
     private val isOnline: StateFlow<Boolean>,
     private val syncManager: SyncManagerOperations,
     private val json: Json,
@@ -34,14 +34,14 @@ class StructuredChartRepositoryImpl(
     // Optional with `null` defaults so existing test call-sites that construct
     // this repo directly without seeding a revision/branch layer continue to
     // compile. Production wiring (RepositoryModule) always passes non-null.
-    private val chartRevisionRepository: ChartRevisionRepository? = null,
-    private val localChartBranch: LocalChartBranchDataSource? = null,
+    private val chartVersionRepository: ChartVersionRepository? = null,
+    private val localChartVariation: LocalChartVariationDataSource? = null,
     // Phase 37.4 (ADR-013 §7): advance the current branch's tip on every save.
     // Optional with `null` default for the same reason the 37.1 deps are
     // optional — existing test call-sites that bypass the branch layer stay
     // green. Production wiring (RepositoryModule) always passes non-null.
-    private val chartBranchRepository: ChartBranchRepository? = null,
-) : StructuredChartRepository {
+    private val chartVariationRepository: ChartVariationRepository? = null,
+) : ChartRepository {
     /**
      * Serializes the read-then-write triple in [update] and [forkFor] so two
      * concurrent saves on the same chart cannot both read the same prior tip
@@ -52,7 +52,7 @@ class StructuredChartRepositoryImpl(
      */
     private val writeMutex = Mutex()
 
-    override suspend fun getByPatternId(patternId: String): StructuredChart? {
+    override suspend fun getByPatternId(patternId: String): Chart? {
         val localChart = local.getByPatternId(patternId)
         if (localChart != null || remote == null || !isOnline.value) return localChart
 
@@ -63,11 +63,11 @@ class StructuredChartRepositoryImpl(
         }
     }
 
-    override fun observeByPatternId(patternId: String): Flow<StructuredChart?> = local.observeByPatternId(patternId)
+    override fun observeByPatternId(patternId: String): Flow<Chart?> = local.observeByPatternId(patternId)
 
     override suspend fun existsByPatternId(patternId: String): Boolean = local.existsByPatternId(patternId)
 
-    override suspend fun create(chart: StructuredChart): StructuredChart =
+    override suspend fun create(chart: Chart): Chart =
         writeMutex.withLock {
             local.insert(chart)
             syncManager.syncOrEnqueue(
@@ -85,7 +85,7 @@ class StructuredChartRepositoryImpl(
             chart
         }
 
-    override suspend fun update(chart: StructuredChart): StructuredChart =
+    override suspend fun update(chart: Chart): Chart =
         writeMutex.withLock {
             // ADR-013 §1: append the new revision BEFORE the tip update. The local
             // tip update happens immediately; both writes flow through PendingSync
@@ -129,7 +129,7 @@ class StructuredChartRepositoryImpl(
         sourcePatternId: String,
         newPatternId: String,
         newOwnerId: String,
-    ): StructuredChart? {
+    ): Chart? {
         // getByPatternId() resolves local-first then falls back to remote when online,
         // so a forker who has not yet visited the source pattern still hits a fresh
         // copy. Returns null when the source has no chart at all — caller (ADR-012 §3)
@@ -170,7 +170,7 @@ class StructuredChartRepositoryImpl(
     }
 
     /**
-     * Append a [ChartRevision] mirroring the tip's drawing payload + lineage.
+     * Append a [ChartVersion] mirroring the tip's drawing payload + lineage.
      *
      * `parentRevisionId` is taken from the chart's prior tip on update paths
      * (caller passes `previousChart.revisionId`), and from the chart's own
@@ -181,17 +181,17 @@ class StructuredChartRepositoryImpl(
      * deterministic — a caller who constructs a chart pre-network-delay could
      * hand us a stale `updatedAt` that ties or out-of-orders the history.
      *
-     * No-ops if the [ChartRevisionRepository] dependency is absent (test
+     * No-ops if the [ChartVersionRepository] dependency is absent (test
      * call-sites; production always provides it).
      */
     private suspend fun appendRevisionFromTip(
-        chart: StructuredChart,
+        chart: Chart,
         commitMessage: String?,
         parentRevisionId: String?,
     ) {
-        val repo = chartRevisionRepository ?: return
+        val repo = chartVersionRepository ?: return
         val revision =
-            ChartRevision(
+            ChartVersion(
                 id = Uuid.random().toString(),
                 patternId = chart.patternId,
                 ownerId = chart.ownerId,
@@ -226,18 +226,18 @@ class StructuredChartRepositoryImpl(
         ownerId: String,
         initialRevisionId: String,
     ) {
-        val branchDs = localChartBranch ?: return
-        if (branchDs.getByPatternIdAndName(patternId, ChartBranch.DEFAULT_BRANCH_NAME) != null) {
+        val branchDs = localChartVariation ?: return
+        if (branchDs.getByPatternIdAndName(patternId, ChartVariation.DEFAULT_BRANCH_NAME) != null) {
             // Branch already exists for this pattern — nothing to enqueue.
             return
         }
         val now = Clock.System.now()
         val branch =
-            ChartBranch(
+            ChartVariation(
                 id = Uuid.random().toString(),
                 patternId = patternId,
                 ownerId = ownerId,
-                branchName = ChartBranch.DEFAULT_BRANCH_NAME,
+                branchName = ChartVariation.DEFAULT_BRANCH_NAME,
                 tipRevisionId = initialRevisionId,
                 createdAt = now,
                 updatedAt = now,
@@ -267,12 +267,12 @@ class StructuredChartRepositoryImpl(
      */
     override suspend fun setTip(
         patternId: String,
-        targetRevision: ChartRevision,
-    ): StructuredChart? =
+        targetRevision: ChartVersion,
+    ): Chart? =
         writeMutex.withLock {
             val current = local.getByPatternId(patternId) ?: return@withLock null
             val rebuilt =
-                targetRevision.toStructuredChart().copy(
+                targetRevision.toChart().copy(
                     id = current.id,
                     createdAt = current.createdAt,
                     updatedAt = Clock.System.now(),
@@ -306,12 +306,12 @@ class StructuredChartRepositoryImpl(
         previousRevisionId: String?,
         newRevisionId: String,
     ) {
-        val branchRepo = chartBranchRepository ?: return
+        val branchRepo = chartVariationRepository ?: return
         if (previousRevisionId == null) {
             // First save into a chart that predates branch wiring (or test
             // shim). Try advancing "main" if it exists; ensureDefaultBranch
             // already set the tip on first create so this is mostly defensive.
-            branchRepo.advanceTip(patternId, ChartBranch.DEFAULT_BRANCH_NAME, newRevisionId)
+            branchRepo.advanceTip(patternId, ChartVariation.DEFAULT_BRANCH_NAME, newRevisionId)
             return
         }
         val branches = branchRepo.getByPatternId(patternId)
@@ -321,7 +321,7 @@ class StructuredChartRepositoryImpl(
             // shouldn't happen post-37.4 but guards against pre-37.4 data
             // where chart_documents.revision_id evolved without any branch
             // row tracking it.
-            branchRepo.advanceTip(patternId, ChartBranch.DEFAULT_BRANCH_NAME, newRevisionId)
+            branchRepo.advanceTip(patternId, ChartVariation.DEFAULT_BRANCH_NAME, newRevisionId)
             return
         }
         matching.forEach { branch ->

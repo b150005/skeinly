@@ -1,8 +1,8 @@
 package io.github.b150005.skeinly.domain.usecase
 
-import io.github.b150005.skeinly.domain.model.ChartBranch
-import io.github.b150005.skeinly.domain.repository.ChartBranchRepository
-import io.github.b150005.skeinly.domain.repository.StructuredChartRepository
+import io.github.b150005.skeinly.domain.model.ChartVariation
+import io.github.b150005.skeinly.domain.repository.ChartRepository
+import io.github.b150005.skeinly.domain.repository.ChartVariationRepository
 import kotlinx.coroutines.CancellationException
 import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
@@ -27,19 +27,19 @@ import kotlin.uuid.Uuid
  */
 @OptIn(ExperimentalUuidApi::class)
 class CreateBranchUseCase(
-    private val branchRepository: ChartBranchRepository,
-    private val chartRepository: StructuredChartRepository,
+    private val branchRepository: ChartVariationRepository,
+    private val chartRepository: ChartRepository,
 ) {
     suspend operator fun invoke(
         patternId: String,
         branchName: String,
         ownerId: String,
-    ): UseCaseResult<ChartBranch> {
+    ): UseCaseResult<ChartVariation> {
         val trimmed = branchName.trim()
         if (trimmed.isEmpty()) {
             return UseCaseResult.Failure(UseCaseError.FieldRequired)
         }
-        if (trimmed.equals(ChartBranch.DEFAULT_BRANCH_NAME, ignoreCase = true)) {
+        if (trimmed.equals(ChartVariation.DEFAULT_BRANCH_NAME, ignoreCase = true)) {
             return UseCaseResult.Failure(
                 UseCaseError.OperationNotAllowed,
             )
@@ -61,7 +61,7 @@ class CreateBranchUseCase(
                     ?: return UseCaseResult.Failure(UseCaseError.ResourceNotFound)
             val now = Clock.System.now()
             val branch =
-                ChartBranch(
+                ChartVariation(
                     id = Uuid.random().toString(),
                     patternId = patternId,
                     ownerId = ownerId,

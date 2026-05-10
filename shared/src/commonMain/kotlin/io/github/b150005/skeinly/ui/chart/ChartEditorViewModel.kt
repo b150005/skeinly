@@ -8,21 +8,21 @@ import io.github.b150005.skeinly.data.analytics.ChartFormat
 import io.github.b150005.skeinly.data.analytics.ClickActionId
 import io.github.b150005.skeinly.data.analytics.Screen
 import io.github.b150005.skeinly.domain.chart.PolarSymmetry
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartCell
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.CraftType
 import io.github.b150005.skeinly.domain.model.ReadingConvention
-import io.github.b150005.skeinly.domain.model.StructuredChart
 import io.github.b150005.skeinly.domain.symbol.ParameterSlot
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
 import io.github.b150005.skeinly.domain.symbol.SymbolCategory
 import io.github.b150005.skeinly.domain.symbol.SymbolDefinition
-import io.github.b150005.skeinly.domain.usecase.CreateStructuredChartUseCase
+import io.github.b150005.skeinly.domain.usecase.CreateChartUseCase
 import io.github.b150005.skeinly.domain.usecase.ErrorMessage
-import io.github.b150005.skeinly.domain.usecase.GetStructuredChartByPatternIdUseCase
-import io.github.b150005.skeinly.domain.usecase.UpdateStructuredChartUseCase
+import io.github.b150005.skeinly.domain.usecase.GetChartByPatternIdUseCase
+import io.github.b150005.skeinly.domain.usecase.UpdateChartUseCase
 import io.github.b150005.skeinly.domain.usecase.UseCaseResult
 import io.github.b150005.skeinly.domain.usecase.toErrorMessage
 import kotlinx.coroutines.channels.Channel
@@ -54,7 +54,7 @@ private const val DEFAULT_LAYER_NAME = "Layer 1"
 data class ChartEditorState(
     val patternId: String = "",
     val isLoading: Boolean = true,
-    val original: StructuredChart? = null,
+    val original: Chart? = null,
     val draftExtents: ChartExtents =
         ChartExtents.Rect(minX = 0, maxX = DEFAULT_GRID_SIZE - 1, minY = 0, maxY = DEFAULT_GRID_SIZE - 1),
     val draftLayers: List<ChartLayer> = listOf(ChartLayer(id = DEFAULT_LAYER_ID, name = DEFAULT_LAYER_NAME)),
@@ -260,9 +260,9 @@ sealed interface ChartEditorEvent {
 
 class ChartEditorViewModel(
     private val patternId: String,
-    private val getStructuredChart: GetStructuredChartByPatternIdUseCase,
-    private val createStructuredChart: CreateStructuredChartUseCase,
-    private val updateStructuredChart: UpdateStructuredChartUseCase,
+    private val getChart: GetChartByPatternIdUseCase,
+    private val createChart: CreateChartUseCase,
+    private val updateChart: UpdateChartUseCase,
     private val symbolCatalog: SymbolCatalog,
     // Phase F.3 — nullable + default null preserves existing test compat.
     private val analyticsTracker: AnalyticsTracker? = null,
@@ -370,7 +370,7 @@ class ChartEditorViewModel(
 
     // Metadata (craft + reading) changes intentionally do NOT touch EditHistory —
     // the snapshot ring buffer captures drawing payload only (extents + layers).
-    // Metadata is round-tripped through StructuredChart at save time.
+    // Metadata is round-tripped through Chart at save time.
     private fun selectCraft(craft: CraftType) {
         _state.update {
             if (it.draftCraftType == craft) return@update it
@@ -446,7 +446,7 @@ class ChartEditorViewModel(
     }
 
     private suspend fun load() {
-        when (val result = getStructuredChart(patternId)) {
+        when (val result = getChart(patternId)) {
             is UseCaseResult.Success -> {
                 val chart = result.value
                 _state.update {
@@ -781,7 +781,7 @@ class ChartEditorViewModel(
                             is ChartExtents.Rect -> CoordinateSystem.RECT_GRID
                             is ChartExtents.Polar -> CoordinateSystem.POLAR_ROUND
                         }
-                    createStructuredChart(
+                    createChart(
                         patternId = patternId,
                         coordinateSystem = coordinateSystem,
                         extents = snapshot.draftExtents,
@@ -790,7 +790,7 @@ class ChartEditorViewModel(
                         readingConvention = snapshot.draftReadingConvention,
                     )
                 } else {
-                    updateStructuredChart(
+                    updateChart(
                         current = original,
                         extents = snapshot.draftExtents,
                         layers = snapshot.draftLayers,
@@ -852,7 +852,7 @@ class ChartEditorViewModel(
     }
 
     private fun computeUnsavedChanges(
-        original: StructuredChart?,
+        original: Chart?,
         draftExtents: ChartExtents,
         draftLayers: List<ChartLayer>,
         draftCraftType: CraftType,

@@ -1,10 +1,10 @@
 package io.github.b150005.skeinly.domain.usecase
 
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestStatus
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionStatus
 import io.github.b150005.skeinly.domain.repository.AuthRepository
-import io.github.b150005.skeinly.domain.repository.ChartRevisionRepository
-import io.github.b150005.skeinly.domain.repository.PullRequestRepository
+import io.github.b150005.skeinly.domain.repository.ChartVersionRepository
+import io.github.b150005.skeinly.domain.repository.SuggestionRepository
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
  * Phase 38.3 (ADR-014 §1, §3, §6) — open a pull request from a forked
  * pattern's branch tip against its upstream.
  *
- * **Common-ancestor walk.** ADR-014 §1 + §3 require [PullRequest.commonAncestorRevisionId]
+ * **Common-ancestor walk.** ADR-014 §1 + §3 require [Suggestion.commonAncestorRevisionId]
  * be captured at PR-open time as the most recent revision present in BOTH
  * histories. The walk:
  *
@@ -38,9 +38,9 @@ import kotlin.uuid.Uuid
  * char limits, enforced client-side.
  */
 @OptIn(ExperimentalUuidApi::class)
-class OpenPullRequestUseCase(
-    private val pullRequestRepository: PullRequestRepository,
-    private val chartRevisionRepository: ChartRevisionRepository,
+class OpenSuggestionUseCase(
+    private val suggestionRepository: SuggestionRepository,
+    private val chartVersionRepository: ChartVersionRepository,
     private val authRepository: AuthRepository,
 ) {
     suspend operator fun invoke(
@@ -51,7 +51,7 @@ class OpenPullRequestUseCase(
         targetBranchId: String,
         title: String,
         description: String?,
-    ): UseCaseResult<PullRequest> {
+    ): UseCaseResult<Suggestion> {
         val trimmedTitle = title.trim()
         if (trimmedTitle.isEmpty()) {
             return UseCaseResult.Failure(UseCaseError.FieldRequired)
@@ -71,7 +71,7 @@ class OpenPullRequestUseCase(
 
         return try {
             val targetHistoryIds =
-                chartRevisionRepository
+                chartVersionRepository
                     .getHistoryForPattern(
                         patternId = targetPatternId,
                         limit = MAX_TARGET_HISTORY_LIMIT,
@@ -92,7 +92,7 @@ class OpenPullRequestUseCase(
 
             val now = Clock.System.now()
             val pr =
-                PullRequest(
+                Suggestion(
                     id = Uuid.random().toString(),
                     sourcePatternId = sourcePatternId,
                     sourceBranchId = sourceBranchId,
@@ -103,14 +103,14 @@ class OpenPullRequestUseCase(
                     authorId = authorId,
                     title = trimmedTitle,
                     description = cleanedDescription,
-                    status = PullRequestStatus.OPEN,
+                    status = SuggestionStatus.OPEN,
                     mergedRevisionId = null,
                     mergedAt = null,
                     closedAt = null,
                     createdAt = now,
                     updatedAt = now,
                 )
-            UseCaseResult.Success(pullRequestRepository.openPullRequest(pr))
+            UseCaseResult.Success(suggestionRepository.openSuggestion(pr))
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -133,7 +133,7 @@ class OpenPullRequestUseCase(
         var depth = 0
         while (currentId != null && depth < MAX_WALK_DEPTH) {
             if (currentId in targetHistoryIds) return currentId
-            val current = chartRevisionRepository.getRevision(currentId) ?: return null
+            val current = chartVersionRepository.getRevision(currentId) ?: return null
             currentId = current.parentRevisionId
             depth += 1
         }

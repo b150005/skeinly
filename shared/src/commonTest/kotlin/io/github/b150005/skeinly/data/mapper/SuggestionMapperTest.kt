@@ -1,21 +1,21 @@
 package io.github.b150005.skeinly.data.mapper
 
-import io.github.b150005.skeinly.db.PullRequestEntity
-import io.github.b150005.skeinly.domain.model.PullRequestStatus
+import io.github.b150005.skeinly.db.SuggestionEntity
+import io.github.b150005.skeinly.domain.model.SuggestionStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.time.Instant
 
-class PullRequestMapperTest {
+class SuggestionMapperTest {
     private fun entity(
         status: String = "open",
         mergedRevisionId: String? = null,
         mergedAt: String? = null,
         closedAt: String? = null,
-    ): PullRequestEntity =
-        PullRequestEntity(
+    ): SuggestionEntity =
+        SuggestionEntity(
             id = "pr-1",
             source_pattern_id = "pat-fork",
             source_branch_id = "branch-fork",
@@ -38,7 +38,7 @@ class PullRequestMapperTest {
     fun `entity with status=open round-trips to OPEN with null lifecycle timestamps`() {
         val pr = entity().toDomain()
 
-        assertEquals(PullRequestStatus.OPEN, pr.status)
+        assertEquals(SuggestionStatus.OPEN, pr.status)
         assertNull(pr.mergedRevisionId)
         assertNull(pr.mergedAt)
         assertNull(pr.closedAt)
@@ -53,7 +53,7 @@ class PullRequestMapperTest {
                 mergedAt = "2026-04-26T15:30:00Z",
             ).toDomain()
 
-        assertEquals(PullRequestStatus.MERGED, pr.status)
+        assertEquals(SuggestionStatus.APPLIED, pr.status)
         assertEquals("rev-merged", pr.mergedRevisionId)
         assertEquals(Instant.parse("2026-04-26T15:30:00Z"), pr.mergedAt)
         assertNull(pr.closedAt)
@@ -63,7 +63,7 @@ class PullRequestMapperTest {
     fun `entity with status=closed round-trips with closedAt`() {
         val pr = entity(status = "closed", closedAt = "2026-04-26T16:00:00Z").toDomain()
 
-        assertEquals(PullRequestStatus.CLOSED, pr.status)
+        assertEquals(SuggestionStatus.CLOSED, pr.status)
         assertEquals(Instant.parse("2026-04-26T16:00:00Z"), pr.closedAt)
         assertNull(pr.mergedRevisionId)
     }
@@ -80,16 +80,16 @@ class PullRequestMapperTest {
 
     @Test
     fun `enum to db string round-trip is exhaustive`() {
-        assertEquals("open", PullRequestStatus.OPEN.toDbString())
-        assertEquals("merged", PullRequestStatus.MERGED.toDbString())
-        assertEquals("closed", PullRequestStatus.CLOSED.toDbString())
+        assertEquals("open", SuggestionStatus.OPEN.toDbString())
+        assertEquals("merged", SuggestionStatus.APPLIED.toDbString())
+        assertEquals("closed", SuggestionStatus.CLOSED.toDbString())
     }
 
     @Test
     fun `canMerge returns true only when caller is target owner and PR is open`() {
         val open =
             entity().toDomain().copy(
-                status = PullRequestStatus.OPEN,
+                status = SuggestionStatus.OPEN,
                 authorId = "fork-author",
             )
 
@@ -99,10 +99,10 @@ class PullRequestMapperTest {
         // Stranger cannot merge.
         assertEquals(false, open.canMerge(currentUserId = "stranger", targetOwnerId = "upstream-owner"))
         // Already-merged PR cannot be re-merged.
-        val merged = open.copy(status = PullRequestStatus.MERGED)
+        val merged = open.copy(status = SuggestionStatus.APPLIED)
         assertEquals(false, merged.canMerge(currentUserId = "upstream-owner", targetOwnerId = "upstream-owner"))
         // Already-closed PR cannot be merged.
-        val closed = open.copy(status = PullRequestStatus.CLOSED)
+        val closed = open.copy(status = SuggestionStatus.CLOSED)
         assertEquals(false, closed.canMerge(currentUserId = "upstream-owner", targetOwnerId = "upstream-owner"))
     }
 }

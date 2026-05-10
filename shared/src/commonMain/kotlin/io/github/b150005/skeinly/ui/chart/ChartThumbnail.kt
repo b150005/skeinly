@@ -25,9 +25,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartExtents
-import io.github.b150005.skeinly.domain.model.StructuredChart
-import io.github.b150005.skeinly.domain.repository.StructuredChartRepository
+import io.github.b150005.skeinly.domain.repository.ChartRepository
 import io.github.b150005.skeinly.domain.symbol.PathCommand
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
 import io.github.b150005.skeinly.generated.resources.Res
@@ -58,16 +58,16 @@ fun ChartThumbnail(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     size: Dp = DEFAULT_THUMBNAIL_SIZE,
-    structuredChartRepository: StructuredChartRepository = koinInject(),
+    chartRepository: ChartRepository = koinInject(),
     catalog: SymbolCatalog = koinInject(),
 ) {
-    var chart by remember(patternId) { mutableStateOf<StructuredChart?>(null) }
+    var chart by remember(patternId) { mutableStateOf<Chart?>(null) }
     LaunchedEffect(patternId) {
         chart =
             try {
-                structuredChartRepository.getByPatternId(patternId)
+                chartRepository.getByPatternId(patternId)
             } catch (e: CancellationException) {
-                // Same cancellation-safety pattern as ForkPublicPatternUseCase
+                // Same cancellation-safety pattern as SavePublicPatternToLibraryUseCase
                 // (Phase 36.3): when the composable leaves composition mid-fetch
                 // (routine for off-screen LazyColumn rows), the cancellation
                 // signal must propagate so coroutine cleanup stays cooperative.
@@ -146,7 +146,7 @@ fun ChartThumbnail(
 @Suppress("LongParameterList")
 private fun DrawScope.drawRectThumbnail(
     rect: ChartExtents.Rect,
-    chart: StructuredChart,
+    chart: Chart,
     catalog: SymbolCatalog,
     parsedPathCache: MutableMap<String, List<PathCommand>>,
     gridColor: Color,

@@ -1,5 +1,6 @@
 package io.github.b150005.skeinly.domain.usecase
 
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartCell
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
@@ -9,7 +10,6 @@ import io.github.b150005.skeinly.domain.model.ProjectSegment
 import io.github.b150005.skeinly.domain.model.ReadingConvention
 import io.github.b150005.skeinly.domain.model.SegmentState
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import io.github.b150005.skeinly.domain.model.StructuredChart
 import io.github.b150005.skeinly.testJson
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -31,21 +31,21 @@ class MarkRowSegmentsDoneUseCaseTest {
 
     private fun newUseCase(
         segments: FakeProjectSegmentRepository,
-        charts: FakeStructuredChartRepository,
+        charts: FakeChartRepository,
     ): MarkRowSegmentsDoneUseCase =
         MarkRowSegmentsDoneUseCase(
             repository = segments,
-            getStructuredChart = GetStructuredChartByPatternIdUseCase(charts),
+            getChart = GetChartByPatternIdUseCase(charts),
             authRepository = FakeAuthRepository(),
             clock = FixedClock(now),
         )
 
-    private fun rectChartWith(layers: List<ChartLayer>): StructuredChart =
-        StructuredChart(
+    private fun rectChartWith(layers: List<ChartLayer>): Chart =
+        Chart(
             id = "chart-1",
             patternId = "pat-1",
             ownerId = "owner",
-            schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+            schemaVersion = Chart.CURRENT_SCHEMA_VERSION,
             storageVariant = StorageVariant.INLINE,
             coordinateSystem = CoordinateSystem.RECT_GRID,
             extents = ChartExtents.Rect(minX = 0, maxX = 7, minY = 0, maxY = 7),
@@ -53,7 +53,7 @@ class MarkRowSegmentsDoneUseCaseTest {
             revisionId = "rev-0",
             parentRevisionId = null,
             contentHash =
-                StructuredChart.computeContentHash(
+                Chart.computeContentHash(
                     ChartExtents.Rect(minX = 0, maxX = 7, minY = 0, maxY = 7),
                     layers,
                     testJson,
@@ -64,20 +64,20 @@ class MarkRowSegmentsDoneUseCaseTest {
             readingConvention = ReadingConvention.KNIT_FLAT,
         )
 
-    private fun polarChartWith(layers: List<ChartLayer>): StructuredChart {
+    private fun polarChartWith(layers: List<ChartLayer>): Chart {
         val extents = ChartExtents.Polar(rings = 3, stitchesPerRing = listOf(6, 12, 18))
-        return StructuredChart(
+        return Chart(
             id = "chart-polar",
             patternId = "pat-1",
             ownerId = "owner",
-            schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+            schemaVersion = Chart.CURRENT_SCHEMA_VERSION,
             storageVariant = StorageVariant.INLINE,
             coordinateSystem = CoordinateSystem.POLAR_ROUND,
             extents = extents,
             layers = layers,
             revisionId = "rev-0",
             parentRevisionId = null,
-            contentHash = StructuredChart.computeContentHash(extents, layers, testJson),
+            contentHash = Chart.computeContentHash(extents, layers, testJson),
             createdAt = now,
             updatedAt = now,
             craftType = CraftType.CROCHET,
@@ -89,7 +89,7 @@ class MarkRowSegmentsDoneUseCaseTest {
     fun `marks every cell on the target row as done across visible layers`() =
         runTest {
             val segments = FakeProjectSegmentRepository()
-            val charts = FakeStructuredChartRepository()
+            val charts = FakeChartRepository()
             charts.seed(
                 rectChartWith(
                     listOf(
@@ -132,7 +132,7 @@ class MarkRowSegmentsDoneUseCaseTest {
     fun `skips cells on invisible layers so toggled-off reference layers stay untouched`() =
         runTest {
             val segments = FakeProjectSegmentRepository()
-            val charts = FakeStructuredChartRepository()
+            val charts = FakeChartRepository()
             charts.seed(
                 rectChartWith(
                     listOf(
@@ -162,7 +162,7 @@ class MarkRowSegmentsDoneUseCaseTest {
     fun `empty row is a no-op`() =
         runTest {
             val segments = FakeProjectSegmentRepository()
-            val charts = FakeStructuredChartRepository()
+            val charts = FakeChartRepository()
             charts.seed(
                 rectChartWith(
                     listOf(
@@ -186,7 +186,7 @@ class MarkRowSegmentsDoneUseCaseTest {
     fun `polar ring maps cell y to ring index and upserts each stitch on that ring`() =
         runTest {
             val segments = FakeProjectSegmentRepository()
-            val charts = FakeStructuredChartRepository()
+            val charts = FakeChartRepository()
             charts.seed(
                 polarChartWith(
                     listOf(
@@ -217,7 +217,7 @@ class MarkRowSegmentsDoneUseCaseTest {
     fun `missing chart yields success no-op`() =
         runTest {
             val segments = FakeProjectSegmentRepository()
-            val charts = FakeStructuredChartRepository()
+            val charts = FakeChartRepository()
             // No chart seeded.
 
             val result = newUseCase(segments, charts).invoke("pat-missing", "proj-1", row = 0)
@@ -244,7 +244,7 @@ class MarkRowSegmentsDoneUseCaseTest {
 
                     override suspend fun resetProject(projectId: String) {}
                 }
-            val charts = FakeStructuredChartRepository()
+            val charts = FakeChartRepository()
             charts.seed(
                 rectChartWith(
                     listOf(
@@ -259,7 +259,7 @@ class MarkRowSegmentsDoneUseCaseTest {
             val useCase =
                 MarkRowSegmentsDoneUseCase(
                     repository = segments,
-                    getStructuredChart = GetStructuredChartByPatternIdUseCase(charts),
+                    getChart = GetChartByPatternIdUseCase(charts),
                     authRepository = FakeAuthRepository(),
                     clock = FixedClock(now),
                 )
@@ -287,7 +287,7 @@ class MarkRowSegmentsDoneUseCaseTest {
                     updatedAt = older,
                 ),
             )
-            val charts = FakeStructuredChartRepository()
+            val charts = FakeChartRepository()
             charts.seed(
                 rectChartWith(
                     listOf(
