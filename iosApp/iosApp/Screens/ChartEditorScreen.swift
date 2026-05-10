@@ -5,7 +5,7 @@ import Shared
 /// Tap-to-place editor with undo/redo and save. Holds a Koin-resolved
 /// `ChartEditorViewModel` via `ScopedViewModel` so state survives SwiftUI
 /// view reinits (see `ScopedViewModel`).
-struct StructuredChartEditorScreen: View {
+struct ChartEditorScreen: View {
     let patternId: String
     @Binding var path: NavigationPath
     @StateObject private var holder: ScopedViewModel<ChartEditorViewModel, ChartEditorState>
@@ -528,7 +528,7 @@ private struct EditorCanvasView: View {
     /// Inlined polar layout (mirrors `shared/ui/chart/PolarDrawing.kt:polarLayoutFor`).
     /// Kept as a Swift struct — we avoid bridging `PolarCellLayout.Layout` through
     /// the Shared framework to keep the boundary narrow. Same pattern as
-    /// `StructuredChartViewerScreen.swift:PolarLayout`.
+    /// `ChartViewerScreen.swift:PolarLayout`.
     private struct PolarLayout {
         let cx: Double
         let cy: Double

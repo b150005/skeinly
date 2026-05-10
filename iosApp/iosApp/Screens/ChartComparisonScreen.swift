@@ -1,7 +1,7 @@
 import SwiftUI
 import Shared
 
-/// SwiftUI mirror of the shared Compose `ChartDiffScreen` (Phase 37.3, ADR-013 §5 §6).
+/// SwiftUI mirror of the shared Compose `ChartComparisonScreen` (Phase 37.3, ADR-013 §5 §6).
 ///
 /// Renders two side-by-side `Canvas` views of the base + target charts with
 /// SYNCHRONIZED pan + zoom (a single `MagnificationGesture` + `DragGesture`
@@ -12,10 +12,10 @@ import Shared
 ///
 /// Initial commit: when `baseRevisionId == nil`, the base pane shows
 /// `label_initial_commit` placeholder text instead of an empty canvas.
-struct ChartDiffScreen: View {
+struct ChartComparisonScreen: View {
     let baseRevisionId: String?
     let targetRevisionId: String
-    @StateObject private var holder: ScopedViewModel<ChartDiffViewModel, ChartDiffState>
+    @StateObject private var holder: ScopedViewModel<ChartComparisonViewModel, ChartComparisonState>
     @State private var showError = false
     @State private var scale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
@@ -23,16 +23,16 @@ struct ChartDiffScreen: View {
     @State private var lastOffset: CGSize = .zero
     private let catalog: SymbolCatalog
 
-    private var viewModel: ChartDiffViewModel { holder.viewModel }
+    private var viewModel: ChartComparisonViewModel { holder.viewModel }
 
     init(baseRevisionId: String?, targetRevisionId: String) {
         self.baseRevisionId = baseRevisionId
         self.targetRevisionId = targetRevisionId
-        let vm = ViewModelFactory.chartDiffViewModel(
+        let vm = ViewModelFactory.chartComparisonViewModel(
             baseRevisionId: baseRevisionId,
             targetRevisionId: targetRevisionId
         )
-        let wrapper = KoinHelperKt.wrapChartDiffState(flow: vm.state)
+        let wrapper = KoinHelperKt.wrapChartComparisonState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
         self.catalog = ViewModelFactory.symbolCatalog()
     }
@@ -40,7 +40,7 @@ struct ChartDiffScreen: View {
     var body: some View {
         contentView
             .accessibilityElement(children: .contain)
-            .accessibilityIdentifier("chartDiffScreen")
+            .accessibilityIdentifier("chartComparisonScreen")
             .navigationTitle(LocalizedStringKey("title_chart_comparison"))
             .navigationBarTitleDisplayMode(.inline)
             .onChange(of: holder.state.error != nil) { _, hasError in
@@ -48,7 +48,7 @@ struct ChartDiffScreen: View {
         }
             .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
                 Button("action_ok") {
-                    viewModel.onEvent(event: ChartDiffEventClearError.shared)
+                    viewModel.onEvent(event: ChartComparisonEventClearError.shared)
                 }
             } message: {
                 Text(holder.state.error?.localizedString ?? "")
@@ -80,7 +80,7 @@ struct ChartDiffScreen: View {
 // MARK: - Diff content
 
 private struct DiffContent: View {
-    let diff: ChartDiff
+    let diff: ChartComparison
     let catalog: SymbolCatalog
     @Binding var scale: CGFloat
     @Binding var lastScale: CGFloat
@@ -117,7 +117,7 @@ private struct DiffContent: View {
 }
 
 private struct DiffSummaryRow: View {
-    let diff: ChartDiff
+    let diff: ChartComparison
 
     var body: some View {
         let added = String.localizedStringWithFormat(
@@ -194,7 +194,7 @@ private struct LayerChangesBanner: View {
 // MARK: - Dual canvas
 
 private struct DualCanvasPanel: View {
-    let diff: ChartDiff
+    let diff: ChartComparison
     let catalog: SymbolCatalog
     let classification: DiffClassification
     @Binding var scale: CGFloat
@@ -282,7 +282,7 @@ private struct DiffClassification {
     let targetHighlights: [CellKey: CellHighlight]
 }
 
-private func classifyCells(diff: ChartDiff) -> DiffClassification {
+private func classifyCells(diff: ChartComparison) -> DiffClassification {
     var base: [CellKey: CellHighlight] = [:]
     var target: [CellKey: CellHighlight] = [:]
 
@@ -319,7 +319,7 @@ private func classifyCells(diff: ChartDiff) -> DiffClassification {
 // MARK: - Diff canvas
 
 private struct DiffCanvas: View {
-    let chart: StructuredChart
+    let chart: Chart
     let catalog: SymbolCatalog
     let side: DiffSide
     let classification: DiffClassification

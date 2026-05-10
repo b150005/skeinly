@@ -7,7 +7,7 @@ import Shared
 ///
 /// Tap a revision row → ViewModel emits a `RevisionTapTarget` carrying
 /// `(targetRevisionId, baseRevisionId)`. The Phase 37.3 path appends a
-/// `Route.chartDiff` to the navigation stack (initial-commit case routes
+/// `Route.chartComparison` to the navigation stack (initial-commit case routes
 /// `baseRevisionId = nil`).
 struct ChartHistoryScreen: View {
     let patternId: String
@@ -110,7 +110,7 @@ struct ChartHistoryScreen: View {
         revisionTapCloseable = wrapper.collect { target in
             Task { @MainActor in
                 path.append(
-                    Route.chartDiff(
+                    Route.chartComparison(
                         baseRevisionId: target.baseRevisionId,
                         targetRevisionId: target.targetRevisionId
                     )
@@ -121,7 +121,7 @@ struct ChartHistoryScreen: View {
 }
 
 private struct RevisionRow: View {
-    let revision: ChartRevision
+    let revision: ChartVersion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {

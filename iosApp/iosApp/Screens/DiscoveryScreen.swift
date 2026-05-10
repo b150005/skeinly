@@ -12,7 +12,7 @@ struct DiscoveryScreen: View {
     /// DiscoveryScreen.kt — the message visibility window is 2s on the
     /// Discovery screen before `path = NavigationPath()` unmounts the view
     /// and pushes ProjectDetail, since SwiftUI overlays are scoped to the
-    /// host view's lifetime (unlike StructuredChartViewerScreen's
+    /// host view's lifetime (unlike ChartViewerScreen's
     /// `prOpenedToast` which survives because the source stays in the
     /// navigation stack — Discovery resets the stack instead of pushing).
     @State private var forkResultToast: String?
@@ -169,7 +169,7 @@ struct DiscoveryScreen: View {
     }
 
     /// Phase 36.5+: transient toast for post-fork feedback. Pattern mirrors
-    /// `prOpenedToast` / `switchedToast` in StructuredChartViewerScreen.swift
+    /// `prOpenedToast` / `switchedToast` in ChartViewerScreen.swift
     /// (Capsule + thinMaterial + callout font + 24pt bottom inset), but the
     /// visibility window is governed by an explicit pre-navigation delay in
     /// `observeForkedProjectId` rather than a `.task` auto-dismiss timer

@@ -48,8 +48,7 @@ import {
 // Constants
 // ---------------------------------------------------------------------
 
-const RFC_4122_UUID_REGEX =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const RFC_4122_UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // ---------------------------------------------------------------------
 // Entry point
@@ -246,12 +245,15 @@ function jsonResponse(body: unknown, status: number): Response {
 function constantTimeEqual(a: string, b: string): boolean {
     if (a.length !== b.length) {
         // Length mismatch: do a dummy compare against `a` itself to keep
-        // the per-call cost stable.
-        let mismatch = 1;
+        // the per-call cost stable. The XOR-self loop is a no-op (always
+        // yields 0); we reference `dummy` in the return so the engine
+        // cannot fold the loop. Always returns false — length mismatch
+        // implies inequality.
+        let dummy = 0;
         for (let i = 0; i < a.length; i++) {
-            mismatch |= a.charCodeAt(i) ^ a.charCodeAt(i);
+            dummy |= a.charCodeAt(i) ^ a.charCodeAt(i);
         }
-        return mismatch === 0 ? false : false;
+        return dummy !== 0;
     }
     let mismatch = 0;
     for (let i = 0; i < a.length; i++) {

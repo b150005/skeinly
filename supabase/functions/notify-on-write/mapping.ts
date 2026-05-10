@@ -123,13 +123,8 @@ export interface TemplateParams {
  * `en-US`. Unknown template key cannot occur thanks to the
  * `TemplateKey` type union.
  */
-export function renderBody(
-    locale: string,
-    key: TemplateKey,
-    params: TemplateParams,
-): string {
-    const table = (TEMPLATES as Record<string, typeof EN_TEMPLATES>)[locale]
-        ?? TEMPLATES["en-US"];
+export function renderBody(locale: string, key: TemplateKey, params: TemplateParams): string {
+    const table = (TEMPLATES as Record<string, typeof EN_TEMPLATES>)[locale] ?? TEMPLATES["en-US"];
     return table[key](params);
 }
 
@@ -185,12 +180,14 @@ export function computePrOpenedDispatches(
         // defense-in-depth: don't notify a user about their own action.
         return [];
     }
-    return [{
-        recipientUserId: targetOwnerId,
-        templateKey: "pr_opened",
-        params: { actor: actorDisplayName, pattern: patternTitle },
-        route: pullRequestRoute(row.id),
-    }];
+    return [
+        {
+            recipientUserId: targetOwnerId,
+            templateKey: "pr_opened",
+            params: { actor: actorDisplayName, pattern: patternTitle },
+            route: pullRequestRoute(row.id),
+        },
+    ];
 }
 
 /**
@@ -258,12 +255,14 @@ export function computePrStatusChangeDispatches(
         // somehow the author (would indicate RPC bypass), still notify.
         if (row.author_id === null) return [];
         if (row.author_id === actorUserId) return []; // never push self
-        return [{
-            recipientUserId: row.author_id,
-            templateKey: "pr_merged_to_author",
-            params: { actor: actorDisplayName, pattern: patternTitle },
-            route,
-        }];
+        return [
+            {
+                recipientUserId: row.author_id,
+                templateKey: "pr_merged_to_author",
+                params: { actor: actorDisplayName, pattern: patternTitle },
+                route,
+            },
+        ];
     }
 
     // status === "closed": either party may close (ADR-014 §1).
@@ -271,23 +270,27 @@ export function computePrStatusChangeDispatches(
     if (actorUserId === row.author_id) {
         // Author closed their own PR; notify target owner.
         if (targetOwnerId === actorUserId) return []; // never push self
-        return [{
-            recipientUserId: targetOwnerId,
-            templateKey: "pr_closed_to_owner",
-            params: { actor: actorDisplayName, pattern: patternTitle },
-            route,
-        }];
+        return [
+            {
+                recipientUserId: targetOwnerId,
+                templateKey: "pr_closed_to_owner",
+                params: { actor: actorDisplayName, pattern: patternTitle },
+                route,
+            },
+        ];
     }
     if (actorUserId === targetOwnerId) {
         // Target owner closed an incoming PR; notify the author.
         if (row.author_id === null) return [];
         if (row.author_id === actorUserId) return [];
-        return [{
-            recipientUserId: row.author_id,
-            templateKey: "pr_closed_to_author",
-            params: { actor: actorDisplayName, pattern: patternTitle },
-            route,
-        }];
+        return [
+            {
+                recipientUserId: row.author_id,
+                templateKey: "pr_closed_to_author",
+                params: { actor: actorDisplayName, pattern: patternTitle },
+                route,
+            },
+        ];
     }
 
     // Actor is neither author nor target owner. Should not happen given

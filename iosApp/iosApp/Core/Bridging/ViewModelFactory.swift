@@ -87,26 +87,26 @@ enum ViewModelFactory {
         KoinHelperKt.getChartHistoryViewModel(patternId: patternId)
     }
 
-    static func chartDiffViewModel(
+    static func chartComparisonViewModel(
         baseRevisionId: String?,
         targetRevisionId: String
-    ) -> ChartDiffViewModel {
-        KoinHelperKt.getChartDiffViewModel(
+    ) -> ChartComparisonViewModel {
+        KoinHelperKt.getChartComparisonViewModel(
             baseRevisionId: baseRevisionId,
             targetRevisionId: targetRevisionId
         )
     }
 
-    static func chartBranchPickerViewModel(patternId: String) -> ChartBranchPickerViewModel {
-        KoinHelperKt.getChartBranchPickerViewModel(patternId: patternId)
+    static func chartVariationPickerViewModel(patternId: String) -> ChartVariationPickerViewModel {
+        KoinHelperKt.getChartVariationPickerViewModel(patternId: patternId)
     }
 
-    static func pullRequestListViewModel(defaultFilter: PullRequestFilter) -> PullRequestListViewModel {
-        KoinHelperKt.getPullRequestListViewModel(defaultFilter: defaultFilter)
+    static func suggestionListViewModel(defaultFilter: SuggestionFilter) -> SuggestionListViewModel {
+        KoinHelperKt.getSuggestionListViewModel(defaultFilter: defaultFilter)
     }
 
-    static func pullRequestDetailViewModel(prId: String) -> PullRequestDetailViewModel {
-        KoinHelperKt.getPullRequestDetailViewModel(prId: prId)
+    static func suggestionDetailViewModel(prId: String) -> SuggestionDetailViewModel {
+        KoinHelperKt.getSuggestionDetailViewModel(prId: prId)
     }
 
     static func chartConflictResolutionViewModel(prId: String) -> ChartConflictResolutionViewModel {
@@ -120,8 +120,8 @@ enum ViewModelFactory {
     /// Phase 36.4.1b: chart repository accessor for ad-hoc reads (currently
     /// only consumed by `ChartThumbnailView` for one-shot fetches; everything
     /// else routes through ViewModels).
-    static func structuredChartRepository() -> StructuredChartRepository {
-        KoinHelperKt.getStructuredChartRepository()
+    static func chartRepository() -> ChartRepository {
+        KoinHelperKt.getChartRepository()
     }
 
     static func symbolGalleryViewModel() -> SymbolGalleryViewModel {

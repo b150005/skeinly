@@ -1,16 +1,16 @@
 import SwiftUI
 import Shared
 
-/// SwiftUI mirror of the shared Compose `PullRequestListScreen` (Phase 38.2,
-/// ADR-014 §6 §8). Owns a Koin-resolved `PullRequestListViewModel` via
+/// SwiftUI mirror of the shared Compose `SuggestionListScreen` (Phase 38.2,
+/// ADR-014 §6 §8). Owns a Koin-resolved `SuggestionListViewModel` via
 /// `ScopedViewModel` so the observed state survives parent re-inits.
 ///
 /// Read-only — tap on a row is a no-op for 38.2; Phase 38.3 routes to
-/// `PullRequestDetailScreen`.
-struct PullRequestListScreen: View {
-    let defaultFilter: PullRequestFilter
+/// `SuggestionDetailScreen`.
+struct SuggestionListScreen: View {
+    let defaultFilter: SuggestionFilter
     @Binding var path: NavigationPath
-    @StateObject private var holder: ScopedViewModel<PullRequestListViewModel, PullRequestListState>
+    @StateObject private var holder: ScopedViewModel<SuggestionListViewModel, SuggestionListState>
     /// Phase 24.2c-3 (ADR-017 §3.6) — drives the in-app pre-permission
     /// explainer alert when the Incoming filter has at least one PR.
     @StateObject private var notificationHolder: ScopedViewModel<
@@ -18,7 +18,7 @@ struct PullRequestListScreen: View {
     >
     @State private var showError = false
 
-    private var viewModel: PullRequestListViewModel { holder.viewModel }
+    private var viewModel: SuggestionListViewModel { holder.viewModel }
     private var notificationViewModel: NotificationPermissionViewModel { notificationHolder.viewModel }
 
     /// Phase 24.2c-3 — bound to the alert presentation. Mirrors the
@@ -39,11 +39,11 @@ struct PullRequestListScreen: View {
         )
     }
 
-    init(defaultFilter: PullRequestFilter, path: Binding<NavigationPath>) {
+    init(defaultFilter: SuggestionFilter, path: Binding<NavigationPath>) {
         self.defaultFilter = defaultFilter
         self._path = path
-        let vm = ViewModelFactory.pullRequestListViewModel(defaultFilter: defaultFilter)
-        let wrapper = KoinHelperKt.wrapPullRequestListState(flow: vm.state)
+        let vm = ViewModelFactory.suggestionListViewModel(defaultFilter: defaultFilter)
+        let wrapper = KoinHelperKt.wrapSuggestionListState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
         let nvm = KoinHelperKt.getNotificationPermissionViewModel()
         let nWrapper = KoinHelperKt.wrapNotificationPermissionState(flow: nvm.state)
@@ -63,7 +63,7 @@ struct PullRequestListScreen: View {
         }
             .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
                 Button("action_ok") {
-                    viewModel.onEvent(event: PullRequestListEventClearError.shared)
+                    viewModel.onEvent(event: SuggestionListEventClearError.shared)
                 }
             } message: {
                 Text(holder.state.error?.localizedString ?? "")
@@ -120,7 +120,7 @@ struct PullRequestListScreen: View {
     /// Computed inline so SwiftUI's diff layer compares a Bool, not the
     /// full state object, when deciding whether to refire the trigger.
     private var shouldDispatchIncomingTrigger: Bool {
-        holder.state.filter == .incoming && !holder.state.pullRequests.isEmpty
+        holder.state.filter == .incoming && !holder.state.suggestions.isEmpty
     }
 
     @ViewBuilder
@@ -132,7 +132,7 @@ struct PullRequestListScreen: View {
             if state.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if state.pullRequests.isEmpty {
+            } else if state.suggestions.isEmpty {
                 ContentUnavailableView(
                     LocalizedStringKey("state_no_suggestions"),
                     systemImage: "tray",
@@ -142,10 +142,10 @@ struct PullRequestListScreen: View {
                 // Group by status — OPEN first, then MERGED, then CLOSED.
                 // Within each group the repository's `created_at DESC`
                 // ordering carries through the grouping pass.
-                let ordered = orderedByStatus(state.pullRequests)
+                let ordered = orderedByStatus(state.suggestions)
                 List(ordered, id: \.id) { pr in
-                    PullRequestRow(
-                        pullRequest: pr,
+                    SuggestionRow(
+                        suggestion: pr,
                         authorName: pr.authorId.flatMap { state.users[$0] }?.displayName
                     )
                     .contentShape(Rectangle())
@@ -159,7 +159,7 @@ struct PullRequestListScreen: View {
     }
 
     @ViewBuilder
-    private func filterChipRow(current: PullRequestFilter) -> some View {
+    private func filterChipRow(current: SuggestionFilter) -> some View {
         HStack(spacing: 8) {
             FilterChipButton(
                 title: LocalizedStringKey("label_filter_received"),
@@ -167,7 +167,7 @@ struct PullRequestListScreen: View {
                 isSelected: current == .incoming,
                 onTap: {
                     viewModel.onEvent(
-                        event: PullRequestListEventSelectFilter(filter: .incoming)
+                        event: SuggestionListEventSelectFilter(filter: .incoming)
                     )
                 }
             )
@@ -177,7 +177,7 @@ struct PullRequestListScreen: View {
                 isSelected: current == .outgoing,
                 onTap: {
                     viewModel.onEvent(
-                        event: PullRequestListEventSelectFilter(filter: .outgoing)
+                        event: SuggestionListEventSelectFilter(filter: .outgoing)
                     )
                 }
             )
@@ -187,8 +187,8 @@ struct PullRequestListScreen: View {
         .padding(.vertical, 8)
     }
 
-    private func orderedByStatus(_ prs: [PullRequest]) -> [PullRequest] {
-        let order: [PullRequestStatus] = [.open, .merged, .closed]
+    private func orderedByStatus(_ prs: [Suggestion]) -> [Suggestion] {
+        let order: [SuggestionStatus] = [.open, .applied, .closed]
         let grouped = Dictionary(grouping: prs, by: { $0.status })
         return order.flatMap { grouped[$0] ?? [] }
     }
@@ -225,18 +225,18 @@ private struct FilterChipButton: View {
     }
 }
 
-private struct PullRequestRow: View {
-    let pullRequest: PullRequest
+private struct SuggestionRow: View {
+    let suggestion: Suggestion
     let authorName: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline) {
-                Text(verbatim: pullRequest.title)
+                Text(verbatim: suggestion.title)
                     .font(.body)
-                    .accessibilityIdentifier("prTitleLabel_\(pullRequest.id)")
+                    .accessibilityIdentifier("prTitleLabel_\(suggestion.id)")
                 Spacer()
-                PullRequestStatusBadge(status: pullRequest.status, prId: pullRequest.id)
+                SuggestionStatusBadge(status: suggestion.status, prId: suggestion.id)
             }
             Text(authorLine)
                 .font(.caption)
@@ -246,7 +246,7 @@ private struct PullRequestRow: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityIdentifier("prRow_\(pullRequest.id)")
+        .accessibilityIdentifier("prRow_\(suggestion.id)")
     }
 
     private var authorLine: String {
@@ -258,13 +258,13 @@ private struct PullRequestRow: View {
     }
 
     private var formattedDate: String {
-        let date = Date(timeIntervalSince1970: TimeInterval(pullRequest.createdAt.epochSeconds))
+        let date = Date(timeIntervalSince1970: TimeInterval(suggestion.createdAt.epochSeconds))
         return date.formatted(date: .abbreviated, time: .shortened)
     }
 }
 
-private struct PullRequestStatusBadge: View {
-    let status: PullRequestStatus
+private struct SuggestionStatusBadge: View {
+    let status: SuggestionStatus
     let prId: String
 
     var body: some View {
@@ -281,10 +281,10 @@ private struct PullRequestStatusBadge: View {
     private var statusKey: String {
         switch status {
         case .open: return "label_suggestion_status_open"
-        case .merged: return "label_suggestion_status_applied"
+        case .applied: return "label_suggestion_status_applied"
         case .closed: return "label_suggestion_status_closed"
         // `default` forced by Kotlin enum→ObjC bridging. Returns the raw
-        // case name (locale-neutral, non-empty) so a future PullRequestStatus
+        // case name (locale-neutral, non-empty) so a future SuggestionStatus
         // addition without a matching Swift switch update surfaces visibly
         // at runtime rather than silently mislabeled as "Open" — same idiom
         // as Phase 33.1.13 SharedContentScreen.swift Difficulty default.

@@ -5,7 +5,7 @@ import Shared
 /// `ChartViewerViewModel` via `ScopedViewModel` so the observed state survives
 /// parent re-inits. Phase 34 adds per-segment progress overlay + tap/long-press
 /// gestures when `projectId` is non-null.
-struct StructuredChartViewerScreen: View {
+struct ChartViewerScreen: View {
     let patternId: String
     let projectId: String?
     @Binding var path: NavigationPath
@@ -68,14 +68,14 @@ struct StructuredChartViewerScreen: View {
                     .accessibilityIdentifier("openBranchPickerMenuItem")
 
                     // Phase 38.4.1 — Open PR entry. Visibility gated on the
-                    // ViewModel-side `canOpenPullRequest` derived property so
+                    // ViewModel-side `canOpenSuggestion` derived property so
                     // forks owned by current user with resolved branches see
                     // the entry; non-fork or non-owner viewers see no item
-                    // (parallel to the Compose `if (state.canOpenPullRequest)`
+                    // (parallel to the Compose `if (state.canOpenSuggestion)`
                     // gate above).
-                    if holder.state.canOpenPullRequest {
+                    if holder.state.canOpenSuggestion {
                         Button {
-                            viewModel.onEvent(event: ChartViewerEventRequestOpenPullRequest())
+                            viewModel.onEvent(event: ChartViewerEventRequestOpenSuggestion())
                         } label: {
                             Label(
                                 LocalizedStringKey("action_send_suggestion"),
@@ -92,7 +92,7 @@ struct StructuredChartViewerScreen: View {
             }
         }
         .sheet(isPresented: $showBranchPicker) {
-            ChartBranchPickerSheet(
+            ChartVariationPickerSheet(
                 patternId: patternId,
                 onDismiss: { showBranchPicker = false },
                 onBranchSwitched: { branchName in
@@ -112,15 +112,15 @@ struct StructuredChartViewerScreen: View {
                 get: { holder.state.pendingOpenPrSheet },
                 set: { newValue in
                     if !newValue {
-                        viewModel.onEvent(event: ChartViewerEventDismissOpenPullRequestSheet())
+                        viewModel.onEvent(event: ChartViewerEventDismissOpenSuggestionSheet())
                     }
                 }
             )
         ) {
-            OpenPullRequestSheet(
+            OpenSuggestionSheet(
                 titleDraft: holder.state.openPrTitleDraft,
                 descriptionDraft: holder.state.openPrDescriptionDraft,
-                isSubmitting: holder.state.isOpeningPullRequest,
+                isSubmitting: holder.state.isOpeningSuggestion,
                 errorMessage: holder.state.openPrError,
                 onTitleChange: { value in
                     viewModel.onEvent(event: ChartViewerEventOpenPrTitleChanged(value: value))
@@ -129,10 +129,10 @@ struct StructuredChartViewerScreen: View {
                     viewModel.onEvent(event: ChartViewerEventOpenPrDescriptionChanged(value: value))
                 },
                 onConfirm: {
-                    viewModel.onEvent(event: ChartViewerEventConfirmOpenPullRequest())
+                    viewModel.onEvent(event: ChartViewerEventConfirmOpenSuggestion())
                 },
                 onDismiss: {
-                    viewModel.onEvent(event: ChartViewerEventDismissOpenPullRequestSheet())
+                    viewModel.onEvent(event: ChartViewerEventDismissOpenSuggestionSheet())
                 }
             )
         }
@@ -172,7 +172,7 @@ struct StructuredChartViewerScreen: View {
             let wrapper = KoinHelperKt.wrapChartViewerNavEvents(flow: viewModel.navEvents)
             navEventsCloseable = wrapper.collect { event in
                 Task { @MainActor in
-                    if let created = event as? ChartViewerNavEventPullRequestCreated {
+                    if let created = event as? ChartViewerNavEventSuggestionCreated {
                         let message = NSLocalizedString("message_suggestion_sent_successfully", comment: "")
                         prOpenedToast = message
                         announceToVoiceOver(message: message)
@@ -188,7 +188,7 @@ struct StructuredChartViewerScreen: View {
     }
 
     @ViewBuilder
-    private func content(chart: StructuredChart) -> some View {
+    private func content(chart: Chart) -> some View {
         VStack(spacing: 4) {
             if !chart.layers.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -245,10 +245,10 @@ struct StructuredChartViewerScreen: View {
 
 /// Phase 38.4.1 (ADR-014 §6) — SwiftUI mirror of Compose `OpenPullRequestDialog`.
 /// `NavigationStack` + `Form` + Cancel / Open toolbar items, matching the
-/// `ChartBranchPickerSheet` / `Open PR` form pattern. Title is required;
+/// `ChartVariationPickerSheet` / `Open PR` form pattern. Title is required;
 /// description is optional. Errors render inline so the user stays in the form
 /// for retry.
-private struct OpenPullRequestSheet: View {
+private struct OpenSuggestionSheet: View {
     let titleDraft: String
     let descriptionDraft: String
     let isSubmitting: Bool
@@ -317,7 +317,7 @@ private struct OpenPullRequestSheet: View {
 /// on every draw so hit-test math stays in lockstep. The gesture layer sits in
 /// parallel via `.simultaneousGesture` so pinch-to-zoom keeps working.
 private struct ChartCanvasView: View {
-    let chart: StructuredChart
+    let chart: Chart
     let catalog: SymbolCatalog
     let hiddenLayerIds: Set<String>
     /// Reads segment state by (layerId, x, y) — routes through the Kotlin

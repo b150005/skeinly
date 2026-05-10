@@ -157,7 +157,7 @@ struct ProjectDetailScreen: View {
                 Section(LocalizedStringKey("label_pattern_info_section")) {
                     patternInfoSection(
                         pattern,
-                        hasStructuredChart: state.hasStructuredChart,
+                        hasChart: state.hasChart,
                         parentPattern: state.parentPattern,
                         parentPatternAuthor: state.parentPatternAuthor,
                         onChartViewerTap: {
@@ -183,7 +183,7 @@ struct ProjectDetailScreen: View {
                         // user authored PRs targeting the upstream); Incoming
                         // when the pattern IS the upstream.
                         onSuggestionsTap: {
-                            let filter: PullRequestFilter =
+                            let filter: SuggestionFilter =
                                 pattern.parentPatternId != nil ? .outgoing : .incoming
                             path.append(Route.pullRequestList(defaultFilter: filter))
                         }
@@ -232,7 +232,7 @@ struct ProjectDetailScreen: View {
                 // Phase 34 US-4: Reset segment progress. Enabled only when the
                 // project has a linked structured chart AND at least one segment
                 // row exists — matches PRD AC-4.1.
-                if state.hasStructuredChart && state.hasSegmentProgress {
+                if state.hasChart && state.hasSegmentProgress {
                     Button(role: .destructive) {
                         showResetProgressConfirmation = true
                     } label: {
@@ -383,7 +383,7 @@ struct ProjectDetailScreen: View {
     @ViewBuilder
     private func patternInfoSection(
         _ pattern: Pattern,
-        hasStructuredChart: Bool,
+        hasChart: Bool,
         parentPattern: Pattern?,
         parentPatternAuthor: User?,
         onChartViewerTap: @escaping () -> Void,
@@ -409,7 +409,7 @@ struct ProjectDetailScreen: View {
             )
         }
 
-        if hasStructuredChart {
+        if hasChart {
             Button(action: onChartViewerTap) {
                 Label(LocalizedStringKey("action_view_chart"), systemImage: "square.grid.3x3")
                     .font(.caption)
@@ -428,7 +428,7 @@ struct ProjectDetailScreen: View {
 
         Button(action: onChartEditorTap) {
             Label(
-                hasStructuredChart
+                hasChart
                     ? LocalizedStringKey("action_edit_chart")
                     : LocalizedStringKey("action_create_chart"),
                 systemImage: "square.and.pencil"

@@ -15,9 +15,9 @@ enum Route: Hashable {
     case chartViewer(patternId: String, projectId: String?)
     case chartEditor(patternId: String)
     case chartHistory(patternId: String)
-    case chartDiff(baseRevisionId: String?, targetRevisionId: String)
+    case chartComparison(baseRevisionId: String?, targetRevisionId: String)
     case symbolGallery
-    case pullRequestList(defaultFilter: PullRequestFilter)
+    case pullRequestList(defaultFilter: SuggestionFilter)
     case pullRequestDetail(prId: String)
     case chartConflictResolution(prId: String)
     case bugReportPreview
@@ -66,8 +66,8 @@ enum Route: Hashable {
         case .chartHistory(let patternId):
             hasher.combine("chartHistory")
             hasher.combine(patternId)
-        case .chartDiff(let baseRevisionId, let targetRevisionId):
-            hasher.combine("chartDiff")
+        case .chartComparison(let baseRevisionId, let targetRevisionId):
+            hasher.combine("chartComparison")
             hasher.combine(baseRevisionId)
             hasher.combine(targetRevisionId)
         case .symbolGallery:
@@ -300,35 +300,35 @@ struct AppRootView: View {
                 .trackScreen(.patternedit)
                 .skeinlyBackButton(path: $path)
         case .chartViewer(let patternId, let projectId):
-            StructuredChartViewerScreen(patternId: patternId, projectId: projectId, path: $path)
+            ChartViewerScreen(patternId: patternId, projectId: projectId, path: $path)
                 .trackScreen(.chartviewer)
                 .skeinlyBackButton(path: $path)
         case .chartEditor(let patternId):
             // Owns its own back button with discard-guard semantics + the
             // same `accessibilityIdentifier("backButton")` — see
-            // `StructuredChartEditorScreen.swift`. Do NOT add
+            // `ChartEditorScreen.swift`. Do NOT add
             // `.skeinlyBackButton` here; it would duplicate the toolbar item.
-            StructuredChartEditorScreen(patternId: patternId, path: $path)
+            ChartEditorScreen(patternId: patternId, path: $path)
                 .trackScreen(.charteditor)
         case .chartHistory(let patternId):
             ChartHistoryScreen(patternId: patternId, path: $path)
                 .trackScreen(.charthistory)
                 .skeinlyBackButton(path: $path)
-        case .chartDiff(let baseRevisionId, let targetRevisionId):
-            ChartDiffScreen(baseRevisionId: baseRevisionId, targetRevisionId: targetRevisionId)
-                .trackScreen(.chartdiff)
+        case .chartComparison(let baseRevisionId, let targetRevisionId):
+            ChartComparisonScreen(baseRevisionId: baseRevisionId, targetRevisionId: targetRevisionId)
+                .trackScreen(.chartcomparison)
                 .skeinlyBackButton(path: $path)
         case .symbolGallery:
             SymbolGalleryScreen()
                 .trackScreen(.symbolgallery)
                 .skeinlyBackButton(path: $path)
         case .pullRequestList(let defaultFilter):
-            PullRequestListScreen(defaultFilter: defaultFilter, path: $path)
-                .trackScreen(.pullrequestlist)
+            SuggestionListScreen(defaultFilter: defaultFilter, path: $path)
+                .trackScreen(.suggestionlist)
                 .skeinlyBackButton(path: $path)
         case .pullRequestDetail(let prId):
-            PullRequestDetailScreen(prId: prId, path: $path)
-                .trackScreen(.pullrequestdetail)
+            SuggestionDetailScreen(prId: prId, path: $path)
+                .trackScreen(.suggestiondetail)
                 .skeinlyBackButton(path: $path)
         case .chartConflictResolution(let prId):
             ChartConflictResolutionScreen(prId: prId, path: $path)

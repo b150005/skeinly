@@ -63,16 +63,20 @@ export function extractWebhookEvent(payload: RevenueCatWebhookPayload): Extracte
     if (!event) return null;
     if (typeof event.id !== "string" || event.id.length === 0) return null;
     if (typeof event.type !== "string" || event.type.length === 0) return null;
-    if (typeof event.event_timestamp_ms !== "number" || !Number.isFinite(event.event_timestamp_ms)) {
+    if (
+        typeof event.event_timestamp_ms !== "number" ||
+        !Number.isFinite(event.event_timestamp_ms)
+    ) {
         return null;
     }
     // TEST + SUBSCRIBER_ALIAS + TRANSFER events don't carry product_id.
     // For all other event types, product_id is required.
     const skipProductCheck =
-        event.type === "TEST" ||
-        event.type === "SUBSCRIBER_ALIAS" ||
-        event.type === "TRANSFER";
-    if (!skipProductCheck && (typeof event.product_id !== "string" || event.product_id.length === 0)) {
+        event.type === "TEST" || event.type === "SUBSCRIBER_ALIAS" || event.type === "TRANSFER";
+    if (
+        !skipProductCheck &&
+        (typeof event.product_id !== "string" || event.product_id.length === 0)
+    ) {
         return null;
     }
 
@@ -105,9 +109,7 @@ export function extractWebhookEvent(payload: RevenueCatWebhookPayload): Extracte
  * 'production'/'sandbox', so this mapping is the single normalization
  * point — every code path downstream sees one of those two literals.
  */
-export function mapEnvironment(
-    environment: string | undefined,
-): "production" | "sandbox" {
+export function mapEnvironment(environment: string | undefined): "production" | "sandbox" {
     if (environment === "SANDBOX") return "sandbox";
     return "production";
 }
@@ -149,14 +151,7 @@ export function mapStoreToPlatform(store: string | undefined): "ios" | "android"
 export function mapEventToStatus(
     eventType: string,
     cancelReason?: string,
-):
-    | "active"
-    | "expired"
-    | "canceled"
-    | "in_grace_period"
-    | "in_billing_retry"
-    | "refunded"
-    | null {
+): "active" | "expired" | "canceled" | "in_grace_period" | "in_billing_retry" | "refunded" | null {
     switch (eventType) {
         case "INITIAL_PURCHASE":
         case "RENEWAL":

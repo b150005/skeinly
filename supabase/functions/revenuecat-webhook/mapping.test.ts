@@ -6,13 +6,13 @@
 // Not currently CI-gated — these are regression anchors for the event-
 // type → status mapping that drives `subscriptions.status` writes.
 
+import { assertEquals } from "jsr:@std/assert@1";
 import {
     extractWebhookEvent,
     mapEnvironment,
     mapEventToStatus,
     mapStoreToPlatform,
 } from "./mapping.ts";
-import { assertEquals } from "jsr:@std/assert@1";
 
 // ---------------------------------------------------------------------
 // extractWebhookEvent
@@ -216,10 +216,7 @@ Deno.test("mapEventToStatus: CANCELLATION + REFUND → refunded", () => {
 });
 
 Deno.test("mapEventToStatus: CANCELLATION + REFUNDED_FOR_ISSUE → refunded", () => {
-    assertEquals(
-        mapEventToStatus("CANCELLATION", "REFUNDED_FOR_ISSUE"),
-        "refunded",
-    );
+    assertEquals(mapEventToStatus("CANCELLATION", "REFUNDED_FOR_ISSUE"), "refunded");
 });
 
 Deno.test("mapEventToStatus: BILLING_ISSUE → in_billing_retry", () => {

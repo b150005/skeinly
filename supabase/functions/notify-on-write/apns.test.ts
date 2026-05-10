@@ -5,17 +5,8 @@
 // fake.
 
 import { assertEquals, assertNotEquals, assertStringIncludes } from "jsr:@std/assert@^1";
-
-import {
-    _resetApnsJwtCacheForTests,
-    classifyApnsResponse,
-    getApnsJwt,
-    sendApns,
-} from "./apns.ts";
-import {
-    createFetchFake,
-    generateTestApnsCredentials,
-} from "./_fakes.ts";
+import { createFetchFake, generateTestApnsCredentials } from "./_fakes.ts";
+import { _resetApnsJwtCacheForTests, classifyApnsResponse, getApnsJwt, sendApns } from "./apns.ts";
 
 // ---------------------------------------------------------------------
 // JWT signing
@@ -59,11 +50,7 @@ Deno.test("getApnsJwt mints fresh after cache reset (iat advances)", async () =>
     const second = await getApnsJwt(creds);
     const firstIat = decodeIat(first);
     const secondIat = decodeIat(second);
-    assertNotEquals(
-        firstIat,
-        secondIat,
-        "iat should advance between fresh mints separated by >1s",
-    );
+    assertNotEquals(firstIat, secondIat, "iat should advance between fresh mints separated by >1s");
 });
 
 // ---------------------------------------------------------------------

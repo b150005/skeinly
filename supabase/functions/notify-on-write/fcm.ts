@@ -10,9 +10,8 @@
 // retry after refresh; everything else log + continue (no DELETE).
 
 import { create as createJwt, getNumericDate } from "jsr:@zaubrik/djwt@^3";
-
-import type { TemplateKey } from "./mapping.ts";
 import type { SendOutcome } from "./apns.ts";
+import type { TemplateKey } from "./mapping.ts";
 
 // ---------------------------------------------------------------------
 // Constants
@@ -74,13 +73,16 @@ export function _resetFcmAccessTokenCacheForTests(): void {
  */
 export async function getFcmAccessToken(sa: ServiceAccount): Promise<string> {
     const now = Date.now();
-    if (cachedFcmAccessToken && cachedFcmAccessToken.expiresAt - now > FCM_TOKEN_REFRESH_MARGIN_MS) {
+    if (
+        cachedFcmAccessToken &&
+        cachedFcmAccessToken.expiresAt - now > FCM_TOKEN_REFRESH_MARGIN_MS
+    ) {
         return cachedFcmAccessToken.value;
     }
     const fresh = await fetchFcmAccessToken(sa);
     cachedFcmAccessToken = {
         value: fresh.accessToken,
-        expiresAt: now + (fresh.expiresInSeconds * 1000),
+        expiresAt: now + fresh.expiresInSeconds * 1000,
     };
     return fresh.accessToken;
 }
@@ -122,10 +124,12 @@ async function fetchFcmAccessToken(sa: ServiceAccount): Promise<AccessTokenResul
         } catch {
             // ignore
         }
-        throw new Error(`fcm_oauth_failed: status=${tokenResponse.status} detail=${detail.slice(0, 200)}`);
+        throw new Error(
+            `fcm_oauth_failed: status=${tokenResponse.status} detail=${detail.slice(0, 200)}`,
+        );
     }
 
-    const tokenJson = await tokenResponse.json() as {
+    const tokenJson = (await tokenResponse.json()) as {
         access_token?: string;
         expires_in?: number;
     };
@@ -169,12 +173,12 @@ function base64DecodeToBuffer(input: string): ArrayBuffer {
  * after a forced cache reset. Any further 401 is a config error
  * (SA permissions revoked, etc.) and surfaces as such.
  */
-export async function sendFcm(
-    sa: ServiceAccount,
-    input: FcmSendInput,
-): Promise<SendOutcome> {
+export async function sendFcm(sa: ServiceAccount, input: FcmSendInput): Promise<SendOutcome> {
     const firstAttempt = await trySendFcm(sa, input);
-    if (firstAttempt.kind !== "transient_error" || firstAttempt.reason !== "fcm_unauth_retry_pending") {
+    if (
+        firstAttempt.kind !== "transient_error" ||
+        firstAttempt.reason !== "fcm_unauth_retry_pending"
+    ) {
         return firstAttempt;
     }
     // 401 → drain cache + try once more. Defensive against a stale
@@ -217,7 +221,7 @@ async function trySendFcm(sa: ServiceAccount, input: FcmSendInput): Promise<Send
         response = await fetch(url, {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${accessToken}`,
+                Authorization: `Bearer ${accessToken}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(messageBody),
@@ -233,7 +237,7 @@ async function trySendFcm(sa: ServiceAccount, input: FcmSendInput): Promise<Send
 
     let errorCode: string | null = null;
     try {
-        const errorBody = await response.json() as {
+        const errorBody = (await response.json()) as {
             error?: {
                 status?: string;
                 details?: Array<{ errorCode?: string }>;
@@ -242,9 +246,7 @@ async function trySendFcm(sa: ServiceAccount, input: FcmSendInput): Promise<Send
         // Prefer the per-detail errorCode (e.g. "UNREGISTERED") over
         // the higher-level status (e.g. "NOT_FOUND") because FCM uses
         // the per-detail code for the canonical token-state signal.
-        errorCode = errorBody.error?.details?.[0]?.errorCode
-            ?? errorBody.error?.status
-            ?? null;
+        errorCode = errorBody.error?.details?.[0]?.errorCode ?? errorBody.error?.status ?? null;
     } catch {
         // Non-JSON body (rare — gateway 502, etc.). Classifier handles
         // null reason as transient by status code.
@@ -257,10 +259,7 @@ async function trySendFcm(sa: ServiceAccount, input: FcmSendInput): Promise<Send
 // Response classification (ADR-018 §3.4)
 // ---------------------------------------------------------------------
 
-const FCM_DELETE_CODES = new Set<string>([
-    "UNREGISTERED",
-    "SENDER_ID_MISMATCH",
-]);
+const FCM_DELETE_CODES = new Set<string>(["UNREGISTERED", "SENDER_ID_MISMATCH"]);
 
 /**
  * Classify an FCM v1 response. UNAUTHENTICATED returns a sentinel

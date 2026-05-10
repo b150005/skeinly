@@ -6,17 +6,17 @@ import { assert, assertEquals } from "jsr:@std/assert@1";
 import {
     ACTOR_FALLBACK_EN,
     ACTOR_FALLBACK_JA,
-    type PullRequestCommentRow,
-    type PullRequestRow,
-    PATTERN_FALLBACK_EN,
-    PR_TITLE_FALLBACK_JA,
-    TEMPLATES,
-    type TemplateKey,
     computePrCommentedDispatches,
     computePrOpenedDispatches,
     computePrStatusChangeDispatches,
+    PATTERN_FALLBACK_EN,
+    PR_TITLE_FALLBACK_JA,
+    type PullRequestCommentRow,
+    type PullRequestRow,
     pullRequestRoute,
     renderBody,
+    TEMPLATES,
+    type TemplateKey,
 } from "./mapping.ts";
 
 // ---------------------------------------------------------------------
@@ -59,12 +59,18 @@ Deno.test("renderBody: pr_commented in EN substitutes actor + pr_title", () => {
 });
 
 Deno.test("renderBody: pr_merged_to_author in EN", () => {
-    const body = renderBody("en-US", "pr_merged_to_author", { actor: "Alice", pattern: "Cardigan" });
+    const body = renderBody("en-US", "pr_merged_to_author", {
+        actor: "Alice",
+        pattern: "Cardigan",
+    });
     assertEquals(body, "Alice applied your suggestion on Cardigan");
 });
 
 Deno.test("renderBody: pr_closed_to_author in EN", () => {
-    const body = renderBody("en-US", "pr_closed_to_author", { actor: "Alice", pattern: "Cardigan" });
+    const body = renderBody("en-US", "pr_closed_to_author", {
+        actor: "Alice",
+        pattern: "Cardigan",
+    });
     assertEquals(body, "Alice closed your suggestion on Cardigan");
 });
 
@@ -113,12 +119,14 @@ const samplePr: PullRequestRow = {
 
 Deno.test("computePrOpenedDispatches: notifies target owner with pr_opened template", () => {
     const dispatches = computePrOpenedDispatches(samplePr, "bob-uuid", "Alice", "Granny Square");
-    assertEquals(dispatches, [{
-        recipientUserId: "bob-uuid",
-        templateKey: "pr_opened",
-        params: { actor: "Alice", pattern: "Granny Square" },
-        route: "pull-request/pr-1",
-    }]);
+    assertEquals(dispatches, [
+        {
+            recipientUserId: "bob-uuid",
+            templateKey: "pr_opened",
+            params: { actor: "Alice", pattern: "Granny Square" },
+            route: "pull-request/pr-1",
+        },
+    ]);
 });
 
 Deno.test("computePrOpenedDispatches: skips when author == target owner (self-PR)", () => {
@@ -148,7 +156,7 @@ Deno.test("computePrCommentedDispatches: notifies both pr.author + target owner 
     const dispatches = computePrCommentedDispatches(
         sampleComment,
         "alice-uuid", // pr.author_id
-        "bob-uuid",   // target owner
+        "bob-uuid", // target owner
         "Carol",
         "Add bobble",
     );
@@ -232,12 +240,14 @@ Deno.test("computePrStatusChangeDispatches: open → merged notifies author with
         "Bob",
         "Granny Square",
     );
-    assertEquals(dispatches, [{
-        recipientUserId: "alice-uuid",
-        templateKey: "pr_merged_to_author",
-        params: { actor: "Bob", pattern: "Granny Square" },
-        route: "pull-request/pr-1",
-    }]);
+    assertEquals(dispatches, [
+        {
+            recipientUserId: "alice-uuid",
+            templateKey: "pr_merged_to_author",
+            params: { actor: "Bob", pattern: "Granny Square" },
+            route: "pull-request/pr-1",
+        },
+    ]);
 });
 
 Deno.test("computePrStatusChangeDispatches: open → closed by author notifies target owner", () => {
@@ -251,12 +261,14 @@ Deno.test("computePrStatusChangeDispatches: open → closed by author notifies t
         "Alice",
         "Granny Square",
     );
-    assertEquals(dispatches, [{
-        recipientUserId: "bob-uuid",
-        templateKey: "pr_closed_to_owner",
-        params: { actor: "Alice", pattern: "Granny Square" },
-        route: "pull-request/pr-1",
-    }]);
+    assertEquals(dispatches, [
+        {
+            recipientUserId: "bob-uuid",
+            templateKey: "pr_closed_to_owner",
+            params: { actor: "Alice", pattern: "Granny Square" },
+            route: "pull-request/pr-1",
+        },
+    ]);
 });
 
 Deno.test("computePrStatusChangeDispatches: open → closed by target owner notifies author", () => {
@@ -270,12 +282,14 @@ Deno.test("computePrStatusChangeDispatches: open → closed by target owner noti
         "Bob",
         "Granny Square",
     );
-    assertEquals(dispatches, [{
-        recipientUserId: "alice-uuid",
-        templateKey: "pr_closed_to_author",
-        params: { actor: "Bob", pattern: "Granny Square" },
-        route: "pull-request/pr-1",
-    }]);
+    assertEquals(dispatches, [
+        {
+            recipientUserId: "alice-uuid",
+            templateKey: "pr_closed_to_author",
+            params: { actor: "Bob", pattern: "Granny Square" },
+            route: "pull-request/pr-1",
+        },
+    ]);
 });
 
 Deno.test("computePrStatusChangeDispatches: silent no-op when oldRow.status was not 'open'", () => {

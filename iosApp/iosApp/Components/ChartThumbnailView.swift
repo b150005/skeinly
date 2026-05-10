@@ -21,10 +21,10 @@ struct ChartThumbnailView: View {
     let onTap: () -> Void
     var size: CGFloat = 64
 
-    @State private var chart: StructuredChart?
+    @State private var chart: Chart?
     @StateObject private var pathCache = PathCommandCache()
     private let catalog: SymbolCatalog = ViewModelFactory.symbolCatalog()
-    private let repository: StructuredChartRepository = ViewModelFactory.structuredChartRepository()
+    private let repository: ChartRepository = ViewModelFactory.chartRepository()
 
     var body: some View {
         Button(action: onTap) {
@@ -91,7 +91,7 @@ struct ChartThumbnailView: View {
     private func drawRectThumbnail(
         into context: inout GraphicsContext,
         size: CGSize,
-        chart: StructuredChart,
+        chart: Chart,
         rect: ChartExtentsRect
     ) {
         let gridWidth = Int(rect.maxX - rect.minX + 1)
@@ -155,7 +155,7 @@ struct ChartThumbnailView: View {
     private func drawPolarThumbnail(
         into context: inout GraphicsContext,
         size: CGSize,
-        chart: StructuredChart,
+        chart: Chart,
         polar: ChartExtentsPolar,
         ringsCount: Int,
         stitchesPerRing: [Int]
