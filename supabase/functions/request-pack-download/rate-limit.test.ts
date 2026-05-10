@@ -8,7 +8,7 @@
 // Kotlin client envelope tests live in Phase 41.2 alongside the
 // SymbolPackSyncManager that consumes the API.
 
-import { assertEquals, assertFalse, assert as assertTrue } from "jsr:@std/assert@1";
+import { assertEquals, assertFalse, assert as assertTrue } from "@std/assert";
 import {
     checkAndRecordRateLimit,
     RATE_LIMIT_MAX_CALLS,

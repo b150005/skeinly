@@ -10,7 +10,7 @@
 // 429 / unknown reasons fall through to transient_error (fail-safe —
 // never delete on an unknown signal).
 
-import { create as createJwt, getNumericDate } from "jsr:@zaubrik/djwt@^3";
+import { create as createJwt, getNumericDate } from "@zaubrik/djwt";
 
 import type { TemplateKey } from "./mapping.ts";
 

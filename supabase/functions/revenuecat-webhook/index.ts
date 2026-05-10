@@ -35,7 +35,7 @@
 // The `upsert_subscription_from_webhook` RPC is SECURITY DEFINER so it
 // runs with the service-role's privileges regardless.
 
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "@supabase/supabase-js";
 import {
     extractWebhookEvent,
     mapEnvironment,

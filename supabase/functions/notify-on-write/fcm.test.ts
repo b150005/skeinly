@@ -4,7 +4,7 @@
 // response classification matrix, end-to-end sendFcm under fetch fake,
 // 401 retry shape.
 
-import { assertEquals, assertNotEquals, assertStringIncludes } from "jsr:@std/assert@^1";
+import { assertEquals, assertNotEquals, assertStringIncludes } from "@std/assert";
 import { createFetchFake, generateTestServiceAccount } from "./_fakes.ts";
 import {
     _resetFcmAccessTokenCacheForTests,

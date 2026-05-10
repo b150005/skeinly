@@ -9,7 +9,7 @@
 // SENDER_ID_MISMATCH warrant DELETE; UNAUTHENTICATED triggers a single
 // retry after refresh; everything else log + continue (no DELETE).
 
-import { create as createJwt, getNumericDate } from "jsr:@zaubrik/djwt@^3";
+import { create as createJwt, getNumericDate } from "@zaubrik/djwt";
 import type { SendOutcome } from "./apns.ts";
 import type { TemplateKey } from "./mapping.ts";
 
