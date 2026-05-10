@@ -1,0 +1,124 @@
+# Verification Layer configuration (ADR-008 + ADR-010).
+#
+# Copy this file to `.claude/verification.yml` to opt in. With no file
+# present, the layer is effectively inert: the research domain falls
+# back to "absent file = inert" (matching the original ADR-008 default
+# for derived projects), and the implementation and design domains
+# remain off.
+#
+# Each domain has its own `enabled` switch. Turn on only the domains
+# you want to pay the cost for.
+
+# --- Research domain (ADR-008) ---
+#
+# Adversarial review of external research that informs decisions
+# (architecture, library selection, API usage, version pin).
+# Generator: docs-researcher. Critic: research-critic.
+research:
+  # When true, the Generator declares a Tier on every research output
+  # and the Critic reviews using a different tool family with primary-
+  # source-only citation. When false, the layer is inert for this
+  # domain.
+  enabled: true
+
+  # Maximum GAN rounds before escalation. After this many rounds with
+  # findings remaining, the orchestrator decides among:
+  #   - ask user for tie-break
+  #   - mark the claim UNVERIFIED: and proceed
+  #   - block downstream until resolved
+  #
+  # 1 disables iteration entirely. 2 is the default and matches
+  # ADR-008. 3+ is unusual and typically indicates ill-posed questions.
+  max_iterations: 2
+
+  # Default Tier when the Generator does not declare one explicitly.
+  # T1 — breaking changes, auth, security-sensitive APIs, crypto
+  # T2 — public API arguments, return types, defaults, version features
+  # T3 — idiomatic style, common usage, widely-known patterns
+  default_tier: T2
+
+  # Scope guard. When true, the layer activates only when external
+  # research will inform a decision. Casual lookups during pair-
+  # programming are skipped. Recommended.
+  external_facts_only: true
+
+  # Tier-specific overrides (optional). Most adopters do not need this.
+  # tier_overrides:
+  #   T1:
+  #     max_iterations: 2  # full GAN
+  #   T2:
+  #     max_iterations: 1  # Critic once unless CRITICAL/HIGH
+  #   T3:
+  #     max_iterations: 0  # Generator self-check only
+
+# --- Implementation domain (ADR-010) ---
+#
+# Adversarial Critic re-implements the SAME acceptance criteria with a
+# deliberately different approach, runs the test suite against both,
+# and reports the behavioural delta.
+# Generator: implementer. Critic: adversarial-implementer.
+#
+# Cost note: implementation verification runs the implementation
+# logic twice. Token consumption per change is approximately doubled.
+# The user explicitly chose to accept this cost when ADR-010 was
+# accepted; derived projects opt in here.
+implementation:
+  enabled: false
+
+  # Implementation re-rounds rarely yield more signal than the first
+  # pair. If the delta surfaced a real divergence, the right next
+  # step is the PR author's, not another Critic round.
+  max_iterations: 1
+
+# --- Design domain (ADR-010) ---
+#
+# For every ADR in Status:Proposed that affects downstream work, the
+# Critic produces ONE concrete counter-proposal that takes a rejected
+# alternative seriously — same Context, same constraints, different
+# decision, full Consequences. Counter-proposals stay in the ADR file
+# as permanent record once Status moves to Accepted.
+# Generator: architect. Critic: architecture-critic.
+#
+# Cost note: every Proposed ADR gains a structured counter-proposal
+# section. Reviewer load increases slightly; long-term decision
+# quality compounds.
+design:
+  enabled: false
+
+  # Design verification produces a counter-proposal artifact, not a
+  # converged consensus. A second iteration on the same ADR rarely
+  # changes the outcome.
+  max_iterations: 1
+
+# --- Citation discipline (cross-cutting) ---
+#
+# Knowledge entries written under .claude/learn/knowledge/, ADRs, and
+# spec / PRD files all carry the same primary-source-only citation
+# rule. A CI check enforces this mechanically using the allowlist in
+# .claude/skills/verification-layer/research/checklist.md.
+#
+# This sub-section is **default-on** because the cost is essentially
+# zero per CI run and the failure mode (silent secondary-source
+# accumulation) is severe. Disable only with a documented reason.
+citation_discipline:
+  enabled: true
+
+  # Paths to scan. The default list is the single source of truth at
+  # .claude/meta/citation-targets.txt — adding a new load-bearing
+  # document directory should be done there, not duplicated here. This
+  # `paths:` key only needs to be set when a derived project wants to
+  # OVERRIDE the default (e.g. add or remove specific directories for
+  # this project only). Leaving the key absent means "use the
+  # citation-targets.txt list."
+  #
+  # Example override (uncomment to use):
+  # paths:
+  #   - .claude/learn/knowledge
+  #   - .claude/meta/adr
+  #   - .claude/meta/prd
+  #   - workarounds            # if you keep a top-level workarounds/ tree
+
+  # An inline escape hatch — a one-time allow comment placed adjacent
+  # to a link the CI would otherwise flag. Use sparingly. The escape
+  # is per-link, with a stated reason, and is itself reviewable.
+  escape_comment_pattern: "<!-- cite-allow: <reason> -->"
