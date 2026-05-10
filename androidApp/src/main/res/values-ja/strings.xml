@@ -8,6 +8,6 @@
 <resources>
     <string name="notification_channel_collaboration">コラボレーション</string>
     <string name="notification_channel_collaboration_description">
-        プルリクエストのオープン・コメント・マージ・クローズ。
+        提案の送信・コメント・反映・クローズ。
     </string>
 </resources>

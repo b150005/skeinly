@@ -1,6 +1,6 @@
 package io.github.b150005.skeinly.domain.repository
 
-import io.github.b150005.skeinly.domain.model.ChartBranch
+import io.github.b150005.skeinly.domain.model.ChartVariation
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.Flow
  *   the `(pattern_id, branch_name)` UNIQUE constraint — re-creating the same
  *   branch name no-ops (returns the existing row).
  * - [advanceTip] moves an existing branch's `tip_revision_id` forward. Used
- *   by `StructuredChartRepository.update` to track the user's current branch
+ *   by `ChartRepository.update` to track the user's current branch
  *   tip across saves (ADR-013 §7).
  * - [deleteBranch] removes a branch row. The "main" branch cannot be deleted —
  *   guarded at the use-case layer, not here.
@@ -27,17 +27,17 @@ import kotlinx.coroutines.flow.Flow
  * Cleanup happens transitively via `pattern_id` ON DELETE CASCADE in
  * migration 015.
  */
-interface ChartBranchRepository {
+interface ChartVariationRepository {
     suspend fun getByPatternIdAndName(
         patternId: String,
         branchName: String,
-    ): ChartBranch?
+    ): ChartVariation?
 
-    suspend fun getByPatternId(patternId: String): List<ChartBranch>
+    suspend fun getByPatternId(patternId: String): List<ChartVariation>
 
-    fun observeBranchesForPattern(patternId: String): Flow<List<ChartBranch>>
+    fun observeBranchesForPattern(patternId: String): Flow<List<ChartVariation>>
 
-    suspend fun createBranch(branch: ChartBranch): ChartBranch
+    suspend fun createBranch(branch: ChartVariation): ChartVariation
 
     suspend fun advanceTip(
         patternId: String,

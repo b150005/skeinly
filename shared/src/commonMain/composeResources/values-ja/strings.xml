@@ -23,8 +23,8 @@
 
     <!-- Load / empty states -->
     <string name="state_loading">読み込み中\u2026</string>
-    <string name="state_empty_chart">空のチャート</string>
-    <string name="state_no_structured_chart">構造化チャートがありません</string>
+    <string name="state_empty_chart">空の編み図</string>
+    <string name="state_no_chart">編み図がありません</string>
 
     <!-- Error messages -->
     <string name="error_generic">エラーが発生しました</string>
@@ -102,10 +102,10 @@
     <string name="dialog_unsaved_changes_body">未保存の変更があります。破棄しますか？</string>
 
     <!-- Chart viewer screen -->
-    <string name="title_chart_viewer">チャート</string>
+    <string name="title_chart_viewer">編み図</string>
 
     <!-- Chart editor screen -->
-    <string name="title_edit_chart">チャートを編集</string>
+    <string name="title_edit_chart">編み図を編集</string>
 
     <!-- Symbol gallery screen -->
     <string name="title_symbol_dictionary">記号辞典</string>
@@ -122,12 +122,12 @@
     <string name="label_extents">グリッド</string>
     <string name="label_extents_flat">平面グリッド</string>
     <string name="label_extents_polar">円形グリッド</string>
-    <string name="dialog_polar_extents_title">円形チャート</string>
+    <string name="dialog_polar_extents_title">円形の編み図</string>
     <string name="label_polar_rings">段数</string>
     <string name="label_polar_stitches_per_ring">各段の目数 (カンマ区切り)</string>
     <!-- Phase 35.3 (ADR-011 §6): グリッドサイズピッカー（新規／既存両方） -->
     <string name="action_resize_chart">サイズ変更</string>
-    <string name="dialog_resize_chart_title">チャートのサイズ変更</string>
+    <string name="dialog_resize_chart_title">編み図のサイズ変更</string>
     <string name="label_grid_width">幅</string>
     <string name="label_grid_height">高さ</string>
     <string name="label_polar_stitches_uniform">各段の目数 (一律)</string>
@@ -137,7 +137,7 @@
     </plurals>
 
     <!-- Project list screen -->
-    <string name="action_discover_patterns">パターンを探す</string>
+    <string name="action_browse_patterns">パターンを探す</string>
     <string name="action_pattern_library">パターンライブラリ</string>
     <string name="action_symbol_dictionary">記号辞典</string>
     <string name="action_profile">プロフィール</string>
@@ -215,7 +215,7 @@
     <string name="dialog_delete_account_body">アカウントと関連データがすべて完全に削除されます。この操作は取り消せません。</string>
 
     <!-- Discovery screen -->
-    <string name="title_discover_patterns">パターンを探す</string>
+    <string name="title_browse_patterns">パターンを探す</string>
     <string name="hint_search_public_patterns">公開パターンを検索\u2026</string>
     <string name="label_difficulty_all">すべて</string>
     <string name="label_difficulty_beginner">初級</string>
@@ -225,15 +225,15 @@
     <string name="state_no_matching_patterns_body">検索条件やフィルターを調整してみてください</string>
     <string name="state_no_public_patterns">公開パターンがまだありません</string>
     <string name="state_no_public_patterns_body">他のニッターが公開したパターンがここに表示されます</string>
-    <string name="action_fork_pattern">パターンをフォーク</string>
-    <string name="action_fork">フォーク</string>
-    <string name="state_forking_pattern">パターンをフォーク中\u2026</string>
+    <string name="action_save_pattern_copy">コピーを保存</string>
+    <string name="action_save_copy">コピーを保存</string>
+    <string name="state_saving_pattern_copy">コピーを保存中\u2026</string>
     <string name="label_gauge_value">ゲージ: %1$s</string>
     <string name="label_yarn_value">糸: %1$s</string>
     <string name="label_needle_value">針: %1$s</string>
     <!-- Phase 36.4 (ADR-012 §4 / §5) -->
-    <string name="label_filter_charts_only">チャートのみ</string>
-    <string name="action_view_chart_thumbnail">チャートプレビューを表示</string>
+    <string name="label_filter_charts_only">編み図のみ</string>
+    <string name="action_view_chart_thumbnail">編み図プレビューを表示</string>
 
     <!-- Pattern library screen -->
     <string name="title_pattern_library">パターンライブラリ</string>
@@ -301,20 +301,20 @@
     <string name="state_uploading_image">アップロード中\u2026</string>
     <string name="action_add">追加</string>
     <string name="label_pattern_value">パターン: %1$s</string>
-    <string name="action_view_structured_chart">構造化チャートを表示</string>
-    <string name="action_edit_structured_chart">構造化チャートを編集</string>
-    <string name="action_create_structured_chart">構造化チャートを作成</string>
+    <string name="action_view_chart">編み図を表示</string>
+    <string name="action_edit_chart">編み図を編集</string>
+    <string name="action_create_chart">編み図を作成</string>
     <!-- Phase 36.5 (ADR-012 §6) "Forked from" attribution. JA puts the author
          in parentheses after the title — the natural reading for "forked from
          <title> by <author>". -->
-    <string name="label_forked_from">%1$s（%2$s）からフォーク</string>
-    <string name="state_forked_from_deleted">削除されたパターンからフォーク</string>
+    <string name="label_copied_from">%1$s（%2$s）からコピー</string>
+    <string name="state_copied_from_deleted">削除されたパターンからのコピー</string>
     <string name="label_yarn">糸</string>
-    <string name="label_chart_images_section">チャート画像</string>
-    <string name="state_no_chart_images">チャート画像はまだありません</string>
+    <string name="label_reference_images_section">参考画像</string>
+    <string name="state_no_reference_images">参考画像はまだありません</string>
     <string name="action_remove">削除</string>
-    <string name="dialog_remove_chart_image_title">チャート画像を削除しますか？</string>
-    <string name="dialog_remove_chart_image_body">このチャート画像を削除してもよろしいですか？</string>
+    <string name="dialog_remove_reference_image_title">参考画像を削除しますか？</string>
+    <string name="dialog_remove_reference_image_body">この参考画像を削除してもよろしいですか？</string>
     <string name="dialog_delete_note_title">メモを削除しますか？</string>
     <string name="dialog_delete_note_body">このメモを削除してもよろしいですか？</string>
     <string name="action_copy">コピー</string>
@@ -324,8 +324,8 @@
     <string name="message_link_copied">コピーしました！</string>
     <string name="action_copy_link">リンクをコピー</string>
     <string name="message_shared_successfully">共有しました！</string>
-    <string name="message_forked_successfully">フォークしました！</string>
-    <string name="message_forked_chart_failed">フォークしました（チャートのコピーに失敗しました — プロジェクト詳細から再フォークしてください）</string>
+    <string name="message_copy_saved_successfully">コピーを保存しました！</string>
+    <string name="message_copy_chart_failed">コピーを保存しました（編み図のコピーに失敗しました — プロジェクト詳細からもう一度お試しください）</string>
     <string name="action_decrement_row">段数を減らす</string>
     <string name="action_increment_row">段数を増やす</string>
 
@@ -336,8 +336,8 @@
     <string name="title_shared_pattern">共有パターン</string>
     <string name="state_pattern_not_found">パターンが見つかりません</string>
     <string name="state_could_not_load">読み込めませんでした</string>
-    <string name="state_view_only_share">閲覧のみ \u2014 このシェアではフォークが許可されていません</string>
-    <string name="action_fork_to_projects">マイプロジェクトにフォーク</string>
+    <string name="state_view_only_share">閲覧のみ \u2014 このシェアではコピーの保存が許可されていません</string>
+    <string name="action_save_copy_to_projects">マイプロジェクトにコピーを保存</string>
     <string name="label_projects">プロジェクト数</string>
 
     <!-- Shared with me screen -->
@@ -348,7 +348,7 @@
     <string name="label_from_user">%1$sから</string>
     <string name="label_shared_on">共有日: %1$s</string>
     <string name="label_permission_view">閲覧</string>
-    <string name="label_permission_fork">フォーク</string>
+    <string name="label_permission_save_copy">コピー</string>
     <string name="label_share_status_pending">保留中</string>
     <string name="label_share_status_declined">辞退済み</string>
     <string name="action_accept">承認</string>
@@ -363,7 +363,7 @@
     <string name="label_activity_completed_by">%1$sがプロジェクトを完了しました</string>
     <string name="label_activity_shared_by">%1$sがパターンを共有しました</string>
     <string name="label_activity_commented_by">%1$sがプロジェクトにコメントしました</string>
-    <string name="label_activity_forked_by">%1$sがパターンをフォークしました</string>
+    <string name="label_activity_copied_by">%1$sがパターンのコピーを保存しました</string>
     <string name="label_activity_created_by">%1$sが新しいパターンを作成しました</string>
 
     <!-- Comment section -->
@@ -416,24 +416,24 @@
     <string name="label_layers_section">レイヤー</string>
 
     <!-- Phase 37.2 chart commit history (ADR-013 §6) -->
-    <string name="title_chart_history">チャート履歴</string>
+    <string name="title_chart_history">編み図の履歴</string>
     <string name="state_no_chart_history">履歴がまだありません</string>
-    <string name="state_no_chart_history_body">保存したチャートのリビジョンがここに表示されます</string>
+    <string name="state_no_chart_history_body">保存した編み図のバージョンがここに表示されます</string>
     <string name="label_auto_save">自動保存</string>
-    <string name="label_initial_commit">最初のコミット</string>
-    <string name="action_restore_revision">新しいコミットとして復元</string>
-    <string name="dialog_restore_revision_title">このリビジョンを復元しますか？</string>
-    <string name="dialog_restore_revision_body">現在のtipの上にこのリビジョンの内容で新しいコミットを追加します。履歴は上書きされません。</string>
+    <string name="label_initial_version">最初のバージョン</string>
+    <string name="action_restore_version">新しいバージョンとして保存</string>
+    <string name="dialog_restore_version_title">このバージョンを復元しますか？</string>
+    <string name="dialog_restore_version_body">現在のバージョンの上にこのバージョンの内容で新しいバージョンを追加します。履歴は上書きされません。</string>
 
     <!-- Phase 37.3 chart diff view (ADR-013 §5 §6) -->
-    <string name="title_chart_diff">チャート差分</string>
-    <plurals name="label_diff_added">
+    <string name="title_chart_comparison">編み図の比較</string>
+    <plurals name="label_comparison_added">
         <item quantity="other">追加 %1$d</item>
     </plurals>
-    <plurals name="label_diff_modified">
+    <plurals name="label_comparison_modified">
         <item quantity="other">変更 %1$d</item>
     </plurals>
-    <plurals name="label_diff_removed">
+    <plurals name="label_comparison_removed">
         <item quantity="other">削除 %1$d</item>
     </plurals>
     <string name="label_layer_renamed">%1$s → %2$s</string>
@@ -443,71 +443,71 @@
     <string name="label_layer_unlocked">レイヤーのロック解除</string>
     <string name="label_layer_added">レイヤーを追加</string>
     <string name="label_layer_removed">レイヤーを削除</string>
-    <string name="state_no_changes">これらのリビジョン間に変更はありません</string>
+    <string name="state_no_changes">これらのバージョン間に変更はありません</string>
 
     <!-- Phase 37.4 branch picker + restore (ADR-013 §6 §7) -->
-    <string name="title_branch_picker">ブランチ</string>
-    <string name="action_create_branch">新しいブランチ</string>
-    <string name="dialog_create_branch_title">ブランチを作成</string>
-    <string name="label_branch_name">ブランチ名</string>
-    <string name="label_current_branch">現在</string>
-    <string name="state_no_branches">ブランチがまだありません</string>
+    <string name="title_variations">アレンジ</string>
+    <string name="action_create_variation">新しいアレンジ</string>
+    <string name="dialog_create_variation_title">アレンジを作成</string>
+    <string name="label_variation_name">アレンジ名</string>
+    <string name="label_current_variation">現在</string>
+    <string name="state_no_variations">アレンジがまだありません</string>
     <string name="action_switch">切り替え</string>
-    <string name="message_switched_to_branch">%1$sに切り替えました</string>
+    <string name="message_switched_to_variation">%1$sに切り替えました</string>
 
     <!-- Phase 38.2 pull request list (ADR-014 §6 §8) -->
-    <string name="title_pull_requests">プルリクエスト</string>
-    <string name="action_pull_requests">プルリクエストを開く</string>
-    <string name="label_filter_incoming">受信</string>
-    <string name="label_filter_outgoing">送信</string>
-    <string name="state_no_pull_requests">プルリクエストがまだありません</string>
-    <string name="state_no_pull_requests_body">フォークからの提案や上流パターンへの提案がここに表示されます</string>
-    <string name="label_pr_status_open">オープン</string>
-    <string name="label_pr_status_merged">マージ済み</string>
-    <string name="label_pr_status_closed">クローズ</string>
-    <string name="label_pr_authored_by">%1$sが作成</string>
+    <string name="title_suggestions">提案</string>
+    <string name="action_suggestions">提案を表示</string>
+    <string name="label_filter_received">受け取った</string>
+    <string name="label_filter_sent">送った</string>
+    <string name="state_no_suggestions">提案がまだありません</string>
+    <string name="state_no_suggestions_body">あなたへの提案、あなたが送った提案がここに表示されます</string>
+    <string name="label_suggestion_status_open">未対応</string>
+    <string name="label_suggestion_status_applied">反映済み</string>
+    <string name="label_suggestion_status_closed">クローズ</string>
+    <string name="label_suggestion_authored_by">%1$sが作成</string>
 
     <!-- Phase 38.3 pull request detail (ADR-014 §6 §8) -->
-    <string name="title_pull_request_detail">プルリクエスト</string>
-    <string name="label_pr_description">説明</string>
-    <string name="label_pr_diff_preview">提案された変更</string>
-    <string name="label_pr_comments">コメント</string>
-    <string name="hint_add_comment_to_pr">コメントを追加…</string>
+    <string name="title_suggestion_detail">提案</string>
+    <string name="label_suggestion_description">説明</string>
+    <string name="label_suggestion_changes_preview">提案された変更</string>
+    <string name="label_suggestion_comments">コメント</string>
+    <string name="hint_add_comment_to_suggestion">コメントを追加…</string>
     <string name="action_post_comment">投稿</string>
-    <string name="action_merge_pr">マージ</string>
-    <string name="action_close_pr">クローズ</string>
-    <string name="dialog_merge_pr_title">このプルリクエストをマージしますか？</string>
-    <string name="dialog_merge_pr_body">投稿者の変更が新しいコミットとしてブランチに反映されます。コンフリクト解決はPhase 38.4で対応予定です。</string>
-    <string name="dialog_close_pr_title">このプルリクエストをクローズしますか？</string>
-    <string name="dialog_close_pr_body">クローズしてもコメントは残りますが、変更は上流のチャートには反映されません。投稿者は後で新しいプルリクエストを開くことができます。</string>
-    <string name="state_pr_not_found">プルリクエストが見つかりません</string>
-    <string name="message_pr_closed_successfully">プルリクエストをクローズしました</string>
+    <string name="action_apply_suggestion">変更を反映</string>
+    <string name="action_close_suggestion">クローズ</string>
+    <string name="dialog_apply_suggestion_title">この提案を反映しますか？</string>
+    <string name="dialog_apply_suggestion_body">投稿者の変更が新しいバージョンとしてアレンジに反映されます。コンフリクト解決はPhase 38.4で対応予定です。</string>
+    <string name="dialog_close_suggestion_title">この提案をクローズしますか？</string>
+    <string name="dialog_close_suggestion_body">クローズしてもコメントは残りますが、変更は元の編み図には反映されません。投稿者は後で新しい提案を送ることができます。</string>
+    <string name="state_suggestion_not_found">提案が見つかりません</string>
+    <string name="message_suggestion_closed_successfully">提案をクローズしました</string>
 
     <!-- Phase 38.4 conflict resolution + merge (ADR-014 §4 §5 §6 §8). -->
-    <string name="title_resolve_conflicts">コンフリクトの解決</string>
+    <string name="title_resolve_conflicts">重複の解決</string>
     <plurals name="label_conflict_summary">
-        <item quantity="other">解決が必要なコンフリクト: %1$d 件</item>
+        <item quantity="other">解決が必要な重複: %1$d 件</item>
     </plurals>
     <string name="label_conflict_layer">レイヤー: %1$s</string>
     <string name="label_conflict_cell">セル (%1$d, %2$d)</string>
-    <string name="action_take_theirs">相手側を採用</string>
-    <string name="action_keep_mine">自分側を維持</string>
+    <string name="action_use_contributors">相手側を採用</string>
+    <string name="action_use_mine">自分側を維持</string>
     <string name="action_skip_conflict">スキップ</string>
-    <string name="action_apply_and_merge">適用してマージ</string>
-    <string name="state_all_conflicts_resolved">すべてのコンフリクトが解決されました</string>
-    <string name="message_pr_merged_successfully">プルリクエストをマージしました</string>
+    <string name="action_apply_changes">変更を反映</string>
+    <string name="state_all_conflicts_resolved">すべての重複が解決されました</string>
+    <string name="message_suggestion_applied_successfully">提案を反映しました</string>
 
     <!-- Phase 38.4.1 (ADR-014 §6) — Open pull request entry. EN source has the
          design rationale block. JA: 「プルリクエストを作成」reads more naturally
          than the literal「プルリクエストを開く」for the action verb (matches the
          Japanese GitHub UI's standard rendering). -->
-    <string name="action_open_pull_request">プルリクエストを作成</string>
-    <string name="dialog_open_pull_request_title">プルリクエストを作成</string>
-    <string name="label_pr_title">タイトル</string>
-    <string name="hint_pr_title">チャートへの変更を提案…</string>
-    <string name="hint_pr_description_optional">パターンオーナーへの補足メモ（任意）…</string>
-    <string name="action_open_pr">作成</string>
-    <string name="message_pr_opened_successfully">プルリクエストを作成しました</string>
+    <string name="action_send_suggestion">変更を提案</string>
+    <string name="dialog_send_suggestion_title">変更を提案</string>
+    <string name="label_suggestion_title">タイトル</string>
+    <string name="hint_suggestion_title">編み図への変更を提案…</string>
+    <string name="hint_suggestion_description_optional">パターンオーナーへの補足メモ（任意）…</string>
+    <string name="action_send">送信</string>
+    <string name="message_suggestion_sent_successfully">提案を送信しました</string>
 
     <!-- Phase 41.3b (ADR-016 §5.1) — paywall sheet copy. EN source has the
          full design rationale block. JA notes:
@@ -565,12 +565,12 @@
     <string name="title_locked_symbol">Pro シンボル</string>
     <!-- Phase 24.2c (ADR-017 §3.6) — プッシュ通知の許可 UX。 -->
     <string name="label_notifications_settings_row">通知</string>
-    <string name="body_notifications_setting_explanation">プルリクエストの作成・コメント・マージなどコラボの動きをお知らせします。</string>
+    <string name="body_notifications_setting_explanation">提案の送信・コメント・反映などコラボの動きをお知らせします。</string>
     <string name="state_notifications_enabled">オン</string>
     <string name="state_notifications_disabled">オフ</string>
     <string name="body_notifications_disabled_hint">設定から通知をオンにできます。</string>
     <string name="title_notifications_explainer">コラボの動きを見逃さない</string>
-    <string name="body_notifications_explainer">プルリクエストの作成・コメント・マージなどコラボの動きをお知らせします。設定からいつでも変更できます。</string>
+    <string name="body_notifications_explainer">提案の送信・コメント・反映などコラボの動きをお知らせします。設定からいつでも変更できます。</string>
     <string name="action_enable_notifications">オンにする</string>
     <string name="action_not_now_notifications">あとで</string>
     <string name="action_open_os_settings">設定を開く</string>

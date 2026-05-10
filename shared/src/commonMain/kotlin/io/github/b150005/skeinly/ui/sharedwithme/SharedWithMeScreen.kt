@@ -41,7 +41,7 @@ import io.github.b150005.skeinly.generated.resources.action_accept
 import io.github.b150005.skeinly.generated.resources.action_back
 import io.github.b150005.skeinly.generated.resources.action_decline
 import io.github.b150005.skeinly.generated.resources.label_from_user
-import io.github.b150005.skeinly.generated.resources.label_permission_fork
+import io.github.b150005.skeinly.generated.resources.label_permission_save_copy
 import io.github.b150005.skeinly.generated.resources.label_permission_view
 import io.github.b150005.skeinly.generated.resources.label_share_status_declined
 import io.github.b150005.skeinly.generated.resources.label_share_status_pending
@@ -166,7 +166,7 @@ private fun ShareListItem(
         stringResource(
             when (share.permission) {
                 SharePermission.VIEW -> Res.string.label_permission_view
-                SharePermission.FORK -> Res.string.label_permission_fork
+                SharePermission.FORK -> Res.string.label_permission_save_copy
             },
         )
 

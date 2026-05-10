@@ -1,9 +1,9 @@
 package io.github.b150005.skeinly.domain.usecase
 
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestStatus
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionStatus
 import io.github.b150005.skeinly.domain.repository.AuthRepository
-import io.github.b150005.skeinly.domain.repository.PullRequestRepository
+import io.github.b150005.skeinly.domain.repository.SuggestionRepository
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
@@ -17,7 +17,7 @@ import kotlin.coroutines.cancellation.CancellationException
  * signed in.
  *
  * **The "is caller authorized to close" check stays at the UI layer** —
- * `PullRequestDetailViewModel` resolves `targetOwnerId` from the target
+ * `SuggestionDetailViewModel` resolves `targetOwnerId` from the target
  * pattern and gates the close button on `currentUserId == authorId ||
  * currentUserId == targetOwnerId`. Adding the same check here would force
  * the use case to take a `PatternRepository` dependency for a check the
@@ -30,16 +30,16 @@ import kotlin.coroutines.cancellation.CancellationException
  * owner can briefly observe their own local cache as CLOSED — until the
  * sync attempt fails RLS and either Realtime corrects the cache from a
  * peer write, or the user re-fetches. This matches every other write path
- * in the repo (see `closePullRequest` in `PullRequestRepositoryImpl` for
+ * in the repo (see `closeSuggestion` in `SuggestionRepositoryImpl` for
  * the offline-tolerance baseline). Surfacing this as a server-trip-required
  * use case would forfeit the offline-first contract.
  */
-class ClosePullRequestUseCase(
-    private val repository: PullRequestRepository,
+class CloseSuggestionUseCase(
+    private val repository: SuggestionRepository,
     private val authRepository: AuthRepository,
 ) {
-    suspend operator fun invoke(pullRequest: PullRequest): UseCaseResult<PullRequest> {
-        if (pullRequest.status != PullRequestStatus.OPEN) {
+    suspend operator fun invoke(suggestion: Suggestion): UseCaseResult<Suggestion> {
+        if (suggestion.status != SuggestionStatus.OPEN) {
             return UseCaseResult.Failure(
                 UseCaseError.OperationNotAllowed,
             )
@@ -50,7 +50,7 @@ class ClosePullRequestUseCase(
             )
         }
         return try {
-            UseCaseResult.Success(repository.closePullRequest(pullRequest))
+            UseCaseResult.Success(repository.closeSuggestion(suggestion))
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

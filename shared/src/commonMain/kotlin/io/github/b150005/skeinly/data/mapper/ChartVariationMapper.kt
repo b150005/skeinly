@@ -1,11 +1,11 @@
 package io.github.b150005.skeinly.data.mapper
 
-import io.github.b150005.skeinly.db.ChartBranchEntity
-import io.github.b150005.skeinly.domain.model.ChartBranch
+import io.github.b150005.skeinly.db.ChartVariationEntity
+import io.github.b150005.skeinly.domain.model.ChartVariation
 import kotlin.time.Instant
 
-internal fun ChartBranchEntity.toDomain(): ChartBranch =
-    ChartBranch(
+internal fun ChartVariationEntity.toDomain(): ChartVariation =
+    ChartVariation(
         id = id,
         patternId = pattern_id,
         ownerId = owner_id,

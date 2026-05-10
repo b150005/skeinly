@@ -152,7 +152,7 @@ async function routePayload(
         return [];
     }
 
-    if (payload.table === "pull_requests" && payload.type === "INSERT") {
+    if (payload.table === "suggestions" && payload.type === "INSERT") {
         const row = payload.record as unknown as PullRequestRow;
         const ctx = await resolvePullRequestContext(supabase, row);
         if (!ctx) return [];
@@ -164,7 +164,7 @@ async function routePayload(
         );
     }
 
-    if (payload.table === "pull_requests" && payload.type === "UPDATE") {
+    if (payload.table === "suggestions" && payload.type === "UPDATE") {
         const row = payload.record as unknown as PullRequestRow;
         const oldRow = (payload.old_record ?? null) as unknown as PullRequestRow | null;
         // Skip the cheap path: if status didn't change, no notification.
@@ -191,7 +191,7 @@ async function routePayload(
         );
     }
 
-    if (payload.table === "pull_request_comments" && payload.type === "INSERT") {
+    if (payload.table === "suggestion_comments" && payload.type === "INSERT") {
         const comment = payload.record as unknown as PullRequestCommentRow;
         const ctx = await resolveCommentContext(supabase, comment);
         if (!ctx) return [];
@@ -265,7 +265,7 @@ async function resolveCommentContext(
     comment: PullRequestCommentRow,
 ): Promise<CommentContext | null> {
     const { data: pr, error: prError } = await supabase
-        .from("pull_requests")
+        .from("suggestions")
         .select("author_id, target_pattern_id, title")
         .eq("id", comment.pull_request_id)
         .maybeSingle();

@@ -3,10 +3,10 @@ package io.github.b150005.skeinly.ui.chart
 import io.github.b150005.skeinly.domain.model.ChartCell
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
-import io.github.b150005.skeinly.domain.model.ChartRevision
+import io.github.b150005.skeinly.domain.model.ChartVersion
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import io.github.b150005.skeinly.domain.repository.ChartRevisionRepository
+import io.github.b150005.skeinly.domain.repository.ChartVersionRepository
 import io.github.b150005.skeinly.domain.usecase.GetChartHistoryUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,12 +30,12 @@ import kotlin.time.Instant
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChartHistoryViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
-    private lateinit var fakeRepo: FakeChartRevisionRepository
+    private lateinit var fakeRepo: FakeChartVersionRepository
 
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        fakeRepo = FakeChartRevisionRepository()
+        fakeRepo = FakeChartVersionRepository()
     }
 
     @AfterTest
@@ -50,8 +50,8 @@ class ChartHistoryViewModelTest {
         parentRevisionId: String? = null,
         commitMessage: String? = null,
         createdAtIso: String = "2026-04-25T10:00:00Z",
-    ): ChartRevision =
-        ChartRevision(
+    ): ChartVersion =
+        ChartVersion(
             id = id,
             patternId = patternId,
             ownerId = "user-1",
@@ -218,18 +218,18 @@ class ChartHistoryViewModelTest {
 /**
  * Per-patternId in-memory fake. Each `MutableStateFlow` is the live source the
  * use case observes — `setHistory` mutates the flow value to simulate a peer
- * device append landing through Realtime in [ChartRevisionRepositoryImpl].
+ * device append landing through Realtime in [ChartVersionRepositoryImpl].
  *
  * `setObserveError` replaces the next observe call's flow with a flow that
  * throws synchronously on collect, exercising the ViewModel's `catch` branch.
  */
-private class FakeChartRevisionRepository : ChartRevisionRepository {
-    private val perPattern = mutableMapOf<String, MutableStateFlow<List<ChartRevision>>>()
+private class FakeChartVersionRepository : ChartVersionRepository {
+    private val perPattern = mutableMapOf<String, MutableStateFlow<List<ChartVersion>>>()
     private var nextObserveError: Throwable? = null
 
     fun setHistory(
         patternId: String,
-        revisions: List<ChartRevision>,
+        revisions: List<ChartVersion>,
     ) {
         perPattern.getOrPut(patternId) { MutableStateFlow(emptyList()) }.value = revisions
     }
@@ -238,7 +238,7 @@ private class FakeChartRevisionRepository : ChartRevisionRepository {
         nextObserveError = error
     }
 
-    override suspend fun getRevision(revisionId: String): ChartRevision? =
+    override suspend fun getRevision(revisionId: String): ChartVersion? =
         perPattern.values
             .flatMap { it.value }
             .firstOrNull { it.revisionId == revisionId }
@@ -247,14 +247,14 @@ private class FakeChartRevisionRepository : ChartRevisionRepository {
         patternId: String,
         limit: Int,
         offset: Int,
-    ): List<ChartRevision> =
+    ): List<ChartVersion> =
         perPattern[patternId]
             ?.value
             .orEmpty()
             .drop(offset)
             .take(limit)
 
-    override fun observeHistoryForPattern(patternId: String): Flow<List<ChartRevision>> {
+    override fun observeHistoryForPattern(patternId: String): Flow<List<ChartVersion>> {
         val pending = nextObserveError
         if (pending != null) {
             nextObserveError = null
@@ -263,7 +263,7 @@ private class FakeChartRevisionRepository : ChartRevisionRepository {
         return perPattern.getOrPut(patternId) { MutableStateFlow(emptyList()) }
     }
 
-    override suspend fun append(revision: ChartRevision): ChartRevision {
+    override suspend fun append(revision: ChartVersion): ChartVersion {
         val flow = perPattern.getOrPut(revision.patternId) { MutableStateFlow(emptyList()) }
         flow.value = listOf(revision) + flow.value
         return revision

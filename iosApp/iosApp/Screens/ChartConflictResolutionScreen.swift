@@ -66,7 +66,7 @@ struct ChartConflictResolutionScreen: View {
             }
             .overlay(alignment: .bottom) {
                 if pendingMergedToast {
-                    Text(LocalizedStringKey("message_pr_merged_successfully"))
+                    Text(LocalizedStringKey("message_suggestion_applied_successfully"))
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
                         .background(.regularMaterial)
@@ -82,7 +82,7 @@ struct ChartConflictResolutionScreen: View {
                     Task { @MainActor in
                         if event is ChartConflictResolutionNavEventMergeApplied {
                             withAnimation { pendingMergedToast = true }
-                            announceToVoiceOver(messageKey: "message_pr_merged_successfully")
+                            announceToVoiceOver(messageKey: "message_suggestion_applied_successfully")
                             try? await Task.sleep(nanoseconds: 1_500_000_000)
                             withAnimation { pendingMergedToast = false }
                             // Pop back to the PR detail screen — Realtime
@@ -225,13 +225,13 @@ struct ChartConflictResolutionScreen: View {
         HStack(spacing: 8) {
             pickerButton(
                 isSelected: pick == .takeTheirs,
-                label: LocalizedStringKey("action_take_theirs"),
+                label: LocalizedStringKey("action_use_contributors"),
                 tag: takeTheirsTag,
                 onTap: { onPick(.takeTheirs) }
             )
             pickerButton(
                 isSelected: pick == .keepMine,
-                label: LocalizedStringKey("action_keep_mine"),
+                label: LocalizedStringKey("action_use_mine"),
                 tag: keepMineTag,
                 onTap: { onPick(.keepMine) }
             )
@@ -260,7 +260,7 @@ struct ChartConflictResolutionScreen: View {
     private func applyAndMergeBar(state: ChartConflictResolutionState) -> some View {
         HStack {
             Spacer()
-            Button(LocalizedStringKey("action_apply_and_merge")) {
+            Button(LocalizedStringKey("action_apply_changes")) {
                 viewModel.onEvent(event: ChartConflictResolutionEventApplyAndMerge.shared)
             }
             .buttonStyle(.borderedProminent)

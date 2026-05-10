@@ -1,6 +1,7 @@
 package io.github.b150005.skeinly.domain.usecase
 
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
@@ -10,7 +11,6 @@ import io.github.b150005.skeinly.domain.model.Pattern
 import io.github.b150005.skeinly.domain.model.ProjectStatus
 import io.github.b150005.skeinly.domain.model.ReadingConvention
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import io.github.b150005.skeinly.domain.model.StructuredChart
 import io.github.b150005.skeinly.domain.model.Visibility
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -23,7 +23,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
-class ForkPublicPatternUseCaseTest {
+class SavePublicPatternToLibraryUseCaseTest {
     private val publicPattern =
         Pattern(
             id = "pub-1",
@@ -42,12 +42,12 @@ class ForkPublicPatternUseCaseTest {
 
     private val privatePattern = publicPattern.copy(id = "priv-1", visibility = Visibility.PRIVATE)
 
-    private fun chartFor(patternId: String): StructuredChart =
-        StructuredChart(
+    private fun chartFor(patternId: String): Chart =
+        Chart(
             id = "chart-$patternId",
             patternId = patternId,
             ownerId = "other-user",
-            schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+            schemaVersion = Chart.CURRENT_SCHEMA_VERSION,
             storageVariant = StorageVariant.INLINE,
             coordinateSystem = CoordinateSystem.RECT_GRID,
             extents = ChartExtents.Rect(minX = 0, maxX = 0, minY = 0, maxY = 0),
@@ -64,9 +64,9 @@ class ForkPublicPatternUseCaseTest {
     private fun createUseCase(
         patternRepo: FakePatternRepository = FakePatternRepository(),
         projectRepo: FakeProjectRepository = FakeProjectRepository(),
-        chartRepo: FakeStructuredChartRepository = FakeStructuredChartRepository(),
+        chartRepo: FakeChartRepository = FakeChartRepository(),
         authRepo: FakeAuthRepository = FakeAuthRepository(),
-    ) = ForkPublicPatternUseCase(patternRepo, projectRepo, chartRepo, authRepo)
+    ) = SavePublicPatternToLibraryUseCase(patternRepo, projectRepo, chartRepo, authRepo)
 
     @Test
     fun `returns SignInRequired failure when not authenticated`() =
@@ -183,7 +183,7 @@ class ForkPublicPatternUseCaseTest {
             authRepo.setAuthState(AuthState.Authenticated("user-1", "test@test.com"))
             val patternRepo = FakePatternRepository()
             patternRepo.create(publicPattern)
-            val chartRepo = FakeStructuredChartRepository()
+            val chartRepo = FakeChartRepository()
             chartRepo.seed(chartFor("pub-1"))
             val useCase = createUseCase(patternRepo = patternRepo, chartRepo = chartRepo, authRepo = authRepo)
 
@@ -209,7 +209,7 @@ class ForkPublicPatternUseCaseTest {
             authRepo.setAuthState(AuthState.Authenticated("user-1", "test@test.com"))
             val patternRepo = FakePatternRepository()
             patternRepo.create(publicPattern)
-            val chartRepo = FakeStructuredChartRepository() // no chart seeded
+            val chartRepo = FakeChartRepository() // no chart seeded
             val useCase = createUseCase(patternRepo = patternRepo, chartRepo = chartRepo, authRepo = authRepo)
 
             val result = useCase("pub-1")
@@ -230,7 +230,7 @@ class ForkPublicPatternUseCaseTest {
             val patternRepo = FakePatternRepository()
             patternRepo.create(publicPattern)
             val projectRepo = FakeProjectRepository()
-            val chartRepo = FakeStructuredChartRepository()
+            val chartRepo = FakeChartRepository()
             chartRepo.seed(chartFor("pub-1"))
             chartRepo.failNext = RuntimeException("transient storage error")
             val useCase =

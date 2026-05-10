@@ -56,7 +56,7 @@ struct PullRequestListScreen: View {
         contentView
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("pullRequestListScreen")
-            .navigationTitle(LocalizedStringKey("title_pull_requests"))
+            .navigationTitle(LocalizedStringKey("title_suggestions"))
             .navigationBarTitleDisplayMode(.inline)
             .onChange(of: holder.state.error != nil) { _, hasError in
             showError = hasError
@@ -134,9 +134,9 @@ struct PullRequestListScreen: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if state.pullRequests.isEmpty {
                 ContentUnavailableView(
-                    LocalizedStringKey("state_no_pull_requests"),
+                    LocalizedStringKey("state_no_suggestions"),
                     systemImage: "tray",
-                    description: Text(LocalizedStringKey("state_no_pull_requests_body"))
+                    description: Text(LocalizedStringKey("state_no_suggestions_body"))
                 )
             } else {
                 // Group by status — OPEN first, then MERGED, then CLOSED.
@@ -162,7 +162,7 @@ struct PullRequestListScreen: View {
     private func filterChipRow(current: PullRequestFilter) -> some View {
         HStack(spacing: 8) {
             FilterChipButton(
-                title: LocalizedStringKey("label_filter_incoming"),
+                title: LocalizedStringKey("label_filter_received"),
                 identifier: "incomingFilterChip",
                 isSelected: current == .incoming,
                 onTap: {
@@ -172,7 +172,7 @@ struct PullRequestListScreen: View {
                 }
             )
             FilterChipButton(
-                title: LocalizedStringKey("label_filter_outgoing"),
+                title: LocalizedStringKey("label_filter_sent"),
                 identifier: "outgoingFilterChip",
                 isSelected: current == .outgoing,
                 onTap: {
@@ -254,7 +254,7 @@ private struct PullRequestRow: View {
         //  - the user-record lookup missed (cold-launch / account deleted), OR
         //  - the PR row's authorId is itself null.
         let resolved = authorName ?? NSLocalizedString("label_someone", comment: "")
-        return String(format: NSLocalizedString("label_pr_authored_by", comment: ""), resolved)
+        return String(format: NSLocalizedString("label_suggestion_authored_by", comment: ""), resolved)
     }
 
     private var formattedDate: String {
@@ -280,9 +280,9 @@ private struct PullRequestStatusBadge: View {
 
     private var statusKey: String {
         switch status {
-        case .open: return "label_pr_status_open"
-        case .merged: return "label_pr_status_merged"
-        case .closed: return "label_pr_status_closed"
+        case .open: return "label_suggestion_status_open"
+        case .merged: return "label_suggestion_status_applied"
+        case .closed: return "label_suggestion_status_closed"
         // `default` forced by Kotlin enum→ObjC bridging. Returns the raw
         // case name (locale-neutral, non-empty) so a future PullRequestStatus
         // addition without a matching Swift switch update surfaces visibly

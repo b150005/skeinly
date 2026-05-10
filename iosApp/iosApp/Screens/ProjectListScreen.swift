@@ -131,7 +131,7 @@ struct ProjectListScreen: View {
                     Divider()
 
                     Button { path.append(Route.discovery) } label: {
-                        Label(LocalizedStringKey("action_discover_patterns"), systemImage: "globe")
+                        Label(LocalizedStringKey("action_browse_patterns"), systemImage: "globe")
                     }
                     .accessibilityIdentifier("discoverPatternsButton")
                     Button { path.append(Route.patternLibrary) } label: {
@@ -153,7 +153,7 @@ struct ProjectListScreen: View {
                     Button {
                         path.append(Route.pullRequestList(defaultFilter: .incoming))
                     } label: {
-                        Label(LocalizedStringKey("action_pull_requests"), systemImage: "bubble.left.and.bubble.right")
+                        Label(LocalizedStringKey("action_suggestions"), systemImage: "bubble.left.and.bubble.right")
                     }
                     .accessibilityIdentifier("pullRequestsButton")
                     Button { path.append(Route.sharedWithMe) } label: {

@@ -8,7 +8,7 @@
 -- (history outlives author account deletion). Local writes always populate
 -- it; null only appears after a remote-side cascade.
 
-CREATE TABLE ChartRevisionEntity (
+CREATE TABLE ChartVersionEntity (
     id TEXT NOT NULL PRIMARY KEY,
     pattern_id TEXT NOT NULL,
     owner_id TEXT NOT NULL,
@@ -27,34 +27,34 @@ CREATE TABLE ChartRevisionEntity (
 );
 
 CREATE INDEX IF NOT EXISTS idx_chart_revisions_pattern_id_created_at
-    ON ChartRevisionEntity(pattern_id, created_at DESC);
+    ON ChartVersionEntity(pattern_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_chart_revisions_revision_id
-    ON ChartRevisionEntity(revision_id);
+    ON ChartVersionEntity(revision_id);
 
 -- No `update` query — revisions are immutable once written.
 
 getById:
-SELECT * FROM ChartRevisionEntity WHERE id = ?;
+SELECT * FROM ChartVersionEntity WHERE id = ?;
 
 getByRevisionId:
-SELECT * FROM ChartRevisionEntity WHERE revision_id = ?;
+SELECT * FROM ChartVersionEntity WHERE revision_id = ?;
 
 getHistoryForPattern:
-SELECT * FROM ChartRevisionEntity
+SELECT * FROM ChartVersionEntity
 WHERE pattern_id = ?
 ORDER BY created_at DESC
 LIMIT ? OFFSET ?;
 
 observeHistoryForPattern:
-SELECT * FROM ChartRevisionEntity
+SELECT * FROM ChartVersionEntity
 WHERE pattern_id = ?
 ORDER BY created_at DESC;
 
 countForPattern:
-SELECT COUNT(*) FROM ChartRevisionEntity WHERE pattern_id = ?;
+SELECT COUNT(*) FROM ChartVersionEntity WHERE pattern_id = ?;
 
 insert:
-INSERT INTO ChartRevisionEntity(
+INSERT INTO ChartVersionEntity(
     id,
     pattern_id,
     owner_id,
@@ -75,7 +75,7 @@ INSERT INTO ChartRevisionEntity(
 -- through chart-revisions-<ownerId>). UNIQUE(pattern_id, revision_id) is
 -- the dedup key.
 upsert:
-INSERT OR IGNORE INTO ChartRevisionEntity(
+INSERT OR IGNORE INTO ChartVersionEntity(
     id,
     pattern_id,
     owner_id,
@@ -92,4 +92,4 @@ INSERT OR IGNORE INTO ChartRevisionEntity(
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 deleteByPatternId:
-DELETE FROM ChartRevisionEntity WHERE pattern_id = ?;
+DELETE FROM ChartVersionEntity WHERE pattern_id = ?;

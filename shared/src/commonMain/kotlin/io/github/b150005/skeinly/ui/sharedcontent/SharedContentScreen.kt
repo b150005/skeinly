@@ -35,7 +35,7 @@ import io.github.b150005.skeinly.domain.model.Pattern
 import io.github.b150005.skeinly.domain.model.SharePermission
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_back
-import io.github.b150005.skeinly.generated.resources.action_fork_to_projects
+import io.github.b150005.skeinly.generated.resources.action_save_copy_to_projects
 import io.github.b150005.skeinly.generated.resources.label_difficulty
 import io.github.b150005.skeinly.generated.resources.label_gauge
 import io.github.b150005.skeinly.generated.resources.label_needle_size
@@ -192,7 +192,7 @@ private fun PatternContent(
                         strokeWidth = 2.dp,
                     )
                 } else {
-                    Text(stringResource(Res.string.action_fork_to_projects))
+                    Text(stringResource(Res.string.action_save_copy_to_projects))
                 }
             }
         } else {

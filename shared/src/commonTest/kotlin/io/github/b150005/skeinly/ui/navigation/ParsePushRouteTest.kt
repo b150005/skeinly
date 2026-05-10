@@ -18,16 +18,16 @@ import kotlin.test.assertTrue
  */
 class ParsePushRouteTest {
     @Test
-    fun `pull-request route resolves to PullRequestDetail with prId`() {
+    fun `pull-request route resolves to SuggestionDetail with prId`() {
         val target = parsePushRoute("pull-request/abc-123")
-        assertTrue(target is PullRequestDetail)
+        assertTrue(target is SuggestionDetail)
         assertEquals("abc-123", target.prId)
     }
 
     @Test
     fun `pull-request route preserves uuid-shaped prId verbatim`() {
         val target = parsePushRoute("pull-request/00000000-0000-0000-0000-000000000001")
-        assertTrue(target is PullRequestDetail)
+        assertTrue(target is SuggestionDetail)
         assertEquals("00000000-0000-0000-0000-000000000001", target.prId)
     }
 
@@ -35,7 +35,7 @@ class ParsePushRouteTest {
     fun `pull-request route with empty prId returns null`() {
         // Defense against the Edge Function ever emitting a malformed
         // route — a tap should silently no-op rather than navigate to
-        // a PullRequestDetail with an empty id (which would crash
+        // a SuggestionDetail with an empty id (which would crash
         // downstream queries).
         assertNull(parsePushRoute("pull-request/"))
     }
@@ -62,7 +62,7 @@ class ParsePushRouteTest {
         // the entire post-prefix tail rather than only the segment up
         // to the next slash.
         val target = parsePushRoute("pull-request/foo/bar")
-        assertTrue(target is PullRequestDetail)
+        assertTrue(target is SuggestionDetail)
         assertEquals("foo/bar", target.prId)
     }
 }

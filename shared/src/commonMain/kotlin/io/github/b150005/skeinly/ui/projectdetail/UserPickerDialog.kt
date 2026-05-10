@@ -35,7 +35,7 @@ import io.github.b150005.skeinly.generated.resources.action_share
 import io.github.b150005.skeinly.generated.resources.dialog_share_with_user_title
 import io.github.b150005.skeinly.generated.resources.label_no_name
 import io.github.b150005.skeinly.generated.resources.label_permission
-import io.github.b150005.skeinly.generated.resources.label_permission_fork
+import io.github.b150005.skeinly.generated.resources.label_permission_save_copy
 import io.github.b150005.skeinly.generated.resources.label_permission_view
 import io.github.b150005.skeinly.generated.resources.label_search_by_name
 import io.github.b150005.skeinly.generated.resources.label_selected_prefix
@@ -128,7 +128,7 @@ fun UserPickerDialog(
                     FilterChip(
                         selected = selectedPermission == SharePermission.FORK,
                         onClick = { selectedPermission = SharePermission.FORK },
-                        label = { Text(stringResource(Res.string.label_permission_fork)) },
+                        label = { Text(stringResource(Res.string.label_permission_save_copy)) },
                     )
                 }
             }

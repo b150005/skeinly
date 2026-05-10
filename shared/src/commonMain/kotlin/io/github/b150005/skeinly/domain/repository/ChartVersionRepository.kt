@@ -1,6 +1,6 @@
 package io.github.b150005.skeinly.domain.repository
 
-import io.github.b150005.skeinly.domain.model.ChartRevision
+import io.github.b150005.skeinly.domain.model.ChartVersion
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -8,14 +8,14 @@ import kotlinx.coroutines.flow.Flow
  *
  * Phase 37.1 reads:
  * - [getRevision] resolves a single revision by its commit identifier; used by
- *   [io.github.b150005.skeinly.domain.usecase.GetChartDiffUseCase] (Phase 37.3) and
+ *   [io.github.b150005.skeinly.domain.usecase.GetChartComparisonUseCase] (Phase 37.3) and
  *   the diff screen's load path.
  * - [getHistoryForPattern] / [observeHistoryForPattern] feed
  *   `ChartHistoryViewModel` (Phase 37.2) with newest-first revision lists.
  *
  * Phase 37.1 writes:
  * - [append] inserts a new immutable revision row. Called by
- *   `StructuredChartRepository.update` BEFORE its tip update; the revision
+ *   `ChartRepository.update` BEFORE its tip update; the revision
  *   row is part of the same logical save and is queued through PendingSync
  *   in lock-step with the tip.
  *
@@ -23,18 +23,18 @@ import kotlinx.coroutines.flow.Flow
  * Git's append-only history invariant. Cleanup happens transitively via
  * `pattern_id` ON DELETE CASCADE in migration 015.
  */
-interface ChartRevisionRepository {
-    suspend fun getRevision(revisionId: String): ChartRevision?
+interface ChartVersionRepository {
+    suspend fun getRevision(revisionId: String): ChartVersion?
 
     suspend fun getHistoryForPattern(
         patternId: String,
         limit: Int = DEFAULT_LIMIT,
         offset: Int = 0,
-    ): List<ChartRevision>
+    ): List<ChartVersion>
 
-    fun observeHistoryForPattern(patternId: String): Flow<List<ChartRevision>>
+    fun observeHistoryForPattern(patternId: String): Flow<List<ChartVersion>>
 
-    suspend fun append(revision: ChartRevision): ChartRevision
+    suspend fun append(revision: ChartVersion): ChartVersion
 
     companion object {
         const val DEFAULT_LIMIT: Int = 50

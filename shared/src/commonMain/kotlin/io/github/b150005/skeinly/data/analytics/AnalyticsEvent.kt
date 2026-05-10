@@ -120,7 +120,7 @@ sealed interface AnalyticsEvent {
     }
 
     /** A pull request was opened. [chartFormat] tracks adoption by chart type. */
-    data class PullRequestOpened(
+    data class SuggestionOpened(
         val chartFormat: ChartFormat,
     ) : AnalyticsEvent {
         override val name: String get() = "pull_request_opened"
@@ -129,7 +129,7 @@ sealed interface AnalyticsEvent {
     }
 
     /** A pull request was closed (loop completion vs abandonment). No properties. */
-    data object PullRequestClosed : AnalyticsEvent {
+    data object SuggestionClosed : AnalyticsEvent {
         override val name: String = "pull_request_closed"
         override val properties: Map<String, Any>? = null
     }
@@ -139,7 +139,7 @@ sealed interface AnalyticsEvent {
      * auto-clean fast-forward path (`false`) from the conflict-resolution
      * path (`true`) so we can measure conflict frequency in production.
      */
-    data class PullRequestMerged(
+    data class SuggestionMerged(
         val hadConflicts: Boolean,
     ) : AnalyticsEvent {
         override val name: String get() = "pull_request_merged"
@@ -148,7 +148,7 @@ sealed interface AnalyticsEvent {
     }
 
     /** A pull request received a comment. */
-    data object PullRequestCommented : AnalyticsEvent {
+    data object SuggestionCommented : AnalyticsEvent {
         override val name: String = "pull_request_commented"
         override val properties: Map<String, Any>? = null
     }

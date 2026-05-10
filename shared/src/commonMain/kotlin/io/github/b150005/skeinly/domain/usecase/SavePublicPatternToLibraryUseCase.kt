@@ -6,18 +6,18 @@ import io.github.b150005.skeinly.domain.model.Project
 import io.github.b150005.skeinly.domain.model.ProjectStatus
 import io.github.b150005.skeinly.domain.model.Visibility
 import io.github.b150005.skeinly.domain.repository.AuthRepository
+import io.github.b150005.skeinly.domain.repository.ChartRepository
 import io.github.b150005.skeinly.domain.repository.PatternRepository
 import io.github.b150005.skeinly.domain.repository.ProjectRepository
-import io.github.b150005.skeinly.domain.repository.StructuredChartRepository
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-class ForkPublicPatternUseCase(
+class SavePublicPatternToLibraryUseCase(
     private val patternRepository: PatternRepository,
     private val projectRepository: ProjectRepository,
-    private val structuredChartRepository: StructuredChartRepository,
+    private val chartRepository: ChartRepository,
     private val authRepository: AuthRepository,
     private val createActivity: CreateActivityUseCase? = null,
 ) {
@@ -67,7 +67,7 @@ class ForkPublicPatternUseCase(
             val chartCloneResult: Result<Boolean> =
                 try {
                     val cloned =
-                        structuredChartRepository.forkFor(
+                        chartRepository.forkFor(
                             sourcePatternId = sourcePattern.id,
                             newPatternId = forkedPattern.id,
                             newOwnerId = userId,

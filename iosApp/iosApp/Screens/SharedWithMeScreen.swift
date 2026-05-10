@@ -124,7 +124,7 @@ private struct ShareRow: View {
 
     private var permissionLabelKey: LocalizedStringKey {
         share.permission == .fork
-            ? LocalizedStringKey("label_permission_fork")
+            ? LocalizedStringKey("label_permission_save_copy")
             : LocalizedStringKey("label_permission_view")
     }
 

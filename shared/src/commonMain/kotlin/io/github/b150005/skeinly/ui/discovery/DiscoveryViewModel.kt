@@ -10,8 +10,8 @@ import io.github.b150005.skeinly.domain.model.Difficulty
 import io.github.b150005.skeinly.domain.model.Pattern
 import io.github.b150005.skeinly.domain.model.SortOrder
 import io.github.b150005.skeinly.domain.usecase.ErrorMessage
-import io.github.b150005.skeinly.domain.usecase.ForkPublicPatternUseCase
 import io.github.b150005.skeinly.domain.usecase.GetPublicPatternsUseCase
+import io.github.b150005.skeinly.domain.usecase.SavePublicPatternToLibraryUseCase
 import io.github.b150005.skeinly.domain.usecase.UseCaseResult
 import io.github.b150005.skeinly.domain.usecase.toErrorMessage
 import kotlinx.coroutines.Job
@@ -108,7 +108,7 @@ private data class FilterState(
 
 class DiscoveryViewModel(
     private val getPublicPatterns: GetPublicPatternsUseCase,
-    private val forkPublicPattern: ForkPublicPatternUseCase,
+    private val savePublicPatternToLibrary: SavePublicPatternToLibraryUseCase,
     // Phase F.4 — nullable + default null preserves existing test compat.
     private val analyticsTracker: AnalyticsTracker? = null,
 ) : ViewModel() {
@@ -232,7 +232,7 @@ class DiscoveryViewModel(
     private fun fork(patternId: String) {
         viewModelScope.launch {
             uiFlags.update { it.copy(forkingPatternId = patternId) }
-            when (val result = forkPublicPattern(patternId)) {
+            when (val result = savePublicPatternToLibrary(patternId)) {
                 is UseCaseResult.Success -> {
                     uiFlags.update { it.copy(forkingPatternId = null) }
                     // Phase F.4 — `had_chart=true` only when the chart was

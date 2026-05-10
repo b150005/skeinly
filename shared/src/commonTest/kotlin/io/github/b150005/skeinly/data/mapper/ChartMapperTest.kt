@@ -1,13 +1,13 @@
 package io.github.b150005.skeinly.data.mapper
 
-import io.github.b150005.skeinly.db.StructuredChartEntity
+import io.github.b150005.skeinly.db.ChartEntity
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.CraftType
 import io.github.b150005.skeinly.domain.model.ReadingConvention
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import io.github.b150005.skeinly.domain.model.StructuredChart
 import io.github.b150005.skeinly.testJson
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -15,16 +15,16 @@ import kotlin.test.assertTrue
 
 /**
  * Exercises the document envelope written to and read from the SQLite
- * `document` text column (see [StructuredChartMapper]). Phase 32.1 adds
+ * `document` text column (see [ChartMapper]). Phase 32.1 adds
  * `craft_type` + `reading_convention` to the envelope; these tests lock in
  * both forward serialization and backward deserialization of v1 payloads.
  */
-class StructuredChartMapperTest {
+class ChartMapperTest {
     private val json = testJson
     private val nowIso = "2026-04-17T10:00:00Z"
 
-    private fun entity(document: String): StructuredChartEntity =
-        StructuredChartEntity(
+    private fun entity(document: String): ChartEntity =
+        ChartEntity(
             id = "chart-1",
             pattern_id = "pat-1",
             owner_id = "user-1",
@@ -42,11 +42,11 @@ class StructuredChartMapperTest {
     private fun sampleChart(
         craftType: CraftType = CraftType.KNIT,
         readingConvention: ReadingConvention = ReadingConvention.KNIT_FLAT,
-    ) = StructuredChart(
+    ) = Chart(
         id = "chart-1",
         patternId = "pat-1",
         ownerId = "user-1",
-        schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+        schemaVersion = Chart.CURRENT_SCHEMA_VERSION,
         storageVariant = StorageVariant.INLINE,
         coordinateSystem = CoordinateSystem.RECT_GRID,
         extents = ChartExtents.Rect(0, 1, 0, 0),
@@ -142,16 +142,16 @@ class StructuredChartMapperTest {
     }
 
     @Test
-    fun `StructuredChart serializer round-trip preserves non-default craft and reading`() {
-        // Mirrors the sync payload path used by StructuredChartRepositoryImpl, which
+    fun `Chart serializer round-trip preserves non-default craft and reading`() {
+        // Mirrors the sync payload path used by ChartRepositoryImpl, which
         // calls `json.encodeToString(chart)` on the full domain instance.
         val original =
             sampleChart(
                 craftType = CraftType.CROCHET,
                 readingConvention = ReadingConvention.ROUND,
             )
-        val encoded = json.encodeToString(StructuredChart.serializer(), original)
-        val decoded = json.decodeFromString(StructuredChart.serializer(), encoded)
+        val encoded = json.encodeToString(Chart.serializer(), original)
+        val decoded = json.decodeFromString(Chart.serializer(), encoded)
 
         assertEquals(CraftType.CROCHET, decoded.craftType)
         assertEquals(ReadingConvention.ROUND, decoded.readingConvention)

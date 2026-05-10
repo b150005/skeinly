@@ -1,7 +1,7 @@
 package io.github.b150005.skeinly.domain.usecase
 
 import io.github.b150005.skeinly.domain.model.AuthState
-import io.github.b150005.skeinly.domain.model.PullRequestComment
+import io.github.b150005.skeinly.domain.model.SuggestionComment
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -9,17 +9,17 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 
-class PostPullRequestCommentUseCaseTest {
-    private lateinit var prRepo: FakePullRequestRepository
+class PostSuggestionCommentUseCaseTest {
+    private lateinit var prRepo: FakeSuggestionRepository
     private lateinit var authRepo: FakeAuthRepository
-    private lateinit var useCase: PostPullRequestCommentUseCase
+    private lateinit var useCase: PostSuggestionCommentUseCase
 
     @BeforeTest
     fun setUp() {
-        prRepo = FakePullRequestRepository()
+        prRepo = FakeSuggestionRepository()
         authRepo = FakeAuthRepository()
         authRepo.setAuthState(AuthState.Authenticated(userId = "user-fork", email = "f@example.com"))
-        useCase = PostPullRequestCommentUseCase(prRepo, authRepo)
+        useCase = PostSuggestionCommentUseCase(prRepo, authRepo)
     }
 
     @Test
@@ -27,10 +27,10 @@ class PostPullRequestCommentUseCaseTest {
         runTest {
             val result = useCase("pr-1", "  Looks great!  ")
 
-            assertIs<UseCaseResult.Success<PullRequestComment>>(result)
+            assertIs<UseCaseResult.Success<SuggestionComment>>(result)
             assertEquals("Looks great!", result.value.body)
             assertEquals("user-fork", result.value.authorId)
-            assertEquals("pr-1", result.value.pullRequestId)
+            assertEquals("pr-1", result.value.suggestionId)
             assertNotNull(prRepo.lastPosted)
         }
 
@@ -46,7 +46,7 @@ class PostPullRequestCommentUseCaseTest {
     @Test
     fun `invoke rejects a body longer than the 5000 char ceiling`() =
         runTest {
-            val tooLong = "x".repeat(PostPullRequestCommentUseCase.MAX_BODY_LENGTH + 1)
+            val tooLong = "x".repeat(PostSuggestionCommentUseCase.MAX_BODY_LENGTH + 1)
 
             val result = useCase("pr-1", tooLong)
 

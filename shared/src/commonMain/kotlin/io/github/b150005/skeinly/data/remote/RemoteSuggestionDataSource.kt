@@ -1,10 +1,10 @@
 package io.github.b150005.skeinly.data.remote
 
-import io.github.b150005.skeinly.data.sync.RemotePullRequestCommentSyncOperations
-import io.github.b150005.skeinly.data.sync.RemotePullRequestSyncOperations
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestComment
-import io.github.b150005.skeinly.domain.repository.PullRequestMergeOperations
+import io.github.b150005.skeinly.data.sync.RemoteSuggestionCommentSyncOperations
+import io.github.b150005.skeinly.data.sync.RemoteSuggestionSyncOperations
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionComment
+import io.github.b150005.skeinly.domain.repository.SuggestionMergeOperations
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
@@ -14,29 +14,29 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 
 /**
- * Remote data source for [PullRequest] + [PullRequestComment] (ADR-014 §1).
+ * Remote data source for [Suggestion] + [SuggestionComment] (ADR-014 §1).
  *
  * Implements both sync operations interfaces — PRs route writes through
  * `upsert` (INSERT and CLOSE both) per ADR-014 §7, comments are append-only.
  * The merge RPC is NOT exposed here; it's invoked from the
- * `MergePullRequestUseCase` (Phase 38.4) directly against
+ * `ApplySuggestionUseCase` (Phase 38.4) directly against
  * [SupabaseClient.postgrest.rpc].
  */
-class RemotePullRequestDataSource(
+class RemoteSuggestionDataSource(
     private val supabaseClient: SupabaseClient,
-) : RemotePullRequestSyncOperations,
-    RemotePullRequestCommentSyncOperations,
-    PullRequestMergeOperations {
-    private val prTable get() = supabaseClient.postgrest["pull_requests"]
-    private val commentTable get() = supabaseClient.postgrest["pull_request_comments"]
+) : RemoteSuggestionSyncOperations,
+    RemoteSuggestionCommentSyncOperations,
+    SuggestionMergeOperations {
+    private val prTable get() = supabaseClient.postgrest["suggestions"]
+    private val commentTable get() = supabaseClient.postgrest["suggestion_comments"]
 
-    suspend fun getById(id: String): PullRequest? =
+    suspend fun getById(id: String): Suggestion? =
         prTable
             .select {
                 filter { eq("id", id) }
             }.decodeSingleOrNull()
 
-    suspend fun getIncomingForOwner(ownerId: String): List<PullRequest> {
+    suspend fun getIncomingForOwner(ownerId: String): List<Suggestion> {
         // Two-step fetch: first the owner's pattern ids, then PRs targeting any
         // of them. RLS on pull_requests already restricts visibility to source
         // owner OR target owner, but the explicit pattern-id filter is the
@@ -61,17 +61,17 @@ class RemotePullRequestDataSource(
             }.decodeList()
     }
 
-    suspend fun getOutgoingForOwner(ownerId: String): List<PullRequest> =
+    suspend fun getOutgoingForOwner(ownerId: String): List<Suggestion> =
         prTable
             .select {
                 filter { eq("author_id", ownerId) }
                 order("created_at", Order.DESCENDING)
             }.decodeList()
 
-    suspend fun getCommentsForPullRequest(pullRequestId: String): List<PullRequestComment> =
+    suspend fun getCommentsForSuggestion(suggestionId: String): List<SuggestionComment> =
         commentTable
             .select {
-                filter { eq("pull_request_id", pullRequestId) }
+                filter { eq("pull_request_id", suggestionId) }
                 order("created_at", Order.ASCENDING)
             }.decodeList()
 
@@ -80,14 +80,14 @@ class RemotePullRequestDataSource(
      * re-enqueued upsert (PendingSync retry after the request landed but the
      * response was lost) is a silent overwrite with the same row.
      */
-    override suspend fun upsert(pullRequest: PullRequest): PullRequest =
+    override suspend fun upsert(suggestion: Suggestion): Suggestion =
         prTable
-            .upsert(pullRequest) {
+            .upsert(suggestion) {
                 onConflict = "id"
                 select()
             }.decodeSingle()
 
-    override suspend fun appendComment(comment: PullRequestComment): PullRequestComment =
+    override suspend fun appendComment(comment: SuggestionComment): SuggestionComment =
         commentTable
             .upsert(comment) {
                 onConflict = "id"
@@ -98,7 +98,7 @@ class RemotePullRequestDataSource(
     /**
      * Phase 38.4 (ADR-014 §5) — invoke the SECURITY DEFINER `merge_pull_request`
      * RPC. Returns the new revision id minted by the RPC. Throws on RPC errors
-     * which the caller (`MergePullRequestUseCase`) translates to
+     * which the caller (`ApplySuggestionUseCase`) translates to
      * [io.github.b150005.skeinly.domain.usecase.UseCaseError] subtypes.
      *
      * The RPC accepts the resolved JSONB document directly per migration 016 —
@@ -113,7 +113,7 @@ class RemotePullRequestDataSource(
      * `rpc(name, parameters)` overload sends these as JSON keys.
      */
     override suspend fun merge(
-        pullRequestId: String,
+        suggestionId: String,
         strategy: String,
         mergedDocument: JsonElement,
         mergedContentHash: String,
@@ -121,13 +121,13 @@ class RemotePullRequestDataSource(
     ): String {
         val params: JsonObject =
             buildJsonObject {
-                put("p_pull_request_id", JsonPrimitive(pullRequestId))
+                put("p_pull_request_id", JsonPrimitive(suggestionId))
                 put("p_strategy", JsonPrimitive(strategy))
                 put("p_merged_document", mergedDocument)
                 put("p_merged_content_hash", JsonPrimitive(mergedContentHash))
                 put("p_resolved_revision_id", JsonPrimitive(resolvedRevisionId))
             }
-        val result = supabaseClient.postgrest.rpc("merge_pull_request", params)
+        val result = supabaseClient.postgrest.rpc("apply_suggestion", params)
         // The RPC's RETURNS UUID surfaces as a JSON-encoded string in the
         // response body (e.g. `"550e8400-..."`). decodeAs<String> unwraps the
         // wrapping quotes via kotlinx.serialization. The RPC's atomic write

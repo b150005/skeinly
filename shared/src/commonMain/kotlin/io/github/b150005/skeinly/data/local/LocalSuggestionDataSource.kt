@@ -5,56 +5,56 @@ import app.cash.sqldelight.coroutines.mapToList
 import io.github.b150005.skeinly.data.mapper.toDbString
 import io.github.b150005.skeinly.data.mapper.toDomain
 import io.github.b150005.skeinly.db.SkeinlyDatabase
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestComment
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionComment
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlin.time.Instant
 
-class LocalPullRequestDataSource(
+class LocalSuggestionDataSource(
     private val db: SkeinlyDatabase,
     private val ioDispatcher: CoroutineDispatcher,
 ) {
-    private val prQueries get() = db.pullRequestQueries
-    private val commentQueries get() = db.pullRequestCommentQueries
+    private val prQueries get() = db.suggestionQueries
+    private val commentQueries get() = db.suggestionCommentQueries
 
     // ---- pull_requests ----
 
-    suspend fun getById(id: String): PullRequest? =
+    suspend fun getById(id: String): Suggestion? =
         withContext(ioDispatcher) {
             prQueries.getById(id).executeAsOneOrNull()?.toDomain()
         }
 
-    suspend fun getByTargetPattern(patternId: String): List<PullRequest> =
+    suspend fun getByTargetPattern(patternId: String): List<Suggestion> =
         withContext(ioDispatcher) {
             prQueries.getByTargetPattern(patternId).executeAsList().map { it.toDomain() }
         }
 
-    suspend fun getBySourcePattern(patternId: String): List<PullRequest> =
+    suspend fun getBySourcePattern(patternId: String): List<Suggestion> =
         withContext(ioDispatcher) {
             prQueries.getBySourcePattern(patternId).executeAsList().map { it.toDomain() }
         }
 
-    suspend fun getIncomingForOwner(ownerId: String): List<PullRequest> =
+    suspend fun getIncomingForOwner(ownerId: String): List<Suggestion> =
         withContext(ioDispatcher) {
             prQueries.getIncomingForOwner(ownerId).executeAsList().map { it.toDomain() }
         }
 
-    suspend fun getOutgoingForOwner(ownerId: String): List<PullRequest> =
+    suspend fun getOutgoingForOwner(ownerId: String): List<Suggestion> =
         withContext(ioDispatcher) {
             prQueries.getOutgoingForOwner(ownerId).executeAsList().map { it.toDomain() }
         }
 
-    fun observeIncomingForOwner(ownerId: String): Flow<List<PullRequest>> =
+    fun observeIncomingForOwner(ownerId: String): Flow<List<Suggestion>> =
         prQueries
             .observeIncomingForOwner(ownerId)
             .asFlow()
             .mapToList(ioDispatcher)
             .map { rows -> rows.map { it.toDomain() } }
 
-    fun observeOutgoingForOwner(ownerId: String): Flow<List<PullRequest>> =
+    fun observeOutgoingForOwner(ownerId: String): Flow<List<Suggestion>> =
         prQueries
             .observeOutgoingForOwner(ownerId)
             .asFlow()
@@ -71,32 +71,32 @@ class LocalPullRequestDataSource(
      * Realtime backfill path: a re-applied event simply overwrites with the
      * same row (PR carries its own updatedAt so consumers can detect drift).
      */
-    suspend fun upsert(pullRequest: PullRequest): PullRequest =
+    suspend fun upsert(suggestion: Suggestion): Suggestion =
         withContext(ioDispatcher) {
             prQueries.upsert(
-                id = pullRequest.id,
-                source_pattern_id = pullRequest.sourcePatternId,
-                source_branch_id = pullRequest.sourceBranchId,
-                source_tip_revision_id = pullRequest.sourceTipRevisionId,
-                target_pattern_id = pullRequest.targetPatternId,
-                target_branch_id = pullRequest.targetBranchId,
-                common_ancestor_revision_id = pullRequest.commonAncestorRevisionId,
-                author_id = pullRequest.authorId,
-                title = pullRequest.title,
-                description = pullRequest.description,
-                status = pullRequest.status.toDbString(),
-                merged_revision_id = pullRequest.mergedRevisionId,
-                merged_at = pullRequest.mergedAt?.toString(),
-                closed_at = pullRequest.closedAt?.toString(),
-                created_at = pullRequest.createdAt.toString(),
-                updated_at = pullRequest.updatedAt.toString(),
+                id = suggestion.id,
+                source_pattern_id = suggestion.sourcePatternId,
+                source_branch_id = suggestion.sourceBranchId,
+                source_tip_revision_id = suggestion.sourceTipRevisionId,
+                target_pattern_id = suggestion.targetPatternId,
+                target_branch_id = suggestion.targetBranchId,
+                common_ancestor_revision_id = suggestion.commonAncestorRevisionId,
+                author_id = suggestion.authorId,
+                title = suggestion.title,
+                description = suggestion.description,
+                status = suggestion.status.toDbString(),
+                merged_revision_id = suggestion.mergedRevisionId,
+                merged_at = suggestion.mergedAt?.toString(),
+                closed_at = suggestion.closedAt?.toString(),
+                created_at = suggestion.createdAt.toString(),
+                updated_at = suggestion.updatedAt.toString(),
             )
-            pullRequest
+            suggestion
         }
 
     suspend fun updateStatus(
         id: String,
-        status: io.github.b150005.skeinly.domain.model.PullRequestStatus,
+        status: io.github.b150005.skeinly.domain.model.SuggestionStatus,
         closedAt: Instant?,
         updatedAt: Instant,
     ): Unit =
@@ -121,26 +121,26 @@ class LocalPullRequestDataSource(
 
     // ---- pull_request_comments ----
 
-    suspend fun getCommentById(id: String): PullRequestComment? =
+    suspend fun getCommentById(id: String): SuggestionComment? =
         withContext(ioDispatcher) {
             commentQueries.getById(id).executeAsOneOrNull()?.toDomain()
         }
 
-    suspend fun getCommentsForPullRequest(pullRequestId: String): List<PullRequestComment> =
+    suspend fun getCommentsForSuggestion(suggestionId: String): List<SuggestionComment> =
         withContext(ioDispatcher) {
-            commentQueries.getByPullRequestId(pullRequestId).executeAsList().map { it.toDomain() }
+            commentQueries.getBySuggestionId(suggestionId).executeAsList().map { it.toDomain() }
         }
 
-    fun observeCommentsForPullRequest(pullRequestId: String): Flow<List<PullRequestComment>> =
+    fun observeCommentsForSuggestion(suggestionId: String): Flow<List<SuggestionComment>> =
         commentQueries
-            .observeByPullRequestId(pullRequestId)
+            .observeBySuggestionId(suggestionId)
             .asFlow()
             .mapToList(ioDispatcher)
             .map { rows -> rows.map { it.toDomain() } }
 
-    suspend fun countCommentsForPullRequest(pullRequestId: String): Long =
+    suspend fun countCommentsForSuggestion(suggestionId: String): Long =
         withContext(ioDispatcher) {
-            commentQueries.countByPullRequestId(pullRequestId).executeAsOne()
+            commentQueries.countBySuggestionId(suggestionId).executeAsOne()
         }
 
     /**
@@ -149,11 +149,11 @@ class LocalPullRequestDataSource(
      * no-op rather than a constraint violation. PRIMARY KEY on `id` is the
      * dedup key.
      */
-    suspend fun upsertComment(comment: PullRequestComment): PullRequestComment =
+    suspend fun upsertComment(comment: SuggestionComment): SuggestionComment =
         withContext(ioDispatcher) {
             commentQueries.upsert(
                 id = comment.id,
-                pull_request_id = comment.pullRequestId,
+                pull_request_id = comment.suggestionId,
                 author_id = comment.authorId,
                 body = comment.body,
                 created_at = comment.createdAt.toString(),
@@ -161,8 +161,8 @@ class LocalPullRequestDataSource(
             comment
         }
 
-    suspend fun deleteCommentsForPullRequest(pullRequestId: String): Unit =
+    suspend fun deleteCommentsForSuggestion(suggestionId: String): Unit =
         withContext(ioDispatcher) {
-            commentQueries.deleteByPullRequestId(pullRequestId)
+            commentQueries.deleteBySuggestionId(suggestionId)
         }
 }

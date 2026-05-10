@@ -1,35 +1,34 @@
 package io.github.b150005.skeinly.domain.usecase
 
-import io.github.b150005.skeinly.domain.model.ChartRevision
-import io.github.b150005.skeinly.domain.model.StructuredChart
-import io.github.b150005.skeinly.domain.model.toStructuredChart
-import io.github.b150005.skeinly.domain.repository.StructuredChartRepository
+import io.github.b150005.skeinly.domain.model.Chart
+import io.github.b150005.skeinly.domain.model.ChartVersion
+import io.github.b150005.skeinly.domain.model.toChart
+import io.github.b150005.skeinly.domain.repository.ChartRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 
-class FakeStructuredChartRepository : StructuredChartRepository {
-    private val charts = MutableStateFlow<List<StructuredChart>>(emptyList())
+class FakeChartRepository : ChartRepository {
+    private val charts = MutableStateFlow<List<Chart>>(emptyList())
 
     var failNext: Throwable? = null
 
-    override suspend fun getByPatternId(patternId: String): StructuredChart? {
+    override suspend fun getByPatternId(patternId: String): Chart? {
         failNext?.let { throw it.also { failNext = null } }
         return charts.value.firstOrNull { it.patternId == patternId }
     }
 
-    override fun observeByPatternId(patternId: String): Flow<StructuredChart?> =
-        charts.map { list -> list.firstOrNull { it.patternId == patternId } }
+    override fun observeByPatternId(patternId: String): Flow<Chart?> = charts.map { list -> list.firstOrNull { it.patternId == patternId } }
 
     override suspend fun existsByPatternId(patternId: String): Boolean = charts.value.any { it.patternId == patternId }
 
-    override suspend fun create(chart: StructuredChart): StructuredChart {
+    override suspend fun create(chart: Chart): Chart {
         failNext?.let { throw it.also { failNext = null } }
         charts.value = charts.value + chart
         return chart
     }
 
-    override suspend fun update(chart: StructuredChart): StructuredChart {
+    override suspend fun update(chart: Chart): Chart {
         failNext?.let { throw it.also { failNext = null } }
         charts.value = charts.value.map { if (it.id == chart.id) chart else it }
         return chart
@@ -44,12 +43,12 @@ class FakeStructuredChartRepository : StructuredChartRepository {
         sourcePatternId: String,
         newPatternId: String,
         newOwnerId: String,
-    ): StructuredChart? {
+    ): Chart? {
         failNext?.let { throw it.also { failNext = null } }
         val source = charts.value.firstOrNull { it.patternId == sourcePatternId } ?: return null
         // Deterministic ids so use-case tests can assert on them. Real impl mints
         // UUIDs; envelope-id-rewrite correctness is exercised in
-        // StructuredChartRepositoryImplTest, not at the use-case layer.
+        // ChartRepositoryImplTest, not at the use-case layer.
         // Note: `createdAt`/`updatedAt` are deliberately NOT updated here even
         // though the real impl bumps both to `Clock.System.now()`. Phase 36.3+
         // use-case tests should assert on lineage / id rewrites only, not on
@@ -68,14 +67,14 @@ class FakeStructuredChartRepository : StructuredChartRepository {
 
     override suspend fun setTip(
         patternId: String,
-        targetRevision: ChartRevision,
-    ): StructuredChart? {
+        targetRevision: ChartVersion,
+    ): Chart? {
         failNext?.let { throw it.also { failNext = null } }
         val current = charts.value.firstOrNull { it.patternId == patternId } ?: return null
         // Mirror the production impl: rewrite the existing row in place from
         // the revision's payload, preserving the row id and createdAt.
         val rebuilt =
-            targetRevision.toStructuredChart().copy(
+            targetRevision.toChart().copy(
                 id = current.id,
                 createdAt = current.createdAt,
             )
@@ -83,7 +82,7 @@ class FakeStructuredChartRepository : StructuredChartRepository {
         return rebuilt
     }
 
-    fun seed(chart: StructuredChart) {
+    fun seed(chart: Chart) {
         charts.value = charts.value + chart
     }
 }

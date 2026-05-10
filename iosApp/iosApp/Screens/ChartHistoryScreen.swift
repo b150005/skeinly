@@ -76,7 +76,7 @@ struct ChartHistoryScreen: View {
                     }
             }
             .confirmationDialog(
-                LocalizedStringKey("dialog_restore_revision_title"),
+                LocalizedStringKey("dialog_restore_version_title"),
                 isPresented: Binding(
                     get: { state.pendingRestoreRevision != nil },
                     set: { newValue in
@@ -87,7 +87,7 @@ struct ChartHistoryScreen: View {
                 ),
                 titleVisibility: .visible
             ) {
-                Button(LocalizedStringKey("action_restore_revision")) {
+                Button(LocalizedStringKey("action_restore_version")) {
                     viewModel.onEvent(event: ChartHistoryEventConfirmRestore.shared)
                 }
                 .accessibilityIdentifier("confirmRestoreRevisionButton")
@@ -95,7 +95,7 @@ struct ChartHistoryScreen: View {
                     viewModel.onEvent(event: ChartHistoryEventDismissRestore.shared)
                 }
             } message: {
-                Text(LocalizedStringKey("dialog_restore_revision_body"))
+                Text(LocalizedStringKey("dialog_restore_version_body"))
             }
         }
     }
@@ -141,7 +141,7 @@ private struct RevisionRow: View {
         if let message = revision.commitMessage, !message.isEmpty {
             return message
         }
-        let key = revision.parentRevisionId == nil ? "label_initial_commit" : "label_auto_save"
+        let key = revision.parentRevisionId == nil ? "label_initial_version" : "label_auto_save"
         return NSLocalizedString(key, comment: "")
     }
 

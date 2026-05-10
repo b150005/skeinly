@@ -17,10 +17,10 @@ import io.github.b150005.skeinly.notifications.PushTokenRegistrar
 import io.github.b150005.skeinly.ui.activityfeed.ActivityFeedViewModel
 import io.github.b150005.skeinly.ui.auth.AuthViewModel
 import io.github.b150005.skeinly.ui.bugreport.BugReportPreviewViewModel
-import io.github.b150005.skeinly.ui.chart.ChartBranchPickerViewModel
-import io.github.b150005.skeinly.ui.chart.ChartDiffViewModel
+import io.github.b150005.skeinly.ui.chart.ChartComparisonViewModel
 import io.github.b150005.skeinly.ui.chart.ChartEditorViewModel
 import io.github.b150005.skeinly.ui.chart.ChartHistoryViewModel
+import io.github.b150005.skeinly.ui.chart.ChartVariationPickerViewModel
 import io.github.b150005.skeinly.ui.chart.ChartViewerViewModel
 import io.github.b150005.skeinly.ui.comments.CommentSectionViewModel
 import io.github.b150005.skeinly.ui.notifications.NotificationPermissionState
@@ -36,9 +36,9 @@ import io.github.b150005.skeinly.ui.profile.ProfileViewModel
 import io.github.b150005.skeinly.ui.projectdetail.ProjectDetailViewModel
 import io.github.b150005.skeinly.ui.projectlist.ProjectListViewModel
 import io.github.b150005.skeinly.ui.pullrequest.ChartConflictResolutionViewModel
-import io.github.b150005.skeinly.ui.pullrequest.PullRequestDetailViewModel
-import io.github.b150005.skeinly.ui.pullrequest.PullRequestFilter
-import io.github.b150005.skeinly.ui.pullrequest.PullRequestListViewModel
+import io.github.b150005.skeinly.ui.pullrequest.SuggestionDetailViewModel
+import io.github.b150005.skeinly.ui.pullrequest.SuggestionFilter
+import io.github.b150005.skeinly.ui.pullrequest.SuggestionListViewModel
 import io.github.b150005.skeinly.ui.settings.SettingsViewModel
 import io.github.b150005.skeinly.ui.sharedcontent.SharedContentViewModel
 import io.github.b150005.skeinly.ui.sharedwithme.SharedWithMeViewModel
@@ -230,17 +230,20 @@ fun getChartEditorViewModel(patternId: String): ChartEditorViewModel = KoinPlatf
 
 fun getChartHistoryViewModel(patternId: String): ChartHistoryViewModel = KoinPlatform.getKoin().get { parametersOf(patternId) }
 
-fun getChartDiffViewModel(
+fun getChartComparisonViewModel(
     baseRevisionId: String?,
     targetRevisionId: String,
-): ChartDiffViewModel = KoinPlatform.getKoin().get { parametersOf(baseRevisionId, targetRevisionId) }
+): ChartComparisonViewModel = KoinPlatform.getKoin().get { parametersOf(baseRevisionId, targetRevisionId) }
 
-fun getChartBranchPickerViewModel(patternId: String): ChartBranchPickerViewModel = KoinPlatform.getKoin().get { parametersOf(patternId) }
+fun getChartVariationPickerViewModel(patternId: String): ChartVariationPickerViewModel =
+    KoinPlatform.getKoin().get {
+        parametersOf(patternId)
+    }
 
-fun getPullRequestListViewModel(defaultFilter: PullRequestFilter): PullRequestListViewModel =
+fun getSuggestionListViewModel(defaultFilter: SuggestionFilter): SuggestionListViewModel =
     KoinPlatform.getKoin().get { parametersOf(defaultFilter) }
 
-fun getPullRequestDetailViewModel(prId: String): PullRequestDetailViewModel = KoinPlatform.getKoin().get { parametersOf(prId) }
+fun getSuggestionDetailViewModel(prId: String): SuggestionDetailViewModel = KoinPlatform.getKoin().get { parametersOf(prId) }
 
 fun getChartConflictResolutionViewModel(prId: String): ChartConflictResolutionViewModel = KoinPlatform.getKoin().get { parametersOf(prId) }
 
@@ -250,7 +253,7 @@ fun getSymbolCatalog(): SymbolCatalog = KoinPlatform.getKoin().get()
 // thumbnail can fetch a chart on demand without a dedicated ViewModel layer
 // (the fetch is a one-shot read with no observable state — wrapping it in a
 // Kotlin ViewModel would be ceremony).
-fun getStructuredChartRepository(): io.github.b150005.skeinly.domain.repository.StructuredChartRepository = KoinPlatform.getKoin().get()
+fun getChartRepository(): io.github.b150005.skeinly.domain.repository.ChartRepository = KoinPlatform.getKoin().get()
 
 // Type-safe FlowWrapper factories for Swift (eliminates as! force-casts)
 
@@ -392,29 +395,29 @@ fun wrapChartHistoryRevisionTaps(
     flow: kotlinx.coroutines.flow.Flow<io.github.b150005.skeinly.ui.chart.RevisionTapTarget>,
 ): EventFlowWrapper<io.github.b150005.skeinly.ui.chart.RevisionTapTarget> = EventFlowWrapper(flow)
 
-fun wrapChartDiffState(
-    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.chart.ChartDiffState>,
-): FlowWrapper<io.github.b150005.skeinly.ui.chart.ChartDiffState> = FlowWrapper(flow)
+fun wrapChartComparisonState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.chart.ChartComparisonState>,
+): FlowWrapper<io.github.b150005.skeinly.ui.chart.ChartComparisonState> = FlowWrapper(flow)
 
-fun wrapChartBranchPickerState(
-    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.chart.ChartBranchPickerState>,
-): FlowWrapper<io.github.b150005.skeinly.ui.chart.ChartBranchPickerState> = FlowWrapper(flow)
+fun wrapChartVariationPickerState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.chart.ChartVariationPickerState>,
+): FlowWrapper<io.github.b150005.skeinly.ui.chart.ChartVariationPickerState> = FlowWrapper(flow)
 
-fun wrapChartBranchSwitchedFlow(
+fun wrapChartVariationSwitchedFlow(
     flow: kotlinx.coroutines.flow.Flow<io.github.b150005.skeinly.ui.chart.BranchSwitchedEvent>,
 ): EventFlowWrapper<io.github.b150005.skeinly.ui.chart.BranchSwitchedEvent> = EventFlowWrapper(flow)
 
-fun wrapPullRequestListState(
-    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.pullrequest.PullRequestListState>,
-): FlowWrapper<io.github.b150005.skeinly.ui.pullrequest.PullRequestListState> = FlowWrapper(flow)
+fun wrapSuggestionListState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.pullrequest.SuggestionListState>,
+): FlowWrapper<io.github.b150005.skeinly.ui.pullrequest.SuggestionListState> = FlowWrapper(flow)
 
-fun wrapPullRequestDetailState(
-    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.pullrequest.PullRequestDetailState>,
-): FlowWrapper<io.github.b150005.skeinly.ui.pullrequest.PullRequestDetailState> = FlowWrapper(flow)
+fun wrapSuggestionDetailState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.pullrequest.SuggestionDetailState>,
+): FlowWrapper<io.github.b150005.skeinly.ui.pullrequest.SuggestionDetailState> = FlowWrapper(flow)
 
-fun wrapPullRequestDetailNavEvents(
-    flow: kotlinx.coroutines.flow.Flow<io.github.b150005.skeinly.ui.pullrequest.PullRequestDetailNavEvent>,
-): EventFlowWrapper<io.github.b150005.skeinly.ui.pullrequest.PullRequestDetailNavEvent> = EventFlowWrapper(flow)
+fun wrapSuggestionDetailNavEvents(
+    flow: kotlinx.coroutines.flow.Flow<io.github.b150005.skeinly.ui.pullrequest.SuggestionDetailNavEvent>,
+): EventFlowWrapper<io.github.b150005.skeinly.ui.pullrequest.SuggestionDetailNavEvent> = EventFlowWrapper(flow)
 
 fun wrapChartConflictResolutionState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.pullrequest.ChartConflictResolutionState>,

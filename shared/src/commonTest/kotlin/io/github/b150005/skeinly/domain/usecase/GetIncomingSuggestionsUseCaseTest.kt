@@ -1,7 +1,7 @@
 package io.github.b150005.skeinly.domain.usecase
 
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestStatus
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionStatus
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -10,15 +10,15 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
-class GetIncomingPullRequestsUseCaseTest {
+class GetIncomingSuggestionsUseCaseTest {
     private fun makePr(
         id: String,
         targetPatternId: String = "pat-upstream",
         sourcePatternId: String = "pat-fork",
         authorId: String? = "user-fork",
-        status: PullRequestStatus = PullRequestStatus.OPEN,
+        status: SuggestionStatus = SuggestionStatus.OPEN,
         createdAtIso: String = "2026-04-25T10:00:00Z",
-    ) = PullRequest(
+    ) = Suggestion(
         id = id,
         sourcePatternId = sourcePatternId,
         sourceBranchId = "br-source-main",
@@ -40,33 +40,33 @@ class GetIncomingPullRequestsUseCaseTest {
     @Test
     fun `invoke returns Success with seeded incoming prs`() =
         runTest {
-            val repo = FakePullRequestRepository()
+            val repo = FakeSuggestionRepository()
             repo.setIncoming("owner-1", listOf(makePr("pr-1"), makePr("pr-2")))
-            val useCase = GetIncomingPullRequestsUseCase(repo)
+            val useCase = GetIncomingSuggestionsUseCase(repo)
 
             val result = useCase("owner-1")
 
-            assertIs<UseCaseResult.Success<List<PullRequest>>>(result)
+            assertIs<UseCaseResult.Success<List<Suggestion>>>(result)
             assertEquals(listOf("pr-1", "pr-2"), result.value.map { it.id })
         }
 
     @Test
     fun `invoke returns Success with empty list when none cached`() =
         runTest {
-            val useCase = GetIncomingPullRequestsUseCase(FakePullRequestRepository())
+            val useCase = GetIncomingSuggestionsUseCase(FakeSuggestionRepository())
 
             val result = useCase("owner-1")
 
-            assertIs<UseCaseResult.Success<List<PullRequest>>>(result)
+            assertIs<UseCaseResult.Success<List<Suggestion>>>(result)
             assertTrue(result.value.isEmpty())
         }
 
     @Test
     fun `invoke wraps repository exception as Failure with mapped UseCaseError`() =
         runTest {
-            val repo = FakePullRequestRepository()
+            val repo = FakeSuggestionRepository()
             repo.nextGetIncomingError = IllegalStateException("boom")
-            val useCase = GetIncomingPullRequestsUseCase(repo)
+            val useCase = GetIncomingSuggestionsUseCase(repo)
 
             val result = useCase("owner-1")
 
@@ -78,9 +78,9 @@ class GetIncomingPullRequestsUseCaseTest {
     @Test
     fun `observe returns Flow seeded from repository`() =
         runTest {
-            val repo = FakePullRequestRepository()
+            val repo = FakeSuggestionRepository()
             repo.setIncoming("owner-1", listOf(makePr("pr-live")))
-            val useCase = GetIncomingPullRequestsUseCase(repo)
+            val useCase = GetIncomingSuggestionsUseCase(repo)
 
             val emitted = useCase.observe("owner-1").first()
 
@@ -91,10 +91,10 @@ class GetIncomingPullRequestsUseCaseTest {
     @Test
     fun `observe is scoped to ownerId only`() =
         runTest {
-            val repo = FakePullRequestRepository()
+            val repo = FakeSuggestionRepository()
             repo.setIncoming("owner-1", listOf(makePr("pr-mine", targetPatternId = "pat-mine")))
             repo.setIncoming("owner-other", listOf(makePr("pr-not-mine", targetPatternId = "pat-other")))
-            val useCase = GetIncomingPullRequestsUseCase(repo)
+            val useCase = GetIncomingSuggestionsUseCase(repo)
 
             val mine = useCase.observe("owner-1").first()
 

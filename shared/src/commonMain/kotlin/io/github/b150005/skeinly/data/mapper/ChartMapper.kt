@@ -1,13 +1,13 @@
 package io.github.b150005.skeinly.data.mapper
 
-import io.github.b150005.skeinly.db.StructuredChartEntity
+import io.github.b150005.skeinly.db.ChartEntity
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.CraftType
 import io.github.b150005.skeinly.domain.model.ReadingConvention
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import io.github.b150005.skeinly.domain.model.StructuredChart
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -50,14 +50,14 @@ private fun <T> JsonElement?.decodeOrDefault(
     default: T,
 ): T = if (this == null || this is JsonNull) default else json.decodeFromJsonElement(serializer, this)
 
-internal fun StructuredChartEntity.toDomain(json: Json): StructuredChart {
+internal fun ChartEntity.toDomain(json: Json): Chart {
     val envelope =
         json.parseToJsonElement(document).let { element ->
             val obj =
                 element as? kotlinx.serialization.json.JsonObject
-                    ?: error("StructuredChart.document is not a JSON object")
-            val extentsElement = obj["extents"] ?: error("StructuredChart.document missing 'extents'")
-            val layersElement = obj["layers"] ?: error("StructuredChart.document missing 'layers'")
+                    ?: error("Chart.document is not a JSON object")
+            val extentsElement = obj["extents"] ?: error("Chart.document missing 'extents'")
+            val layersElement = obj["layers"] ?: error("Chart.document missing 'layers'")
             val extents = json.decodeFromJsonElement(DocumentEnvelope.extentsSerializer, extentsElement)
             val layers = json.decodeFromJsonElement(DocumentEnvelope.layersSerializer, layersElement)
             val craftType =
@@ -74,7 +74,7 @@ internal fun StructuredChartEntity.toDomain(json: Json): StructuredChart {
                 )
             DocumentEnvelopeValues(extents, layers, craftType, readingConvention)
         }
-    return StructuredChart(
+    return Chart(
         id = id,
         patternId = pattern_id,
         ownerId = owner_id,
@@ -93,7 +93,7 @@ internal fun StructuredChartEntity.toDomain(json: Json): StructuredChart {
     )
 }
 
-internal fun StructuredChart.toDocumentJson(json: Json): String {
+internal fun Chart.toDocumentJson(json: Json): String {
     val obj =
         buildMap<String, kotlinx.serialization.json.JsonElement> {
             put("extents", json.encodeToJsonElement(DocumentEnvelope.extentsSerializer, extents))

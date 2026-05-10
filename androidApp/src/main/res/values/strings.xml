@@ -19,6 +19,6 @@
          per-locale variants live under values-ja/strings.xml. -->
     <string name="notification_channel_collaboration">Collaboration</string>
     <string name="notification_channel_collaboration_description">
-        Pull-request opens, comments, merges, and closes.
+        Suggestion sent, commented, applied, and closed events.
     </string>
 </resources>

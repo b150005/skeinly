@@ -1,8 +1,8 @@
 package io.github.b150005.skeinly.domain.usecase
 
 import io.github.b150005.skeinly.domain.model.AuthState
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestStatus
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionStatus
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -11,21 +11,21 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.time.Instant
 
-class ClosePullRequestUseCaseTest {
-    private lateinit var prRepo: FakePullRequestRepository
+class CloseSuggestionUseCaseTest {
+    private lateinit var prRepo: FakeSuggestionRepository
     private lateinit var authRepo: FakeAuthRepository
-    private lateinit var useCase: ClosePullRequestUseCase
+    private lateinit var useCase: CloseSuggestionUseCase
 
     @BeforeTest
     fun setUp() {
-        prRepo = FakePullRequestRepository()
+        prRepo = FakeSuggestionRepository()
         authRepo = FakeAuthRepository()
         authRepo.setAuthState(AuthState.Authenticated(userId = "user-fork", email = "f@example.com"))
-        useCase = ClosePullRequestUseCase(prRepo, authRepo)
+        useCase = CloseSuggestionUseCase(prRepo, authRepo)
     }
 
     private fun openPr() =
-        PullRequest(
+        Suggestion(
             id = "pr-1",
             sourcePatternId = "pat-fork",
             sourceBranchId = "br-source-main",
@@ -36,7 +36,7 @@ class ClosePullRequestUseCaseTest {
             authorId = "user-fork",
             title = "Reworked sleeve",
             description = null,
-            status = PullRequestStatus.OPEN,
+            status = SuggestionStatus.OPEN,
             mergedRevisionId = null,
             mergedAt = null,
             closedAt = null,
@@ -49,8 +49,8 @@ class ClosePullRequestUseCaseTest {
         runTest {
             val result = useCase(openPr())
 
-            assertIs<UseCaseResult.Success<PullRequest>>(result)
-            assertEquals(PullRequestStatus.CLOSED, result.value.status)
+            assertIs<UseCaseResult.Success<Suggestion>>(result)
+            assertEquals(SuggestionStatus.CLOSED, result.value.status)
             assertNotNull(result.value.closedAt)
             assertNotNull(prRepo.lastClosed)
         }
@@ -58,7 +58,7 @@ class ClosePullRequestUseCaseTest {
     @Test
     fun `invoke rejects a PR that is already merged`() =
         runTest {
-            val merged = openPr().copy(status = PullRequestStatus.MERGED)
+            val merged = openPr().copy(status = SuggestionStatus.APPLIED)
 
             val result = useCase(merged)
 
@@ -69,7 +69,7 @@ class ClosePullRequestUseCaseTest {
     @Test
     fun `invoke rejects a PR that is already closed`() =
         runTest {
-            val closed = openPr().copy(status = PullRequestStatus.CLOSED)
+            val closed = openPr().copy(status = SuggestionStatus.CLOSED)
 
             val result = useCase(closed)
 

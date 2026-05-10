@@ -10,10 +10,10 @@ import io.github.b150005.skeinly.ui.activityfeed.ActivityFeedViewModel
 import io.github.b150005.skeinly.ui.auth.AuthViewModel
 import io.github.b150005.skeinly.ui.auth.ForgotPasswordViewModel
 import io.github.b150005.skeinly.ui.bugreport.BugReportPreviewViewModel
-import io.github.b150005.skeinly.ui.chart.ChartBranchPickerViewModel
-import io.github.b150005.skeinly.ui.chart.ChartDiffViewModel
+import io.github.b150005.skeinly.ui.chart.ChartComparisonViewModel
 import io.github.b150005.skeinly.ui.chart.ChartEditorViewModel
 import io.github.b150005.skeinly.ui.chart.ChartHistoryViewModel
+import io.github.b150005.skeinly.ui.chart.ChartVariationPickerViewModel
 import io.github.b150005.skeinly.ui.chart.ChartViewerViewModel
 import io.github.b150005.skeinly.ui.comments.CommentSectionViewModel
 import io.github.b150005.skeinly.ui.discovery.DiscoveryViewModel
@@ -26,9 +26,9 @@ import io.github.b150005.skeinly.ui.profile.ProfileViewModel
 import io.github.b150005.skeinly.ui.projectdetail.ProjectDetailViewModel
 import io.github.b150005.skeinly.ui.projectlist.ProjectListViewModel
 import io.github.b150005.skeinly.ui.pullrequest.ChartConflictResolutionViewModel
-import io.github.b150005.skeinly.ui.pullrequest.PullRequestDetailViewModel
-import io.github.b150005.skeinly.ui.pullrequest.PullRequestFilter
-import io.github.b150005.skeinly.ui.pullrequest.PullRequestListViewModel
+import io.github.b150005.skeinly.ui.pullrequest.SuggestionDetailViewModel
+import io.github.b150005.skeinly.ui.pullrequest.SuggestionFilter
+import io.github.b150005.skeinly.ui.pullrequest.SuggestionListViewModel
 import io.github.b150005.skeinly.ui.settings.SettingsViewModel
 import io.github.b150005.skeinly.ui.sharedcontent.SharedContentViewModel
 import io.github.b150005.skeinly.ui.sharedwithme.SharedWithMeViewModel
@@ -116,7 +116,7 @@ val viewModelModule =
                 uploadProgressPhoto = get(),
                 deleteProgressPhoto = get(),
                 progressPhotoStorage = getOrNull(progressPhotosStorageQualifier),
-                observeStructuredChart = get(),
+                observeChart = get(),
                 observeProjectSegments = get(),
                 resetProjectProgress = get(),
                 analyticsTracker = get(),
@@ -142,7 +142,7 @@ val viewModelModule =
             ChartViewerViewModel(
                 patternId = params.get<String>(0),
                 projectId = params.get<String?>(1),
-                observeStructuredChart = get(),
+                observeChart = get(),
                 observeProjectSegments = get(),
                 toggleSegmentState = get(),
                 markSegmentDone = get(),
@@ -151,9 +151,9 @@ val viewModelModule =
                 // gracefully degrades to closed in offline-only / mis-wired
                 // setups; production wiring always provides non-null.
                 patternRepository = getOrNull(),
-                chartBranchRepository = getOrNull(),
+                chartVariationRepository = getOrNull(),
                 authRepository = getOrNull(),
-                openPullRequest = getOrNull(),
+                openSuggestion = getOrNull(),
                 analyticsTracker = get(),
             )
         }
@@ -165,7 +165,7 @@ val viewModelModule =
             )
         }
         viewModel { params ->
-            ChartBranchPickerViewModel(
+            ChartVariationPickerViewModel(
                 patternId = params.get(),
                 getBranches = get(),
                 createBranch = get(),
@@ -178,18 +178,18 @@ val viewModelModule =
             // Positional indices per the ChartViewerViewModel binding above —
             // `params.getOrNull<String>()` would re-read index 0 (the nullable
             // baseRevisionId) and silently bind both fields to the same id.
-            ChartDiffViewModel(
+            ChartComparisonViewModel(
                 baseRevisionId = params.get<String?>(0),
                 targetRevisionId = params.get<String>(1),
-                getChartDiff = get(),
+                getChartComparison = get(),
             )
         }
         viewModel { params ->
             ChartEditorViewModel(
                 patternId = params.get(),
-                getStructuredChart = get(),
-                createStructuredChart = get(),
-                updateStructuredChart = get(),
+                getChart = get(),
+                createChart = get(),
+                updateChart = get(),
                 symbolCatalog = get(),
                 analyticsTracker = get(),
             )
@@ -200,12 +200,12 @@ val viewModelModule =
                 token = params.get<String?>(0),
                 shareId = params.get<String?>(1),
                 resolveShareToken = get(),
-                forkSharedPattern = get(),
+                saveSharedPatternToLibrary = get(),
             )
         }
         viewModel { params ->
-            PullRequestListViewModel(
-                defaultFilter = params.get<PullRequestFilter>(),
+            SuggestionListViewModel(
+                defaultFilter = params.get<SuggestionFilter>(),
                 getIncoming = get(),
                 getOutgoing = get(),
                 authRepository = get(),
@@ -213,29 +213,29 @@ val viewModelModule =
             )
         }
         viewModel { params ->
-            PullRequestDetailViewModel(
+            SuggestionDetailViewModel(
                 prId = params.get(),
-                getPullRequest = get(),
+                getSuggestion = get(),
                 getComments = get(),
                 postComment = get(),
-                closePullRequest = get(),
-                pullRequestRepository = get(),
+                closeSuggestion = get(),
+                suggestionRepository = get(),
                 patternRepository = get(),
                 userRepository = get(),
                 authRepository = get(),
-                mergePullRequest = get(),
-                chartRevisionRepository = get(),
-                structuredChartRepository = get(),
+                applySuggestion = get(),
+                chartVersionRepository = get(),
+                chartRepository = get(),
                 analyticsTracker = get(),
             )
         }
         viewModel { params ->
             ChartConflictResolutionViewModel(
                 prId = params.get(),
-                getPullRequest = get(),
-                chartRevisionRepository = get(),
-                structuredChartRepository = get(),
-                mergePullRequest = get(),
+                getSuggestion = get(),
+                chartVersionRepository = get(),
+                chartRepository = get(),
+                applySuggestion = get(),
                 // Phase F.5 — AnalyticsTracker is registered as a single in
                 // PreferencesModule and always present in production. The
                 // ctor param is nullable-with-default so test sites can

@@ -45,7 +45,7 @@ data class NotificationPermissionState(
 sealed interface NotificationPermissionEvent {
     /**
      * Fired by an entry-point screen when the user crossed the threshold
-     * for that trigger (e.g. PullRequestListScreen Incoming with PRs).
+     * for that trigger (e.g. SuggestionListScreen Incoming with PRs).
      * The VM decides whether to surface the explainer based on OS state +
      * prompter state.
      */

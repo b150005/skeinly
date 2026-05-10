@@ -13,9 +13,9 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import io.github.b150005.skeinly.domain.chart.PolarCellLayout
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.SegmentState
-import io.github.b150005.skeinly.domain.model.StructuredChart
 import io.github.b150005.skeinly.domain.symbol.PathCommand
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
 import kotlin.math.PI
@@ -142,7 +142,7 @@ fun polarWedgePath(
  */
 fun DrawScope.drawPolarSegmentOverlay(
     polar: ChartExtents.Polar,
-    chart: StructuredChart,
+    chart: Chart,
     hiddenLayerIds: Set<String>,
     segments: Map<SegmentKey, SegmentState>,
     layout: PolarCellLayout.Layout,
@@ -195,7 +195,7 @@ fun DrawScope.drawPolarSegmentOverlay(
 @Suppress("LongParameterList")
 fun DrawScope.drawPolarCells(
     polar: ChartExtents.Polar,
-    chart: StructuredChart,
+    chart: Chart,
     hiddenLayerIds: Set<String>,
     catalog: SymbolCatalog,
     layout: PolarCellLayout.Layout,

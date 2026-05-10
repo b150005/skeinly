@@ -1,21 +1,21 @@
 package io.github.b150005.skeinly.data.sync
 
-import io.github.b150005.skeinly.data.local.LocalChartRevisionDataSource
+import io.github.b150005.skeinly.data.local.LocalChartVersionDataSource
 import io.github.b150005.skeinly.data.local.LocalPatternDataSource
 import io.github.b150005.skeinly.data.local.LocalProgressDataSource
 import io.github.b150005.skeinly.data.local.LocalProjectDataSource
 import io.github.b150005.skeinly.data.local.LocalProjectSegmentDataSource
-import io.github.b150005.skeinly.data.local.LocalPullRequestDataSource
+import io.github.b150005.skeinly.data.local.LocalSuggestionDataSource
 import io.github.b150005.skeinly.data.realtime.ChangeFilter
 import io.github.b150005.skeinly.data.realtime.ChannelHandle
 import io.github.b150005.skeinly.data.realtime.RealtimeChannelProvider
 import io.github.b150005.skeinly.domain.model.AuthState
-import io.github.b150005.skeinly.domain.model.ChartRevision
+import io.github.b150005.skeinly.domain.model.ChartVersion
 import io.github.b150005.skeinly.domain.model.Pattern
 import io.github.b150005.skeinly.domain.model.Progress
 import io.github.b150005.skeinly.domain.model.Project
 import io.github.b150005.skeinly.domain.model.ProjectSegment
-import io.github.b150005.skeinly.domain.model.PullRequest
+import io.github.b150005.skeinly.domain.model.Suggestion
 import io.github.b150005.skeinly.domain.repository.AuthRepository
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.decodeOldRecord
@@ -49,22 +49,22 @@ class RealtimeSyncManager(
     // Phase 37.1 (ADR-013 §8): chart-revisions-<ownerId> 5th channel.
     // Optional with `null` default so existing test call-sites that don't
     // exercise revisions continue to construct this manager unchanged.
-    private val localChartRevision: LocalChartRevisionDataSource? = null,
+    private val localChartVersion: LocalChartVersionDataSource? = null,
     // Phase 38.1 (ADR-014 §7): pull-requests-incoming-<ownerId> + outgoing
     // 6th + 7th channels. Optional with `null` default for backward compat
     // with existing test call-sites — same pattern as chart_revisions above.
     // The dynamic per-PR comments channel (pull-request-comments-<prId>)
-    // lands in Phase 38.3 alongside PullRequestDetailScreen and is NOT
+    // lands in Phase 38.3 alongside SuggestionDetailScreen and is NOT
     // managed by RealtimeSyncManager — it's opened/closed on view lifecycle.
-    private val localPullRequest: LocalPullRequestDataSource? = null,
+    private val localSuggestion: LocalSuggestionDataSource? = null,
 ) {
     private var projectChannel: ChannelHandle? = null
     private var progressChannel: ChannelHandle? = null
     private var patternChannel: ChannelHandle? = null
     private var projectSegmentChannel: ChannelHandle? = null
-    private var chartRevisionChannel: ChannelHandle? = null
-    private var pullRequestIncomingChannel: ChannelHandle? = null
-    private var pullRequestOutgoingChannel: ChannelHandle? = null
+    private var chartVersionChannel: ChannelHandle? = null
+    private var suggestionIncomingChannel: ChannelHandle? = null
+    private var suggestionOutgoingChannel: ChannelHandle? = null
     private var authObserverJob: Job? = null
     private var connectivityJob: Job? = null
     private var retryJob: Job? = null
@@ -126,10 +126,10 @@ class RealtimeSyncManager(
             subscribeToProgress(ownerId)
             subscribeToPatterns(ownerId)
             subscribeToProjectSegments(ownerId)
-            if (localChartRevision != null) subscribeToChartRevisions(ownerId)
-            if (localPullRequest != null) {
-                subscribeToPullRequestsOutgoing(ownerId)
-                subscribeToPullRequestsIncoming(ownerId)
+            if (localChartVersion != null) subscribeToChartVersions(ownerId)
+            if (localSuggestion != null) {
+                subscribeToSuggestionsOutgoing(ownerId)
+                subscribeToSuggestionsIncoming(ownerId)
             }
         }
 
@@ -147,12 +147,12 @@ class RealtimeSyncManager(
         patternChannel = null
         projectSegmentChannel?.unsubscribe()
         projectSegmentChannel = null
-        chartRevisionChannel?.unsubscribe()
-        chartRevisionChannel = null
-        pullRequestIncomingChannel?.unsubscribe()
-        pullRequestIncomingChannel = null
-        pullRequestOutgoingChannel?.unsubscribe()
-        pullRequestOutgoingChannel = null
+        chartVersionChannel?.unsubscribe()
+        chartVersionChannel = null
+        suggestionIncomingChannel?.unsubscribe()
+        suggestionIncomingChannel = null
+        suggestionOutgoingChannel?.unsubscribe()
+        suggestionOutgoingChannel = null
     }
 
     /**
@@ -267,16 +267,16 @@ class RealtimeSyncManager(
         handle.subscribe()
     }
 
-    private suspend fun subscribeToChartRevisions(ownerId: String) {
+    private suspend fun subscribeToChartVersions(ownerId: String) {
         val handle = channelProvider.createChannel("chart-revisions-$ownerId")
-        chartRevisionChannel = handle
+        chartVersionChannel = handle
 
         handle
             .postgresChangeFlow(
-                table = "chart_revisions",
+                table = "chart_versions",
                 filter = ChangeFilter("owner_id", ownerId),
             ).onEach { action ->
-                handleChartRevisionAction(action)
+                handleChartVersionAction(action)
             }.catch { e ->
                 if (e is CancellationException) throw e
                 logger.log(TAG, "Channel flow error on chart_revisions", e)
@@ -294,16 +294,16 @@ class RealtimeSyncManager(
      * RLS visibility AND any client filter, so the eq filter is the tighter
      * constraint here).
      */
-    private suspend fun subscribeToPullRequestsOutgoing(ownerId: String) {
+    private suspend fun subscribeToSuggestionsOutgoing(ownerId: String) {
         val handle = channelProvider.createChannel("pull-requests-outgoing-$ownerId")
-        pullRequestOutgoingChannel = handle
+        suggestionOutgoingChannel = handle
 
         handle
             .postgresChangeFlow(
-                table = "pull_requests",
+                table = "suggestions",
                 filter = ChangeFilter("author_id", ownerId),
             ).onEach { action ->
-                handlePullRequestAction(action)
+                handleSuggestionAction(action)
             }.catch { e ->
                 if (e is CancellationException) throw e
                 logger.log(TAG, "Channel flow error on pull_requests outgoing", e)
@@ -320,23 +320,23 @@ class RealtimeSyncManager(
      * filter; RLS scopes the broadcast to PRs where the user is participant
      * (author OR target owner) per migration 016 — the same union the
      * outgoing channel sees, just differently labeled. The local handler
-     * upserts unconditionally; the [PullRequest.id] PRIMARY KEY makes
+     * upserts unconditionally; the [Suggestion.id] PRIMARY KEY makes
      * outgoing-PR events arriving on both channels idempotent. Cost: each
      * outgoing PR change fires once on each channel (2x bandwidth on
      * outgoing events only); each incoming PR change fires once. Acceptable
      * given the v1 channel budget — revisit consolidation in Phase 39 if
      * connection caps become tight.
      */
-    private suspend fun subscribeToPullRequestsIncoming(ownerId: String) {
+    private suspend fun subscribeToSuggestionsIncoming(ownerId: String) {
         val handle = channelProvider.createChannel("pull-requests-incoming-$ownerId")
-        pullRequestIncomingChannel = handle
+        suggestionIncomingChannel = handle
 
         handle
             .postgresChangeFlow(
-                table = "pull_requests",
+                table = "suggestions",
                 filter = null,
             ).onEach { action ->
-                handlePullRequestAction(action)
+                handleSuggestionAction(action)
             }.catch { e ->
                 if (e is CancellationException) throw e
                 logger.log(TAG, "Channel flow error on pull_requests incoming", e)
@@ -449,17 +449,17 @@ class RealtimeSyncManager(
      * `handlePatternAction` Delete already removes the parent row locally; this
      * handler is the explicit revision-side cleanup.
      */
-    private suspend fun handleChartRevisionAction(action: PostgresAction) {
-        val ds = localChartRevision ?: return
+    private suspend fun handleChartVersionAction(action: PostgresAction) {
+        val ds = localChartVersion ?: return
         when (action) {
             is PostgresAction.Insert -> {
-                val revision = action.decodeRecord<ChartRevision>()
+                val revision = action.decodeRecord<ChartVersion>()
                 ds.upsert(revision)
             }
             is PostgresAction.Delete -> {
                 // CASCADE delete from pattern. Decode the old record to recover
                 // pattern_id, then bulk-clear local revisions for that pattern.
-                val old = action.decodeOldRecord<ChartRevision>()
+                val old = action.decodeOldRecord<ChartVersion>()
                 ds.deleteByPatternId(old.patternId)
             }
             is PostgresAction.Update,
@@ -472,7 +472,7 @@ class RealtimeSyncManager(
      * Pull request Realtime handler (Phase 38.1, ADR-014 §7).
      *
      * INSERT and UPDATE both upsert via the same path — the local
-     * [LocalPullRequestDataSource.upsert] uses INSERT OR REPLACE on `id` so
+     * [LocalSuggestionDataSource.upsert] uses INSERT OR REPLACE on `id` so
      * a re-arrived event from the dual-channel subscription (outgoing PR
      * delivered through both incoming + outgoing channels) is a silent
      * overwrite with the same row.
@@ -488,19 +488,19 @@ class RealtimeSyncManager(
      * because a revision's parent is a single pattern; the asymmetry is
      * deliberate, not an oversight.
      */
-    private suspend fun handlePullRequestAction(action: PostgresAction) {
-        val ds = localPullRequest ?: return
+    private suspend fun handleSuggestionAction(action: PostgresAction) {
+        val ds = localSuggestion ?: return
         when (action) {
             is PostgresAction.Insert -> {
-                val pr = action.decodeRecord<PullRequest>()
+                val pr = action.decodeRecord<Suggestion>()
                 ds.upsert(pr)
             }
             is PostgresAction.Update -> {
-                val pr = action.decodeRecord<PullRequest>()
+                val pr = action.decodeRecord<Suggestion>()
                 ds.upsert(pr)
             }
             is PostgresAction.Delete -> {
-                val old = action.decodeOldRecord<PullRequest>()
+                val old = action.decodeOldRecord<Suggestion>()
                 ds.deleteById(old.id)
             }
             is PostgresAction.Select -> { /* no-op */ }

@@ -37,17 +37,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import io.github.b150005.skeinly.domain.model.ChartBranch
+import io.github.b150005.skeinly.domain.model.ChartVariation
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_cancel
-import io.github.b150005.skeinly.generated.resources.action_create_branch
+import io.github.b150005.skeinly.generated.resources.action_create_variation
 import io.github.b150005.skeinly.generated.resources.action_switch
-import io.github.b150005.skeinly.generated.resources.dialog_create_branch_title
-import io.github.b150005.skeinly.generated.resources.label_branch_name
-import io.github.b150005.skeinly.generated.resources.label_current_branch
-import io.github.b150005.skeinly.generated.resources.message_switched_to_branch
-import io.github.b150005.skeinly.generated.resources.state_no_branches
-import io.github.b150005.skeinly.generated.resources.title_branch_picker
+import io.github.b150005.skeinly.generated.resources.dialog_create_variation_title
+import io.github.b150005.skeinly.generated.resources.label_current_variation
+import io.github.b150005.skeinly.generated.resources.label_variation_name
+import io.github.b150005.skeinly.generated.resources.message_switched_to_variation
+import io.github.b150005.skeinly.generated.resources.state_no_variations
+import io.github.b150005.skeinly.generated.resources.title_variations
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -66,11 +66,11 @@ import org.koin.core.parameter.parametersOf
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChartBranchPickerSheet(
+fun ChartVariationPickerSheet(
     patternId: String,
     onDismiss: () -> Unit,
     onBranchSwitched: (branchName: String) -> Unit,
-    viewModel: ChartBranchPickerViewModel = koinViewModel { parametersOf(patternId) },
+    viewModel: ChartVariationPickerViewModel = koinViewModel { parametersOf(patternId) },
 ) {
     val state by viewModel.state.collectAsState()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -97,13 +97,13 @@ fun ChartBranchPickerSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = stringResource(Res.string.title_branch_picker),
+                text = stringResource(Res.string.title_variations),
                 style = MaterialTheme.typography.titleLarge,
             )
 
             if (state.branches.isEmpty() && !state.isLoading) {
                 Text(
-                    text = stringResource(Res.string.state_no_branches),
+                    text = stringResource(Res.string.state_no_variations),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -112,7 +112,7 @@ fun ChartBranchPickerSheet(
                     BranchRow(
                         branch = branch,
                         isCurrent = branch.tipRevisionId == state.currentRevisionId,
-                        onSwitch = { viewModel.onEvent(ChartBranchPickerEvent.SwitchBranch(branch.branchName)) },
+                        onSwitch = { viewModel.onEvent(ChartVariationPickerEvent.SwitchBranch(branch.branchName)) },
                     )
                     HorizontalDivider()
                 }
@@ -133,7 +133,7 @@ fun ChartBranchPickerSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(Icons.Default.Add, contentDescription = null)
-                Text(text = stringResource(Res.string.action_create_branch))
+                Text(text = stringResource(Res.string.action_create_variation))
             }
         }
     }
@@ -141,7 +141,7 @@ fun ChartBranchPickerSheet(
     if (showCreateDialog) {
         CreateBranchDialog(
             onConfirm = { name ->
-                viewModel.onEvent(ChartBranchPickerEvent.CreateBranch(name))
+                viewModel.onEvent(ChartVariationPickerEvent.CreateBranch(name))
                 showCreateDialog = false
             },
             onDismiss = { showCreateDialog = false },
@@ -151,7 +151,7 @@ fun ChartBranchPickerSheet(
 
 @Composable
 private fun BranchRow(
-    branch: ChartBranch,
+    branch: ChartVariation,
     isCurrent: Boolean,
     onSwitch: () -> Unit,
 ) {
@@ -173,7 +173,7 @@ private fun BranchRow(
         if (isCurrent) {
             AssistChip(
                 onClick = {},
-                label = { Text(stringResource(Res.string.label_current_branch)) },
+                label = { Text(stringResource(Res.string.label_current_variation)) },
                 leadingIcon = {
                     Icon(
                         Icons.Default.Check,
@@ -203,12 +203,12 @@ private fun CreateBranchDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         modifier = Modifier.testTag("createBranchDialog"),
-        title = { Text(stringResource(Res.string.dialog_create_branch_title)) },
+        title = { Text(stringResource(Res.string.dialog_create_variation_title)) },
         text = {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text(stringResource(Res.string.label_branch_name)) },
+                label = { Text(stringResource(Res.string.label_variation_name)) },
                 singleLine = true,
                 modifier =
                     Modifier
@@ -222,7 +222,7 @@ private fun CreateBranchDialog(
                 enabled = name.isNotBlank(),
                 modifier = Modifier.testTag("confirmCreateBranchButton"),
             ) {
-                Text(stringResource(Res.string.action_create_branch))
+                Text(stringResource(Res.string.action_create_variation))
             }
         },
         dismissButton = {
@@ -239,7 +239,7 @@ private fun CreateBranchDialog(
  */
 @Composable
 fun rememberSwitchedSnackbar(): (String) -> String {
-    val template = stringResource(Res.string.message_switched_to_branch)
+    val template = stringResource(Res.string.message_switched_to_variation)
     return remember(template) {
         { branchName: String -> template.replace("%1\$s", branchName) }
     }

@@ -1,7 +1,7 @@
 package io.github.b150005.skeinly.domain.usecase
 
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.repository.PullRequestRepository
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.repository.SuggestionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
@@ -21,10 +21,10 @@ import kotlin.coroutines.cancellation.CancellationException
  * matches the user's role on the entry point (target owner → INCOMING,
  * source author → OUTGOING).
  */
-class GetPullRequestUseCase(
-    private val repository: PullRequestRepository,
+class GetSuggestionUseCase(
+    private val repository: SuggestionRepository,
 ) {
-    suspend operator fun invoke(prId: String): UseCaseResult<PullRequest> =
+    suspend operator fun invoke(prId: String): UseCaseResult<Suggestion> =
         try {
             val pr = repository.getById(prId)
             if (pr == null) {
@@ -46,12 +46,12 @@ class GetPullRequestUseCase(
     fun observe(
         prId: String,
         ownerId: String,
-        scope: PullRequestObserveScope,
-    ): Flow<PullRequest> {
+        scope: SuggestionObserveScope,
+    ): Flow<Suggestion> {
         val source =
             when (scope) {
-                PullRequestObserveScope.INCOMING -> repository.observeIncomingForOwner(ownerId)
-                PullRequestObserveScope.OUTGOING -> repository.observeOutgoingForOwner(ownerId)
+                SuggestionObserveScope.INCOMING -> repository.observeIncomingForOwner(ownerId)
+                SuggestionObserveScope.OUTGOING -> repository.observeOutgoingForOwner(ownerId)
             }
         return source
             .map { rows -> rows.firstOrNull { it.id == prId } }
@@ -60,7 +60,7 @@ class GetPullRequestUseCase(
 }
 
 /** Which owner-scoped observe stream a PR detail consumer should subscribe to. */
-enum class PullRequestObserveScope {
+enum class SuggestionObserveScope {
     INCOMING,
     OUTGOING,
 }

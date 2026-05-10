@@ -1,5 +1,5 @@
 -- Phase 37.1: Collaboration core — chart_revisions + chart_branches (ADR-013).
-CREATE TABLE ChartRevisionEntity (
+CREATE TABLE ChartVersionEntity (
     id TEXT NOT NULL PRIMARY KEY,
     pattern_id TEXT NOT NULL,
     owner_id TEXT NOT NULL,
@@ -18,11 +18,11 @@ CREATE TABLE ChartRevisionEntity (
 );
 
 CREATE INDEX IF NOT EXISTS idx_chart_revisions_pattern_id_created_at
-    ON ChartRevisionEntity(pattern_id, created_at DESC);
+    ON ChartVersionEntity(pattern_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_chart_revisions_revision_id
-    ON ChartRevisionEntity(revision_id);
+    ON ChartVersionEntity(revision_id);
 
-CREATE TABLE ChartBranchEntity (
+CREATE TABLE ChartVariationEntity (
     id TEXT NOT NULL PRIMARY KEY,
     pattern_id TEXT NOT NULL,
     owner_id TEXT NOT NULL,
@@ -34,4 +34,4 @@ CREATE TABLE ChartBranchEntity (
     UNIQUE (pattern_id, branch_name)
 );
 
-CREATE INDEX IF NOT EXISTS idx_chart_branches_pattern_id ON ChartBranchEntity(pattern_id);
+CREATE INDEX IF NOT EXISTS idx_chart_branches_pattern_id ON ChartVariationEntity(pattern_id);

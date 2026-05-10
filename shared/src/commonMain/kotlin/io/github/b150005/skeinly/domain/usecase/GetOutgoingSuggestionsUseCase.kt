@@ -1,23 +1,23 @@
 package io.github.b150005.skeinly.domain.usecase
 
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.repository.PullRequestRepository
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.repository.SuggestionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Read-side of the Phase 38.2 outgoing pull-request list (ADR-014 §6, §8).
  *
- * Symmetric to [GetIncomingPullRequestsUseCase] — wraps
- * [PullRequestRepository.observeOutgoingForOwner] for the live ViewModel flow,
+ * Symmetric to [GetIncomingSuggestionsUseCase] — wraps
+ * [SuggestionRepository.observeOutgoingForOwner] for the live ViewModel flow,
  * plus a one-shot suspend invoke for the cold-launch backfill.
  */
-class GetOutgoingPullRequestsUseCase(
-    private val repository: PullRequestRepository,
+class GetOutgoingSuggestionsUseCase(
+    private val repository: SuggestionRepository,
 ) {
-    fun observe(ownerId: String): Flow<List<PullRequest>> = repository.observeOutgoingForOwner(ownerId)
+    fun observe(ownerId: String): Flow<List<Suggestion>> = repository.observeOutgoingForOwner(ownerId)
 
-    suspend operator fun invoke(ownerId: String): UseCaseResult<List<PullRequest>> =
+    suspend operator fun invoke(ownerId: String): UseCaseResult<List<Suggestion>> =
         try {
             UseCaseResult.Success(repository.getOutgoingForOwner(ownerId))
         } catch (e: CancellationException) {

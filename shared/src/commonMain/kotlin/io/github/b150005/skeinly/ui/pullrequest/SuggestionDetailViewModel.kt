@@ -7,23 +7,23 @@ import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
 import io.github.b150005.skeinly.data.analytics.ClickActionId
 import io.github.b150005.skeinly.data.analytics.Screen
 import io.github.b150005.skeinly.domain.chart.ConflictDetector
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestComment
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionComment
 import io.github.b150005.skeinly.domain.model.User
-import io.github.b150005.skeinly.domain.model.toStructuredChart
+import io.github.b150005.skeinly.domain.model.toChart
 import io.github.b150005.skeinly.domain.repository.AuthRepository
-import io.github.b150005.skeinly.domain.repository.ChartRevisionRepository
+import io.github.b150005.skeinly.domain.repository.ChartRepository
+import io.github.b150005.skeinly.domain.repository.ChartVersionRepository
 import io.github.b150005.skeinly.domain.repository.PatternRepository
-import io.github.b150005.skeinly.domain.repository.PullRequestRepository
-import io.github.b150005.skeinly.domain.repository.StructuredChartRepository
+import io.github.b150005.skeinly.domain.repository.SuggestionRepository
 import io.github.b150005.skeinly.domain.repository.UserRepository
-import io.github.b150005.skeinly.domain.usecase.ClosePullRequestUseCase
+import io.github.b150005.skeinly.domain.usecase.ApplySuggestionUseCase
+import io.github.b150005.skeinly.domain.usecase.CloseSuggestionUseCase
 import io.github.b150005.skeinly.domain.usecase.ErrorMessage
-import io.github.b150005.skeinly.domain.usecase.GetPullRequestCommentsUseCase
-import io.github.b150005.skeinly.domain.usecase.GetPullRequestUseCase
-import io.github.b150005.skeinly.domain.usecase.MergePullRequestUseCase
-import io.github.b150005.skeinly.domain.usecase.PostPullRequestCommentUseCase
-import io.github.b150005.skeinly.domain.usecase.PullRequestObserveScope
+import io.github.b150005.skeinly.domain.usecase.GetSuggestionCommentsUseCase
+import io.github.b150005.skeinly.domain.usecase.GetSuggestionUseCase
+import io.github.b150005.skeinly.domain.usecase.PostSuggestionCommentUseCase
+import io.github.b150005.skeinly.domain.usecase.SuggestionObserveScope
 import io.github.b150005.skeinly.domain.usecase.UseCaseResult
 import io.github.b150005.skeinly.domain.usecase.applyResolutions
 import io.github.b150005.skeinly.domain.usecase.toErrorMessage
@@ -49,22 +49,22 @@ import kotlinx.coroutines.withTimeout
  *
  * Loads PR + target owner + comments and exposes write actions for posting
  * comments and closing the PR. Merge stays inert per the spec — Phase 38.4
- * wires `MergePullRequestUseCase` against the SECURITY DEFINER RPC.
+ * wires `ApplySuggestionUseCase` against the SECURITY DEFINER RPC.
  *
  * **Realtime lifecycle.** Opens the per-PR comments channel
  * `pull-request-comments-<prId>` (ADR-014 §7) in `init` via
- * [PullRequestRepository.subscribeToCommentsChannel]; closes it in
+ * [SuggestionRepository.subscribeToCommentsChannel]; closes it in
  * [onCleared]. The channel keeps the local cache warm so
- * [GetPullRequestCommentsUseCase.observe] emits live updates without a
+ * [GetSuggestionCommentsUseCase.observe] emits live updates without a
  * manual refresh.
  *
- * **Author resolution** mirrors `PullRequestListViewModel` —
+ * **Author resolution** mirrors `SuggestionListViewModel` —
  * [UserRepository.getByIds] resolves comment author + PR author display
  * names; UI falls back to `label_someone` on cache misses.
  */
-data class PullRequestDetailState(
-    val pullRequest: PullRequest? = null,
-    val comments: List<PullRequestComment> = emptyList(),
+data class SuggestionDetailState(
+    val suggestion: Suggestion? = null,
+    val comments: List<SuggestionComment> = emptyList(),
     val users: Map<String, User> = emptyMap(),
     /** Resolved from `PatternRepository.getById(targetPatternId)`; null until loaded. */
     val targetOwnerId: String? = null,
@@ -89,7 +89,7 @@ data class PullRequestDetailState(
      */
     val canMerge: Boolean
         get() {
-            val pr = pullRequest ?: return false
+            val pr = suggestion ?: return false
             val current = currentUserId ?: return false
             val owner = targetOwnerId ?: return false
             return pr.canMerge(current, owner)
@@ -98,46 +98,46 @@ data class PullRequestDetailState(
     /** Derived gate for the close button. Either party may close per ADR-014 §1. */
     val canClose: Boolean
         get() {
-            val pr = pullRequest ?: return false
-            if (pr.status != io.github.b150005.skeinly.domain.model.PullRequestStatus.OPEN) return false
+            val pr = suggestion ?: return false
+            if (pr.status != io.github.b150005.skeinly.domain.model.SuggestionStatus.OPEN) return false
             val current = currentUserId ?: return false
             return current == pr.authorId || current == targetOwnerId
         }
 }
 
-sealed interface PullRequestDetailEvent {
+sealed interface SuggestionDetailEvent {
     data class CommentDraftChanged(
         val draft: String,
-    ) : PullRequestDetailEvent
+    ) : SuggestionDetailEvent
 
-    data object PostComment : PullRequestDetailEvent
+    data object PostComment : SuggestionDetailEvent
 
-    data object RequestClose : PullRequestDetailEvent
+    data object RequestClose : SuggestionDetailEvent
 
-    data object ConfirmClose : PullRequestDetailEvent
+    data object ConfirmClose : SuggestionDetailEvent
 
-    data object DismissCloseConfirmation : PullRequestDetailEvent
+    data object DismissCloseConfirmation : SuggestionDetailEvent
 
-    data object RequestMerge : PullRequestDetailEvent
+    data object RequestMerge : SuggestionDetailEvent
 
     /**
      * Phase 38.4 — confirm the merge dialog. Routes through `ConflictDetector`
      * to decide between (a) auto-clean direct merge and (b) navigate to
      * `ChartConflictResolutionScreen` for interactive resolution.
      */
-    data object ConfirmMerge : PullRequestDetailEvent
+    data object ConfirmMerge : SuggestionDetailEvent
 
-    data object DismissMergeConfirmation : PullRequestDetailEvent
+    data object DismissMergeConfirmation : SuggestionDetailEvent
 
-    data object ClearError : PullRequestDetailEvent
+    data object ClearError : SuggestionDetailEvent
 }
 
 /**
  * One-shot navigation events surfaced to the screen layer (e.g. Snackbar
  * confirmation + back-pop after close lands).
  */
-sealed interface PullRequestDetailNavEvent {
-    data object PrClosed : PullRequestDetailNavEvent
+sealed interface SuggestionDetailNavEvent {
+    data object PrClosed : SuggestionDetailNavEvent
 
     /**
      * Phase 38.4 — auto-clean merge succeeded; surface the success Snackbar
@@ -147,7 +147,7 @@ sealed interface PullRequestDetailNavEvent {
      */
     data class PrMerged(
         val mergedRevisionId: String,
-    ) : PullRequestDetailNavEvent
+    ) : SuggestionDetailNavEvent
 
     /**
      * Phase 38.4 — conflicts detected; navigate to the resolution screen
@@ -156,11 +156,11 @@ sealed interface PullRequestDetailNavEvent {
      */
     data class NavigateToConflictResolution(
         val prId: String,
-    ) : PullRequestDetailNavEvent
+    ) : SuggestionDetailNavEvent
 
     /**
      * Phase 24.2c-3 (ADR-017 §3.6) — fired on the success path of
-     * [PullRequestDetailEvent.PostComment]. The screen layer listens for
+     * [SuggestionDetailEvent.PostComment]. The screen layer listens for
      * this and dispatches
      * [io.github.b150005.skeinly.ui.notifications.NotificationPermissionEvent.TriggerEncountered]
      * with [io.github.b150005.skeinly.notifications.NotificationPromptTrigger.PR_COMMENT_POSTED]
@@ -171,16 +171,16 @@ sealed interface PullRequestDetailNavEvent {
      * detail surface emits a domain signal, and the screen layer composes
      * notification-permission UX on top of it.
      */
-    data object CommentPosted : PullRequestDetailNavEvent
+    data object CommentPosted : SuggestionDetailNavEvent
 }
 
-class PullRequestDetailViewModel(
+class SuggestionDetailViewModel(
     private val prId: String,
-    private val getPullRequest: GetPullRequestUseCase,
-    private val getComments: GetPullRequestCommentsUseCase,
-    private val postComment: PostPullRequestCommentUseCase,
-    private val closePullRequest: ClosePullRequestUseCase,
-    private val pullRequestRepository: PullRequestRepository,
+    private val getSuggestion: GetSuggestionUseCase,
+    private val getComments: GetSuggestionCommentsUseCase,
+    private val postComment: PostSuggestionCommentUseCase,
+    private val closeSuggestion: CloseSuggestionUseCase,
+    private val suggestionRepository: SuggestionRepository,
     private val patternRepository: PatternRepository,
     private val userRepository: UserRepository,
     private val authRepository: AuthRepository,
@@ -188,17 +188,17 @@ class PullRequestDetailViewModel(
     // the merge path can construct the ViewModel without supplying them; the
     // RequestMerge path no-ops if any are absent (defense-in-depth — Koin
     // production wiring always provides non-null).
-    private val mergePullRequest: MergePullRequestUseCase? = null,
-    private val chartRevisionRepository: ChartRevisionRepository? = null,
-    private val structuredChartRepository: StructuredChartRepository? = null,
+    private val applySuggestion: ApplySuggestionUseCase? = null,
+    private val chartVersionRepository: ChartVersionRepository? = null,
+    private val chartRepository: ChartRepository? = null,
     // Phase F.4 — nullable + default null preserves existing test compat.
     private val analyticsTracker: AnalyticsTracker? = null,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(PullRequestDetailState())
-    val state: StateFlow<PullRequestDetailState> = _state.asStateFlow()
+    private val _state = MutableStateFlow(SuggestionDetailState())
+    val state: StateFlow<SuggestionDetailState> = _state.asStateFlow()
 
-    private val _navEvents = Channel<PullRequestDetailNavEvent>(Channel.BUFFERED)
-    val navEvents: Flow<PullRequestDetailNavEvent> = _navEvents.receiveAsFlow()
+    private val _navEvents = Channel<SuggestionDetailNavEvent>(Channel.BUFFERED)
+    val navEvents: Flow<SuggestionDetailNavEvent> = _navEvents.receiveAsFlow()
 
     init {
         // 1. Open the per-PR comments Realtime channel BEFORE seeding the
@@ -206,7 +206,7 @@ class PullRequestDetailViewModel(
         //    propagates through the channel rather than being missed.
         viewModelScope.launch {
             try {
-                pullRequestRepository.subscribeToCommentsChannel(prId)
+                suggestionRepository.subscribeToCommentsChannel(prId)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Throwable) {
@@ -240,7 +240,7 @@ class PullRequestDetailViewModel(
         CoroutineScope(Dispatchers.Default + NonCancellable).launch {
             try {
                 withTimeout(timeMillis = 5_000) {
-                    pullRequestRepository.closeCommentsChannel()
+                    suggestionRepository.closeCommentsChannel()
                 }
             } catch (_: Throwable) {
                 // Best-effort cleanup. Timeout / network error / cancellation
@@ -250,50 +250,50 @@ class PullRequestDetailViewModel(
         super.onCleared()
     }
 
-    fun onEvent(event: PullRequestDetailEvent) {
+    fun onEvent(event: SuggestionDetailEvent) {
         when (event) {
-            is PullRequestDetailEvent.CommentDraftChanged ->
+            is SuggestionDetailEvent.CommentDraftChanged ->
                 _state.update { it.copy(commentDraft = event.draft) }
 
-            PullRequestDetailEvent.PostComment -> postCommentInternal()
+            SuggestionDetailEvent.PostComment -> postCommentInternal()
 
-            PullRequestDetailEvent.RequestClose -> {
+            SuggestionDetailEvent.RequestClose -> {
                 analyticsTracker?.track(
-                    AnalyticsEvent.ClickAction(ClickActionId.ClosePullRequest, Screen.PullRequestDetail),
+                    AnalyticsEvent.ClickAction(ClickActionId.CloseSuggestion, Screen.SuggestionDetail),
                 )
                 _state.update { it.copy(pendingCloseConfirmation = true) }
             }
 
-            PullRequestDetailEvent.ConfirmClose -> {
+            SuggestionDetailEvent.ConfirmClose -> {
                 _state.update { it.copy(pendingCloseConfirmation = false) }
                 closeInternal()
             }
 
-            PullRequestDetailEvent.DismissCloseConfirmation ->
+            SuggestionDetailEvent.DismissCloseConfirmation ->
                 _state.update { it.copy(pendingCloseConfirmation = false) }
 
-            PullRequestDetailEvent.RequestMerge -> {
+            SuggestionDetailEvent.RequestMerge -> {
                 analyticsTracker?.track(
-                    AnalyticsEvent.ClickAction(ClickActionId.MergePullRequest, Screen.PullRequestDetail),
+                    AnalyticsEvent.ClickAction(ClickActionId.ApplySuggestion, Screen.SuggestionDetail),
                 )
                 _state.update { it.copy(pendingMergeConfirmation = true) }
             }
 
-            PullRequestDetailEvent.ConfirmMerge -> {
+            SuggestionDetailEvent.ConfirmMerge -> {
                 _state.update { it.copy(pendingMergeConfirmation = false) }
                 attemptMerge()
             }
 
-            PullRequestDetailEvent.DismissMergeConfirmation ->
+            SuggestionDetailEvent.DismissMergeConfirmation ->
                 _state.update { it.copy(pendingMergeConfirmation = false) }
 
-            PullRequestDetailEvent.ClearError ->
+            SuggestionDetailEvent.ClearError ->
                 _state.update { it.copy(error = null) }
         }
     }
 
     private suspend fun loadInitial() {
-        when (val result = getPullRequest(prId)) {
+        when (val result = getSuggestion(prId)) {
             is UseCaseResult.Failure -> {
                 _state.update {
                     it.copy(
@@ -325,7 +325,7 @@ class PullRequestDetailViewModel(
                     }
                 _state.update {
                     it.copy(
-                        pullRequest = pr,
+                        suggestion = pr,
                         targetOwnerId = targetPattern?.ownerId,
                         isLoading = false,
                     )
@@ -338,7 +338,7 @@ class PullRequestDetailViewModel(
         }
     }
 
-    private fun observePrRow(pr: PullRequest) {
+    private fun observePrRow(pr: Suggestion) {
         // Pick the observe scope based on the user's role: target owner → INCOMING,
         // source author → OUTGOING. A user who is both (rare — owns both source
         // and target patterns) defaults to INCOMING since that's the merge surface.
@@ -352,15 +352,15 @@ class PullRequestDetailViewModel(
             }
         val scope =
             if (targetOwnerId == currentId) {
-                PullRequestObserveScope.INCOMING
+                SuggestionObserveScope.INCOMING
             } else {
-                PullRequestObserveScope.OUTGOING
+                SuggestionObserveScope.OUTGOING
             }
 
-        getPullRequest
+        getSuggestion
             .observe(prId, ownerId, scope)
             .onEach { fresh ->
-                _state.update { it.copy(pullRequest = fresh) }
+                _state.update { it.copy(suggestion = fresh) }
             }.catch { e ->
                 if (e is CancellationException) throw e
                 _state.update {
@@ -383,7 +383,7 @@ class PullRequestDetailViewModel(
             }.launchIn(viewModelScope)
     }
 
-    private suspend fun resolveUsersForPr(pr: PullRequest) {
+    private suspend fun resolveUsersForPr(pr: Suggestion) {
         val authorId = pr.authorId ?: return
         if (_state.value.users.containsKey(authorId)) return
         // Explicit try/catch (not runCatching) so CancellationException
@@ -401,7 +401,7 @@ class PullRequestDetailViewModel(
         _state.update { current -> current.copy(users = current.users + (authorId to user)) }
     }
 
-    private suspend fun resolveUsersForComments(comments: List<PullRequestComment>) {
+    private suspend fun resolveUsersForComments(comments: List<SuggestionComment>) {
         val newAuthorIds = comments.mapNotNull { it.authorId }.distinct() - _state.value.users.keys
         if (newAuthorIds.isEmpty()) return
         val resolved =
@@ -437,11 +437,11 @@ class PullRequestDetailViewModel(
                     }
                     resolveUsersForComments(listOf(result.value))
                     // Phase F.4 — engagement signal; no properties (cardinality safe).
-                    analyticsTracker?.track(AnalyticsEvent.PullRequestCommented)
+                    analyticsTracker?.track(AnalyticsEvent.SuggestionCommented)
                     // Phase 24.2c-3 (ADR-017 §3.6) — engagement-moment signal
                     // for the in-app pre-permission explainer. The screen
                     // layer routes this to NotificationPermissionViewModel.
-                    _navEvents.trySend(PullRequestDetailNavEvent.CommentPosted)
+                    _navEvents.trySend(SuggestionDetailNavEvent.CommentPosted)
                 }
                 is UseCaseResult.Failure ->
                     _state.update {
@@ -454,10 +454,10 @@ class PullRequestDetailViewModel(
     /**
      * Phase 38.4 (ADR-014 §4 §5 §6) — confirm-merge path. Loads the three
      * revision snapshots, runs [ConflictDetector], and either:
-     *  - Auto-clean: invokes [MergePullRequestUseCase] with the source-tip
+     *  - Auto-clean: invokes [ApplySuggestionUseCase] with the source-tip
      *    document directly. The conflict-detector returned `isClean = true`
      *    so no user resolution is required.
-     *  - Conflicts: emits [PullRequestDetailNavEvent.NavigateToConflictResolution]
+     *  - Conflicts: emits [SuggestionDetailNavEvent.NavigateToConflictResolution]
      *    so the screen layer pushes [ChartConflictResolutionScreen] for
      *    interactive resolution.
      *
@@ -466,11 +466,11 @@ class PullRequestDetailViewModel(
      * surfaces a Validation error rather than silently no-op'ing.
      */
     private fun attemptMerge() {
-        val pr = _state.value.pullRequest ?: return
-        val merge = mergePullRequest
-        val chartRevisionRepo = chartRevisionRepository
-        val chartRepo = structuredChartRepository
-        if (merge == null || chartRevisionRepo == null || chartRepo == null) {
+        val pr = _state.value.suggestion ?: return
+        val merge = applySuggestion
+        val chartVersionRepo = chartVersionRepository
+        val chartRepo = chartRepository
+        if (merge == null || chartVersionRepo == null || chartRepo == null) {
             _state.update {
                 it.copy(error = ErrorMessage.RequiresConnectivity)
             }
@@ -480,7 +480,7 @@ class PullRequestDetailViewModel(
             _state.update { it.copy(isMerging = true) }
             val ancestor =
                 try {
-                    chartRevisionRepo.getRevision(pr.commonAncestorRevisionId)?.toStructuredChart()
+                    chartVersionRepo.getRevision(pr.commonAncestorRevisionId)?.toChart()
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
@@ -488,7 +488,7 @@ class PullRequestDetailViewModel(
                 }
             val theirs =
                 try {
-                    chartRevisionRepo.getRevision(pr.sourceTipRevisionId)?.toStructuredChart()
+                    chartVersionRepo.getRevision(pr.sourceTipRevisionId)?.toChart()
                 } catch (e: CancellationException) {
                     throw e
                 } catch (_: Exception) {
@@ -530,7 +530,7 @@ class PullRequestDetailViewModel(
                         theirs = theirs,
                         ancestor = ancestor,
                     )
-                when (val result = merge(pullRequest = pr, resolvedChart = resolved)) {
+                when (val result = merge(suggestion = pr, resolvedChart = resolved)) {
                     is UseCaseResult.Success -> {
                         _state.update { it.copy(isMerging = false) }
                         // Phase F.4 / F.5 — this branch is only reachable when
@@ -544,10 +544,10 @@ class PullRequestDetailViewModel(
                         // ViewModels cover every successful merge transition
                         // exactly once.
                         analyticsTracker?.track(
-                            AnalyticsEvent.PullRequestMerged(hadConflicts = false),
+                            AnalyticsEvent.SuggestionMerged(hadConflicts = false),
                         )
                         _navEvents.trySend(
-                            PullRequestDetailNavEvent.PrMerged(
+                            SuggestionDetailNavEvent.PrMerged(
                                 mergedRevisionId = result.value.mergedRevisionId,
                             ),
                         )
@@ -560,29 +560,29 @@ class PullRequestDetailViewModel(
             } else {
                 _state.update { it.copy(isMerging = false) }
                 _navEvents.trySend(
-                    PullRequestDetailNavEvent.NavigateToConflictResolution(prId = prId),
+                    SuggestionDetailNavEvent.NavigateToConflictResolution(prId = prId),
                 )
             }
         }
     }
 
     private fun closeInternal() {
-        val pr = _state.value.pullRequest ?: return
+        val pr = _state.value.suggestion ?: return
         if (_state.value.isClosingPr) return
         viewModelScope.launch {
             _state.update { it.copy(isClosingPr = true) }
-            when (val result = closePullRequest(pr)) {
+            when (val result = closeSuggestion(pr)) {
                 is UseCaseResult.Success -> {
                     _state.update {
                         it.copy(
                             isClosingPr = false,
-                            pullRequest = result.value,
+                            suggestion = result.value,
                         )
                     }
                     // Phase F.4 — alpha1 cares about close-vs-merge ratio
                     // (collab loop completion vs abandonment). No properties.
-                    analyticsTracker?.track(AnalyticsEvent.PullRequestClosed)
-                    _navEvents.trySend(PullRequestDetailNavEvent.PrClosed)
+                    analyticsTracker?.track(AnalyticsEvent.SuggestionClosed)
+                    _navEvents.trySend(SuggestionDetailNavEvent.PrClosed)
                 }
                 is UseCaseResult.Failure ->
                     _state.update {

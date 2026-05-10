@@ -47,9 +47,9 @@ enum class ClickActionId(
     ViewHistory("view_history"),
 
     // Pull requests
-    OpenPullRequest("open_pull_request"),
-    MergePullRequest("merge_pull_request"),
-    ClosePullRequest("close_pull_request"),
+    OpenSuggestion("open_pull_request"),
+    ApplySuggestion("apply_suggestion"),
+    CloseSuggestion("close_pull_request"),
 
     // Onboarding
     SubmitOnboarding("submit_onboarding"),

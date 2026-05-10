@@ -95,7 +95,7 @@ private struct ActivityRow: View {
         case .completed: key = "label_activity_completed_by"
         case .shared: key = "label_activity_shared_by"
         case .commented: key = "label_activity_commented_by"
-        case .forked: key = "label_activity_forked_by"
+        case .forked: key = "label_activity_copied_by"
         case .created: key = "label_activity_created_by"
         // Kotlin `ActivityType` is bridged as a non-frozen enum, so Swift
         // requires a default branch. Fall through to the "started" copy;

@@ -7,30 +7,30 @@ import io.github.b150005.skeinly.data.analytics.ChartFormat
 import io.github.b150005.skeinly.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.skeinly.data.analytics.SegmentVia
 import io.github.b150005.skeinly.domain.model.AuthState
-import io.github.b150005.skeinly.domain.model.ChartBranch
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartCell
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
+import io.github.b150005.skeinly.domain.model.ChartVariation
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.Pattern
 import io.github.b150005.skeinly.domain.model.ProjectSegment
 import io.github.b150005.skeinly.domain.model.SegmentState
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import io.github.b150005.skeinly.domain.model.StructuredChart
 import io.github.b150005.skeinly.domain.model.Visibility
 import io.github.b150005.skeinly.domain.usecase.ErrorMessage
 import io.github.b150005.skeinly.domain.usecase.FakeAuthRepository
-import io.github.b150005.skeinly.domain.usecase.FakeChartBranchRepository
+import io.github.b150005.skeinly.domain.usecase.FakeChartRepository
+import io.github.b150005.skeinly.domain.usecase.FakeChartVariationRepository
 import io.github.b150005.skeinly.domain.usecase.FakePatternRepository
 import io.github.b150005.skeinly.domain.usecase.FakeProjectSegmentRepository
-import io.github.b150005.skeinly.domain.usecase.FakePullRequestRepository
-import io.github.b150005.skeinly.domain.usecase.FakeStructuredChartRepository
-import io.github.b150005.skeinly.domain.usecase.GetStructuredChartByPatternIdUseCase
+import io.github.b150005.skeinly.domain.usecase.FakeSuggestionRepository
+import io.github.b150005.skeinly.domain.usecase.GetChartByPatternIdUseCase
 import io.github.b150005.skeinly.domain.usecase.MarkRowSegmentsDoneUseCase
 import io.github.b150005.skeinly.domain.usecase.MarkSegmentDoneUseCase
+import io.github.b150005.skeinly.domain.usecase.ObserveChartUseCase
 import io.github.b150005.skeinly.domain.usecase.ObserveProjectSegmentsUseCase
-import io.github.b150005.skeinly.domain.usecase.ObserveStructuredChartUseCase
-import io.github.b150005.skeinly.domain.usecase.OpenPullRequestUseCase
+import io.github.b150005.skeinly.domain.usecase.OpenSuggestionUseCase
 import io.github.b150005.skeinly.domain.usecase.ToggleSegmentStateUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -52,13 +52,13 @@ import kotlin.time.Instant
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChartViewerViewModelTest {
     private val now = Instant.parse("2026-04-18T00:00:00Z")
-    private lateinit var repo: FakeStructuredChartRepository
+    private lateinit var repo: FakeChartRepository
     private lateinit var segmentRepo: FakeProjectSegmentRepository
 
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        repo = FakeStructuredChartRepository()
+        repo = FakeChartRepository()
         segmentRepo = FakeProjectSegmentRepository()
     }
 
@@ -71,12 +71,12 @@ class ChartViewerViewModelTest {
         patternId: String,
         layers: List<ChartLayer>,
         coordinateSystem: CoordinateSystem = CoordinateSystem.RECT_GRID,
-    ): StructuredChart =
-        StructuredChart(
+    ): Chart =
+        Chart(
             id = "chart-$patternId",
             patternId = patternId,
             ownerId = "user-1",
-            schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+            schemaVersion = Chart.CURRENT_SCHEMA_VERSION,
             storageVariant = StorageVariant.INLINE,
             coordinateSystem = coordinateSystem,
             extents = ChartExtents.Rect(minX = 0, maxX = 2, minY = 0, maxY = 2),
@@ -96,14 +96,14 @@ class ChartViewerViewModelTest {
         ChartViewerViewModel(
             patternId = patternId,
             projectId = projectId,
-            observeStructuredChart = ObserveStructuredChartUseCase(repo),
+            observeChart = ObserveChartUseCase(repo),
             observeProjectSegments = ObserveProjectSegmentsUseCase(segmentRepo),
             toggleSegmentState = ToggleSegmentStateUseCase(segmentRepo, authRepository = null),
             markSegmentDone = MarkSegmentDoneUseCase(segmentRepo, authRepository = null),
             markRowSegmentsDone =
                 MarkRowSegmentsDoneUseCase(
                     repository = segmentRepo,
-                    getStructuredChart = GetStructuredChartByPatternIdUseCase(repo),
+                    getChart = GetChartByPatternIdUseCase(repo),
                     authRepository = null,
                 ),
             analyticsTracker = analyticsTracker,
@@ -153,19 +153,19 @@ class ChartViewerViewModelTest {
     fun `state surfaces error message when observe flow throws`() =
         runTest {
             val failingRepo =
-                object : io.github.b150005.skeinly.domain.repository.StructuredChartRepository {
+                object : io.github.b150005.skeinly.domain.repository.ChartRepository {
                     override suspend fun getByPatternId(patternId: String) = null
 
                     override fun observeByPatternId(patternId: String) =
-                        kotlinx.coroutines.flow.flow<StructuredChart?> {
+                        kotlinx.coroutines.flow.flow<Chart?> {
                             throw IllegalStateException("boom")
                         }
 
                     override suspend fun existsByPatternId(patternId: String) = false
 
-                    override suspend fun create(chart: StructuredChart) = chart
+                    override suspend fun create(chart: Chart) = chart
 
-                    override suspend fun update(chart: StructuredChart) = chart
+                    override suspend fun update(chart: Chart) = chart
 
                     override suspend fun delete(id: String) {}
 
@@ -177,21 +177,21 @@ class ChartViewerViewModelTest {
 
                     override suspend fun setTip(
                         patternId: String,
-                        targetRevision: io.github.b150005.skeinly.domain.model.ChartRevision,
+                        targetRevision: io.github.b150005.skeinly.domain.model.ChartVersion,
                     ) = null
                 }
             val viewModel =
                 ChartViewerViewModel(
                     patternId = "pat-1",
                     projectId = null,
-                    observeStructuredChart = ObserveStructuredChartUseCase(failingRepo),
+                    observeChart = ObserveChartUseCase(failingRepo),
                     observeProjectSegments = ObserveProjectSegmentsUseCase(segmentRepo),
                     toggleSegmentState = ToggleSegmentStateUseCase(segmentRepo, authRepository = null),
                     markSegmentDone = MarkSegmentDoneUseCase(segmentRepo, authRepository = null),
                     markRowSegmentsDone =
                         MarkRowSegmentsDoneUseCase(
                             repository = segmentRepo,
-                            getStructuredChart = GetStructuredChartByPatternIdUseCase(failingRepo),
+                            getChart = GetChartByPatternIdUseCase(failingRepo),
                             authRepository = null,
                         ),
                 )
@@ -552,14 +552,14 @@ class ChartViewerViewModelTest {
                 ChartViewerViewModel(
                     patternId = "pat-1",
                     projectId = "proj-1",
-                    observeStructuredChart = ObserveStructuredChartUseCase(repo),
+                    observeChart = ObserveChartUseCase(repo),
                     observeProjectSegments = ObserveProjectSegmentsUseCase(failingSegmentRepo),
                     toggleSegmentState = ToggleSegmentStateUseCase(segmentRepo, authRepository = null),
                     markSegmentDone = MarkSegmentDoneUseCase(segmentRepo, authRepository = null),
                     markRowSegmentsDone =
                         MarkRowSegmentsDoneUseCase(
                             repository = failingSegmentRepo,
-                            getStructuredChart = GetStructuredChartByPatternIdUseCase(repo),
+                            getChart = GetChartByPatternIdUseCase(repo),
                             authRepository = null,
                         ),
                 )
@@ -602,12 +602,12 @@ class ChartViewerViewModelTest {
         tipRevisionId: String,
         id: String = "branch-$patternId-main",
         ownerId: String = "test-user-id",
-    ): ChartBranch =
-        ChartBranch(
+    ): ChartVariation =
+        ChartVariation(
             id = id,
             patternId = patternId,
             ownerId = ownerId,
-            branchName = ChartBranch.DEFAULT_BRANCH_NAME,
+            branchName = ChartVariation.DEFAULT_BRANCH_NAME,
             tipRevisionId = tipRevisionId,
             createdAt = testInstant,
             updatedAt = testInstant,
@@ -615,9 +615,9 @@ class ChartViewerViewModelTest {
 
     private data class OpenPrTestRig(
         val viewModel: ChartViewerViewModel,
-        val prRepo: FakePullRequestRepository,
+        val prRepo: FakeSuggestionRepository,
         val patternRepo: FakePatternRepository,
-        val branchRepo: FakeChartBranchRepository,
+        val branchRepo: FakeChartVariationRepository,
         val authRepo: FakeAuthRepository,
     )
 
@@ -631,9 +631,9 @@ class ChartViewerViewModelTest {
         analyticsTracker: AnalyticsTracker? = null,
     ): OpenPrTestRig {
         val patternRepo = FakePatternRepository()
-        val branchRepo = FakeChartBranchRepository()
+        val branchRepo = FakeChartVariationRepository()
         val authRepo = FakeAuthRepository()
-        val prRepo = FakePullRequestRepository()
+        val prRepo = FakeSuggestionRepository()
         // Source pattern owns chart "fork-pat" with revision "rev-0".
         val seededChart = chart(patternId = "fork-pat", layers = listOf(ChartLayer(id = "L1", name = "Main")))
         repo.seed(seededChart)
@@ -654,61 +654,61 @@ class ChartViewerViewModelTest {
                     id = "branch-upstream-main",
                 ),
             )
-            // Seed the target's history too so OpenPullRequestUseCase's walk
+            // Seed the target's history too so OpenSuggestionUseCase's walk
             // finds the source tip as the common ancestor on the first hop.
-            // OpenPullRequestUseCase fetches via `getHistoryForPattern`; we
-            // inject a custom ChartRevisionRepository that returns the source
+            // OpenSuggestionUseCase fetches via `getHistoryForPattern`; we
+            // inject a custom ChartVersionRepository that returns the source
             // tip as the only entry — sufficient for the happy-path test.
         }
         if (signedInUserId != null) {
             authRepo.setAuthState(AuthState.Authenticated(userId = signedInUserId, email = "u@e"))
         }
-        // Build the OpenPullRequestUseCase with a minimal in-test ChartRevisionRepository
+        // Build the OpenSuggestionUseCase with a minimal in-test ChartVersionRepository
         // that always claims the source tip is in target history (1-hop common ancestor).
-        val chartRevRepo = ForkChartRevisionFake(sourceTipRevisionId = seededChart.revisionId)
-        val openPrUseCase = OpenPullRequestUseCase(prRepo, chartRevRepo, authRepo)
+        val chartRevRepo = ForkChartVersionFake(sourceTipRevisionId = seededChart.revisionId)
+        val openPrUseCase = OpenSuggestionUseCase(prRepo, chartRevRepo, authRepo)
 
         val vm =
             ChartViewerViewModel(
                 patternId = "fork-pat",
                 projectId = null,
-                observeStructuredChart = ObserveStructuredChartUseCase(repo),
+                observeChart = ObserveChartUseCase(repo),
                 observeProjectSegments = ObserveProjectSegmentsUseCase(segmentRepo),
                 toggleSegmentState = ToggleSegmentStateUseCase(segmentRepo, authRepository = null),
                 markSegmentDone = MarkSegmentDoneUseCase(segmentRepo, authRepository = null),
                 markRowSegmentsDone =
                     MarkRowSegmentsDoneUseCase(
                         repository = segmentRepo,
-                        getStructuredChart = GetStructuredChartByPatternIdUseCase(repo),
+                        getChart = GetChartByPatternIdUseCase(repo),
                         authRepository = null,
                     ),
                 patternRepository = patternRepo,
-                chartBranchRepository = branchRepo,
+                chartVariationRepository = branchRepo,
                 authRepository = authRepo,
-                openPullRequest = openPrUseCase,
+                openSuggestion = openPrUseCase,
                 analyticsTracker = analyticsTracker,
             )
         return OpenPrTestRig(vm, prRepo, patternRepo, branchRepo, authRepo)
     }
 
     @Test
-    fun `canOpenPullRequest is true on a fork owned by current user with branches resolved`() =
+    fun `canOpenSuggestion is true on a fork owned by current user with branches resolved`() =
         runTest {
             val rig = makeOpenPrViewModel()
             advanceUntilIdle()
 
             val state = rig.viewModel.state.value
-            assertTrue(state.canOpenPullRequest)
+            assertTrue(state.canOpenSuggestion)
             assertNotNull(state.pattern)
             assertNotNull(state.currentBranch)
             assertNotNull(state.targetMainBranch)
         }
 
     @Test
-    fun `canOpenPullRequest is false on a non-fork pattern`() =
+    fun `canOpenSuggestion is false on a non-fork pattern`() =
         runTest {
             val patternRepo = FakePatternRepository()
-            val branchRepo = FakeChartBranchRepository()
+            val branchRepo = FakeChartVariationRepository()
             val authRepo = FakeAuthRepository()
             authRepo.setAuthState(AuthState.Authenticated(userId = "test-user-id", email = "u@e"))
             val seededChart = chart("non-fork", listOf(ChartLayer(id = "L1", name = "Main")))
@@ -719,41 +719,41 @@ class ChartViewerViewModelTest {
                 ChartViewerViewModel(
                     patternId = "non-fork",
                     projectId = null,
-                    observeStructuredChart = ObserveStructuredChartUseCase(repo),
+                    observeChart = ObserveChartUseCase(repo),
                     observeProjectSegments = ObserveProjectSegmentsUseCase(segmentRepo),
                     toggleSegmentState = ToggleSegmentStateUseCase(segmentRepo, authRepository = null),
                     markSegmentDone = MarkSegmentDoneUseCase(segmentRepo, authRepository = null),
                     markRowSegmentsDone =
                         MarkRowSegmentsDoneUseCase(
                             repository = segmentRepo,
-                            getStructuredChart = GetStructuredChartByPatternIdUseCase(repo),
+                            getChart = GetChartByPatternIdUseCase(repo),
                             authRepository = null,
                         ),
                     patternRepository = patternRepo,
-                    chartBranchRepository = branchRepo,
+                    chartVariationRepository = branchRepo,
                     authRepository = authRepo,
                 )
             advanceUntilIdle()
 
-            assertFalse(vm.state.value.canOpenPullRequest)
+            assertFalse(vm.state.value.canOpenSuggestion)
         }
 
     @Test
-    fun `canOpenPullRequest is false when current user does not own the pattern`() =
+    fun `canOpenSuggestion is false when current user does not own the pattern`() =
         runTest {
             val rig = makeOpenPrViewModel(forkOwnerId = "someone-else")
             advanceUntilIdle()
-            assertFalse(rig.viewModel.state.value.canOpenPullRequest)
+            assertFalse(rig.viewModel.state.value.canOpenSuggestion)
         }
 
     @Test
-    fun `canOpenPullRequest is false when target main branch is missing`() =
+    fun `canOpenSuggestion is false when target main branch is missing`() =
         runTest {
             val rig = makeOpenPrViewModel(seedTargetMain = false)
             advanceUntilIdle()
             val state = rig.viewModel.state.value
             assertNull(state.targetMainBranch)
-            assertFalse(state.canOpenPullRequest)
+            assertFalse(state.canOpenSuggestion)
         }
 
     @Test
@@ -767,13 +767,13 @@ class ChartViewerViewModelTest {
             // `resolveCurrentBranch`.
             val current = state.currentBranch
             assertNotNull(current)
-            assertEquals(ChartBranch.DEFAULT_BRANCH_NAME, current.branchName)
+            assertEquals(ChartVariation.DEFAULT_BRANCH_NAME, current.branchName)
             // But the PR-open gate stays CLOSED because the resolved branch's
             // tipRevisionId does not match the loaded chart's revisionId.
             // Without this guard a PR would land with a (sourceBranchId,
             // sourceTipRevisionId) that the merge RPC immediately rejects with
             // "Source tip drifted" — see code review MEDIUM-1.
-            assertFalse(state.canOpenPullRequest)
+            assertFalse(state.canOpenSuggestion)
         }
 
     @Test
@@ -791,13 +791,13 @@ class ChartViewerViewModelTest {
         }
 
     @Test
-    fun `RequestOpenPullRequest opens the sheet and clears any prior error`() =
+    fun `RequestOpenSuggestion opens the sheet and clears any prior error`() =
         runTest {
             val rig = makeOpenPrViewModel()
             advanceUntilIdle()
             // Seed an inline error first.
             rig.viewModel.onEvent(ChartViewerEvent.OpenPrTitleChanged(""))
-            rig.viewModel.onEvent(ChartViewerEvent.RequestOpenPullRequest)
+            rig.viewModel.onEvent(ChartViewerEvent.RequestOpenSuggestion)
 
             val state = rig.viewModel.state.value
             assertTrue(state.pendingOpenPrSheet)
@@ -805,14 +805,14 @@ class ChartViewerViewModelTest {
         }
 
     @Test
-    fun `DismissOpenPullRequestSheet clears drafts and pending flag`() =
+    fun `DismissOpenSuggestionSheet clears drafts and pending flag`() =
         runTest {
             val rig = makeOpenPrViewModel()
             advanceUntilIdle()
-            rig.viewModel.onEvent(ChartViewerEvent.RequestOpenPullRequest)
+            rig.viewModel.onEvent(ChartViewerEvent.RequestOpenSuggestion)
             rig.viewModel.onEvent(ChartViewerEvent.OpenPrTitleChanged("hi"))
             rig.viewModel.onEvent(ChartViewerEvent.OpenPrDescriptionChanged("there"))
-            rig.viewModel.onEvent(ChartViewerEvent.DismissOpenPullRequestSheet)
+            rig.viewModel.onEvent(ChartViewerEvent.DismissOpenSuggestionSheet)
 
             val state = rig.viewModel.state.value
             assertFalse(state.pendingOpenPrSheet)
@@ -821,20 +821,20 @@ class ChartViewerViewModelTest {
         }
 
     @Test
-    fun `ConfirmOpenPullRequest opens PR through use case and emits PullRequestCreated nav event`() =
+    fun `ConfirmOpenSuggestion opens PR through use case and emits SuggestionCreated nav event`() =
         runTest {
             val rig = makeOpenPrViewModel()
             advanceUntilIdle()
-            rig.viewModel.onEvent(ChartViewerEvent.RequestOpenPullRequest)
+            rig.viewModel.onEvent(ChartViewerEvent.RequestOpenSuggestion)
             rig.viewModel.onEvent(ChartViewerEvent.OpenPrTitleChanged("Add stitch"))
             rig.viewModel.onEvent(ChartViewerEvent.OpenPrDescriptionChanged("Suggesting an extra row."))
 
             rig.viewModel.navEvents.test {
-                rig.viewModel.onEvent(ChartViewerEvent.ConfirmOpenPullRequest)
+                rig.viewModel.onEvent(ChartViewerEvent.ConfirmOpenSuggestion)
                 advanceUntilIdle()
 
                 val event = awaitItem()
-                assertTrue(event is ChartViewerNavEvent.PullRequestCreated)
+                assertTrue(event is ChartViewerNavEvent.SuggestionCreated)
                 assertNotNull(rig.prRepo.lastOpened)
                 assertEquals("Add stitch", rig.prRepo.lastOpened?.title)
                 assertEquals("Suggesting an extra row.", rig.prRepo.lastOpened?.description)
@@ -845,44 +845,44 @@ class ChartViewerViewModelTest {
 
                 val state = rig.viewModel.state.value
                 assertFalse(state.pendingOpenPrSheet)
-                assertFalse(state.isOpeningPullRequest)
+                assertFalse(state.isOpeningSuggestion)
                 assertEquals("", state.openPrTitleDraft)
                 cancelAndConsumeRemainingEvents()
             }
         }
 
     @Test
-    fun `ConfirmOpenPullRequest failure surfaces openPrError and keeps the sheet open`() =
+    fun `ConfirmOpenSuggestion failure surfaces openPrError and keeps the sheet open`() =
         runTest {
             val rig = makeOpenPrViewModel()
             advanceUntilIdle()
-            rig.viewModel.onEvent(ChartViewerEvent.RequestOpenPullRequest)
+            rig.viewModel.onEvent(ChartViewerEvent.RequestOpenSuggestion)
             rig.viewModel.onEvent(ChartViewerEvent.OpenPrTitleChanged("Add stitch"))
             rig.prRepo.nextOpenError = RuntimeException("network down")
 
-            rig.viewModel.onEvent(ChartViewerEvent.ConfirmOpenPullRequest)
+            rig.viewModel.onEvent(ChartViewerEvent.ConfirmOpenSuggestion)
             advanceUntilIdle()
 
             val state = rig.viewModel.state.value
             assertTrue(state.pendingOpenPrSheet)
-            assertFalse(state.isOpeningPullRequest)
+            assertFalse(state.isOpeningSuggestion)
             assertNotNull(state.openPrError)
             assertNull(rig.prRepo.lastOpened)
         }
 
     @Test
-    fun `ConfirmOpenPullRequest is a no-op when canOpenPullRequest gate is closed`() =
+    fun `ConfirmOpenSuggestion is a no-op when canOpenSuggestion gate is closed`() =
         runTest {
             // Non-fork pattern → gate closed → submit no-ops without surfacing an
             // error (defensive guard; UI gates the entry too).
             val rig = makeOpenPrViewModel(seedFork = false)
             advanceUntilIdle()
             rig.viewModel.onEvent(ChartViewerEvent.OpenPrTitleChanged("hi"))
-            rig.viewModel.onEvent(ChartViewerEvent.ConfirmOpenPullRequest)
+            rig.viewModel.onEvent(ChartViewerEvent.ConfirmOpenSuggestion)
             advanceUntilIdle()
 
             val state = rig.viewModel.state.value
-            assertFalse(state.isOpeningPullRequest)
+            assertFalse(state.isOpeningSuggestion)
             assertNull(state.openPrError)
             assertNull(rig.prRepo.lastOpened)
         }
@@ -1004,18 +1004,18 @@ class ChartViewerViewModelTest {
         }
 
     @Test
-    fun `successful ConfirmOpenPullRequest captures pull_request_opened with chart_format`() =
+    fun `successful ConfirmOpenSuggestion captures pull_request_opened with chart_format`() =
         runTest {
             val tracker = RecordingAnalyticsTracker()
             val rig = makeOpenPrViewModel(analyticsTracker = tracker)
             rig.viewModel.onEvent(ChartViewerEvent.OpenPrTitleChanged("PR title"))
-            rig.viewModel.onEvent(ChartViewerEvent.ConfirmOpenPullRequest)
+            rig.viewModel.onEvent(ChartViewerEvent.ConfirmOpenSuggestion)
             advanceUntilIdle()
 
             assertNotNull(rig.prRepo.lastOpened, "test fixture sanity: PR should land")
             // The seeded chart uses RECT_GRID by default in [chart].
             assertEquals(
-                listOf<AnalyticsEvent>(AnalyticsEvent.PullRequestOpened(chartFormat = ChartFormat.Rect)),
+                listOf<AnalyticsEvent>(AnalyticsEvent.SuggestionOpened(chartFormat = ChartFormat.Rect)),
                 tracker.outcomeEvents,
             )
         }
@@ -1024,23 +1024,23 @@ class ChartViewerViewModelTest {
 }
 
 /**
- * Minimal in-test [io.github.b150005.skeinly.domain.repository.ChartRevisionRepository]
- * for `OpenPullRequestUseCase`'s parent-chain walk. Returns a single-entry
+ * Minimal in-test [io.github.b150005.skeinly.domain.repository.ChartVersionRepository]
+ * for `OpenSuggestionUseCase`'s parent-chain walk. Returns a single-entry
  * history for the upstream pattern containing the source tip, so the walk
  * resolves the source tip itself as the common ancestor on the first hop.
- * The full walk algorithm is exercised in `OpenPullRequestUseCaseTest`; this
+ * The full walk algorithm is exercised in `OpenSuggestionUseCaseTest`; this
  * fake covers only what the ViewModel-side happy path needs.
  */
-private class ForkChartRevisionFake(
+private class ForkChartVersionFake(
     private val sourceTipRevisionId: String,
-) : io.github.b150005.skeinly.domain.repository.ChartRevisionRepository {
+) : io.github.b150005.skeinly.domain.repository.ChartVersionRepository {
     override suspend fun getRevision(revisionId: String) =
         if (revisionId == sourceTipRevisionId) {
-            io.github.b150005.skeinly.domain.model.ChartRevision(
+            io.github.b150005.skeinly.domain.model.ChartVersion(
                 id = "rev-row-id",
                 patternId = "upstream-pat",
                 ownerId = "upstream-owner",
-                schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+                schemaVersion = Chart.CURRENT_SCHEMA_VERSION,
                 storageVariant = StorageVariant.INLINE,
                 coordinateSystem = CoordinateSystem.RECT_GRID,
                 extents = ChartExtents.Rect(0, 0, 0, 0),
@@ -1060,12 +1060,11 @@ private class ForkChartRevisionFake(
         patternId: String,
         limit: Int,
         offset: Int,
-    ): List<io.github.b150005.skeinly.domain.model.ChartRevision> = listOf(getRevision(sourceTipRevisionId)!!)
+    ): List<io.github.b150005.skeinly.domain.model.ChartVersion> = listOf(getRevision(sourceTipRevisionId)!!)
 
     override fun observeHistoryForPattern(
         patternId: String,
-    ): kotlinx.coroutines.flow.Flow<List<io.github.b150005.skeinly.domain.model.ChartRevision>> =
-        kotlinx.coroutines.flow.flowOf(emptyList())
+    ): kotlinx.coroutines.flow.Flow<List<io.github.b150005.skeinly.domain.model.ChartVersion>> = kotlinx.coroutines.flow.flowOf(emptyList())
 
-    override suspend fun append(revision: io.github.b150005.skeinly.domain.model.ChartRevision) = revision
+    override suspend fun append(revision: io.github.b150005.skeinly.domain.model.ChartVersion) = revision
 }

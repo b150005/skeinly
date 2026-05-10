@@ -1,7 +1,7 @@
 package io.github.b150005.skeinly.domain.usecase
 
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestStatus
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionStatus
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -9,13 +9,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.time.Instant
 
-class GetPullRequestUseCaseTest {
+class GetSuggestionUseCaseTest {
     private fun makePr(
         id: String,
         targetPatternId: String = "pat-upstream",
         authorId: String? = "user-fork",
-        status: PullRequestStatus = PullRequestStatus.OPEN,
-    ) = PullRequest(
+        status: SuggestionStatus = SuggestionStatus.OPEN,
+    ) = Suggestion(
         id = id,
         sourcePatternId = "pat-fork",
         sourceBranchId = "br-source-main",
@@ -37,20 +37,20 @@ class GetPullRequestUseCaseTest {
     @Test
     fun `invoke returns Success when PR is cached`() =
         runTest {
-            val repo = FakePullRequestRepository()
+            val repo = FakeSuggestionRepository()
             repo.seedById(makePr("pr-1"))
-            val useCase = GetPullRequestUseCase(repo)
+            val useCase = GetSuggestionUseCase(repo)
 
             val result = useCase("pr-1")
 
-            assertIs<UseCaseResult.Success<PullRequest>>(result)
+            assertIs<UseCaseResult.Success<Suggestion>>(result)
             assertEquals("pr-1", result.value.id)
         }
 
     @Test
     fun `invoke returns NotFound when PR id is unknown`() =
         runTest {
-            val useCase = GetPullRequestUseCase(FakePullRequestRepository())
+            val useCase = GetSuggestionUseCase(FakeSuggestionRepository())
 
             val result = useCase("missing")
 
@@ -61,9 +61,9 @@ class GetPullRequestUseCaseTest {
     @Test
     fun `invoke wraps repository exception as Failure with mapped UseCaseError`() =
         runTest {
-            val repo = FakePullRequestRepository()
+            val repo = FakeSuggestionRepository()
             repo.nextGetByIdError = IllegalStateException("boom")
-            val useCase = GetPullRequestUseCase(repo)
+            val useCase = GetSuggestionUseCase(repo)
 
             val result = useCase("pr-anything")
 
@@ -74,11 +74,11 @@ class GetPullRequestUseCaseTest {
     @Test
     fun `observe emits matching PR from incoming flow when scope is INCOMING`() =
         runTest {
-            val repo = FakePullRequestRepository()
+            val repo = FakeSuggestionRepository()
             repo.setIncoming("owner-1", listOf(makePr("pr-target")))
-            val useCase = GetPullRequestUseCase(repo)
+            val useCase = GetSuggestionUseCase(repo)
 
-            val emitted = useCase.observe("pr-target", "owner-1", PullRequestObserveScope.INCOMING).first()
+            val emitted = useCase.observe("pr-target", "owner-1", SuggestionObserveScope.INCOMING).first()
 
             assertEquals("pr-target", emitted.id)
         }
@@ -86,11 +86,11 @@ class GetPullRequestUseCaseTest {
     @Test
     fun `observe filters out PRs with non-matching id`() =
         runTest {
-            val repo = FakePullRequestRepository()
+            val repo = FakeSuggestionRepository()
             repo.setIncoming("owner-1", listOf(makePr("pr-a"), makePr("pr-b")))
-            val useCase = GetPullRequestUseCase(repo)
+            val useCase = GetSuggestionUseCase(repo)
 
-            val emitted = useCase.observe("pr-b", "owner-1", PullRequestObserveScope.INCOMING).first()
+            val emitted = useCase.observe("pr-b", "owner-1", SuggestionObserveScope.INCOMING).first()
 
             assertEquals("pr-b", emitted.id)
         }
@@ -98,17 +98,17 @@ class GetPullRequestUseCaseTest {
     @Test
     fun `observe surfaces an updated PR row when peer Realtime emission flips status`() =
         runTest {
-            val repo = FakePullRequestRepository()
+            val repo = FakeSuggestionRepository()
             repo.setIncoming("owner-1", listOf(makePr("pr-1")))
-            val useCase = GetPullRequestUseCase(repo)
+            val useCase = GetSuggestionUseCase(repo)
 
             // Simulate close-from-peer landing through the repository.
             repo.setIncoming(
                 "owner-1",
-                listOf(makePr("pr-1", status = PullRequestStatus.CLOSED)),
+                listOf(makePr("pr-1", status = SuggestionStatus.CLOSED)),
             )
 
-            val emitted = useCase.observe("pr-1", "owner-1", PullRequestObserveScope.INCOMING).first()
-            assertEquals(PullRequestStatus.CLOSED, emitted.status)
+            val emitted = useCase.observe("pr-1", "owner-1", SuggestionObserveScope.INCOMING).first()
+            assertEquals(SuggestionStatus.CLOSED, emitted.status)
         }
 }

@@ -11,7 +11,7 @@ import io.github.jan.supabase.postgrest.query.Order
  *
  * Exists as an interface so the repository test can inject an in-memory
  * fake without standing up Supabase. Same precedent as
- * [io.github.b150005.skeinly.domain.repository.PullRequestMergeOperations]
+ * [io.github.b150005.skeinly.domain.repository.SuggestionMergeOperations]
  * (ADR-014 §5).
  */
 interface SubscriptionRemoteOperations {

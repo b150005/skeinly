@@ -64,13 +64,13 @@ class EventRingBufferTest {
 
             tracker.track(AnalyticsEvent.ProjectCreated)
             tracker.track(AnalyticsEvent.RowIncremented)
-            tracker.track(AnalyticsEvent.PullRequestCommented)
+            tracker.track(AnalyticsEvent.SuggestionCommented)
 
             assertEquals(
                 listOf(
                     AnalyticsEvent.ProjectCreated,
                     AnalyticsEvent.RowIncremented,
-                    AnalyticsEvent.PullRequestCommented,
+                    AnalyticsEvent.SuggestionCommented,
                 ),
                 buffer.snapshot(),
             )
@@ -85,14 +85,14 @@ class EventRingBufferTest {
 
             tracker.track(AnalyticsEvent.ProjectCreated)
             tracker.track(AnalyticsEvent.RowIncremented)
-            tracker.track(AnalyticsEvent.PullRequestCommented)
+            tracker.track(AnalyticsEvent.SuggestionCommented)
             // Fourth tracked event evicts ProjectCreated (oldest).
             tracker.track(AnalyticsEvent.PatternCreated)
 
             assertEquals(
                 listOf(
                     AnalyticsEvent.RowIncremented,
-                    AnalyticsEvent.PullRequestCommented,
+                    AnalyticsEvent.SuggestionCommented,
                     AnalyticsEvent.PatternCreated,
                 ),
                 buffer.snapshot(),
@@ -187,7 +187,7 @@ class EventRingBufferTest {
 
             tracker.track(AnalyticsEvent.ProjectCreated)
             tracker.track(AnalyticsEvent.RowIncremented)
-            tracker.track(AnalyticsEvent.PullRequestCommented)
+            tracker.track(AnalyticsEvent.SuggestionCommented)
             assertEquals(3, buffer.snapshot().size)
 
             buffer.clear()

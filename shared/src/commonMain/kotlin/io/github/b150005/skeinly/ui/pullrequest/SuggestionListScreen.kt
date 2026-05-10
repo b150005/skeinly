@@ -34,20 +34,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestStatus
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionStatus
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_back
-import io.github.b150005.skeinly.generated.resources.label_filter_incoming
-import io.github.b150005.skeinly.generated.resources.label_filter_outgoing
-import io.github.b150005.skeinly.generated.resources.label_pr_authored_by
-import io.github.b150005.skeinly.generated.resources.label_pr_status_closed
-import io.github.b150005.skeinly.generated.resources.label_pr_status_merged
-import io.github.b150005.skeinly.generated.resources.label_pr_status_open
+import io.github.b150005.skeinly.generated.resources.label_filter_received
+import io.github.b150005.skeinly.generated.resources.label_filter_sent
 import io.github.b150005.skeinly.generated.resources.label_someone
-import io.github.b150005.skeinly.generated.resources.state_no_pull_requests
-import io.github.b150005.skeinly.generated.resources.state_no_pull_requests_body
-import io.github.b150005.skeinly.generated.resources.title_pull_requests
+import io.github.b150005.skeinly.generated.resources.label_suggestion_authored_by
+import io.github.b150005.skeinly.generated.resources.label_suggestion_status_applied
+import io.github.b150005.skeinly.generated.resources.label_suggestion_status_closed
+import io.github.b150005.skeinly.generated.resources.label_suggestion_status_open
+import io.github.b150005.skeinly.generated.resources.state_no_suggestions
+import io.github.b150005.skeinly.generated.resources.state_no_suggestions_body
+import io.github.b150005.skeinly.generated.resources.title_suggestions
 import io.github.b150005.skeinly.notifications.NotificationPromptTrigger
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.localized
@@ -65,18 +65,18 @@ import org.koin.core.parameter.parametersOf
  * Phase 38.2 (ADR-014 §6 §8) — read-only pull-request list.
  *
  * Top bar with back nav + chip row toggling between Incoming / Outgoing.
- * Tap a row → no-op for 38.2; Phase 38.3 routes to `PullRequestDetailScreen`.
+ * Tap a row → no-op for 38.2; Phase 38.3 routes to `SuggestionDetailScreen`.
  *
  * Rows are grouped by status: OPEN at top, MERGED next, CLOSED last. Within a
  * group the repository's `created_at DESC` ordering is preserved (newest-first).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PullRequestListScreen(
-    defaultFilter: PullRequestFilter,
+fun SuggestionListScreen(
+    defaultFilter: SuggestionFilter,
     onBack: () -> Unit,
-    onPullRequestClick: (String) -> Unit = {},
-    viewModel: PullRequestListViewModel = koinViewModel { parametersOf(defaultFilter) },
+    onSuggestionClick: (String) -> Unit = {},
+    viewModel: SuggestionListViewModel = koinViewModel { parametersOf(defaultFilter) },
     // Phase 24.2c-3 (ADR-017 §3.6) — drives the in-app pre-permission
     // explainer dispatched on first encounter of a non-empty Incoming list.
     // Scoped via `koinViewModel()` so it shares lifecycle with this screen
@@ -93,7 +93,7 @@ fun PullRequestListScreen(
     LaunchedEffect(errorText) {
         errorText?.let {
             snackbarHostState.showSnackbar(it)
-            viewModel.onEvent(PullRequestListEvent.ClearError)
+            viewModel.onEvent(SuggestionListEvent.ClearError)
         }
     }
 
@@ -103,8 +103,8 @@ fun PullRequestListScreen(
     // dispatch is idempotent (the prompter records "asked" globally on
     // first response) so a hypothetical refire after a SelectFilter →
     // back-to-Incoming round trip stays safe.
-    LaunchedEffect(state.filter, state.pullRequests.isNotEmpty()) {
-        if (state.filter == PullRequestFilter.INCOMING && state.pullRequests.isNotEmpty()) {
+    LaunchedEffect(state.filter, state.suggestions.isNotEmpty()) {
+        if (state.filter == SuggestionFilter.INCOMING && state.suggestions.isNotEmpty()) {
             notificationViewModel.onEvent(
                 NotificationPermissionEvent.TriggerEncountered(
                     NotificationPromptTrigger.PR_LIST_INCOMING_WITH_PRS,
@@ -116,7 +116,7 @@ fun PullRequestListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.title_pull_requests)) },
+                title = { Text(stringResource(Res.string.title_suggestions)) },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag("backButton")) {
                         Icon(
@@ -134,28 +134,28 @@ fun PullRequestListScreen(
                 Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .testTag("pullRequestListScreen"),
+                    .testTag("suggestionListScreen"),
         ) {
             FilterChipRow(
                 current = state.filter,
-                onSelect = { viewModel.onEvent(PullRequestListEvent.SelectFilter(it)) },
+                onSelect = { viewModel.onEvent(SuggestionListEvent.SelectFilter(it)) },
             )
             Box(modifier = Modifier.fillMaxSize()) {
                 when {
                     state.isLoading ->
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
 
-                    state.pullRequests.isEmpty() ->
+                    state.suggestions.isEmpty() ->
                         Column(
                             modifier = Modifier.align(Alignment.Center),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Text(
-                                text = stringResource(Res.string.state_no_pull_requests),
+                                text = stringResource(Res.string.state_no_suggestions),
                                 style = MaterialTheme.typography.bodyLarge,
                             )
                             Text(
-                                text = stringResource(Res.string.state_no_pull_requests_body),
+                                text = stringResource(Res.string.state_no_suggestions_body),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -165,17 +165,17 @@ fun PullRequestListScreen(
                         // Group by status — OPEN first, then MERGED, then CLOSED.
                         // `groupBy` preserves original list order within each group,
                         // which carries the repository's `created_at DESC` semantics.
-                        val grouped = state.pullRequests.groupBy { it.status }
+                        val grouped = state.suggestions.groupBy { it.status }
                         val ordered =
                             STATUS_DISPLAY_ORDER.flatMap { status ->
                                 grouped[status].orEmpty()
                             }
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
                             items(ordered, key = { it.id }) { pr ->
-                                PullRequestRow(
-                                    pullRequest = pr,
+                                SuggestionRow(
+                                    suggestion = pr,
                                     authorName = pr.authorId?.let { state.users[it]?.displayName },
-                                    onClick = { onPullRequestClick(pr.id) },
+                                    onClick = { onSuggestionClick(pr.id) },
                                 )
                                 HorizontalDivider()
                             }
@@ -204,16 +204,16 @@ fun PullRequestListScreen(
 
 private val STATUS_DISPLAY_ORDER =
     listOf(
-        PullRequestStatus.OPEN,
-        PullRequestStatus.MERGED,
-        PullRequestStatus.CLOSED,
+        SuggestionStatus.OPEN,
+        SuggestionStatus.APPLIED,
+        SuggestionStatus.CLOSED,
     )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FilterChipRow(
-    current: PullRequestFilter,
-    onSelect: (PullRequestFilter) -> Unit,
+    current: SuggestionFilter,
+    onSelect: (SuggestionFilter) -> Unit,
 ) {
     Column(
         modifier =
@@ -225,17 +225,17 @@ private fun FilterChipRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             FilterChip(
-                selected = current == PullRequestFilter.INCOMING,
-                onClick = { onSelect(PullRequestFilter.INCOMING) },
-                label = { Text(stringResource(Res.string.label_filter_incoming)) },
-                leadingIcon = selectedCheckmarkIcon(current == PullRequestFilter.INCOMING),
+                selected = current == SuggestionFilter.INCOMING,
+                onClick = { onSelect(SuggestionFilter.INCOMING) },
+                label = { Text(stringResource(Res.string.label_filter_received)) },
+                leadingIcon = selectedCheckmarkIcon(current == SuggestionFilter.INCOMING),
                 modifier = Modifier.testTag("incomingFilterChip"),
             )
             FilterChip(
-                selected = current == PullRequestFilter.OUTGOING,
-                onClick = { onSelect(PullRequestFilter.OUTGOING) },
-                label = { Text(stringResource(Res.string.label_filter_outgoing)) },
-                leadingIcon = selectedCheckmarkIcon(current == PullRequestFilter.OUTGOING),
+                selected = current == SuggestionFilter.OUTGOING,
+                onClick = { onSelect(SuggestionFilter.OUTGOING) },
+                label = { Text(stringResource(Res.string.label_filter_sent)) },
+                leadingIcon = selectedCheckmarkIcon(current == SuggestionFilter.OUTGOING),
                 modifier = Modifier.testTag("outgoingFilterChip"),
             )
         }
@@ -243,8 +243,8 @@ private fun FilterChipRow(
 }
 
 @Composable
-private fun PullRequestRow(
-    pullRequest: PullRequest,
+private fun SuggestionRow(
+    suggestion: Suggestion,
     authorName: String?,
     onClick: () -> Unit,
 ) {
@@ -252,17 +252,17 @@ private fun PullRequestRow(
     //  - the user-record lookup missed (e.g. cold-launch with empty UserRepository
     //    cache, account deleted via ON DELETE SET NULL), OR
     //  - the PR row's authorId is itself null (Postgres ON DELETE SET NULL on
-    //    profiles cascade — see PullRequest.authorId KDoc).
+    //    profiles cascade — see Suggestion.authorId KDoc).
     val resolvedName = authorName ?: stringResource(Res.string.label_someone)
-    val authorLine = stringResource(Res.string.label_pr_authored_by, resolvedName)
-    val timestamp = pullRequest.createdAt.formatFull()
+    val authorLine = stringResource(Res.string.label_suggestion_authored_by, resolvedName)
+    val timestamp = suggestion.createdAt.formatFull()
 
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .clickable(role = Role.Button, onClick = onClick)
-                .testTag("prRow_${pullRequest.id}")
+                .testTag("prRow_${suggestion.id}")
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
@@ -272,14 +272,14 @@ private fun PullRequestRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = pullRequest.title,
+                text = suggestion.title,
                 style = MaterialTheme.typography.bodyLarge,
                 modifier =
                     Modifier
                         .weight(1f, fill = true)
-                        .testTag("prTitleLabel_${pullRequest.id}"),
+                        .testTag("prTitleLabel_${suggestion.id}"),
             )
-            StatusChip(status = pullRequest.status, prId = pullRequest.id)
+            StatusChip(status = suggestion.status, prId = suggestion.id)
         }
         Text(
             text = authorLine,
@@ -297,7 +297,7 @@ private fun PullRequestRow(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StatusChip(
-    status: PullRequestStatus,
+    status: SuggestionStatus,
     prId: String,
 ) {
     AssistChip(
@@ -313,13 +313,13 @@ private fun StatusChip(
 }
 
 /**
- * Maps the closed [PullRequestStatus] enum to its `label_pr_status_*` resource.
+ * Maps the closed [SuggestionStatus] enum to its `label_pr_status_*` resource.
  * Exhaustive `when` per the project's sealed-type discipline.
  */
-private val PullRequestStatus.labelKey: StringResource
+private val SuggestionStatus.labelKey: StringResource
     get() =
         when (this) {
-            PullRequestStatus.OPEN -> Res.string.label_pr_status_open
-            PullRequestStatus.MERGED -> Res.string.label_pr_status_merged
-            PullRequestStatus.CLOSED -> Res.string.label_pr_status_closed
+            SuggestionStatus.OPEN -> Res.string.label_suggestion_status_open
+            SuggestionStatus.APPLIED -> Res.string.label_suggestion_status_applied
+            SuggestionStatus.CLOSED -> Res.string.label_suggestion_status_closed
         }

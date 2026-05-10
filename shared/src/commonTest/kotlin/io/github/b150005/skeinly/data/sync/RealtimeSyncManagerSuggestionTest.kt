@@ -1,11 +1,11 @@
 package io.github.b150005.skeinly.data.sync
 
-import io.github.b150005.skeinly.data.local.LocalChartRevisionDataSource
+import io.github.b150005.skeinly.data.local.LocalChartVersionDataSource
 import io.github.b150005.skeinly.data.local.LocalPatternDataSource
 import io.github.b150005.skeinly.data.local.LocalProgressDataSource
 import io.github.b150005.skeinly.data.local.LocalProjectDataSource
 import io.github.b150005.skeinly.data.local.LocalProjectSegmentDataSource
-import io.github.b150005.skeinly.data.local.LocalPullRequestDataSource
+import io.github.b150005.skeinly.data.local.LocalSuggestionDataSource
 import io.github.b150005.skeinly.data.realtime.FakeRealtimeChannelProvider
 import io.github.b150005.skeinly.db.SkeinlyDatabase
 import io.github.b150005.skeinly.db.createTestDriver
@@ -25,13 +25,13 @@ import kotlin.test.assertTrue
  * pull-request channels (ADR-014 §7).
  *
  * Lives in its own test class because the existing [RealtimeSyncManagerTest]
- * setup helper doesn't wire `localPullRequest` (kept null-default for
+ * setup helper doesn't wire `localSuggestion` (kept null-default for
  * backward compatibility — the precedent set by Phase 37.1 chart_revisions).
  * Threading the new local data source through the existing helper would
  * widen its signature and force every other test in the file to learn about
  * a parameter they don't exercise; a dedicated class is the lighter touch.
  */
-class RealtimeSyncManagerPullRequestTest {
+class RealtimeSyncManagerSuggestionTest {
     private fun createManager(): Pair<RealtimeSyncManager, FakeRealtimeChannelProvider> {
         val driver = createTestDriver()
         val db = SkeinlyDatabase(driver)
@@ -51,8 +51,8 @@ class RealtimeSyncManagerPullRequestTest {
                 isOnline = null,
                 config = RealtimeConfig(),
                 random = kotlin.random.Random(seed = 42),
-                localChartRevision = LocalChartRevisionDataSource(db, testDispatcher, testJson),
-                localPullRequest = LocalPullRequestDataSource(db, testDispatcher),
+                localChartVersion = LocalChartVersionDataSource(db, testDispatcher, testJson),
+                localSuggestion = LocalSuggestionDataSource(db, testDispatcher),
             )
         return manager to channelProvider
     }

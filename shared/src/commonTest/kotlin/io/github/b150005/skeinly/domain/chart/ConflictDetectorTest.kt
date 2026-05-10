@@ -1,11 +1,11 @@
 package io.github.b150005.skeinly.domain.chart
 
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartCell
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import io.github.b150005.skeinly.domain.model.StructuredChart
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -42,8 +42,8 @@ class ConflictDetectorTest {
         extents: ChartExtents = ChartExtents.Rect(minX = 0, maxX = 8, minY = 0, maxY = 8),
         revisionId: String = id,
         parentRevisionId: String? = null,
-    ): StructuredChart =
-        StructuredChart(
+    ): Chart =
+        Chart(
             id = id,
             patternId = "pat-1",
             ownerId = "user-1",

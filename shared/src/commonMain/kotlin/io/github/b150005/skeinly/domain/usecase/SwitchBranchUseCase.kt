@@ -1,9 +1,9 @@
 package io.github.b150005.skeinly.domain.usecase
 
-import io.github.b150005.skeinly.domain.model.StructuredChart
-import io.github.b150005.skeinly.domain.repository.ChartBranchRepository
-import io.github.b150005.skeinly.domain.repository.ChartRevisionRepository
-import io.github.b150005.skeinly.domain.repository.StructuredChartRepository
+import io.github.b150005.skeinly.domain.model.Chart
+import io.github.b150005.skeinly.domain.repository.ChartRepository
+import io.github.b150005.skeinly.domain.repository.ChartVariationRepository
+import io.github.b150005.skeinly.domain.repository.ChartVersionRepository
 import kotlinx.coroutines.CancellationException
 
 /**
@@ -19,7 +19,7 @@ import kotlinx.coroutines.CancellationException
  * Concurrency: the use case reads the branch + revision rows outside any
  * mutex (these are immutable once written, so no read-write race), then
  * delegates the read+write of the `chart_documents` tip pointer to
- * `StructuredChartRepository.setTip` which serializes through the same
+ * `ChartRepository.setTip` which serializes through the same
  * `writeMutex` that `update`/`create`/`forkFor` use. A concurrent
  * chart-editor `update()` racing the switch can no longer silently roll
  * back the editor's save — see `setTip` KDoc.
@@ -34,14 +34,14 @@ import kotlinx.coroutines.CancellationException
  *   immediately.
  */
 class SwitchBranchUseCase(
-    private val branchRepository: ChartBranchRepository,
-    private val revisionRepository: ChartRevisionRepository,
-    private val chartRepository: StructuredChartRepository,
+    private val branchRepository: ChartVariationRepository,
+    private val revisionRepository: ChartVersionRepository,
+    private val chartRepository: ChartRepository,
 ) {
     suspend operator fun invoke(
         patternId: String,
         branchName: String,
-    ): UseCaseResult<StructuredChart> =
+    ): UseCaseResult<Chart> =
         try {
             val branch = branchRepository.getByPatternIdAndName(patternId, branchName)
             if (branch == null) {

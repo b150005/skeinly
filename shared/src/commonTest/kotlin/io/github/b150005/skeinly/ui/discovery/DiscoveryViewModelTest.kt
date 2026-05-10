@@ -6,20 +6,20 @@ import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
 import io.github.b150005.skeinly.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.skeinly.data.remote.FakePublicPatternDataSource
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.Difficulty
 import io.github.b150005.skeinly.domain.model.Pattern
 import io.github.b150005.skeinly.domain.model.SortOrder
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import io.github.b150005.skeinly.domain.model.StructuredChart
 import io.github.b150005.skeinly.domain.model.Visibility
 import io.github.b150005.skeinly.domain.usecase.FakeAuthRepository
+import io.github.b150005.skeinly.domain.usecase.FakeChartRepository
 import io.github.b150005.skeinly.domain.usecase.FakePatternRepository
 import io.github.b150005.skeinly.domain.usecase.FakeProjectRepository
-import io.github.b150005.skeinly.domain.usecase.FakeStructuredChartRepository
-import io.github.b150005.skeinly.domain.usecase.ForkPublicPatternUseCase
 import io.github.b150005.skeinly.domain.usecase.GetPublicPatternsUseCase
+import io.github.b150005.skeinly.domain.usecase.SavePublicPatternToLibraryUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -89,13 +89,13 @@ class DiscoveryViewModelTest {
         dataSource: FakePublicPatternDataSource = FakePublicPatternDataSource(),
         patternRepo: FakePatternRepository = FakePatternRepository(),
         projectRepo: FakeProjectRepository = FakeProjectRepository(),
-        chartRepo: FakeStructuredChartRepository = FakeStructuredChartRepository(),
+        chartRepo: FakeChartRepository = FakeChartRepository(),
         authRepo: FakeAuthRepository = FakeAuthRepository(),
         analyticsTracker: AnalyticsTracker? = null,
     ): DiscoveryViewModel {
         val getPublicPatterns = GetPublicPatternsUseCase(dataSource)
-        val forkPublicPattern = ForkPublicPatternUseCase(patternRepo, projectRepo, chartRepo, authRepo)
-        return DiscoveryViewModel(getPublicPatterns, forkPublicPattern, analyticsTracker)
+        val savePublicPatternToLibrary = SavePublicPatternToLibraryUseCase(patternRepo, projectRepo, chartRepo, authRepo)
+        return DiscoveryViewModel(getPublicPatterns, savePublicPatternToLibrary, analyticsTracker)
     }
 
     @Test
@@ -238,13 +238,13 @@ class DiscoveryViewModelTest {
             // Seed the chart so `forkFor` enters the success path normally,
             // then arm `failNext` so the actual `forkFor` call throws —
             // exactly the "had a chart, clone hit transient failure" scenario.
-            val chartRepo = FakeStructuredChartRepository()
+            val chartRepo = FakeChartRepository()
             chartRepo.seed(
-                StructuredChart(
+                Chart(
                     id = "chart-pub-a",
                     patternId = "pub-a",
                     ownerId = "other-user",
-                    schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+                    schemaVersion = Chart.CURRENT_SCHEMA_VERSION,
                     storageVariant = StorageVariant.INLINE,
                     coordinateSystem = CoordinateSystem.RECT_GRID,
                     extents = ChartExtents.Rect(0, 0, 0, 0),

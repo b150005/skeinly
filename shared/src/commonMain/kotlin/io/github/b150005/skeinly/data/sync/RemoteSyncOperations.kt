@@ -1,14 +1,14 @@
 package io.github.b150005.skeinly.data.sync
 
-import io.github.b150005.skeinly.domain.model.ChartBranch
-import io.github.b150005.skeinly.domain.model.ChartRevision
+import io.github.b150005.skeinly.domain.model.Chart
+import io.github.b150005.skeinly.domain.model.ChartVariation
+import io.github.b150005.skeinly.domain.model.ChartVersion
 import io.github.b150005.skeinly.domain.model.Pattern
 import io.github.b150005.skeinly.domain.model.Progress
 import io.github.b150005.skeinly.domain.model.Project
 import io.github.b150005.skeinly.domain.model.ProjectSegment
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestComment
-import io.github.b150005.skeinly.domain.model.StructuredChart
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionComment
 
 /**
  * Interface for project remote write operations needed by the sync system.
@@ -44,10 +44,10 @@ interface RemotePatternSyncOperations {
 /**
  * Interface for structured chart remote write operations needed by the sync system.
  */
-interface RemoteStructuredChartSyncOperations {
-    suspend fun upsert(chart: StructuredChart): StructuredChart
+interface RemoteChartSyncOperations {
+    suspend fun upsert(chart: Chart): Chart
 
-    suspend fun update(chart: StructuredChart): StructuredChart
+    suspend fun update(chart: Chart): Chart
 
     suspend fun delete(id: String)
 }
@@ -71,8 +71,8 @@ interface RemoteProjectSegmentSyncOperations {
  * No UPDATE or DELETE path exists; the row's lifecycle ends only when the
  * parent pattern is deleted (ON DELETE CASCADE in migration 015).
  */
-interface RemoteChartRevisionSyncOperations {
-    suspend fun append(revision: ChartRevision): ChartRevision
+interface RemoteChartVersionSyncOperations {
+    suspend fun append(revision: ChartVersion): ChartVersion
 }
 
 /**
@@ -83,35 +83,35 @@ interface RemoteChartRevisionSyncOperations {
  * DELETE (branch deletion); the interface surfaces both today so the sync
  * routing in [SyncExecutor] is wired exhaustively from this slice.
  */
-interface RemoteChartBranchSyncOperations {
-    suspend fun upsert(branch: ChartBranch): ChartBranch
+interface RemoteChartVariationSyncOperations {
+    suspend fun upsert(branch: ChartVariation): ChartVariation
 
     suspend fun delete(id: String)
 }
 
 /**
- * Remote write operations for [PullRequest] (ADR-014 §7).
+ * Remote write operations for [Suggestion] (ADR-014 §7).
  *
  * INSERT and UPDATE both map to `upsert` — open-PR is the only INSERT path,
  * close-PR is the only UPDATE path, and both are idempotent on `id`.
  * Status → MERGED transitions via the `merge_pull_request` SECURITY DEFINER
  * RPC, NOT through this interface — the RPC is invoked directly by
- * `MergePullRequestUseCase` (Phase 38.4) and Realtime echoes the resulting
+ * `ApplySuggestionUseCase` (Phase 38.4) and Realtime echoes the resulting
  * PR row back through the local data source.
  *
  * No `delete` — PRs are kept as audit trail. CASCADE on pattern deletion is
  * the only cleanup path server-side.
  */
-interface RemotePullRequestSyncOperations {
-    suspend fun upsert(pullRequest: PullRequest): PullRequest
+interface RemoteSuggestionSyncOperations {
+    suspend fun upsert(suggestion: Suggestion): Suggestion
 }
 
 /**
- * Remote write operations for [PullRequestComment] (ADR-014 §7).
+ * Remote write operations for [SuggestionComment] (ADR-014 §7).
  *
  * Append-only per ADR-014 §1 — only `appendComment` (INSERT) is supported.
  * No UPDATE / DELETE path; comment rows are immutable once written.
  */
-interface RemotePullRequestCommentSyncOperations {
-    suspend fun appendComment(comment: PullRequestComment): PullRequestComment
+interface RemoteSuggestionCommentSyncOperations {
+    suspend fun appendComment(comment: SuggestionComment): SuggestionComment
 }

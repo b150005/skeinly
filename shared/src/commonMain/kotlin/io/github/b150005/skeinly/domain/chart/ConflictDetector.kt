@@ -1,14 +1,14 @@
 package io.github.b150005.skeinly.domain.chart
 
 import io.github.b150005.skeinly.domain.model.CellChange
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartCell
 import io.github.b150005.skeinly.domain.model.ChartLayer
 import io.github.b150005.skeinly.domain.model.LayerChange
-import io.github.b150005.skeinly.domain.model.StructuredChart
 
 /**
  * Phase 38.4 (ADR-014 §4) — pure 3-way conflict detection wrapper over
- * [ChartDiffAlgorithm].
+ * [ChartComparisonAlgorithm].
  *
  * Compares ancestor / theirs / mine and partitions every per-cell-coordinate
  * change into three buckets:
@@ -29,17 +29,17 @@ import io.github.b150005.skeinly.domain.model.StructuredChart
  * (matches Phase 37 §5). Wide cells use the top-left anchor as the key.
  *
  * Algorithm complexity is O(N + M) over total cell counts since the underlying
- * [ChartDiffAlgorithm.diff] is already O(N + M) and the per-key partitioning
+ * [ChartComparisonAlgorithm.diff] is already O(N + M) and the per-key partitioning
  * is one extra pass over the union of changed coordinates.
  */
 object ConflictDetector {
     fun detect(
-        ancestor: StructuredChart,
-        theirs: StructuredChart,
-        mine: StructuredChart,
+        ancestor: Chart,
+        theirs: Chart,
+        mine: Chart,
     ): ConflictReport {
-        val theirDiff = ChartDiffAlgorithm.diff(ancestor, theirs)
-        val mineDiff = ChartDiffAlgorithm.diff(ancestor, mine)
+        val theirDiff = ChartComparisonAlgorithm.diff(ancestor, theirs)
+        val mineDiff = ChartComparisonAlgorithm.diff(ancestor, mine)
 
         // Index cell changes by (layerId, x, y) so the union pass is a single
         // map lookup per coordinate. Wide cells anchor at top-left, matching

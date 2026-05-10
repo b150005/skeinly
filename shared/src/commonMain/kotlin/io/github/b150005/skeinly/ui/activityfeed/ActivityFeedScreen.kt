@@ -42,8 +42,8 @@ import io.github.b150005.skeinly.generated.resources.action_back
 import io.github.b150005.skeinly.generated.resources.body_no_activity
 import io.github.b150005.skeinly.generated.resources.label_activity_commented_by
 import io.github.b150005.skeinly.generated.resources.label_activity_completed_by
+import io.github.b150005.skeinly.generated.resources.label_activity_copied_by
 import io.github.b150005.skeinly.generated.resources.label_activity_created_by
-import io.github.b150005.skeinly.generated.resources.label_activity_forked_by
 import io.github.b150005.skeinly.generated.resources.label_activity_shared_by
 import io.github.b150005.skeinly.generated.resources.label_activity_started_by
 import io.github.b150005.skeinly.generated.resources.label_someone
@@ -176,6 +176,6 @@ private fun activityTemplate(type: ActivityType): Pair<ImageVector, StringResour
         ActivityType.COMPLETED -> Icons.Default.Check to Res.string.label_activity_completed_by
         ActivityType.SHARED -> Icons.Default.Share to Res.string.label_activity_shared_by
         ActivityType.COMMENTED -> Icons.AutoMirrored.Filled.Comment to Res.string.label_activity_commented_by
-        ActivityType.FORKED -> Icons.AutoMirrored.Filled.CallSplit to Res.string.label_activity_forked_by
+        ActivityType.FORKED -> Icons.AutoMirrored.Filled.CallSplit to Res.string.label_activity_copied_by
         ActivityType.CREATED -> Icons.Default.Add to Res.string.label_activity_created_by
     }

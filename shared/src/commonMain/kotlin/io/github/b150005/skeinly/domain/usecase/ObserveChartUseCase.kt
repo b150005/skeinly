@@ -1,11 +1,11 @@
 package io.github.b150005.skeinly.domain.usecase
 
-import io.github.b150005.skeinly.domain.model.StructuredChart
-import io.github.b150005.skeinly.domain.repository.StructuredChartRepository
+import io.github.b150005.skeinly.domain.model.Chart
+import io.github.b150005.skeinly.domain.repository.ChartRepository
 import kotlinx.coroutines.flow.Flow
 
-class ObserveStructuredChartUseCase(
-    private val repository: StructuredChartRepository,
+class ObserveChartUseCase(
+    private val repository: ChartRepository,
 ) {
-    operator fun invoke(patternId: String): Flow<StructuredChart?> = repository.observeByPatternId(patternId)
+    operator fun invoke(patternId: String): Flow<Chart?> = repository.observeByPatternId(patternId)
 }

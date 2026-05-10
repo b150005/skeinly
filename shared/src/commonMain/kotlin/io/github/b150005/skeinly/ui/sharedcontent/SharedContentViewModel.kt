@@ -6,8 +6,8 @@ import io.github.b150005.skeinly.domain.model.Pattern
 import io.github.b150005.skeinly.domain.model.Share
 import io.github.b150005.skeinly.domain.model.SharePermission
 import io.github.b150005.skeinly.domain.usecase.ErrorMessage
-import io.github.b150005.skeinly.domain.usecase.ForkSharedPatternUseCase
 import io.github.b150005.skeinly.domain.usecase.ResolveShareTokenUseCase
+import io.github.b150005.skeinly.domain.usecase.SaveSharedPatternToLibraryUseCase
 import io.github.b150005.skeinly.domain.usecase.UseCaseResult
 import io.github.b150005.skeinly.domain.usecase.toErrorMessage
 import kotlinx.coroutines.channels.Channel
@@ -38,7 +38,7 @@ class SharedContentViewModel(
     private val token: String? = null,
     private val shareId: String? = null,
     private val resolveShareToken: ResolveShareTokenUseCase,
-    private val forkSharedPattern: ForkSharedPatternUseCase,
+    private val saveSharedPatternToLibrary: SaveSharedPatternToLibraryUseCase,
 ) : ViewModel() {
     private val _state = MutableStateFlow(SharedContentState())
     val state: StateFlow<SharedContentState> = _state.asStateFlow()
@@ -88,7 +88,7 @@ class SharedContentViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isForkInProgress = true, error = null) }
 
-            when (val result = forkSharedPattern(share.id)) {
+            when (val result = saveSharedPatternToLibrary(share.id)) {
                 is UseCaseResult.Success -> {
                     _state.update { it.copy(isForkInProgress = false) }
                     _forkedProjectChannel.send(result.value.project.id)

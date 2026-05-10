@@ -21,7 +21,7 @@ import io.github.b150005.skeinly.ui.auth.AuthViewModel
 import io.github.b150005.skeinly.ui.auth.ForgotPasswordScreen
 import io.github.b150005.skeinly.ui.auth.LoginScreen
 import io.github.b150005.skeinly.ui.bugreport.BugReportPreviewScreen
-import io.github.b150005.skeinly.ui.chart.ChartDiffScreen
+import io.github.b150005.skeinly.ui.chart.ChartComparisonScreen
 import io.github.b150005.skeinly.ui.chart.ChartEditorScreen
 import io.github.b150005.skeinly.ui.chart.ChartHistoryScreen
 import io.github.b150005.skeinly.ui.chart.ChartViewerScreen
@@ -36,9 +36,9 @@ import io.github.b150005.skeinly.ui.profile.ProfileScreen
 import io.github.b150005.skeinly.ui.projectdetail.ProjectDetailScreen
 import io.github.b150005.skeinly.ui.projectlist.ProjectListScreen
 import io.github.b150005.skeinly.ui.pullrequest.ChartConflictResolutionScreen
-import io.github.b150005.skeinly.ui.pullrequest.PullRequestDetailScreen
-import io.github.b150005.skeinly.ui.pullrequest.PullRequestFilter
-import io.github.b150005.skeinly.ui.pullrequest.PullRequestListScreen
+import io.github.b150005.skeinly.ui.pullrequest.SuggestionDetailScreen
+import io.github.b150005.skeinly.ui.pullrequest.SuggestionFilter
+import io.github.b150005.skeinly.ui.pullrequest.SuggestionListScreen
 import io.github.b150005.skeinly.ui.settings.SettingsScreen
 import io.github.b150005.skeinly.ui.sharedcontent.SharedContentScreen
 import io.github.b150005.skeinly.ui.sharedwithme.SharedWithMeScreen
@@ -120,7 +120,7 @@ data class ChartHistory(
  * an "Initial commit" view in the base pane. `targetRevisionId` is required.
  */
 @Serializable
-data class ChartDiff(
+data class ChartComparison(
     val baseRevisionId: String?,
     val targetRevisionId: String,
 )
@@ -138,27 +138,27 @@ data object SymbolGallery
  *   INCOMING; on a fork pattern → OUTGOING (per ADR-014 §6).
  */
 @Serializable
-data class PullRequestList(
-    val defaultFilter: PullRequestFilter = PullRequestFilter.INCOMING,
+data class SuggestionList(
+    val defaultFilter: SuggestionFilter = SuggestionFilter.INCOMING,
 )
 
 /**
  * Phase 38.3 (ADR-014 §6 §8) — single PR detail surface. Reached from
- * `PullRequestListScreen` row taps. The "Open pull request" entry on
+ * `SuggestionListScreen` row taps. The "Open pull request" entry on
  * `ChartViewerScreen`'s overflow menu also routes here (after the open-PR
  * flow lands; 38.3 ships the data layer + use case, the ChartViewer
  * compose-form-and-submit flow is a follow-up).
  */
 @Serializable
-data class PullRequestDetail(
+data class SuggestionDetail(
     val prId: String,
 )
 
 /**
  * Phase 38.4 (ADR-014 §6) — interactive conflict resolution surface.
- * Reached from `PullRequestDetailScreen` when the user confirms merge AND
+ * Reached from `SuggestionDetailScreen` when the user confirms merge AND
  * `ConflictDetector.detect(...)` returns at least one conflict. Auto-clean
- * merges bypass this route and invoke `MergePullRequestUseCase` directly.
+ * merges bypass this route and invoke `ApplySuggestionUseCase` directly.
  */
 @Serializable
 data class ChartConflictResolution(
@@ -351,7 +351,7 @@ fun SkeinlyNavHost(
                     navController.navigate(SymbolGallery)
                 },
                 onSuggestionsClick = {
-                    navController.navigate(PullRequestList(defaultFilter = PullRequestFilter.INCOMING))
+                    navController.navigate(SuggestionList(defaultFilter = SuggestionFilter.INCOMING))
                 },
             )
         }
@@ -509,11 +509,11 @@ fun SkeinlyNavHost(
                 onSuggestionsClick = { isFork ->
                     val filter =
                         if (isFork) {
-                            PullRequestFilter.OUTGOING
+                            SuggestionFilter.OUTGOING
                         } else {
-                            PullRequestFilter.INCOMING
+                            SuggestionFilter.INCOMING
                         }
-                    navController.navigate(PullRequestList(defaultFilter = filter))
+                    navController.navigate(SuggestionList(defaultFilter = filter))
                 },
             )
         }
@@ -526,8 +526,8 @@ fun SkeinlyNavHost(
                 onHistoryClick = {
                     navController.navigate(ChartHistory(patternId = route.patternId))
                 },
-                onOpenPullRequestNavigate = { prId ->
-                    navController.navigate(PullRequestDetail(prId = prId))
+                onOpenSuggestionNavigate = { prId ->
+                    navController.navigate(SuggestionDetail(prId = prId))
                 },
             )
         }
@@ -553,44 +553,44 @@ fun SkeinlyNavHost(
                 // Phase 37.3 (ADR-013 §6): tap a revision row → diff against its
                 // parent. ViewModel resolves `baseRevisionId` from the tapped
                 // row's `parentRevisionId`; null base routes to the initial-commit
-                // view in `ChartDiffScreen`.
+                // view in `ChartComparisonScreen`.
                 onRevisionClick = { baseRevisionId, targetRevisionId ->
                     navController.navigate(
-                        ChartDiff(baseRevisionId = baseRevisionId, targetRevisionId = targetRevisionId),
+                        ChartComparison(baseRevisionId = baseRevisionId, targetRevisionId = targetRevisionId),
                     )
                 },
             )
         }
-        composable<ChartDiff> { backStackEntry ->
-            val route = backStackEntry.toRoute<ChartDiff>()
-            ChartDiffScreen(
+        composable<ChartComparison> { backStackEntry ->
+            val route = backStackEntry.toRoute<ChartComparison>()
+            ChartComparisonScreen(
                 baseRevisionId = route.baseRevisionId,
                 targetRevisionId = route.targetRevisionId,
                 onBack = { navController.popBackStack() },
             )
         }
-        composable<PullRequestList> { backStackEntry ->
-            val route = backStackEntry.toRoute<PullRequestList>()
-            PullRequestListScreen(
+        composable<SuggestionList> { backStackEntry ->
+            val route = backStackEntry.toRoute<SuggestionList>()
+            SuggestionListScreen(
                 defaultFilter = route.defaultFilter,
                 onBack = { navController.popBackStack() },
                 // Phase 38.3 routes a row tap to the PR detail surface.
-                onPullRequestClick = { prId ->
-                    navController.navigate(PullRequestDetail(prId = prId))
+                onSuggestionClick = { prId ->
+                    navController.navigate(SuggestionDetail(prId = prId))
                 },
             )
         }
-        composable<PullRequestDetail> { backStackEntry ->
-            val route = backStackEntry.toRoute<PullRequestDetail>()
-            PullRequestDetailScreen(
+        composable<SuggestionDetail> { backStackEntry ->
+            val route = backStackEntry.toRoute<SuggestionDetail>()
+            SuggestionDetailScreen(
                 prId = route.prId,
                 onBack = { navController.popBackStack() },
                 // Phase 38.3 (ADR-014 §6): PR diff preview taps route to the
-                // existing Phase 37.3 ChartDiffScreen between the snapshot
+                // existing Phase 37.3 ChartComparisonScreen between the snapshot
                 // ancestor and the source tip captured at PR-open time.
                 onOpenDiff = { baseRevisionId, targetRevisionId ->
                     navController.navigate(
-                        ChartDiff(
+                        ChartComparison(
                             baseRevisionId = baseRevisionId,
                             targetRevisionId = targetRevisionId,
                         ),
@@ -649,11 +649,11 @@ fun SkeinlyNavHost(
  * without exposing the helper to consumers of the navigation surface.
  */
 internal fun parsePushRoute(raw: String): Any? {
-    val pullRequestPrefix = "pull-request/"
-    if (raw.startsWith(pullRequestPrefix)) {
-        val prId = raw.substring(pullRequestPrefix.length)
+    val suggestionPrefix = "pull-request/"
+    if (raw.startsWith(suggestionPrefix)) {
+        val prId = raw.substring(suggestionPrefix.length)
         if (prId.isEmpty()) return null
-        return PullRequestDetail(prId = prId)
+        return SuggestionDetail(prId = prId)
     }
     return null
 }

@@ -15,7 +15,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlin.time.Instant
 
-class ForkSharedPatternUseCaseTest {
+class SaveSharedPatternToLibraryUseCaseTest {
     private val testPattern =
         Pattern(
             id = "pat-1",
@@ -55,7 +55,7 @@ class ForkSharedPatternUseCaseTest {
         patternRepo: FakePatternRepository = FakePatternRepository(),
         projectRepo: FakeProjectRepository = FakeProjectRepository(),
         authRepo: FakeAuthRepository = FakeAuthRepository(),
-    ) = ForkSharedPatternUseCase(shareRepo, patternRepo, projectRepo, authRepo)
+    ) = SaveSharedPatternToLibraryUseCase(shareRepo, patternRepo, projectRepo, authRepo)
 
     @Test
     fun `returns failure when share repository is null`() =

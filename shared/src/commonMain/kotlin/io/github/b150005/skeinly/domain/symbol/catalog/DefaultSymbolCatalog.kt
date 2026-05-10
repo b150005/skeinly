@@ -1,6 +1,6 @@
 package io.github.b150005.skeinly.domain.symbol.catalog
 
-import io.github.b150005.skeinly.domain.model.StructuredChart
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.symbol.SvgPathParser
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
 import io.github.b150005.skeinly.domain.symbol.SymbolCategory
@@ -38,7 +38,7 @@ class DefaultSymbolCatalog private constructor(
             val seen = mutableSetOf<String>()
             val byCategory = mutableMapOf<SymbolCategory, MutableList<SymbolDefinition>>()
             for (def in defs) {
-                require(StructuredChart.isValidSymbolId(def.id)) {
+                require(Chart.isValidSymbolId(def.id)) {
                     "Invalid symbol id '${def.id}' (fails SYMBOL_ID_REGEX)"
                 }
                 require(seen.add(def.id)) {

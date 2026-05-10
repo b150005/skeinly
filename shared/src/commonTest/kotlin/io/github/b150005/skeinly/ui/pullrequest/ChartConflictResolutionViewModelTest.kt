@@ -5,26 +5,26 @@ import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
 import io.github.b150005.skeinly.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.skeinly.domain.chart.CellCoordinate
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartCell
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
-import io.github.b150005.skeinly.domain.model.ChartRevision
+import io.github.b150005.skeinly.domain.model.ChartVersion
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.Pattern
-import io.github.b150005.skeinly.domain.model.PullRequest
-import io.github.b150005.skeinly.domain.model.PullRequestStatus
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import io.github.b150005.skeinly.domain.model.StructuredChart
+import io.github.b150005.skeinly.domain.model.Suggestion
+import io.github.b150005.skeinly.domain.model.SuggestionStatus
 import io.github.b150005.skeinly.domain.model.Visibility
-import io.github.b150005.skeinly.domain.repository.ChartRevisionRepository
-import io.github.b150005.skeinly.domain.repository.PullRequestMergeOperations
+import io.github.b150005.skeinly.domain.repository.ChartVersionRepository
+import io.github.b150005.skeinly.domain.repository.SuggestionMergeOperations
+import io.github.b150005.skeinly.domain.usecase.ApplySuggestionUseCase
 import io.github.b150005.skeinly.domain.usecase.ConflictResolution
 import io.github.b150005.skeinly.domain.usecase.FakeAuthRepository
+import io.github.b150005.skeinly.domain.usecase.FakeChartRepository
 import io.github.b150005.skeinly.domain.usecase.FakePatternRepository
-import io.github.b150005.skeinly.domain.usecase.FakePullRequestRepository
-import io.github.b150005.skeinly.domain.usecase.FakeStructuredChartRepository
-import io.github.b150005.skeinly.domain.usecase.GetPullRequestUseCase
-import io.github.b150005.skeinly.domain.usecase.MergePullRequestUseCase
+import io.github.b150005.skeinly.domain.usecase.FakeSuggestionRepository
+import io.github.b150005.skeinly.domain.usecase.GetSuggestionUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -57,7 +57,7 @@ import kotlin.time.Instant
  *  4. canApplyAndMerge stays false if a layer conflict is unresolved
  *  5. PickCell records resolution and re-evaluates canApplyAndMerge
  *  6. PickLayer records resolution and re-evaluates canApplyAndMerge
- *  7. ApplyAndMerge invokes MergePullRequestUseCase + emits MergeApplied event
+ *  7. ApplyAndMerge invokes ApplySuggestionUseCase + emits MergeApplied event
  *  8. ApplyAndMerge surfaces UseCase failure as state error
  *  9. revision lookup miss surfaces error and leaves report null
  * 10. ClearError nulls the error message
@@ -80,8 +80,8 @@ class ChartConflictResolutionViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun pr(): PullRequest =
-        PullRequest(
+    private fun pr(): Suggestion =
+        Suggestion(
             id = "pr-1",
             sourcePatternId = "pat-fork",
             sourceBranchId = "branch-source",
@@ -92,7 +92,7 @@ class ChartConflictResolutionViewModelTest {
             authorId = "contributor",
             title = "Fix row 12",
             description = null,
-            status = PullRequestStatus.OPEN,
+            status = SuggestionStatus.OPEN,
             mergedRevisionId = null,
             mergedAt = null,
             closedAt = null,
@@ -120,8 +120,8 @@ class ChartConflictResolutionViewModelTest {
         revisionId: String,
         layers: List<ChartLayer>,
         patternId: String = "pat-upstream",
-    ): StructuredChart =
-        StructuredChart(
+    ): Chart =
+        Chart(
             id = "chart-$revisionId",
             patternId = patternId,
             ownerId = "owner-id",
@@ -140,8 +140,8 @@ class ChartConflictResolutionViewModelTest {
     private fun revisionFor(
         revisionId: String,
         layers: List<ChartLayer>,
-    ): ChartRevision =
-        ChartRevision(
+    ): ChartVersion =
+        ChartVersion(
             id = revisionId,
             patternId = "pat-upstream",
             ownerId = "owner-id",
@@ -163,11 +163,11 @@ class ChartConflictResolutionViewModelTest {
         theirsLayers: List<ChartLayer>,
         mineLayers: List<ChartLayer>,
         signedInAs: String = "owner-id",
-        mergeOps: PullRequestMergeOperations? = NoOpMergeOps(),
+        mergeOps: SuggestionMergeOperations? = NoOpMergeOps(),
         analyticsTracker: AnalyticsTracker? = null,
     ): Harness {
         val prRepo =
-            FakePullRequestRepository().apply {
+            FakeSuggestionRepository().apply {
                 seedById(pr())
             }
         val revisionRepo =
@@ -179,7 +179,7 @@ class ChartConflictResolutionViewModelTest {
                     ),
             )
         val chartRepo =
-            FakeStructuredChartRepository().apply {
+            FakeChartRepository().apply {
                 seed(chartFor(revisionId = "rev-mine", layers = mineLayers))
             }
         val auth =
@@ -188,15 +188,15 @@ class ChartConflictResolutionViewModelTest {
             }
         val patterns =
             FakePatternRepository().apply { seed(targetPattern()) }
-        val merge = MergePullRequestUseCase(mergeOps, patterns, auth, json)
+        val merge = ApplySuggestionUseCase(mergeOps, patterns, auth, json)
 
         val viewModel =
             ChartConflictResolutionViewModel(
                 prId = "pr-1",
-                getPullRequest = GetPullRequestUseCase(prRepo),
-                chartRevisionRepository = revisionRepo,
-                structuredChartRepository = chartRepo,
-                mergePullRequest = merge,
+                getSuggestion = GetSuggestionUseCase(prRepo),
+                chartVersionRepository = revisionRepo,
+                chartRepository = chartRepo,
+                applySuggestion = merge,
                 analyticsTracker = analyticsTracker,
             )
         return Harness(viewModel = viewModel, mergeOps = mergeOps)
@@ -204,7 +204,7 @@ class ChartConflictResolutionViewModelTest {
 
     private data class Harness(
         val viewModel: ChartConflictResolutionViewModel,
-        val mergeOps: PullRequestMergeOperations?,
+        val mergeOps: SuggestionMergeOperations?,
     )
 
     @Test
@@ -347,26 +347,26 @@ class ChartConflictResolutionViewModelTest {
         runTest {
             // Don't seed the chart repo so `mine` lookup returns null.
             val prRepo =
-                FakePullRequestRepository().apply { seedById(pr()) }
+                FakeSuggestionRepository().apply { seedById(pr()) }
             val revisionRepo =
                 FakeRevisionRepoForResolution(
                     revisions = emptyList(), // no ancestor or theirs
                 )
-            val chartRepo = FakeStructuredChartRepository()
+            val chartRepo = FakeChartRepository()
             val auth =
                 FakeAuthRepository().apply {
                     setAuthState(AuthState.Authenticated(userId = "owner-id", email = "u@x"))
                 }
             val patterns = FakePatternRepository().apply { seed(targetPattern()) }
-            val merge = MergePullRequestUseCase(NoOpMergeOps(), patterns, auth, json)
+            val merge = ApplySuggestionUseCase(NoOpMergeOps(), patterns, auth, json)
 
             val viewModel =
                 ChartConflictResolutionViewModel(
                     prId = "pr-1",
-                    getPullRequest = GetPullRequestUseCase(prRepo),
-                    chartRevisionRepository = revisionRepo,
-                    structuredChartRepository = chartRepo,
-                    mergePullRequest = merge,
+                    getSuggestion = GetSuggestionUseCase(prRepo),
+                    chartVersionRepository = revisionRepo,
+                    chartRepository = chartRepo,
+                    applySuggestion = merge,
                 )
             advanceUntilIdle()
 
@@ -403,7 +403,7 @@ class ChartConflictResolutionViewModelTest {
             // surfaces here as a compile/equality failure rather than a
             // silent drift in the wire map.
             assertEquals(
-                AnalyticsEvent.PullRequestMerged(hadConflicts = true),
+                AnalyticsEvent.SuggestionMerged(hadConflicts = true),
                 tracker.captured.single(),
             )
             // Anchor the "capture BEFORE _navEvents.trySend" invariant: if the
@@ -471,9 +471,9 @@ class ChartConflictResolutionViewModelTest {
             assertNull(harness.viewModel.state.value.error)
         }
 
-    private class NoOpMergeOps : PullRequestMergeOperations {
+    private class NoOpMergeOps : SuggestionMergeOperations {
         override suspend fun merge(
-            pullRequestId: String,
+            suggestionId: String,
             strategy: String,
             mergedDocument: JsonElement,
             mergedContentHash: String,
@@ -483,12 +483,12 @@ class ChartConflictResolutionViewModelTest {
 
     private class RecordingMergeOps(
         var throwOnNext: Throwable? = null,
-    ) : PullRequestMergeOperations {
+    ) : SuggestionMergeOperations {
         var callCount = 0
             private set
 
         override suspend fun merge(
-            pullRequestId: String,
+            suggestionId: String,
             strategy: String,
             mergedDocument: JsonElement,
             mergedContentHash: String,
@@ -504,25 +504,25 @@ class ChartConflictResolutionViewModelTest {
     }
 
     private class FakeRevisionRepoForResolution(
-        revisions: List<ChartRevision>,
-    ) : ChartRevisionRepository {
+        revisions: List<ChartVersion>,
+    ) : ChartVersionRepository {
         private val byId = revisions.associateBy { it.revisionId }.toMutableMap()
         private val flow = MutableStateFlow(revisions)
 
-        override suspend fun getRevision(revisionId: String): ChartRevision? = byId[revisionId]
+        override suspend fun getRevision(revisionId: String): ChartVersion? = byId[revisionId]
 
         override suspend fun getHistoryForPattern(
             patternId: String,
             limit: Int,
             offset: Int,
-        ): List<ChartRevision> =
+        ): List<ChartVersion> =
             flow.value
                 .filter { it.patternId == patternId }
                 .drop(offset)
                 .take(limit)
 
-        override fun observeHistoryForPattern(patternId: String): Flow<List<ChartRevision>> = flow
+        override fun observeHistoryForPattern(patternId: String): Flow<List<ChartVersion>> = flow
 
-        override suspend fun append(revision: ChartRevision): ChartRevision = error("not used")
+        override suspend fun append(revision: ChartVersion): ChartVersion = error("not used")
     }
 }

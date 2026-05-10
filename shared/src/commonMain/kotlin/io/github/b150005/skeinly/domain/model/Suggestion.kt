@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 import kotlin.time.Instant
 
 /**
- * Lifecycle of a [PullRequest] (ADR-014 §1, §3).
+ * Lifecycle of a [Suggestion] (ADR-014 §1, §3).
  *
  * Closed enum — three values, no DRAFT for v1.
  *
@@ -13,7 +13,7 @@ import kotlin.time.Instant
  *   close; source author can close.
  * - [MERGED]: terminal. Reached only via the SECURITY DEFINER
  *   `merge_pull_request` RPC — never via a client-side UPDATE. The PR row's
- *   [PullRequest.mergedRevisionId] points at the resulting commit.
+ *   [Suggestion.mergedRevisionId] points at the resulting commit.
  * - [CLOSED]: terminal. Reached when either party closes the PR without
  *   merging. Comments survive but no further state transitions are valid.
  *
@@ -21,12 +21,12 @@ import kotlin.time.Instant
  * migration 016 (`status IN ('open', 'merged', 'closed')`).
  */
 @Serializable
-enum class PullRequestStatus {
+enum class SuggestionStatus {
     @SerialName("open")
     OPEN,
 
-    @SerialName("merged")
-    MERGED,
+    @SerialName("applied")
+    APPLIED,
 
     @SerialName("closed")
     CLOSED,
@@ -60,11 +60,11 @@ enum class PullRequestStatus {
  * uses the *current* target tip as the merge base.
  *
  * **Merge result.** [mergedRevisionId] / [mergedAt] are populated by the
- * RPC when status flips to [PullRequestStatus.MERGED]. NULL on OPEN and
+ * RPC when status flips to [SuggestionStatus.APPLIED]. NULL on OPEN and
  * CLOSED PRs.
  */
 @Serializable
-data class PullRequest(
+data class Suggestion(
     val id: String,
     @SerialName("source_pattern_id") val sourcePatternId: String,
     @SerialName("source_branch_id") val sourceBranchId: String,
@@ -75,7 +75,7 @@ data class PullRequest(
     @SerialName("author_id") val authorId: String?,
     val title: String,
     val description: String?,
-    val status: PullRequestStatus,
+    val status: SuggestionStatus,
     @SerialName("merged_revision_id") val mergedRevisionId: String?,
     @SerialName("merged_at") val mergedAt: Instant?,
     @SerialName("closed_at") val closedAt: Instant?,
@@ -83,7 +83,7 @@ data class PullRequest(
     @SerialName("updated_at") val updatedAt: Instant,
 ) {
     /**
-     * Gates the merge button on [PullRequestDetailScreen] (Phase 38.3).
+     * Gates the merge button on [SuggestionDetailScreen] (Phase 38.3).
      *
      * Phase 38.1 ships this as a domain-side helper so the ViewModel doesn't
      * need to learn the [targetPatternId] → owner lookup. The merge RPC
@@ -99,19 +99,19 @@ data class PullRequest(
     fun canMerge(
         currentUserId: String,
         targetOwnerId: String,
-    ): Boolean = status == PullRequestStatus.OPEN && currentUserId == targetOwnerId
+    ): Boolean = status == SuggestionStatus.OPEN && currentUserId == targetOwnerId
 }
 
 /**
  * One flat append-only comment on a pull request (ADR-014 §1, §3).
  *
  * **Append-only.** RLS forbids UPDATE / DELETE — comments are immutable
- * once posted, mirroring [ChartRevision]'s history-immutability invariant
+ * once posted, mirroring [ChartVersion]'s history-immutability invariant
  * (ADR-013 §1). A typo-laden comment is permanent until the PR is closed
  * (closure preserves the comment chain). Soft-delete is post-v1.
  *
  * **Authorship.** [authorId] nullable for the same reason as
- * [PullRequest.authorId] — the FK to `profiles` is `ON DELETE SET NULL`.
+ * [Suggestion.authorId] — the FK to `profiles` is `ON DELETE SET NULL`.
  *
  * **Plain text only.** Markdown rendering would diverge between Compose
  * `Text` and SwiftUI `Text` and there is no shared sanitizer; v1 keeps
@@ -119,9 +119,9 @@ data class PullRequest(
  * UI-side; server CHECK accepts up to 5000 (migration 016).
  */
 @Serializable
-data class PullRequestComment(
+data class SuggestionComment(
     val id: String,
-    @SerialName("pull_request_id") val pullRequestId: String,
+    @SerialName("pull_request_id") val suggestionId: String,
     @SerialName("author_id") val authorId: String?,
     val body: String,
     @SerialName("created_at") val createdAt: Instant,

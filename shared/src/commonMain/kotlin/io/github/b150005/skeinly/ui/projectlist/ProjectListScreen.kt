@@ -72,18 +72,18 @@ import io.github.b150005.skeinly.domain.model.ProjectStatus
 import io.github.b150005.skeinly.domain.model.SortOrder
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_activity_feed
+import io.github.b150005.skeinly.generated.resources.action_browse_patterns
 import io.github.b150005.skeinly.generated.resources.action_cancel
 import io.github.b150005.skeinly.generated.resources.action_clear_search
 import io.github.b150005.skeinly.generated.resources.action_delete
-import io.github.b150005.skeinly.generated.resources.action_discover_patterns
 import io.github.b150005.skeinly.generated.resources.action_more_options
 import io.github.b150005.skeinly.generated.resources.action_new_project
 import io.github.b150005.skeinly.generated.resources.action_pattern_library
 import io.github.b150005.skeinly.generated.resources.action_profile
-import io.github.b150005.skeinly.generated.resources.action_pull_requests
 import io.github.b150005.skeinly.generated.resources.action_settings
 import io.github.b150005.skeinly.generated.resources.action_shared_with_me
 import io.github.b150005.skeinly.generated.resources.action_sort
+import io.github.b150005.skeinly.generated.resources.action_suggestions
 import io.github.b150005.skeinly.generated.resources.action_symbol_dictionary
 import io.github.b150005.skeinly.generated.resources.dialog_delete_project_body
 import io.github.b150005.skeinly.generated.resources.dialog_delete_project_title
@@ -169,7 +169,7 @@ fun ProjectListScreen(
                         modifier = Modifier.dialogTestTagsAsResourceId(),
                     ) {
                         DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.action_discover_patterns)) },
+                            text = { Text(stringResource(Res.string.action_browse_patterns)) },
                             leadingIcon = { Icon(Icons.Default.Explore, contentDescription = null) },
                             onClick = {
                                 menuExpanded = false
@@ -218,13 +218,13 @@ fun ProjectListScreen(
                         // patterns receive PRs from forkers); the chip row in the
                         // list lets them toggle to Outgoing without re-navigating.
                         DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.action_pull_requests)) },
+                            text = { Text(stringResource(Res.string.action_suggestions)) },
                             leadingIcon = { Icon(Icons.Default.Forum, contentDescription = null) },
                             onClick = {
                                 menuExpanded = false
                                 onSuggestionsClick()
                             },
-                            modifier = Modifier.testTag("pullRequestsButton"),
+                            modifier = Modifier.testTag("suggestionsButton"),
                         )
                         DropdownMenuItem(
                             text = { Text(stringResource(Res.string.action_shared_with_me)) },

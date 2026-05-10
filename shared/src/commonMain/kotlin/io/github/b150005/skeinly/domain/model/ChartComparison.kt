@@ -21,9 +21,9 @@ package io.github.b150005.skeinly.domain.model
  * chart so every target layer surfaces as [LayerChange.Added]. The UI surfaces
  * an "Initial commit" affordance in lieu of the change-summary chip.
  */
-data class ChartDiff(
-    val base: StructuredChart?,
-    val target: StructuredChart,
+data class ChartComparison(
+    val base: Chart?,
+    val target: Chart,
     val cellChanges: List<CellChange>,
     val layerChanges: List<LayerChange>,
 ) {

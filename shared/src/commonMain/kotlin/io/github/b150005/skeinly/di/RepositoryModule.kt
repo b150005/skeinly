@@ -1,14 +1,14 @@
 package io.github.b150005.skeinly.di
 
-import io.github.b150005.skeinly.data.local.LocalChartBranchDataSource
-import io.github.b150005.skeinly.data.local.LocalChartRevisionDataSource
+import io.github.b150005.skeinly.data.local.LocalChartDataSource
+import io.github.b150005.skeinly.data.local.LocalChartVariationDataSource
+import io.github.b150005.skeinly.data.local.LocalChartVersionDataSource
 import io.github.b150005.skeinly.data.local.LocalPatternDataSource
 import io.github.b150005.skeinly.data.local.LocalProgressDataSource
 import io.github.b150005.skeinly.data.local.LocalProjectDataSource
 import io.github.b150005.skeinly.data.local.LocalProjectSegmentDataSource
-import io.github.b150005.skeinly.data.local.LocalPullRequestDataSource
-import io.github.b150005.skeinly.data.local.LocalStructuredChartDataSource
 import io.github.b150005.skeinly.data.local.LocalSubscriptionDataSource
+import io.github.b150005.skeinly.data.local.LocalSuggestionDataSource
 import io.github.b150005.skeinly.data.local.LocalSymbolPackDataSource
 import io.github.b150005.skeinly.data.realtime.RealtimeChannelProvider
 import io.github.b150005.skeinly.data.realtime.SupabaseRealtimeChannelProvider
@@ -18,19 +18,19 @@ import io.github.b150005.skeinly.data.remote.ConnectivityMonitor
 import io.github.b150005.skeinly.data.remote.DeviceTokenRemoteOperations
 import io.github.b150005.skeinly.data.remote.PublicPatternDataSource
 import io.github.b150005.skeinly.data.remote.RemoteActivityDataSource
-import io.github.b150005.skeinly.data.remote.RemoteChartBranchDataSource
-import io.github.b150005.skeinly.data.remote.RemoteChartRevisionDataSource
+import io.github.b150005.skeinly.data.remote.RemoteChartDataSource
+import io.github.b150005.skeinly.data.remote.RemoteChartVariationDataSource
+import io.github.b150005.skeinly.data.remote.RemoteChartVersionDataSource
 import io.github.b150005.skeinly.data.remote.RemoteCommentDataSource
 import io.github.b150005.skeinly.data.remote.RemoteDeviceTokenDataSource
 import io.github.b150005.skeinly.data.remote.RemotePatternDataSource
 import io.github.b150005.skeinly.data.remote.RemoteProgressDataSource
 import io.github.b150005.skeinly.data.remote.RemoteProjectDataSource
 import io.github.b150005.skeinly.data.remote.RemoteProjectSegmentDataSource
-import io.github.b150005.skeinly.data.remote.RemotePullRequestDataSource
 import io.github.b150005.skeinly.data.remote.RemoteShareDataSource
 import io.github.b150005.skeinly.data.remote.RemoteStorageDataSource
-import io.github.b150005.skeinly.data.remote.RemoteStructuredChartDataSource
 import io.github.b150005.skeinly.data.remote.RemoteSubscriptionDataSource
+import io.github.b150005.skeinly.data.remote.RemoteSuggestionDataSource
 import io.github.b150005.skeinly.data.remote.RemoteSymbolPackDataSource
 import io.github.b150005.skeinly.data.remote.RemoteUserDataSource
 import io.github.b150005.skeinly.data.remote.ShareDataSourceOperations
@@ -41,8 +41,9 @@ import io.github.b150005.skeinly.data.remote.createSymbolPackHttpClient
 import io.github.b150005.skeinly.data.remote.isConfigured
 import io.github.b150005.skeinly.data.repository.ActivityRepositoryImpl
 import io.github.b150005.skeinly.data.repository.AuthRepositoryImpl
-import io.github.b150005.skeinly.data.repository.ChartBranchRepositoryImpl
-import io.github.b150005.skeinly.data.repository.ChartRevisionRepositoryImpl
+import io.github.b150005.skeinly.data.repository.ChartRepositoryImpl
+import io.github.b150005.skeinly.data.repository.ChartVariationRepositoryImpl
+import io.github.b150005.skeinly.data.repository.ChartVersionRepositoryImpl
 import io.github.b150005.skeinly.data.repository.CommentRepositoryImpl
 import io.github.b150005.skeinly.data.repository.DeviceTokenRepositoryImpl
 import io.github.b150005.skeinly.data.repository.OfflineUserRepository
@@ -50,26 +51,25 @@ import io.github.b150005.skeinly.data.repository.PatternRepositoryImpl
 import io.github.b150005.skeinly.data.repository.ProgressRepositoryImpl
 import io.github.b150005.skeinly.data.repository.ProjectRepositoryImpl
 import io.github.b150005.skeinly.data.repository.ProjectSegmentRepositoryImpl
-import io.github.b150005.skeinly.data.repository.PullRequestRepositoryImpl
 import io.github.b150005.skeinly.data.repository.ShareRepositoryImpl
-import io.github.b150005.skeinly.data.repository.StructuredChartRepositoryImpl
 import io.github.b150005.skeinly.data.repository.SubscriptionRepositoryImpl
+import io.github.b150005.skeinly.data.repository.SuggestionRepositoryImpl
 import io.github.b150005.skeinly.data.repository.UserRepositoryImpl
 import io.github.b150005.skeinly.domain.repository.ActivityRepository
 import io.github.b150005.skeinly.domain.repository.AuthRepository
-import io.github.b150005.skeinly.domain.repository.ChartBranchRepository
-import io.github.b150005.skeinly.domain.repository.ChartRevisionRepository
+import io.github.b150005.skeinly.domain.repository.ChartRepository
+import io.github.b150005.skeinly.domain.repository.ChartVariationRepository
+import io.github.b150005.skeinly.domain.repository.ChartVersionRepository
 import io.github.b150005.skeinly.domain.repository.CommentRepository
 import io.github.b150005.skeinly.domain.repository.DeviceTokenRepository
 import io.github.b150005.skeinly.domain.repository.PatternRepository
 import io.github.b150005.skeinly.domain.repository.ProgressRepository
 import io.github.b150005.skeinly.domain.repository.ProjectRepository
 import io.github.b150005.skeinly.domain.repository.ProjectSegmentRepository
-import io.github.b150005.skeinly.domain.repository.PullRequestRepository
 import io.github.b150005.skeinly.domain.repository.ShareRepository
 import io.github.b150005.skeinly.domain.repository.StorageOperations
-import io.github.b150005.skeinly.domain.repository.StructuredChartRepository
 import io.github.b150005.skeinly.domain.repository.SubscriptionRepository
+import io.github.b150005.skeinly.domain.repository.SuggestionRepository
 import io.github.b150005.skeinly.domain.repository.UserRepository
 import io.github.b150005.skeinly.domain.symbol.CompositeSymbolCatalog
 import io.github.b150005.skeinly.domain.symbol.DefaultSymbolPackCatalog
@@ -105,11 +105,11 @@ val repositoryModule =
         single { LocalProjectDataSource(get(), get(ioDispatcherQualifier)) }
         single { LocalProgressDataSource(get(), get(ioDispatcherQualifier)) }
         single { LocalPatternDataSource(get(), get(ioDispatcherQualifier)) }
-        single { LocalStructuredChartDataSource(get(), get(ioDispatcherQualifier), get()) }
+        single { LocalChartDataSource(get(), get(ioDispatcherQualifier), get()) }
         single { LocalProjectSegmentDataSource(get(), get(ioDispatcherQualifier)) }
-        single { LocalChartRevisionDataSource(get(), get(ioDispatcherQualifier), get()) }
-        single { LocalChartBranchDataSource(get(), get(ioDispatcherQualifier)) }
-        single { LocalPullRequestDataSource(get(), get(ioDispatcherQualifier)) }
+        single { LocalChartVersionDataSource(get(), get(ioDispatcherQualifier), get()) }
+        single { LocalChartVariationDataSource(get(), get(ioDispatcherQualifier)) }
+        single { LocalSuggestionDataSource(get(), get(ioDispatcherQualifier)) }
         single { LocalSubscriptionDataSource(get(), get(ioDispatcherQualifier)) }
         single { LocalSymbolPackDataSource(get(), get(ioDispatcherQualifier)) }
 
@@ -120,11 +120,11 @@ val repositoryModule =
             single { RemoteProgressDataSource(get<SupabaseClient>()) }
             single { RemotePatternDataSource(get<SupabaseClient>()) }
             single<PublicPatternDataSource> { get<RemotePatternDataSource>() }
-            single { RemoteStructuredChartDataSource(get<SupabaseClient>()) }
+            single { RemoteChartDataSource(get<SupabaseClient>()) }
             single { RemoteProjectSegmentDataSource(get<SupabaseClient>()) }
-            single { RemoteChartRevisionDataSource(get<SupabaseClient>()) }
-            single { RemoteChartBranchDataSource(get<SupabaseClient>()) }
-            single { RemotePullRequestDataSource(get<SupabaseClient>()) }
+            single { RemoteChartVersionDataSource(get<SupabaseClient>()) }
+            single { RemoteChartVariationDataSource(get<SupabaseClient>()) }
+            single { RemoteSuggestionDataSource(get<SupabaseClient>()) }
             single { RemoteSubscriptionDataSource(get<SupabaseClient>()) }
             // Phase 24.2e (ADR-017 §3.5) — device_tokens upsert
             // adapter. Interface alias lets DeviceTokenRepositoryImpl
@@ -135,7 +135,7 @@ val repositoryModule =
             single<DeviceTokenRemoteOperations> { get<RemoteDeviceTokenDataSource>() }
             // Interface alias lets SubscriptionRepositoryImpl be tested
             // with an in-memory fake without standing up Supabase. Same
-            // shape as PullRequestMergeOperations above.
+            // shape as SuggestionMergeOperations above.
             single<SubscriptionRemoteOperations> { get<RemoteSubscriptionDataSource>() }
             // Phase 41.2b (ADR-016 §3.3, §4.3): symbol pack catalog +
             // Edge Function download mediation. The injected HttpClient is
@@ -158,10 +158,10 @@ val repositoryModule =
             }
             single<SymbolPackRemoteOperations> { get<RemoteSymbolPackDataSource>() }
             // Phase 38.4: Expose the merge RPC port as a domain-layer
-            // interface so MergePullRequestUseCase doesn't take a hard
+            // interface so ApplySuggestionUseCase doesn't take a hard
             // dependency on the Supabase-typed data source.
-            single<io.github.b150005.skeinly.domain.repository.PullRequestMergeOperations> {
-                get<RemotePullRequestDataSource>()
+            single<io.github.b150005.skeinly.domain.repository.SuggestionMergeOperations> {
+                get<RemoteSuggestionDataSource>()
             }
             single<ShareDataSourceOperations> { RemoteShareDataSource(get<SupabaseClient>()) }
             single { RemoteUserDataSource(get<SupabaseClient>()) }
@@ -232,20 +232,20 @@ val repositoryModule =
                 json = get(),
             )
         }
-        single<StructuredChartRepository> {
-            StructuredChartRepositoryImpl(
+        single<ChartRepository> {
+            ChartRepositoryImpl(
                 local = get(),
                 remote = getOrNull(),
                 isOnline = get<ConnectivityMonitor>().isOnline,
                 syncManager = get(),
                 json = get(),
-                chartRevisionRepository = get(),
-                localChartBranch = get(),
-                chartBranchRepository = get(),
+                chartVersionRepository = get(),
+                localChartVariation = get(),
+                chartVariationRepository = get(),
             )
         }
-        single<ChartRevisionRepository> {
-            ChartRevisionRepositoryImpl(
+        single<ChartVersionRepository> {
+            ChartVersionRepositoryImpl(
                 local = get(),
                 remote = getOrNull(),
                 isOnline = get<ConnectivityMonitor>().isOnline,
@@ -253,15 +253,15 @@ val repositoryModule =
                 json = get(),
             )
         }
-        single<ChartBranchRepository> {
-            ChartBranchRepositoryImpl(
+        single<ChartVariationRepository> {
+            ChartVariationRepositoryImpl(
                 local = get(),
                 syncManager = get(),
                 json = get(),
             )
         }
-        single<PullRequestRepository> {
-            PullRequestRepositoryImpl(
+        single<SuggestionRepository> {
+            SuggestionRepositoryImpl(
                 local = get(),
                 remote = getOrNull(),
                 isOnline = get<ConnectivityMonitor>().isOnline,

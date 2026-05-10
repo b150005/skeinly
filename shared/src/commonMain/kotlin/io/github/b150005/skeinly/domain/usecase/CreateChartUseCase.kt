@@ -1,23 +1,23 @@
 package io.github.b150005.skeinly.domain.usecase
 
 import io.github.b150005.skeinly.domain.LocalUser
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
 import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.CraftType
 import io.github.b150005.skeinly.domain.model.ReadingConvention
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import io.github.b150005.skeinly.domain.model.StructuredChart
 import io.github.b150005.skeinly.domain.repository.AuthRepository
-import io.github.b150005.skeinly.domain.repository.StructuredChartRepository
+import io.github.b150005.skeinly.domain.repository.ChartRepository
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-class CreateStructuredChartUseCase(
-    private val repository: StructuredChartRepository,
+class CreateChartUseCase(
+    private val repository: ChartRepository,
     private val authRepository: AuthRepository,
     private val json: Json,
 ) {
@@ -34,7 +34,7 @@ class CreateStructuredChartUseCase(
         layers: List<ChartLayer> = emptyList(),
         craftType: CraftType = CraftType.KNIT,
         readingConvention: ReadingConvention = ReadingConvention.KNIT_FLAT,
-    ): UseCaseResult<StructuredChart> {
+    ): UseCaseResult<Chart> {
         if (patternId.isBlank()) {
             return UseCaseResult.Failure(UseCaseError.FieldRequired)
         }
@@ -51,18 +51,18 @@ class CreateStructuredChartUseCase(
             val ownerId = authRepository.getCurrentUserId() ?: LocalUser.ID
             val now = Clock.System.now()
             val chart =
-                StructuredChart(
+                Chart(
                     id = Uuid.random().toString(),
                     patternId = patternId,
                     ownerId = ownerId,
-                    schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+                    schemaVersion = Chart.CURRENT_SCHEMA_VERSION,
                     storageVariant = StorageVariant.INLINE,
                     coordinateSystem = coordinateSystem,
                     extents = extents,
                     layers = layers,
                     revisionId = Uuid.random().toString(),
                     parentRevisionId = null,
-                    contentHash = StructuredChart.computeContentHash(extents, layers, json),
+                    contentHash = Chart.computeContentHash(extents, layers, json),
                     createdAt = now,
                     updatedAt = now,
                     craftType = craftType,

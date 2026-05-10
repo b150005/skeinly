@@ -1,5 +1,5 @@
 -- Phase 38.1: Pull request workflow data spine (ADR-014 §1, §2).
-CREATE TABLE PullRequestEntity (
+CREATE TABLE SuggestionEntity (
     id TEXT NOT NULL PRIMARY KEY,
     source_pattern_id TEXT NOT NULL,
     source_branch_id TEXT NOT NULL,
@@ -21,20 +21,20 @@ CREATE TABLE PullRequestEntity (
 );
 
 CREATE INDEX IF NOT EXISTS idx_pr_target_pattern_status
-    ON PullRequestEntity(target_pattern_id, status, created_at);
+    ON SuggestionEntity(target_pattern_id, status, created_at);
 CREATE INDEX IF NOT EXISTS idx_pr_source_pattern_status
-    ON PullRequestEntity(source_pattern_id, status, created_at);
+    ON SuggestionEntity(source_pattern_id, status, created_at);
 CREATE INDEX IF NOT EXISTS idx_pr_author_status
-    ON PullRequestEntity(author_id, status);
+    ON SuggestionEntity(author_id, status);
 
-CREATE TABLE PullRequestCommentEntity (
+CREATE TABLE SuggestionCommentEntity (
     id TEXT NOT NULL PRIMARY KEY,
     pull_request_id TEXT NOT NULL,
     author_id TEXT,
     body TEXT NOT NULL,
     created_at TEXT NOT NULL,
-    FOREIGN KEY (pull_request_id) REFERENCES PullRequestEntity(id) ON DELETE CASCADE
+    FOREIGN KEY (pull_request_id) REFERENCES SuggestionEntity(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_pr_comments_pr_id_created
-    ON PullRequestCommentEntity(pull_request_id, created_at);
+    ON SuggestionCommentEntity(pull_request_id, created_at);

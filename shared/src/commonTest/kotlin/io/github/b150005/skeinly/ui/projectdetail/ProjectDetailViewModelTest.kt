@@ -7,6 +7,7 @@ import io.github.b150005.skeinly.data.analytics.RecordingAnalyticsTracker
 import io.github.b150005.skeinly.data.remote.FakeRemoteStorageDataSource
 import io.github.b150005.skeinly.domain.LocalUser
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.Chart
 import io.github.b150005.skeinly.domain.model.ChartCell
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
@@ -18,7 +19,6 @@ import io.github.b150005.skeinly.domain.model.ProjectStatus
 import io.github.b150005.skeinly.domain.model.SegmentState
 import io.github.b150005.skeinly.domain.model.SharePermission
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import io.github.b150005.skeinly.domain.model.StructuredChart
 import io.github.b150005.skeinly.domain.model.User
 import io.github.b150005.skeinly.domain.model.Visibility
 import io.github.b150005.skeinly.domain.usecase.AddProgressNoteUseCase
@@ -28,17 +28,17 @@ import io.github.b150005.skeinly.domain.usecase.DeleteChartImageUseCase
 import io.github.b150005.skeinly.domain.usecase.DeleteProgressNoteUseCase
 import io.github.b150005.skeinly.domain.usecase.DeleteProgressPhotoUseCase
 import io.github.b150005.skeinly.domain.usecase.FakeAuthRepository
+import io.github.b150005.skeinly.domain.usecase.FakeChartRepository
 import io.github.b150005.skeinly.domain.usecase.FakePatternRepository
 import io.github.b150005.skeinly.domain.usecase.FakeProgressRepository
 import io.github.b150005.skeinly.domain.usecase.FakeProjectRepository
 import io.github.b150005.skeinly.domain.usecase.FakeProjectSegmentRepository
 import io.github.b150005.skeinly.domain.usecase.FakeShareRepository
-import io.github.b150005.skeinly.domain.usecase.FakeStructuredChartRepository
 import io.github.b150005.skeinly.domain.usecase.FakeUserRepository
 import io.github.b150005.skeinly.domain.usecase.GetProgressNotesUseCase
 import io.github.b150005.skeinly.domain.usecase.IncrementRowUseCase
+import io.github.b150005.skeinly.domain.usecase.ObserveChartUseCase
 import io.github.b150005.skeinly.domain.usecase.ObserveProjectSegmentsUseCase
-import io.github.b150005.skeinly.domain.usecase.ObserveStructuredChartUseCase
 import io.github.b150005.skeinly.domain.usecase.ReopenProjectUseCase
 import io.github.b150005.skeinly.domain.usecase.ResetProjectProgressUseCase
 import io.github.b150005.skeinly.domain.usecase.ShareProjectUseCase
@@ -125,7 +125,7 @@ class ProjectDetailViewModelTest {
             uploadProgressPhoto = UploadProgressPhotoUseCase(null, authRepository),
             deleteProgressPhoto = DeleteProgressPhotoUseCase(null, authRepository),
             progressPhotoStorage = null,
-            observeStructuredChart = ObserveStructuredChartUseCase(FakeStructuredChartRepository()),
+            observeChart = ObserveChartUseCase(FakeChartRepository()),
             observeProjectSegments = ObserveProjectSegmentsUseCase(FakeProjectSegmentRepository()),
             resetProjectProgress = ResetProjectProgressUseCase(FakeProjectSegmentRepository()),
             analyticsTracker = analyticsTracker,
@@ -701,7 +701,7 @@ class ProjectDetailViewModelTest {
             uploadProgressPhoto = UploadProgressPhotoUseCase(null, authRepository),
             deleteProgressPhoto = DeleteProgressPhotoUseCase(null, authRepository),
             progressPhotoStorage = null,
-            observeStructuredChart = ObserveStructuredChartUseCase(FakeStructuredChartRepository()),
+            observeChart = ObserveChartUseCase(FakeChartRepository()),
             observeProjectSegments = ObserveProjectSegmentsUseCase(FakeProjectSegmentRepository()),
             resetProjectProgress = ResetProjectProgressUseCase(FakeProjectSegmentRepository()),
         )
@@ -733,7 +733,7 @@ class ProjectDetailViewModelTest {
             uploadProgressPhoto = UploadProgressPhotoUseCase(storage, authRepository),
             deleteProgressPhoto = DeleteProgressPhotoUseCase(storage, authRepository),
             progressPhotoStorage = storage,
-            observeStructuredChart = ObserveStructuredChartUseCase(FakeStructuredChartRepository()),
+            observeChart = ObserveChartUseCase(FakeChartRepository()),
             observeProjectSegments = ObserveProjectSegmentsUseCase(FakeProjectSegmentRepository()),
             resetProjectProgress = ResetProjectProgressUseCase(FakeProjectSegmentRepository()),
         )
@@ -745,7 +745,7 @@ class ProjectDetailViewModelTest {
     // --- Phase 34 US-7: segment progress summary ---
 
     private fun createViewModelWithChartAndSegments(
-        chartRepo: FakeStructuredChartRepository,
+        chartRepo: FakeChartRepository,
         segmentRepo: FakeProjectSegmentRepository,
     ): ProjectDetailViewModel =
         ProjectDetailViewModel(
@@ -774,7 +774,7 @@ class ProjectDetailViewModelTest {
             uploadProgressPhoto = UploadProgressPhotoUseCase(null, authRepository),
             deleteProgressPhoto = DeleteProgressPhotoUseCase(null, authRepository),
             progressPhotoStorage = null,
-            observeStructuredChart = ObserveStructuredChartUseCase(chartRepo),
+            observeChart = ObserveChartUseCase(chartRepo),
             observeProjectSegments = ObserveProjectSegmentsUseCase(segmentRepo),
             resetProjectProgress = ResetProjectProgressUseCase(segmentRepo),
         )
@@ -782,12 +782,12 @@ class ProjectDetailViewModelTest {
     private fun buildChart(
         patternId: String,
         layers: List<ChartLayer>,
-    ): StructuredChart =
-        StructuredChart(
+    ): Chart =
+        Chart(
             id = "chart-$patternId",
             patternId = patternId,
             ownerId = LocalUser.ID,
-            schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+            schemaVersion = Chart.CURRENT_SCHEMA_VERSION,
             storageVariant = StorageVariant.INLINE,
             coordinateSystem = CoordinateSystem.RECT_GRID,
             extents = ChartExtents.Rect(minX = 0, maxX = 2, minY = 0, maxY = 1),
@@ -826,13 +826,13 @@ class ProjectDetailViewModelTest {
             // Chart repo empty on purpose.
             val viewModel =
                 createViewModelWithChartAndSegments(
-                    chartRepo = FakeStructuredChartRepository(),
+                    chartRepo = FakeChartRepository(),
                     segmentRepo = FakeProjectSegmentRepository(),
                 )
 
             viewModel.state.test {
                 val state = awaitItem()
-                assertFalse(state.hasStructuredChart)
+                assertFalse(state.hasChart)
                 assertNull(state.segmentsDone)
                 assertNull(state.segmentsTotal)
                 cancelAndIgnoreRemainingEvents()
@@ -844,7 +844,7 @@ class ProjectDetailViewModelTest {
         runTest(testDispatcher) {
             projectRepository.create(createProjectWithPattern("pat-1"))
             patternRepository.create(createTestPattern().copy(id = "pat-1"))
-            val chartRepo = FakeStructuredChartRepository()
+            val chartRepo = FakeChartRepository()
             chartRepo.seed(
                 buildChart(
                     patternId = "pat-1",
@@ -868,7 +868,7 @@ class ProjectDetailViewModelTest {
 
             viewModel.state.test {
                 val state = awaitItem()
-                assertTrue(state.hasStructuredChart)
+                assertTrue(state.hasChart)
                 assertEquals(0, state.segmentsDone)
                 assertEquals(3, state.segmentsTotal)
                 cancelAndIgnoreRemainingEvents()
@@ -880,7 +880,7 @@ class ProjectDetailViewModelTest {
         runTest(testDispatcher) {
             projectRepository.create(createProjectWithPattern("pat-1"))
             patternRepository.create(createTestPattern().copy(id = "pat-1"))
-            val chartRepo = FakeStructuredChartRepository()
+            val chartRepo = FakeChartRepository()
             chartRepo.seed(
                 buildChart(
                     patternId = "pat-1",
@@ -918,7 +918,7 @@ class ProjectDetailViewModelTest {
         runTest(testDispatcher) {
             projectRepository.create(createProjectWithPattern("pat-1"))
             patternRepository.create(createTestPattern().copy(id = "pat-1"))
-            val chartRepo = FakeStructuredChartRepository()
+            val chartRepo = FakeChartRepository()
             chartRepo.seed(
                 buildChart(
                     patternId = "pat-1",
@@ -967,7 +967,7 @@ class ProjectDetailViewModelTest {
         runTest(testDispatcher) {
             projectRepository.create(createProjectWithPattern("pat-1"))
             patternRepository.create(createTestPattern().copy(id = "pat-1"))
-            val chartRepo = FakeStructuredChartRepository()
+            val chartRepo = FakeChartRepository()
             // Chart has 2 placed cells at (0,0) and (1,0).
             chartRepo.seed(
                 buildChart(
@@ -1007,13 +1007,13 @@ class ProjectDetailViewModelTest {
         runTest(testDispatcher) {
             projectRepository.create(createProjectWithPattern("pat-1"))
             patternRepository.create(createTestPattern().copy(id = "pat-1"))
-            val chartRepo = FakeStructuredChartRepository()
+            val chartRepo = FakeChartRepository()
             val polarChart =
-                StructuredChart(
+                Chart(
                     id = "chart-polar",
                     patternId = "pat-1",
                     ownerId = LocalUser.ID,
-                    schemaVersion = StructuredChart.CURRENT_SCHEMA_VERSION,
+                    schemaVersion = Chart.CURRENT_SCHEMA_VERSION,
                     storageVariant = StorageVariant.INLINE,
                     coordinateSystem = CoordinateSystem.POLAR_ROUND,
                     extents = ChartExtents.Polar(rings = 2, stitchesPerRing = listOf(6, 12)),
@@ -1057,7 +1057,7 @@ class ProjectDetailViewModelTest {
         runTest(testDispatcher) {
             projectRepository.create(createProjectWithPattern("pat-1"))
             patternRepository.create(createTestPattern().copy(id = "pat-1"))
-            val chartRepo = FakeStructuredChartRepository()
+            val chartRepo = FakeChartRepository()
             // Chart exists but has only a hidden layer (no visible cells to summarize).
             chartRepo.seed(
                 buildChart(
@@ -1077,7 +1077,7 @@ class ProjectDetailViewModelTest {
 
             viewModel.state.test {
                 val state = awaitItem()
-                assertTrue(state.hasStructuredChart)
+                assertTrue(state.hasChart)
                 assertNull(state.segmentsDone)
                 assertNull(state.segmentsTotal)
                 cancelAndIgnoreRemainingEvents()

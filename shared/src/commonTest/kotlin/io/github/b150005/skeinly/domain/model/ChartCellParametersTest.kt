@@ -43,14 +43,14 @@ class ChartCellParametersTest {
 
     @Test
     fun `kebab case ids pass validator`() {
-        assertTrue(StructuredChart.isValidSymbolId("jis.knit.k2tog-r"))
-        assertTrue(StructuredChart.isValidSymbolId("jis.knit.cable-1x1-r-p"))
-        assertTrue(StructuredChart.isValidSymbolId("jis.knit.cast-on"))
+        assertTrue(Chart.isValidSymbolId("jis.knit.k2tog-r"))
+        assertTrue(Chart.isValidSymbolId("jis.knit.cable-1x1-r-p"))
+        assertTrue(Chart.isValidSymbolId("jis.knit.cast-on"))
     }
 
     @Test
     fun `segment starting with hyphen is rejected`() {
-        assertFalse(StructuredChart.isValidSymbolId("jis.knit.-bad"))
-        assertFalse(StructuredChart.isValidSymbolId("jis.-knit.k"))
+        assertFalse(Chart.isValidSymbolId("jis.knit.-bad"))
+        assertFalse(Chart.isValidSymbolId("jis.-knit.k"))
     }
 }

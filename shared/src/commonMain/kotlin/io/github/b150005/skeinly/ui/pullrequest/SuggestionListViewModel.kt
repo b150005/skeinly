@@ -2,13 +2,13 @@ package io.github.b150005.skeinly.ui.pullrequest
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.b150005.skeinly.domain.model.PullRequest
+import io.github.b150005.skeinly.domain.model.Suggestion
 import io.github.b150005.skeinly.domain.model.User
 import io.github.b150005.skeinly.domain.repository.AuthRepository
 import io.github.b150005.skeinly.domain.repository.UserRepository
 import io.github.b150005.skeinly.domain.usecase.ErrorMessage
-import io.github.b150005.skeinly.domain.usecase.GetIncomingPullRequestsUseCase
-import io.github.b150005.skeinly.domain.usecase.GetOutgoingPullRequestsUseCase
+import io.github.b150005.skeinly.domain.usecase.GetIncomingSuggestionsUseCase
+import io.github.b150005.skeinly.domain.usecase.GetOutgoingSuggestionsUseCase
 import io.github.b150005.skeinly.domain.usecase.UseCaseResult
 import io.github.b150005.skeinly.domain.usecase.toErrorMessage
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,35 +25,35 @@ import kotlinx.coroutines.flow.update
 import kotlinx.serialization.Serializable
 
 /**
- * Read-side filter for [PullRequestListScreen] (ADR-014 §6).
+ * Read-side filter for [SuggestionListScreen] (ADR-014 §6).
  *
  * Same data model on both branches; the screen renders a single list scoped
- * to the chosen direction. Tracked client-side via [PullRequestListEvent.SelectFilter]
+ * to the chosen direction. Tracked client-side via [SuggestionListEvent.SelectFilter]
  * so a user can toggle between the two without re-navigating.
  *
- * `@Serializable` so the [io.github.b150005.skeinly.ui.navigation.PullRequestList]
+ * `@Serializable` so the [io.github.b150005.skeinly.ui.navigation.SuggestionList]
  * route can carry it as a default filter.
  */
 @Serializable
-enum class PullRequestFilter {
+enum class SuggestionFilter {
     INCOMING,
     OUTGOING,
 }
 
-data class PullRequestListState(
-    val filter: PullRequestFilter = PullRequestFilter.INCOMING,
-    val pullRequests: List<PullRequest> = emptyList(),
+data class SuggestionListState(
+    val filter: SuggestionFilter = SuggestionFilter.INCOMING,
+    val suggestions: List<Suggestion> = emptyList(),
     val users: Map<String, User> = emptyMap(),
     val isLoading: Boolean = true,
     val error: ErrorMessage? = null,
 )
 
-sealed interface PullRequestListEvent {
+sealed interface SuggestionListEvent {
     data class SelectFilter(
-        val filter: PullRequestFilter,
-    ) : PullRequestListEvent
+        val filter: SuggestionFilter,
+    ) : SuggestionListEvent
 
-    data object ClearError : PullRequestListEvent
+    data object ClearError : SuggestionListEvent
 }
 
 /**
@@ -61,7 +61,7 @@ sealed interface PullRequestListEvent {
  * authenticated user. Parameterized on [defaultFilter]; the chip row in the UI
  * lets the user toggle between Incoming and Outgoing without re-navigating.
  *
- * **Cold-launch seeding contract.** [io.github.b150005.skeinly.domain.repository.PullRequestRepository.observeIncomingForOwner]
+ * **Cold-launch seeding contract.** [io.github.b150005.skeinly.domain.repository.SuggestionRepository.observeIncomingForOwner]
  * is local-only with no remote seed — a fresh install observing an empty cache
  * would render the empty state forever. The ViewModel kicks the suspend
  * `invoke()` overload first to backfill the local cache from the remote, then
@@ -80,15 +80,15 @@ sealed interface PullRequestListEvent {
  * falls back to `label_someone` when the lookup misses.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class PullRequestListViewModel(
-    defaultFilter: PullRequestFilter,
-    private val getIncoming: GetIncomingPullRequestsUseCase,
-    private val getOutgoing: GetOutgoingPullRequestsUseCase,
+class SuggestionListViewModel(
+    defaultFilter: SuggestionFilter,
+    private val getIncoming: GetIncomingSuggestionsUseCase,
+    private val getOutgoing: GetOutgoingSuggestionsUseCase,
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(PullRequestListState(filter = defaultFilter))
-    val state: StateFlow<PullRequestListState> = _state.asStateFlow()
+    private val _state = MutableStateFlow(SuggestionListState(filter = defaultFilter))
+    val state: StateFlow<SuggestionListState> = _state.asStateFlow()
 
     private val _filter = MutableStateFlow(defaultFilter)
 
@@ -96,9 +96,9 @@ class PullRequestListViewModel(
         observeWithFilterSwitching()
     }
 
-    fun onEvent(event: PullRequestListEvent) {
+    fun onEvent(event: SuggestionListEvent) {
         when (event) {
-            is PullRequestListEvent.SelectFilter -> {
+            is SuggestionListEvent.SelectFilter -> {
                 if (_filter.value != event.filter) {
                     // Reset users — stale entries from the old filter must not
                     // be reused on the new filter (an authorId collision could
@@ -117,7 +117,7 @@ class PullRequestListViewModel(
                 }
             }
 
-            PullRequestListEvent.ClearError -> _state.update { it.copy(error = null) }
+            SuggestionListEvent.ClearError -> _state.update { it.copy(error = null) }
         }
     }
 
@@ -143,21 +143,21 @@ class PullRequestListViewModel(
                 flow {
                     val seed =
                         when (filter) {
-                            PullRequestFilter.INCOMING -> getIncoming(ownerId)
-                            PullRequestFilter.OUTGOING -> getOutgoing(ownerId)
+                            SuggestionFilter.INCOMING -> getIncoming(ownerId)
+                            SuggestionFilter.OUTGOING -> getOutgoing(ownerId)
                         }
                     if (seed is UseCaseResult.Failure) {
                         _state.update { it.copy(error = seed.error.toErrorMessage()) }
                     }
                     emitAll(
                         when (filter) {
-                            PullRequestFilter.INCOMING -> getIncoming.observe(ownerId)
-                            PullRequestFilter.OUTGOING -> getOutgoing.observe(ownerId)
+                            SuggestionFilter.INCOMING -> getIncoming.observe(ownerId)
+                            SuggestionFilter.OUTGOING -> getOutgoing.observe(ownerId)
                         },
                     )
                 }
             }.onEach { prs ->
-                _state.update { it.copy(pullRequests = prs, isLoading = false) }
+                _state.update { it.copy(suggestions = prs, isLoading = false) }
                 resolveUsers(prs)
             }.catch { e ->
                 _state.update {
@@ -166,7 +166,7 @@ class PullRequestListViewModel(
             }.launchIn(viewModelScope)
     }
 
-    private suspend fun resolveUsers(prs: List<PullRequest>) {
+    private suspend fun resolveUsers(prs: List<Suggestion>) {
         // Snapshot read on the keys-to-fetch set is fine — we only need to
         // know which authorIds are *probably* missing. The actual merge below
         // re-reads `current.users` inside `_state.update` so a concurrent
