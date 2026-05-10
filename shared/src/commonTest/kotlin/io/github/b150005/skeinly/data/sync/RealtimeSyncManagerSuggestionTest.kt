@@ -84,7 +84,7 @@ class RealtimeSyncManagerSuggestionTest {
             manager.subscribe("owner-1")
 
             val outgoingHandle = channelProvider.channelFor("pull-requests-outgoing-owner-1")!!
-            assertEquals("pull_requests", outgoingHandle.subscribedTable)
+            assertEquals("suggestions", outgoingHandle.subscribedTable)
             assertEquals("author_id", outgoingHandle.subscribedFilter?.column)
             assertEquals("owner-1", outgoingHandle.subscribedFilter?.value)
         }
@@ -97,7 +97,7 @@ class RealtimeSyncManagerSuggestionTest {
             manager.subscribe("owner-1")
 
             val incomingHandle = channelProvider.channelFor("pull-requests-incoming-owner-1")!!
-            assertEquals("pull_requests", incomingHandle.subscribedTable)
+            assertEquals("suggestions", incomingHandle.subscribedTable)
             // Single-eq ChangeFilter cannot express "target_pattern_id IN
             // owned_patterns"; ADR-014 §7 routes incoming through RLS scoping.
             assertNull(incomingHandle.subscribedFilter)

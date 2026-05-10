@@ -463,3 +463,31 @@ Best-effort chart clone (decision §3 of the agent team). On failure:
 - Phase 26 Completed notes: original `ForkPublicPatternUseCase` design
 - Phase 32 Completed notes: editor MVP invariants (`EditHistory` not serialized)
 - `supabase/migrations/012_structured_chart.sql`: existing RLS for chart documents
+
+---
+
+## Amendment — 2026-05-10 (Terminology audit, pre-v0.1.0)
+
+Per `audits/terminology-audit-2026-05-10.md`: the "Fork" affordance
+renames to "Save a copy" (EN) / 「コピーを保存」 (JA) across all
+user-facing surfaces. Ravelry's "add to Ravelry library" + amu app's
+「複製」 primary-source evidence confirms no knitting app in the
+surveyed set uses "fork" — it's GitHub jargon foreign to the
+craft-app idiom.
+
+**Code:** `ForkSharedPatternUseCase` / `ForkPublicPatternUseCase` →
+`SaveSharedPatternToLibraryUseCase` / `SavePublicPatternToLibraryUseCase`.
+**i18n:** ~10 keys renamed (action_fork_pattern → action_save_pattern_copy,
+label_forked_from → label_copied_from, etc.).
+**Supabase:** `Pattern.parentPatternId` column unchanged (internal
+attribution mechanism — internal column names retain old terminology
+per the audit's "table-rename only, columns stay" decision).
+
+The "Discovery" screen retitles its EN string to "Browse Patterns"
+matching Ravelry's dominant nav idiom; the JA string 「パターンを探す」
+was already aligned and stays. Code identifier `DiscoveryViewModel` /
+`DiscoveryScreen` retained — internal naming, no consumer reach.
+
+This ADR's "Fork" semantics (pattern lineage + future PR-back-to-
+original) are unchanged at the data-model level. Only the
+user-facing CTA label changes.

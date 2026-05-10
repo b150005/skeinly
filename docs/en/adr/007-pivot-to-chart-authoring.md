@@ -97,3 +97,26 @@ be locked before the product identity is finalized.
 | Shared SVG renderer (Compose Multiplatform Canvas) | Single implementation of chart drawing | CMP's graphics layer is still maturing (CMP 1.10.x); SwiftUI users get a non-native feel; future symbol interactions (tap-to-edit) harder to wire on non-native canvas | Chart is the most visible surface; native fidelity matters more than implementation economy |
 | WebView + HTML Canvas (ammies-style) | Maximum code reuse; existing web examples to port | Non-native scroll/zoom gestures on mobile; higher memory footprint; hostile to future offline-first requirement | Defeats the "native KMP" strategy committed to in ADR-001 |
 | Drop Git-like collaboration from v1.0 and target a simpler authoring-only release | Smaller scope, earlier launch | The Git model is the differentiator that justifies the app's existence relative to Ammies + KnitCompanion; releasing without it is a weaker product story | Collaboration can be phased (Phase 37–38) but must be in v1.0 scope |
+
+---
+
+## Amendment — 2026-05-10 (Terminology audit, pre-v0.1.0)
+
+Per `audits/terminology-audit-2026-05-10.md`: the user-facing label
+"structured chart" is renamed to plain "chart" (EN) / 「編み図」 (JA)
+since CYC + Nihon Vogue-sha + amu app primary sources confirm "chart"
+is the universal industry term. The "structured" qualifier was dev-
+internal vocabulary distinguishing the symbol-grid editor surface
+from photo-attached chart images; that distinction is now expressed
+via "chart" vs "reference image" labels instead.
+
+**Code:** `StructuredChart` data class renamed to `Chart` across
+`shared/src/commonMain/kotlin` (file + content).
+**i18n:** `state_no_structured_chart` / `action_view_structured_chart`
+etc. renamed to `state_no_chart` / `action_view_chart` in shared
+composeResources + iOS Localizable.xcstrings. JA「構造化チャート」 → 「編み図」.
+**Supabase:** No schema change here (the `chart_documents` table name
+was already non-jargon). ADR-008 amendment lists the table-rename
+cascade for `chart_revisions` / `chart_branches`.
+**This ADR title** retitles to "Pivot from Row Counter to Chart
+Authoring" in subsequent doc-edit commit.

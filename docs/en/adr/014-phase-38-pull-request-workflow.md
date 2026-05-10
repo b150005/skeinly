@@ -1016,3 +1016,72 @@ forker watching upstream. No new public-fan-out is introduced — Phase
 - `supabase/migrations/015_chart_revisions.sql`: existing
   `chart_revisions` + `chart_branches` schema and RLS that Phase 38
   builds on top of
+
+---
+
+## Amendment — 2026-05-10 (Terminology audit, pre-v0.1.0)
+
+Per `audits/terminology-audit-2026-05-10.md`: this ADR's
+"Pull request" + "Merge" + status enum 'merged' renames to
+knitter-friendly equivalents.
+
+**Mapping:**
+
+| Concept | EN (was → new) | JA (was → new) |
+|---|---|---|
+| Suggested change | Pull request → Suggestion | プルリクエスト → 提案 |
+| Apply suggestion | Merge → Apply changes | マージ → 変更を反映 |
+| Status (applied) | merged → applied | マージ済み → 反映済み |
+
+The collaboration concept is novel in the knitting-app industry (no
+competitor surveyed in the 2026-05-10 docs-researcher Round 1 had
+an equivalent feature). Choice favored descriptive clarity over
+non-existent industry alignment: "Suggestion" / 「提案」 read
+naturally to a layperson knitter; "Apply changes" / 「変更を反映」
+is the universal verb-noun pair.
+
+**Supabase Migration 027 (applied to prod 2026-05-10):**
+- `pull_requests` → `suggestions` (table rename only)
+- `pull_request_comments` → `suggestion_comments` (table rename only)
+- `pull_requests.status` enum value `'merged'` → `'applied'`
+- `merge_pull_request` RPC → `apply_suggestion` (with renamed args:
+  `p_pull_request_id` → `p_suggestion_id`, `p_merged_document` →
+  `p_applied_document`, etc.)
+
+Internal column names (`source_branch_id`, `target_branch_id`,
+`source_tip_revision_id`, `merged_revision_id`, `merged_at`,
+`pull_request_id` on comments) retained as internal artifacts.
+
+**Code:** `PullRequest` → `Suggestion`, `MergePullRequestUseCase` →
+`ApplySuggestionUseCase` across `shared/src/commonMain/kotlin` +
+SQLDelight schema.
+- Status enum: `SuggestionStatus.MERGED` → `APPLIED` with
+  `@SerialName("applied")` for wire-format serialization.
+- RPC name in client: `"merge_pull_request"` → `"apply_suggestion"`.
+
+**i18n:** ~32 keys renamed across the Phase 38 wave
+(title_pull_requests → title_suggestions, action_merge_pr →
+action_apply_suggestion, label_pr_status_merged →
+label_suggestion_status_applied, etc.). Plus the conflict
+resolution buttons "Take theirs" / "Keep mine" → "Use contributor's"
+/ "Use mine"; JA 「相手側を採用」「自分側を維持」 retained
+(already knitter-friendly).
+
+**Edge Function `notify-on-write`:**
+- Webhook dispatch table refs: `"pull_requests"` → `"suggestions"`,
+  `"pull_request_comments"` → `"suggestion_comments"`
+- Status type union: updated to `"applied"`
+- EN/JA notification template strings updated:
+  "merged your pull request" → "applied your suggestion",
+  「プルリクエストをマージしました」→「提案を反映しました」, etc.
+
+User-side action remaining: redeploy `notify-on-write` Edge Function
+(`supabase functions deploy notify-on-write`) so push notifications
+dispatch on the new table names. Database Webhook configuration in
+Dashboard automatically follows the table rename via OID; no
+reconfiguration needed.
+
+This ADR's title retitles to "Phase 38 Suggestion Workflow (Comment,
+Approve, Apply, Conflict Resolution)" in subsequent doc-edit commit.
+The associated spec `pull-request-flow.md` renames to
+`suggestion-flow.md`.

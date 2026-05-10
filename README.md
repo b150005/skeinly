@@ -31,6 +31,22 @@ A Kotlin Multiplatform knitting app for managing patterns, tracking progress, an
 - **Local-first** data storage with SQLDelight, with cloud sync via Supabase
 - **Clean Architecture**: UI → ViewModel → UseCase → Repository → DataSource
 
+### Vocabulary mapping (developer reference)
+
+The collaboration model is internally a Git-shaped DAG (commits, branches, pull requests, merges), but **user-facing language is knitter-friendly** per the 2026-05-10 terminology audit ([audits/terminology-audit-2026-05-10.md](audits/terminology-audit-2026-05-10.md)). When working on these features, expect this mental-model bridge:
+
+| Git concept | App label (EN) | App label (JA) | Internal class / Supabase table |
+|---|---|---|---|
+| fork (verb/noun) | Save a copy | コピーを保存 | `SaveSharedPatternToLibraryUseCase`; `Pattern.parentPatternId` (no separate table) |
+| branch | Variation | アレンジ | `ChartVariation` / `chart_variations` |
+| commit / revision | Version | バージョン | `ChartVersion` / `chart_versions` |
+| merge | Apply changes | 変更を反映 | `ApplySuggestionUseCase`; RPC `apply_suggestion` |
+| pull request | Suggestion | 提案 | `Suggestion` / `suggestions` |
+| diff | Comparison | 比較 | `ChartComparison` |
+| upstream | original | 元の (e.g. 元のパターン) | (concept; no class) |
+
+The `_revision_id` / `_branch_id` / `pull_request_id` etc. column names inside the renamed tables are intentionally retained as internal artifacts — only the table names + status enum value (`'merged'` → `'applied'`) were renamed at the schema level. ADR-013 + ADR-014 amendment blocks document the boundary between user-visible vs internal vocabulary.
+
 ### Tech Stack
 
 | Layer | Technology |
@@ -266,6 +282,22 @@ The `release-tag-publish` Makefile target gracefully degrades when secrets are m
 - **プラットフォームネイティブ UI**: Jetpack Compose (Android)、SwiftUI (iOS/macOS)
 - **ローカルファースト** のデータ保存 (SQLDelight) + Supabase によるクラウド同期
 - **クリーンアーキテクチャ**: UI → ViewModel → UseCase → Repository → DataSource
+
+### 用語対応表 (開発者向け)
+
+コラボレーションモデルの内部実装は Git 相当の DAG (commit / branch / pull request / merge) ですが、**UI に表示される用語は編み物者にとって自然な言葉に統一**されています (2026-05-10 の用語監査による。詳細: [audits/terminology-audit-2026-05-10.md](audits/terminology-audit-2026-05-10.md))。本プロジェクトのコードを読む際は以下の対応表をブリッジとしてください:
+
+| Git 概念 | アプリ表示 (EN) | アプリ表示 (JA) | 内部クラス / Supabase テーブル |
+|---|---|---|---|
+| fork (verb/noun) | Save a copy | コピーを保存 | `SaveSharedPatternToLibraryUseCase`; `Pattern.parentPatternId` (専用テーブルなし) |
+| branch | Variation | アレンジ | `ChartVariation` / `chart_variations` |
+| commit / revision | Version | バージョン | `ChartVersion` / `chart_versions` |
+| merge | Apply changes | 変更を反映 | `ApplySuggestionUseCase`; RPC `apply_suggestion` |
+| pull request | Suggestion | 提案 | `Suggestion` / `suggestions` |
+| diff | Comparison | 比較 | `ChartComparison` |
+| upstream | original | 元の (例: 元のパターン) | (概念のみ; 専用クラスなし) |
+
+リネームされたテーブル内の `_revision_id` / `_branch_id` / `pull_request_id` 等のカラム名は、内部アーティファクトとして意図的に旧名を保持しています — スキーマレベルでリネームしたのはテーブル名と status enum value (`'merged'` → `'applied'`) のみ。ADR-013 + ADR-014 の amendment ブロックに「user-visible 用語と内部用語の境界」を記載しています。
 
 ### 技術スタック
 

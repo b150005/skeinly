@@ -1,4 +1,11 @@
-# Spec — Structured Chart Editor
+# Spec — Chart Editor
+
+> Note: prior to the 2026-05-10 terminology audit this spec was titled
+> "Spec — Structured Chart Editor". The "structured" qualifier was
+> dev-internal vocabulary distinguishing the symbol-grid editor surface
+> from photo-attached chart images; that distinction is now expressed
+> via plain "chart" + "reference image" labels per the audit. See
+> `audits/terminology-audit-2026-05-10.md` for rationale.
 
 > **Purpose**: a stable, feature-organized view of the chart editor as it exists in main today. Use this when planning extensions; for *why* a decision was made, follow the ADR + archive references at the bottom.
 >

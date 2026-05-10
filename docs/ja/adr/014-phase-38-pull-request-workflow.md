@@ -128,3 +128,38 @@ Phase 38 が初めて扱う 3 つの構造的要素:
 
 詳細な意思決定プロセス、エージェントチーム議論、却下した代替案は
 [英語版](../../en/adr/014-phase-38-pull-request-workflow.md) を参照。
+
+---
+
+## Amendment — 2026-05-10 (用語監査、v0.1.0 直前)
+
+`audits/terminology-audit-2026-05-10.md` の決定に基づく用語ピボット。
+詳細は EN 版 ADR の Amendment ブロックを参照。
+
+**主要なリネーム** (本セッション 2026-05-10 適用):
+
+| 旧 | 新 |
+|---|---|
+| Structured Chart / 構造化チャート | Chart / 編み図 |
+| Fork / フォーク | Save a copy / コピーを保存 |
+| Branch / ブランチ | Variation / アレンジ |
+| Revision・Commit / リビジョン・コミット | Version / バージョン |
+| Pull request / プルリクエスト | Suggestion / 提案 |
+| Merge / マージ | Apply changes / 変更を反映 |
+| Diff / 差分 | Comparison / 比較 |
+| Discovery (EN) | Browse Patterns (EN); JA は既に「パターンを探す」で OK |
+
+**Supabase migrations 026 + 027** で `chart_revisions` → `chart_versions`、
+`chart_branches` → `chart_variations`、`pull_requests` → `suggestions`、
+`pull_request_comments` → `suggestion_comments`、status enum value
+`'merged'` → `'applied'`、`merge_pull_request` RPC → `apply_suggestion` を
+適用済 (prod 反映済 2026-05-10)。
+
+**検証ベース**: docs-researcher (T2) Round 1 + scoped Round 2 が
+Craft Yarn Council, 日本ヴォーグ社 (tezukuritown.com), Brooklyn
+Tweed, Stephen West, amu app 等の primary source で各リネームを
+裏付けた。research-critic agent が Round 1 を独立 tool family
+(WebFetch + GitHub) で再検証し 6/9 PASS を確認。
+
+事前 v1 破壊的変更ポリシー (CLAUDE.md `### Planned — Phase 39`
+HARD-GATE) により内部表名・status enum 値の変更を許容。
