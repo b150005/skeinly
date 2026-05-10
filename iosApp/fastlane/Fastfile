@@ -34,9 +34,9 @@ platform :ios do
 
   desc "Build IPA, sign with manual signing, and upload to TestFlight."
   lane :beta do
-    install_signing_assets if ENV["CI"]
+    profile_path = install_signing_assets if ENV["CI"]
 
-    profile_name = resolve_profile_name
+    profile_name = resolve_profile_name(profile_path)
     api_key_path = decode_asc_api_key
 
     build_app(
@@ -101,19 +101,41 @@ def install_signing_assets
   UI.user_error!("APPLE_PROVISIONING_PROFILE_BASE64 is required in CI") if profile_b64.to_s.empty?
   File.binwrite(profile_path, Base64.decode64(profile_b64))
   install_provisioning_profile(path: profile_path)
+  # Return the source path so the caller can read the Name directly without
+  # having to re-discover where `install_provisioning_profile` landed it.
+  # Xcode 16+ moved the install destination from
+  # ~/Library/MobileDevice/Provisioning Profiles to
+  # ~/Library/Developer/Xcode/UserData/Provisioning Profiles, and that
+  # path discovery (glob + UUID-named filename) is fragile across fastlane
+  # / Xcode versions. Reading the source bytes we just decoded sidesteps
+  # the whole path-discovery surface.
+  profile_path
 end
 
-# Read the human-readable Name field from the installed provisioning
-# profile. xcodebuild's manual-signing export options reference the profile
-# by name, not file path. Extracted via `security cms -D` (decode CMS
-# envelope) then a regex over the resulting plist XML — no plist gem
-# dependency.
-def resolve_profile_name
-  profiles_dir = File.expand_path("~/Library/MobileDevice/Provisioning Profiles")
-  profile_files = Dir.glob("#{profiles_dir}/*.mobileprovision")
-  UI.user_error!("No provisioning profile found in #{profiles_dir}") if profile_files.empty?
+# Read the human-readable Name field from a provisioning profile. xcodebuild's
+# manual-signing export options reference the profile by name, not file path.
+# Extracted via `security cms -D` (decode CMS envelope) then a regex over the
+# resulting plist XML — no plist gem dependency.
+#
+# When `profile_path` is provided (CI path, from `install_signing_assets`),
+# read directly from that file. When not provided (local dev path, where the
+# user has already manually installed a profile), fall back to globbing both
+# the legacy and Xcode 16+ install dirs in priority order.
+def resolve_profile_name(profile_path = nil)
+  if profile_path.nil? || !File.exist?(profile_path)
+    legacy_dir = File.expand_path("~/Library/MobileDevice/Provisioning Profiles")
+    xcode16_dir = File.expand_path("~/Library/Developer/Xcode/UserData/Provisioning Profiles")
+    candidates = Dir.glob("#{xcode16_dir}/*.mobileprovision") +
+                 Dir.glob("#{legacy_dir}/*.mobileprovision")
+    if candidates.empty?
+      UI.user_error!(
+        "No provisioning profile found in #{xcode16_dir} or #{legacy_dir}",
+      )
+    end
+    profile_path = candidates.first
+  end
 
-  decoded_xml = `security cms -D -i "#{profile_files.first}" 2>/dev/null`
+  decoded_xml = `security cms -D -i "#{profile_path}" 2>/dev/null`
   match = decoded_xml.match(%r{<key>Name</key>\s*<string>([^<]+)</string>})
   UI.user_error!("Provisioning profile is missing the 'Name' field") if match.nil?
   match[1]
