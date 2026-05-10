@@ -281,7 +281,7 @@ Deno.test("computePrStatusChangeDispatches: open → closed by target owner noti
 Deno.test("computePrStatusChangeDispatches: silent no-op when oldRow.status was not 'open'", () => {
     // E.g. a status flip from 'applied' to something else (defensive
     // edge case — should not happen given the WITH CHECK on
-    // pull_requests UPDATE policy + the merge_pull_request RPC's
+    // suggestions UPDATE policy + the apply_suggestion RPC's
     // FOR UPDATE lock, but if it does, no push).
     const oldRow: PullRequestRow = { ...samplePr, status: "applied" };
     const newRow: PullRequestRow = { ...samplePr, status: "closed" };

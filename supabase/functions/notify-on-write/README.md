@@ -8,7 +8,7 @@ Phase 24.1 (per [ADR-017](../../../docs/en/adr/017-phase-24-push-notifications.m
 PR opened / commented / merged / closed
       │
       │ INSERT or UPDATE on
-      │   public.pull_requests / public.pull_request_comments
+      │   public.suggestions / public.suggestion_comments
       ▼
 Supabase Database Webhook
   (Type: Supabase Edge Functions; function: notify-on-write)
@@ -110,7 +110,7 @@ After `supabase functions deploy notify-on-write` and Dashboard webhook wiring:
 ```bash
 WEBHOOK_URL="https://<project-ref>.supabase.co/functions/v1/notify-on-write"
 SECRET="<SKEINLY_DATABASE_WEBHOOK_SECRET value>"
-BODY='{"type":"INSERT","table":"pull_requests","schema":"public","record":{"id":"00000000-0000-0000-0000-000000000001","author_id":"00000000-0000-0000-0000-000000000002","target_pattern_id":"00000000-0000-0000-0000-000000000003","status":"open"}}'
+BODY='{"type":"INSERT","table":"suggestions","schema":"public","record":{"id":"00000000-0000-0000-0000-000000000001","author_id":"00000000-0000-0000-0000-000000000002","target_pattern_id":"00000000-0000-0000-0000-000000000003","status":"open"}}'
 
 curl -s -w '\nHTTP %{http_code}\n' -X POST "$WEBHOOK_URL" \
   -H "Authorization: Bearer $SECRET" \

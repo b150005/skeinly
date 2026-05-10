@@ -11,7 +11,7 @@
 >
 > **Audience**: an agent extending history / branch / diff surfaces, or building atop the append-only revision spine.
 >
-> **Scope**: chart_revisions append-only spine, ChartHistoryScreen, ChartBranchPickerSheet, ChartDiffScreen, RestoreRevision flow, branch CRUD. Out of scope: pull-request workflow ([pull-request-flow.md](pull-request-flow.md)), chart editor itself ([chart-editor.md](chart-editor.md)).
+> **Scope**: chart_versions append-only spine, ChartHistoryScreen, ChartBranchPickerSheet, ChartDiffScreen, RestoreRevision flow, branch CRUD. Out of scope: pull-request workflow ([pull-request-flow.md](pull-request-flow.md)), chart editor itself ([chart-editor.md](chart-editor.md)).
 
 ## Current shape
 
@@ -21,13 +21,13 @@
 
 | Table | Role |
 |---|---|
-| `chart_revisions` | Append-only revision history. Composite PK `(pattern_id, revision_id)`. Standalone UNIQUE on `revision_id` (per ADR-013 §1, the canonical commit identifier referenced as a FK target by `chart_branches.tip_revision_id`, `pull_requests.source_tip_revision_id` / `common_ancestor_revision_id` / `merged_revision_id`). FK `parent_revision_id` references `revision_id` (single-parent linked list). `author_id` is FK to users (NOT users.id PK — `auth.users(id)` references the Supabase auth schema). `content_hash` deterministic over JSON of extents + layers. `document` JSONB stores the snapshot. No DELETE policy — only CASCADE on pattern deletion |
-| `chart_branches` | Mutable branch tip pointers. PK `(pattern_id, name)`. `tip_revision_id` FK to `chart_revisions(revision_id)` |
+| `chart_versions` | Append-only revision history. Composite PK `(pattern_id, revision_id)`. Standalone UNIQUE on `revision_id` (per ADR-013 §1, the canonical commit identifier referenced as a FK target by `chart_variations.tip_revision_id`, `pull_requests.source_tip_revision_id` / `common_ancestor_revision_id` / `merged_revision_id`). FK `parent_revision_id` references `revision_id` (single-parent linked list). `author_id` is FK to users (NOT users.id PK — `auth.users(id)` references the Supabase auth schema). `content_hash` deterministic over JSON of extents + layers. `document` JSONB stores the snapshot. No DELETE policy — only CASCADE on pattern deletion |
+| `chart_variations` | Mutable branch tip pointers. PK `(pattern_id, name)`. `tip_revision_id` FK to `chart_revisions(revision_id)` |
 | `chart_documents` | Single-row-per-pattern view of "current tip on the default branch". Synced server-side by triggers; client reads as-if a flat field on `Pattern` |
 
 **Critical invariants (ADR-013 §1)**:
 
-- `chart_revisions` is **append-only**. No UPDATE policy exists. The Phase 37 `RestoreRevisionUseCase` does not edit a past revision — it appends a new revision whose `document` mirrors the restored one but `parent_revision_id = current.tip_revision_id`.
+- `chart_versions` is **append-only**. No UPDATE policy exists. The Phase 37 `RestoreRevisionUseCase` does not edit a past revision — it appends a new revision whose `document` mirrors the restored one but `parent_revision_id = current.tip_revision_id`.
 - `author_id != owner_id` is **only legitimately produced by the merge_pull_request RPC** (see [pull-request-flow.md](pull-request-flow.md)). All non-RPC client writes set `author_id = owner_id`.
 
 ### File map
@@ -49,7 +49,7 @@
 | `GetChartHistoryUseCase.kt` | Suspend invoke + observe Flow. Returns walked parent chain (newest → oldest) |
 | `GetChartRevisionUseCase.kt` | Single-revision lookup by id |
 | `GetChartDiffUseCase.kt` | Resolves base + target revisions, runs `ChartDiffAlgorithm.diff` |
-| `RestoreRevisionUseCase.kt` | Appends a new revision whose document = restored snapshot, `parent_revision_id = current_tip_revision_id`. Updates `chart_branches.tip_revision_id` |
+| `RestoreRevisionUseCase.kt` | Appends a new revision whose document = restored snapshot, `parent_revision_id = current_tip_revision_id`. Updates `chart_variations.tip_revision_id` |
 | `GetChartBranchesUseCase.kt` | listForPattern + observe Flow |
 | `CreateBranchUseCase.kt` | New branch from current tip. Validates name (non-blank, ≤ 100 chars, unique within pattern) |
 | `SwitchBranchUseCase.kt` | Updates the local + remote chart_documents tip pointer to the target branch's tip |
@@ -110,7 +110,7 @@
 
 2. **Single-parent linked list**: `chart_revisions.parent_revision_id` is single-valued. Multi-parent merge-commit was rejected for v1 (see [pull-request-flow.md](pull-request-flow.md) — fast-forward strategy detection still produces a 1-parent commit).
 
-3. **`revision_id` is the canonical commit identifier**: composite PK is `(pattern_id, revision_id)`, but `revision_id` carries a standalone UNIQUE so other tables FK against it directly without joining through `pattern_id`. Per ADR-013 §1 — referenced by `chart_branches.tip_revision_id`, `pull_requests.source_tip_revision_id` / `common_ancestor_revision_id` / `merged_revision_id`.
+3. **`revision_id` is the canonical commit identifier**: composite PK is `(pattern_id, revision_id)`, but `revision_id` carries a standalone UNIQUE so other tables FK against it directly without joining through `pattern_id`. Per ADR-013 §1 — referenced by `chart_variations.tip_revision_id`, `pull_requests.source_tip_revision_id` / `common_ancestor_revision_id` / `merged_revision_id`.
 
 4. **`author_id` semantics**: client writes always set `author_id = owner_id`. The merge_pull_request RPC is the only legitimate divergence. Multi-author diff blame is a post-v1 affordance built atop populated `author_id`.
 
@@ -133,7 +133,7 @@
 ### Multi-author diff blame ("who last touched this cell")
 
 Post-v1. Requires:
-- Populated `author_id` on every `chart_revisions` row (already happens for non-merge writes; merge writes carry author from the PR).
+- Populated `author_id` on every `chart_versions` row (already happens for non-merge writes; merge writes carry author from the PR).
 - Per-cell author lookup: walk parent_revision_id chain backwards from the tip until the cell's `(layerId, x, y)` first appears with a different value.
 - UI: hover-to-reveal author name on a cell in `ChartViewerScreen` (or in `ChartDiffScreen` per pane).
 
@@ -172,12 +172,12 @@ The `ConflictDetector` algorithm wraps `ChartDiffAlgorithm.diff`. A future "prev
 | ADR | File | Scope |
 |---|---|---|
 | ADR-007 | [docs/en/adr/007-pivot-to-chart-authoring.md](../../../docs/en/adr/007-pivot-to-chart-authoring.md) | Pivot from v1 store submission to structured chart authoring; opens the Phase 29–40 workstream |
-| ADR-013 | [docs/en/adr/013-phase-37-collaboration-core.md](../../../docs/en/adr/013-phase-37-collaboration-core.md) | Append-only `chart_revisions`, parent chain, content hash, branches, restore semantics, Realtime channel layout |
+| ADR-013 | [docs/en/adr/013-phase-37-collaboration-core.md](../../../docs/en/adr/013-phase-37-collaboration-core.md) | Append-only `chart_versions`, parent chain, content hash, branches, restore semantics, Realtime channel layout |
 
 **Phase archive entries** in [docs/en/phase/completed-archive.md](../../../docs/en/phase/completed-archive.md):
 
 - Phase 37.0 — ADR-013 cut
-- Phase 37.1 — Data spine: `chart_revisions` + `chart_branches` schema, repository, sync, Realtime
+- Phase 37.1 — Data spine: `chart_versions` + `chart_variations` schema, repository, sync, Realtime
 - Phase 37.2 — `ChartHistoryScreen` + `GetChartHistoryUseCase`
 - Phase 37.3 — `ChartDiffScreen` + `ChartDiffAlgorithm` + `GetChartDiffUseCase`
 - Phase 37.4 — Branch CRUD + `RestoreRevisionUseCase`

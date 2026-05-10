@@ -96,7 +96,8 @@ export function extractWebhookEvent(payload: RevenueCatWebhookPayload): Extracte
  * Map RevenueCat `event.environment` → Skeinly's `subscriptions.environment`
  * column. RevenueCat sends uppercase ("SANDBOX" / "PRODUCTION"); Postgres
  * convention is lowercase (mirrors `platform` 'ios'/'android' +
- * `pull_requests.status`). Defensive default: missing / unknown values
+ * `suggestions.status` per Phase D terminology audit Migration 027).
+ * Defensive default: missing / unknown values
  * map to 'production' so a future RevenueCat schema addition doesn't
  * accidentally classify real production receipts as sandbox.
  *

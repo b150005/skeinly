@@ -4,10 +4,14 @@
 > "Spec — Pull Request Flow" and lived at `pull-request-flow.md`.
 > User-facing renames: Pull request → Suggestion / 「提案」, Merge →
 > Apply changes / 「変更を反映」, status enum 'merged' → 'applied' /
-> 「反映済み」. Supabase Migrations 026 + 027 renamed `pull_requests` →
-> `suggestions` and `pull_request_comments` → `suggestion_comments` on
-> prod 2026-05-10. See `audits/terminology-audit-2026-05-10.md` and
-> ADR-014 amendment for full rationale.
+> 「反映済み」. Supabase Migrations 026 + 027 (applied 2026-05-10) renamed
+> the underlying tables (formerly `pull_requests` → `suggestions`;
+> formerly `pull_request_comments` → `suggestion_comments`).
+> See `audits/terminology-audit-2026-05-10.md` and ADR-014 amendment
+> for full rationale. Body text below uses the new names; some
+> internal column / Kotlin-class references retain their pre-rename
+> labels per the audit's "table-rename only, columns + property names
+> stay" decision.
 
 > **Purpose**: stable feature-organized view of the chart-pattern pull-request workflow as it exists in main today. Describes the *what*; ADR-014 carries the *why*.
 >
@@ -23,19 +27,19 @@
 
 | Table | Role |
 |---|---|
-| `pull_requests` | One row per PR. FKs to `patterns(id) ON DELETE CASCADE` (source + target), `chart_branches(id) ON DELETE CASCADE` (source + target), `chart_revisions(revision_id) ON DELETE RESTRICT` (`source_tip_revision_id`, `common_ancestor_revision_id`), `ON DELETE SET NULL` for `merged_revision_id`. `status TEXT NOT NULL CHECK (status IN ('open','merged','closed'))`. Partial unique on `(source_branch_id, target_branch_id) WHERE status = 'open'` |
-| `pull_request_comments` | Append-only comments. `length(body) <= 5000` CHECK. RLS gates on PR-participant set |
+| `suggestions` | One row per PR. FKs to `patterns(id) ON DELETE CASCADE` (source + target), `chart_branches(id) ON DELETE CASCADE` (source + target), `chart_revisions(revision_id) ON DELETE RESTRICT` (`source_tip_revision_id`, `common_ancestor_revision_id`), `ON DELETE SET NULL` for `merged_revision_id`. `status TEXT NOT NULL CHECK (status IN ('open','applied','closed'))`. Partial unique on `(source_branch_id, target_branch_id) WHERE status = 'open'` |
+| `suggestion_comments` | Append-only comments. `length(body) <= 5000` CHECK. RLS gates on PR-participant set |
 
 **Critical RLS clauses**:
-- INSERT on `pull_requests` requires `author_id = auth.uid()` AND **fork-routing invariant**: `source_pattern_id IN (SELECT id FROM patterns WHERE parent_pattern_id = target_pattern_id)`. Without this clause, any user could open a PR from any pattern they own against any target UUID.
-- UPDATE permits `status` flips to `'open'` or `'closed'` only. The `'merged'` transition is reachable only through the SECURITY DEFINER `merge_pull_request` RPC.
+- INSERT on `suggestions` requires `author_id = auth.uid()` AND **fork-routing invariant**: `source_pattern_id IN (SELECT id FROM patterns WHERE parent_pattern_id = target_pattern_id)`. Without this clause, any user could open a PR from any pattern they own against any target UUID.
+- UPDATE permits `status` flips to `'open'` or `'closed'` only. The `'merged'` transition is reachable only through the SECURITY DEFINER `apply_suggestion` RPC.
 - No DELETE policy. PRs are kept as audit trail; only CASCADE on pattern deletion clears them.
 
-**`merge_pull_request` SECURITY DEFINER RPC** (in 016_pull_requests.sql):
+**`apply_suggestion` SECURITY DEFINER RPC** (in 016_pull_requests.sql):
 - Validates: PR exists, `status = 'open'`, caller is target owner (`patterns.owner_id = v_caller`), strategy in `('squash', 'fast_forward')`, source tip unchanged (`chart_branches.tip_revision_id = source_tip_revision_id`).
 - Captures `v_target_tip_pre_merge` BEFORE the INSERT (so the chart_documents UPDATE never reads NULL via subquery).
-- INSERTs the merged revision into `chart_revisions` with `author_id = v_pr.author_id` and `owner_id = v_caller` — this is the only place in the codebase that produces `chart_revisions.author_id != owner_id` rows.
-- UPDATEs `chart_branches.tip_revision_id` (target), `chart_documents` tip pointer, `pull_requests` row (status=merged + merged_revision_id + merged_at).
+- INSERTs the merged revision into `chart_versions` with `author_id = v_pr.author_id` and `owner_id = v_caller` — this is the only place in the codebase that produces `chart_revisions.author_id != owner_id` rows.
+- UPDATEs `chart_variations.tip_revision_id` (target), `chart_documents` tip pointer, `suggestions` row (status=applied + merged_revision_id + merged_at).
 - `FOR UPDATE` on the PR row at function start serializes concurrent merges. Partial unique index prevents INSERT-side duplicate OPENs. **Both mechanisms are complementary, not redundant.**
 
 ### File map
@@ -159,7 +163,7 @@ To add a strategy:
 ### Adding required-approval gates / draft PR / threaded comments
 
 Post-v1 (deferred per ADR-014). The current data model collapses the approval shape to merge / close (target owner is implicit + sole approver). Adding required approval would require:
-- New table `pull_request_approvals` with FKs to `pull_requests` + `users`.
+- New table `pull_request_approvals` with FKs to `suggestions` + `users`.
 - New RLS policy allowing collaborators (where defined?) to insert approval rows.
 - Pre-merge gate in the RPC: `SELECT COUNT(*) FROM pull_request_approvals WHERE pull_request_id = v_pr.id AND state = 'approved'` ≥ N.
 - This implies a `team` or `collaborator` concept, which v1 does not have.
@@ -199,7 +203,7 @@ To add a new entry:
 | ADR | File | Scope |
 |---|---|---|
 | ADR-012 | [docs/en/adr/012-fork-attribution.md](../../../docs/en/adr/012-fork-attribution.md) | Fork → upstream PR routing invariant |
-| ADR-013 | [docs/en/adr/013-phase-37-collaboration-core.md](../../../docs/en/adr/013-phase-37-collaboration-core.md) | Append-only `chart_revisions`, parent chain, content hash, `chart_branches.tip_revision_id` |
+| ADR-013 | [docs/en/adr/013-phase-37-collaboration-core.md](../../../docs/en/adr/013-phase-37-collaboration-core.md) | Append-only `chart_versions`, parent chain, content hash, `chart_variations.tip_revision_id` |
 | ADR-014 | [docs/en/adr/014-phase-38-pull-request.md](../../../docs/en/adr/014-phase-38-pull-request.md) | PR data model, RPC merge atomicity, conflict resolution shape, comment surface, scope cuts |
 
 **Phase archive entries** in [docs/en/phase/completed-archive.md](../../../docs/en/phase/completed-archive.md):

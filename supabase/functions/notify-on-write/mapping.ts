@@ -1,5 +1,5 @@
 // Phase 24.1 (ADR-017 §3.4 + §3.7): pure helpers for translating Database
-// Webhook payloads from `pull_requests` / `pull_request_comments` table
+// Webhook payloads from `suggestions` / `suggestion_comments` table
 // writes into recipient sets + localized notification bodies.
 //
 // Pure functions only — no fetch / no DB access / no env var reads. Deno
@@ -25,7 +25,7 @@ export interface WebhookPayload<TRow = Record<string, unknown>> {
     old_record?: TRow | null;
 }
 
-/** Minimal projection of `public.pull_requests` row that the recipient
+/** Minimal projection of `public.suggestions` row that the recipient
  * computation depends on. The full row carries 12+ columns; we only
  * read the 5 fields below. */
 export interface PullRequestRow {
@@ -36,7 +36,7 @@ export interface PullRequestRow {
     status: "open" | "applied" | "closed";
 }
 
-/** Minimal projection of `public.pull_request_comments` row. */
+/** Minimal projection of `public.suggestion_comments` row. */
 export interface PullRequestCommentRow {
     id: string;
     pull_request_id: string;
@@ -164,7 +164,7 @@ export function pullRequestRoute(prId: string): string {
 }
 
 /**
- * Compute dispatches for a `pull_requests` INSERT — target owner
+ * Compute dispatches for a `suggestions` INSERT — target owner
  * receives `pr_opened`. The actor (author) is intentionally excluded;
  * a user does not get pushed for their own action.
  *
@@ -194,7 +194,7 @@ export function computePrOpenedDispatches(
 }
 
 /**
- * Compute dispatches for a `pull_request_comments` INSERT — every PR
+ * Compute dispatches for a `suggestion_comments` INSERT — every PR
  * participant EXCEPT the comment author receives `pr_commented`.
  * Participant set = { pr.author_id, pr.target_owner_id }.
  *
@@ -226,7 +226,7 @@ export function computePrCommentedDispatches(
 }
 
 /**
- * Compute dispatches for a `pull_requests` UPDATE where status flipped
+ * Compute dispatches for a `suggestions` UPDATE where status flipped
  * from 'open' → 'applied' or 'closed'. Branches on actor vs participant
  * to pick the correct template.
  *
@@ -291,6 +291,6 @@ export function computePrStatusChangeDispatches(
     }
 
     // Actor is neither author nor target owner. Should not happen given
-    // RLS UPDATE policy on pull_requests, but defense-in-depth: no push.
+    // RLS UPDATE policy on suggestions, but defense-in-depth: no push.
     return [];
 }
