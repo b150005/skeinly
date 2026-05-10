@@ -12,7 +12,7 @@
 // to drain retired tokens (uninstall, OS reset, etc.).
 //
 // Receives Supabase Database Webhook deliveries from 3 source tables
-// (`pull_requests` INSERT/UPDATE, `pull_request_comments` INSERT) and
+// (`suggestions` INSERT/UPDATE, `suggestion_comments` INSERT) and
 // computes per-recipient notification dispatches.
 //
 // Webhook auth: shared-secret Bearer token in the `Authorization`
@@ -300,11 +300,11 @@ async function resolveCommentContext(
 }
 
 /**
- * Heuristic actor inference for `pull_requests` UPDATE in absence of an
+ * Heuristic actor inference for `suggestions` UPDATE in absence of an
  * explicit `actor_id` column on the row (ADR-017 §3.9 trade-off
  * acknowledged). For:
  *   - status='merged' → actor is target_owner (per ADR-014 §5 the
- *     `merge_pull_request` RPC's `WHERE owner_id = v_caller` clause is
+ *     `apply_suggestion` RPC's `WHERE owner_id = v_caller` clause is
  *     the only path to status='merged').
  *   - status='closed' → actor is whichever party closed it. Phase 24.1
  *     defaults to target_owner; Phase 24.3 may augment this with a

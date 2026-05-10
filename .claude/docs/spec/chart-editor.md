@@ -102,9 +102,9 @@ The `EditHistory` instance is **private to the ViewModel**, not in `ChartEditorS
    - `PolarSymmetry.rotateCells` / `reflectCells` are no-ops on rect extents — handlers cast to `Polar` and return early on cast fail.
    - `trimCellsToExtents` uses different footprint logic per variant: rect cells check full `width × height`; polar cells check anchor only (`(x, y)` stitch/ring) per ADR-011 §7.
 
-2. **Append-only `chart_revisions`** (ADR-013 §1):
+2. **Append-only `chart_versions`** (ADR-013 §1):
    - `UpdateStructuredChartUseCase` never overwrites the prior `revisionId`. Always mints new + threads old as `parentRevisionId`.
-   - `chart_revisions` has no DELETE policy. The editor never calls a delete path.
+   - `chart_versions` has no DELETE policy. The editor never calls a delete path.
 
 3. **`hasUnsavedChanges` is the single source of truth** for the discard guard. `computeUnsavedChanges(original, draftExtents, draftLayers, draftCraftType, draftReadingConvention)`:
    - New chart (`original == null`): true only when any layer has at least one cell.
@@ -184,7 +184,7 @@ Remaining 35.2+ work: `SymbolDefinition.mirrorHorizontal` catalog lookup, per-ri
 | ADR-008 | [docs/en/adr/008-structured-chart-data-model.md](../../../docs/en/adr/008-structured-chart-data-model.md) | Symbol id scheme, document envelope, content hash, fill-vs-stroke |
 | ADR-009 | [docs/en/adr/009-parametric-symbols.md](../../../docs/en/adr/009-parametric-symbols.md) | `parameterSlots`, deferred-commit dialog, `symbolParameters` on cell |
 | ADR-011 | [docs/en/adr/011-phase-35-advanced-editor.md](../../../docs/en/adr/011-phase-35-advanced-editor.md) | Multi-layer ops, polar authoring, resize, layer lock/visibility |
-| ADR-013 | [docs/en/adr/013-phase-37-collaboration-core.md](../../../docs/en/adr/013-phase-37-collaboration-core.md) | Append-only `chart_revisions`, parent chain, content hash |
+| ADR-013 | [docs/en/adr/013-phase-37-collaboration-core.md](../../../docs/en/adr/013-phase-37-collaboration-core.md) | Append-only `chart_versions`, parent chain, content hash |
 
 **Phase archive entries** in [docs/en/phase/completed-archive.md](../../../docs/en/phase/completed-archive.md):
 
