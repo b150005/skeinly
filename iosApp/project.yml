@@ -103,6 +103,26 @@ targets:
         # `objectForInfoDictionaryKey`. Drives the F2 (ADR-015) bug
         # reporter gating on iOS.
         IsBetaBuild: "$(IS_BETA)"
+        # TestFlight auto-upload — Export Compliance pre-declaration.
+        # App Store Connect requires every build to answer "does the app
+        # use encryption?" before being available to TestFlight testers.
+        # The default per-build interactive prompt blocks unattended CI
+        # uploads; pre-declaring this key as `false` means Apple records
+        # "uses only standard OS-provided HTTPS encryption" once and
+        # applies it to every build automatically — no per-build user
+        # action.
+        #
+        # Truthfulness: Skeinly uses ONLY (a) HTTPS via Ktor + Apple
+        # native URLSession (Apple OS-provided TLS) and (b) Apple's
+        # built-in keychain encryption. No bundled third-party crypto
+        # library, no custom cryptographic primitive. This qualifies for
+        # the U.S. Bureau of Industry and Security (BIS) self-classification
+        # exemption under EAR 740.17(b)(1) — the "uses only encryption
+        # in the operating system" exemption — so the `false` declaration
+        # is accurate, not a workaround. References:
+        #   https://developer.apple.com/documentation/security/complying_with_encryption_export_regulations
+        #   https://www.bis.doc.gov/index.php/policy-guidance/encryption
+        ITSAppUsesNonExemptEncryption: false
         UILaunchScreen:
           UIColorName: SystemBackground
         CFBundleURLTypes:
