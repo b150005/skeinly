@@ -3,8 +3,8 @@
 // sendOne (apns/fcm) → processOutcome → DELETE-on-token-cleanup with
 // fake Supabase + fake fetch.
 
-import { assertEquals } from "jsr:@std/assert@^1";
-import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import { assertEquals } from "@std/assert";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
     createFetchFake,
     generateTestApnsCredentials,

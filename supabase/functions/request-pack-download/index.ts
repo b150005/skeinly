@@ -43,7 +43,7 @@
 // `SubscriptionRepository.refresh`. The 5-minute signed-URL TTL bounds
 // residual access through any in-flight URL the user already holds.
 
-import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { checkAndRecordRateLimit, RATE_LIMIT_WINDOW_MS } from "./rate-limit.ts";
 
 // ---------------------------------------------------------------------

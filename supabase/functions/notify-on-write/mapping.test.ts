@@ -2,7 +2,7 @@
 // mapping.ts. No fetch, no DB, no env vars — runs offline via:
 //   deno test supabase/functions/notify-on-write/
 
-import { assert, assertEquals } from "jsr:@std/assert@1";
+import { assert, assertEquals } from "@std/assert";
 import {
     ACTOR_FALLBACK_EN,
     ACTOR_FALLBACK_JA,

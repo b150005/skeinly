@@ -44,7 +44,7 @@
 // hooks point at this function URL — see ADR-017 §3.4 for the table /
 // event matrix.
 
-import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { type ApnsCredentials, type SendOutcome, sendApns } from "./apns.ts";
 import { type ServiceAccount, sendFcm } from "./fcm.ts";
 import {

@@ -4,7 +4,7 @@
 // response classification matrix, end-to-end sendApns under fetch
 // fake.
 
-import { assertEquals, assertNotEquals, assertStringIncludes } from "jsr:@std/assert@^1";
+import { assertEquals, assertNotEquals, assertStringIncludes } from "@std/assert";
 import { createFetchFake, generateTestApnsCredentials } from "./_fakes.ts";
 import { _resetApnsJwtCacheForTests, classifyApnsResponse, getApnsJwt, sendApns } from "./apns.ts";
 

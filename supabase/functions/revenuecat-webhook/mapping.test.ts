@@ -6,7 +6,7 @@
 // Not currently CI-gated — these are regression anchors for the event-
 // type → status mapping that drives `subscriptions.status` writes.
 
-import { assertEquals } from "jsr:@std/assert@1";
+import { assertEquals } from "@std/assert";
 import {
     extractWebhookEvent,
     mapEnvironment,
