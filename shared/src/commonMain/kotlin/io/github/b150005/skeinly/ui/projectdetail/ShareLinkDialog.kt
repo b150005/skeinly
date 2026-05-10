@@ -42,7 +42,18 @@ fun ShareLinkDialog(
     // Migrate when JetBrains adds a multiplatform ClipEntry text constructor.
     @Suppress("DEPRECATION")
     val clipboardManager = LocalClipboardManager.current
-    val shareUrl = "skeinly://share/$shareToken"
+    // Phase 39 (W3 / 2026-05-11) — Universal Link / App Link URL.
+    // The legacy `skeinly://share/<token>` custom scheme was deleted
+    // (no Tech Debt fallback). Verified handlers:
+    //   - iOS: `iosApp/iosApp.entitlements` declares
+    //     `applinks:b150005.github.io`; AASA at
+    //     `docs/public/.well-known/apple-app-site-association` claims
+    //     `/skeinly/patterns/shared/*` for this app ID.
+    //   - Android: AndroidManifest intent-filter with autoVerify="true"
+    //     for `https://b150005.github.io/skeinly/` + assetlinks.json
+    //     at `docs/public/.well-known/assetlinks.json`.
+    // URL family decided in the W3 deep-link audit (2026-05-10).
+    val shareUrl = "https://b150005.github.io/skeinly/patterns/shared/$shareToken"
     var copied by remember { mutableStateOf(false) }
 
     AlertDialog(

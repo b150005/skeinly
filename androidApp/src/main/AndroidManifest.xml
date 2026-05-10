@@ -39,11 +39,41 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <intent-filter>
+
+            <!--
+                Phase 39 (W3 / 2026-05-11) — Android App Links.
+
+                `autoVerify="true"` triggers Play's domain verification:
+                Android fetches `https://b150005.github.io/.well-known/assetlinks.json`
+                during app install, validates the SHA256 fingerprint matches
+                this APK's signing cert, and only then routes matching URLs
+                directly to the app (skipping the "Open with…" disambiguation).
+                If verification fails, links fall back to the browser.
+
+                URL family handled (per W3 deep-link audit, 2026-05-10):
+                  /skeinly/patterns/shared/*    — share token deep link
+                  /skeinly/patterns/*           — public pattern detail
+                  /skeinly/pull-requests/*      — pull request detail
+
+                pathPrefix is broad here (`/skeinly/`) — the actual route
+                discrimination happens in MainActivity.handleDeepLinkUri()
+                via `parseExternalRoute(...)` (commonMain). Anything that
+                doesn't match a known route is dropped silently (the user
+                lands on the launcher destination, no crash).
+
+                The legacy `skeinly://share/<token>` custom scheme intent
+                filter was DELETED in this slice (no Tech Debt fallback)
+                because pre-v1 breaking changes are accepted (closed alpha
+                has no installed clients depending on the old URL shape).
+            -->
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="skeinly" android:host="share" />
+                <data
+                    android:scheme="https"
+                    android:host="b150005.github.io"
+                    android:pathPrefix="/skeinly/" />
             </intent-filter>
         </activity>
 

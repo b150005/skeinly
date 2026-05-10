@@ -32,7 +32,21 @@ import io.github.b150005.skeinly.ui.navigation.SkeinlyNavHost
 import org.koin.android.ext.android.get
 
 class MainActivity : ComponentActivity() {
-    private var deepLinkToken by mutableStateOf<String?>(null)
+    /**
+     * Phase 39 (W3 / 2026-05-11) — full Universal Link / App Link URL
+     * captured from Intent.data when the OS routes a verified
+     * `https://b150005.github.io/skeinly/...` link to this Activity.
+     * Renamed from the Phase 24.5 era `deepLinkToken` (which carried
+     * only the bare share-token UUID extracted from the legacy
+     * `skeinly://share/<token>` custom scheme — that scheme was deleted
+     * from AndroidManifest.xml in this same slice, no Tech Debt
+     * fallback per pre-v1 breaking changes accepted policy).
+     *
+     * Parsing happens inside the shared `SkeinlyNavHost` via
+     * `parseExternalRoute(url)` so route-shape evolution stays in
+     * commonMain.
+     */
+    private var deepLinkUrl by mutableStateOf<String?>(null)
 
     /**
      * Phase 24.5 (ADR-017 §3.8) — host-relative push route from a
@@ -75,7 +89,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        deepLinkToken = extractShareToken(intent)
+        deepLinkUrl = extractDeepLinkUrl(intent)
         pushRoute = extractPushRoute(intent)
         // Phase 24.2e — wire the Activity-scoped permission launcher to the
         // shared `PushTokenRegistrar`. The closure fires the Activity's
@@ -122,7 +136,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     SkeinlyNavHost(
                         navController = nc,
-                        deepLinkToken = deepLinkToken,
+                        deepLinkUrl = deepLinkUrl,
                         pushRoute = pushRoute,
                         onPushRouteConsumed = { pushRoute = null },
                     )
@@ -258,7 +272,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        deepLinkToken = extractShareToken(intent)
+        deepLinkUrl = extractDeepLinkUrl(intent)
         // Phase 24.5 — `singleTop` launchMode delivers FCM-tap intents
         // here when the app is already in foreground/background.
         // Re-extract on every fresh intent so the NavHost LaunchedEffect
@@ -282,14 +296,30 @@ class MainActivity : ComponentActivity() {
         return raw.takeIf { it.isNotBlank() }
     }
 
-    private fun extractShareToken(intent: Intent?): String? {
+    /**
+     * Phase 39 (W3 / 2026-05-11) — extract a Universal Link / App Link
+     * URL from a launch / re-launch Intent. Returns the full URL string
+     * (rather than a parsed route) so the shared `SkeinlyNavHost` owns
+     * the parsing via `parseExternalRoute(url)` — evolutions of the URL
+     * family stay in commonMain.
+     *
+     * The OS routes a URL here only if the AndroidManifest intent-filter
+     * matches AND Play's autoVerify domain check has confirmed
+     * `https://b150005.github.io/.well-known/assetlinks.json` lists the
+     * package + signing fingerprint. Defense-in-depth: we still validate
+     * scheme/host here so a misconfigured intent-filter (or a cleartext
+     * fallback path) cannot leak unverified URLs into the nav surface.
+     *
+     * Returns null when the intent has no URI, or the URI is not under
+     * https://b150005.github.io/skeinly/ — `parseExternalRoute` re-validates
+     * the prefix as defense-in-depth, but rejecting at the host boundary
+     * keeps the nav surface clean.
+     */
+    private fun extractDeepLinkUrl(intent: Intent?): String? {
         val data = intent?.data ?: return null
-        if (data.scheme != "skeinly" || data.host != "share") return null
-        val segment = data.lastPathSegment ?: return null
-
-        // Validate token format: UUID v4 (tokens are generated via Uuid.random().toString())
-        val uuidPattern = Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
-        return if (uuidPattern.matches(segment)) segment else null
+        if (data.scheme != "https" || data.host != "b150005.github.io") return null
+        if (data.path?.startsWith("/skeinly/") != true) return null
+        return data.toString()
     }
 
     companion object {

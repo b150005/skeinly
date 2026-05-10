@@ -58,6 +58,16 @@ jobs:
             "/ja/privacy-policy/"
             "/ja/terms-of-service/"
             "/site.webmanifest"
+            # Phase 39 (W3 / 2026-05-11) — Universal Link / App Link
+            # infrastructure. Both files MUST return 200 with no redirect
+            # for iOS AASA verification + Android assetlinks autoVerify
+            # to succeed. AASA has no extension (Apple convention); GitHub
+            # Pages serves it as application/octet-stream which Apple
+            # accepts (per developer.apple.com/documentation/xcode/supporting-associated-domains).
+            # assetlinks.json content type is application/json (auto-set
+            # by GitHub Pages for .json files).
+            "/.well-known/apple-app-site-association"
+            "/.well-known/assetlinks.json"
           )
           fail=0
           for p in "${paths[@]}"; do

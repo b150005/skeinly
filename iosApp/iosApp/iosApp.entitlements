@@ -35,5 +35,40 @@
     -->
     <key>aps-environment</key>
     <string>production</string>
+
+    <!--
+        Phase 39 (W3 / 2026-05-11) — Universal Links via Associated Domains.
+
+        `applinks:b150005.github.io` declares that this app handles
+        https://b150005.github.io/* URLs as Universal Links. iOS fetches
+        `https://b150005.github.io/.well-known/apple-app-site-association`
+        on first launch (and periodically thereafter) to verify the
+        domain claims the app via `appIDs: ["L9ZR4679P5.io.github.b150005.skeinly"]`.
+        Path matching (which subpaths the app handles) is encoded in
+        the AASA `components` array, NOT here — this entitlement only
+        gates "may we claim links from this domain at all".
+
+        URL family handled (per the W3 deep-link audit, 2026-05-10):
+          /skeinly/patterns/shared/<token>   — share token deep link
+          /skeinly/patterns/<patternId>      — public pattern detail
+          /skeinly/pull-requests/<prId>      — pull request detail
+
+        Other paths fall through to Safari (web fallback HTML at
+        docs/public/skeinly/* — deferred to post-alpha polish).
+
+        Capability: ensure the App ID `io.github.b150005.skeinly`
+        registered in Apple Developer Portal has the "Associated
+        Domains" capability enabled (provisioning profile screenshot
+        2026-05-10 confirms ON), AND the Distribution Provisioning
+        Profile includes that capability. The Path Y fastlane sigh
+        refactor (commit 0956d3f) handles capability propagation
+        automatically — re-Generate the profile in Apple Developer
+        Portal once after capability changes; next CI run picks up
+        the updated profile.
+    -->
+    <key>com.apple.developer.associated-domains</key>
+    <array>
+        <string>applinks:b150005.github.io</string>
+    </array>
 </dict>
 </plist>

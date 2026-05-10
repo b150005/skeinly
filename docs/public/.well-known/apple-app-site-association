@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["L9ZR4679P5.io.github.b150005.skeinly"],
+        "components": [
+          { "/": "/skeinly/patterns/shared/*", "comment": "Skeinly pattern share token" },
+          { "/": "/skeinly/patterns/*", "comment": "Skeinly public pattern detail" },
+          { "/": "/skeinly/pull-requests/*", "comment": "Skeinly pull request detail" }
+        ]
+      }
+    ]
+  }
+}
