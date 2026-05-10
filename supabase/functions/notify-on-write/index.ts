@@ -316,7 +316,7 @@ function inferStatusChangeActor(
     _oldRow: PullRequestRow,
     ctx: PullRequestContext,
 ): string | null {
-    if (newRow.status === "merged") {
+    if (newRow.status === "applied") {
         return ctx.targetOwnerId;
     }
     if (newRow.status === "closed") {

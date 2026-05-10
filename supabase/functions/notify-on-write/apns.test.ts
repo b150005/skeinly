@@ -129,7 +129,7 @@ Deno.test("sendApns: success path", async () => {
         fake.setApnsResponse("good-token", { status: 200 });
         const outcome = await sendApns(creds, {
             deviceToken: "good-token",
-            body: "Alice opened a pull request on Sweater",
+            body: "Alice sent a suggestion on Sweater",
             templateKey: "pr_opened",
             route: "pull-request/pr-test",
         });
