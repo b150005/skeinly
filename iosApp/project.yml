@@ -178,7 +178,7 @@ targets:
         # upload. CURRENT_PROJECT_VERSION restarts at 1 because it must be
         # strictly increasing only within a given MARKETING_VERSION stream;
         # changing MARKETING_VERSION starts a fresh stream.
-        MARKETING_VERSION: "0.1.0"
+        MARKETING_VERSION: "0.1.1"
         CURRENT_PROJECT_VERSION: "1"
         PRODUCT_BUNDLE_IDENTIFIER: io.github.b150005.skeinly
         # Phase 39.2 — F2 build-flavor flag. "YES" while MARKETING_VERSION
