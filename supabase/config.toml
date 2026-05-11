@@ -436,3 +436,16 @@ verify_jwt = false
 # `supabase/webhooks.md` for the 3 Database Webhook configurations.
 [functions.notify-on-write]
 verify_jwt = false
+
+# Phase 39 W5 (ADR-020) — bug report proxy. The beta build invokes this
+# function with the user's Supabase anon JWT in the Authorization header
+# (the same posture as `request-pack-download`); Supabase's edge
+# verifies the JWT before the handler runs. The function then
+# authenticates as the "Skeinly Beta Bug Reporter" GitHub App via three
+# secrets (`SKEINLY_BUGREPORT_APP_ID` / `SKEINLY_BUGREPORT_INSTALLATION_ID`
+# / `SKEINLY_BUGREPORT_PRIVATE_KEY_PEM` — release-secrets EF-7) and
+# creates an Issue on `b150005/skeinly`. JWT verification stays at the
+# Supabase default (true) because the inbound caller IS an
+# authenticated Supabase client, not a third-party webhook.
+[functions.submit-bug-report]
+verify_jwt = true
