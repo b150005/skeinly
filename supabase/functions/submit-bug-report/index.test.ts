@@ -253,7 +253,7 @@ Deno.test("handleRequest success returns issue_number + html_url envelope", asyn
     }
 });
 
-Deno.test("handleRequest defaults labels to beta-bug when omitted", async () => {
+Deno.test("handleRequest defaults labels to feedback when omitted", async () => {
     resetState();
     await setEnvFromTestCreds();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
@@ -268,7 +268,7 @@ Deno.test("handleRequest defaults labels to beta-bug when omitted", async () => 
         const issueCall = fake.calls.find((c) => c.url.includes("/issues"));
         assert(issueCall !== undefined);
         const payload = JSON.parse(issueCall.body ?? "{}");
-        assertEquals(payload.labels, ["beta-bug"]);
+        assertEquals(payload.labels, ["feedback"]);
     } finally {
         fake.restore();
     }

@@ -2,7 +2,52 @@
 
 ## Status
 
-Accepted (2026-05-11)
+Accepted (2026-05-11). **Amended 2026-05-12** (see §Amendment).
+
+## Amendment (2026-05-12) — scope broadened beyond beta
+
+The original ADR framed the GitHub App + Edge Function as "Skeinly
+Beta Bug Reporter" — a Phase 39 closed-beta artifact. Pre-deployment
+review surfaced that **the GitHub App and Edge Function are reused
+unchanged by general users after the Phase 40 GA cutover**; only the
+in-app entry points (Settings → Beta → Send Feedback,
+shake/3-finger-long-press gestures) are currently behind
+`BuildFlags.isBeta` for Phase 39 closed-beta operation. Phase 40 GA
+opens at least the Settings entry to all users.
+
+The vendor artifacts (GitHub App, Edge Function, secrets, Issue
+label, in-app title-prefix) MUST therefore carry no "beta" branding
+— a tester finishing Phase 39 closed beta sees the same Skeinly
+Feedback channel they will continue to use in Phase 40 GA, and a
+post-GA user's report does not surface in Issues with a stale
+"[Beta]" prefix or `beta-bug` label.
+
+Concrete changes from the original ADR:
+
+| Surface | Original | Amended |
+|---|---|---|
+| GitHub App name | `Skeinly Beta Bug Reporter` | **`Skeinly Feedback`** |
+| App description | `Server-side proxy that creates Issues from Skeinly beta tester in-app bug reports.` | **`Server-side proxy that creates GitHub Issues from Skeinly users' in-app feedback (bug reports, feature requests, general feedback).`** |
+| Default Issue label | `beta-bug` | **`feedback`** (scope-broad; `bug` / `feature-request` / etc. applied at triage time) |
+| ViewModel title prefix | `[Beta] $description` (or `[Beta] Bug report` empty default) | **No prefix; `$description` as-is, empty default → `Bug report`** |
+| Edge Function code | references "Beta Bug Reporter" in header comments | "Skeinly Feedback" in header comments |
+| Secrets EF-7 names | `SKEINLY_BUGREPORT_APP_ID` / `..._INSTALLATION_ID` / `..._PRIVATE_KEY_PEM` | **unchanged** (env-var names are internal-only; renaming would force a deploy + secret-recreate cycle for no end-user benefit) |
+| In-app entry point gating (`BuildFlags.isBeta`) | Phase 39 closed-beta only | **unchanged in this commit**; Phase 40 GA opens the Settings → "Send Feedback" entry for all users. Tracked under Tech Debt Backlog → `Bug-report Settings entry GA opening`. |
+
+The user-facing copy was already scope-neutral after the W5b i18n
+sweep (the disclosure body says "sends this report to the Skeinly
+team" not "to the Skeinly beta team"), so no further i18n changes
+are needed for the amendment.
+
+The original §6 user-attended steps are updated: when creating the
+GitHub App, name it `Skeinly Feedback` (not `Skeinly Beta Bug
+Reporter`) and use the amended description.
+
+The remaining body of this ADR (§1-§Q3, §1-§6, §Consequences,
+§Considered alternatives) reads as originally written but with the
+two name strings and the title-prefix scope swapped in. Future
+readers should treat this Amendment section as authoritative on
+naming and labels.
 
 ## Context
 
@@ -126,7 +171,7 @@ ViewModel testable: tests pass a recording lambda; production wires
 `proxyClient::submit`.
 
 **devops-engineer** — user-attended steps:
-1. https://github.com/settings/apps/new — create "Skeinly Beta Bug Reporter"
+1. https://github.com/settings/apps/new — create "Skeinly Feedback"
 2. Repository permissions → **Issues: Read & write**; everything else None.
 3. Where can this GitHub App be installed? → **Only on this account**
 4. Webhook section → uncheck "Active" (no webhooks needed).
@@ -226,11 +271,11 @@ Content-Type: application/json
 {
   "title": "[Beta] tap Save crashes on iOS 26.4",
   "body": "## Description\n…\n## Reproduction context\n…",
-  "labels": ["beta-bug"]
+  "labels": ["feedback"]
 }
 ```
 
-`labels` is optional (defaults to `["beta-bug"]`). Phase 39 W5 hardcodes
+`labels` is optional (defaults to `["feedback"]`). Phase 39 W5 hardcodes
 the single label; future slices may extend (e.g. screen-tagged labels).
 
 #### Response (success)
@@ -339,7 +384,7 @@ Authorization: Bearer <INSTALLATION_TOKEN>
 Accept: application/vnd.github+json
 X-GitHub-Api-Version: 2022-11-28
 
-{ "title": "...", "body": "...", "labels": ["beta-bug"] }
+{ "title": "...", "body": "...", "labels": ["feedback"] }
 ```
 
 GitHub returns the created Issue object. We pass back `number` and
@@ -493,7 +538,7 @@ correlate transit metadata with the reported content.</p>
 <p>You can submit reports anonymously by signing out of your GitHub
 account before viewing the resulting Issue page — the Issue itself
 does not carry your GitHub identity since the proxy creates it as the
-Skeinly Beta Bug Reporter GitHub App, not as you personally.</p>
+Skeinly Feedback GitHub App, not as you personally.</p>
 ```
 
 JA mirror with localized phrasing. Replaces (does NOT add to) the
@@ -559,7 +604,7 @@ opening a browser.
   screenshots on the Issue page after submit" — that workflow still
   works for testers with GitHub accounts; testers without accounts
   lose screenshot attachment but can describe in body.
-- **Issue assignment / reviewer setup.** Single label `beta-bug`
+- **Issue assignment / reviewer setup.** Single label `feedback`
   applied; assignment happens in repo via existing automation if any.
 - **Comment threading.** Submitted Issues are read-only from the app
   side; testers can comment via the GitHub UI if signed in.

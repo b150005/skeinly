@@ -179,7 +179,7 @@ val repositoryModule =
             single<SymbolPackRemoteOperations> { get<RemoteSymbolPackDataSource>() }
             // Phase 39 W5b (ADR-020) — bug-report proxy client. POSTs
             // to `${supabaseConfig.url}/functions/v1/submit-bug-report`
-            // which authenticates as the "Skeinly Beta Bug Reporter"
+            // which authenticates as the "Skeinly Feedback"
             // GitHub App and creates an Issue on b150005/skeinly.
             // Replaces Phase 39.5's `BugSubmissionLauncher`
             // expect/actual (deleted in the same commit). The injected

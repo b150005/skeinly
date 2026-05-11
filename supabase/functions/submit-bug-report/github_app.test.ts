@@ -147,7 +147,7 @@ Deno.test("createIssue success returns issue number + html_url", async () => {
         return jsonResponse({ error: "unexpected" }, 500);
     });
     try {
-        const result = await createIssue(creds, { title: "x", body: "y", labels: ["beta-bug"] });
+        const result = await createIssue(creds, { title: "x", body: "y", labels: ["feedback"] });
         assertEquals(result.kind, "success");
         if (result.kind === "success") {
             assertEquals(result.issueNumber, 123);
@@ -169,13 +169,13 @@ Deno.test("createIssue sends title + body + labels in request body", async () =>
         return jsonResponse({ number: 1, html_url: "u" }, 201);
     });
     try {
-        await createIssue(creds, { title: "T1", body: "B1", labels: ["beta-bug", "ios"] });
+        await createIssue(creds, { title: "T1", body: "B1", labels: ["feedback", "ios"] });
         const issueCall = fake.calls.find((c) => c.url.includes("/issues"));
         assert(issueCall !== undefined);
         const payload = JSON.parse(issueCall.body ?? "{}");
         assertEquals(payload.title, "T1");
         assertEquals(payload.body, "B1");
-        assertEquals(payload.labels, ["beta-bug", "ios"]);
+        assertEquals(payload.labels, ["feedback", "ios"]);
     } finally {
         fake.restore();
     }

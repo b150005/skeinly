@@ -24,7 +24,7 @@ import kotlinx.serialization.json.Json
  * Replaces Phase 39.5's `BugSubmissionLauncher` (which opened a prefilled
  * GitHub Issue URL in the system browser). This client POSTs the
  * diagnostic title + body directly to the Edge Function, which
- * authenticates as the "Skeinly Beta Bug Reporter" GitHub App and
+ * authenticates as the "Skeinly Feedback" GitHub App and
  * creates an Issue on b150005/skeinly server-side. The Edge Function's
  * response is parsed into [SubmitOutcome] on success or a typed
  * [BugReportProxyException] subclass on failure.
