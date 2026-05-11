@@ -50,7 +50,37 @@ configFiles:
   Release: local.xcconfig
 settings:
   base:
+    # DEVELOPMENT_TEAM is injected by local.xcconfig (developer local
+    # builds use their personal team; CI release builds use the CI-written
+    # xcconfig with the project's team ID). Empty here so xcodegen
+    # generates the project with the xcconfig reference intact rather
+    # than baking a literal team into the .xcodeproj.
     DEVELOPMENT_TEAM: ""
+  # Phase 39 (W3 / 2026-05-11) — manual signing for Release archives.
+  # Without these settings, xcodegen generates a Release configuration
+  # with `CODE_SIGN_STYLE = Automatic` (the Xcode default), and the
+  # archive step fails with "Select a provisioning profile in the
+  # Signing & Capabilities editor" because automatic signing can't
+  # resolve a profile in a CI environment without an interactive login
+  # to Apple Developer Portal. fastlane's `signingStyle: "manual"` in
+  # export_options only governs the export step (archive → IPA); the
+  # ARCHIVE step itself reads these build settings from the .xcodeproj.
+  #
+  # PROVISIONING_PROFILE_SPECIFIER must match the profile's "Name"
+  # field in Apple Developer Portal — sigh fetches by this name and
+  # the archive step locates the keychain-installed profile by the
+  # same name. Currently "Skeinly App Store" (immutable for the
+  # lifetime of the App Store listing).
+  #
+  # Debug stays at Automatic so local developer builds onto a
+  # simulator / personal device don't require manual profile setup.
+  configs:
+    Debug:
+      CODE_SIGN_STYLE: Automatic
+    Release:
+      CODE_SIGN_STYLE: Manual
+      CODE_SIGN_IDENTITY: "Apple Distribution"
+      PROVISIONING_PROFILE_SPECIFIER: "Skeinly App Store"
 
 targets:
   iosApp:
