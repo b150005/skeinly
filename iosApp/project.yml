@@ -211,6 +211,39 @@ targets:
         # Notifications capability for the App ID, otherwise
         # `xcodebuild archive` reports a code-sign mismatch.
         CODE_SIGN_ENTITLEMENTS: iosApp/iosApp.entitlements
+      # Phase 39 (W4 / 2026-05-11) — target-level Release signing settings.
+      # The Path Y v4 archive failure (run 25650644594 / 25651605096)
+      # diagnosed via the new ios-failure-diagnostics artifact bundle
+      # showed that xcodegen bakes the default `CODE_SIGN_IDENTITY =
+      # "iPhone Developer"` (= iOS Development) into the iosApp
+      # *target-level* Release XCBuildConfiguration when this `configs`
+      # block is absent. Xcode's build-settings hierarchy places
+      # target-level above project-level, so the project-level
+      # `settings.configs.Release.CODE_SIGN_IDENTITY = "Apple
+      # Distribution"` was silently overridden — signing analyzer asked
+      # for a development cert that doesn't exist in the CI keychain
+      # ("No 'iOS Development' signing certificate matching team ID
+      # L9ZR4679P5 was found").
+      #
+      # Re-asserting the same Release-only signing trio at the target
+      # level forces xcodegen to write them directly into the iosApp
+      # target's Release XCBuildConfiguration, making them the highest-
+      # priority value (modulo xcargs). Debug stays Automatic for local
+      # simulator builds.
+      #
+      # The project-level `settings.configs.Release` block above is
+      # retained because it serves as the value applied to PBXProject's
+      # XCBuildConfiguration (visible in Xcode → Project → Info →
+      # Configurations, used as the inheritance base for any future
+      # signed target). It is no longer load-bearing for iosApp, which
+      # this block fully overrides.
+      configs:
+        Debug:
+          CODE_SIGN_STYLE: Automatic
+        Release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "Apple Distribution"
+          PROVISIONING_PROFILE_SPECIFIER: "Skeinly App Store"
     dependencies:
       - framework: "../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)/Shared.framework"
         embed: false
