@@ -437,15 +437,32 @@ verify_jwt = false
 [functions.notify-on-write]
 verify_jwt = false
 
-# Phase 39 W5 (ADR-020) — bug report proxy. The beta build invokes this
-# function with the user's Supabase anon JWT in the Authorization header
-# (the same posture as `request-pack-download`); Supabase's edge
-# verifies the JWT before the handler runs. The function then
-# authenticates as the "Skeinly Feedback" GitHub App via three
-# secrets (`SKEINLY_BUGREPORT_APP_ID` / `SKEINLY_BUGREPORT_INSTALLATION_ID`
-# / `SKEINLY_BUGREPORT_PRIVATE_KEY_PEM` — release-secrets EF-7) and
-# creates an Issue on `b150005/skeinly`. JWT verification stays at the
-# Supabase default (true) because the inbound caller IS an
-# authenticated Supabase client, not a third-party webhook.
+# Phase 39 W5 (ADR-020) — bug report proxy. The mobile app invokes
+# this function with the project's publishable key in the `apikey`
+# header (Supabase 2025-11-01 new key format — `sb_publishable_*`
+# is not a JWT). JWT verification is DISABLED because:
+#
+# 1. The new `sb_publishable_*` format is not a JWT — `verify_jwt =
+#    true` would reject any Authorization header value as
+#    `UNAUTHORIZED_INVALID_JWT_FORMAT` (and reject the request as
+#    `UNAUTHORIZED_NO_AUTH_HEADER` if Authorization is absent).
+# 2. The bug reporting flow must work for users who are NOT signed
+#    in to Supabase Auth (e.g. a sign-in flow itself is broken;
+#    user wants to report that). A user session JWT is not always
+#    available.
+# 3. Mirrors the `notify-on-write` and `revenuecat-webhook` Edge
+#    Function pattern (both `verify_jwt = false`) — Supabase
+#    recommends disabling JWT verification for unauthenticated
+#    client-invoked functions per the Edge Functions auth doc.
+#
+# The function then authenticates as the "Skeinly Feedback" GitHub
+# App via three secrets (`SKEINLY_BUGREPORT_APP_ID` /
+# `SKEINLY_BUGREPORT_INSTALLATION_ID` /
+# `SKEINLY_BUGREPORT_PRIVATE_KEY_PEM` — release-secrets EF-7) and
+# creates an Issue on `b150005/skeinly`. Abuse prevention is via the
+# in-memory rate limit (5 reports / hour per source-hash) — the
+# publishable key is trivially obtainable from app bundle
+# inspection, so an "auth boundary" at the edge layer would be
+# performative anyway.
 [functions.submit-bug-report]
-verify_jwt = true
+verify_jwt = false
