@@ -64,20 +64,20 @@ supabase functions deploy submit-bug-report
 ```
 
 `supabase/config.toml` ships with the function entry under
-`[functions.submit-bug-report]`; deploy picks up that config
-automatically. JWT verification stays on the Supabase default
-(`verify_jwt = true`) — Supabase rejects unauthenticated requests at
-the edge before they reach this code.
+`[functions.submit-bug-report]` with `verify_jwt = false` — see
+ADR-020 §Q4. The function is invoked as an unauthenticated client
+endpoint; real auth happens downstream at the GitHub API call via
+the App's three secrets.
 
 ## Smoke test (after deploy)
 
 ```bash
-ANON=$(supabase status --output env | grep API_KEY | cut -d= -f2)
+PUB=<project_publishable_key>  # sb_publishable_*
 curl -i \
   -X POST "https://<project>.supabase.co/functions/v1/submit-bug-report" \
-  -H "apikey: ${ANON}" \
+  -H "apikey: ${PUB}" \
   -H "Content-Type: application/json" \
-  -d '{"title":"[Beta] smoke test","body":"This is a smoke test from the README."}'
+  -d '{"title":"smoke test","body":"This is a smoke test from the README."}'
 ```
 
 Expect HTTP 200 with `{"ok":true,"issue_number":<n>,"html_url":"..."}`.

@@ -1,49 +1,23 @@
 // Phase 39 W5 (ADR-020) — Bug report proxy Edge Function.
 //
-// Receives POST /functions/v1/submit-bug-report from beta builds,
-// validates input, applies rate limiting, then authenticates as the
-// "Skeinly Feedback" GitHub App and creates an Issue on
-// b150005/skeinly via the GitHub REST API.
+// Receives POST /functions/v1/submit-bug-report, validates input,
+// applies rate limiting, then authenticates as the Skeinly Feedback
+// GitHub App and creates an Issue on b150005/skeinly via the GitHub
+// REST API. Replaces Phase 39.5's client-side URL prefill flow
+// (ADR-015 §3). Full design + agent-team deliberation in ADR-020.
 //
-// Replaces Phase 39.5's client-side URL prefill flow (ADR-015 §3).
-// See ADR-020 for the full design + agent-team deliberation.
-//
-// Required env vars (manual: `supabase secrets set` after GitHub App
-// creation per ADR-020 §6 user-attended steps):
+// Runs with `verify_jwt = false` (see `supabase/config.toml` and
+// ADR-020 §Q4). Real auth is downstream at the GitHub API call via
+// the App's three secrets:
 //   - SKEINLY_BUGREPORT_APP_ID
 //   - SKEINLY_BUGREPORT_INSTALLATION_ID
 //   - SKEINLY_BUGREPORT_PRIVATE_KEY_PEM
+// The `SKEINLY_` prefix is load-bearing — Supabase reserves
+// `SUPABASE_*` for platform-injected env vars and `supabase secrets
+// set` rejects names with that prefix.
 //
-// Client auth: NO edge-layer verification. The function is
-// published with `verify_jwt = false` in `supabase/config.toml` —
-// matches the `notify-on-write` / `revenuecat-webhook` Edge
-// Function pattern.
-//
-// Why not `verify_jwt = true`: the project migrated to the new
-// `sb_publishable_*` non-JWT API key format (Supabase 2025-11-01
-// transition). With `verify_jwt = true`, the edge layer requires
-// a valid JWT in the `Authorization` header:
-//   - `Authorization: Bearer sb_publishable_*` →
-//     `UNAUTHORIZED_INVALID_JWT_FORMAT` (the key is not a JWT)
-//   - `apikey: sb_publishable_*` alone (no Authorization) →
-//     `UNAUTHORIZED_NO_AUTH_HEADER` (Authorization is mandatory)
-//   - `Authorization: Bearer <user-session-jwt> + apikey: ...` →
-//     would work, but Skeinly users may NOT be signed in to
-//     Supabase Auth when they want to report a bug (e.g. sign-in
-//     flow itself is broken). Bug reporting must work without a
-//     user session.
-// The Supabase Edge Functions auth doc explicitly recommends
-// disabling `verify_jwt` for unauthenticated client-invoked
-// functions. The mobile app still sends `apikey:
-// <publishable_key>` (defensive convention + forward-compat) but
-// the function does not gate on it — abuse prevention is via the
-// in-memory rate limit (5 reports / hour per source-hash). The
-// publishable key is trivially obtainable from app bundle
-// inspection, so an "auth boundary" here would be performative.
-//
-// `SKEINLY_` prefix on the secrets is load-bearing — Supabase reserves
-// `SUPABASE_*` for platform-injected env vars and `supabase secrets set`
-// rejects names starting with that prefix.
+// Abuse prevention: in-memory rate limit (5 reports/hour per
+// source-hash on `x-real-ip` + auth-tail). See `computeSourceHash`.
 
 import { createIssue, type GithubAppCredentials } from "./github_app.ts";
 
@@ -136,23 +110,15 @@ function checkRateLimit(sourceHash: string): { retryAfterMinutes: number } | nul
 // ---------------------------------------------------------------------
 
 /**
- * Stable per-request hash for rate-limit keying. Combines the client
- * IP (from `x-real-ip`, Supabase-edge-set) with a salt derived from
- * the Authorization header's tail (anon JWT signature) to defend
- * against a single tester behind shared NAT — though at 10-tester
- * scale this distinction is academic.
+ * Stable per-request hash for rate-limit keying: client IP
+ * (`x-real-ip`) + auth-header tail. The auth-header tail term keeps a
+ * single tester behind shared NAT separate if a future build sends a
+ * user-specific JWT in `Authorization`. Today the client only sends
+ * `apikey: <publishable_key>` (ADR-020 §Q4), so prefer `apikey` then
+ * fall back to `authorization` for forward-compat.
  */
 async function computeSourceHash(req: Request): Promise<string> {
     const ip = req.headers.get("x-real-ip") ?? req.headers.get("x-forwarded-for") ?? "unknown";
-    // 2026-05-12 amendment: read either `apikey` (new Supabase
-    // sb_publishable_* path, Authorization-equivalent for non-JWT
-    // project keys) or `authorization` (legacy JWT path). The tail
-    // is appended as rate-limit salt; with the project's single
-    // publishable key embedded in every build, tester separation
-    // is effectively IP-based at the ≤10-tester closed-beta scale,
-    // but the auth-tail term is retained so a single tester behind
-    // shared NAT does not collide if a future build embeds a
-    // user-specific JWT instead.
     const authHeader = req.headers.get("apikey") ?? req.headers.get("authorization") ?? "";
     const authTail = authHeader.slice(-12);
     const input = `${ip}|${authTail}`;
@@ -191,11 +157,9 @@ function validate(
         return { ok: false, message: `body length must be 1..${MAX_BODY_LENGTH}` };
     }
 
-    // 2026-05-12 amendment: scope broadened from beta-only to general
-    // users. Default label is `feedback` (neutral; triage applies
-    // `bug` / `feature-request` / etc. on the Issue tracker side).
-    // The previous "beta-bug" default was a Phase 39 closed-beta
-    // artifact that did not survive the GA-readiness review.
+    // Default label is `feedback` (neutral; triage applies more
+    // specific labels — `bug` / `feature-request` / etc. — on the
+    // Issue tracker side). ADR-020 §Context.
     let labels: readonly string[] = ["feedback"];
     if ("labels" in obj && obj.labels !== undefined) {
         if (!Array.isArray(obj.labels)) {
