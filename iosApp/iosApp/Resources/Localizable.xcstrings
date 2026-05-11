@@ -7700,6 +7700,57 @@
           }
         }
       }
+    },
+    "title_force_update": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update required"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アップデートが必要です"
+          }
+        }
+      }
+    },
+    "body_force_update_default": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A new version of Skeinly is required to continue. Please update from the store to keep using the app."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skeinly を引き続き使用するには新しいバージョンが必要です。ストアからアップデートしてください。"
+          }
+        }
+      }
+    },
+    "action_update_now": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update now"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今すぐアップデート"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

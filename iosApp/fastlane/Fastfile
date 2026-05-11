@@ -181,10 +181,30 @@ def fetch_provisioning_profile(api_key)
   # flag is passed, so we omit both. Only pass one of these explicitly
   # if/when we add an `:adhoc` lane (e.g. for QA distribution outside
   # TestFlight).
+  #
+  # `force: true` — regenerate the profile from Apple Developer Portal
+  # on every CI run. This is the only setting that guarantees the
+  # downloaded profile carries the current App ID capability set
+  # (Associated Domains, Push Notifications, Sign In with Apple,
+  # In-App Purchase). With `force: false`, sigh would download whatever
+  # existing profile matches the name — including a stale one that was
+  # created before the most recent capability was added to the App ID.
+  # The 2026-05-11 Path Y first attempt failed exactly that way
+  # (existing profile UUID `e04fc65a-0e67-...` predated the
+  # Associated Domains add for W3).
+  #
+  # Trade-off: Apple Developer Portal accumulates archived profiles
+  # (one per CI run) under the App ID. Apple's per-app per-type
+  # active-profile cap (~120 for distribution) won't bite for ~24 days
+  # at 5 runs/day, which is past alpha. Post-alpha cleanup options:
+  # (a) periodically delete archived profiles via App Store Connect
+  # API, or (b) switch to `force: false` once the capability set
+  # stabilizes (the user's manual re-Generate on capability change
+  # then suffices).
   sigh(
     app_identifier: PRODUCT_BUNDLE_ID,
     api_key: api_key,
-    force: false,
+    force: true,
     provisioning_name: PROVISIONING_PROFILE_NAME,
     ignore_profiles_with_different_name: true,
     output_path: runner_temp,

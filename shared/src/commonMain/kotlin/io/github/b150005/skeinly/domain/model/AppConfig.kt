@@ -73,9 +73,15 @@ enum class AppPlatform { ANDROID, IOS }
 private fun parseSemver(version: String): Triple<Int, Int, Int>? {
     val parts = version.split('.')
     if (parts.size !in 1..3) return null
-    val major = parts.getOrNull(0)?.toIntOrNull() ?: return null
-    val minor = parts.getOrNull(1)?.toIntOrNull() ?: 0
-    val patch = parts.getOrNull(2)?.toIntOrNull() ?: 0
+    // Mandatory: major must always parse. Minor / patch default to 0
+    // ONLY when the input is short (1 or 2 segments). When the input
+    // provides a segment, it must parse — otherwise hyphenated
+    // prerelease suffixes like `1.0.0-beta1` would parse as
+    // `(1, 0, 0)` (with the `-beta1` discarded), defeating the
+    // "digits and dots only" check.
+    val major = parts[0].toIntOrNull() ?: return null
+    val minor = if (parts.size >= 2) parts[1].toIntOrNull() ?: return null else 0
+    val patch = if (parts.size >= 3) parts[2].toIntOrNull() ?: return null else 0
     if (major < 0 || minor < 0 || patch < 0) return null
     return Triple(major, minor, patch)
 }

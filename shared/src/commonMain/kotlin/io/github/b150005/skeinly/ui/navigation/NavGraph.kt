@@ -26,6 +26,7 @@ import io.github.b150005.skeinly.ui.chart.ChartEditorScreen
 import io.github.b150005.skeinly.ui.chart.ChartHistoryScreen
 import io.github.b150005.skeinly.ui.chart.ChartViewerScreen
 import io.github.b150005.skeinly.ui.discovery.DiscoveryScreen
+import io.github.b150005.skeinly.ui.forceupdate.ForceUpdateGate
 import io.github.b150005.skeinly.ui.onboarding.OnboardingScreen
 import io.github.b150005.skeinly.ui.packmanagement.PackManagementScreen
 import io.github.b150005.skeinly.ui.patternedit.PatternEditScreen
@@ -242,6 +243,30 @@ fun SkeinlyNavHost(
      */
     pushRoute: String? = null,
     onPushRouteConsumed: () -> Unit = {},
+) {
+    // Phase 39 (W4 / 2026-05-11) — force-update gate wraps the entire
+    // NavHost. When `app_config.min_required_version_*` exceeds the
+    // installed BuildFlags.versionName, the gate replaces the nav
+    // surface with a blocking ForceUpdateScreen — no NavHost is
+    // rendered, no destinations reachable, system back stays on the
+    // force-update screen because there is no nav stack to pop.
+    // Fail-open on no-cache + offline (offline-first contract).
+    ForceUpdateGate {
+        SkeinlyNavHostContent(
+            navController = navController,
+            deepLinkUrl = deepLinkUrl,
+            pushRoute = pushRoute,
+            onPushRouteConsumed = onPushRouteConsumed,
+        )
+    }
+}
+
+@Composable
+private fun SkeinlyNavHostContent(
+    navController: NavHostController,
+    deepLinkUrl: String?,
+    pushRoute: String?,
+    onPushRouteConsumed: () -> Unit,
 ) {
     // Check onboarding state
     val getOnboardingCompleted: GetOnboardingCompletedUseCase = koinInject()
