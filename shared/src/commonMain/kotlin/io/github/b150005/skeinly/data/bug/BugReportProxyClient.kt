@@ -7,7 +7,6 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.util.network.UnresolvedAddressException
@@ -102,7 +101,18 @@ class BugReportProxyClient(
                 httpClient.post(url) {
                     contentType(ContentType.Application.Json)
                     headers {
-                        append(HttpHeaders.Authorization, "Bearer $supabasePublishableKey")
+                        // 2026-05-12 amendment: `apikey` header (NOT
+                        // `Authorization: Bearer`) per the Supabase
+                        // Edge Functions auth doc — the new
+                        // `sb_publishable_*` key format is not a JWT,
+                        // so a `verify_jwt = true` function rejects
+                        // it as `UNAUTHORIZED_INVALID_JWT_FORMAT`
+                        // when sent in the Authorization header.
+                        // The `apikey` header is the documented
+                        // channel for project-level API key auth +
+                        // is what `supabase-js` uses internally.
+                        // See https://supabase.com/docs/guides/functions/auth
+                        append("apikey", supabasePublishableKey)
                     }
                     setBody(json.encodeToString(SubmitRequestWire.serializer(), SubmitRequestWire(title, body)))
                 }

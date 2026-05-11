@@ -39,6 +39,53 @@ sweep (the disclosure body says "sends this report to the Skeinly
 team" not "to the Skeinly beta team"), so no further i18n changes
 are needed for the amendment.
 
+### Second amendment (2026-05-12 PM) — `apikey` header instead of `Authorization: Bearer`
+
+The smoke test against the deployed Edge Function returned HTTP 401
+`UNAUTHORIZED_INVALID_JWT_FORMAT` because the project migrated to
+Supabase's new `sb_publishable_*` API key format (2025-11-01
+transition; the JWT-format `anon` key is deprecated per CLAUDE.md).
+A `verify_jwt = true` Edge Function rejects any `Authorization`
+header value that is not a valid JWT, and `sb_publishable_*` is not
+a JWT — per the [Supabase Edge Functions auth doc](https://supabase.com/docs/guides/functions/auth):
+"The check does not accept an API key. Publishable and secret keys
+are not JWTs, so callers that send one in the `Authorization` header
+fail the check before their request reaches your handler."
+
+The Supabase-recommended pattern for client-invoked Edge Functions
+that authenticate via the project's publishable key is to put it in
+the **`apikey` header** instead — `supabase-js` does this
+automatically, and the `apikey` channel is the supported
+non-JWT-key-auth boundary.
+
+Concrete changes:
+
+| Surface | Original | Amended |
+|---|---|---|
+| `BugReportProxyClient.kt` request header | `Authorization: Bearer $supabasePublishableKey` | **`apikey: $supabasePublishableKey`** |
+| Edge Function `computeSourceHash` rate-limit seed | reads `Authorization` header tail | **reads `apikey` tail with `Authorization` fallback** (defensive — keeps the legacy code path working if any caller still sends Authorization) |
+| Smoke test curl recipe (README, release-secrets.md) | `-H "Authorization: Bearer ${ANON}"` | **`-H "apikey: ${ANON}"`** |
+| Edge Function header comment in `index.ts` | "Client auth: Supabase anon JWT" | **"Client auth: Supabase publishable key in the `apikey` header"** with the explanation above |
+| `BugReportProxyClientTest` assertion | `request.headers[HttpHeaders.Authorization] == "Bearer ..."` | **`request.headers["apikey"] == "..."`** |
+
+`verify_jwt = true` stays in `supabase/config.toml` — the Supabase
+edge admits the request after recognising the publishable key in
+the `apikey` header, just as it admits any other client-invoked
+function. No deploy-config change needed beyond the standard
+`supabase functions deploy submit-bug-report` after the code merge.
+
+Tests: 14 KMP `BugReportProxyClientTest` and 17 Deno `index.test.ts`
+were rewritten to match the new header convention (Deno tests fix
+`buildRequest` + 2 inline-request bodies to use `apikey`; KMP test
+updates one assertion). Total commonTest count 1536 unchanged; Deno
+test count 32 unchanged.
+
+Forward-compat: a future build that ships a signed-in user's
+session JWT for per-user attribution would add `Authorization:
+Bearer <user_jwt>` alongside the existing `apikey` header
+(`supabase-js`'s established pattern). No rewrite of the client
+needed when that day comes.
+
 The original §6 user-attended steps are updated: when creating the
 GitHub App, name it `Skeinly Feedback` (not `Skeinly Beta Bug
 Reporter`) and use the amended description.
@@ -265,7 +312,7 @@ Resolved: **(a) In-memory Map keyed by request source identifier.**
 
 ```http
 POST /functions/v1/submit-bug-report HTTP/1.1
-Authorization: Bearer <SUPABASE_ANON_KEY>
+apikey: <SUPABASE_PUBLISHABLE_KEY>
 Content-Type: application/json
 
 {

@@ -8,7 +8,7 @@ via a dedicated GitHub App with `Issues: Read & write` permission.
 
 ```
 POST https://<project>.supabase.co/functions/v1/submit-bug-report
-Authorization: Bearer <SUPABASE_ANON_KEY>
+apikey: <SUPABASE_PUBLISHABLE_KEY>
 Content-Type: application/json
 
 {
@@ -75,7 +75,7 @@ the edge before they reach this code.
 ANON=$(supabase status --output env | grep API_KEY | cut -d= -f2)
 curl -i \
   -X POST "https://<project>.supabase.co/functions/v1/submit-bug-report" \
-  -H "Authorization: Bearer ${ANON}" \
+  -H "apikey: ${ANON}" \
   -H "Content-Type: application/json" \
   -d '{"title":"[Beta] smoke test","body":"This is a smoke test from the README."}'
 ```

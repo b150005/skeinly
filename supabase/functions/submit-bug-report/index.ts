@@ -14,12 +14,27 @@
 //   - SKEINLY_BUGREPORT_INSTALLATION_ID
 //   - SKEINLY_BUGREPORT_PRIVATE_KEY_PEM
 //
-// Client auth: Supabase anon JWT. The function is published with
-// `verify_jwt = true` in supabase/config.toml (default) so Supabase's
-// edge layer rejects unauthenticated requests before they reach this
-// code — we do not re-verify here. The client-issued anon JWT is
-// trivially obtainable from app bundle inspection; abuse prevention
-// is via the rate limit below, not via this auth check.
+// Client auth: Supabase publishable key in the `apikey` header. The
+// function is published with `verify_jwt = true` in
+// supabase/config.toml so Supabase's edge layer admits the request
+// after recognising the publishable key. We do not re-verify here.
+//
+// 2026-05-12 amendment: the original ADR-020 specified
+// `Authorization: Bearer <publishable_key>` but the project migrated
+// to the new `sb_publishable_*` non-JWT key format (Supabase
+// 2025-11-01 transition), and `verify_jwt = true` rejects any
+// Authorization header that is not a valid JWT (error
+// `UNAUTHORIZED_INVALID_JWT_FORMAT`). The Supabase docs for client-
+// invoked Edge Functions place the publishable key in `apikey`
+// instead (the legacy/standard channel) — `supabase-js` puts a
+// signed-in user's session JWT in `Authorization` and the project's
+// publishable key in `apikey`. Our client has no user JWT (the
+// proxy acts as the GitHub App on behalf of any user), so we send
+// only `apikey`.
+//
+// The publishable key is trivially obtainable from app bundle
+// inspection; abuse prevention is via the rate limit below, not via
+// this auth check.
 //
 // `SKEINLY_` prefix on the secrets is load-bearing — Supabase reserves
 // `SUPABASE_*` for platform-injected env vars and `supabase secrets set`
@@ -124,7 +139,17 @@ function checkRateLimit(sourceHash: string): { retryAfterMinutes: number } | nul
  */
 async function computeSourceHash(req: Request): Promise<string> {
     const ip = req.headers.get("x-real-ip") ?? req.headers.get("x-forwarded-for") ?? "unknown";
-    const authTail = (req.headers.get("authorization") ?? "").slice(-12);
+    // 2026-05-12 amendment: read either `apikey` (new Supabase
+    // sb_publishable_* path, Authorization-equivalent for non-JWT
+    // project keys) or `authorization` (legacy JWT path). The tail
+    // is appended as rate-limit salt; with the project's single
+    // publishable key embedded in every build, tester separation
+    // is effectively IP-based at the ≤10-tester closed-beta scale,
+    // but the auth-tail term is retained so a single tester behind
+    // shared NAT does not collide if a future build embeds a
+    // user-specific JWT instead.
+    const authHeader = req.headers.get("apikey") ?? req.headers.get("authorization") ?? "";
+    const authTail = authHeader.slice(-12);
     const input = `${ip}|${authTail}`;
     const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
     return Array.from(new Uint8Array(buf))

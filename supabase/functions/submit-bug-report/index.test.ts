@@ -31,7 +31,9 @@ function buildRequest(body: unknown, init?: RequestInit): Request {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            Authorization: "Bearer sb_anon_test",
+            // 2026-05-12 amendment: `apikey` header (new Supabase
+            // sb_publishable_* path) replaces `Authorization: Bearer`.
+            apikey: "sb_publishable_test",
             "x-real-ip": "203.0.113.42",
         },
         body: JSON.stringify(body),
@@ -146,7 +148,7 @@ Deno.test("handleRequest rejects malformed JSON body", async () => {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            Authorization: "Bearer x",
+            apikey: "sb_publishable_test",
             "x-real-ip": "1.2.3.4",
         },
         body: "{not json",
@@ -206,7 +208,7 @@ Deno.test("handleRequest rate limit is per-source-hash (different IPs independen
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: "Bearer sb_anon_test",
+                apikey: "sb_publishable_test",
                 "x-real-ip": "198.51.100.7",
             },
             body: JSON.stringify({ title: "b1", body: "b" }),
