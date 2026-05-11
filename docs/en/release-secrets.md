@@ -1116,7 +1116,7 @@ supabase secrets list | grep SKEINLY_DATABASE_WEBHOOK_SECRET
 
 ### EF-7. `SKEINLY_BUGREPORT_APP_ID` / `SKEINLY_BUGREPORT_INSTALLATION_ID` / `SKEINLY_BUGREPORT_PRIVATE_KEY_PEM`
 
-**WHAT**: GitHub App credential trio used by the `submit-bug-report` Edge Function (Phase 39 W5, ADR-020) to authenticate as the "Skeinly Beta Bug Reporter" GitHub App and create Issues on `b150005/skeinly` on the tester's behalf. Replaces Phase 39.5's client-side URL prefill flow.
+**WHAT**: GitHub App credential trio used by the `submit-bug-report` Edge Function (Phase 39 W5, ADR-020) to authenticate as the "Skeinly Feedback" GitHub App and create Issues on `b150005/skeinly` on the tester's behalf. Replaces Phase 39.5's client-side URL prefill flow.
 
 - `SKEINLY_BUGREPORT_APP_ID` — numeric App ID, shown at the top of the App's settings page after creation.
 - `SKEINLY_BUGREPORT_INSTALLATION_ID` — numeric Installation ID, appears in the post-install URL `github.com/settings/installations/<id>`.
@@ -1129,7 +1129,7 @@ supabase secrets list | grep SKEINLY_DATABASE_WEBHOOK_SECRET
 **OBTAIN**:
 
 1. Open https://github.com/settings/apps/new
-2. **GitHub App name**: `Skeinly Beta Bug Reporter`
+2. **GitHub App name**: `Skeinly Feedback`
 3. **Homepage URL**: `https://b150005.github.io/skeinly/`
 4. **Webhook → Active**: uncheck (no webhooks needed)
 5. **Repository permissions → Issues**: Read & write. All other permissions: No access.

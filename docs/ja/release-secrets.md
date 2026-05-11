@@ -1111,7 +1111,7 @@ supabase secrets list | grep SKEINLY_DATABASE_WEBHOOK_SECRET
 
 ### EF-7. `SKEINLY_BUGREPORT_APP_ID` / `SKEINLY_BUGREPORT_INSTALLATION_ID` / `SKEINLY_BUGREPORT_PRIVATE_KEY_PEM`
 
-**WHAT**: Phase 39 W5 (ADR-020) の `submit-bug-report` Edge Function が "Skeinly Beta Bug Reporter" GitHub App として認証して `b150005/skeinly` リポジトリに Issue を作成するために使う 3 点 secret。Phase 39.5 のクライアント側 URL プリフィル方式を置換する。
+**WHAT**: Phase 39 W5 (ADR-020) の `submit-bug-report` Edge Function が "Skeinly Feedback" GitHub App として認証して `b150005/skeinly` リポジトリに Issue を作成するために使う 3 点 secret。Phase 39.5 のクライアント側 URL プリフィル方式を置換する。
 
 - `SKEINLY_BUGREPORT_APP_ID` — 数値 App ID。App 作成後、設定ページ上部に表示される。
 - `SKEINLY_BUGREPORT_INSTALLATION_ID` — 数値 Installation ID。Install 後のブラウザ URL `github.com/settings/installations/<id>` に出る。
@@ -1124,7 +1124,7 @@ supabase secrets list | grep SKEINLY_DATABASE_WEBHOOK_SECRET
 **OBTAIN**:
 
 1. https://github.com/settings/apps/new を開く
-2. **GitHub App name**: `Skeinly Beta Bug Reporter`
+2. **GitHub App name**: `Skeinly Feedback`
 3. **Homepage URL**: `https://b150005.github.io/skeinly/`
 4. **Webhook → Active**: チェックを外す
 5. **Repository permissions → Issues**: Read & write のみ、他は全部 No access

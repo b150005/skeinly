@@ -42,7 +42,7 @@ const INSTALLATION_TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
 const GITHUB_OWNER = "b150005";
 const GITHUB_REPO = "skeinly";
 
-const USER_AGENT = "Skeinly-Beta-Bug-Reporter/1.0";
+const USER_AGENT = "Skeinly-Feedback/1.0";
 
 // ---------------------------------------------------------------------
 // Public types

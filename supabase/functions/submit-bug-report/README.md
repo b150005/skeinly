@@ -14,7 +14,7 @@ Content-Type: application/json
 {
   "title": "[Beta] tap save crashes on iOS 26.4",
   "body": "## Description\n…",
-  "labels": ["beta-bug"]
+  "labels": ["feedback"]
 }
 ```
 
@@ -33,7 +33,7 @@ Failure (200 OK with `ok: false` envelope):
 ## User-attended setup (one-time)
 
 1. Open https://github.com/settings/apps/new
-2. **GitHub App name**: `Skeinly Beta Bug Reporter`
+2. **GitHub App name**: `Skeinly Feedback`
 3. **Homepage URL**: `https://b150005.github.io/skeinly/`
 4. **Webhook → Active**: uncheck (no webhooks needed)
 5. **Repository permissions → Issues**: Read & write. All other permissions: No access.

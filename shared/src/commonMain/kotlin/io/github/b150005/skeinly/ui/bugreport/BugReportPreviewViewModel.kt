@@ -220,6 +220,14 @@ class BugReportPreviewViewModel(
         )
 
     private fun computeTitle(description: String): String {
+        // 2026-05-12 amendment: the "[Beta] " prefix introduced in
+        // Phase 39.5 was a closed-beta artifact and did not survive
+        // the W5 GA-readiness review (the GitHub App / Edge Function
+        // are reused by general users post-GA, where a "[Beta]"
+        // prefix would be wrong). The first non-blank line of the
+        // description stands on its own; empty descriptions get the
+        // generic "Bug report" placeholder. Triage labels at the
+        // GitHub-side classify bug-vs-feature-vs-feedback.
         val firstLine =
             description
                 .lineSequence()
@@ -232,7 +240,7 @@ class BugReportPreviewViewModel(
             } else {
                 firstLine
             }
-        return if (truncated.isEmpty()) "[Beta] Bug report" else "[Beta] $truncated"
+        return truncated.ifEmpty { "Bug report" }
     }
 
     companion object {

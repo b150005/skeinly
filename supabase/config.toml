@@ -441,7 +441,7 @@ verify_jwt = false
 # function with the user's Supabase anon JWT in the Authorization header
 # (the same posture as `request-pack-download`); Supabase's edge
 # verifies the JWT before the handler runs. The function then
-# authenticates as the "Skeinly Beta Bug Reporter" GitHub App via three
+# authenticates as the "Skeinly Feedback" GitHub App via three
 # secrets (`SKEINLY_BUGREPORT_APP_ID` / `SKEINLY_BUGREPORT_INSTALLATION_ID`
 # / `SKEINLY_BUGREPORT_PRIVATE_KEY_PEM` — release-secrets EF-7) and
 # creates an Issue on `b150005/skeinly`. JWT verification stays at the

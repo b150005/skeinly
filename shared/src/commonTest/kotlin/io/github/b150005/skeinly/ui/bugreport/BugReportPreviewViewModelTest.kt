@@ -130,8 +130,10 @@ class BugReportPreviewViewModelTest {
             rig.viewModel.onEvent(BugReportPreviewEvent.Submit)
             assertEquals(1, rig.calls.size)
             val (title, body) = rig.calls.first()
-            assertTrue(title.contains("[Beta]"))
-            assertTrue(title.contains("Steps to reproduce..."))
+            // 2026-05-12 amendment: title prefix removed (Phase 39.5
+            // "[Beta]" did not survive the W5 GA-readiness review).
+            // Title is now just the first non-blank line.
+            assertEquals("Steps to reproduce...", title)
             assertTrue(body.contains("Steps to reproduce..."))
             assertTrue(body.contains("project_created"))
         }
@@ -141,7 +143,7 @@ class BugReportPreviewViewModelTest {
         runTest {
             val rig = makeRig(submitResult = Result.success(SubmitOutcome(1, "u")))
             rig.viewModel.onEvent(BugReportPreviewEvent.Submit)
-            assertEquals("[Beta] Bug report", rig.calls.single().first)
+            assertEquals("Bug report", rig.calls.single().first)
         }
 
     @Test
@@ -153,7 +155,10 @@ class BugReportPreviewViewModelTest {
             rig.viewModel.onEvent(BugReportPreviewEvent.Submit)
             val title = rig.calls.single().first
             assertTrue(title.endsWith("..."))
-            assertEquals(90, title.length)
+            // MAX_TITLE_LENGTH (80) + "..." trailer = 83 chars after the
+            // W5 prefix removal (down from 90 when "[Beta] " prefix was
+            // still in play).
+            assertEquals(83, title.length)
         }
 
     @Test

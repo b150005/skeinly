@@ -2,7 +2,7 @@
 //
 // Receives POST /functions/v1/submit-bug-report from beta builds,
 // validates input, applies rate limiting, then authenticates as the
-// "Skeinly Beta Bug Reporter" GitHub App and creates an Issue on
+// "Skeinly Feedback" GitHub App and creates an Issue on
 // b150005/skeinly via the GitHub REST API.
 //
 // Replaces Phase 39.5's client-side URL prefill flow (ADR-015 §3).
@@ -47,7 +47,7 @@ const RATE_LIMIT_MAX = 5;
 interface SubmitBugReportRequest {
     title: string;
     body: string;
-    /** Always populated after `validate()` (defaults to `["beta-bug"]`).
+    /** Always populated after `validate()` (defaults to `["feedback"]`).
      *  Caller-supplied `labels` field on the wire is optional; the
      *  validator fills the default before this shape is constructed. */
     labels: readonly string[];
@@ -161,7 +161,12 @@ function validate(
         return { ok: false, message: `body length must be 1..${MAX_BODY_LENGTH}` };
     }
 
-    let labels: readonly string[] = ["beta-bug"];
+    // 2026-05-12 amendment: scope broadened from beta-only to general
+    // users. Default label is `feedback` (neutral; triage applies
+    // `bug` / `feature-request` / etc. on the Issue tracker side).
+    // The previous "beta-bug" default was a Phase 39 closed-beta
+    // artifact that did not survive the GA-readiness review.
+    let labels: readonly string[] = ["feedback"];
     if ("labels" in obj && obj.labels !== undefined) {
         if (!Array.isArray(obj.labels)) {
             return { ok: false, message: "labels must be an array of strings" };
