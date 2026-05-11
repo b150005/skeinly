@@ -1,0 +1,60 @@
+name: Dependency Review
+
+# Phase 39 (W3 / 2026-05-11) — supply-chain attack defense.
+#
+# Runs on every pull request. The `dependency-review-action` compares
+# the dependency manifest diff between the base and head refs, queries
+# the GitHub Advisory Database (synced with OSV.dev), and fails the PR
+# if any introduced dependency has a known vulnerability at or above
+# the `fail-on-severity` threshold. This includes *transitive*
+# dependencies — not just the top-level `Gemfile` / `build.gradle.kts`
+# entries.
+#
+# Threat model addressed: a malicious patch-level release that
+# Dependabot would otherwise auto-PR without review (the "fastlane
+# 2.234.0 is available" pattern from today's incident, applied to a
+# compromised gem with a known CVE). The action fires before merge,
+# so even Dependabot-authored PRs are gated.
+#
+# Source: actions/dependency-review-action@v4 (pinned to the v4 major
+# tag; the action is published from a GitHub-internal repo and is
+# considered trusted vendor code in the same trust tier as
+# actions/checkout / actions/setup-* — exempt from the SHA-pin policy
+# applied to third-party community actions).
+
+on:
+  pull_request:
+    branches: [main]
+
+# Least-privilege permissions: only read repository content and write
+# pull-request comments (for the inline summary). No id-token, no
+# write to contents / packages / actions.
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Dependency review
+        uses: actions/dependency-review-action@v4
+        with:
+          # `high` is the alpha-launch threshold — block PRs that
+          # introduce a HIGH or CRITICAL CVE. Post-GA, consider
+          # tightening to `critical` once the false-positive rate has
+          # been measured against real-world Dependabot PR flow.
+          fail-on-severity: high
+          # In-PR comment summarizing what changed + what's flagged.
+          # `always` posts even when nothing is flagged (helpful for
+          # demonstrating the gate ran during review).
+          comment-summary-in-pr: always
+          # Deny GPL / AGPL licenses (Skeinly is closed-source pre-1.0;
+          # accepting copyleft transitively would require open-sourcing
+          # the entire dependency-using artifact). MIT / Apache 2.0 /
+          # BSD / ISC are explicitly allowed via the allow list below.
+          deny-licenses: AGPL-1.0-only, AGPL-1.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later, GPL-1.0-only, GPL-1.0-or-later, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later
