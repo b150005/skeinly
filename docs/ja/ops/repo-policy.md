@@ -1,6 +1,6 @@
 # リポジトリ運用ポリシー
 
-> 英語原典: [docs/en/repo-policy.md](../en/repo-policy.md)
+> 英語原典: [docs/en/ops/repo-policy.md](../../en/ops/repo-policy.md)
 
 このドキュメントは `skeinly` リポジトリのブランチ保護ルールと貢献ポリシーを記述します。
 

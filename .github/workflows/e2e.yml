@@ -2,7 +2,7 @@ name: E2E Tests
 
 # Triggers must include `pull_request` because `Android E2E (Maestro)` and
 # `iOS E2E (Maestro)` are listed as required status checks on the
-# `main-strict` ruleset (see docs/en/repo-policy.md). Without the
+# `main-strict` ruleset (see docs/en/ops/repo-policy.md). Without the
 # `pull_request` trigger here, every PR is structurally unmergeable —
 # required checks expecting a workflow that never runs on PRs — and would
 # need admin bypass for every merge. Match the trigger shape of `ci.yml`

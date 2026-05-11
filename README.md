@@ -90,7 +90,7 @@ The full step-by-step setup procedure is in [`docs/ja/vendor-setup.md`](docs/ja/
 |---|---|---|
 | macOS | 26.0+ (Tahoe) | iOS builds require macOS; Xcode 26.4+ requires macOS Tahoe 26.2+ |
 | JDK | 25 (LTS) | Temurin recommended (`brew install --cask temurin`); set via `JAVA_HOME`. Bytecode targets stay at Java 17 for Android runtime compatibility — only the build-running JDK is upgraded. |
-| Xcode | 26.0+ | iOS 26 SDK; required for App Store Connect submissions since 2026-04-28 (see [Repo Policy](./docs/en/repo-policy.md#apple-app-store-sdk-requirements)) |
+| Xcode | 26.0+ | iOS 26 SDK; required for App Store Connect submissions since 2026-04-28 (see [Repo Policy](./docs/en/ops/repo-policy.md#apple-app-store-sdk-requirements)) |
 | Ruby | 3.3+ | Drives fastlane for iOS releases (`brew install ruby`) |
 | Bundler | 2.x+ | `gem install bundler` if not present |
 | Android SDK | API 36+ | platform-tools (`adb`) required for installs |
@@ -243,13 +243,23 @@ The `release-tag-publish` Makefile target gracefully degrades when secrets are m
 
 ### Documentation
 
+Documentation is organized into 4 lanes — `WHAT IS` (current shape), `WHY` (rationale), `WHAT TO DO` (operator runbooks), `HISTORICAL` (phase log). Start here based on the task:
+
+| Task | Entry point |
+|---|---|
+| Cold-start orientation | [Architecture](./docs/en/architecture.md) (system) + [Specs](./docs/en/spec/) (per-feature) |
+| Operating the system | [Ops Runbooks](./docs/en/ops/README.md) — content publishing, release, incidents, secret rotation, beta testing |
+| Tracking decisions | [ADR Index](./docs/en/adr/) |
+| Doc map overview | [docs/en/index.md](./docs/en/index.md) |
+
+Key reference docs:
+
 | Document | Description |
-|----------|-------------|
-| [Repo Policy](./docs/en/repo-policy.md) | Branch protection, ruleset, security posture, Apple SDK requirements |
-| [Vendor Setup](./docs/en/vendor-setup.md) | Apple Developer / App Store Connect / Universal Links Phase A0 procedure |
-| [Release Secrets Setup](./docs/en/release-secrets.md) | Step-by-step guide for 19 GitHub Secrets + 4 Supabase Edge Function secrets |
+|---|---|
+| [Repo Policy](./docs/en/ops/repo-policy.md) | Branch protection, ruleset, Apple SDK requirements |
+| [Vendor Setup](./docs/en/vendor-setup.md) | Apple Developer / ASC / Universal Links one-time setup |
+| [Release Secrets](./docs/en/release-secrets.md) | All GitHub Secrets + Edge Function secrets — registry + first-time registration |
 | [i18n Convention](./docs/en/i18n-convention.md) | Key-naming rules across the 5 i18n sources |
-| [ADR Index](./docs/en/adr/) | Architecture Decision Records |
 | [Phase 39 Beta Rubric](./docs/en/phase/phase-39-beta-rubric.md) | Tester acceptance criteria |
 
 ### License
@@ -342,7 +352,7 @@ The `release-tag-publish` Makefile target gracefully degrades when secrets are m
 |---|---|---|
 | macOS | 26.0 以上 (Tahoe) | iOS ビルドには macOS が必要。Xcode 26.4+ は macOS Tahoe 26.2+ を要求 |
 | JDK | 25 (LTS) | Temurin 推奨（`brew install --cask temurin`）。`JAVA_HOME` を設定。Bytecode ターゲットは Android runtime 互換のため Java 17 のまま — ビルド実行用 JDK のみ最新化。 |
-| Xcode | 26.0 以上 | iOS 26 SDK。2026-04-28 以降 App Store Connect への申請に必須（[Repo Policy](./docs/ja/repo-policy.md#apple-app-store-sdk-要件)参照） |
+| Xcode | 26.0 以上 | iOS 26 SDK。2026-04-28 以降 App Store Connect への申請に必須（[Repo Policy](./docs/ja/ops/repo-policy.md#apple-app-store-sdk-要件)参照） |
 | Ruby | 3.3 以上 | iOS リリースの fastlane 駆動用（`brew install ruby`） |
 | Bundler | 2.x 以上 | 未インストールなら `gem install bundler` |
 | Android SDK | API 36 以上 | platform-tools (`adb`) がインストール時に必要 |
@@ -495,13 +505,23 @@ Tag push で 3 ジョブが並列実行されます:
 
 ### ドキュメント
 
+ドキュメントは 4 lane で構成 — `WHAT IS` (現状) / `WHY` (理由) / `WHAT TO DO` (運用 runbook) / `HISTORICAL` (フェーズログ)。タスク別エントリポイント:
+
+| タスク | エントリポイント |
+|---|---|
+| コールドスタート | [アーキテクチャ](./docs/ja/architecture.md) (システム) + [Spec](./docs/ja/spec/) (機能別) |
+| 運用 | [Ops Runbook](./docs/ja/ops/README.md) — コンテンツ公開、リリース、障害対応、シークレットローテーション、ベータテスト |
+| 設計判断 | [ADR 索引](./docs/ja/adr/) |
+| Doc 全体マップ | [docs/ja/index.md](./docs/ja/index.md) |
+
+主要リファレンス:
+
 | ドキュメント | 説明 |
-|-------------|------|
-| [リポジトリポリシー](./docs/ja/repo-policy.md) | ブランチ保護、ルールセット、セキュリティ姿勢、Apple SDK 要件 |
-| [ベンダーセットアップ](./docs/ja/vendor-setup.md) | Apple Developer / App Store Connect / Universal Links Phase A0 手順 |
-| [リリースシークレットセットアップ](./docs/ja/release-secrets.md) | 19 GitHub Secrets + 4 Supabase Edge Function secrets の段階的取得・検証・登録手順 |
+|---|---|
+| [リポジトリポリシー](./docs/ja/ops/repo-policy.md) | ブランチ保護、ルールセット、Apple SDK 要件 |
+| [ベンダーセットアップ](./docs/ja/vendor-setup.md) | Apple Developer / App Store Connect / Universal Links 一発設定 |
+| [リリースシークレット](./docs/ja/release-secrets.md) | 全 GitHub Secrets + Edge Function secret のレジストリ + 初回登録 |
 | [i18n 規約](./docs/ja/i18n-convention.md) | 5 つの i18n ソース間のキー命名規則 |
-| [ADR 索引](./docs/ja/adr/) | アーキテクチャ決定レコード |
 
 ### ライセンス
 

@@ -15,7 +15,7 @@ permissions:
 # in this file):
 #
 # - `macos-26`: project requires macOS 26 (Tahoe) + Xcode 26.4+
-#   per docs/en/repo-policy.md. `macos-latest` currently aliases to
+#   per docs/en/ops/repo-policy.md. `macos-latest` currently aliases to
 #   `macos-15` (Sequoia) — GitHub promotes the alias ~6 months
 #   after each macOS major lands. Until promotion, the explicit pin is
 #   the only way to keep dev/CI environments aligned. Bump to

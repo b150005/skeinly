@@ -1083,7 +1083,7 @@ Expected: `HTTP 401` + body `{"error":"unauthorized"}`.
 
 **ROTATE**: Edit the webhook in the RevenueCat dashboard → update the Authorization header to a new value → re-register the Supabase secret. RevenueCat retries failed webhook deliveries up to 5 times automatically, so the rotation window has built-in tolerance for missed events.
 
-> **Dependency chain**: this secret is one of three pieces that together make webhook-driven subscription state work: (a) the deployed Edge Function itself, (b) [migration 023 `upsert_subscription_from_webhook` RPC](../../supabase/migrations/023_revenuecat_webhook_helper.sql), (c) the KMP-side [`RevenueCatAuthBridge.kt`](../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/data/subscription/RevenueCatAuthBridge.kt) which calls `Purchases.logIn(userId)` so webhook events carry the Skeinly UUID as `app_user_id`. Full Phase 39 closed beta sandbox tester setup walkthrough: [docs/en/phase/phase-39-sandbox-setup.md](phase/phase-39-sandbox-setup.md).
+> **Dependency chain**: this secret is one of three pieces that together make webhook-driven subscription state work: (a) the deployed Edge Function itself, (b) [migration 023 `upsert_subscription_from_webhook` RPC](../../supabase/migrations/023_revenuecat_webhook_helper.sql), (c) the KMP-side [`RevenueCatAuthBridge.kt`](../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/data/subscription/RevenueCatAuthBridge.kt) which calls `Purchases.logIn(userId)` so webhook events carry the Skeinly UUID as `app_user_id`. Full Phase 39 closed beta sandbox tester setup walkthrough: [docs/en/ops/beta-testing.md](ops/beta-testing.md).
 
 Reference: [RevenueCat Webhooks](https://www.revenuecat.com/docs/integrations/webhooks)
 
@@ -1095,7 +1095,7 @@ Reference: [RevenueCat Webhooks](https://www.revenuecat.com/docs/integrations/we
 
 > **Naming note**: the `SKEINLY_` prefix is load-bearing. Per the [Supabase Edge Function limits doc](https://supabase.com/docs/guides/functions/limits#secrets), env-var names starting with `SUPABASE_` are reserved by the platform and `supabase secrets set` rejects them. Phase 24.1 originally proposed `SUPABASE_DATABASE_WEBHOOK_SECRET`; renamed to `SKEINLY_DATABASE_WEBHOOK_SECRET` before deployment to avoid the registration error.
 
-**CONSUMED BY**: [`supabase/functions/notify-on-write/index.ts`](../../supabase/functions/notify-on-write/index.ts) — verifies the `Authorization: Bearer <value>` header on every webhook delivery. Three Database Webhooks fire this function (see [`supabase/webhooks.md`](../../supabase/webhooks.md)).
+**CONSUMED BY**: [`supabase/functions/notify-on-write/index.ts`](../../supabase/functions/notify-on-write/index.ts) — verifies the `Authorization: Bearer <value>` header on every webhook delivery. Three Database Webhooks fire this function (see [`docs/en/ops/webhooks.md`](ops/webhooks.md)).
 
 **OBTAIN**: generated locally with `openssl rand -hex 32` (any cryptographically random 32-byte hex string works; Supabase does not impose a length minimum but 256 bits aligns with established secret-rotation discipline across the project's webhook secrets).
 
@@ -1108,11 +1108,11 @@ supabase secrets set SKEINLY_DATABASE_WEBHOOK_SECRET="$SKEINLY_DATABASE_WEBHOOK_
 supabase secrets list | grep SKEINLY_DATABASE_WEBHOOK_SECRET
 ```
 
-**REGISTER (Database Webhook side)**: open Dashboard → Database → Webhooks → for each of the 3 webhooks, select `Supabase Edge Functions` as the type (NOT `HTTP Request`) → pick `notify-on-write` from the function dropdown → in the HTTP Headers section **overwrite the auto-populated `Authorization` header value** (which is the project anon key — public, embedded in the mobile app) with `Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET value>`. The auto-populated anon key would let any app user spoof webhook deliveries directly to the Edge Function URL. Full step-by-step walkthrough including the rationale: [`supabase/webhooks.md`](../../supabase/webhooks.md).
+**REGISTER (Database Webhook side)**: open Dashboard → Database → Webhooks → for each of the 3 webhooks, select `Supabase Edge Functions` as the type (NOT `HTTP Request`) → pick `notify-on-write` from the function dropdown → in the HTTP Headers section **overwrite the auto-populated `Authorization` header value** (which is the project anon key — public, embedded in the mobile app) with `Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET value>`. The auto-populated anon key would let any app user spoof webhook deliveries directly to the Edge Function URL. Full step-by-step walkthrough including the rationale: [`docs/en/ops/webhooks.md`](ops/webhooks.md).
 
 **ROTATE**: generate a new value with `openssl rand -hex 32`, re-register the Supabase secret, then update the `Authorization` HTTP header on each of the 3 Database Webhooks via Dashboard. The webhook system does not auto-retry on auth failure (the Edge Function returns 401 and Supabase records the failure but does NOT re-deliver), so plan rotation during a quiet window or briefly tolerate missed pushes.
 
-> **Dependency chain**: this secret is one of three pieces that together make collaboration push work: (a) the deployed Edge Function itself, (b) the 3 Database Webhooks configured per [`supabase/webhooks.md`](../../supabase/webhooks.md), (c) `device_tokens` table populated by Phase 24.2's `PushTokenRegistrar`. Phase 24.1 wires (a) + (b); Phase 24.2 adds the client side; Phase 24.3 enables real APNs / FCM sends; Phase 24.4–24.6 expand the event matrix + add deep link routing + privacy policy update.
+> **Dependency chain**: this secret is one of three pieces that together make collaboration push work: (a) the deployed Edge Function itself, (b) the 3 Database Webhooks configured per [`docs/en/ops/webhooks.md`](ops/webhooks.md), (c) `device_tokens` table populated by Phase 24.2's `PushTokenRegistrar`. Phase 24.1 wires (a) + (b); Phase 24.2 adds the client side; Phase 24.3 enables real APNs / FCM sends; Phase 24.4–24.6 expand the event matrix + add deep link routing + privacy policy update.
 
 ### EF-7. `SKEINLY_BUGREPORT_APP_ID` / `SKEINLY_BUGREPORT_INSTALLATION_ID` / `SKEINLY_BUGREPORT_PRIVATE_KEY_PEM`
 

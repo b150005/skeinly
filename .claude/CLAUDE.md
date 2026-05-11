@@ -28,6 +28,25 @@ skeinly/
 └── .claude/                   # Agent team and Claude Code configuration
 ```
 
+## Documentation map
+
+Each doc has a deliberate lane. Match the question to the lane before reading or writing:
+
+| Lane | Purpose | Where |
+|---|---|---|
+| **WHAT IS** | Current shape of the system / a feature | [docs/en/architecture.md](../docs/en/architecture.md) (system) + [docs/en/spec/](../docs/en/spec/) (per-feature) |
+| **WHY** | Design rationale + alternatives considered | [docs/en/adr/](../docs/en/adr/) |
+| **WHAT TO DO** | Step-by-step operator runbooks | [docs/en/ops/](../docs/en/ops/) |
+| **HISTORICAL** | How we got here over time | [docs/en/phase/](../docs/en/phase/) + ADR revision histories |
+
+When implementation drifts from an ADR, update the spec (or system architecture); only update the ADR if the *decision* changed (not just the implementation). The ADR's `Revision history` block is the trail for decision-level changes.
+
+Quick entry points by task:
+- Joining the project / coming back after a long break → `docs/en/architecture.md`
+- Extending a feature → corresponding `docs/en/spec/<feature>.md`
+- Operational task (publish content, cut a release, rotate a secret, debug a production failure) → `docs/en/ops/README.md` then the matching runbook
+- Tracking decisions → `docs/en/adr/`
+
 ## Architecture Principles
 
 - **Clean Architecture** with clear separation: UI → ViewModel → UseCase → Repository → DataSource
@@ -65,7 +84,7 @@ skeinly/
 | Android SDK | API 36 | platform-tools (`adb`) required |
 | iOS deployment target | 17.0 | [iosApp/project.yml](../iosApp/project.yml) `deploymentTarget.iOS` |
 
-**Why Xcode 26 / macOS 26 / iOS 26 SDK?** Apple App Store Connect submissions since **2026-04-28** require apps built with Xcode 26+ using the iOS 26 SDK or later (also iPadOS 26 / tvOS 26 / visionOS 26 / watchOS 26 SDK as applicable). CI runners (`macos-latest` on GitHub-hosted) ship with Xcode 26+ since the enforcement date. Local builds must match. See [docs/en/repo-policy.md](../docs/en/repo-policy.md#apple-app-store-sdk-requirements) for the full requirement and references.
+**Why Xcode 26 / macOS 26 / iOS 26 SDK?** Apple App Store Connect submissions since **2026-04-28** require apps built with Xcode 26+ using the iOS 26 SDK or later (also iPadOS 26 / tvOS 26 / visionOS 26 / watchOS 26 SDK as applicable). CI runners (`macos-latest` on GitHub-hosted) ship with Xcode 26+ since the enforcement date. Local builds must match. See [docs/en/ops/repo-policy.md](../docs/en/ops/repo-policy.md#apple-app-store-sdk-requirements) for the full requirement and references.
 
 **Build SDK vs deployment target**: We build with the iOS 26 SDK (latest), but the runtime deployment target stays at iOS 17 — these are independent. iOS 26-only APIs must be gated with `if #available(iOS 26.0, *)` on Swift / `Build.VERSION.SDK_INT` checks on Android-side equivalents. The iOS 26 SDK applies Liquid Glass styling to native UIKit/SwiftUI controls by default; Phase 18 already adopted Liquid Glass design tokens, so no opt-out is required.
 
@@ -131,7 +150,7 @@ Agents detect this project as **Kotlin Multiplatform** by finding:
 
 ## Development Workflow
 
-> Branch protection, PR requirements, status check gates, and bypass mechanics are documented in [docs/en/repo-policy.md](../docs/en/repo-policy.md) (JA: [docs/ja/repo-policy.md](../docs/ja/repo-policy.md)). The active ruleset is `main-strict` (id `15581036`). The Owner has Admin-role bypass for emergency direct push; everyone else must go through PR.
+> Branch protection, PR requirements, status check gates, and bypass mechanics are documented in [docs/en/ops/repo-policy.md](../docs/en/ops/repo-policy.md) (JA: [docs/ja/ops/repo-policy.md](../docs/ja/ops/repo-policy.md)). The active ruleset is `main-strict` (id `15581036`). The Owner has Admin-role bypass for emergency direct push; everyone else must go through PR.
 
 > Build, test, lint, and release commands are exposed as Makefile targets at the project root. Run `make help` for the full list, or open [Makefile](../Makefile) / [README.md](../README.md) `### Development` section. Pre-push invariant chain: `make ci-local`. Local IPA verification via fastlane: `make release-ipa-local`.
 
@@ -445,7 +464,7 @@ Items deferred across phases. When reopening one, cut a dedicated PR — do not 
 - **`upsert_subscription_from_webhook` RPC** (commit `33c098f`, migration 023): SECURITY DEFINER + `last_verified_at` 順序ガード付き conditional upsert。out-of-order RevenueCat retry が新しい状態を古い状態で上書きできない。closed-enum 再検証 (platform / product_id / status) で defense-in-depth。Prod に `mcp__supabase__apply_migration` で適用済み。
 - **`environment` カラム + RPC 拡張** (migration 024): `public.subscriptions` に `environment TEXT NOT NULL DEFAULT 'production' CHECK (... IN ('production', 'sandbox'))` 追加 + `upsert_subscription_from_webhook` RPC に `p_environment` パラメータ追加 (DEFAULT 'production')。`idx_subscriptions_active_production` パーシャルインデックスを併設。Edge Function は `mapEnvironment(event.environment)` で `"SANDBOX"` → `"sandbox"` / `"PRODUCTION"` → `"production"` に lower-case 正規化。Phase 40 GA 後に sandbox dev-test と production traffic が同じテーブルに流入しても `WHERE environment = 'production'` で分析を分離可能。Prod に適用済み。
 - **`revenuecat-webhook` Edge Function** (commit `2752a30`): `supabase/functions/revenuecat-webhook/{index,mapping,mapping.test}.ts` + README。constant-time Bearer 検証 + 11 種 RevenueCat event タイプの status マッピング (`INITIAL_PURCHASE` / `RENEWAL` / `CANCELLATION` + cancel_reason variants / `EXPIRATION` / `BILLING_ISSUE` / `REFUND` / etc.)。TEST / SUBSCRIBER_ALIAS / TRANSFER / anonymous app_user_id / 未対応 store / 未マッピング event は 200 で fast-acknowledge (RevenueCat retry を即終了)。+29 Deno tests (`deno test supabase/functions/revenuecat-webhook/`)。デプロイは user-side: `supabase functions deploy revenuecat-webhook`。
-- **Sandbox tester onboarding 手順** (commit `<docs-commit>`, [docs/{en,ja}/phase/phase-39-sandbox-setup.md](../docs/en/phase/phase-39-sandbox-setup.md)): Apple Sandbox tester / Google Play License tester 登録から sandbox accelerated-time での更新サイクル観測まで。closed beta テスター 5–10 名分の invite ワークフローを doc 化。
+- **Sandbox tester onboarding 手順** (commit `<docs-commit>`, [docs/{en,ja}/ops/beta-testing.md](../docs/en/ops/beta-testing.md)): Apple Sandbox tester / Google Play License tester 登録から sandbox accelerated-time での更新サイクル観測まで。closed beta テスター 5–10 名分の invite ワークフローを doc 化。
 - **HARD-GATE 残項目** (user-side actions only):
   1. Edge Function deploy: `supabase functions deploy revenuecat-webhook`
   2. RevenueCat dashboard で Webhook URL + Authorization header 設定 ([release-secrets.md EF-5](../docs/ja/release-secrets.md))
