@@ -1,11 +1,11 @@
 # Phase 39 Closed Beta — Sandbox Tester Setup
 
-> Japanese translation: [docs/ja/phase/phase-39-sandbox-setup.md](../../ja/phase/phase-39-sandbox-setup.md)
+> Japanese translation: [docs/ja/ops/beta-testing.md](../../ja/ops/beta-testing.md)
 
 ## Goal
 
 Closed beta testers (5–10 people including ≥1 round-chart author + ≥1
-ja-JP tester per the [Phase 39 rubric](phase-39-beta-rubric.md))
+ja-JP tester per the [Phase 39 rubric](../phase/phase-39-beta-rubric.md))
 exercise the **full Pro purchase flow** — Apple StoreKit / Google Play
 Billing dialog, real receipt validation, real RevenueCat events,
 real `subscriptions` table writes — but **without paying real money**.

@@ -273,7 +273,7 @@ targets:
       # Core/ holds Foundation-only utilities testable without Shared.framework.
       # Files that import Shared live under Core/Bridging/ and are deliberately
       # excluded — iosAppTests does not link Shared.framework. See
-      # docs/en/repo-policy.md (or this commit) for the convention rationale.
+      # docs/en/ops/repo-policy.md (or this commit) for the convention rationale.
       - path: iosApp/Core
         excludes:
           - "Bridging"

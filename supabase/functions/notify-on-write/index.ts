@@ -39,7 +39,7 @@
 //   - SUPABASE_SERVICE_ROLE_KEY             (auto)
 //   - SKEINLY_DATABASE_WEBHOOK_SECRET       (manual: supabase secrets set)
 //
-// Database Webhook configuration is documented in supabase/webhooks.md
+// Database Webhook configuration is documented in docs/en/ops/webhooks.md
 // and configured via Supabase Dashboard → Database → Webhooks. Three
 // hooks point at this function URL — see ADR-017 §3.4 for the table /
 // event matrix.

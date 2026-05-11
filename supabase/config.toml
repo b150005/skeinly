@@ -433,7 +433,7 @@ verify_jwt = false
 # (release-secrets EF-6). The Edge Function performs constant-time
 # string comparison before any further processing. See
 # `supabase/functions/notify-on-write/index.ts` for the verify logic +
-# `supabase/webhooks.md` for the 3 Database Webhook configurations.
+# `docs/en/ops/webhooks.md` for the 3 Database Webhook configurations.
 [functions.notify-on-write]
 verify_jwt = false
 

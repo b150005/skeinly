@@ -1,6 +1,6 @@
 # Repository Policy
 
-> 翻訳: [docs/ja/repo-policy.md](../ja/repo-policy.md)
+> 翻訳: [docs/ja/ops/repo-policy.md](../../ja/ops/repo-policy.md)
 
 This document describes the branch protection rules and contribution policy for the `skeinly` repository.
 

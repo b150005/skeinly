@@ -1078,7 +1078,7 @@ curl -s -w '\nHTTP %{http_code}\n' -X POST "$WEBHOOK_URL" \
 
 **ROTATE**: RevenueCat ダッシュボードの Webhook 編集 → Authorization header を新しい値に更新 → Supabase secret を再登録。RevenueCat は Webhook 失敗時に最大 5 回まで自動リトライするため、ローテーション中の取りこぼし耐性は確保されている。
 
-> **依存リソース**: 本 secret は Edge Function 単体だけでなく、(a) Edge Function 自体のデプロイ、(b) [migration 023 `upsert_subscription_from_webhook` RPC](../../supabase/migrations/023_revenuecat_webhook_helper.sql)、(c) KMP 側の [`RevenueCatAuthBridge.kt`](../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/data/subscription/RevenueCatAuthBridge.kt) (`Purchases.logIn(userId)` を呼び webhook の `event.app_user_id` を Skeinly UUID にする) と組み合わさって完全機能する。Phase 39 closed beta sandbox tester 設定の全体手順は [docs/ja/phase/phase-39-sandbox-setup.md](phase/phase-39-sandbox-setup.md) を参照。
+> **依存リソース**: 本 secret は Edge Function 単体だけでなく、(a) Edge Function 自体のデプロイ、(b) [migration 023 `upsert_subscription_from_webhook` RPC](../../supabase/migrations/023_revenuecat_webhook_helper.sql)、(c) KMP 側の [`RevenueCatAuthBridge.kt`](../../shared/src/commonMain/kotlin/io/github/b150005/skeinly/data/subscription/RevenueCatAuthBridge.kt) (`Purchases.logIn(userId)` を呼び webhook の `event.app_user_id` を Skeinly UUID にする) と組み合わさって完全機能する。Phase 39 closed beta sandbox tester 設定の全体手順は [docs/ja/ops/beta-testing.md](ops/beta-testing.md) を参照。
 
 参照: [RevenueCat Webhooks](https://www.revenuecat.com/docs/integrations/webhooks)
 
@@ -1090,7 +1090,7 @@ curl -s -w '\nHTTP %{http_code}\n' -X POST "$WEBHOOK_URL" \
 
 > **命名上の注意**: `SKEINLY_` プレフィックスは load-bearing。[Supabase Edge Function limits doc](https://supabase.com/docs/guides/functions/limits#secrets) によると `SUPABASE_` で始まる env-var 名はプラットフォーム予約のため `supabase secrets set` が拒否する。Phase 24.1 では当初 `SUPABASE_DATABASE_WEBHOOK_SECRET` として設計したが、deploy 前に登録エラー回避のため `SKEINLY_DATABASE_WEBHOOK_SECRET` に rename。
 
-**消費箇所**: [`supabase/functions/notify-on-write/index.ts`](../../supabase/functions/notify-on-write/index.ts) — webhook 配信ごとに `Authorization: Bearer <value>` ヘッダを検証。3 つの Database Webhook がこの Edge Function を fire する (詳細は [`supabase/webhooks.md`](../../supabase/webhooks.md))。
+**消費箇所**: [`supabase/functions/notify-on-write/index.ts`](../../supabase/functions/notify-on-write/index.ts) — webhook 配信ごとに `Authorization: Bearer <value>` ヘッダを検証。3 つの Database Webhook がこの Edge Function を fire する (詳細は [`docs/en/ops/webhooks.md`](../en/ops/webhooks.md))。
 
 **OBTAIN**: ローカルで `openssl rand -hex 32` 生成 (任意の暗号論的乱数 32 byte hex 文字列で可、Supabase 側に最小長制約はないが、プロジェクト内の他の webhook secret ローテーション規律と揃えて 256-bit に固定)。
 
@@ -1103,11 +1103,11 @@ supabase secrets set SKEINLY_DATABASE_WEBHOOK_SECRET="$SKEINLY_DATABASE_WEBHOOK_
 supabase secrets list | grep SKEINLY_DATABASE_WEBHOOK_SECRET
 ```
 
-**REGISTER (Database Webhook 側)**: Dashboard → Database → Webhooks → 3 つの webhook それぞれで Type に `Supabase Edge Functions` を選択 (NOT `HTTP Request`) → function dropdown から `notify-on-write` を選択 → HTTP Headers セクションで **自動入力された `Authorization` ヘッダ値を上書き** (自動入力値はプロジェクトの anon key — public でアプリに埋め込み済み)、`Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET の値>` に置き換え。anon key を残すと、アプリの利用者なら誰でも Edge Function URL に直接 webhook payload を spoof 投稿できてしまう。手順詳細 + 根拠は [`supabase/webhooks.md`](../../supabase/webhooks.md) を参照。
+**REGISTER (Database Webhook 側)**: Dashboard → Database → Webhooks → 3 つの webhook それぞれで Type に `Supabase Edge Functions` を選択 (NOT `HTTP Request`) → function dropdown から `notify-on-write` を選択 → HTTP Headers セクションで **自動入力された `Authorization` ヘッダ値を上書き** (自動入力値はプロジェクトの anon key — public でアプリに埋め込み済み)、`Bearer <SKEINLY_DATABASE_WEBHOOK_SECRET の値>` に置き換え。anon key を残すと、アプリの利用者なら誰でも Edge Function URL に直接 webhook payload を spoof 投稿できてしまう。手順詳細 + 根拠は [`docs/en/ops/webhooks.md`](../en/ops/webhooks.md) を参照。
 
 **ROTATE**: `openssl rand -hex 32` で新しい値を生成、Supabase secret を再登録、Dashboard 上の 3 つの Database Webhook 全部の `Authorization` HTTP ヘッダ値を更新。Webhook システムは認証失敗で auto-retry しない (Edge Function が 401 を返し Supabase は失敗を記録するが re-deliver しない) ため、ローテーション中は静かなタイミングで実施するか、瞬間的な push 取りこぼしを許容する。
 
-> **依存リソース**: 本 secret は Edge Function 単体だけでなく、(a) deploy された Edge Function 自体、(b) [`supabase/webhooks.md`](../../supabase/webhooks.md) に従って設定した 3 つの Database Webhook、(c) Phase 24.2 の `PushTokenRegistrar` で populate される `device_tokens` テーブル — の組み合わせで初めて完全機能する。Phase 24.1 が (a) + (b)、Phase 24.2 が client side、Phase 24.3 が APNs / FCM 実送信、Phase 24.4–24.6 が event matrix 拡張 + deep link routing + privacy policy 更新。
+> **依存リソース**: 本 secret は Edge Function 単体だけでなく、(a) deploy された Edge Function 自体、(b) [`docs/en/ops/webhooks.md`](../en/ops/webhooks.md) に従って設定した 3 つの Database Webhook、(c) Phase 24.2 の `PushTokenRegistrar` で populate される `device_tokens` テーブル — の組み合わせで初めて完全機能する。Phase 24.1 が (a) + (b)、Phase 24.2 が client side、Phase 24.3 が APNs / FCM 実送信、Phase 24.4–24.6 が event matrix 拡張 + deep link routing + privacy policy 更新。
 
 ### EF-7. `SKEINLY_BUGREPORT_APP_ID` / `SKEINLY_BUGREPORT_INSTALLATION_ID` / `SKEINLY_BUGREPORT_PRIVATE_KEY_PEM`
 

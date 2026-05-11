@@ -1,6 +1,6 @@
 # Phase 39 Closed Beta — Sandbox Tester 設定手順
 
-> English source: [docs/en/phase/phase-39-sandbox-setup.md](../../en/phase/phase-39-sandbox-setup.md)
+> English source: [docs/en/ops/beta-testing.md](../../en/ops/beta-testing.md)
 
 ## ゴール
 
