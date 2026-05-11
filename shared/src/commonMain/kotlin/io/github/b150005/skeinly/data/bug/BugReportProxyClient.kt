@@ -18,59 +18,26 @@ import kotlinx.serialization.json.Json
 
 /**
  * Phase 39 W5b (ADR-020 §3) — KMP client for the `submit-bug-report`
- * Supabase Edge Function.
+ * Supabase Edge Function. POSTs the title + body to the Edge
+ * Function, which authenticates as the Skeinly Feedback GitHub App
+ * and creates an Issue on b150005/skeinly server-side.
  *
- * Replaces Phase 39.5's `BugSubmissionLauncher` (which opened a prefilled
- * GitHub Issue URL in the system browser). This client POSTs the
- * diagnostic title + body directly to the Edge Function, which
- * authenticates as the "Skeinly Feedback" GitHub App and
- * creates an Issue on b150005/skeinly server-side. The Edge Function's
- * response is parsed into [SubmitOutcome] on success or a typed
- * [BugReportProxyException] subclass on failure.
+ * Auth: sends `apikey: <publishable_key>` (NOT `Authorization: Bearer`)
+ * because the Edge Function runs with `verify_jwt = false` — see
+ * ADR-020 §Q4 for the auth-model rationale. Abuse prevention is the
+ * Edge Function's per-source rate limit (ADR-020 §2).
  *
- * **Why commonMain + Ktor (not expect/actual):** HTTP POST has no
- * platform-specific path; Ktor's [HttpClient] runs identically on
- * Android and iOS. Phase 39.5's `BugSubmissionLauncher` was an
- * expect/actual because `Intent.startActivity` / `UIApplication.shared.open`
- * are platform APIs; W5b removes that abstraction entirely. The
- * [HttpClient] dependency comes from the existing `symbolPackHttpClient`
- * Koin qualifier — both clients have identical configuration (plain
- * Ktor, no auth plugins, default timeouts).
- *
- * **Auth shape:** Supabase publishable key in the `Authorization: Bearer`
- * header. Supabase's edge layer verifies the JWT before the Edge
- * Function receives the request (`verify_jwt = true` in
- * `supabase/config.toml`). Abuse prevention is via the Edge Function's
- * in-memory rate limit (ADR-020 §2), not via this auth — the
- * publishable key is trivially obtainable from app bundle inspection.
- *
- * **Error-channel discipline:** the Edge Function returns HTTP 200 with
- * an `{ok: false, code, message}` envelope for application-level
- * errors. Non-200 is reserved for Supabase-platform problems (function
- * unreachable, deploy missing). This client maps both into the same
- * [BugReportProxyException] hierarchy so the caller's branch logic is
- * uniform.
- *
- * **Network exception handling:** [IOException] and
- * [UnresolvedAddressException] (Ktor's offline / DNS-failure signals)
- * surface as [BugReportProxyException.Offline]. Everything else flows
- * through [BugReportProxyException.Unknown] with the exception message
- * preserved for diagnostics. [CancellationException] is always
- * rethrown per Kotlin coroutine-cancellation discipline.
+ * Empty `supabaseUrl` or `supabasePublishableKey` (local-only dev
+ * builds) short-circuits to [BugReportProxyException.ConfigMissing].
+ * Application errors come back as a HTTP 200 `{ok: false, code,
+ * message}` envelope; non-200 means Supabase-platform breakage and
+ * maps to [BugReportProxyException.Server]. [CancellationException]
+ * is always rethrown per Kotlin coroutine discipline.
  */
 class BugReportProxyClient(
     private val httpClient: HttpClient,
-    /** Supabase project URL (e.g. `https://abc.supabase.co`). Empty
-     *  string means the Edge Function is unreachable (local-only dev
-     *  build); `submit` short-circuits with [BugReportProxyException.ConfigMissing]
-     *  in that case. */
     private val supabaseUrl: String,
-    /** Supabase publishable key for the `Authorization: Bearer` header.
-     *  Empty paired with empty `supabaseUrl` enables the same
-     *  short-circuit path. */
     private val supabasePublishableKey: String,
-    // Json instance injected so tests can reuse the production
-    // configuration (ignoreUnknownKeys, etc.) without re-declaring it.
     private val json: Json,
 ) {
     /**
@@ -101,17 +68,12 @@ class BugReportProxyClient(
                 httpClient.post(url) {
                     contentType(ContentType.Application.Json)
                     headers {
-                        // 2026-05-12 amendment: `apikey` header (NOT
-                        // `Authorization: Bearer`) per the Supabase
-                        // Edge Functions auth doc — the new
-                        // `sb_publishable_*` key format is not a JWT,
-                        // so a `verify_jwt = true` function rejects
-                        // it as `UNAUTHORIZED_INVALID_JWT_FORMAT`
-                        // when sent in the Authorization header.
-                        // The `apikey` header is the documented
-                        // channel for project-level API key auth +
-                        // is what `supabase-js` uses internally.
-                        // See https://supabase.com/docs/guides/functions/auth
+                        // `apikey` header (NOT `Authorization: Bearer`)
+                        // — ADR-020 §Q4. Edge Function runs with
+                        // verify_jwt = false; a future
+                        // user-attribution build could add
+                        // `Authorization: Bearer <user_jwt>` alongside
+                        // without touching this header.
                         append("apikey", supabasePublishableKey)
                     }
                     setBody(json.encodeToString(SubmitRequestWire.serializer(), SubmitRequestWire(title, body)))

@@ -2,153 +2,7 @@
 
 ## Status
 
-Accepted (2026-05-11). **Amended 2026-05-12** (see §Amendment).
-
-## Amendment (2026-05-12) — scope broadened beyond beta
-
-The original ADR framed the GitHub App + Edge Function as "Skeinly
-Beta Bug Reporter" — a Phase 39 closed-beta artifact. Pre-deployment
-review surfaced that **the GitHub App and Edge Function are reused
-unchanged by general users after the Phase 40 GA cutover**; only the
-in-app entry points (Settings → Beta → Send Feedback,
-shake/3-finger-long-press gestures) are currently behind
-`BuildFlags.isBeta` for Phase 39 closed-beta operation. Phase 40 GA
-opens at least the Settings entry to all users.
-
-The vendor artifacts (GitHub App, Edge Function, secrets, Issue
-label, in-app title-prefix) MUST therefore carry no "beta" branding
-— a tester finishing Phase 39 closed beta sees the same Skeinly
-Feedback channel they will continue to use in Phase 40 GA, and a
-post-GA user's report does not surface in Issues with a stale
-"[Beta]" prefix or `beta-bug` label.
-
-Concrete changes from the original ADR:
-
-| Surface | Original | Amended |
-|---|---|---|
-| GitHub App name | `Skeinly Beta Bug Reporter` | **`Skeinly Feedback`** |
-| App description | `Server-side proxy that creates Issues from Skeinly beta tester in-app bug reports.` | **`Server-side proxy that creates GitHub Issues from Skeinly users' in-app feedback (bug reports, feature requests, general feedback).`** |
-| Default Issue label | `beta-bug` | **`feedback`** (scope-broad; `bug` / `feature-request` / etc. applied at triage time) |
-| ViewModel title prefix | `[Beta] $description` (or `[Beta] Bug report` empty default) | **No prefix; `$description` as-is, empty default → `Bug report`** |
-| Edge Function code | references "Beta Bug Reporter" in header comments | "Skeinly Feedback" in header comments |
-| Secrets EF-7 names | `SKEINLY_BUGREPORT_APP_ID` / `..._INSTALLATION_ID` / `..._PRIVATE_KEY_PEM` | **unchanged** (env-var names are internal-only; renaming would force a deploy + secret-recreate cycle for no end-user benefit) |
-| In-app entry point gating (`BuildFlags.isBeta`) | Phase 39 closed-beta only | **unchanged in this commit**; Phase 40 GA opens the Settings → "Send Feedback" entry for all users. Tracked under Tech Debt Backlog → `Bug-report Settings entry GA opening`. |
-
-The user-facing copy was already scope-neutral after the W5b i18n
-sweep (the disclosure body says "sends this report to the Skeinly
-team" not "to the Skeinly beta team"), so no further i18n changes
-are needed for the amendment.
-
-### Second amendment (2026-05-12 PM) — `apikey` header instead of `Authorization: Bearer`
-
-The smoke test against the deployed Edge Function returned HTTP 401
-`UNAUTHORIZED_INVALID_JWT_FORMAT` because the project migrated to
-Supabase's new `sb_publishable_*` API key format (2025-11-01
-transition; the JWT-format `anon` key is deprecated per CLAUDE.md).
-A `verify_jwt = true` Edge Function rejects any `Authorization`
-header value that is not a valid JWT, and `sb_publishable_*` is not
-a JWT — per the [Supabase Edge Functions auth doc](https://supabase.com/docs/guides/functions/auth):
-"The check does not accept an API key. Publishable and secret keys
-are not JWTs, so callers that send one in the `Authorization` header
-fail the check before their request reaches your handler."
-
-The Supabase-recommended pattern for client-invoked Edge Functions
-that authenticate via the project's publishable key is to put it in
-the **`apikey` header** instead — `supabase-js` does this
-automatically, and the `apikey` channel is the supported
-non-JWT-key-auth boundary.
-
-Concrete changes:
-
-| Surface | Original | Amended |
-|---|---|---|
-| `BugReportProxyClient.kt` request header | `Authorization: Bearer $supabasePublishableKey` | **`apikey: $supabasePublishableKey`** |
-| Edge Function `computeSourceHash` rate-limit seed | reads `Authorization` header tail | **reads `apikey` tail with `Authorization` fallback** (defensive — keeps the legacy code path working if any caller still sends Authorization) |
-| Smoke test curl recipe (README, release-secrets.md) | `-H "Authorization: Bearer ${ANON}"` | **`-H "apikey: ${ANON}"`** |
-| Edge Function header comment in `index.ts` | "Client auth: Supabase anon JWT" | **"Client auth: Supabase publishable key in the `apikey` header"** with the explanation above |
-| `BugReportProxyClientTest` assertion | `request.headers[HttpHeaders.Authorization] == "Bearer ..."` | **`request.headers["apikey"] == "..."`** |
-
-`verify_jwt = true` stays in `supabase/config.toml` — the Supabase
-edge admits the request after recognising the publishable key in
-the `apikey` header, just as it admits any other client-invoked
-function. No deploy-config change needed beyond the standard
-`supabase functions deploy submit-bug-report` after the code merge.
-
-Tests: 14 KMP `BugReportProxyClientTest` and 17 Deno `index.test.ts`
-were rewritten to match the new header convention (Deno tests fix
-`buildRequest` + 2 inline-request bodies to use `apikey`; KMP test
-updates one assertion). Total commonTest count 1536 unchanged; Deno
-test count 32 unchanged.
-
-Forward-compat: a future build that ships a signed-in user's
-session JWT for per-user attribution would add `Authorization:
-Bearer <user_jwt>` alongside the existing `apikey` header
-(`supabase-js`'s established pattern). No rewrite of the client
-needed when that day comes.
-
-### Third amendment (2026-05-12 PM-2) — disable `verify_jwt`
-
-The `apikey`-header fix above still produced HTTP 401
-`UNAUTHORIZED_NO_AUTH_HEADER` from the Supabase edge layer. The
-[Edge Functions auth doc](https://supabase.com/docs/guides/functions/auth)
-clarifies that `verify_jwt = true` requires a JWT in the
-`Authorization` header — the `apikey` channel identifies the
-project but does NOT replace the Authorization check. The doc's
-recommended pattern for **unauthenticated client-invoked functions**
-(Skeinly's case: users may not be signed in to Supabase Auth when
-they want to report a bug — e.g. the sign-in flow itself is what
-they're reporting) is to disable JWT verification entirely:
-
-> "Turn `verify_jwt` off for functions that are called without an
->  `Authorization` header."
-
-This matches the existing pattern in the repo: `notify-on-write`
-and `revenuecat-webhook` both use `verify_jwt = false` (they
-authenticate via a custom Bearer shared-secret read by the
-function itself, not via Supabase Auth). `submit-bug-report`
-joins that pattern.
-
-Concrete change:
-
-| Surface | Original | Amended |
-|---|---|---|
-| `supabase/config.toml` `[functions.submit-bug-report]` | `verify_jwt = true` | **`verify_jwt = false`** |
-
-Unchanged:
-- Client still sends `apikey: $supabasePublishableKey` (defensive
-  + forward-compat with the recommended pattern for
-  user-authenticated invocations down the road) — the Edge
-  Function does not gate on it.
-- Rate-limit seed (`computeSourceHash`) still reads `apikey` →
-  `authorization` fallback for source-hash differentiation.
-- Auth IS provided at the Edge Function layer in the form of the
-  GitHub App's three secrets, which the function uses to
-  authenticate against GitHub when creating the Issue. That auth
-  is what makes the function meaningful — Supabase-layer auth
-  would only gate "who can invoke" but the publishable key is
-  public anyway, so the gate is performative.
-
-Abuse prevention restated: per ADR-020 §2, the in-memory
-rate limit (5 reports / hour per source-hash on `x-real-ip` +
-auth-tail) is the actual defense. At ≤10-tester closed-beta scale
-and even at Phase 40 GA scale (≤O(10K) installs), an Edge
-Function instance handling at worst N×5 requests/hour where N is
-the number of unique source IPs is well within Supabase's
-function-invocation budget.
-
-Deploy: standard `supabase functions deploy submit-bug-report` —
-the `verify_jwt = false` config takes effect on next deploy. No
-secret changes.
-
-The original §6 user-attended steps are updated: when creating the
-GitHub App, name it `Skeinly Feedback` (not `Skeinly Beta Bug
-Reporter`) and use the amended description.
-
-The remaining body of this ADR (§1-§Q3, §1-§6, §Consequences,
-§Considered alternatives) reads as originally written but with the
-two name strings and the title-prefix scope swapped in. Future
-readers should treat this Amendment section as authoritative on
-naming and labels.
+Accepted (2026-05-11), consolidated 2026-05-12 (see §Revision history at end).
 
 ## Context
 
@@ -183,6 +37,19 @@ hosted as a Supabase Edge Function. The Edge Function authenticates as
 a GitHub App with `Issues: Read & write` permission on the
 `b150005/skeinly` repository only, creating Issues on the tester's
 behalf with the same template+body payload Phase 39.5 already produces.
+
+**Scope beyond beta.** The GitHub App, Edge Function, secrets, and
+Issue label are **NOT beta-only**. The same channel carries over to
+Phase 40 GA unchanged for all users (bug reports, feature requests,
+general feedback). Only the **in-app entry points** stay
+`BuildFlags.isBeta`-gated for Phase 39 closed-beta operation —
+Phase 40 GA will open at least the Settings → "Send Feedback" entry
+to all users. The shake / 3-finger-long-press gestures may remain
+Beta-only as power-user affordances. The vendor artifacts therefore
+carry no "beta" branding: a tester finishing Phase 39 sees the same
+"Skeinly Feedback" channel they will continue to use in GA, and a
+post-GA user's report does not surface in Issues with a stale
+`[Beta]` prefix or `beta-bug` label.
 
 This ADR records the full design, the agent-team deliberation that
 shaped it, the user-attended steps for GitHub App creation and secret
@@ -230,11 +97,11 @@ deployment slips.
 - **Private key custody: Supabase Edge Function secret (PEM blob).**
   Same custody surface as `APPLE_APNS_KEY_P8` (Phase 24.1) and
   `FIREBASE_SERVICE_ACCOUNT_JSON` (Phase 24.3). No new threat model.
-- **Client auth: Supabase anon key** (same posture as `notify-on-write`
-  webhook auth — actually the inverse: `notify-on-write` uses a custom
-  Bearer secret because Supabase webhooks don't auto-sign payloads;
-  here the client *is* the app, which already carries the anon key, so
-  reusing it costs nothing in security and saves a secret to manage).
+- **Supabase-layer auth: deliberately disabled** (see Q4 below). The
+  function runs with `verify_jwt = false`; the real auth that gives
+  the function meaning is the GitHub App's three secrets (App ID,
+  Installation ID, Private Key PEM) which the function uses
+  downstream when calling the GitHub API.
 - **Abuse prevention: in-memory rate limit, 5 reports/hour per request
   source.** Phase 39 closed beta = ≤10 testers; abuse risk is
   effectively zero. Per-Deno-instance Map keyed by the request's
@@ -281,18 +148,22 @@ ViewModel testable: tests pass a recording lambda; production wires
 7. Install App → select `b150005/skeinly` only → note the **Installation
    ID** from the install URL
    (`github.com/settings/installations/<INSTALL_ID>`).
-8. Register Supabase Edge Function secrets:
+8. On `b150005/skeinly`, ensure the `feedback` Issue label exists
+   (Issues → Labels → New). The Edge Function default-applies this
+   label; if the label is absent GitHub returns 422
+   `VALIDATION_FAILED`.
+9. Register Supabase Edge Function secrets:
    - `SKEINLY_BUGREPORT_APP_ID` — the App ID number
    - `SKEINLY_BUGREPORT_INSTALLATION_ID` — the Installation ID number
    - `SKEINLY_BUGREPORT_PRIVATE_KEY_PEM` — full PEM contents
      (multi-line, starts with `-----BEGIN RSA PRIVATE KEY-----`)
-9. Edge Function deploy (autonomous via the Skeinly side):
-   `git checkout main && git pull && supabase functions deploy submit-bug-report`
-10. Smoke test (manual): trigger a bug report from a TestFlight /
+10. Edge Function deploy (autonomous via the Skeinly side):
+    `git checkout main && git pull && supabase functions deploy submit-bug-report`
+11. Smoke test (manual): trigger a bug report from a TestFlight /
     Play Internal build; verify Issue lands in `b150005/skeinly/issues`.
 
-Steps 1–8 are user-attended (GitHub UI + 2FA + secret rotation outside
-autonomous reach). Step 9 can be autonomous. Step 10 requires a real
+Steps 1–9 are user-attended (GitHub UI + 2FA + secret rotation outside
+autonomous reach). Step 10 can be autonomous. Step 11 requires a real
 device with a Beta build.
 
 ### Decision points resolved by the team
@@ -333,22 +204,69 @@ Resolved: **(a) In-memory Map keyed by request source identifier.**
 - Phase 40 GA (open distribution) can revisit with a `bug_report_throttle`
   table if abuse signals warrant; YAGNI for closed beta.
 
+**Q4: What auth model gates Edge Function invocation?**
+Resolved: **(c) Unauthenticated client (`verify_jwt = false`); real
+auth lives downstream at the GitHub API call.**
+
+Considered:
+- **(a) `verify_jwt = true` + Supabase user JWT in `Authorization`.**
+  Rejected. A user reporting a bug may not be signed in to Supabase
+  Auth — in fact the sign-in flow itself could be the bug they want
+  to report. Gating on Supabase user auth would block a legitimate
+  use case.
+- **(b) `verify_jwt = true` + publishable key in `Authorization`.**
+  Rejected. As of the 2025-11-01 Supabase API-key transition, the
+  project ships a `sb_publishable_*` key which is NOT a JWT. The
+  Supabase edge layer rejects non-JWT values in `Authorization` with
+  HTTP 401 `UNAUTHORIZED_INVALID_JWT_FORMAT` before reaching the
+  function. Moving the publishable key to the `apikey` header (the
+  supported channel per [Supabase docs](https://supabase.com/docs/guides/functions/auth))
+  still fails `verify_jwt = true` because `apikey` identifies the
+  project but does not satisfy the JWT check
+  (`UNAUTHORIZED_NO_AUTH_HEADER`).
+- **(c) `verify_jwt = false` (chosen).** Matches the
+  Supabase-documented pattern for **unauthenticated client-invoked
+  functions** and the existing repo precedent (`notify-on-write` and
+  `revenuecat-webhook` both `verify_jwt = false`, both authenticate
+  via custom Bearer shared-secrets read by the function itself).
+  Real auth is provided by the GitHub App's three secrets used in
+  the downstream GitHub API call — that is the function's meaningful
+  auth boundary. The publishable key is public anyway, so a
+  Supabase-layer gate on it would have been performative.
+
+The client still sends `apikey: <publishable_key>` (defensive +
+forward-compat with `supabase-js`'s standard pattern for a future
+build that wants to layer a user-session JWT on top via
+`Authorization: Bearer <user_jwt>`). The Edge Function does not
+gate on `apikey`; it only reads the tail of `apikey` (with
+`Authorization` fallback) as a seed for `computeSourceHash` to
+differentiate rate-limit windows per caller.
+
+Abuse prevention restated: per §2 below, the in-memory rate limit
+(5 reports/hour per source-hash on `x-real-ip` + auth-tail) is the
+actual defense. At ≤10-tester closed-beta scale and even at Phase 40
+GA scale (≤O(10K) installs), an Edge Function instance handling at
+worst N×5 requests/hour where N is the number of unique source IPs
+sits comfortably within Supabase's function-invocation budget.
+
 ## Decision
 
 ### 1. Architecture
 
 ```
 ┌──────────────┐         ┌──────────────────────────────┐
-│ Beta build   │ POST    │ Supabase Edge Function       │
+│ App build    │ POST    │ Supabase Edge Function       │
 │ (iOS/Android)│ ───────▶│ submit-bug-report            │
-│              │         │                              │
-│ BugReport    │         │ 1. Auth: Bearer <anon>       │
-│ PreviewVM    │         │ 2. Rate limit check          │
+│              │         │ (verify_jwt = false)         │
+│ BugReport    │         │                              │
+│ PreviewVM    │         │ 1. apikey header → source    │
+│              │         │    hash seed (not gated)     │
+│ Ktor client  │         │ 2. Rate limit check          │
 │              │         │ 3. Validate length / shape   │
-│ Ktor client  │         │ 4. JWT sign with App PEM     │
-│              │         │ 5. Exchange for install token│
-│              │         │ 6. POST /repos/.../issues    │
-└──────────────┘         │ 7. Return {number, html_url} │
+│ apikey:      │         │ 4. JWT sign with App PEM     │
+│   <publishable>│       │ 5. Exchange for install token│
+└──────────────┘         │ 6. POST /repos/.../issues    │
+                         │ 7. Return {number, html_url} │
                          └──────────────┬───────────────┘
                                         │
                                         │ HTTPS + JWT/installation token
@@ -362,6 +280,18 @@ Resolved: **(a) In-memory Map keyed by request source identifier.**
 
 ### 2. Edge Function `submit-bug-report`
 
+Registered in `supabase/config.toml` as:
+
+```toml
+[functions.submit-bug-report]
+verify_jwt = false
+```
+
+See Q4 above for the rationale; the function is the
+unauthenticated-client-invocation sibling of `notify-on-write` and
+`revenuecat-webhook`. Real auth happens downstream at the GitHub API
+call via the App's three secrets.
+
 #### Request
 
 ```http
@@ -370,14 +300,20 @@ apikey: <SUPABASE_PUBLISHABLE_KEY>
 Content-Type: application/json
 
 {
-  "title": "[Beta] tap Save crashes on iOS 26.4",
+  "title": "tap Save crashes on iOS 26.4",
   "body": "## Description\n…\n## Reproduction context\n…",
   "labels": ["feedback"]
 }
 ```
 
-`labels` is optional (defaults to `["feedback"]`). Phase 39 W5 hardcodes
-the single label; future slices may extend (e.g. screen-tagged labels).
+`apikey` carries the project's `sb_publishable_*` key. The Edge
+Function does not validate the key (Supabase-layer auth is off); it
+only uses the tail of `apikey` (with `Authorization` fallback for
+forward-compat) as a seed for the per-caller rate-limit hash.
+
+`labels` is optional (defaults to `["feedback"]`). Phase 39 W5
+hardcodes the single label; future slices may extend (e.g.
+screen-tagged labels).
 
 #### Response (success)
 
@@ -419,10 +355,9 @@ supabase/functions/submit-bug-report/
 
 In-memory `Map<string, RateWindow>` keyed by a stable per-request hash
 derived from `x-real-ip` (Supabase's edge sets this) **plus** the
-SHA-256 of the anon key tail (defense against a single tester behind
-NAT — though at 10-tester scale this is academic). Window: 1 hour
-sliding (record array of timestamps, drop entries > 1h, reject if
-count ≥ 5).
+SHA-256 of the `apikey` (or `Authorization`) header tail. Window:
+1 hour sliding (record array of timestamps, drop entries > 1h, reject
+if count ≥ 5).
 
 The Map is per-Deno-instance, so a cold start clears it. This is
 acceptable — cold-starts are rare on warm Supabase projects, and a
@@ -537,6 +472,8 @@ class BugReportProxyClient(
 ) {
     suspend fun submit(title: String, body: String): Result<SubmitOutcome> = runCatching {
         // POST .../functions/v1/submit-bug-report with title + body
+        // Header: apikey: <SupabaseConfig.publishableKey>
+        // (NOT Authorization: Bearer — see ADR-020 Q4.)
         // Parse the {ok, issue_number, html_url} envelope
         // Throw a typed BugReportProxyException on ok: false
     }
@@ -556,6 +493,13 @@ sealed class BugReportProxyException(message: String) : Exception(message) {
     class Unknown(message: String) : BugReportProxyException(message)
 }
 ```
+
+The client sends the publishable key in the `apikey` header (per
+Q4). It does NOT send `Authorization: Bearer` because the Edge
+Function runs with `verify_jwt = false` and any caller-supplied
+JWT would be ignored anyway. A future build that wants to attribute
+reports to signed-in users adds a session JWT in `Authorization`
+without touching the `apikey` header.
 
 #### `BugReportPreviewViewModel` signature change
 
@@ -577,6 +521,10 @@ sealed interface SubmitResultState {
 }
 ```
 
+The title sent to the proxy is the description itself (no
+`[Beta]` prefix — Phase 40 GA reuses this surface unchanged). Empty
+descriptions default to `Bug report`.
+
 Submission flow:
 
 1. User taps "Send" → `isSubmitting = true`, `submitResult = null`.
@@ -592,10 +540,10 @@ Submission flow:
 #### Koin wiring
 
 ```kotlin
-// commonMain di/ViewModelModule.kt (or NetworkModule if more appropriate)
-single { BugReportProxyClient(get(), get()) }
+// commonMain di/RepositoryModule.kt
+single { BugReportProxyClient(get(qualifier = symbolPackHttpClient), get<SupabaseConfig>()) }
 
-// ViewModel factory updates to pass the suspend lambda
+// ViewModel factory passes the suspend lambda
 viewModelOf {
     BugReportPreviewViewModel(
         ringBuffer = get(),
@@ -616,17 +564,17 @@ The Swift screen adds a switch over `SubmitResultStateSuccess` /
 
 ### 4. Privacy policy update
 
-`docs/public/privacy-policy/index.html` and the JA mirror gain a new
-subsection inside "Diagnostic Data (Beta builds only)":
+`docs/public/privacy-policy/index.html` and the JA mirror replace
+Phase 39.5's "URL prefill" disclosure with proxy-based wording:
 
 ```html
 <h3>Bug Reports</h3>
 <p>When you submit a bug report from a beta build, the in-app reporter
 sends the report content to a server-side proxy (Supabase Edge Function)
 which creates a GitHub Issue on the Skeinly repository on your behalf.
-The proxy runs under a GitHub App with permissions limited to creating
-and updating Issues on the <code>b150005/skeinly</code> repository
-only.</p>
+The proxy runs under a GitHub App ("Skeinly Feedback") with permissions
+limited to creating and updating Issues on the
+<code>b150005/skeinly</code> repository only.</p>
 <p>The data sent to the proxy is the same data shown in the in-app
 preview screen before you tap Send: your description, a list of the
 last 10 actions you took in the app, app version, OS version, device
@@ -636,15 +584,10 @@ according to its own privacy policy.</p>
 <p>The transit metadata (your IP address, request timestamp) is
 visible to Supabase but is not persisted by the proxy code. We do not
 correlate transit metadata with the reported content.</p>
-<p>You can submit reports anonymously by signing out of your GitHub
-account before viewing the resulting Issue page — the Issue itself
-does not carry your GitHub identity since the proxy creates it as the
-Skeinly Feedback GitHub App, not as you personally.</p>
+<p>The Issue itself does not carry your GitHub identity — the proxy
+creates it as the Skeinly Feedback GitHub App, not as you
+personally.</p>
 ```
-
-JA mirror with localized phrasing. Replaces (does NOT add to) the
-existing Phase 39.5 wording about "URL prefill opens GitHub in your
-browser" — that's no longer accurate.
 
 ### 5. Sub-slice plan
 
@@ -660,6 +603,7 @@ working bug-report flow.
   `github_app.ts`, `_fakes.ts`, `index.test.ts`,
   `github_app.test.ts`, `deno.json`, `README.md`
 - `supabase/config.toml` — register `[functions.submit-bug-report]`
+  with `verify_jwt = false`
 - `docs/{en,ja}/adr/020-phase-39-w5-bug-report-proxy.md` (this ADR)
 - `docs/{en,ja}/release-secrets.md` — new EF-7 entry for the GitHub
   App trio (`SKEINLY_BUGREPORT_APP_ID` /
@@ -668,10 +612,10 @@ working bug-report flow.
 - `CLAUDE.md` — W5a entry under `### Completed`; W5b under
   `### Planned`
 
-User-attended at W5a close: GitHub App creation, secret registration,
-Edge Function deploy, curl-based smoke test against the deployed
-function. Clients still use URL prefill — no client-visible behavior
-change.
+User-attended at W5a close: GitHub App creation, `feedback` label
+creation, secret registration, Edge Function deploy, curl-based
+smoke test against the deployed function. Clients still use URL
+prefill — no client-visible behavior change.
 
 #### W5b (KMP client cutover)
 
@@ -684,7 +628,7 @@ change.
   `submitResult`
 - `iosApp/iosApp/Screens/BugReportPreviewScreen.swift` — submitResult
   switch
-- Koin wiring (`ViewModelModule.kt`,
+- Koin wiring (`ViewModelModule.kt`, `RepositoryModule.kt`,
   `PlatformModule.{android,ios}.kt`)
 - `docs/public/privacy-policy/index.html` + JA mirror — replaces the
   "URL prefill" wording with proxy-based description
@@ -714,6 +658,10 @@ opening a browser.
   as the GitHub App.
 - **Persistent rate-limit storage.** In-memory only.
 - **Issue update / close from app.** Create-only.
+- **Phase 40 GA in-app entry-point opening.** The
+  `BuildFlags.isBeta` gate on Settings → "Send Feedback" stays in
+  W5b. Tech Debt Backlog → `Bug-report Settings entry GA opening`
+  tracks the GA gate removal.
 
 ## Consequences
 
@@ -730,8 +678,12 @@ opening a browser.
   Issue.
 - Single-PR landing keeps the tree green; no half-cutover state.
 - Standardizes the third-party-credential-bearing Edge Function
-  pattern (notify-on-write, revenuecat-webhook, submit-bug-report) —
-  future server-side integrations follow the same shape.
+  pattern (`notify-on-write`, `revenuecat-webhook`,
+  `submit-bug-report`) — all three are `verify_jwt = false` with
+  real auth happening at the downstream API call.
+- Scope-broad branding ("Skeinly Feedback") carries over to Phase 40
+  GA unchanged; the channel survives the beta-to-GA transition with
+  no vendor-artifact churn.
 
 ### Negative
 
@@ -778,6 +730,51 @@ policy disclosure and the closed-beta consent.
 Rejected per Q3 deliberation. Overkill at 10-tester scale. YAGNI;
 revisit at Phase 40 GA if abuse signals appear.
 
+### `verify_jwt = true` + Supabase user session JWT
+Rejected per Q4 deliberation. Bug reporting must work for unauthenticated
+callers — the sign-in flow itself can be the bug the user wants to
+report. Gating on Supabase user JWT would block a legitimate use
+case. Real auth lives at the GitHub API call downstream.
+
+### `verify_jwt = true` + publishable key in `Authorization`
+Rejected per Q4 deliberation. As of the 2025-11-01 Supabase API-key
+transition, the project's publishable key is `sb_publishable_*` — not
+a JWT. `verify_jwt = true` rejects non-JWT values in `Authorization`
+at the edge layer (`UNAUTHORIZED_INVALID_JWT_FORMAT`) before reaching
+the function. Moving the key to the `apikey` header fixes that error
+but still fails `verify_jwt = true` because `apikey` identifies the
+project, not the caller (`UNAUTHORIZED_NO_AUTH_HEADER`). The
+Supabase-documented pattern for client-invoked functions without a
+user session is `verify_jwt = false` — same shape as
+`notify-on-write` and `revenuecat-webhook`.
+
+### "Skeinly Beta Bug Reporter" GitHub App name + `[Beta]` title prefix + `beta-bug` label
+Rejected on pre-deployment review. The GitHub App + Edge Function +
+Issue label are reused unchanged by general users post-Phase 40 GA;
+only the in-app entry points are `BuildFlags.isBeta`-gated. Vendor
+artifacts therefore carry no "beta" branding so the channel survives
+the GA transition without rename + secret-recreate churn.
+
+## Revision history
+
+- 2026-05-11 — Initial draft and acceptance. Original naming was
+  "Skeinly Beta Bug Reporter" + `beta-bug` label + `[Beta]` title
+  prefix; client auth proposed as `Authorization: Bearer <anon_jwt>`
+  with `verify_jwt = true`.
+- 2026-05-12 — Pre-deployment review: vendor artifacts renamed to
+  "Skeinly Feedback" + `feedback` label + no title prefix (scope
+  beyond beta).
+- 2026-05-12 — Smoke-test fix: client auth header changed to
+  `apikey: <publishable_key>` after the 2025-11-01 Supabase
+  `sb_publishable_*` transition broke the JWT-in-Authorization
+  assumption.
+- 2026-05-12 — Smoke-test fix: `verify_jwt = false` adopted; real
+  auth lives at the downstream GitHub API call. Q4 added and §1 /
+  §2 / §3 updated to reflect the unauthenticated-client pattern.
+- 2026-05-12 — ADR consolidated: three amendment sections folded
+  into the main body; this revision history block is the
+  authoritative trail.
+
 ## References
 
 - ADR-015 (Phase 39 F2 beta bug reporting): the URL prefill shape this ADR replaces
@@ -787,5 +784,6 @@ revisit at Phase 40 GA if abuse signals appear.
   - https://docs.github.com/en/apps/creating-github-apps
   - https://docs.github.com/en/rest/apps/apps?apiVersion=2022-11-28#generate-an-installation-access-token-for-an-app
   - https://docs.github.com/en/rest/issues/issues?apiVersion=2022-11-28#create-an-issue
-- `notify-on-write` Edge Function (Phase 24.1 / commit 1ed59e2 forward) — code shape precedent
-- `revenuecat-webhook` Edge Function (Phase 39.0.1 / commit 2752a30) — Deno test shape precedent
+- Supabase Edge Functions auth doc: https://supabase.com/docs/guides/functions/auth
+- `notify-on-write` Edge Function (Phase 24.1 / commit 1ed59e2 forward) — code shape precedent + `verify_jwt = false` precedent
+- `revenuecat-webhook` Edge Function (Phase 39.0.1 / commit 2752a30) — Deno test shape precedent + `verify_jwt = false` precedent

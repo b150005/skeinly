@@ -177,19 +177,11 @@ val repositoryModule =
                 )
             }
             single<SymbolPackRemoteOperations> { get<RemoteSymbolPackDataSource>() }
-            // Phase 39 W5b (ADR-020) — bug-report proxy client. POSTs
-            // to `${supabaseConfig.url}/functions/v1/submit-bug-report`
-            // which authenticates as the "Skeinly Feedback"
-            // GitHub App and creates an Issue on b150005/skeinly.
-            // Replaces Phase 39.5's `BugSubmissionLauncher`
-            // expect/actual (deleted in the same commit). The injected
-            // [HttpClient] is the existing `symbolPackHttpClient` —
-            // both use a plain Ktor instance with no auth plugins and
-            // identical default timeouts, so the qualifier reuse
-            // avoids growing the DI surface by a redundant alias.
-            // [SupabaseConfig] (the existing expect/actual) supplies
-            // both the function URL host and the publishable key used
-            // in the `Authorization: Bearer` header.
+            // Phase 39 W5b (ADR-020) — bug-report proxy client.
+            // Reuses the `symbolPackHttpClient` Ktor instance (plain,
+            // no auth plugins) and reads SupabaseConfig for the
+            // function host + publishable key sent in the `apikey`
+            // header (ADR-020 §Q4).
             single {
                 io.github.b150005.skeinly.data.bug.BugReportProxyClient(
                     httpClient = get<HttpClient>(symbolPackHttpClientQualifier),
