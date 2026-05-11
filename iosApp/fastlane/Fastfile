@@ -241,13 +241,26 @@ end
 
 # Build the xcargs string passed to xcodebuild via build_app. Versioning
 # (MARKETING_VERSION + CURRENT_PROJECT_VERSION) is sourced from CI env so
-# the tag/run-number drives the iOS bundle version. CODE_SIGN_STYLE +
-# CODE_SIGN_IDENTITY pinned to manual + Apple Distribution. Vendor SDK
-# configuration (Supabase / Sentry / PostHog) is also passed through —
-# the values land as build settings, which Info.plist resolves via
-# `$(VAR)` placeholders declared in project.yml. This is the single
+# the tag/run-number drives the iOS bundle version. DEVELOPMENT_TEAM is
+# also defensively re-asserted here even though the xcconfig (CI-written
+# at the `Create local.xcconfig for CI` workflow step) already injects
+# it — the xcargs path covers the rare case where xcconfig substitution
+# didn't take effect (e.g. an unexpected xcodegen output state).
+#
+# Vendor SDK configuration (Supabase / Sentry / PostHog) is passed
+# through — the values land as build settings, which Info.plist resolves
+# via `$(VAR)` placeholders declared in project.yml. This is the single
 # injection point in the CI/Release path; the local.xcconfig file used
 # locally provides the same settings via a different surface.
+#
+# `CODE_SIGN_STYLE = Manual` + `CODE_SIGN_IDENTITY = Apple Distribution`
+# + `PROVISIONING_PROFILE_SPECIFIER = Skeinly App Store` are NOW baked
+# into `project.yml`'s `settings.configs.Release` (Phase 39 W3 fix
+# 2026-05-11). They used to be re-asserted here as xcargs but the
+# 2026-05-11 CI failure showed that path was insufficient — xcodebuild's
+# signing analyzer reads the .xcodeproj's persistent build settings
+# before xcargs override, and an Automatic-signing .xcodeproj generated
+# by xcodegen would fail at archive time regardless of xcargs.
 def build_xcargs
   args = []
   args << "MARKETING_VERSION=#{ENV['MARKETING_VERSION']}" unless ENV["MARKETING_VERSION"].to_s.empty?
@@ -258,8 +271,6 @@ def build_xcargs
   args << "SENTRY_DSN_IOS=#{shell_escape(ENV['SENTRY_DSN_IOS'])}" unless ENV["SENTRY_DSN_IOS"].to_s.empty?
   args << "POSTHOG_API_KEY=#{shell_escape(ENV['POSTHOG_PROJECT_API_KEY'])}" unless ENV["POSTHOG_PROJECT_API_KEY"].to_s.empty?
   args << "POSTHOG_HOST=#{shell_escape(ENV['POSTHOG_HOST'])}" unless ENV["POSTHOG_HOST"].to_s.empty?
-  args << "CODE_SIGN_STYLE=Manual"
-  args << 'CODE_SIGN_IDENTITY="Apple Distribution"'
   args.join(" ")
 end
 
