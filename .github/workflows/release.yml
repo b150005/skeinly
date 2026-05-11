@@ -367,6 +367,120 @@ jobs:
           path: shared/build/bin/iosArm64/releaseFramework/
           retention-days: 90
 
+      # Phase 39 (W4 / 2026-05-11) — diagnostic artifact bundle for iOS
+      # archive failures. The fastlane CI summary surfaces only the
+      # xcbeautify-filtered tail of xcodebuild output; the actual signing
+      # analyzer details + dependency graph + entitlement resolution live
+      # in `gym/iosApp-iosApp.log` (raw xcodebuild stderr) and the
+      # XCBuildData build description. The decoded provisioning profile
+      # XML is the ground truth for which capabilities the active profile
+      # *actually* carries (Associated Domains, Push, etc.) — Apple
+      # Developer Portal UI sometimes shows a stale capability set vs the
+      # provisioned profile bytes.
+      #
+      # Runs on iOS Release job failure with signing configured (no point
+      # diagnosing the skip path). Bundles into a single artifact dir
+      # under $RUNNER_TEMP so cleanup happens automatically when the
+      # runner VM recycles. Anything secret-derived (`.p12`, raw key
+      # bytes) is intentionally NOT included — only public-facing
+      # provisioning data + xcodebuild logs.
+      - name: Collect iOS build failure diagnostics
+        if: failure() && steps.ios-signing.outputs.available == 'true'
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set +e  # best-effort: don't fail the diagnostics gather itself
+          DIAG="$RUNNER_TEMP/ios-failure-diagnostics"
+          mkdir -p "$DIAG"
+
+          # 1. gym/xcodebuild raw log — the source of truth for signing
+          #    analyzer output, target dependency graph, and Xcode 26's
+          #    new signing diagnostic messages.
+          if [ -f "$HOME/Library/Logs/gym/iosApp-iosApp.log" ]; then
+            cp "$HOME/Library/Logs/gym/iosApp-iosApp.log" "$DIAG/gym-iosApp-iosApp.log"
+            echo "OK   gym log captured ($(wc -l < "$DIAG/gym-iosApp-iosApp.log") lines)"
+          else
+            echo "::warning::gym log not found at \$HOME/Library/Logs/gym/iosApp-iosApp.log"
+            ls -la "$HOME/Library/Logs/gym/" 2>/dev/null > "$DIAG/gym-dir-listing.txt" || true
+          fi
+
+          # 2. XCBuildData — Xcode's build description for the archive.
+          #    Contains the resolved build settings per target (so we can
+          #    see exactly which CODE_SIGN_IDENTITY each target was asked
+          #    to use), the target dependency graph (so we can see if a
+          #    test target is unexpectedly pulled into the archive), and
+          #    the SDK selection. The directory is small (~MB scale) so
+          #    we copy it whole rather than cherry-pick.
+          XCBUILD_ROOT="$HOME/Library/Developer/Xcode/DerivedData"
+          if [ -d "$XCBUILD_ROOT" ]; then
+            find "$XCBUILD_ROOT" -type d -name "*.xcbuilddata" -print0 2>/dev/null \
+              | while IFS= read -r -d '' xcbd; do
+                  rel="$(basename "$(dirname "$(dirname "$xcbd")")")__$(basename "$xcbd")"
+                  cp -R "$xcbd" "$DIAG/xcbuilddata__$rel" 2>/dev/null || true
+                done
+            echo "OK   XCBuildData copied"
+          fi
+
+          # 3. Decoded provisioning profile — `security cms -D` outputs
+          #    the profile's plist XML, which lists Entitlements (the
+          #    ground truth for Associated Domains / aps-environment /
+          #    etc. capabilities). The .mobileprovision file is fetched
+          #    by sigh into $RUNNER_TEMP and is also installed into the
+          #    Xcode profile dir; we read from $RUNNER_TEMP because it
+          #    survives even if installation failed.
+          PROFILE_PATH="$RUNNER_TEMP/distribution.mobileprovision"
+          if [ -f "$PROFILE_PATH" ]; then
+            security cms -D -i "$PROFILE_PATH" > "$DIAG/distribution-profile-decoded.plist" 2>&1
+            echo "OK   provisioning profile decoded"
+            # Extract just the entitlements block for quick visual diff.
+            /usr/libexec/PlistBuddy -c "Print :Entitlements" "$DIAG/distribution-profile-decoded.plist" \
+              > "$DIAG/distribution-profile-entitlements.txt" 2>&1 || true
+          else
+            echo "::warning::Provisioning profile not found at $PROFILE_PATH"
+          fi
+
+          # 4. Keychain inventory — which signing identities are present
+          #    after import_certificate ran. If "Apple Distribution"
+          #    isn't here, the .p12 import silently failed; if "iOS
+          #    Development" is missing, that's expected (we don't import
+          #    one). The output redacts CN serial numbers but exposes
+          #    cert names + team affiliations.
+          security find-identity -v -p codesigning > "$DIAG/keychain-identities.txt" 2>&1
+          echo "OK   keychain identities listed"
+
+          # 5. iosApp.xcodeproj signing settings — what xcodegen generated
+          #    for both Debug and Release. project.pbxproj is plain text;
+          #    we grep for the signing-relevant lines.
+          PBX="iosApp/iosApp.xcodeproj/project.pbxproj"
+          if [ -f "$PBX" ]; then
+            grep -E 'CODE_SIGN_(STYLE|IDENTITY|ENTITLEMENTS)|PROVISIONING_PROFILE|DEVELOPMENT_TEAM' \
+              "$PBX" > "$DIAG/pbxproj-signing.txt" 2>&1
+            echo "OK   pbxproj signing settings extracted"
+          fi
+
+          # 6. local.xcconfig — what the CI step wrote (DEVELOPMENT_TEAM
+          #    redacted via the *** mask if the secret was actually
+          #    substituted).
+          if [ -f "iosApp/local.xcconfig" ]; then
+            sed "s|$APPLE_TEAM_ID|<TEAM_ID_REDACTED>|g" iosApp/local.xcconfig \
+              > "$DIAG/local.xcconfig" 2>&1
+            echo "OK   local.xcconfig captured (team ID redacted)"
+          fi
+
+          # 7. Listing summary so the artifact landing page shows what
+          #    we have without unzipping.
+          ls -laR "$DIAG" > "$DIAG/_listing.txt" 2>&1 || true
+          echo "Diagnostics bundle prepared at $DIAG"
+
+      - name: Upload iOS build failure diagnostics
+        if: failure() && steps.ios-signing.outputs.available == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-failure-diagnostics
+          path: ${{ runner.temp }}/ios-failure-diagnostics/
+          retention-days: 14
+          if-no-files-found: warn
+
       # Defense-in-depth cleanup. fastlane's setup_ci creates an
       # ephemeral keychain that's normally torn down at runner shutdown,
       # but explicit cleanup avoids leaks if the build aborts mid-run.
