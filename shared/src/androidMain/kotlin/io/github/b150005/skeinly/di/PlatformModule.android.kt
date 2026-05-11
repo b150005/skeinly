@@ -6,7 +6,6 @@ import io.github.b150005.skeinly.data.remote.ConnectivityMonitor
 import io.github.b150005.skeinly.db.DriverFactory
 import io.github.b150005.skeinly.notifications.OsSettingsLauncher
 import io.github.b150005.skeinly.notifications.PushTokenRegistrar
-import io.github.b150005.skeinly.platform.BugSubmissionLauncher
 import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.platform.StoreUrlLauncher
 import org.koin.dsl.module
@@ -18,12 +17,11 @@ val platformModule =
         // skeinly_prefs is unencrypted — suitable for non-sensitive UX flags only.
         // Use EncryptedSharedPreferences for auth tokens and user PII.
         single<Settings> { SharedPreferencesSettings.Factory(get()).create("skeinly_prefs") }
-        // Phase 39.5 (ADR-015 §3) — bug-report system browser launcher
-        // and read-only device context provider. Both reach for the
-        // application Context via Koin's existing `androidContext()`
-        // wiring, so no additional setup is needed at the Application
-        // layer beyond the modules being included.
-        single { BugSubmissionLauncher(get()) }
+        // Phase 39 W5b (ADR-020) — bug-report submission moved from
+        // a platform `BugSubmissionLauncher` expect/actual to the
+        // commonMain `BugReportProxyClient` (registered in
+        // RepositoryModule). DeviceContextProvider is still
+        // platform-specific (reads Android Build.* / Locale).
         single { DeviceContextProvider(get()) }
         // Phase 24.2e (ADR-017 §3.5, §3.6) — push-token + permission
         // registrar. 24.2e swaps in FirebaseMessaging.getInstance().token

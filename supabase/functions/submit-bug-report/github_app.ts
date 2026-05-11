@@ -186,37 +186,28 @@ function wrapPkcs1AsPkcs8(pkcs1: ArrayBuffer): ArrayBuffer {
     // AlgorithmIdentifier for rsaEncryption (OID 1.2.840.113549.1.1.1)
     //  + NULL parameters: SEQUENCE(13) { OID(9) ..., NULL }
     const algIdentifier = new Uint8Array([
-        0x30,
-        0x0d,
-        0x06,
-        0x09,
-        0x2a,
-        0x86,
-        0x48,
-        0x86,
-        0xf7,
-        0x0d,
-        0x01,
-        0x01,
-        0x01,
-        0x05,
-        0x00,
+        0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01, 0x05, 0x00,
     ]);
     // version INTEGER 0
     const version = new Uint8Array([0x02, 0x01, 0x00]);
     // OCTET STRING wrapping the PKCS#1 body
     const octetStringHeader = encodeAsn1TlvHeader(0x04, pkcs1Bytes.length);
     // Outer SEQUENCE wrapping {version, algIdentifier, octetString}
-    const innerLength = version.length + algIdentifier.length + octetStringHeader.length + pkcs1Bytes.length;
+    const innerLength =
+        version.length + algIdentifier.length + octetStringHeader.length + pkcs1Bytes.length;
     const outerSeqHeader = encodeAsn1TlvHeader(0x30, innerLength);
 
     const total = outerSeqHeader.length + innerLength;
     const out = new Uint8Array(total);
     let offset = 0;
-    out.set(outerSeqHeader, offset); offset += outerSeqHeader.length;
-    out.set(version, offset); offset += version.length;
-    out.set(algIdentifier, offset); offset += algIdentifier.length;
-    out.set(octetStringHeader, offset); offset += octetStringHeader.length;
+    out.set(outerSeqHeader, offset);
+    offset += outerSeqHeader.length;
+    out.set(version, offset);
+    offset += version.length;
+    out.set(algIdentifier, offset);
+    offset += algIdentifier.length;
+    out.set(octetStringHeader, offset);
+    offset += octetStringHeader.length;
     out.set(pkcs1Bytes, offset);
     return out.buffer;
 }
@@ -272,8 +263,8 @@ export async function getInstallationToken(creds: GithubAppCredentials): Promise
     const resp = await fetch(url, {
         method: "POST",
         headers: {
-            "Authorization": `Bearer ${jwt}`,
-            "Accept": "application/vnd.github+json",
+            Authorization: `Bearer ${jwt}`,
+            Accept: "application/vnd.github+json",
             "X-GitHub-Api-Version": "2022-11-28",
             "User-Agent": USER_AGENT,
         },
@@ -347,8 +338,8 @@ export async function createIssue(
         resp = await fetch(url, {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${installationToken}`,
-                "Accept": "application/vnd.github+json",
+                Authorization: `Bearer ${installationToken}`,
+                Accept: "application/vnd.github+json",
                 "Content-Type": "application/json",
                 "X-GitHub-Api-Version": "2022-11-28",
                 "User-Agent": USER_AGENT,
@@ -392,7 +383,10 @@ export async function createIssue(
     try {
         payload = (await resp.json()) as { number?: number; html_url?: string };
     } catch (error: unknown) {
-        return { kind: "api_failed", message: `issue_create_response_unparseable: ${errorMessage(error)}` };
+        return {
+            kind: "api_failed",
+            message: `issue_create_response_unparseable: ${errorMessage(error)}`,
+        };
     }
 
     if (typeof payload.number !== "number" || typeof payload.html_url !== "string") {

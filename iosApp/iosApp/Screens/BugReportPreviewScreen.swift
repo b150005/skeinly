@@ -1,16 +1,22 @@
 import SwiftUI
 import Shared
 
-/// Phase 39.5 (ADR-015 §3, §6) — SwiftUI mirror of
-/// `BugReportPreviewScreen.kt` (Compose). Reachable from Settings → Beta →
-/// "Send Feedback" or via the shake gesture.
+/// Phase 39 W5b (ADR-020) — SwiftUI mirror of `BugReportPreviewScreen.kt`
+/// (Compose). Reachable from Settings → Beta → "Send Feedback" or via
+/// the shake gesture.
 ///
-/// UI parity with the Compose surface: description TextField at the top,
-/// disclosure copy, scrollable preview of the generated GitHub Issue body,
-/// Submit / Cancel actions at the bottom. The Submit action delegates to
-/// the shared `BugSubmissionLauncher` via the ViewModel, which fires
-/// `UIApplication.shared.openURL(url:options:completionHandler:)` against
-/// the prefilled GitHub Issue URL.
+/// W5b changes over Phase 39.5:
+/// - The "Send report" button now POSTs to the `submit-bug-report`
+///   Edge Function which authenticates as the "Skeinly Beta Bug
+///   Reporter" GitHub App and creates the Issue server-side. No
+///   browser hand-off.
+/// - A post-submit banner renders the result above the editor:
+///   Success banner with the GitHub Issue number ("#123"), or one of
+///   six typed error banners. Dismiss button clears the banner so the
+///   user can edit + retry.
+/// - Submit button shows a `ProgressView` + "Sending…" label while
+///   the HTTP round-trip is in flight; the underlying ViewModel
+///   guards against double-submit so multi-tap is harmless.
 struct BugReportPreviewScreen: View {
     @StateObject private var holder: ScopedViewModel<
         BugReportPreviewViewModel,
@@ -32,17 +38,20 @@ struct BugReportPreviewScreen: View {
     var body: some View {
         let state = holder.state
 
-        // Form-style layout to match the Settings screen rhythm; ScrollView
-        // keeps the preview body fully visible even on small phones.
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
+                // Result banner — surfaces success / error of the most
+                // recent submission. Null state hides the banner.
+                if let result = state.submitResult {
+                    ResultBanner(result: result) {
+                        viewModel.onEvent(event: BugReportPreviewEventDismissResult.shared)
+                    }
+                }
+
                 Text(LocalizedStringKey("body_bug_report_includes_actions"))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
 
-                // SwiftUI's `axis: .vertical` lets the TextField grow with
-                // its content. lineLimit(4...12) parallels the Compose
-                // `minLines = 4, maxLines = 12`.
                 TextField(
                     LocalizedStringKey("hint_bug_description_placeholder"),
                     text: Binding(
@@ -57,6 +66,7 @@ struct BugReportPreviewScreen: View {
                 )
                 .lineLimit(4...12)
                 .textFieldStyle(.roundedBorder)
+                .disabled(state.isSubmitting)
                 .accessibilityIdentifier("bugDescriptionField")
                 .accessibilityLabel(LocalizedStringKey("label_bug_description"))
 
@@ -66,9 +76,6 @@ struct BugReportPreviewScreen: View {
                     .font(.subheadline)
                     .fontWeight(.semibold)
 
-                // SwiftUI `Text` is selectable in iOS 15+ via
-                // `.textSelection(.enabled)`. Mirrors the Compose
-                // `SelectionContainer` wrap.
                 Text(verbatim: state.previewBody)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -79,11 +86,23 @@ struct BugReportPreviewScreen: View {
                 Button {
                     viewModel.onEvent(event: BugReportPreviewEventSubmit.shared)
                 } label: {
-                    Text(LocalizedStringKey("action_submit_bug_report"))
-                        .frame(maxWidth: .infinity)
+                    HStack(spacing: 8) {
+                        if state.isSubmitting {
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                                .controlSize(.small)
+                                .tint(.white)
+                            Text(LocalizedStringKey("state_bug_report_submitting"))
+                        } else {
+                            Text(LocalizedStringKey("action_submit_bug_report"))
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(state.isSubmitting)
+                // Disable on in-flight or success — error states stay
+                // enabled so retry is one tap. Mirrors the Compose gate.
+                .disabled(state.isSubmitting || state.submitResult is SubmitResultStateSuccess)
                 .accessibilityIdentifier("submitBugReportButton")
 
                 Button(role: .cancel) {
@@ -101,5 +120,71 @@ struct BugReportPreviewScreen: View {
         .accessibilityIdentifier("bugReportPreviewScreen")
         .navigationTitle(LocalizedStringKey("title_bug_report_preview"))
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// Post-submit banner. Maps each [SubmitResultState] subclass to the
+/// matching localized copy. Exhaustive switch via Swift's NSEnum
+/// bridge of the Kotlin sealed-interface `ErrorKind`.
+private struct ResultBanner: View {
+    let result: SubmitResultState
+    let onDismiss: () -> Void
+
+    var body: some View {
+        let (text, background, foreground): (LocalizedStringKey, Color, Color) = {
+            if let success = result as? SubmitResultStateSuccess {
+                // "Bug report sent. Thank you! #123"
+                let key = LocalizedStringKey(
+                    "\(NSLocalizedString("state_bug_report_submitted", comment: "")) #\(success.issueNumber)",
+                )
+                return (key, Color.accentColor.opacity(0.18), Color.primary)
+            }
+            if let error = result as? SubmitResultStateError {
+                return (errorKey(for: error.kind), Color.red.opacity(0.12), Color.primary)
+            }
+            // Defensive default — keep the banner visible with the
+            // dismiss button so the user can clear it rather than
+            // hide it silently if a future SubmitResultState subclass
+            // bridges through without a Swift switch case.
+            return (LocalizedStringKey("state_bug_report_error_unknown"), Color.red.opacity(0.12), Color.primary)
+        }()
+
+        VStack(alignment: .leading, spacing: 8) {
+            Text(text)
+                .font(.body)
+                .foregroundStyle(foreground)
+            HStack {
+                Spacer()
+                Button {
+                    onDismiss()
+                } label: {
+                    Text(LocalizedStringKey("action_bug_report_dismiss_result"))
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityIdentifier("bugReportResultBannerDismiss")
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12).fill(background),
+        )
+        .accessibilityIdentifier("bugReportResultBanner")
+    }
+
+    private func errorKey(for kind: ErrorKind) -> LocalizedStringKey {
+        // Default arm guards against future ErrorKind additions
+        // bridging through without a Swift case — same defensive
+        // pattern as the SettingsScreen notification status mapping.
+        switch kind {
+        case .offline: return LocalizedStringKey("state_bug_report_error_offline")
+        case .rateLimited: return LocalizedStringKey("state_bug_report_error_rate_limited")
+        case .validationFailed: return LocalizedStringKey("state_bug_report_error_validation")
+        case .configMissing: return LocalizedStringKey("state_bug_report_error_config_missing")
+        case .server: return LocalizedStringKey("state_bug_report_error_server")
+        case .unknown: return LocalizedStringKey("state_bug_report_error_unknown")
+        default: return LocalizedStringKey("state_bug_report_error_unknown")
+        }
     }
 }

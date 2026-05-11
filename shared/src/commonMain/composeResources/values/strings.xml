@@ -94,8 +94,22 @@
     <string name="label_bug_description">Describe the bug</string>
     <string name="hint_bug_description_placeholder">Steps to reproduce, what you expected, what happened…</string>
     <string name="label_bug_report_preview_body">Diagnostic body to be attached</string>
-    <string name="body_bug_report_includes_actions">Submitting opens GitHub. The report includes your description plus app version, OS, device, locale, and your last 10 actions — no patterns, notes, photos, or PII.</string>
-    <string name="action_submit_bug_report">Submit on GitHub</string>
+    <string name="body_bug_report_includes_actions">Submitting sends this report to the Skeinly team. The report includes your description plus app version, OS, device, locale, and your last 10 actions — no patterns, notes, photos, or PII.</string>
+    <string name="action_submit_bug_report">Send report</string>
+    <!-- Phase 39 W5b — submit-result banner copy. The success banner
+         interpolates the GitHub Issue number ("#123"); the six error
+         banners pick one of OFFLINE / RATE_LIMITED / VALIDATION_FAILED
+         / CONFIG_MISSING / SERVER / UNKNOWN so users see actionable
+         copy rather than the raw exception message. -->
+    <string name="state_bug_report_submitting">Sending…</string>
+    <string name="state_bug_report_submitted">Bug report sent. Thank you!</string>
+    <string name="state_bug_report_error_offline">Couldn\'t send — check your network connection and try again.</string>
+    <string name="state_bug_report_error_rate_limited">You\'ve sent too many reports recently. Please wait a few minutes and try again.</string>
+    <string name="state_bug_report_error_validation">Your report couldn\'t be sent because of an invalid field. Try editing your description and submitting again.</string>
+    <string name="state_bug_report_error_config_missing">Bug reporting isn\'t available right now. Please try again later.</string>
+    <string name="state_bug_report_error_server">The server couldn\'t process your report. Please try again in a few minutes.</string>
+    <string name="state_bug_report_error_unknown">Something went wrong while sending your report. Please try again.</string>
+    <string name="action_bug_report_dismiss_result">OK</string>
 
     <string name="error_authentication_failed">Authentication failed</string>
     <string name="error_email_invalid">Invalid email address</string>

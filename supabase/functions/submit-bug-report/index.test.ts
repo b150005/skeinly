@@ -5,10 +5,9 @@
 // (success / GitHub auth fail / GitHub api fail).
 
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
-
+import { generateTestGithubAppCredentials, installFakeFetch, jsonResponse } from "./_fakes.ts";
 import { _resetCachesForTests } from "./github_app.ts";
 import { _resetRateLimitMapForTests, handleRequest } from "./index.ts";
-import { generateTestGithubAppCredentials, installFakeFetch, jsonResponse } from "./_fakes.ts";
 
 // ---------------------------------------------------------------------
 // Helpers
@@ -32,7 +31,7 @@ function buildRequest(body: unknown, init?: RequestInit): Request {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "Authorization": "Bearer sb_anon_test",
+            Authorization: "Bearer sb_anon_test",
             "x-real-ip": "203.0.113.42",
         },
         body: JSON.stringify(body),
@@ -147,7 +146,7 @@ Deno.test("handleRequest rejects malformed JSON body", async () => {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "Authorization": "Bearer x",
+            Authorization: "Bearer x",
             "x-real-ip": "1.2.3.4",
         },
         body: "{not json",
@@ -207,7 +206,7 @@ Deno.test("handleRequest rate limit is per-source-hash (different IPs independen
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": "Bearer sb_anon_test",
+                Authorization: "Bearer sb_anon_test",
                 "x-real-ip": "198.51.100.7",
             },
             body: JSON.stringify({ title: "b1", body: "b" }),
@@ -241,7 +240,9 @@ Deno.test("handleRequest success returns issue_number + html_url envelope", asyn
         return jsonResponse({ error: "unexpected" }, 500);
     });
     try {
-        const resp = await handleRequest(buildRequest({ title: "[Beta] tap save crashes", body: "## Description\n…" }));
+        const resp = await handleRequest(
+            buildRequest({ title: "[Beta] tap save crashes", body: "## Description\n…" }),
+        );
         assertEquals(resp.status, 200);
         const json = await resp.json();
         assertEquals(json.ok, true);
