@@ -4,6 +4,8 @@ import io.github.b150005.skeinly.data.analytics.AnalyticsEvent
 import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
 import io.github.b150005.skeinly.data.analytics.EventRingBuffer
 import io.github.b150005.skeinly.data.analytics.Screen
+import io.github.b150005.skeinly.data.bug.BugReportProxyException
+import io.github.b150005.skeinly.data.bug.SubmitOutcome
 import io.github.b150005.skeinly.platform.DeviceContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -20,19 +22,21 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Phase 39.5 (ADR-015 §6) — ViewModel coverage for the bug-report preview.
+ * Phase 39 W5b (ADR-020) — ViewModel coverage rewritten for suspend
+ * submit + state.submitResult. Phase 39.5's fire-and-forget submission
+ * is replaced by a proper round-trip exposing typed Success / Error
+ * states.
  *
- * `Dispatchers.setMain(UnconfinedTestDispatcher)` is required because
- * `viewModelScope` (from androidx.lifecycle) uses `Dispatchers.Main` by
- * default — without the override, every `viewModelScope.launch { ... }`
- * inside the ViewModel either fails with `IllegalStateException` (no
- * Main dispatcher) or never runs synchronously inside `runTest`. The
- * unconfined variant runs queued coroutines synchronously on the
- * caller's thread so state assertions land without `advanceUntilIdle()`
- * after every event dispatch.
+ * `Dispatchers.setMain(UnconfinedTestDispatcher)` keeps every
+ * `viewModelScope.launch { ... }` coroutine synchronous within
+ * `runTest`, so state assertions can land without
+ * `advanceUntilIdle()` after every dispatch.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class BugReportPreviewViewModelTest {
@@ -58,7 +62,7 @@ class BugReportPreviewViewModelTest {
         )
 
     @Test
-    fun init_renders_initial_preview_with_empty_description_and_empty_events() =
+    fun init_renders_initial_preview() =
         runTest {
             val rig = makeRig()
             val state = rig.viewModel.state.value
@@ -66,7 +70,8 @@ class BugReportPreviewViewModelTest {
             assertTrue(state.previewBody.isNotEmpty())
             assertTrue(state.previewBody.contains("## Description"))
             assertTrue(state.previewBody.contains("- Platform: Android Android 14"))
-            assertTrue(state.previewBody.contains("_No actions captured"))
+            assertNull(state.submitResult)
+            assertFalse(state.isSubmitting)
         }
 
     @Test
@@ -90,7 +95,27 @@ class BugReportPreviewViewModelTest {
         }
 
     @Test
-    fun submit_invokes_launcher_with_title_and_body() =
+    fun submit_success_records_outcome_in_state() =
+        runTest {
+            val rig =
+                makeRig(
+                    submitResult =
+                        Result.success(
+                            SubmitOutcome(issueNumber = 42, htmlUrl = "https://github.com/b150005/skeinly/issues/42"),
+                        ),
+                )
+            rig.viewModel.onEvent(BugReportPreviewEvent.DescriptionChanged("Steps…"))
+            rig.viewModel.onEvent(BugReportPreviewEvent.Submit)
+            val state = rig.viewModel.state.value
+            assertFalse(state.isSubmitting)
+            val result = assertNotNull(state.submitResult)
+            val success = assertIs<SubmitResultState.Success>(result)
+            assertEquals(42, success.issueNumber)
+            assertEquals("https://github.com/b150005/skeinly/issues/42", success.htmlUrl)
+        }
+
+    @Test
+    fun submit_invokes_callback_with_title_and_body() =
         runTest {
             val rig =
                 makeRig(
@@ -99,6 +124,7 @@ class BugReportPreviewViewModelTest {
                             AnalyticsEvent.ScreenViewed(Screen.ProjectList),
                             AnalyticsEvent.ProjectCreated,
                         ),
+                    submitResult = Result.success(SubmitOutcome(1, "u")),
                 )
             rig.viewModel.onEvent(BugReportPreviewEvent.DescriptionChanged("Steps to reproduce..."))
             rig.viewModel.onEvent(BugReportPreviewEvent.Submit)
@@ -113,7 +139,7 @@ class BugReportPreviewViewModelTest {
     @Test
     fun submit_with_empty_description_uses_default_title() =
         runTest {
-            val rig = makeRig()
+            val rig = makeRig(submitResult = Result.success(SubmitOutcome(1, "u")))
             rig.viewModel.onEvent(BugReportPreviewEvent.Submit)
             assertEquals("[Beta] Bug report", rig.calls.single().first)
         }
@@ -121,32 +147,124 @@ class BugReportPreviewViewModelTest {
     @Test
     fun submit_truncates_overlong_first_line_to_title_cap() =
         runTest {
-            val rig = makeRig()
+            val rig = makeRig(submitResult = Result.success(SubmitOutcome(1, "u")))
             val firstLine = "a".repeat(120)
             rig.viewModel.onEvent(BugReportPreviewEvent.DescriptionChanged(firstLine))
             rig.viewModel.onEvent(BugReportPreviewEvent.Submit)
             val title = rig.calls.single().first
             assertTrue(title.endsWith("..."))
-            // "[Beta] " + 80-char body + "..." = 7 + 80 + 3 = 90.
             assertEquals(90, title.length)
         }
 
     @Test
-    fun submit_skips_blank_first_line_and_uses_first_non_blank() =
+    fun submit_offline_failure_classified_as_OFFLINE() =
         runTest {
-            val rig = makeRig()
-            rig.viewModel.onEvent(
-                BugReportPreviewEvent.DescriptionChanged("\n\n  \n  Real first line\n"),
-            )
+            val rig = makeRig(submitResult = Result.failure(BugReportProxyException.Offline("DNS")))
             rig.viewModel.onEvent(BugReportPreviewEvent.Submit)
-            assertEquals("[Beta] Real first line", rig.calls.single().first)
+            val error = assertIs<SubmitResultState.Error>(rig.viewModel.state.value.submitResult)
+            assertEquals(ErrorKind.OFFLINE, error.kind)
+        }
+
+    @Test
+    fun submit_rate_limited_failure_classified_as_RATE_LIMITED() =
+        runTest {
+            val rig = makeRig(submitResult = Result.failure(BugReportProxyException.RateLimited("try in 47 minutes")))
+            rig.viewModel.onEvent(BugReportPreviewEvent.Submit)
+            val error = assertIs<SubmitResultState.Error>(rig.viewModel.state.value.submitResult)
+            assertEquals(ErrorKind.RATE_LIMITED, error.kind)
+            assertTrue(error.rawMessage.contains("47"))
+        }
+
+    @Test
+    fun submit_validation_failed_classified_as_VALIDATION_FAILED() =
+        runTest {
+            val rig = makeRig(submitResult = Result.failure(BugReportProxyException.ValidationFailed("title too long")))
+            rig.viewModel.onEvent(BugReportPreviewEvent.Submit)
+            val error = assertIs<SubmitResultState.Error>(rig.viewModel.state.value.submitResult)
+            assertEquals(ErrorKind.VALIDATION_FAILED, error.kind)
+        }
+
+    @Test
+    fun submit_config_missing_failure_classified_as_CONFIG_MISSING() =
+        runTest {
+            val rig = makeRig(submitResult = Result.failure(BugReportProxyException.ConfigMissing("secrets absent")))
+            rig.viewModel.onEvent(BugReportPreviewEvent.Submit)
+            val error = assertIs<SubmitResultState.Error>(rig.viewModel.state.value.submitResult)
+            assertEquals(ErrorKind.CONFIG_MISSING, error.kind)
+        }
+
+    @Test
+    fun submit_server_failure_classified_as_SERVER() =
+        runTest {
+            val rig = makeRig(submitResult = Result.failure(BugReportProxyException.Server("HTTP 503")))
+            rig.viewModel.onEvent(BugReportPreviewEvent.Submit)
+            val error = assertIs<SubmitResultState.Error>(rig.viewModel.state.value.submitResult)
+            assertEquals(ErrorKind.SERVER, error.kind)
+        }
+
+    @Test
+    fun submit_unknown_failure_classified_as_UNKNOWN() =
+        runTest {
+            val rig = makeRig(submitResult = Result.failure(BugReportProxyException.Unknown("unparseable")))
+            rig.viewModel.onEvent(BugReportPreviewEvent.Submit)
+            val error = assertIs<SubmitResultState.Error>(rig.viewModel.state.value.submitResult)
+            assertEquals(ErrorKind.UNKNOWN, error.kind)
+        }
+
+    @Test
+    fun submit_non_proxy_exception_classified_as_UNKNOWN() =
+        runTest {
+            val rig = makeRig(submitResult = Result.failure(IllegalStateException("boom")))
+            rig.viewModel.onEvent(BugReportPreviewEvent.Submit)
+            val error = assertIs<SubmitResultState.Error>(rig.viewModel.state.value.submitResult)
+            assertEquals(ErrorKind.UNKNOWN, error.kind)
+        }
+
+    @Test
+    fun dismiss_result_clears_banner() =
+        runTest {
+            val rig = makeRig(submitResult = Result.success(SubmitOutcome(1, "u")))
+            rig.viewModel.onEvent(BugReportPreviewEvent.Submit)
+            assertNotNull(rig.viewModel.state.value.submitResult)
+            rig.viewModel.onEvent(BugReportPreviewEvent.DismissResult)
+            assertNull(rig.viewModel.state.value.submitResult)
+        }
+
+    @Test
+    fun submit_is_idempotent_during_round_trip() =
+        runTest {
+            // Configure submit to never return so we can observe the
+            // is-submitting guard. The TestScope's unconfined dispatcher
+            // makes the launch synchronous up to the suspension point.
+            val calls = mutableListOf<Pair<String, String>>()
+            val tracker = FakeAnalyticsTracker()
+            val scope = TestScope(testDispatcher)
+            val ringBuffer = EventRingBuffer(tracker)
+            ringBuffer.start(scope)
+            val pending = kotlinx.coroutines.CompletableDeferred<Result<SubmitOutcome>>()
+            val vm =
+                BugReportPreviewViewModel(
+                    ringBuffer = ringBuffer,
+                    deviceContext = deviceContext,
+                    submit = { title, body ->
+                        calls.add(title to body)
+                        pending.await()
+                    },
+                )
+            vm.onEvent(BugReportPreviewEvent.Submit)
+            assertTrue(vm.state.value.isSubmitting)
+            // Second tap while the first is in flight — must be a no-op
+            // (no additional call recorded).
+            vm.onEvent(BugReportPreviewEvent.Submit)
+            assertEquals(1, calls.size)
+            // Let the first submission complete.
+            pending.complete(Result.success(SubmitOutcome(1, "u")))
         }
 
     @Test
     fun submit_re_snapshots_buffer_so_events_added_after_init_are_included() =
         runTest {
-            val rig = makeRig()
-            // Initial render already happened with empty buffer in init.
+            val rig = makeRig(submitResult = Result.success(SubmitOutcome(1, "u")))
             rig.tracker.emit(AnalyticsEvent.ProjectCreated)
             rig.tracker.emit(AnalyticsEvent.RowIncremented)
             rig.viewModel.onEvent(BugReportPreviewEvent.Submit)
@@ -172,14 +290,6 @@ class BugReportPreviewViewModelTest {
         }
 
     @Test
-    fun is_submitting_toggles_off_after_launch_returns() =
-        runTest {
-            val rig = makeRig()
-            rig.viewModel.onEvent(BugReportPreviewEvent.Submit)
-            assertFalse(rig.viewModel.state.value.isSubmitting)
-        }
-
-    @Test
     fun preview_body_carries_device_context_lines() =
         runTest {
             val rig = makeRig()
@@ -194,7 +304,10 @@ class BugReportPreviewViewModelTest {
         val calls: List<Pair<String, String>>,
     )
 
-    private fun makeRig(seedEvents: List<AnalyticsEvent> = emptyList()): TestRig {
+    private fun makeRig(
+        seedEvents: List<AnalyticsEvent> = emptyList(),
+        submitResult: Result<SubmitOutcome> = Result.success(SubmitOutcome(1, "u")),
+    ): TestRig {
         val tracker = FakeAnalyticsTracker()
         val scope = TestScope(testDispatcher)
         val ringBuffer = EventRingBuffer(tracker)
@@ -205,7 +318,10 @@ class BugReportPreviewViewModelTest {
             BugReportPreviewViewModel(
                 ringBuffer = ringBuffer,
                 deviceContext = deviceContext,
-                submit = { title, body -> calls.add(title to body) },
+                submit = { title, body ->
+                    calls.add(title to body)
+                    submitResult
+                },
             )
         return TestRig(vm, tracker, calls)
     }

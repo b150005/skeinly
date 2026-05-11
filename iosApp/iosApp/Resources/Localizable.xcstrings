@@ -1447,18 +1447,17 @@
       }
     },
     "action_submit_bug_report": {
-      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Submit on GitHub"
+            "value": "Send report"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "GitHub で送信"
+            "value": "レポートを送信"
           }
         }
       }
@@ -1719,18 +1718,17 @@
       }
     },
     "body_bug_report_includes_actions": {
-      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Submitting opens GitHub. The report includes your description plus app version, OS, device, locale, and your last 10 actions — no patterns, notes, photos, or PII."
+            "value": "Submitting sends this report to the Skeinly team. The report includes your description plus app version, OS, device, locale, and your last 10 actions — no patterns, notes, photos, or PII."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "送信すると GitHub が開きます。レポートには、入力した内容に加えて、アプリバージョン・OS・デバイス・ロケール・直近 10 件の操作履歴が含まれます。パターン、メモ、写真、個人情報は含まれません。"
+            "value": "送信するとレポートが Skeinly チームに送られます。レポートには、入力した内容に加えて、アプリバージョン・OS・デバイス・ロケール・直近 10 件の操作履歴が含まれます。パターン、メモ、写真、個人情報は含まれません。"
           }
         }
       }
@@ -7748,6 +7746,150 @@
           "stringUnit": {
             "state": "translated",
             "value": "今すぐアップデート"
+          }
+        }
+      }
+    },
+    "state_bug_report_submitting": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sending…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "送信中…"
+          }
+        }
+      }
+    },
+    "state_bug_report_submitted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bug report sent. Thank you!"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "レポートを送信しました。ありがとうございます！"
+          }
+        }
+      }
+    },
+    "state_bug_report_error_offline": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't send — check your network connection and try again."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "送信できませんでした。ネットワーク接続を確認して、もう一度お試しください。"
+          }
+        }
+      }
+    },
+    "state_bug_report_error_rate_limited": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You've sent too many reports recently. Please wait a few minutes and try again."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "短時間に多数のレポートが送信されました。数分待ってからもう一度お試しください。"
+          }
+        }
+      }
+    },
+    "state_bug_report_error_validation": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your report couldn't be sent because of an invalid field. Try editing your description and submitting again."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入力内容に問題があり、レポートを送信できませんでした。説明文を編集してもう一度お試しください。"
+          }
+        }
+      }
+    },
+    "state_bug_report_error_config_missing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bug reporting isn't available right now. Please try again later."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "バグレポート機能を現在ご利用いただけません。しばらく経ってからお試しください。"
+          }
+        }
+      }
+    },
+    "state_bug_report_error_server": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The server couldn't process your report. Please try again in a few minutes."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サーバーがレポートを処理できませんでした。数分後にもう一度お試しください。"
+          }
+        }
+      }
+    },
+    "state_bug_report_error_unknown": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something went wrong while sending your report. Please try again."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "送信中にエラーが発生しました。もう一度お試しください。"
+          }
+        }
+      }
+    },
+    "action_bug_report_dismiss_result": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
           }
         }
       }

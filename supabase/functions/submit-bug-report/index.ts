@@ -94,8 +94,9 @@ export function _resetRateLimitMapForTests(): void {
 function checkRateLimit(sourceHash: string): { retryAfterMinutes: number } | null {
     const now = Date.now();
     const window = rateLimitMap.get(sourceHash);
-    const fresh: number[] = (window?.timestamps ?? [])
-        .filter((ts) => now - ts < RATE_LIMIT_WINDOW_MS);
+    const fresh: number[] = (window?.timestamps ?? []).filter(
+        (ts) => now - ts < RATE_LIMIT_WINDOW_MS,
+    );
 
     if (fresh.length >= RATE_LIMIT_MAX) {
         // Compute when the oldest entry in the window falls off.
@@ -135,7 +136,9 @@ async function computeSourceHash(req: Request): Promise<string> {
 // Input validation
 // ---------------------------------------------------------------------
 
-function validate(body: unknown): { ok: true; value: SubmitBugReportRequest } | { ok: false; message: string } {
+function validate(
+    body: unknown,
+): { ok: true; value: SubmitBugReportRequest } | { ok: false; message: string } {
     if (typeof body !== "object" || body === null) {
         return { ok: false, message: "request body must be a JSON object" };
     }

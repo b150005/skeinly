@@ -86,8 +86,22 @@
     <string name="label_bug_description">バグの内容</string>
     <string name="hint_bug_description_placeholder">再現手順、期待していた動作、実際に起きたこと…</string>
     <string name="label_bug_report_preview_body">添付される診断情報</string>
-    <string name="body_bug_report_includes_actions">送信すると GitHub が開きます。レポートには、入力した内容に加えて、アプリバージョン・OS・デバイス・ロケール・直近 10 件の操作履歴が含まれます。パターン、メモ、写真、個人情報は含まれません。</string>
-    <string name="action_submit_bug_report">GitHub で送信</string>
+    <string name="body_bug_report_includes_actions">送信するとレポートが Skeinly チームに送られます。レポートには、入力した内容に加えて、アプリバージョン・OS・デバイス・ロケール・直近 10 件の操作履歴が含まれます。パターン、メモ、写真、個人情報は含まれません。</string>
+    <string name="action_submit_bug_report">レポートを送信</string>
+    <!-- Phase 39 W5b — 送信結果バナー文言。成功時は Issue 番号 (#123) を
+         埋め込み、失敗時は 6 つの ErrorKind (OFFLINE / RATE_LIMITED /
+         VALIDATION_FAILED / CONFIG_MISSING / SERVER / UNKNOWN) のいずれかを
+         表示する。生の例外メッセージではなく、ユーザーが次の行動を取れる
+         文言を返す。 -->
+    <string name="state_bug_report_submitting">送信中…</string>
+    <string name="state_bug_report_submitted">レポートを送信しました。ありがとうございます！</string>
+    <string name="state_bug_report_error_offline">送信できませんでした。ネットワーク接続を確認して、もう一度お試しください。</string>
+    <string name="state_bug_report_error_rate_limited">短時間に多数のレポートが送信されました。数分待ってからもう一度お試しください。</string>
+    <string name="state_bug_report_error_validation">入力内容に問題があり、レポートを送信できませんでした。説明文を編集してもう一度お試しください。</string>
+    <string name="state_bug_report_error_config_missing">バグレポート機能を現在ご利用いただけません。しばらく経ってからお試しください。</string>
+    <string name="state_bug_report_error_server">サーバーがレポートを処理できませんでした。数分後にもう一度お試しください。</string>
+    <string name="state_bug_report_error_unknown">送信中にエラーが発生しました。もう一度お試しください。</string>
+    <string name="action_bug_report_dismiss_result">OK</string>
 
     <string name="error_authentication_failed">認証に失敗しました</string>
     <string name="error_email_invalid">無効なメールアドレスです</string>

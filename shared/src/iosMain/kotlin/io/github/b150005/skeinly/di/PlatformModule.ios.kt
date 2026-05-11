@@ -6,7 +6,6 @@ import io.github.b150005.skeinly.data.remote.ConnectivityMonitor
 import io.github.b150005.skeinly.db.DriverFactory
 import io.github.b150005.skeinly.notifications.OsSettingsLauncher
 import io.github.b150005.skeinly.notifications.PushTokenRegistrar
-import io.github.b150005.skeinly.platform.BugSubmissionLauncher
 import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.platform.StoreUrlLauncher
 import org.koin.dsl.module
@@ -18,10 +17,11 @@ val platformModule =
         // skeinly_prefs is unencrypted NSUserDefaults — suitable for non-sensitive UX flags only.
         // Use Keychain for auth tokens and user PII.
         single<Settings> { NSUserDefaultsSettings.Factory().create("skeinly_prefs") }
-        // Phase 39.5 (ADR-015 §3) — bug-report URL launcher + device
-        // context. iOS actuals do not depend on `Context` so they're
-        // parameterless `single { ... }`.
-        single { BugSubmissionLauncher() }
+        // Phase 39 W5b (ADR-020) — bug-report submission moved from
+        // platform `BugSubmissionLauncher` expect/actual to the
+        // commonMain `BugReportProxyClient` (registered in
+        // RepositoryModule). DeviceContextProvider is still
+        // platform-specific (reads UIDevice / NSLocale).
         single { DeviceContextProvider() }
         // Phase 24.2e (ADR-017 §3.5, §3.6) — push-token + permission
         // registrar. 24.2e wires UNUserNotificationCenter + APNs token

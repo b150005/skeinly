@@ -219,6 +219,8 @@ kotlin {
             // pulling in the multiplatform-settings-test artifact (which the
             // project does not currently consume).
             implementation(libs.multiplatform.settings)
+            // Phase 39 W5b — Ktor MockEngine for BugReportProxyClient tests.
+            implementation(libs.ktor.client.mock)
         }
         androidMain {
             kotlin.srcDir(

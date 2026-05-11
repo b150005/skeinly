@@ -1,9 +1,9 @@
 package io.github.b150005.skeinly.di
 
 import io.github.b150005.skeinly.config.BuildFlags
+import io.github.b150005.skeinly.data.bug.BugReportProxyClient
 import io.github.b150005.skeinly.notifications.OsSettingsLauncher
 import io.github.b150005.skeinly.notifications.PushTokenRegistrar
-import io.github.b150005.skeinly.platform.BugSubmissionLauncher
 import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.platform.snapshotContext
 import io.github.b150005.skeinly.ui.activityfeed.ActivityFeedViewModel
@@ -245,20 +245,22 @@ val viewModelModule =
                 analyticsTracker = get(),
             )
         }
-        // Phase 39.5 (ADR-015 §6) — bug-report preview surface. The
-        // ViewModel takes a plain DTO + a lambda rather than the
-        // `expect class` provider/launcher directly so commonTest can
-        // stub them without running into the "expect class is final at
-        // the actual" subclassing limitation. The DI boundary owns the
-        // adaptation: snapshot the device-context provider into the DTO
-        // and bind the launcher's `launch` method to the lambda.
+        // Phase 39 W5b (ADR-020) — bug-report preview surface. The
+        // ViewModel takes a plain DTO + a suspend lambda rather than
+        // the BugReportProxyClient directly so commonTest can stub
+        // submission without standing up Ktor. The DI boundary owns
+        // the adaptation: snapshot the device-context provider into
+        // the DTO and bind the proxy client's `submit` method
+        // reference to the lambda. (Phase 39.5 used the same pattern
+        // for BugSubmissionLauncher; W5b deletes that expect/actual
+        // and routes through the Edge Function instead.)
         viewModel {
-            val launcher: BugSubmissionLauncher = get()
+            val proxyClient: BugReportProxyClient = get()
             val provider: DeviceContextProvider = get()
             BugReportPreviewViewModel(
                 ringBuffer = get(),
                 deviceContext = provider.snapshotContext(),
-                submit = { title, body -> launcher.launch(title, body) },
+                submit = proxyClient::submit,
             )
         }
         // Phase 24.2 (ADR-017 §3.6) — push notification consent ViewModel.

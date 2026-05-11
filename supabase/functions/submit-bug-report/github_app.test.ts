@@ -6,14 +6,13 @@
 // validation_failed / api_failed / unparseable response).
 
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
-
+import { generateTestGithubAppCredentials, installFakeFetch, jsonResponse } from "./_fakes.ts";
 import {
     _resetCachesForTests,
     createIssue,
     getAppJwt,
     getInstallationToken,
 } from "./github_app.ts";
-import { generateTestGithubAppCredentials, installFakeFetch, jsonResponse } from "./_fakes.ts";
 
 // ---------------------------------------------------------------------
 // JWT minting + cache
@@ -140,7 +139,10 @@ Deno.test("createIssue success returns issue number + html_url", async () => {
             return jsonResponse({ token: "ghs_x", expires_at: expiresAt });
         }
         if (req.url.includes("/repos/b150005/skeinly/issues")) {
-            return jsonResponse({ number: 123, html_url: "https://github.com/b150005/skeinly/issues/123" }, 201);
+            return jsonResponse(
+                { number: 123, html_url: "https://github.com/b150005/skeinly/issues/123" },
+                201,
+            );
         }
         return jsonResponse({ error: "unexpected" }, 500);
     });
