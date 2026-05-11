@@ -78,7 +78,7 @@ class AppConfigRepositoryImplTest {
         }
 
     @Test
-    fun `refresh failure transitions Loading to Unavailable, no cache`() =
+    fun `refresh failure transitions Loading to Unavailable when no cache`() =
         runTest {
             // When remote is non-null but throws (e.g. network failure on
             // first launch with no cache) the gate should transition to
