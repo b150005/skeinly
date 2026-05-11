@@ -162,7 +162,29 @@ gh secret set APPLE_DISTRIBUTION_CERT_PASSWORD
 # paste password, Ctrl+D
 ```
 
-### 3. `APPLE_PROVISIONING_PROFILE_BASE64`
+### 3. `APPLE_PROVISIONING_PROFILE_BASE64` — DEPRECATED 2026-05-11
+
+> **DEPRECATED**: As of Path Y (Fastfile commit `0956d3f`, 2026-05-11),
+> CI no longer reads this secret. The provisioning profile is fetched
+> from Apple Developer Portal at runtime via `sigh` (using the App
+> Store Connect API key — secrets 5–7). Capability changes propagate
+> by re-Generating the profile in Portal Web UI once; the next CI run
+> picks up the updated profile automatically with no GitHub Secret
+> update needed.
+>
+> **Remove this secret** to reduce the surface of unused credentials:
+>
+> ```bash
+> gh secret delete APPLE_PROVISIONING_PROFILE_BASE64
+> ```
+>
+> Note: the profile itself must still exist in Apple Developer Portal
+> — sigh fetches it from there. Only the GitHub Secret carrying the
+> base64-encoded bytes is obsolete. The previous OBTAIN/VERIFY/REGISTER
+> procedure is preserved below for historical reference only.
+
+<details>
+<summary>Historical procedure (pre-Path-Y, kept for reference)</summary>
 
 **WHAT**: Base64-encoded `.mobileprovision` App Store provisioning profile.
 
@@ -198,6 +220,8 @@ gh secret set APPLE_PROVISIONING_PROFILE_BASE64 < profile.base64
 ```
 
 **ROTATE**: Profiles expire 1 year after creation. Mark your calendar 11 months out. Renewal procedure is identical to step 2.
+
+</details>
 
 ### 4. `APPLE_TEAM_ID`
 
@@ -1117,12 +1141,12 @@ gh secret list --env production
 gh secret list --env development
 ```
 
-Expected **Repository scope** output (19 entries — values shared across all environments):
+Expected **Repository scope** output (18 entries — values shared across all environments;
+`APPLE_PROVISIONING_PROFILE_BASE64` was 19th before Path Y deprecation 2026-05-11):
 
 ```
 APPLE_DISTRIBUTION_CERT_BASE64        Updated YYYY-MM-DD
 APPLE_DISTRIBUTION_CERT_PASSWORD      Updated YYYY-MM-DD
-APPLE_PROVISIONING_PROFILE_BASE64     Updated YYYY-MM-DD
 APPLE_TEAM_ID                         Updated YYYY-MM-DD
 APP_STORE_CONNECT_API_KEY_BASE64      Updated YYYY-MM-DD
 APP_STORE_CONNECT_API_KEY_ID          Updated YYYY-MM-DD
@@ -1140,6 +1164,10 @@ SENTRY_DSN_IOS                        Updated YYYY-MM-DD
 SUPABASE_PUBLISHABLE_KEY              Updated YYYY-MM-DD
 SUPABASE_URL                          Updated YYYY-MM-DD
 ```
+
+> If `APPLE_PROVISIONING_PROFILE_BASE64` still appears in `gh secret list`,
+> it is safe to delete — Path Y migrated CI to fetch the profile from
+> Apple Developer Portal at runtime. See §3 above.
 
 Expected **`production` Environment scope** output (3 entries — Firebase prod ×2 + Android release publishing ×1):
 
@@ -1203,7 +1231,7 @@ Specifically:
 | Secret | Rotation procedure | Frequency |
 |---|---|---|
 | `APPLE_DISTRIBUTION_CERT_BASE64` + password | Apple Developer → Certificates → revoke + create new + re-export `.p12` | Annual or on incident |
-| `APPLE_PROVISIONING_PROFILE_BASE64` | Apple Developer → Profiles → regenerate (same cert) | Forced annually by Apple |
+| `APPLE_PROVISIONING_PROFILE_BASE64` (DEPRECATED 2026-05-11) | No GitHub Secret rotation needed — sigh fetches the profile from Apple Developer Portal at every CI run. Manual re-Generate in Portal Web UI required only on capability additions / annual expiry. | N/A on GitHub side; Portal re-Generate on capability change or annual expiry |
 | `APPLE_TEAM_ID` | Cannot change without changing teams | N/A |
 | `APP_STORE_CONNECT_API_KEY_*` | App Store Connect → Team Keys → revoke + generate new (Supabase Edge Function side dormant since 2026-05-09 `verify-receipt` deletion — re-register only if Phase H' or equivalent revives a server-side validator) | Recommended every 12 months |
 | `KEYSTORE_*` | **Do NOT rotate**. Losing the keystore breaks Play Store updates. Use Google Play's "App Signing by Google Play" key reset only as a last resort. | Never (under normal conditions) |
