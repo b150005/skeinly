@@ -800,4 +800,11 @@
     <string name="action_not_now_notifications">Not now</string>
     <string name="action_open_os_settings">Open Settings</string>
     <string name="body_notifications_denied_explanation">You denied notifications. Open Settings to re-enable.</string>
+
+    <!-- Phase 39 (W4 / 2026-05-11) — force-update gate. Triggered when the
+         installed app version is older than `app_config.min_required_version_*`.
+         Non-dismissable; "Update Now" deep-links to the store. -->
+    <string name="title_force_update">Update required</string>
+    <string name="body_force_update_default">A new version of Skeinly is required to continue. Please update from the store to keep using the app.</string>
+    <string name="action_update_now">Update now</string>
 </resources>

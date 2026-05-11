@@ -36,4 +36,28 @@ class BuildFlagsTest {
             "BuildFlags.isBeta should be true while version.properties carries a major==0 semver",
         )
     }
+
+    @Test
+    fun versionName_is_non_empty_and_has_dotted_form() {
+        // Phase 39 (W4): the force-update gate compares this against
+        // `app_config.min_required_version_android`. Empty / non-dotted
+        // values would cause `compareSemver` to fail-open (return null),
+        // silently disabling the gate. Catching that here keeps the
+        // assumption explicit.
+        val v = BuildFlags.versionName
+        assertTrue(v.isNotEmpty(), "BuildFlags.versionName must not be empty")
+        assertTrue(
+            v.contains('.'),
+            "BuildFlags.versionName='$v' should contain a dot (semver X.Y.Z form expected)",
+        )
+        // Defensive parse: every segment is digit-only (no hyphenated
+        // prerelease tag — App Store Connect rejects them).
+        val segments = v.split('.')
+        segments.forEach { seg ->
+            assertTrue(
+                seg.all { it.isDigit() },
+                "BuildFlags.versionName segment '$seg' must be digits only (got '$v')",
+            )
+        }
+    }
 }

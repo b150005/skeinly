@@ -25,4 +25,35 @@ package io.github.b150005.skeinly.config
  */
 expect object BuildFlags {
     val isBeta: Boolean
+
+    /**
+     * Phase 39 (W4 / 2026-05-11) — marketing version name (`X.Y.Z`),
+     * matched against `app_config.min_required_version_*` in the force-
+     * update gate ([io.github.b150005.skeinly.domain.repository.AppConfigRepository]).
+     *
+     * Android: generated at build time from `version.properties` `VERSION_NAME`
+     * by `generateBuildFlagsAndroid` (the same task that derives `isBeta`).
+     * iOS: read at runtime from `CFBundleShortVersionString` in Info.plist
+     * (populated by xcconfig macro `MARKETING_VERSION` in `iosApp/project.yml`).
+     *
+     * Guarantees `X.Y.Z` semver format (digits + dots only) because:
+     *   - iOS `CFBundleShortVersionString` is enforced by App Store Connect
+     *     to accept only digits and dots (no hyphens / prerelease tags).
+     *   - Android `VERSION_NAME` is constrained by the same convention in
+     *     `version.properties` (commented in the file header).
+     *
+     * Empty string fallback only fires if both the Android codegen and
+     * the iOS plist read fail — in that case the force-update gate's
+     * semver parser degrades to fail-open per its KDoc.
+     */
+    val versionName: String
+
+    /**
+     * Phase 39 (W4 / 2026-05-11) — compile-time platform identity. Used
+     * by the force-update gate to pick between
+     * `app_config.min_required_version_android` and `_ios`. Each actual
+     * hard-codes its own value (the codegen / static path means the
+     * compiler erases the branch at the call site).
+     */
+    val platform: io.github.b150005.skeinly.domain.model.AppPlatform
 }

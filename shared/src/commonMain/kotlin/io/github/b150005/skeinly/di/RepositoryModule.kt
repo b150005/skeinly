@@ -18,6 +18,7 @@ import io.github.b150005.skeinly.data.remote.ConnectivityMonitor
 import io.github.b150005.skeinly.data.remote.DeviceTokenRemoteOperations
 import io.github.b150005.skeinly.data.remote.PublicPatternDataSource
 import io.github.b150005.skeinly.data.remote.RemoteActivityDataSource
+import io.github.b150005.skeinly.data.remote.RemoteAppConfigDataSource
 import io.github.b150005.skeinly.data.remote.RemoteChartDataSource
 import io.github.b150005.skeinly.data.remote.RemoteChartVariationDataSource
 import io.github.b150005.skeinly.data.remote.RemoteChartVersionDataSource
@@ -40,6 +41,7 @@ import io.github.b150005.skeinly.data.remote.SymbolPackRemoteOperations
 import io.github.b150005.skeinly.data.remote.createSymbolPackHttpClient
 import io.github.b150005.skeinly.data.remote.isConfigured
 import io.github.b150005.skeinly.data.repository.ActivityRepositoryImpl
+import io.github.b150005.skeinly.data.repository.AppConfigRepositoryImpl
 import io.github.b150005.skeinly.data.repository.AuthRepositoryImpl
 import io.github.b150005.skeinly.data.repository.ChartRepositoryImpl
 import io.github.b150005.skeinly.data.repository.ChartVariationRepositoryImpl
@@ -56,6 +58,7 @@ import io.github.b150005.skeinly.data.repository.SubscriptionRepositoryImpl
 import io.github.b150005.skeinly.data.repository.SuggestionRepositoryImpl
 import io.github.b150005.skeinly.data.repository.UserRepositoryImpl
 import io.github.b150005.skeinly.domain.repository.ActivityRepository
+import io.github.b150005.skeinly.domain.repository.AppConfigRepository
 import io.github.b150005.skeinly.domain.repository.AuthRepository
 import io.github.b150005.skeinly.domain.repository.ChartRepository
 import io.github.b150005.skeinly.domain.repository.ChartVariationRepository
@@ -101,6 +104,18 @@ val repositoryModule =
             )
         }
 
+        // Phase 39 (W4 / 2026-05-11) — force-update gate. Registered
+        // unconditionally so [ForceUpdateGate]'s `koinInject<AppConfigRepository>()`
+        // always resolves. Local-only mode (Supabase not configured)
+        // passes a null `remote`; the gate fails-open per the
+        // offline-first contract.
+        single<AppConfigRepository> {
+            AppConfigRepositoryImpl(
+                remote = getOrNull<RemoteAppConfigDataSource>(),
+                cache = get(),
+            )
+        }
+
         // Local data sources
         single { LocalProjectDataSource(get(), get(ioDispatcherQualifier)) }
         single { LocalProgressDataSource(get(), get(ioDispatcherQualifier)) }
@@ -125,6 +140,11 @@ val repositoryModule =
             single { RemoteChartVersionDataSource(get<SupabaseClient>()) }
             single { RemoteChartVariationDataSource(get<SupabaseClient>()) }
             single { RemoteSuggestionDataSource(get<SupabaseClient>()) }
+            // Phase 39 (W4 / 2026-05-11) — force-update remote source.
+            // Only registered when Supabase is configured; the repository
+            // below uses getOrNull() so local-only mode degrades to
+            // never-refresh + fail-open per the offline-first contract.
+            single { RemoteAppConfigDataSource(get<SupabaseClient>()) }
             single { RemoteSubscriptionDataSource(get<SupabaseClient>()) }
             // Phase 24.2e (ADR-017 §3.5) — device_tokens upsert
             // adapter. Interface alias lets DeviceTokenRepositoryImpl

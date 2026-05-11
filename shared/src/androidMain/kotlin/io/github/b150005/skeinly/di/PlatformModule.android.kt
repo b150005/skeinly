@@ -8,6 +8,7 @@ import io.github.b150005.skeinly.notifications.OsSettingsLauncher
 import io.github.b150005.skeinly.notifications.PushTokenRegistrar
 import io.github.b150005.skeinly.platform.BugSubmissionLauncher
 import io.github.b150005.skeinly.platform.DeviceContextProvider
+import io.github.b150005.skeinly.platform.StoreUrlLauncher
 import org.koin.dsl.module
 
 val platformModule =
@@ -33,4 +34,8 @@ val platformModule =
         // Phase 24.2c (ADR-017 §3.6) — opens the OS app-notification
         // Settings page so a denied user can re-enable.
         single { OsSettingsLauncher(get()) }
+        // Phase 39 (W4 / 2026-05-11) — Play Store deep-link / web fallback
+        // launcher for the force-update gate's "Update now" CTA. Takes
+        // application Context for `Intent(VIEW, market://) + startActivity`.
+        single { StoreUrlLauncher(get()) }
     }

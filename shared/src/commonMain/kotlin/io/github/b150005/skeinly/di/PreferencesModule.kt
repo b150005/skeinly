@@ -5,6 +5,8 @@ import io.github.b150005.skeinly.data.analytics.AnalyticsTrackerImpl
 import io.github.b150005.skeinly.data.analytics.EventRingBuffer
 import io.github.b150005.skeinly.data.preferences.AnalyticsPreferences
 import io.github.b150005.skeinly.data.preferences.AnalyticsPreferencesImpl
+import io.github.b150005.skeinly.data.preferences.AppConfigPreferences
+import io.github.b150005.skeinly.data.preferences.AppConfigPreferencesImpl
 import io.github.b150005.skeinly.data.preferences.OnboardingPreferences
 import io.github.b150005.skeinly.data.preferences.OnboardingPreferencesImpl
 import io.github.b150005.skeinly.notifications.NotificationPermissionPrompter
@@ -15,6 +17,11 @@ val preferencesModule =
     module {
         single<OnboardingPreferences> { OnboardingPreferencesImpl(get()) }
         single<AnalyticsPreferences> { AnalyticsPreferencesImpl(get()) }
+        // Phase 39 (W4 / 2026-05-11) — force-update gate cache. Persists
+        // the last successfully fetched `app_config` row so the gate has
+        // a value to evaluate against on offline launches. Settings-backed
+        // (SharedPreferences / NSUserDefaults).
+        single<AppConfigPreferences> { AppConfigPreferencesImpl(get()) }
         // Phase 24.2 (ADR-017 §3.6) — gates the in-app pre-permission
         // explainer. State is one bit (Settings-backed); the Trigger enum
         // reaches across screens (PR list / detail / comment-post).
