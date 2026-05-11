@@ -46,6 +46,31 @@ Supabase 推奨の client-invoked Edge Function 認証パターンは **`apikey`
 
 将来互換: signed-in user の session JWT を per-user attribution 用に同時に送りたくなった場合は、`apikey` に publishable key + `Authorization: Bearer <user_jwt>` を併用する `supabase-js` の標準パターンに pivot する。クライアント側書き直し不要で対応可能。
 
+### 第三改訂 (2026-05-12 PM-2) — `verify_jwt` を無効化
+
+第二改訂の `apikey` 修正後も Supabase edge から HTTP 401 `UNAUTHORIZED_NO_AUTH_HEADER` が返ってきた。[Edge Functions auth doc](https://supabase.com/docs/guides/functions/auth) を再確認すると、`verify_jwt = true` は **`Authorization` ヘッダに JWT を必須** とすることが明示されており、`apikey` チャネルはプロジェクト識別子であって Authorization の代替ではない。
+
+doc が推奨する **未認証クライアント呼び出し向け Edge Function** のパターン (Skeinly のケース: ユーザーは Supabase Auth に signed-in でない可能性がある — 例えば sign-in flow 自体が壊れて報告したい場合) は、JWT 検証を無効化すること:
+
+> "Turn `verify_jwt` off for functions that are called without an `Authorization` header."
+
+これは既存 repo の他 Edge Function (`notify-on-write` と `revenuecat-webhook` 両者とも `verify_jwt = false`、custom Bearer shared-secret で Edge Function 内で認証) と一致する。`submit-bug-report` も同パターンに合流。
+
+具体的な変更:
+
+| 面 | 当初 | 改訂後 |
+|---|---|---|
+| `supabase/config.toml` `[functions.submit-bug-report]` | `verify_jwt = true` | **`verify_jwt = false`** |
+
+変更なし:
+- クライアントは引き続き `apikey: $supabasePublishableKey` を送る (defensive + 将来の user-authenticated invocation パターンへの forward-compat) — Edge Function はそれを gate にしない
+- Rate-limit seed (`computeSourceHash`) は引き続き `apikey` → `authorization` の fallback 順で source-hash を計算
+- 認証は Edge Function 層で GitHub App 3 点 secret で行われる — それが function の核心の auth。Supabase 層の auth は「誰が呼べるか」を gate するだけで、publishable key は public なため performative なものになっていた
+
+Abuse 防御の再確認: ADR-020 §2 に従い、in-memory rate limit (5 reports / hour per source-hash, `x-real-ip` + auth-tail から計算) が実際の防御層。クローズドベータ ≤10 testers + Phase 40 GA 規模 (≤O(10K) installs) でも、Edge Function instance が最大 N×5 requests/hour (N = unique source IP 数) を処理する規模は Supabase 関数呼び出し予算内に余裕で収まる。
+
+Deploy: 標準の `supabase functions deploy submit-bug-report` — 次の deploy で `verify_jwt = false` 反映。secret 変更なし。
+
 §ユーザー側手順の GitHub App 名は `Skeinly Feedback` (旧 `Skeinly Beta Bug Reporter`) + 上記 description に置き換える。
 
 ADR 本文の残りの節 (§Q1-Q3、§1-§6、§影響、§代替案) は原文のまま、name 文字列 2 箇所と title-prefix scope のみ本 amendment で読み替える。今後の読者は本 Amendment セクションの命名・ラベルを authoritative として扱う。

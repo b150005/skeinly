@@ -14,27 +14,32 @@
 //   - SKEINLY_BUGREPORT_INSTALLATION_ID
 //   - SKEINLY_BUGREPORT_PRIVATE_KEY_PEM
 //
-// Client auth: Supabase publishable key in the `apikey` header. The
-// function is published with `verify_jwt = true` in
-// supabase/config.toml so Supabase's edge layer admits the request
-// after recognising the publishable key. We do not re-verify here.
+// Client auth: NO edge-layer verification. The function is
+// published with `verify_jwt = false` in `supabase/config.toml` —
+// matches the `notify-on-write` / `revenuecat-webhook` Edge
+// Function pattern.
 //
-// 2026-05-12 amendment: the original ADR-020 specified
-// `Authorization: Bearer <publishable_key>` but the project migrated
-// to the new `sb_publishable_*` non-JWT key format (Supabase
-// 2025-11-01 transition), and `verify_jwt = true` rejects any
-// Authorization header that is not a valid JWT (error
-// `UNAUTHORIZED_INVALID_JWT_FORMAT`). The Supabase docs for client-
-// invoked Edge Functions place the publishable key in `apikey`
-// instead (the legacy/standard channel) — `supabase-js` puts a
-// signed-in user's session JWT in `Authorization` and the project's
-// publishable key in `apikey`. Our client has no user JWT (the
-// proxy acts as the GitHub App on behalf of any user), so we send
-// only `apikey`.
-//
-// The publishable key is trivially obtainable from app bundle
-// inspection; abuse prevention is via the rate limit below, not via
-// this auth check.
+// Why not `verify_jwt = true`: the project migrated to the new
+// `sb_publishable_*` non-JWT API key format (Supabase 2025-11-01
+// transition). With `verify_jwt = true`, the edge layer requires
+// a valid JWT in the `Authorization` header:
+//   - `Authorization: Bearer sb_publishable_*` →
+//     `UNAUTHORIZED_INVALID_JWT_FORMAT` (the key is not a JWT)
+//   - `apikey: sb_publishable_*` alone (no Authorization) →
+//     `UNAUTHORIZED_NO_AUTH_HEADER` (Authorization is mandatory)
+//   - `Authorization: Bearer <user-session-jwt> + apikey: ...` →
+//     would work, but Skeinly users may NOT be signed in to
+//     Supabase Auth when they want to report a bug (e.g. sign-in
+//     flow itself is broken). Bug reporting must work without a
+//     user session.
+// The Supabase Edge Functions auth doc explicitly recommends
+// disabling `verify_jwt` for unauthenticated client-invoked
+// functions. The mobile app still sends `apikey:
+// <publishable_key>` (defensive convention + forward-compat) but
+// the function does not gate on it — abuse prevention is via the
+// in-memory rate limit (5 reports / hour per source-hash). The
+// publishable key is trivially obtainable from app bundle
+// inspection, so an "auth boundary" here would be performative.
 //
 // `SKEINLY_` prefix on the secrets is load-bearing — Supabase reserves
 // `SUPABASE_*` for platform-injected env vars and `supabase secrets set`

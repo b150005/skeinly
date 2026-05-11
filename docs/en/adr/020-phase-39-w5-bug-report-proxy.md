@@ -86,6 +86,60 @@ Bearer <user_jwt>` alongside the existing `apikey` header
 (`supabase-js`'s established pattern). No rewrite of the client
 needed when that day comes.
 
+### Third amendment (2026-05-12 PM-2) — disable `verify_jwt`
+
+The `apikey`-header fix above still produced HTTP 401
+`UNAUTHORIZED_NO_AUTH_HEADER` from the Supabase edge layer. The
+[Edge Functions auth doc](https://supabase.com/docs/guides/functions/auth)
+clarifies that `verify_jwt = true` requires a JWT in the
+`Authorization` header — the `apikey` channel identifies the
+project but does NOT replace the Authorization check. The doc's
+recommended pattern for **unauthenticated client-invoked functions**
+(Skeinly's case: users may not be signed in to Supabase Auth when
+they want to report a bug — e.g. the sign-in flow itself is what
+they're reporting) is to disable JWT verification entirely:
+
+> "Turn `verify_jwt` off for functions that are called without an
+>  `Authorization` header."
+
+This matches the existing pattern in the repo: `notify-on-write`
+and `revenuecat-webhook` both use `verify_jwt = false` (they
+authenticate via a custom Bearer shared-secret read by the
+function itself, not via Supabase Auth). `submit-bug-report`
+joins that pattern.
+
+Concrete change:
+
+| Surface | Original | Amended |
+|---|---|---|
+| `supabase/config.toml` `[functions.submit-bug-report]` | `verify_jwt = true` | **`verify_jwt = false`** |
+
+Unchanged:
+- Client still sends `apikey: $supabasePublishableKey` (defensive
+  + forward-compat with the recommended pattern for
+  user-authenticated invocations down the road) — the Edge
+  Function does not gate on it.
+- Rate-limit seed (`computeSourceHash`) still reads `apikey` →
+  `authorization` fallback for source-hash differentiation.
+- Auth IS provided at the Edge Function layer in the form of the
+  GitHub App's three secrets, which the function uses to
+  authenticate against GitHub when creating the Issue. That auth
+  is what makes the function meaningful — Supabase-layer auth
+  would only gate "who can invoke" but the publishable key is
+  public anyway, so the gate is performative.
+
+Abuse prevention restated: per ADR-020 §2, the in-memory
+rate limit (5 reports / hour per source-hash on `x-real-ip` +
+auth-tail) is the actual defense. At ≤10-tester closed-beta scale
+and even at Phase 40 GA scale (≤O(10K) installs), an Edge
+Function instance handling at worst N×5 requests/hour where N is
+the number of unique source IPs is well within Supabase's
+function-invocation budget.
+
+Deploy: standard `supabase functions deploy submit-bug-report` —
+the `verify_jwt = false` config takes effect on next deploy. No
+secret changes.
+
 The original §6 user-attended steps are updated: when creating the
 GitHub App, name it `Skeinly Feedback` (not `Skeinly Beta Bug
 Reporter`) and use the amended description.
