@@ -24,6 +24,28 @@
 
 ユーザー向け文言は W5b の i18n sweep の段階で既に scope-neutral に書き換え済 (「Skeinly チームに送ります」とのみ書いてあり、「ベータチームに送ります」とは書いていない)。本 amendment で追加の i18n 変更は不要。
 
+### 第二改訂 (2026-05-12 PM) — `apikey` header (`Authorization: Bearer` から変更)
+
+デプロイ後の curl スモークテストが HTTP 401 `UNAUTHORIZED_INVALID_JWT_FORMAT` で失敗。原因: project が Supabase の新形式 `sb_publishable_*` API key へ移行済 (2025-11-01 切り替え、JWT 形式 `anon` キーは deprecated。CLAUDE.md `The legacy anon JWT key is deprecated by Supabase` を参照)。`verify_jwt = true` の Edge Function は `Authorization` header の値を JWT として検証するが、`sb_publishable_*` は JWT ではないため [Supabase Edge Functions auth doc](https://supabase.com/docs/guides/functions/auth) が明記する通り `apikey` でなく `Authorization` に乗せると edge layer で reject される。
+
+Supabase 推奨の client-invoked Edge Function 認証パターンは **`apikey` header に publishable key を入れる** こと (`supabase-js` SDK が自動的にこれを行う)。
+
+具体的な修正:
+
+| 面 | 当初 | 改訂後 |
+|---|---|---|
+| `BugReportProxyClient.kt` request header | `Authorization: Bearer $supabasePublishableKey` | **`apikey: $supabasePublishableKey`** |
+| Edge Function `computeSourceHash` rate-limit seed | `Authorization` header tail を読む | **`apikey` tail を優先、`Authorization` を fallback** (defense; 旧経路を壊さない) |
+| Smoke test curl (README, release-secrets.md) | `-H "Authorization: Bearer ${ANON}"` | **`-H "apikey: ${ANON}"`** |
+| Edge Function `index.ts` header コメント | "Client auth: Supabase anon JWT" | **"Client auth: Supabase publishable key in the `apikey` header"** + 上記理由 |
+| `BugReportProxyClientTest` assertion | `request.headers[HttpHeaders.Authorization] == "Bearer ..."` | **`request.headers["apikey"] == "..."`** |
+
+`verify_jwt = true` は `supabase/config.toml` で維持 — Supabase edge は `apikey` header の publishable key を認識して通常通り request を受け入れる。新たな deploy-config 変更不要、コードマージ後に通常の `supabase functions deploy submit-bug-report` で OK。
+
+テスト: KMP `BugReportProxyClientTest` 14 件 + Deno `index.test.ts` 17 件を新 header convention に合わせて更新 (Deno 側は `buildRequest` + 2 inline-request の body 3 箇所を `apikey` に書き換え; KMP 側は 1 assertion 更新)。総 commonTest 数 1536 件 / Deno 32 件、いずれも増減なし。
+
+将来互換: signed-in user の session JWT を per-user attribution 用に同時に送りたくなった場合は、`apikey` に publishable key + `Authorization: Bearer <user_jwt>` を併用する `supabase-js` の標準パターンに pivot する。クライアント側書き直し不要で対応可能。
+
 §ユーザー側手順の GitHub App 名は `Skeinly Feedback` (旧 `Skeinly Beta Bug Reporter`) + 上記 description に置き換える。
 
 ADR 本文の残りの節 (§Q1-Q3、§1-§6、§影響、§代替案) は原文のまま、name 文字列 2 箇所と title-prefix scope のみ本 amendment で読み替える。今後の読者は本 Amendment セクションの命名・ラベルを authoritative として扱う。
@@ -81,7 +103,7 @@ Beta build ──POST──▶ Edge Function submit-bug-report ──▶ GitHub 
 ### リクエスト
 ```http
 POST /functions/v1/submit-bug-report
-Authorization: Bearer <SUPABASE_ANON_KEY>
+apikey: <SUPABASE_PUBLISHABLE_KEY>
 Content-Type: application/json
 
 {

@@ -34,9 +34,14 @@ class BugReportProxyClientTest {
                         request.url.toString(),
                     )
                     assertEquals("POST", request.method.value)
+                    // 2026-05-12 amendment: `apikey` header carries
+                    // the publishable key (the new `sb_publishable_*`
+                    // format is not a JWT, so it cannot be sent in
+                    // `Authorization: Bearer` to a `verify_jwt = true`
+                    // Edge Function).
                     assertEquals(
-                        "Bearer sb_publishable_test",
-                        request.headers[HttpHeaders.Authorization],
+                        "sb_publishable_test",
+                        request.headers["apikey"],
                     )
                     respondJson(
                         """{"ok":true,"issue_number":42,"html_url":"https://github.com/b150005/skeinly/issues/42"}""",

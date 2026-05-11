@@ -1161,7 +1161,7 @@ supabase functions deploy submit-bug-report
 ANON=<supabase project anon key>
 curl -i \
   -X POST "https://<project>.supabase.co/functions/v1/submit-bug-report" \
-  -H "Authorization: Bearer ${ANON}" \
+  -H "apikey: ${ANON}" \
   -H "Content-Type: application/json" \
   -d '{"title":"[Beta] smoke test","body":"This is a smoke test."}'
 ```
