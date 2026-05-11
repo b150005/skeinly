@@ -1114,6 +1114,66 @@ supabase secrets list | grep SKEINLY_DATABASE_WEBHOOK_SECRET
 
 > **Dependency chain**: this secret is one of three pieces that together make collaboration push work: (a) the deployed Edge Function itself, (b) the 3 Database Webhooks configured per [`supabase/webhooks.md`](../../supabase/webhooks.md), (c) `device_tokens` table populated by Phase 24.2's `PushTokenRegistrar`. Phase 24.1 wires (a) + (b); Phase 24.2 adds the client side; Phase 24.3 enables real APNs / FCM sends; Phase 24.4–24.6 expand the event matrix + add deep link routing + privacy policy update.
 
+### EF-7. `SKEINLY_BUGREPORT_APP_ID` / `SKEINLY_BUGREPORT_INSTALLATION_ID` / `SKEINLY_BUGREPORT_PRIVATE_KEY_PEM`
+
+**WHAT**: GitHub App credential trio used by the `submit-bug-report` Edge Function (Phase 39 W5, ADR-020) to authenticate as the "Skeinly Beta Bug Reporter" GitHub App and create Issues on `b150005/skeinly` on the tester's behalf. Replaces Phase 39.5's client-side URL prefill flow.
+
+- `SKEINLY_BUGREPORT_APP_ID` — numeric App ID, shown at the top of the App's settings page after creation.
+- `SKEINLY_BUGREPORT_INSTALLATION_ID` — numeric Installation ID, appears in the post-install URL `github.com/settings/installations/<id>`.
+- `SKEINLY_BUGREPORT_PRIVATE_KEY_PEM` — full PEM body of the `.pem` downloaded from the App's "Private keys" section. Includes `-----BEGIN ... PRIVATE KEY-----` / `-----END ... PRIVATE KEY-----` lines verbatim. Both PKCS#1 (`BEGIN RSA PRIVATE KEY`) and PKCS#8 (`BEGIN PRIVATE KEY`) are accepted by the Edge Function.
+
+> **Naming note**: the `SKEINLY_` prefix is load-bearing (same rationale as EF-6 / EF-3).
+
+**CONSUMED BY**: [`supabase/functions/submit-bug-report/index.ts`](../../supabase/functions/submit-bug-report/index.ts) (reads env vars at request time) + [`supabase/functions/submit-bug-report/github_app.ts`](../../supabase/functions/submit-bug-report/github_app.ts) (RS256 JWT signing + installation token exchange).
+
+**OBTAIN**:
+
+1. Open https://github.com/settings/apps/new
+2. **GitHub App name**: `Skeinly Beta Bug Reporter`
+3. **Homepage URL**: `https://b150005.github.io/skeinly/`
+4. **Webhook → Active**: uncheck (no webhooks needed)
+5. **Repository permissions → Issues**: Read & write. All other permissions: No access.
+6. **Where can this GitHub App be installed?**: Only on this account
+7. Click **Create GitHub App**. Note the **App ID** displayed at the top of the reloaded settings page.
+8. Scroll to **Private keys** → **Generate a private key**. A `.pem` file downloads.
+9. Open the App's **Install App** page from the left sidebar, click **Install** next to your account name, select **Only select repositories** → `b150005/skeinly`. Confirm.
+10. The post-install browser URL is `github.com/settings/installations/<INSTALLATION_ID>`. Note the **Installation ID** number.
+
+**REGISTER**:
+
+```bash
+supabase secrets set SKEINLY_BUGREPORT_APP_ID=<app-id-from-step-7>
+supabase secrets set SKEINLY_BUGREPORT_INSTALLATION_ID=<install-id-from-step-10>
+supabase secrets set SKEINLY_BUGREPORT_PRIVATE_KEY_PEM="$(cat /path/to/downloaded.pem)"
+supabase secrets list | grep SKEINLY_BUGREPORT
+```
+
+**DEPLOY**:
+
+```bash
+git checkout main && git pull
+supabase functions deploy submit-bug-report
+```
+
+**SMOKE TEST** (after deploy):
+
+```bash
+ANON=<supabase project anon key>
+curl -i \
+  -X POST "https://<project>.supabase.co/functions/v1/submit-bug-report" \
+  -H "Authorization: Bearer ${ANON}" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"[Beta] smoke test","body":"This is a smoke test."}'
+```
+
+Expect HTTP 200 with `{"ok":true,"issue_number":<n>,"html_url":"..."}`. Visit the returned URL to verify, then close the Issue manually.
+
+**ROTATE**: App settings → Generate new private key → download `.pem` → `supabase secrets set SKEINLY_BUGREPORT_PRIVATE_KEY_PEM="$(cat new.pem)"` → `supabase functions deploy submit-bug-report` → App settings → revoke the old key. App ID and Installation ID do not change.
+
+> **Dependency chain**: Phase 39 W5a wires the Edge Function (this entry). Phase 39.5's client-side URL prefill remains the active submission path until Phase 39 W5b deletes `BugSubmissionLauncher` (expect/actual) and routes via a new `BugReportProxyClient`. Until W5b lands, this Edge Function is deployed but unused by client builds — keep it deployed so the W5b commit can flip the client-side switch without coordinated deploy timing.
+
+Reference: [GitHub Apps documentation](https://docs.github.com/en/apps/creating-github-apps)
+
 ### Reused: App Store Connect API key (DEPRECATED 2026-05-09 for Edge Functions)
 
 > **DEPRECATED 2026-05-09 for Edge Function consumption**: was registered for the now-deleted `verify-receipt` Edge Function (iOS branch, JWS signing for App Store Server API calls). RevenueCat handles iOS receipt validation server-side, so the Supabase-side registration of these three secrets is no longer consumed by any Edge Function. Safe to:
@@ -1200,7 +1260,7 @@ For Supabase Edge Function secrets (registered via `supabase secrets set`):
 supabase secrets list
 ```
 
-Expected (6 entries after Phase 24.1 `SKEINLY_DATABASE_WEBHOOK_SECRET` registration; was 5 after 2026-05-09 `verify-receipt` deletion):
+Expected (9 entries after Phase 39 W5a `SKEINLY_BUGREPORT_*` registration; was 6 after Phase 24.1; was 5 after 2026-05-09 `verify-receipt` deletion):
 
 ```
 APPLE_APNS_KEY_ID                           # for notify-on-write (Phase 24.3 wires the actual send)
@@ -1208,6 +1268,9 @@ APPLE_APNS_KEY_P8                           # for notify-on-write (Phase 24.3 wi
 APPLE_TEAM_ID                               # for notify-on-write (Phase 24.3 wires the actual send)
 FIREBASE_SERVICE_ACCOUNT_JSON               # for notify-on-write (Phase 24.3 wires the actual send)
 REVENUECAT_WEBHOOK_SECRET                   # for revenuecat-webhook (Phase 39 prep)
+SKEINLY_BUGREPORT_APP_ID                    # for submit-bug-report (Phase 39 W5a)
+SKEINLY_BUGREPORT_INSTALLATION_ID           # for submit-bug-report (Phase 39 W5a)
+SKEINLY_BUGREPORT_PRIVATE_KEY_PEM           # for submit-bug-report (Phase 39 W5a)
 SKEINLY_DATABASE_WEBHOOK_SECRET             # for notify-on-write Database Webhook signing (Phase 24.1)
 ```
 
@@ -1248,6 +1311,7 @@ Specifically:
 | Environment `GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64` | Cloud Console → IAM → Service Accounts → `google-play-publisher@...` → revoke + new key → re-run `gh secret set --env production` | Annual or on incident |
 | Edge Function `REVENUECAT_WEBHOOK_SECRET` | `openssl rand -hex 32` for new value → update RevenueCat Webhook Authorization header → re-register Supabase secret | Annual or on incident |
 | Edge Function `SKEINLY_DATABASE_WEBHOOK_SECRET` | `openssl rand -hex 32` for new value → re-register Supabase secret + update Authorization HTTP header on each of the 3 Database Webhooks via Dashboard | Annual or on incident |
+| Edge Function `SKEINLY_BUGREPORT_PRIVATE_KEY_PEM` | GitHub App settings → Generate new private key → download `.pem` → `supabase secrets set SKEINLY_BUGREPORT_PRIVATE_KEY_PEM="$(cat new.pem)"` → `supabase functions deploy submit-bug-report` → revoke old key on App settings page. `SKEINLY_BUGREPORT_APP_ID` + `SKEINLY_BUGREPORT_INSTALLATION_ID` do not rotate (immutable for the App). | Annual or on incident |
 
 After rotating, re-run `gh secret set` for each affected secret. The next CI run picks up the new value automatically.
 
