@@ -32,6 +32,46 @@ jobs:
           echo "version=$TAG" >> "$GITHUB_OUTPUT"
           echo "Release version: $TAG"
 
+      # Phase 39 (W3 / 2026-05-11) — pre-release verification that the
+      # Universal Link / Android App Link infrastructure is live at the
+      # root domain. Hosted in the separate User Pages repo
+      # `b150005/b150005.github.io` (Skeinly Project Pages at
+      # /skeinly/ cannot host these — Apple/Google ignore subpath AASA).
+      #
+      # Failing here BEFORE Android/iOS builds saves ~25min of CI time
+      # on a release where the AASA / assetlinks accidentally went
+      # missing (e.g. an unrelated cleanup commit on the User Pages
+      # repo). The downstream tag-push reaches alpha testers as a
+      # broken Universal Link experience without this gate; better to
+      # fail at the validation step.
+      #
+      # The package_name + SHA256 fingerprint match is the *minimum*
+      # health check — Apple/Google's own verifier checks more (e.g.
+      # appIDs format, JSON shape), but those errors surface as 200
+      # responses, so we lean on shape + content checks here.
+      - name: Verify Universal Link infrastructure is live
+        run: |
+          set -euo pipefail
+          AASA_URL="https://b150005.github.io/.well-known/apple-app-site-association"
+          ASSETLINKS_URL="https://b150005.github.io/.well-known/assetlinks.json"
+          EXPECTED_APP_ID="L9ZR4679P5.io.github.b150005.skeinly"
+          EXPECTED_PACKAGE="io.github.b150005.skeinly"
+          EXPECTED_SHA256_PREFIX="18:B3:0D:4F"
+
+          AASA=$(curl -fsSL --max-time 10 --retry 3 --retry-delay 5 \
+            --retry-all-errors "$AASA_URL")
+          echo "$AASA" | grep -q "$EXPECTED_APP_ID" \
+            || { echo "::error::AASA missing expected appID $EXPECTED_APP_ID"; exit 1; }
+          echo "OK   AASA returned 200 and contains expected appID"
+
+          ASSETLINKS=$(curl -fsSL --max-time 10 --retry 3 --retry-delay 5 \
+            --retry-all-errors "$ASSETLINKS_URL")
+          echo "$ASSETLINKS" | grep -q "\"$EXPECTED_PACKAGE\"" \
+            || { echo "::error::assetlinks missing expected package_name $EXPECTED_PACKAGE"; exit 1; }
+          echo "$ASSETLINKS" | grep -q "$EXPECTED_SHA256_PREFIX" \
+            || { echo "::error::assetlinks missing expected SHA256 prefix $EXPECTED_SHA256_PREFIX"; exit 1; }
+          echo "OK   assetlinks returned 200 and contains expected package + SHA256"
+
   build-android:
     name: Build Android Release
     runs-on: ubuntu-latest
