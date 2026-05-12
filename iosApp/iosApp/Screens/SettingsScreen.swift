@@ -277,6 +277,12 @@ struct SettingsScreen: View {
                 }
                 .accessibilityIdentifier("termsOfServiceButton")
 
+                // Pre-alpha A35 — Help & FAQ page link.
+                Link(destination: URL(string: "https://b150005.github.io/skeinly/help/")!) {
+                    Label("action_help_faq", systemImage: "questionmark.circle")
+                }
+                .accessibilityIdentifier("helpFaqButton")
+
                 // Pre-alpha A34 — Contact Support row. Opens mailto:
                 // composer via the shared `SupportContactLauncher`
                 // Kotlin actual; the URL is built in commonMain with

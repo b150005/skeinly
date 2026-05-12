@@ -256,6 +256,23 @@
         }
       }
     },
+    "action_help_faq": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Help & FAQ"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルプとよくある質問"
+          }
+        }
+      }
+    },
     "action_change_password": {
       "extractionState": "manual",
       "localizations": {
