@@ -13,7 +13,7 @@ import kotlin.time.Instant
  *   close; source author can close.
  * - [APPLIED]: terminal. Reached only via the SECURITY DEFINER
  *   `apply_suggestion` RPC — never via a client-side UPDATE. The suggestion
- *   row's [Suggestion.mergedRevisionId] points at the resulting version.
+ *   row's [Suggestion.appliedVersionId] points at the resulting version.
  * - [CLOSED]: terminal. Reached when either party closes the suggestion
  *   without applying it. Comments survive but no further state transitions
  *   are valid.
@@ -61,9 +61,10 @@ enum class SuggestionStatus {
  * suggestion as the target owner commits to their own variation; the apply
  * RPC always uses the *current* target tip as the apply base.
  *
- * **Apply result.** [mergedRevisionId] / [mergedAt] (column names preserved
- * from migration 016 per migration 027's "internal column names not renamed"
- * scope) are populated by the RPC when status flips to
+ * **Apply result.** [appliedVersionId] / [appliedAt] (Postgres column names
+ * `merged_revision_id` / `merged_at` preserved verbatim per migration 027's
+ * "internal column names not renamed" scope; the Kotlin property names use
+ * the post-Phase-D verbs) are populated by the RPC when status flips to
  * [SuggestionStatus.APPLIED]. NULL on OPEN and CLOSED suggestions.
  */
 @Serializable
@@ -79,8 +80,8 @@ data class Suggestion(
     val title: String,
     val description: String?,
     val status: SuggestionStatus,
-    @SerialName("merged_revision_id") val mergedRevisionId: String?,
-    @SerialName("merged_at") val mergedAt: Instant?,
+    @SerialName("merged_revision_id") val appliedVersionId: String?,
+    @SerialName("merged_at") val appliedAt: Instant?,
     @SerialName("closed_at") val closedAt: Instant?,
     @SerialName("created_at") val createdAt: Instant,
     @SerialName("updated_at") val updatedAt: Instant,
@@ -99,7 +100,7 @@ data class Suggestion(
      * a non-owner. The RPC's `WHERE owner_id = v_caller` check is the actual
      * security boundary; this method is UI-affordance gating only.
      */
-    fun canMerge(
+    fun canApply(
         currentUserId: String,
         targetOwnerId: String,
     ): Boolean = status == SuggestionStatus.OPEN && currentUserId == targetOwnerId

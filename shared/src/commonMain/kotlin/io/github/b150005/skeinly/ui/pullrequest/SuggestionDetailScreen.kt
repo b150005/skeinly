@@ -200,7 +200,7 @@ fun SuggestionDetailScreen(
                         users = state.users,
                         commentDraft = state.commentDraft,
                         isSendingComment = state.isSendingComment,
-                        canMerge = state.canMerge,
+                        canApply = state.canApply,
                         canClose = state.canClose,
                         onCommentDraftChanged = {
                             viewModel.onEvent(SuggestionDetailEvent.CommentDraftChanged(it))
@@ -284,7 +284,7 @@ private fun DetailContent(
     users: Map<String, io.github.b150005.skeinly.domain.model.User>,
     commentDraft: String,
     isSendingComment: Boolean,
-    canMerge: Boolean,
+    canApply: Boolean,
     canClose: Boolean,
     onCommentDraftChanged: (String) -> Unit,
     onPostComment: () -> Unit,
@@ -322,9 +322,9 @@ private fun DetailContent(
             )
         }
 
-        if (canMerge || canClose) {
+        if (canApply || canClose) {
             ActionBar(
-                canMerge = canMerge,
+                canApply = canApply,
                 canClose = canClose,
                 onMerge = onMergeClick,
                 onClose = onCloseClick,
@@ -539,7 +539,7 @@ private fun CommentComposeBox(
 
 @Composable
 private fun ActionBar(
-    canMerge: Boolean,
+    canApply: Boolean,
     canClose: Boolean,
     onMerge: () -> Unit,
     onClose: () -> Unit,
@@ -557,7 +557,7 @@ private fun ActionBar(
                 modifier = Modifier.testTag("closeButton"),
             ) { Text(stringResource(Res.string.action_close_suggestion)) }
         }
-        if (canMerge) {
+        if (canApply) {
             // Phase 38.4: merge active. Tap → confirmation dialog → ConfirmMerge
             // → conflict detection → either direct RPC (auto-clean) or push
             // ChartConflictResolutionScreen (interactive resolution).

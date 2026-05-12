@@ -88,12 +88,12 @@ data class SuggestionDetailState(
      * On state, not as a top-level extension property, so the Swift bridge
      * can read it as a regular `Bool` getter rather than a Kt-class function.
      */
-    val canMerge: Boolean
+    val canApply: Boolean
         get() {
             val pr = suggestion ?: return false
             val current = currentUserId ?: return false
             val owner = targetOwnerId ?: return false
-            return pr.canMerge(current, owner)
+            return pr.canApply(current, owner)
         }
 
     /** Derived gate for the close button. Either party may close per ADR-014 §1. */
@@ -147,7 +147,7 @@ sealed interface SuggestionDetailNavEvent {
      * caller; reserved for forward-compat).
      */
     data class PrMerged(
-        val mergedRevisionId: String,
+        val appliedVersionId: String,
     ) : SuggestionDetailNavEvent
 
     /**
@@ -308,7 +308,7 @@ class SuggestionDetailViewModel(
                 val pr = result.value
                 // Explicit try/catch (not runCatching) because runCatching
                 // swallows CancellationException — losing targetOwnerId for
-                // the session means canMerge / canClose stay permanently
+                // the session means canApply / canClose stay permanently
                 // false even after a successful re-fetch, and the merge gate
                 // is the load-bearing part of the detail surface. If the
                 // call is cancelled, propagate so the structured-concurrency
@@ -549,7 +549,7 @@ class SuggestionDetailViewModel(
                         )
                         _navEvents.trySend(
                             SuggestionDetailNavEvent.PrMerged(
-                                mergedRevisionId = result.value.mergedRevisionId,
+                                appliedVersionId = result.value.appliedVersionId,
                             ),
                         )
                     }

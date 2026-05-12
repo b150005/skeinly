@@ -64,7 +64,7 @@ class ApplySuggestionUseCase(
      * etc.) are NOT used — the RPC writes its own envelope. Only the document
      * payload + content hash matter for the apply result.
      *
-     * [strategy] is currently always [MergeStrategy.SQUASH] in v1 (the
+     * [strategy] is currently always [ApplyStrategy.SQUASH] in v1 (the
      * fast-forward path is a server-side enum value reserved for forward
      * compatibility but no client path exercises it; ADR-014 §5 final
      * paragraph).
@@ -72,8 +72,8 @@ class ApplySuggestionUseCase(
     suspend operator fun invoke(
         suggestion: Suggestion,
         resolvedChart: Chart,
-        strategy: MergeStrategy = MergeStrategy.SQUASH,
-    ): UseCaseResult<MergeResult> {
+        strategy: ApplyStrategy = ApplyStrategy.SQUASH,
+    ): UseCaseResult<ApplyResult> {
         // Client-side preconditions before the round trip. The RPC re-validates
         // server-side; these reject stale UI state without paying the network
         // cost.
@@ -129,10 +129,10 @@ class ApplySuggestionUseCase(
                     resolvedRevisionId = newRevisionId,
                 )
             UseCaseResult.Success(
-                MergeResult(
+                ApplyResult(
                     suggestionId = suggestion.id,
-                    mergedRevisionId = returnedRevisionId,
-                    mergedContentHash = appliedContentHash,
+                    appliedVersionId = returnedRevisionId,
+                    appliedContentHash = appliedContentHash,
                 ),
             )
         } catch (e: CancellationException) {
@@ -173,10 +173,10 @@ class ApplySuggestionUseCase(
 }
 
 /**
- * Merge strategy. Phase 38 v1 always uses [SQUASH]; [FAST_FORWARD] is
+ * Apply strategy. Phase 38 v1 always uses [SQUASH]; [FAST_FORWARD] is
  * reserved on the SQL side per ADR-014 §5 but no client path exercises it.
  */
-enum class MergeStrategy(
+enum class ApplyStrategy(
     val wireValue: String,
 ) {
     SQUASH("squash"),
@@ -184,13 +184,13 @@ enum class MergeStrategy(
 }
 
 /**
- * Outcome of a successful merge. The returned [mergedRevisionId] matches the
+ * Outcome of a successful apply. The returned [appliedVersionId] matches the
  * id the use case minted — the RPC echoes it back as confirmation.
  */
-data class MergeResult(
+data class ApplyResult(
     val suggestionId: String,
-    val mergedRevisionId: String,
-    val mergedContentHash: String,
+    val appliedVersionId: String,
+    val appliedContentHash: String,
 )
 
 /**

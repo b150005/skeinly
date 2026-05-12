@@ -51,8 +51,8 @@ class ApplySuggestionUseCaseTest {
             title = "Add cable section",
             description = null,
             status = SuggestionStatus.OPEN,
-            mergedRevisionId = null,
-            mergedAt = null,
+            appliedVersionId = null,
+            appliedAt = null,
             closedAt = null,
             createdAt = now,
             updatedAt = now,
@@ -224,7 +224,7 @@ class ApplySuggestionUseCaseTest {
             assertTrue(result is UseCaseResult.Success)
             assertEquals("pr-1", result.value.suggestionId)
             assertEquals("squash", ops.lastStrategy)
-            assertEquals(ops.lastRevisionId, result.value.mergedRevisionId)
+            assertEquals(ops.lastRevisionId, result.value.appliedVersionId)
             assertEquals(1, ops.callCount)
         }
 
@@ -489,9 +489,9 @@ class ApplySuggestionUseCaseTest {
             val useCase = ApplySuggestionUseCase(ops, patterns, auth, json)
 
             val r1 = useCase(openPr(), resolvedChart())
-            val firstId = (r1 as UseCaseResult.Success).value.mergedRevisionId
+            val firstId = (r1 as UseCaseResult.Success).value.appliedVersionId
             val r2 = useCase(openPr(), resolvedChart())
-            val secondId = (r2 as UseCaseResult.Success).value.mergedRevisionId
+            val secondId = (r2 as UseCaseResult.Success).value.appliedVersionId
 
             assertTrue(firstId != secondId, "Each merge should mint a distinct revision id (was '$firstId')")
             assertEquals(2, ops.callCount)
