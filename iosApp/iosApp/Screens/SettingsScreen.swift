@@ -242,6 +242,26 @@ struct SettingsScreen: View {
                         Label("action_change_email", systemImage: "envelope")
                     }
                     .accessibilityIdentifier("changeEmailButton")
+
+                    // Pre-alpha A30 — Manage subscription deep link.
+                    // Recommended by Apple HIG; mirrors the Compose Settings
+                    // row for symmetry across platforms. Opens
+                    // https://apps.apple.com/account/subscriptions via the
+                    // shared `SubscriptionManagementLauncher` Kotlin
+                    // platform actual. Shown to all signed-in users
+                    // regardless of Pro subscription state (non-subscribers
+                    // see an empty subscriptions list, which is informative).
+                    Button {
+                        KoinHelperKt.openSubscriptionManagement()
+                    } label: {
+                        VStack(alignment: .leading) {
+                            Label("action_manage_subscription", systemImage: "creditcard")
+                            Text("body_manage_subscription_helper")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .accessibilityIdentifier("manageSubscriptionButton")
                 }
             }
 

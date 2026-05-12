@@ -429,6 +429,20 @@ fun wrapChartConflictResolutionNavEvents(
 
 fun getSymbolGalleryViewModel(): SymbolGalleryViewModel = KoinPlatform.getKoin().get()
 
+/**
+ * Pre-alpha A30 — invokes the platform's subscription-management deep link
+ * from SwiftUI. Bridges through Koin instead of receiving a Swift-side
+ * dependency injection so the SwiftUI call site stays a one-liner.
+ * Fire-and-forget: no error handling required — failure on the Kotlin
+ * side is already swallowed in
+ * [io.github.b150005.skeinly.platform.SubscriptionManagementLauncher].
+ */
+fun openSubscriptionManagement() {
+    val launcher: io.github.b150005.skeinly.platform.SubscriptionManagementLauncher =
+        KoinPlatform.getKoin().get()
+    launcher.open()
+}
+
 fun wrapSymbolGalleryState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.symbol.SymbolGalleryState>,
 ): FlowWrapper<io.github.b150005.skeinly.ui.symbol.SymbolGalleryState> = FlowWrapper(flow)

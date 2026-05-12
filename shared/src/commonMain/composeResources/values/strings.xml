@@ -63,6 +63,9 @@
     <string name="message_reset_email_sent">If an account exists for this email, you\'ll receive a reset link shortly.</string>
     <string name="action_change_password">Change Password</string>
     <string name="action_change_email">Change Email</string>
+    <!-- Pre-alpha A30 — Subscription management deep link in Settings → Account. -->
+    <string name="action_manage_subscription">Manage Subscription</string>
+    <string name="body_manage_subscription_helper">Review, change, or cancel your Skeinly Pro subscription in the platform store.</string>
     <string name="dialog_change_password_title">Change Password</string>
     <string name="dialog_change_email_title">Change Email</string>
     <string name="label_new_password">New Password</string>
