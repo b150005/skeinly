@@ -202,6 +202,130 @@
     <p>We do <strong>not</strong> sell, rent, or share your personal information with third parties for advertising or marketing purposes.</p>
     <p>Your content is shared with other users <strong>only</strong> when you explicitly choose to share a pattern or project. Shared content is visible to the recipients you select.</p>
 
+    <h3>Subprocessors</h3>
+    <p>We use the following third-party service providers ("subprocessors") to operate the App. Each acts as a data processor on our behalf under a Data Processing Agreement; they are contractually prohibited from using your data for any purpose other than providing the services described.</p>
+    <table style="width: 100%; border-collapse: collapse; margin: 1rem 0;">
+      <thead>
+        <tr style="border-bottom: 1px solid #ddd;">
+          <th style="text-align: left; padding: 0.5rem;">Subprocessor</th>
+          <th style="text-align: left; padding: 0.5rem;">Purpose</th>
+          <th style="text-align: left; padding: 0.5rem;">Data processed</th>
+          <th style="text-align: left; padding: 0.5rem;">Privacy policy</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem; vertical-align: top;"><strong>Supabase</strong> (via AWS)</td>
+          <td style="padding: 0.5rem; vertical-align: top;">Backend database, auth, file storage, realtime sync</td>
+          <td style="padding: 0.5rem; vertical-align: top;">All app data (account, profile, pattern, project, progress, push device tokens, share metadata, subscription state)</td>
+          <td style="padding: 0.5rem; vertical-align: top;"><a href="https://supabase.com/privacy">supabase.com/privacy</a></td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem; vertical-align: top;"><strong>RevenueCat</strong></td>
+          <td style="padding: 0.5rem; vertical-align: top;">Subscription state proxy + IAP receipt validation</td>
+          <td style="padding: 0.5rem; vertical-align: top;">Anonymous app user ID (same UUID as Supabase), platform, product ID, transaction ID, subscription period</td>
+          <td style="padding: 0.5rem; vertical-align: top;"><a href="https://www.revenuecat.com/privacy">revenuecat.com/privacy</a></td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem; vertical-align: top;"><strong>Sentry</strong> (opt-in)</td>
+          <td style="padding: 0.5rem; vertical-align: top;">Crash and error reporting (beta builds only, requires opt-in)</td>
+          <td style="padding: 0.5rem; vertical-align: top;">Stack traces, device model, OS version, anonymous installation UUID</td>
+          <td style="padding: 0.5rem; vertical-align: top;"><a href="https://sentry.io/privacy/">sentry.io/privacy</a></td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem; vertical-align: top;"><strong>PostHog</strong> (opt-in)</td>
+          <td style="padding: 0.5rem; vertical-align: top;">Anonymous product analytics (beta builds only, requires opt-in)</td>
+          <td style="padding: 0.5rem; vertical-align: top;">Page views, button taps, anonymous device-level distinct ID</td>
+          <td style="padding: 0.5rem; vertical-align: top;"><a href="https://posthog.com/privacy">posthog.com/privacy</a></td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem; vertical-align: top;"><strong>Apple</strong> (APNs)</td>
+          <td style="padding: 0.5rem; vertical-align: top;">Push notification delivery on iOS</td>
+          <td style="padding: 0.5rem; vertical-align: top;">Opaque device token + notification body</td>
+          <td style="padding: 0.5rem; vertical-align: top;"><a href="https://www.apple.com/legal/privacy/">apple.com/legal/privacy</a></td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem; vertical-align: top;"><strong>Google</strong> (Firebase Cloud Messaging)</td>
+          <td style="padding: 0.5rem; vertical-align: top;">Push notification delivery on Android</td>
+          <td style="padding: 0.5rem; vertical-align: top;">Opaque device token + notification body + Firebase project ID</td>
+          <td style="padding: 0.5rem; vertical-align: top;"><a href="https://policies.google.com/privacy">policies.google.com/privacy</a></td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem; vertical-align: top;"><strong>GitHub</strong> (bug reports)</td>
+          <td style="padding: 0.5rem; vertical-align: top;">Hosting in-app bug reports as Issues on the public Skeinly repository (only when you submit a report)</td>
+          <td style="padding: 0.5rem; vertical-align: top;">Bug title and body, app version, OS, device model, locale, anonymous PostHog distinct ID, last 10 in-app actions</td>
+          <td style="padding: 0.5rem; vertical-align: top;"><a href="https://docs.github.com/en/site-policy/privacy-policies">github.com/site-policy</a></td>
+        </tr>
+        <tr>
+          <td style="padding: 0.5rem; vertical-align: top;"><strong>Apple App Store / Google Play</strong></td>
+          <td style="padding: 0.5rem; vertical-align: top;">In-app purchase processing (IAP)</td>
+          <td style="padding: 0.5rem; vertical-align: top;">Transaction details (purchase, renewal, cancellation). Skeinly receives only a subscription-state indicator via RevenueCat; we do not see your Apple ID or Google account directly.</td>
+          <td style="padding: 0.5rem; vertical-align: top;">per Apple / Google IAP terms</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>This subprocessor list is updated when material changes occur. We recommend you review the linked third-party privacy policies for full details on how each subprocessor handles the data we share with them.</p>
+
+    <h3>Data Retention</h3>
+    <p>Different data types are retained for different periods based on the purpose of collection:</p>
+    <table style="width: 100%; border-collapse: collapse; margin: 1rem 0;">
+      <thead>
+        <tr style="border-bottom: 1px solid #ddd;">
+          <th style="text-align: left; padding: 0.5rem;">Data type</th>
+          <th style="text-align: left; padding: 0.5rem;">Retention period</th>
+          <th style="text-align: left; padding: 0.5rem;">Trigger for deletion</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem;">Account record (email, profile, display name, avatar)</td>
+          <td style="padding: 0.5rem;">Until account deletion</td>
+          <td style="padding: 0.5rem;">User-initiated deletion via Settings &gt; Delete Account</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem;">Pattern, project, progress, suggestion, comment data</td>
+          <td style="padding: 0.5rem;">Until account deletion</td>
+          <td style="padding: 0.5rem;">Cascades from account deletion</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem;">Push notification device tokens</td>
+          <td style="padding: 0.5rem;">Until token rotation OR account deletion</td>
+          <td style="padding: 0.5rem;">Token rotation (OS-issued) overwrites; foreign-key cascade on account deletion</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem;">PostHog event data (opt-in only)</td>
+          <td style="padding: 0.5rem;">12 months (configured in PostHog project settings)</td>
+          <td style="padding: 0.5rem;">Auto-expires per PostHog retention policy</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem;">Sentry crash and error data (opt-in only)</td>
+          <td style="padding: 0.5rem;">90 days (Sentry Developer plan default)</td>
+          <td style="padding: 0.5rem;">Auto-expires per Sentry retention policy</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem;">Supabase database backups</td>
+          <td style="padding: 0.5rem;">7 days (Pro tier point-in-time recovery window)</td>
+          <td style="padding: 0.5rem;">Auto-expires per Supabase backup retention</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem;">GitHub Issues (bug reports)</td>
+          <td style="padding: 0.5rem;">Indefinite (Issues on a public repository)</td>
+          <td style="padding: 0.5rem;">Manual close + lock if you request removal of identifying information</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem;">RevenueCat subscription data</td>
+          <td style="padding: 0.5rem;">Per RevenueCat retention policy</td>
+          <td style="padding: 0.5rem;">Per RevenueCat policy linked above</td>
+        </tr>
+        <tr>
+          <td style="padding: 0.5rem;">Apple App Store / Google Play purchase history</td>
+          <td style="padding: 0.5rem;">Per Apple / Google policy (outside Skeinly control)</td>
+          <td style="padding: 0.5rem;">Managed by your Apple ID / Google account</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Operational note: when you delete your account, Skeinly-controlled data is removed immediately. Data held by subprocessors that auto-expires (PostHog, Sentry, Supabase backups) ages out per the subprocessor's retention schedule. The opt-in analytics + crash reporting (PostHog, Sentry) collect no further data after revocation; the already-collected data ages out per the schedule above.</p>
+
     <h2>Your Rights</h2>
     <p>You have the right to:</p>
     <ul>
