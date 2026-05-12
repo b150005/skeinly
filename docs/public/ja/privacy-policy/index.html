@@ -202,6 +202,130 @@
     <p>お客様の個人情報を広告やマーケティング目的で第三者に販売、貸与、または共有することは<strong>ありません</strong>。</p>
     <p>お客様のコンテンツは、パターンやプロジェクトを明示的に共有することを選択した場合<strong>のみ</strong>、他のユーザーに表示されます。</p>
 
+    <h3>サブプロセッサー</h3>
+    <p>当方はアプリの運営のため以下の第三者サービスプロバイダー（「サブプロセッサー」）を利用しています。いずれもデータ処理契約 (DPA) に基づき当方の代理としてデータ処理者として機能し、契約上、以下に記載するサービス提供以外の目的でお客様のデータを利用することは禁止されています。</p>
+    <table style="width: 100%; border-collapse: collapse; margin: 1rem 0;">
+      <thead>
+        <tr style="border-bottom: 1px solid #ddd;">
+          <th style="text-align: left; padding: 0.5rem;">サブプロセッサー</th>
+          <th style="text-align: left; padding: 0.5rem;">目的</th>
+          <th style="text-align: left; padding: 0.5rem;">処理されるデータ</th>
+          <th style="text-align: left; padding: 0.5rem;">プライバシーポリシー</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem; vertical-align: top;"><strong>Supabase</strong>（AWS 経由）</td>
+          <td style="padding: 0.5rem; vertical-align: top;">バックエンドデータベース、認証、ファイルストレージ、リアルタイム同期</td>
+          <td style="padding: 0.5rem; vertical-align: top;">アプリ全データ（アカウント、プロフィール、パターン、プロジェクト、進捗、プッシュ用デバイストークン、共有メタデータ、サブスクリプション状態）</td>
+          <td style="padding: 0.5rem; vertical-align: top;"><a href="https://supabase.com/privacy">supabase.com/privacy</a></td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem; vertical-align: top;"><strong>RevenueCat</strong></td>
+          <td style="padding: 0.5rem; vertical-align: top;">サブスクリプション状態の中継および IAP レシート検証</td>
+          <td style="padding: 0.5rem; vertical-align: top;">匿名アプリユーザー ID（Supabase の UUID と同一）、プラットフォーム、製品 ID、トランザクション ID、サブスクリプション期間</td>
+          <td style="padding: 0.5rem; vertical-align: top;"><a href="https://www.revenuecat.com/privacy">revenuecat.com/privacy</a></td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem; vertical-align: top;"><strong>Sentry</strong>（オプトイン）</td>
+          <td style="padding: 0.5rem; vertical-align: top;">クラッシュ・エラーレポート（ベータビルドのみ、明示的なオプトイン必須）</td>
+          <td style="padding: 0.5rem; vertical-align: top;">スタックトレース、デバイスモデル、OS バージョン、匿名インストール UUID</td>
+          <td style="padding: 0.5rem; vertical-align: top;"><a href="https://sentry.io/privacy/">sentry.io/privacy</a></td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem; vertical-align: top;"><strong>PostHog</strong>（オプトイン）</td>
+          <td style="padding: 0.5rem; vertical-align: top;">匿名のプロダクト分析（ベータビルドのみ、明示的なオプトイン必須）</td>
+          <td style="padding: 0.5rem; vertical-align: top;">ページビュー、ボタンタップ、匿名デバイスレベル識別子 (distinct_id)</td>
+          <td style="padding: 0.5rem; vertical-align: top;"><a href="https://posthog.com/privacy">posthog.com/privacy</a></td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem; vertical-align: top;"><strong>Apple</strong>（APNs）</td>
+          <td style="padding: 0.5rem; vertical-align: top;">iOS のプッシュ通知配信</td>
+          <td style="padding: 0.5rem; vertical-align: top;">不透明なデバイストークン＋通知本文</td>
+          <td style="padding: 0.5rem; vertical-align: top;"><a href="https://www.apple.com/legal/privacy/">apple.com/legal/privacy</a></td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem; vertical-align: top;"><strong>Google</strong>（Firebase Cloud Messaging）</td>
+          <td style="padding: 0.5rem; vertical-align: top;">Android のプッシュ通知配信</td>
+          <td style="padding: 0.5rem; vertical-align: top;">不透明なデバイストークン＋通知本文＋Firebase プロジェクト ID</td>
+          <td style="padding: 0.5rem; vertical-align: top;"><a href="https://policies.google.com/privacy">policies.google.com/privacy</a></td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem; vertical-align: top;"><strong>GitHub</strong>（バグレポート）</td>
+          <td style="padding: 0.5rem; vertical-align: top;">Skeinly 公開リポジトリへのアプリ内バグレポートの Issue 投稿（レポート送信時のみ）</td>
+          <td style="padding: 0.5rem; vertical-align: top;">バグタイトルと本文、アプリバージョン、OS、デバイスモデル、ロケール、匿名 PostHog distinct_id、直近 10 件のアプリ内操作</td>
+          <td style="padding: 0.5rem; vertical-align: top;"><a href="https://docs.github.com/en/site-policy/privacy-policies">github.com/site-policy</a></td>
+        </tr>
+        <tr>
+          <td style="padding: 0.5rem; vertical-align: top;"><strong>Apple App Store / Google Play</strong></td>
+          <td style="padding: 0.5rem; vertical-align: top;">アプリ内課金 (IAP) の処理</td>
+          <td style="padding: 0.5rem; vertical-align: top;">トランザクション詳細（購入、更新、解約）。Skeinly は RevenueCat 経由でサブスクリプション状態の指標のみを受け取り、Apple ID や Google アカウントを直接取得することはありません。</td>
+          <td style="padding: 0.5rem; vertical-align: top;">Apple / Google の IAP 規約に準拠</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>このサブプロセッサー一覧は実質的な変更があった際に更新されます。各サブプロセッサーの詳細な取扱いについては、上記のリンク先のプライバシーポリシーも併せてご確認ください。</p>
+
+    <h3>データ保持期間</h3>
+    <p>データの種類ごとに、収集目的に応じた保持期間を定めています。</p>
+    <table style="width: 100%; border-collapse: collapse; margin: 1rem 0;">
+      <thead>
+        <tr style="border-bottom: 1px solid #ddd;">
+          <th style="text-align: left; padding: 0.5rem;">データの種類</th>
+          <th style="text-align: left; padding: 0.5rem;">保持期間</th>
+          <th style="text-align: left; padding: 0.5rem;">削除のトリガー</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem;">アカウント情報（メール、プロフィール、表示名、アバター）</td>
+          <td style="padding: 0.5rem;">アカウント削除まで</td>
+          <td style="padding: 0.5rem;">設定 &gt; アカウント削除によるユーザー操作</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem;">パターン、プロジェクト、進捗、提案、コメントデータ</td>
+          <td style="padding: 0.5rem;">アカウント削除まで</td>
+          <td style="padding: 0.5rem;">アカウント削除からのカスケード削除</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem;">プッシュ通知デバイストークン</td>
+          <td style="padding: 0.5rem;">トークン回転 または アカウント削除まで</td>
+          <td style="padding: 0.5rem;">OS によるトークン回転で上書き、アカウント削除時に外部キーカスケード削除</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem;">PostHog イベントデータ（オプトインのみ）</td>
+          <td style="padding: 0.5rem;">12 ヶ月（PostHog プロジェクト設定）</td>
+          <td style="padding: 0.5rem;">PostHog の保持ポリシーで自動失効</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem;">Sentry クラッシュ・エラーデータ（オプトインのみ）</td>
+          <td style="padding: 0.5rem;">90 日（Sentry Developer プランの既定値）</td>
+          <td style="padding: 0.5rem;">Sentry の保持ポリシーで自動失効</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem;">Supabase データベースバックアップ</td>
+          <td style="padding: 0.5rem;">7 日間（Pro プランの Point-in-Time Recovery ウィンドウ）</td>
+          <td style="padding: 0.5rem;">Supabase のバックアップ保持ポリシーで自動失効</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem;">GitHub Issues（バグレポート）</td>
+          <td style="padding: 0.5rem;">無期限（公開リポジトリの Issue）</td>
+          <td style="padding: 0.5rem;">個人を特定し得る情報の削除依頼があった場合に手動で Close + Lock</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 0.5rem;">RevenueCat サブスクリプションデータ</td>
+          <td style="padding: 0.5rem;">RevenueCat の保持ポリシーに準拠</td>
+          <td style="padding: 0.5rem;">RevenueCat ポリシーを参照</td>
+        </tr>
+        <tr>
+          <td style="padding: 0.5rem;">Apple App Store / Google Play 購入履歴</td>
+          <td style="padding: 0.5rem;">Apple / Google のポリシーに準拠（Skeinly の管理外）</td>
+          <td style="padding: 0.5rem;">お客様の Apple ID / Google アカウントで管理</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>運用上の注意: アカウントを削除した場合、Skeinly 管理下のデータは即座に削除されます。自動失効するサブプロセッサー保有データ（PostHog、Sentry、Supabase バックアップ）は、各サブプロセッサーの保持スケジュールに従って失効します。オプトイン分析・クラッシュレポート（PostHog、Sentry）はオプトアウト後、追加のデータ収集を停止し、既に収集されたデータは上記スケジュールに沿って失効します。</p>
+
     <h2>お客様の権利</h2>
     <p>お客様には以下の権利があります：</p>
     <ul>
