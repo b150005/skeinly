@@ -12,6 +12,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
@@ -61,6 +62,7 @@ import io.github.b150005.skeinly.generated.resources.action_change_password
 import io.github.b150005.skeinly.generated.resources.action_contact_support
 import io.github.b150005.skeinly.generated.resources.action_delete
 import io.github.b150005.skeinly.generated.resources.action_delete_account
+import io.github.b150005.skeinly.generated.resources.action_help_faq
 import io.github.b150005.skeinly.generated.resources.action_manage_subscription
 import io.github.b150005.skeinly.generated.resources.action_privacy_policy
 import io.github.b150005.skeinly.generated.resources.action_save
@@ -103,6 +105,13 @@ import org.koin.compose.viewmodel.koinViewModel
 
 private const val URL_PRIVACY_POLICY = "https://b150005.github.io/skeinly/privacy-policy/"
 private const val URL_TERMS_OF_SERVICE = "https://b150005.github.io/skeinly/terms-of-service/"
+
+// Pre-alpha A35 — Help / FAQ page. GitHub Pages serves the EN page at
+// `/help/` and the JA mirror at `/ja/help/`. Skeinly does not actively
+// route based on device locale; users see EN by default and can click
+// the "日本語" link in the page header to switch — same pattern as the
+// Privacy Policy + ToS pages.
+private const val URL_HELP = "https://b150005.github.io/skeinly/help/"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -326,6 +335,22 @@ fun SettingsScreen(
                             .clickable(role = Role.Button) {
                                 uriHandler.openUri(URL_TERMS_OF_SERVICE)
                             }.testTag("termsOfServiceButton"),
+                )
+
+                // Pre-alpha A35 — Help & FAQ page. Opens the static
+                // HTML page (`docs/public/help/`) in the system browser.
+                ListItem(
+                    headlineContent = { Text(stringResource(Res.string.action_help_faq)) },
+                    leadingContent = { Icon(Icons.AutoMirrored.Filled.Help, contentDescription = null) },
+                    trailingContent = {
+                        Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null)
+                    },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable(role = Role.Button) {
+                                uriHandler.openUri(URL_HELP)
+                            }.testTag("helpFaqButton"),
                 )
 
                 // Pre-alpha A34 — Contact Support row. Opens the user's

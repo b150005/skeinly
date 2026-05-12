@@ -69,6 +69,8 @@
     <!-- Pre-alpha A34 — Contact Support entry in Settings → About / Legal. Distinct from beta-section "Send Feedback" (bug report). -->
     <string name="action_contact_support">Contact Support</string>
     <string name="body_contact_support_helper">Email the Skeinly team for account questions, refund requests, DMCA notices, or other support.</string>
+    <!-- Pre-alpha A35 — Help & FAQ entry in Settings → About / Legal. Opens the static help page in the system browser. -->
+    <string name="action_help_faq">Help &amp; FAQ</string>
     <string name="dialog_change_password_title">Change Password</string>
     <string name="dialog_change_email_title">Change Email</string>
     <string name="label_new_password">New Password</string>

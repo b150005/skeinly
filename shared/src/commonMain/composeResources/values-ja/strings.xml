@@ -61,6 +61,8 @@
     <!-- Pre-alpha A34 — Contact Support entry in Settings → About / Legal. Distinct from beta-section "Send Feedback" (bug report). -->
     <string name="action_contact_support">サポートに連絡</string>
     <string name="body_contact_support_helper">アカウントに関するお問い合わせ、返金依頼、DMCA 通知などはこちらから Skeinly チームへメールでご連絡ください。</string>
+    <!-- Pre-alpha A35 — Help & FAQ entry in Settings → About / Legal. Opens the static help page in the system browser. -->
+    <string name="action_help_faq">ヘルプとよくある質問</string>
     <string name="dialog_change_password_title">パスワードを変更</string>
     <string name="dialog_change_email_title">メールアドレスを変更</string>
     <string name="label_new_password">新しいパスワード</string>
