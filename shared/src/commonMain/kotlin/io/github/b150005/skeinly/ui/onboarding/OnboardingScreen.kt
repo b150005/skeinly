@@ -56,9 +56,11 @@ import io.github.b150005.skeinly.generated.resources.title_diagnostic_consent
 import io.github.b150005.skeinly.generated.resources.title_onboarding_count
 import io.github.b150005.skeinly.generated.resources.title_onboarding_library
 import io.github.b150005.skeinly.generated.resources.title_onboarding_track
+import io.github.b150005.skeinly.ui.a11y.ReduceMotionDetector
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 // Index-keyed copy. Order MUST match OnboardingViewModel.DEFAULT_PAGES.
@@ -85,10 +87,18 @@ private val onboardingBodyKeys: List<StringResource> =
 fun OnboardingScreen(
     onComplete: () -> Unit,
     viewModel: OnboardingViewModel = koinViewModel(),
+    reduceMotionDetector: ReduceMotionDetector = koinInject(),
 ) {
     val state by viewModel.state.collectAsState()
     val pagerState = rememberPagerState(pageCount = { state.pages.size })
     val scope = rememberCoroutineScope()
+    // Pre-alpha A25 — read the OS Reduce Motion toggle once at
+    // composition; HorizontalPager's animateScrollToPage falls back to
+    // an instant scrollToPage when the user has opted out of motion.
+    // We accept the boundary that toggling Reduce Motion mid-onboarding
+    // does not take effect until the next composition (which onboarding
+    // re-composes on every page change anyway).
+    val reduceMotion = reduceMotionDetector.isEnabled()
 
     // Sync pager state → ViewModel when user swipes
     LaunchedEffect(pagerState) {
@@ -163,7 +173,12 @@ fun OnboardingScreen(
                     viewModel.onEvent(OnboardingEvent.Complete)
                 } else {
                     scope.launch {
-                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                        val nextPage = pagerState.currentPage + 1
+                        if (reduceMotion) {
+                            pagerState.scrollToPage(nextPage)
+                        } else {
+                            pagerState.animateScrollToPage(nextPage)
+                        }
                     }
                 }
             },

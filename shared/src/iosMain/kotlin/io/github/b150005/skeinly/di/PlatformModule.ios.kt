@@ -12,6 +12,7 @@ import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.platform.StoreUrlLauncher
 import io.github.b150005.skeinly.platform.SubscriptionManagementLauncher
 import io.github.b150005.skeinly.platform.SupportContactLauncher
+import io.github.b150005.skeinly.ui.a11y.ReduceMotionDetector
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
@@ -77,4 +78,10 @@ val platformModule =
         // with support email + diagnostic context (app version, OS,
         // device, locale). Settings → Help & Support → Contact Support.
         single { SupportContactLauncher() }
+        // Pre-alpha A25 — reads UIAccessibilityIsReduceMotionEnabled()
+        // so custom animations (HorizontalPager page-scroll,
+        // animateColorAsState splash transitions, etc.) degrade to
+        // instant snaps when the user has Reduce Motion on. Stock
+        // Material 3 transitions auto-respect via the UIKit bridge.
+        single { ReduceMotionDetector() }
     }
