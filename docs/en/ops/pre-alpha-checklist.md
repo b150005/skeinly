@@ -20,6 +20,7 @@ Tracker for the closed-alpha launch readiness audit. Every item below maps to a 
 | **A13** Tighten `avatars` storage bucket SELECT policy | Migration 030 | Dropped broad `Anyone can read avatars` SELECT policy on `storage.objects`. The avatars bucket is `public = true`, so the Storage HTTP API continues to serve files via URL without an RLS policy. Owner upload/update/delete policies retained (scoped by `auth.uid()::text = (storage.foldername(name))[1]`). Supabase lint 0025 (`public_bucket_allows_listing`) cleared. App code does not call `.list()` on this bucket. |
 | **A18** Migration rollback procedure doc | docs commit | New `docs/en/ops/migration-rollback.md` (+ JA mirror) covering: forward-only principle, destructive-migration matrix with recovery paths (DROP TABLE / DROP COLUMN / lossy ALTER / DROP FUNCTION / REVOKE / RLS DISABLE), pre-migration safety discipline (BREAKING tag + inline rollback plan + low-write window), drill procedure, PITR procedure, forward-fix vs PITR decision matrix. Cross-linked from `release.md`. |
 | **A22** ATT decision rationale doc | docs commit | New section in `docs/en/ops/repo-policy.md` (+ JA mirror) — App Tracking Transparency NOT required, per-subprocessor analysis (PostHog / Sentry / RevenueCat / APNs / FCM / Supabase / GitHub all confirmed non-tracking + non-data-broker), conditions for re-evaluation, reviewer-facing summary text for App Store Connect Review Notes. |
+| **A20** GDPR / CCPA data portability (alpha-scope) | docs commit | New SOP `docs/en/ops/data-export-sop.md` (+ JA mirror) covering email-based fulfillment: 7-day SLA, identity verification, Supabase Dashboard CSV export of all 17 user-scoped tables, Storage avatar enumeration, out-of-scope subprocessor instructions, response templates. Satisfies GDPR Art. 20 / CCPA right-to-know for alpha tester scope. Option B (in-app "Export My Data" + Edge Function) scheduled pre-Phase-40 GA in CLAUDE.md polish list. |
 
 ## Outstanding Action Required Items
 
@@ -32,7 +33,6 @@ Tracker for the closed-alpha launch readiness audit. Every item below maps to a 
 - **A9 / V13** Enable HIBP leaked-password protection in Supabase Dashboard — user-side toggle
 - **A16** iOS Universal Links — entitlement + AASA file + Apple Developer provisioning profile regen
 - **A17** Supabase PITR / DR drill SOP — operational doc
-- **A20** GDPR / CCPA data portability path — email-based SOP or in-app Export button
 - **A23-A27** a11y audits (TalkBack/VoiceOver, Dynamic Type, Reduce Motion, color contrast, touch targets, focus order, states)
 - **A28** Sentry crash-free SLO target alert
 - **A29** Play Vitals + Sentry ANR alerts wire
@@ -1246,20 +1246,24 @@ Replace the current "Data Sharing" pass-through paragraph with the table above (
 
 ## 32. GDPR / CCPA Data Portability
 
-### 32.1 Action Required — A20. Implement data portability
+### 32.1 Action Required — A20. Implement data portability — ✅ CLOSED for alpha (2026-05-12) / Option B scheduled pre-Phase-40
 
-Currently, the Privacy Policy enumerates the GDPR data portability right but does NOT provide an actual path. For full GDPR + CCPA compliance, implement one of:
+**Resolution (alpha-scope, Option A)**: New operational runbook [docs/en/ops/data-export-sop.md](data-export-sop.md) (+ JA mirror) covering:
 
-**Option A** (minimum viable): User emails support → operator runs `pg_dump --table=public.* --schema=public --data-only --inserts` filtered by `WHERE owner_id = $uid OR user_id = $uid` + emails the resulting `.sql` file (or converted to `.json` / `.csv`). Bounded by operator response time SLA (e.g., 30 days per GDPR Art. 12(3)).
+- SLA: 7-day operator response target (well within GDPR Article 12(3) 30-day requirement)
+- Receipt + identity verification workflow (refuse requests from unverified email channels per GDPR Article 12(6))
+- Supabase Dashboard SQL Editor enumeration of all 17 user-scoped tables (profiles / patterns / projects / progress / project_segments / chart_documents / chart_versions / chart_variations / shares / comments / suggestions / suggestion_comments / activities / device_tokens / subscriptions / user_symbol_pack_state / feedback) — single CSV export
+- Storage avatars enumeration + per-file download
+- `auth.users` metadata inclusion
+- Out-of-scope subprocessor data instructions (Apple/Google IAP, RevenueCat, GitHub Issues, Sentry, PostHog — each with self-serve pointer + relevant UUID)
+- Response email templates (EN + JA) listing what's included and what's not
+- Closure logging
 
-**Option B** (preferred for "best outcome" stance): In-app "Export My Data" button in Settings:
-1. Calls an Edge Function `export-my-data` (new) which runs the equivalent server-side queries scoped to the caller's UID.
-2. Returns a JSON bundle with all the user's data per the PII Inventory.
-3. Either downloads directly OR emails to the user's registered email.
+This fully satisfies GDPR Article 20 + CCPA right-to-know for the 5–10 closed-alpha tester scope. The 7-day operator response is rehearsed during the alpha to keep the SOP fresh against the eventual real request.
 
-**Recommended**: ship Option A for alpha (operational, low LOC), upgrade to Option B post-GA when scale demands.
+**Scheduled (pre-Phase-40 GA, Option B)**: In-app "Export My Data" button in Settings + new Edge Function `export-my-data` (with `verify_jwt = true`) running the equivalent server-side queries scoped to the caller's UID, returning a downloadable JSON bundle. The Edge Function reuses the table enumeration in the SOP step 4 as its query body. Tracked in CLAUDE.md `### Planned — pre-Phase-40 polish` so it lands before the GA.
 
-**Owner**: implementer (Option B if pursued) + devops-engineer (Option A SOP).
+**Owner**: devops-engineer (Option A SOP, this commit) + implementer (Option B pre-Phase-40).
 
 ---
 
