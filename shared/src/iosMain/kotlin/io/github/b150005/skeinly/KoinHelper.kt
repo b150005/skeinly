@@ -444,17 +444,3 @@ fun nsDataToByteArray(data: platform.Foundation.NSData): ByteArray {
     }
     return byteArray
 }
-
-// Generic wrappers (deprecated — prefer typed variants above)
-
-@Deprecated(
-    "Use a typed wrapper function instead (wrapAuthState, wrapProjectListState, etc.)",
-    level = DeprecationLevel.WARNING,
-)
-fun <T : Any> wrapStateFlow(flow: kotlinx.coroutines.flow.StateFlow<T>): FlowWrapper<T> = FlowWrapper(flow)
-
-@Deprecated(
-    "Use a typed wrapper function instead (wrapForkedProjectIdFlow, etc.)",
-    level = DeprecationLevel.WARNING,
-)
-fun <T : Any> wrapEventFlow(flow: kotlinx.coroutines.flow.Flow<T>): EventFlowWrapper<T> = EventFlowWrapper(flow)
