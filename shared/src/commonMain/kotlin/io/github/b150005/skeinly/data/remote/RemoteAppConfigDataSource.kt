@@ -37,6 +37,9 @@ class RemoteAppConfigDataSource(
             minRequiredVersionIos = row.minRequiredVersionIos,
             forceUpdateMessageEn = row.forceUpdateMessageEn,
             forceUpdateMessageJa = row.forceUpdateMessageJa,
+            maintenanceModeActive = row.maintenanceModeActive,
+            maintenanceMessageEn = row.maintenanceMessageEn,
+            maintenanceMessageJa = row.maintenanceMessageJa,
         )
     }
 
@@ -46,6 +49,10 @@ class RemoteAppConfigDataSource(
      * (kotlinx-serialization's @SerialName preserves them in the JSON
      * decode); the domain [AppConfig] uses camelCase to match Kotlin
      * convention.
+     *
+     * Pre-alpha A15 (migration 029) extends the row with three
+     * maintenance-mode columns. Defaults (false / null) keep decode
+     * resilient against a pre-029 prod that returns a 4-column row.
      */
     @Serializable
     private data class AppConfigRow(
@@ -57,5 +64,11 @@ class RemoteAppConfigDataSource(
         val forceUpdateMessageEn: String? = null,
         @SerialName("force_update_message_ja")
         val forceUpdateMessageJa: String? = null,
+        @SerialName("maintenance_mode_active")
+        val maintenanceModeActive: Boolean = false,
+        @SerialName("maintenance_message_en")
+        val maintenanceMessageEn: String? = null,
+        @SerialName("maintenance_message_ja")
+        val maintenanceMessageJa: String? = null,
     )
 }

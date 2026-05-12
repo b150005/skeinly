@@ -5,6 +5,11 @@ package io.github.b150005.skeinly.domain.model
  * client startup against `min_required_version_*`. Single row, mirrored
  * exactly from `public.app_config` (see migration 028).
  *
+ * Pre-alpha A15 (2026-05-12) — extended with maintenance-mode fields
+ * (see migration 029). Maintenance mode takes priority over force-update
+ * at the client gate because if service is down the user can't act on
+ * a force-update CTA anyway.
+ *
  * Update path: Supabase Dashboard SQL editor / service-role only —
  * client cannot mutate via PostgREST. RLS allows public SELECT so the
  * gate can read this before any auth.
@@ -20,29 +25,59 @@ data class AppConfig(
      */
     val forceUpdateMessageEn: String?,
     val forceUpdateMessageJa: String?,
+    /**
+     * Pre-alpha A15 — true ⇒ all clients show a blocking maintenance
+     * screen at startup regardless of installed version. Toggled via
+     * `UPDATE public.app_config SET maintenance_mode_active = true` from
+     * the Supabase Dashboard SQL editor by an on-call operator.
+     */
+    val maintenanceModeActive: Boolean,
+    /**
+     * Optional custom maintenance message (EN / JA). Same fallback pattern
+     * as `forceUpdateMessage*`: null ⇒ client uses the bundled default
+     * copy from i18n resources (`maintenance_default_message`).
+     */
+    val maintenanceMessageEn: String?,
+    val maintenanceMessageJa: String?,
 )
 
 /**
- * Minimum-version requirement evaluation outcome. Three states keep
- * the failure modes explicit at the call site so we never accidentally
- * fail-CLOSED when we only meant fail-OPEN-on-unknown:
+ * App-startup gate evaluation outcome. Four states keep the failure
+ * modes explicit at the call site so we never accidentally fail-CLOSED
+ * when we only meant fail-OPEN-on-unknown.
  *
- *   - [Ok]: client version satisfies the floor; show normal app.
- *   - [UpdateRequired]: client version is below the floor; show the
- *     blocking force-update screen with the optional custom message.
- *   - [Unknown]: no config available locally (first launch + offline);
- *     fail-open per the offline-first contract — the gate engages
- *     from the first successful fetch onward.
+ * Priority order at the gate (highest to lowest):
+ *   1. [MaintenanceMode] — service-down kill switch; client cannot proceed.
+ *   2. [UpdateRequired]  — version below the floor; client must upgrade.
+ *   3. [Ok]              — client can proceed to the normal app.
+ *   4. [Unknown]         — no config available yet (first launch + offline);
+ *                          fail-open per the offline-first contract.
+ *
+ * Renamed from `ForceUpdateRequirement` in pre-alpha A15 (the original
+ * name reflected only the version-floor outcome; the new
+ * [MaintenanceMode] variant makes the broader "app-startup gate" framing
+ * load-bearing). Callers that previously read `ForceUpdateRequirement.Ok`
+ * now read `AppGateRequirement.Ok`.
  */
-sealed interface ForceUpdateRequirement {
-    data object Ok : ForceUpdateRequirement
+sealed interface AppGateRequirement {
+    data object Ok : AppGateRequirement
+
+    /**
+     * Pre-alpha A15 — server has declared a maintenance window. Client
+     * shows a blocking, non-dismissable maintenance screen with a Retry
+     * button (re-fetches `get_app_config()`); no Update CTA.
+     */
+    data class MaintenanceMode(
+        val customMessageEn: String?,
+        val customMessageJa: String?,
+    ) : AppGateRequirement
 
     data class UpdateRequired(
         val customMessageEn: String?,
         val customMessageJa: String?,
-    ) : ForceUpdateRequirement
+    ) : AppGateRequirement
 
-    data object Unknown : ForceUpdateRequirement
+    data object Unknown : AppGateRequirement
 }
 
 /**
@@ -107,28 +142,40 @@ internal fun compareSemver(
 }
 
 /**
- * Evaluate whether the current app version satisfies the
- * platform-specific minimum required version in [config]. Unparseable
- * versions degrade to [ForceUpdateRequirement.Ok] (fail-open) — the
- * gate must never block users on a config / parsing error, only on a
- * deliberate kill-switch trigger.
+ * Evaluate whether the current app version satisfies the startup gate.
+ * Priority: maintenance > version-floor > normal.
+ *
+ * - [AppConfig.maintenanceModeActive] = true ⇒
+ *   [AppGateRequirement.MaintenanceMode] regardless of version.
+ * - Otherwise compare [currentVersion] against the platform-specific
+ *   floor; below the floor ⇒ [AppGateRequirement.UpdateRequired],
+ *   at-or-above ⇒ [AppGateRequirement.Ok].
+ * - Unparseable versions degrade to [AppGateRequirement.Ok] (fail-open)
+ *   — the gate must never block users on a parsing error, only on a
+ *   deliberate kill-switch trigger.
  */
 fun AppConfig.evaluate(
     currentVersion: String,
     platform: AppPlatform,
-): ForceUpdateRequirement {
+): AppGateRequirement {
+    if (maintenanceModeActive) {
+        return AppGateRequirement.MaintenanceMode(
+            customMessageEn = maintenanceMessageEn,
+            customMessageJa = maintenanceMessageJa,
+        )
+    }
     val requiredVersion =
         when (platform) {
             AppPlatform.ANDROID -> minRequiredVersionAndroid
             AppPlatform.IOS -> minRequiredVersionIos
         }
-    val delta = compareSemver(currentVersion, requiredVersion) ?: return ForceUpdateRequirement.Ok
+    val delta = compareSemver(currentVersion, requiredVersion) ?: return AppGateRequirement.Ok
     return if (delta < 0) {
-        ForceUpdateRequirement.UpdateRequired(
+        AppGateRequirement.UpdateRequired(
             customMessageEn = forceUpdateMessageEn,
             customMessageJa = forceUpdateMessageJa,
         )
     } else {
-        ForceUpdateRequirement.Ok
+        AppGateRequirement.Ok
     }
 }

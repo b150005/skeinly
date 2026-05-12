@@ -7750,6 +7750,57 @@
         }
       }
     },
+    "title_maintenance": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skeinly is temporarily unavailable"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skeinly は一時的にご利用いただけません"
+          }
+        }
+      }
+    },
+    "body_maintenance_default": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We are performing scheduled maintenance on the Skeinly backend. Please try again in a few minutes."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skeinly バックエンドのメンテナンス中です。数分後に再度お試しください。"
+          }
+        }
+      }
+    },
+    "action_maintenance_retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再試行"
+          }
+        }
+      }
+    },
     "state_bug_report_submitting": {
       "localizations": {
         "en": {

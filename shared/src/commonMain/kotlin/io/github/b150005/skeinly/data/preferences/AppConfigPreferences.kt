@@ -82,6 +82,14 @@ internal class AppConfigPreferencesImpl(
         val minRequiredVersionIos: String,
         val forceUpdateMessageEn: String? = null,
         val forceUpdateMessageJa: String? = null,
+        // Pre-alpha A15 — maintenance-mode columns (migration 029). Default
+        // false / null so older cached payloads (pre-A15) decode cleanly:
+        // `ignoreUnknownKeys = true` skips unknown keys forward, but
+        // missing-key reads use these field defaults so the cache shape
+        // is forward-compatible (older cache → new domain ⇒ maintenance off).
+        val maintenanceModeActive: Boolean = false,
+        val maintenanceMessageEn: String? = null,
+        val maintenanceMessageJa: String? = null,
     ) {
         fun toDomain(): AppConfig =
             AppConfig(
@@ -89,6 +97,9 @@ internal class AppConfigPreferencesImpl(
                 minRequiredVersionIos = minRequiredVersionIos,
                 forceUpdateMessageEn = forceUpdateMessageEn,
                 forceUpdateMessageJa = forceUpdateMessageJa,
+                maintenanceModeActive = maintenanceModeActive,
+                maintenanceMessageEn = maintenanceMessageEn,
+                maintenanceMessageJa = maintenanceMessageJa,
             )
 
         companion object {
@@ -98,6 +109,9 @@ internal class AppConfigPreferencesImpl(
                     minRequiredVersionIos = config.minRequiredVersionIos,
                     forceUpdateMessageEn = config.forceUpdateMessageEn,
                     forceUpdateMessageJa = config.forceUpdateMessageJa,
+                    maintenanceModeActive = config.maintenanceModeActive,
+                    maintenanceMessageEn = config.maintenanceMessageEn,
+                    maintenanceMessageJa = config.maintenanceMessageJa,
                 )
         }
     }
