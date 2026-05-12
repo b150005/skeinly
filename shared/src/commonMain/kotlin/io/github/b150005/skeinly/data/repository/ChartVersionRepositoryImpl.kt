@@ -39,7 +39,7 @@ class ChartVersionRepositoryImpl(
     ): List<ChartVersion> {
         val localRows = local.getHistoryForPattern(patternId, limit, offset)
         // Trust the local cache when it has data: Realtime keeps it warm
-        // (chart-revisions-<ownerId>) so a hit here is the freshest read.
+        // (chart-versions-<ownerId>) so a hit here is the freshest read.
         // Only reach for the remote when local is empty AND we're online —
         // matches ChartRepositoryImpl.getByPatternId's fallback.
         if (localRows.isNotEmpty() || remote == null || !isOnline.value) return localRows

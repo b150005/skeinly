@@ -328,10 +328,10 @@ class SuggestionRepositoryImplTest {
     fun `merged PR round-trip preserves mergedRevisionId and mergedAt`() =
         runTest {
             val mergedAt = "2026-04-26T15:30:00Z"
-            // Simulate a Realtime echo of a merge transaction that landed
-            // server-side via the merge_pull_request RPC. The local upsert
-            // path is the only consumer of MERGED rows in Phase 38.1 — there
-            // is no client-side write path to MERGED.
+            // Simulate a Realtime echo of an apply transaction that landed
+            // server-side via the apply_suggestion RPC. The local upsert
+            // path is the only consumer of APPLIED rows in Phase 38.1 —
+            // there is no client-side write path to APPLIED.
             val merged =
                 testPr(
                     status = SuggestionStatus.APPLIED,

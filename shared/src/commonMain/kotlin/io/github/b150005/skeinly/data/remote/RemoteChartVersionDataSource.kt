@@ -16,8 +16,8 @@ import kotlinx.serialization.Serializable
 import kotlin.time.Instant
 
 /**
- * jsonb payload of `chart_revisions.document`. Mirrors the chart_documents
- * envelope intentionally — every revision row carries the same drawing
+ * jsonb payload of `chart_versions.document`. Mirrors the chart_documents
+ * envelope intentionally — every version row carries the same drawing
  * payload shape that the tip pointer carries (ADR-013 §3).
  */
 @Serializable

@@ -17,38 +17,39 @@ import kotlin.uuid.Uuid
 
 /**
  * Phase 38.4 (ADR-014 §5, §6, §8) — invoke the SECURITY DEFINER
- * `merge_pull_request` RPC.
+ * `apply_suggestion` RPC.
  *
  * The RPC is the only writer permitted to produce
- * `chart_revisions.author_id != owner_id` rows. This use case bypasses the
+ * `chart_versions.author_id != owner_id` rows. This use case bypasses the
  * standard local-then-sync orchestration (the caller cannot pre-write a stub
  * locally and reconcile, since the local SQLDelight INSERT would not satisfy
  * the multi-author RLS WITH CHECK that the server function bypasses).
  *
- * Caller path: target owner taps "Merge" → `ConflictDetector.detect(...)` →
+ * Caller path: target owner taps "Apply" → `ConflictDetector.detect(...)` →
  * if `report.isClean`, the resolved document is straight from the source tip
  * (auto-applied) → if not, the resolver UI builds the resolved document by
  * applying the user's [io.github.b150005.skeinly.domain.chart.ConflictDetector]
- * picks per cell over `mine` → this use case mints a fresh revision id and
+ * picks per cell over `mine` → this use case mints a fresh version id and
  * invokes the RPC.
  *
- * **Validation envelope.** RPC errors (PR not open, source tip drifted,
- * caller is not target owner, target branch missing tip) surface as Postgres
- * exceptions with descriptive messages. They are categorised into:
- * - "Caller is not target owner" / "PR not open" → [UseCaseError.Validation]
+ * **Validation envelope.** RPC errors (suggestion not open, source tip
+ * drifted, caller is not target owner, target variation missing tip) surface
+ * as Postgres exceptions with descriptive messages. They are categorised
+ * into:
+ * - "Caller is not target owner" / "Suggestion not open" → [UseCaseError.Validation]
  * - "Source tip drifted; re-resolve required" → [UseCaseError.Validation]
  * - Generic / network → [Exception.toUseCaseError]
  *
  * The use case re-validates the OPEN-status precondition client-side too —
- * a stale UI state showing an already-merged PR should not even attempt the
- * round trip.
+ * a stale UI state showing an already-applied suggestion should not even
+ * attempt the round trip.
  *
  * **Atomicity guarantee.** A successful RPC return implies all 4 server-side
- * mutations committed (revision INSERT, branch tip UPDATE, chart_documents
- * UPDATE, PR row UPDATE). Realtime then echoes the merged PR + advanced tip
- * back through the existing `pull-requests-incoming-<ownerId>` and
- * `chart-revisions-<ownerId>` channels — local cache rehydrates without
- * additional code paths in this use case.
+ * mutations committed (version INSERT, variation tip UPDATE, chart_documents
+ * UPDATE, suggestion row UPDATE). Realtime then echoes the applied
+ * suggestion + advanced tip back through the existing
+ * `suggestions-incoming-<ownerId>` and `chart-versions-<ownerId>` channels
+ * — local cache rehydrates without additional code paths in this use case.
  */
 @OptIn(ExperimentalUuidApi::class)
 class ApplySuggestionUseCase(

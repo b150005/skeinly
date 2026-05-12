@@ -100,13 +100,14 @@ data class ChartViewerState(
      *    against an upstream).
      * 2. The current user owns this pattern (only the owner can open PRs from it;
      *    a cross-fork browser viewing someone else's pattern cannot).
-     * 3. Source branch resolves on the local cache AND its `tipRevisionId`
+     * 3. Source variation resolves on the local cache AND its `tipRevisionId`
      *    matches the loaded chart's revisionId. The "main" fallback in
-     *    [resolveCurrentBranch] keeps the displayed-branch rendering helpful
-     *    during cache lag, but submitting a PR with a `sourceBranchId` whose
-     *    tip does not match `sourceTipRevisionId` would land an immediately
-     *    unmergeable PR (the `merge_pull_request` RPC raises "Source tip
-     *    drifted" with no recovery path) — see code review MEDIUM-1.
+     *    [resolveCurrentBranch] keeps the displayed-variation rendering
+     *    helpful during cache lag, but submitting a suggestion with a
+     *    `sourceBranchId` whose tip does not match `sourceTipRevisionId`
+     *    would land an immediately unappliable suggestion (the
+     *    `apply_suggestion` RPC raises "Source tip drifted" with no recovery
+     *    path) — see code review MEDIUM-1.
      * 4. Target pattern's `"main"` branch resolves.
      * 5. Chart is loaded (we need the revisionId to be the source tip).
      *

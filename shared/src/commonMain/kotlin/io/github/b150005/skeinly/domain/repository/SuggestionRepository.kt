@@ -19,18 +19,18 @@ import kotlinx.coroutines.flow.Flow
  *   `SuggestionDetailViewModel` (Phase 38.3).
  *
  * Phase 38.1 writes:
- * - [openSuggestion] writes a new PR row + enqueues a CHART/PR INSERT
- *   through the sync layer.
+ * - [openSuggestion] writes a new suggestion row + enqueues a CHART/SUGGESTION
+ *   INSERT through the sync layer.
  * - [closeSuggestion] flips status → CLOSED + enqueues UPDATE.
  * - [postComment] writes a new comment row + enqueues INSERT.
  *
- * **Merge is NOT a repository method** — Phase 38.4 wires the SECURITY
- * DEFINER `merge_pull_request` RPC through a dedicated `ApplySuggestionUseCase`
+ * **Apply is NOT a repository method** — Phase 38.4 wires the SECURITY
+ * DEFINER `apply_suggestion` RPC through a dedicated `ApplySuggestionUseCase`
  * that bypasses local-then-sync orchestration (the RPC is the only writer
- * permitted to produce `chart_revisions.author_id != owner_id` rows; the
+ * permitted to produce `chart_versions.author_id != owner_id` rows; the
  * caller cannot pre-write a stub locally and reconcile). When the RPC
- * returns, Realtime echoes the merged PR row back through this repo's
- * Realtime subscription.
+ * returns, Realtime echoes the applied suggestion row back through this
+ * repo's Realtime subscription.
  */
 interface SuggestionRepository {
     suspend fun getById(id: String): Suggestion?
@@ -44,7 +44,7 @@ interface SuggestionRepository {
      * cache. Callers that need a remote-seeded list (e.g. cold-launch
      * `SuggestionListViewModel`) should invoke [getIncomingForOwner] first
      * to backfill the cache, then collect this Flow for live updates. The
-     * Realtime channel `pull-requests-incoming-<ownerId>` keeps the cache
+     * Realtime channel `suggestions-incoming-<ownerId>` keeps the cache
      * warm thereafter.
      */
     fun observeIncomingForOwner(ownerId: String): Flow<List<Suggestion>>
@@ -63,15 +63,17 @@ interface SuggestionRepository {
     suspend fun postComment(comment: SuggestionComment): SuggestionComment
 
     /**
-     * Open the per-PR Realtime channel `pull-request-comments-<prId>` (ADR-014
-     * §7) so INSERTs to `pull_request_comments` for this PR land in the local
-     * SQLDelight cache. Calling [observeCommentsForSuggestion] alone is not
-     * enough — that observer reads from the cache; without the channel, no peer
-     * comment ever reaches the cache. Idempotent on the same `prId`; calling on
-     * a different `prId` swaps the active channel.
+     * Open the per-suggestion Realtime channel
+     * `suggestion-comments-<suggestionId>` (ADR-014 §7) so INSERTs to
+     * `suggestion_comments` for this suggestion land in the local SQLDelight
+     * cache. Calling [observeCommentsForSuggestion] alone is not enough —
+     * that observer reads from the cache; without the channel, no peer
+     * comment ever reaches the cache. Idempotent on the same `suggestionId`;
+     * calling on a different `suggestionId` swaps the active channel.
      *
      * Local-only mode (no `RealtimeChannelProvider`) is a silent no-op so the
-     * Phase 38.3 [SuggestionDetailViewModel] does not need a configuration check.
+     * Phase 38.3 [SuggestionDetailViewModel] does not need a configuration
+     * check.
      */
     suspend fun subscribeToCommentsChannel(suggestionId: String)
 

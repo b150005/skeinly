@@ -47,20 +47,21 @@ import kotlinx.coroutines.withTimeout
 /**
  * Phase 38.3 (ADR-014 §6, §8) — single pull-request detail surface.
  *
- * Loads PR + target owner + comments and exposes write actions for posting
- * comments and closing the PR. Merge stays inert per the spec — Phase 38.4
- * wires `ApplySuggestionUseCase` against the SECURITY DEFINER RPC.
+ * Loads suggestion + target owner + comments and exposes write actions for
+ * posting comments and closing the suggestion. Apply stays inert per the
+ * spec — Phase 38.4 wires `ApplySuggestionUseCase` against the
+ * SECURITY DEFINER RPC.
  *
- * **Realtime lifecycle.** Opens the per-PR comments channel
- * `pull-request-comments-<prId>` (ADR-014 §7) in `init` via
+ * **Realtime lifecycle.** Opens the per-suggestion comments channel
+ * `suggestion-comments-<suggestionId>` (ADR-014 §7) in `init` via
  * [SuggestionRepository.subscribeToCommentsChannel]; closes it in
  * [onCleared]. The channel keeps the local cache warm so
  * [GetSuggestionCommentsUseCase.observe] emits live updates without a
  * manual refresh.
  *
  * **Author resolution** mirrors `SuggestionListViewModel` —
- * [UserRepository.getByIds] resolves comment author + PR author display
- * names; UI falls back to `label_someone` on cache misses.
+ * [UserRepository.getByIds] resolves comment author + suggestion author
+ * display names; UI falls back to `label_someone` on cache misses.
  */
 data class SuggestionDetailState(
     val suggestion: Suggestion? = null,
