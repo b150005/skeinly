@@ -175,7 +175,7 @@ W5 は 2 段階で着地させる。Phase 39.5 の URL プリフィル経路は 
 - `supabase/functions/submit-bug-report/` 一式 (index.ts / github_app.ts / _fakes.ts / tests / README / deno.json)
 - `supabase/config.toml` の `[functions.submit-bug-report]` 登録 (`verify_jwt = false`)
 - ADR-020 (en + ja)
-- `release-secrets.md` (en + ja) の EF-7 GitHub App 三点 (App ID / Installation ID / Private Key PEM)
+- `release-secrets.md` (en + ja) の GitHub App 三点 (App ID / Installation ID / Private Key PEM) — W5a 着地時は EF-7、2026-05-12 dormant entry 削除 (旧 EF-4 `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON`) に伴い EF-6 に renumber
 - CLAUDE.md W5a entry
 
 W5a 完了時のユーザー側作業: GitHub App 作成、`feedback` ラベル作成、secret 登録、Edge Function deploy、curl スモークテスト。クライアントは引き続き URL プリフィル経路を使う (ユーザー可視の挙動変化なし)。

@@ -32,7 +32,7 @@ The release workflow ([`.github/workflows/release.yml`](../../.github/workflows/
 
 - [Prerequisites](#prerequisites)
 - [How to register a secret in GitHub](#how-to-register-a-secret-in-github)
-- [iOS code signing (4 secrets)](#ios-code-signing-4-secrets)
+- [iOS code signing (3 secrets)](#ios-code-signing-3-secrets)
 - [App Store Connect API (3 secrets)](#app-store-connect-api-3-secrets)
 - [Android signing (4 secrets)](#android-signing-4-secrets)
 - [Supabase runtime (2 secrets)](#supabase-runtime-2-secrets)
@@ -41,7 +41,7 @@ The release workflow ([`.github/workflows/release.yml`](../../.github/workflows/
 - [Analytics — PostHog (1 secret)](#analytics--posthog-1-secret)
 - [Subscriptions — RevenueCat (2 secrets)](#subscriptions--revenuecat-2-secrets)
 - [Android release publishing (1 secret × 1 environment = 1 registration)](#android-release-publishing-1-secret--1-environment--1-registration)
-- [Supabase Edge Function Secrets (5 secrets)](#supabase-edge-function-secrets-5-secrets)
+- [Supabase Edge Function Secrets (8 secrets)](#supabase-edge-function-secrets-8-secrets)
 - [Bulk verification](#bulk-verification)
 - [Rotation and revocation](#rotation-and-revocation)
 - [Security notes](#security-notes)
@@ -96,9 +96,9 @@ To remove a secret:
 gh secret delete <SECRET_NAME>
 ```
 
-## iOS code signing (4 secrets)
+## iOS code signing (3 secrets)
 
-These four cryptographic assets allow CI to sign the iOS app as your Apple Developer team. They have nothing to do with App Store Connect API authentication — that comes next.
+These three cryptographic assets allow CI to sign the iOS app as your Apple Developer team. They have nothing to do with App Store Connect API authentication — that comes next.
 
 ### 1. `APPLE_DISTRIBUTION_CERT_BASE64`
 
@@ -162,68 +162,7 @@ gh secret set APPLE_DISTRIBUTION_CERT_PASSWORD
 # paste password, Ctrl+D
 ```
 
-### 3. `APPLE_PROVISIONING_PROFILE_BASE64` — DEPRECATED 2026-05-11
-
-> **DEPRECATED**: As of Path Y (Fastfile commit `0956d3f`, 2026-05-11),
-> CI no longer reads this secret. The provisioning profile is fetched
-> from Apple Developer Portal at runtime via `sigh` (using the App
-> Store Connect API key — secrets 5–7). Capability changes propagate
-> by re-Generating the profile in Portal Web UI once; the next CI run
-> picks up the updated profile automatically with no GitHub Secret
-> update needed.
->
-> **Remove this secret** to reduce the surface of unused credentials:
->
-> ```bash
-> gh secret delete APPLE_PROVISIONING_PROFILE_BASE64
-> ```
->
-> Note: the profile itself must still exist in Apple Developer Portal
-> — sigh fetches it from there. Only the GitHub Secret carrying the
-> base64-encoded bytes is obsolete. The previous OBTAIN/VERIFY/REGISTER
-> procedure is preserved below for historical reference only.
-
-<details>
-<summary>Historical procedure (pre-Path-Y, kept for reference)</summary>
-
-**WHAT**: Base64-encoded `.mobileprovision` App Store provisioning profile.
-
-**OBTAIN:**
-
-1. Sign in to [Apple Developer](https://developer.apple.com/account) → **Certificates, Identifiers & Profiles** → **Profiles**.
-2. Either:
-   - Use an existing profile if one already covers `io.github.b150005.skeinly` for App Store distribution. Click it → **Download**.
-   - Or click `+` → **App Store** under Distribution → select bundle ID `io.github.b150005.skeinly` → select the Apple Distribution cert from step 1 → name it (e.g. `Skeinly App Store`) → **Generate** → **Download**.
-3. Base64-encode:
-
-   ```bash
-   base64 -i Skeinly_App_Store.mobileprovision -o profile.base64
-   ```
-
-**VERIFY:**
-
-```bash
-# Decode the CMS envelope — output is XML plist with the profile metadata.
-security cms -D -i Skeinly_App_Store.mobileprovision | head -40
-```
-
-Confirm:
-- `<key>Name</key>` value matches what you named the profile
-- `<key>application-identifier</key>` ends with `io.github.b150005.skeinly`
-- `<key>ExpirationDate</key>` is in the future (typically 1 year out)
-- `<key>TeamIdentifier</key>` matches your Team ID (next secret)
-
-**REGISTER:**
-
-```bash
-gh secret set APPLE_PROVISIONING_PROFILE_BASE64 < profile.base64
-```
-
-**ROTATE**: Profiles expire 1 year after creation. Mark your calendar 11 months out. Renewal procedure is identical to step 2.
-
-</details>
-
-### 4. `APPLE_TEAM_ID`
+### 3. `APPLE_TEAM_ID`
 
 **WHAT**: Your 10-character alphanumeric Apple Developer Team ID.
 
@@ -251,7 +190,7 @@ gh secret set APPLE_TEAM_ID
 
 These three credentials authorize CI to upload builds to TestFlight via the App Store Connect REST API. They are independent from code signing — even if signing succeeds, missing/wrong API credentials only block the upload step.
 
-### 5. `APP_STORE_CONNECT_API_KEY_BASE64`
+### 4. `APP_STORE_CONNECT_API_KEY_BASE64`
 
 **WHAT**: Base64-encoded `.p8` private key file (PKCS#8 format).
 
@@ -291,7 +230,7 @@ gh secret set APP_STORE_CONNECT_API_KEY_BASE64 < p8.base64
 
 **ROTATE**: App Store Connect → Users and Access → Integrations → Team Keys → revoke the old key, then repeat steps 3–7. Update both `APP_STORE_CONNECT_API_KEY_BASE64` and `APP_STORE_CONNECT_API_KEY_ID` GitHub Secrets.
 
-### 6. `APP_STORE_CONNECT_API_KEY_ID`
+### 5. `APP_STORE_CONNECT_API_KEY_ID`
 
 **WHAT**: The 10-character Key ID associated with the `.p8` you just downloaded.
 
@@ -309,7 +248,7 @@ gh secret set APP_STORE_CONNECT_API_KEY_ID
 # paste 10-char ID, Ctrl+D
 ```
 
-### 7. `APP_STORE_CONNECT_ISSUER_ID`
+### 6. `APP_STORE_CONNECT_ISSUER_ID`
 
 **WHAT**: A UUID identifying your App Store Connect account organization.
 
@@ -331,7 +270,7 @@ gh secret set APP_STORE_CONNECT_ISSUER_ID
 
 These four credentials sign the Android Release APK so Google Play accepts it. The signing keystore is **non-rotatable for the lifetime of the app on Play** — losing it means publishing as a new app under a different ID. Treat it accordingly.
 
-### 8. `KEYSTORE_BASE64`
+### 7. `KEYSTORE_BASE64`
 
 **WHAT**: Base64-encoded Android signing keystore (`.jks` file).
 
@@ -384,7 +323,7 @@ gh secret set KEYSTORE_BASE64 < keystore.base64
 
 **SECURE BACKUP**: Same rule as `.p8` — move to a password manager immediately. **A lost upload keystore cannot be recovered**; Google Play offers a "key reset" via support but it is a multi-week, app-disrupting process. Maintain at least two encrypted backups (e.g. password manager + offline encrypted USB).
 
-### 9. `KEYSTORE_PASSWORD`
+### 8. `KEYSTORE_PASSWORD`
 
 **WHAT**: The "keystore password" you set during `keytool -genkey`.
 
@@ -397,7 +336,7 @@ gh secret set KEYSTORE_PASSWORD
 # paste, Ctrl+D
 ```
 
-### 10. `KEY_ALIAS`
+### 9. `KEY_ALIAS`
 
 **WHAT**: The alias passed to `-alias` during `keytool -genkey` (defaults to `upload` in the example above).
 
@@ -415,7 +354,7 @@ gh secret set KEY_ALIAS
 # paste alias, Ctrl+D
 ```
 
-### 11. `KEY_PASSWORD`
+### 10. `KEY_PASSWORD`
 
 **WHAT**: The "key password" you set during `keytool -genkey` (separate from keystore password). Often set to the same value as `KEYSTORE_PASSWORD` to simplify CI configuration.
 
@@ -430,7 +369,7 @@ gh secret set KEY_PASSWORD
 
 These secrets are baked into the Android APK and iOS IPA at build time so the app can reach the Supabase backend. They are **not** signing secrets — they are runtime configuration.
 
-### 12. `SUPABASE_URL`
+### 11. `SUPABASE_URL`
 
 **WHAT**: The public URL of your Supabase project.
 
@@ -448,7 +387,7 @@ gh secret set SUPABASE_URL
 # paste, Ctrl+D
 ```
 
-### 13. `SUPABASE_PUBLISHABLE_KEY`
+### 12. `SUPABASE_PUBLISHABLE_KEY`
 
 > **2025-11-01 full migration**: legacy `SUPABASE_ANON_KEY` (`eyJ...` JWT) has been fully retired in this codebase and replaced by `SUPABASE_PUBLISHABLE_KEY` across every consumer (Kotlin `expect/actual val publishableKey`, iOS `Info.plist` key, Gradle env, all CI workflows). See `docs/ja/release-secrets.md` for the canonical guidance.
 
@@ -507,7 +446,7 @@ gh api -X PUT "repos/{owner}/{repo}/environments/production" \
 
 Or via the GitHub UI: Settings → Environments → New environment → on `production`, set the Deployment branch policy to allow only `main`.
 
-### 14. `FIREBASE_GOOGLE_SERVICES_JSON_BASE64` (Android)
+### 13. `FIREBASE_GOOGLE_SERVICES_JSON_BASE64` (Android)
 
 **WHAT**: Base64-encoded `google-services.json` file downloaded from the Firebase Console for the Android app. Registered **once per Environment** (`production` / `development`) under the same secret name.
 
@@ -588,7 +527,7 @@ gh secret get FIREBASE_GOOGLE_SERVICES_JSON_BASE64 --env development \
 
 **ROTATE**: Re-download from the Firebase Console only if you change the package name or signing SHA-1. Day-to-day no rotation is needed.
 
-### 14b. `FIREBASE_GOOGLE_SERVICE_INFO_PLIST_BASE64` (iOS)
+### 13b. `FIREBASE_GOOGLE_SERVICE_INFO_PLIST_BASE64` (iOS)
 
 **WHAT**: Base64-encoded `GoogleService-Info.plist` file downloaded from the Firebase Console for the iOS app. Registered **once per Environment** (`production` / `development`) under the same secret name.
 
@@ -637,7 +576,7 @@ The iOS release workflow decodes this at build time into `iosApp/iosApp/GoogleSe
 
 These secrets wire the Sentry SDK on iOS + Android and authorize CI to upload debug symbols (dSYM for iOS, mapping files for Android) so stack traces are symbolicated automatically in the Sentry dashboard.
 
-### 15. `SENTRY_DSN_IOS`
+### 14. `SENTRY_DSN_IOS`
 
 **WHAT**: The Data Source Name (DSN) for the iOS Sentry project. A URL-shaped string identifying the Sentry project + auth.
 
@@ -659,7 +598,7 @@ gh secret set SENTRY_DSN_IOS
 
 **ROTATE**: Sentry → Settings → Projects → `skeinly-ios` → Client Keys → revoke old key + create new. Update GitHub Secret.
 
-### 16. `SENTRY_DSN_ANDROID`
+### 15. `SENTRY_DSN_ANDROID`
 
 **WHAT**: DSN for the Android Sentry project. Same shape as `SENTRY_DSN_IOS` but a separate Sentry project so iOS and Android crashes filter independently.
 
@@ -672,7 +611,7 @@ gh secret set SENTRY_DSN_ANDROID
 # paste DSN, Ctrl+D
 ```
 
-### 17. `SENTRY_AUTH_TOKEN`
+### 16. `SENTRY_AUTH_TOKEN`
 
 **WHAT**: An **Organization Auth Token** that lets CI upload dSYMs (iOS) and mapping files (Android) to Sentry after each release build, so stack traces are symbolicated automatically. **Not a User Auth Token** — User Tokens are tied to a specific user account and silently expire if that user is removed from the organization, which is a real operational risk for CI. Sentry's documentation explicitly recommends Organization Auth Tokens for CI:
 
@@ -732,7 +671,7 @@ PostHog's official documentation also explicitly **discourages** splitting proje
 
 > "PostHog strongly recommends keeping your apps and marketing website on the same production project"
 
-### 18. `POSTHOG_PROJECT_API_KEY`
+### 17. `POSTHOG_PROJECT_API_KEY`
 
 **WHAT**: The Project API Key for the PostHog project. Embedded in release builds. Format: `phc_<43-char-base62>`.
 
@@ -785,7 +724,7 @@ References: [PostHog: Multi-environment tutorial](https://posthog.com/tutorials/
 
 These secrets wire the RevenueCat SDK on iOS + Android. **Public SDK Keys** are designed to be embedded in client binaries (passed to `Purchases.configure()`). The `Secret Key (sk_...)` is **server-only and must NEVER be embedded in a client**. RevenueCat issues **separate Public SDK Keys for iOS / Android per Project** (we run a single Project named `Skeinly` that hosts both iOS + Android App Configurations).
 
-### 19. `REVENUECAT_API_KEY_IOS`
+### 18. `REVENUECAT_API_KEY_IOS`
 
 **WHAT**: The Public iOS SDK Key. Embedded in the iOS release binary.
 
@@ -806,7 +745,7 @@ gh secret set REVENUECAT_API_KEY_IOS
 
 **ROTATE**: RevenueCat → Project Settings → Apps → iOS → API Keys → revoke + issue new. The new key takes effect from the next release after the GitHub Secret update.
 
-### 20. `REVENUECAT_API_KEY_ANDROID`
+### 19. `REVENUECAT_API_KEY_ANDROID`
 
 **WHAT**: The Public Android SDK Key. Embedded in the Android release AAB.
 
@@ -821,7 +760,7 @@ gh secret set REVENUECAT_API_KEY_ANDROID
 # paste goog_..., Ctrl+D
 ```
 
-**About the Webhook secret**: RevenueCat's Webhook signature-verification secret is **Edge Function only** (not needed by the client). See [EF-5 `REVENUECAT_WEBHOOK_SECRET`](#ef-5-revenuecat_webhook_secret) at the end of this document.
+**About the Webhook secret**: RevenueCat's Webhook signature-verification secret is **Edge Function only** (not needed by the client). See [EF-4 `REVENUECAT_WEBHOOK_SECRET`](#ef-4-revenuecat_webhook_secret) at the end of this document.
 
 **RevenueCat ↔ Apple/Google IAP wiring** (registering App Store Connect API Key + Google Play Service Account in RevenueCat, which is a prerequisite for Public SDK Key issuance) is documented in [vendor-setup.md](vendor-setup.md) under the RevenueCat section.
 
@@ -831,7 +770,7 @@ Reference: [RevenueCat API Keys & Authentication](https://www.revenuecat.com/doc
 
 Service Account JSON used by `gradle-play-publisher` from CI to upload AABs to the Google Play Internal track. **Registered against the `production` Environment only** (debug builds never publish to Internal track, so `development` does not need it).
 
-### 21. `GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64`
+### 20. `GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64`
 
 **WHAT**: Base64-encoded Service Account JSON with write access to Google Play Developer API release tracks. Consumed by `gradle-play-publisher` plugin (or fastlane `supply` equivalent) at AAB upload time.
 
@@ -880,9 +819,9 @@ gh secret set GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64 \
 
 **ROTATE**: Cloud Console → IAM → Service Accounts → `google-play-publisher@...` → Keys → revoke old + create new JSON → re-run the REGISTER step above. Play Console permissions persist across key rotations because they are scoped to the SA email, which is unchanged.
 
-## Supabase Edge Function Secrets (5 secrets)
+## Supabase Edge Function Secrets (8 secrets)
 
-These secrets are consumed by Supabase Edge Functions (`notify-on-write` for collaboration push — Phase 24.1 (this slice) wires the shell; Phase 24.3 wires the actual APNs / FCM sends; `revenuecat-webhook` for IAP webhook ingestion — Phase 39 prep, 2026-05-08). They are **not** GitHub Secrets — they are registered against the Supabase project via the Supabase CLI:
+These secrets are consumed by Supabase Edge Functions (`notify-on-write` for collaboration push — Phase 24.1 wires the shell; Phase 24.3 wires the actual APNs / FCM sends; `revenuecat-webhook` for IAP webhook ingestion — Phase 39 prep, 2026-05-08; `submit-bug-report` for closed-beta feedback intake — Phase 39 W5a). They are **not** GitHub Secrets — they are registered against the Supabase project via the Supabase CLI:
 
 ```bash
 supabase login                                # one-time
@@ -943,61 +882,7 @@ supabase secrets set FIREBASE_SERVICE_ACCOUNT_JSON="$(cat firebase-admin-sdk.jso
 
 **ROTATE**: Firebase Console → Project Settings → Service Accounts → Manage all service accounts → click the SA → Keys tab → revoke old + add new JSON.
 
-### EF-4. `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON` (DEPRECATED 2026-05-09)
-
-> **DEPRECATED 2026-05-09**: was registered for the now-deleted `verify-receipt` Edge Function (agent-team deliberation found no complementary role given RevenueCat's coverage of Apple/Google receipt validation; `revenuecat-webhook` Edge Function delegates to RevenueCat which validates server-side). The underlying SA `revenuecat@<project-ref>.iam.gserviceaccount.com` continues to be uploaded to RevenueCat dashboard for receipt validation — that registration is unaffected. The Supabase secret is no longer consumed by any Edge Function; safe to `supabase secrets unset GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON` to reduce credential surface. Section retained for rotation reference and in case Phase H' (or equivalent) needs an independent server-side validator post-beta.
-
-**WHAT**: Service Account JSON for the Google Play Developer API, intended for Android IAP receipts server-side validation and subscription state polling. Originally consumed by `verifyGoogleReceipt` in `supabase/functions/verify-receipt/index.ts` (deleted 2026-05-09).
-
-**SA**: `revenuecat@<project-ref>.iam.gserviceaccount.com` (same SA as the one uploaded to RevenueCat dashboard — single source of truth).
-
-> **2026-05-08 migration**: renamed from `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` and re-pointed from the `google-play-publisher@...` SA to `revenuecat@...` (PoLP separation). The `google-play-publisher@...` SA is now exclusively used for CI release publishing (see [#21 `GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64`](#21-google_play_publisher_sa_json_base64)). Migration steps at the end of this section.
-
-**OBTAIN:**
-
-The `revenuecat@...` SA is expected to exist in Cloud Console with a JSON key already issued (created during vendor-setup A0c-3 RevenueCat wiring). Re-issue the key only if needed:
-
-1. [Google Cloud Console](https://console.cloud.google.com) → IAM & Admin → **Service Accounts** → click `revenuecat@...`.
-2. **Keys** tab → **Add Key** → **Create new key** → JSON → Download.
-3. (Optional) **Disable** + **Delete** the old key.
-
-**VERIFY**: JSON has `"type": "service_account"`, `client_email` is `revenuecat@<project-ref>.iam.gserviceaccount.com`. The Play Console **Users and permissions** page lists the same email with these permissions checked:
-- View revenue data, orders, churn survey responses (**View financial data**)
-- Manage orders and subscriptions (**Manage orders**)
-- View app information / bulk reports download — read-only (auto)
-
-> **Permission scope**: app-level or account-level both work. While Skeinly is the only app, the functional difference is zero. If the developer account ever manages multiple apps, scoping to Skeinly only would be tighter PoLP.
-
-**REGISTER:**
-
-```bash
-# Register under the new secret name
-supabase secrets set GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON="$(cat ~/path/to/revenuecat-sa.json)"
-supabase secrets list | grep GOOGLE_PLAY_IAP_VALIDATOR
-```
-
-**Migration steps** (if the legacy `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` secret is registered with the `google-play-publisher@...` JSON):
-
-```bash
-# 1. Delete the old secret
-supabase secrets unset GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
-
-# 2. Register under the new name with the new SA
-supabase secrets set GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON="$(cat ~/path/to/revenuecat-sa.json)"
-
-# 3. Confirm
-supabase secrets list | grep GOOGLE_PLAY
-# Only GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON should appear
-```
-
-> Edge Function `verify-receipt` was deleted on 2026-05-09. The migration steps above remain useful only if the secret was already registered under the legacy name — `unset` of either name is now equally valid.
-
-**ROTATE**: Cloud Console → IAM → Service Accounts → `revenuecat@...` → Keys → revoke old + create new JSON. **Re-register the secret in 3 places**:
-1. Supabase Edge Function: `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON`.
-2. RevenueCat dashboard: Project Settings → Apps → Skeinly → re-upload Service Account Credentials.
-3. (If applicable) any other consumer of the same JSON.
-
-### EF-5. `REVENUECAT_WEBHOOK_SECRET`
+### EF-4. `REVENUECAT_WEBHOOK_SECRET`
 
 **WHAT**: A shared secret used **server-side** to verify Webhook deliveries from RevenueCat to the `revenuecat-webhook` Edge Function. The value entered into RevenueCat's **Webhooks → Authorization header** field is matched on the Edge Function side against the incoming `Authorization: Bearer <value>` header (constant-time comparison).
 
@@ -1087,11 +972,11 @@ Expected: `HTTP 401` + body `{"error":"unauthorized"}`.
 
 Reference: [RevenueCat Webhooks](https://www.revenuecat.com/docs/integrations/webhooks)
 
-### EF-6. `SKEINLY_DATABASE_WEBHOOK_SECRET`
+### EF-5. `SKEINLY_DATABASE_WEBHOOK_SECRET`
 
 **WHAT**: Shared secret used to authenticate Supabase Database Webhook deliveries to the `notify-on-write` Edge Function (Phase 24.1, ADR-017). Generated by the maintainer (`openssl rand -hex 32`) and registered both as a Supabase Edge Function secret AND as the value of the `Authorization: Bearer <secret>` HTTP header on each of the 3 Database Webhooks via Dashboard. The Edge Function verifies every delivery via constant-time string compare.
 
-> **Authentication shape**: per the [Supabase Database Webhooks doc](https://supabase.com/docs/guides/database/webhooks), Database Webhooks do NOT auto-sign payloads — the Dashboard UI only exposes Method / URL / Timeout / HTTP Headers / HTTP Parameters, with no signing-secret field and no `x-supabase-webhook-signature` header. The Authorization Bearer header is the supported authentication boundary. Mirrors the `revenuecat-webhook` pattern (EF-5).
+> **Authentication shape**: per the [Supabase Database Webhooks doc](https://supabase.com/docs/guides/database/webhooks), Database Webhooks do NOT auto-sign payloads — the Dashboard UI only exposes Method / URL / Timeout / HTTP Headers / HTTP Parameters, with no signing-secret field and no `x-supabase-webhook-signature` header. The Authorization Bearer header is the supported authentication boundary. Mirrors the `revenuecat-webhook` pattern (EF-4).
 
 > **Naming note**: the `SKEINLY_` prefix is load-bearing. Per the [Supabase Edge Function limits doc](https://supabase.com/docs/guides/functions/limits#secrets), env-var names starting with `SUPABASE_` are reserved by the platform and `supabase secrets set` rejects them. Phase 24.1 originally proposed `SUPABASE_DATABASE_WEBHOOK_SECRET`; renamed to `SKEINLY_DATABASE_WEBHOOK_SECRET` before deployment to avoid the registration error.
 
@@ -1114,7 +999,7 @@ supabase secrets list | grep SKEINLY_DATABASE_WEBHOOK_SECRET
 
 > **Dependency chain**: this secret is one of three pieces that together make collaboration push work: (a) the deployed Edge Function itself, (b) the 3 Database Webhooks configured per [`docs/en/ops/webhooks.md`](ops/webhooks.md), (c) `device_tokens` table populated by Phase 24.2's `PushTokenRegistrar`. Phase 24.1 wires (a) + (b); Phase 24.2 adds the client side; Phase 24.3 enables real APNs / FCM sends; Phase 24.4–24.6 expand the event matrix + add deep link routing + privacy policy update.
 
-### EF-7. `SKEINLY_BUGREPORT_APP_ID` / `SKEINLY_BUGREPORT_INSTALLATION_ID` / `SKEINLY_BUGREPORT_PRIVATE_KEY_PEM`
+### EF-6. `SKEINLY_BUGREPORT_APP_ID` / `SKEINLY_BUGREPORT_INSTALLATION_ID` / `SKEINLY_BUGREPORT_PRIVATE_KEY_PEM`
 
 **WHAT**: GitHub App credential trio used by the `submit-bug-report` Edge Function (Phase 39 W5, ADR-020) to authenticate as the "Skeinly Feedback" GitHub App and create Issues on `b150005/skeinly` on the tester's behalf. Replaces Phase 39.5's client-side URL prefill flow.
 
@@ -1122,7 +1007,7 @@ supabase secrets list | grep SKEINLY_DATABASE_WEBHOOK_SECRET
 - `SKEINLY_BUGREPORT_INSTALLATION_ID` — numeric Installation ID, appears in the post-install URL `github.com/settings/installations/<id>`.
 - `SKEINLY_BUGREPORT_PRIVATE_KEY_PEM` — full PEM body of the `.pem` downloaded from the App's "Private keys" section. Includes `-----BEGIN ... PRIVATE KEY-----` / `-----END ... PRIVATE KEY-----` lines verbatim. Both PKCS#1 (`BEGIN RSA PRIVATE KEY`) and PKCS#8 (`BEGIN PRIVATE KEY`) are accepted by the Edge Function.
 
-> **Naming note**: the `SKEINLY_` prefix is load-bearing (same rationale as EF-6 / EF-3).
+> **Naming note**: the `SKEINLY_` prefix is load-bearing (same rationale as EF-5 / EF-3).
 
 **CONSUMED BY**: [`supabase/functions/submit-bug-report/index.ts`](../../supabase/functions/submit-bug-report/index.ts) (reads env vars at request time) + [`supabase/functions/submit-bug-report/github_app.ts`](../../supabase/functions/submit-bug-report/github_app.ts) (RS256 JWT signing + installation token exchange).
 
@@ -1174,20 +1059,6 @@ Expect HTTP 200 with `{"ok":true,"issue_number":<n>,"html_url":"..."}`. Visit th
 
 Reference: [GitHub Apps documentation](https://docs.github.com/en/apps/creating-github-apps)
 
-### Reused: App Store Connect API key (DEPRECATED 2026-05-09 for Edge Functions)
-
-> **DEPRECATED 2026-05-09 for Edge Function consumption**: was registered for the now-deleted `verify-receipt` Edge Function (iOS branch, JWS signing for App Store Server API calls). RevenueCat handles iOS receipt validation server-side, so the Supabase-side registration of these three secrets is no longer consumed by any Edge Function. Safe to:
->
-> ```bash
-> supabase secrets unset APP_STORE_CONNECT_API_KEY
-> supabase secrets unset APP_STORE_CONNECT_KEY_ID
-> supabase secrets unset APP_STORE_CONNECT_ISSUER_ID
-> ```
->
-> The same App Store Connect API key remains REQUIRED as GitHub Secrets §5–§7 for the iOS release pipeline (TestFlight upload via `xcrun altool`).
-
-Historical: when `verify-receipt` was the IAP validation path, this Supabase Edge Function registration was required as a single source of truth alongside the GitHub Secret.
-
 ## Bulk verification
 
 After registering all GitHub Secrets, confirm with `gh`:
@@ -1201,8 +1072,7 @@ gh secret list --env production
 gh secret list --env development
 ```
 
-Expected **Repository scope** output (18 entries — values shared across all environments;
-`APPLE_PROVISIONING_PROFILE_BASE64` was 19th before Path Y deprecation 2026-05-11):
+Expected **Repository scope** output (18 entries — values shared across all environments):
 
 ```
 APPLE_DISTRIBUTION_CERT_BASE64        Updated YYYY-MM-DD
@@ -1225,10 +1095,6 @@ SUPABASE_PUBLISHABLE_KEY              Updated YYYY-MM-DD
 SUPABASE_URL                          Updated YYYY-MM-DD
 ```
 
-> If `APPLE_PROVISIONING_PROFILE_BASE64` still appears in `gh secret list`,
-> it is safe to delete — Path Y migrated CI to fetch the profile from
-> Apple Developer Portal at runtime. See §3 above.
-
 Expected **`production` Environment scope** output (3 entries — Firebase prod ×2 + Android release publishing ×1):
 
 ```
@@ -1244,15 +1110,12 @@ FIREBASE_GOOGLE_SERVICES_JSON_BASE64        Updated YYYY-MM-DD
 FIREBASE_GOOGLE_SERVICE_INFO_PLIST_BASE64   Updated YYYY-MM-DD
 ```
 
-Total: 19 Repository + Environment scope (production: 3 + development: 2) = **24 registrations**. Anything missing or with a stale timestamp is suspect.
+Total: 18 Repository + Environment scope (production: 3 + development: 2) = **23 registrations**. Anything missing or with a stale timestamp is suspect.
 
 > **Legacy name cleanup**: When migrating from a prior layout, delete the following with `gh secret delete`:
 > - `SUPABASE_ANON_KEY` (→ fully migrated to `SUPABASE_PUBLISHABLE_KEY`)
 > - `POSTHOG_PROJECT_API_KEY_PROD` / `POSTHOG_PROJECT_API_KEY_DEV` (→ consolidated into `POSTHOG_PROJECT_API_KEY`)
 > - The old Repository-scope `FIREBASE_GOOGLE_SERVICES_JSON_BASE64` (→ moved to Environment scope)
->
-> Edge Function legacy name cleanup:
-> - `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (→ renamed to `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON` and re-pointed at the `revenuecat@...` SA, 2026-05-08). Delete with `supabase secrets unset GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`.
 
 For Supabase Edge Function secrets (registered via `supabase secrets set`):
 
@@ -1260,7 +1123,7 @@ For Supabase Edge Function secrets (registered via `supabase secrets set`):
 supabase secrets list
 ```
 
-Expected (9 entries after Phase 39 W5a `SKEINLY_BUGREPORT_*` registration; was 6 after Phase 24.1; was 5 after 2026-05-09 `verify-receipt` deletion):
+Expected (9 entries):
 
 ```
 APPLE_APNS_KEY_ID                           # for notify-on-write (Phase 24.3 wires the actual send)
@@ -1273,8 +1136,6 @@ SKEINLY_BUGREPORT_INSTALLATION_ID           # for submit-bug-report (Phase 39 W5
 SKEINLY_BUGREPORT_PRIVATE_KEY_PEM           # for submit-bug-report (Phase 39 W5a)
 SKEINLY_DATABASE_WEBHOOK_SECRET             # for notify-on-write Database Webhook signing (Phase 24.1)
 ```
-
-If the legacy 4 secrets (`APP_STORE_CONNECT_API_KEY` + `APP_STORE_CONNECT_KEY_ID` + `APP_STORE_CONNECT_ISSUER_ID` + `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON`) are still registered, they are now dormant — see the deprecation notes in EF-4 + "Reused: App Store Connect API key" sections above for the `unset` commands.
 
 The first end-to-end verification of the iOS pipeline only happens at tag push — the iOS release job is gated on tag triggers, not regular pushes. Before the first alpha/beta tag push, you can:
 
@@ -1294,9 +1155,8 @@ Specifically:
 | Secret | Rotation procedure | Frequency |
 |---|---|---|
 | `APPLE_DISTRIBUTION_CERT_BASE64` + password | Apple Developer → Certificates → revoke + create new + re-export `.p12` | Annual or on incident |
-| `APPLE_PROVISIONING_PROFILE_BASE64` (DEPRECATED 2026-05-11) | No GitHub Secret rotation needed — sigh fetches the profile from Apple Developer Portal at every CI run. Manual re-Generate in Portal Web UI required only on capability additions / annual expiry. | N/A on GitHub side; Portal re-Generate on capability change or annual expiry |
 | `APPLE_TEAM_ID` | Cannot change without changing teams | N/A |
-| `APP_STORE_CONNECT_API_KEY_*` | App Store Connect → Team Keys → revoke + generate new (Supabase Edge Function side dormant since 2026-05-09 `verify-receipt` deletion — re-register only if Phase H' or equivalent revives a server-side validator) | Recommended every 12 months |
+| `APP_STORE_CONNECT_API_KEY_*` | App Store Connect → Team Keys → revoke + generate new | Recommended every 12 months |
 | `KEYSTORE_*` | **Do NOT rotate**. Losing the keystore breaks Play Store updates. Use Google Play's "App Signing by Google Play" key reset only as a last resort. | Never (under normal conditions) |
 | `SUPABASE_PUBLISHABLE_KEY` | Supabase Dashboard → Project Settings → API Keys → Generate new Publishable key | On suspected leak |
 | `FIREBASE_GOOGLE_SERVICES_JSON_BASE64` (Environment scope) | Re-download from Firebase Console only on package or signing SHA-1 change (per environment) | Effectively never |
@@ -1307,7 +1167,6 @@ Specifically:
 | `REVENUECAT_API_KEY_*` | RevenueCat → Project Settings → Apps → Public SDK Key revoke + issue new | On suspected leak |
 | Edge Function `APPLE_APNS_KEY_*` | Apple Developer → Keys → revoke + generate new + re-register Supabase secret | Annual or on incident |
 | Edge Function `FIREBASE_SERVICE_ACCOUNT_JSON` | Firebase Console → Service Accounts → revoke + new key | Annual or on incident |
-| Edge Function `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON` (DEPRECATED 2026-05-09) | Supabase secret dormant since `verify-receipt` deletion. Cloud Console → IAM → Service Accounts → `revenuecat@...` → revoke + new key → re-upload to RevenueCat dashboard (the live consumer of this SA) | Annual or on incident |
 | Environment `GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64` | Cloud Console → IAM → Service Accounts → `google-play-publisher@...` → revoke + new key → re-run `gh secret set --env production` | Annual or on incident |
 | Edge Function `REVENUECAT_WEBHOOK_SECRET` | `openssl rand -hex 32` for new value → update RevenueCat Webhook Authorization header → re-register Supabase secret | Annual or on incident |
 | Edge Function `SKEINLY_DATABASE_WEBHOOK_SECRET` | `openssl rand -hex 32` for new value → re-register Supabase secret + update Authorization HTTP header on each of the 3 Database Webhooks via Dashboard | Annual or on incident |

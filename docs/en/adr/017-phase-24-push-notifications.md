@@ -332,7 +332,7 @@ These were considered + explicitly deferred to Phase 24+ or beyond. Listed so fu
 **24.1 — Data spine**:
 - Migration NNN: `device_tokens` table + RLS policies + indexes. Apply to prod.
 - Edge Function `notify-on-write` shell: webhook Bearer-auth verification + body parse + table-type branch + log-only `dispatchPush` (no actual APNs/FCM calls yet) + Deno test for the parser + locale lookup.
-- New Edge Function secret `SKEINLY_DATABASE_WEBHOOK_SECRET` registration doc in release-secrets.md (EF-6).
+- New Edge Function secret `SKEINLY_DATABASE_WEBHOOK_SECRET` registration doc in release-secrets.md (EF-6 at landing time; renumbered to EF-5 on 2026-05-12).
 - Dashboard: Database Webhooks configured for the 3 event sources; documented in new `supabase/webhooks.md`.
 - KMP: NO client wiring this slice.
 - Tests: ~15 Deno tests for the Edge Function parser + locale resolver + recipient-set computation. NO commonTest delta.
@@ -432,7 +432,7 @@ Resolved at Phase 24.3 implementation when the actual APNs call lands. Lean towa
 - Token cleanup on uninstall is reactive (next push attempt fails → DELETE), not proactive. A user who uninstalls accumulates one stale row until their PR-related event fires; bounded by the lifetime of a typical token (~weeks to months).
 
 **Tracking**:
-- New Edge Function secret EF-6 in release-secrets.md.
+- New Edge Function secret EF-6 in release-secrets.md (renumbered to EF-5 on 2026-05-12 after the dormant EF-4 entry was removed).
 - Migration NNN landing at Phase 24.1 (NNN = next available number after migration 024 — likely 025).
 - 6 sub-slices over Phase 24.0 → 24.6.
 - HARD-GATE for Phase 39 closed-beta tester invites: closed at end of Phase 24.6.

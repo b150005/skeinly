@@ -180,7 +180,7 @@ push notification は opt-in surface — ユーザが OS permission 明示 grant
 | Slice | 内容 | code 規模 |
 |---|---|---|
 | 24.0 | このADR + CLAUDE.md promotion | doc only |
-| 24.1 | データスパイン: `device_tokens` 移行 + `notify-on-write` shell + Database Webhook config doc + EF-6 secret 登録 doc | 1 migration + Edge Function shell + ~15 Deno tests + 0 commonTest + 0 i18n |
+| 24.1 | データスパイン: `device_tokens` 移行 + `notify-on-write` shell + Database Webhook config doc + EF-6 secret 登録 doc (2026-05-12 に dormant EF-4 削除に伴い EF-5 へ renumber) | 1 migration + Edge Function shell + ~15 Deno tests + 0 commonTest + 0 i18n |
 | 24.2 | クライアント device token registration + permission UX (KMP `expect/actual` `PushTokenRegistrar` + `NotificationPermissionPrompter` + pre-permission Composable + Settings 行 + OS settings deep-link) | ~25 commonTest + ~12 i18n keys + iOS/Android native code |
 | 24.3 | PR comment 通知 end-to-end (Edge Function 実 APNs + FCM 呼出) | ~20 Deno tests + 0 commonTest + 0 i18n |
 | 24.4 | PR-opened + merged + closed イベント | ~10 Deno tests |

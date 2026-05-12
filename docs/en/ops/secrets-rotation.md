@@ -19,7 +19,6 @@
 | Secret | Procedure | Frequency |
 |---|---|---|
 | `APPLE_DISTRIBUTION_CERT_BASE64` + password | Apple Developer → Certificates → revoke + create new + re-export `.p12` → re-register both | Annual or on incident |
-| `APPLE_PROVISIONING_PROFILE_BASE64` | DEPRECATED 2026-05-11. sigh fetches the profile from Apple Developer Portal at every CI run. Re-Generate in the Portal Web UI only on capability changes or annual expiry. | N/A on GitHub side |
 | `APPLE_TEAM_ID` | Cannot change without changing teams. | Never |
 | `APP_STORE_CONNECT_API_KEY_*` (3 secrets) | ASC → Team Keys → revoke + generate new + re-register all 3 (base64, id, issuer) | Annual |
 | `KEYSTORE_*` (4 secrets) | **Do NOT rotate.** Losing the keystore breaks Play Store updates permanently. Google Play "App Signing by Google Play" key reset is a last-resort recovery, not a routine rotation. | Never |
