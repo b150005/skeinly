@@ -18,6 +18,8 @@ Tracker for the closed-alpha launch readiness audit. Every item below maps to a 
 | **A11** Revoke EXECUTE on internal SECURITY DEFINER functions | Migration 030 | Three-tier matrix: (a) `get_app_config` keeps anon + authenticated (intentional pre-sign-in surface); (b) `apply_suggestion` / `delete_own_account` / `is_pro` revoked from anon, kept on authenticated; (c) `grant_alpha_pro` / `handle_new_user` / `rls_auto_enable` / `set_progress_owner_id` / `touch_app_config_updated_at` / `upsert_subscription_from_webhook` revoked from anon + authenticated + PUBLIC. Supabase lints 0028 / 0029 reduced from 18 → 5 advisor findings (all 5 remaining intentional). |
 | **A12** Tighten `comments` SELECT policy | Migration 030 | Dropped the bare `s.share_token IS NOT NULL` arm; token-shared project comments now require the caller to be the explicit `s.to_user_id`. Token-based viewers (anonymous-link recipients) no longer see comments, matching the read-only "view this pattern" UX. |
 | **A13** Tighten `avatars` storage bucket SELECT policy | Migration 030 | Dropped broad `Anyone can read avatars` SELECT policy on `storage.objects`. The avatars bucket is `public = true`, so the Storage HTTP API continues to serve files via URL without an RLS policy. Owner upload/update/delete policies retained (scoped by `auth.uid()::text = (storage.foldername(name))[1]`). Supabase lint 0025 (`public_bucket_allows_listing`) cleared. App code does not call `.list()` on this bucket. |
+| **A18** Migration rollback procedure doc | docs commit | New `docs/en/ops/migration-rollback.md` (+ JA mirror) covering: forward-only principle, destructive-migration matrix with recovery paths (DROP TABLE / DROP COLUMN / lossy ALTER / DROP FUNCTION / REVOKE / RLS DISABLE), pre-migration safety discipline (BREAKING tag + inline rollback plan + low-write window), drill procedure, PITR procedure, forward-fix vs PITR decision matrix. Cross-linked from `release.md`. |
+| **A22** ATT decision rationale doc | docs commit | New section in `docs/en/ops/repo-policy.md` (+ JA mirror) — App Tracking Transparency NOT required, per-subprocessor analysis (PostHog / Sentry / RevenueCat / APNs / FCM / Supabase / GitHub all confirmed non-tracking + non-data-broker), conditions for re-evaluation, reviewer-facing summary text for App Store Connect Review Notes. |
 
 ## Outstanding Action Required Items
 
@@ -30,9 +32,7 @@ Tracker for the closed-alpha launch readiness audit. Every item below maps to a 
 - **A9 / V13** Enable HIBP leaked-password protection in Supabase Dashboard — user-side toggle
 - **A16** iOS Universal Links — entitlement + AASA file + Apple Developer provisioning profile regen
 - **A17** Supabase PITR / DR drill SOP — operational doc
-- **A18** Migration rollback procedure doc — `docs/en/ops/release.md`
 - **A20** GDPR / CCPA data portability path — email-based SOP or in-app Export button
-- **A22** ATT decision rationale doc — for App Store reviewer
 - **A23-A27** a11y audits (TalkBack/VoiceOver, Dynamic Type, Reduce Motion, color contrast, touch targets, focus order, states)
 - **A28** Sentry crash-free SLO target alert
 - **A29** Play Vitals + Sentry ANR alerts wire
@@ -1122,28 +1122,19 @@ Define a DR drill procedure in `docs/en/ops/incident-playbook.md`:
   - `phase_24_1_device_tokens` — push notification tokens.
   - `phase_d_terminology_audit_*` — schema-level renames (collaboration_core + suggestion_workflow).
 
-### 27.2 Action Required — A18. Document migration rollback procedure
+### 27.2 Action Required — A18. Document migration rollback procedure — ✅ CLOSED (2026-05-12)
 
-In `docs/en/ops/release.md` (or a new `migration-rollback.md`):
+**Resolution**: New runbook [docs/en/ops/migration-rollback.md](migration-rollback.md) + JA mirror [docs/ja/ops/migration-rollback.md](../../ja/ops/migration-rollback.md). Covers:
 
-1. **Forward-only principle**: Skeinly does NOT use down migrations. Reversing a migration always requires writing a NEW migration that reverses the prior one (e.g., `028_app_config` was reversed by writing `029_drop_app_config` if needed).
+1. **Forward-only principle** + the choice matrix (forward-fix vs PITR restore vs both).
+2. **Destructive migration matrix** with per-class recovery paths (DROP TABLE / DROP COLUMN / ALTER ... TYPE lossy + lossless / DROP FUNCTION / ALTER FUNCTION search_path / REVOKE EXECUTE / DROP-CREATE POLICY / data-only DELETE / RLS DISABLE-ENABLE).
+3. **Pre-migration safety discipline**: BREAKING tag in header, inline `-- Rollback plan:` comment block in the migration SQL, low-write apply window.
+4. **Pre-v1 breaking-change policy** documented with the two existing precedents (Phase D terminology, migration 030 share-token arm removal). Phase 40 GA tightens the policy (ADR + coupled compatibility window + double-staffed review).
+5. **Rollback drill procedure** — runnable on migration 030 as the first reference exercise.
+6. **PITR procedure** — step-by-step Supabase Dashboard restore flow.
+7. **Forward-fix vs PITR decision matrix** — symptom-indexed choice table.
 
-2. **Pre-migration safety**: every migration that DROPs a column / table / function / changes RLS / changes constraints MUST:
-   - Be tagged `BREAKING` in the migration comment header.
-   - Have a documented rollback plan in the same commit (either: PITR restore to pre-migration time, OR a reverse migration ready to apply).
-
-3. **Destructive migration types and their rollback paths**:
-   - `DROP TABLE` → PITR restore is the ONLY recovery; reverse migration impossible (data lost).
-   - `DROP COLUMN` → PITR restore for data; reverse migration adds the column back schema-wise.
-   - `ALTER COLUMN ... TYPE` (lossy cast) → PITR restore; reverse migration alone doesn't restore the lost precision.
-   - `DROP FUNCTION` → reverse migration recreates the function.
-   - RLS / policy changes → reverse migration restores prior policy.
-
-4. **Pre-v1 breaking-change policy** (per memory `pre_v1_breaking_changes.md`): until Phase 40 GA, destructive migrations are permitted without backward-compat shims when they produce a better v1.0 outcome. Phase 40 GA tightens this — destructive migrations require explicit ADR + double-staffed review.
-
-5. **Practice rollback drill**: pick one historical migration (e.g., 028_app_config) and write the reverse migration locally as an exercise. Don't apply to prod.
-
-**Owner**: architect.
+Cross-linked from `release.md` and `pre-alpha-checklist.md`.
 
 ## 28-29. Privacy Policy + Terms of Service Review
 
@@ -1308,11 +1299,17 @@ Per the Apple Guidelines Section 1.1 V2 analysis:
 
 ATT prompt is required ONLY when an app links user/device data across third-party apps/websites for advertising/attribution. Skeinly does neither.
 
-### 34.2 Action Required
+### 34.2 Action Required — A22. ATT decision rationale doc — ✅ CLOSED (2026-05-12)
 
-**A22**: Document the ATT decision rationale in `docs/en/ops/repo-policy.md` (or this checklist). At App Store submission time, the reviewer may ask "why no ATT prompt?" — having the documented rationale ready saves review-loop time.
+**Resolution**: New section added to [docs/en/ops/repo-policy.md](repo-policy.md) (+ JA mirror) documenting:
 
-**A22.1** (verify): Confirm PostHog DPA does NOT classify PostHog as a "third-party ad partner". As of 2026-05-12 PostHog is positioned as a first-party analytics processor (Skeinly is the controller, PostHog is the processor). If PostHog ever pivots, re-evaluate ATT.
+- The two ATT-triggering conditions per Apple guidance (cross-app linkage for advertising / data-broker sharing) — both must be evaluated independently.
+- Per-subprocessor analysis table: PostHog / Sentry / RevenueCat / Apple APNs / Google FCM / Supabase / GitHub all confirmed non-tracking + non-data-broker (2026-05-12 verification).
+- Conclusion: `NSUserTrackingUsageDescription` is intentionally absent; `ATTrackingManager.requestTrackingAuthorization` is never called.
+- Conditions that require re-evaluation (e.g., adding a third-party advertising SDK, subprocessor pivots from first-party to data-broker classification, RevenueCat changes subprocessor relationship, new opt-in feature joins Skeinly data with third-party data).
+- Reviewer-facing summary text recommended for App Store Connect → App Review → Notes — saves review-loop time when the reviewer asks "why no ATT prompt?".
+
+**A22.1** (continuous verification): Re-verify PostHog DPA + Sentry DPA at each contract renewal. PostHog is positioned as a first-party analytics processor as of 2026-05-12; if either pivots to data-broker / cross-app-attribution offering, A22 must be re-opened and the ATT decision re-evaluated.
 
 ---
 

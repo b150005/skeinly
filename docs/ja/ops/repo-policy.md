@@ -227,6 +227,48 @@ iOS jobs で観測された 4× 高速化 (6m18s self-hosted vs 25min on `macos-
 
 将来再検討 (例: 月次 GHA minutes コストが閾値超え、beta が高頻度 push phase に移行) する場合は、Lume VM runner + `--ephemeral` JIT registration で各 job fresh isolated 環境にする shape が正解 — ここで試した host-direct setup ではない。
 
+## App Tracking Transparency (ATT) — 判断根拠
+
+**判断 (2026-05-12, pre-alpha audit 項目 A22)**: Skeinly は iOS の App Tracking Transparency (`AppTrackingTransparency.framework`) prompt を**表示しない**、かつ ATT prompt を要求される対象に**該当しない**。
+
+**根拠**: Apple 公式 ([App Tracking Transparency · Apple Developer](https://developer.apple.com/app-store/user-privacy-and-data-use/)) — ATT は以下のいずれかに該当する場合のみ必須:
+- アプリで収集したユーザー / デバイスデータを、他社のアプリ・ウェブサイト・オフライン properties で収集したデータと**ターゲット広告 / 広告計測目的でリンクする**場合
+- ユーザー / デバイスデータを**データブローカーと共有する**場合
+
+両条件はそれぞれ独立評価。
+
+### Subprocessor 別分析 (2026-05-12 検証済み)
+
+| Subprocessor | 収集データ | 他社 properties とリンク? | データブローカー共有? | ATT 必須? |
+|---|---|---|---|---|
+| **PostHog** (opt-in) | 匿名 per-install `distinct_id`、画面遷移、ボタンタップ | **No** — PostHog DPA 上 first-party analytics processor (Skeinly が controller)。`distinct_id` は匿名インストール UUID で third-party graph に join しない。 | **No** — データブローカーではない。 | ❌ |
+| **Sentry** (opt-in) | 匿名インストール UUID、stack trace、デバイスモデル、OS バージョン | **No** — first-party error-reporting processor。UUID は Skeinly の Sentry プロジェクトローカル、他社アプリと cross-link しない。 | **No** — データブローカーではない。 | ❌ |
+| **RevenueCat** | Subscription state、`app_user_id` (= Supabase UID)、platform、product_id、transaction_id | **No** — Skeinly の代理で Apple/Google IAP receipt を受信する IAP-state proxy。広告 / cross-app linkage なし。 | **No** — データブローカーではない。 | ❌ |
+| **Apple APNs / Google FCM** | 不透明な push token + 通知本文 | **No** — ユーザー自身のデバイス上の Skeinly アプリへの push 通知配信専用。Cross-app linkage なし。 | **No**。 | ❌ |
+| **Supabase** | 全アプリデータ (auth + UGC + Storage) | **No** — Skeinly のメイン backend processor (DPA 締結済)。 | **No**。 | ❌ |
+| **GitHub** (bug-report-proxy、submit ごと opt-in) | バグレポートのタイトル + 本文 + PostHog `distinct_id` (相関付け用) | **No** — Skeinly Feedback GitHub App が Skeinly 自身のリポジトリに Issue を立てる、サポート相関目的。広告ではない。 | **No**。 | ❌ |
+
+### 結論
+
+Skeinly は ATT が要求される 2 つの行為のいずれにも該当しない:
+- **広告目的の cross-app linkage なし**: 全 analytics + crash-reporting が first-party processor、広告 attribution SDK は組み込んでいない、広告ネットワーク統合なし
+- **データブローカー共有なし**: どの subprocessor もデータブローカーではない
+
+したがって `NSUserTrackingUsageDescription` Info.plist key は意図的に未設定、`ATTrackingManager.requestTrackingAuthorization` は呼び出さない。
+
+### 再評価が必要となる条件
+
+以下のいずれかが発生した場合、A22 を再オープン:
+1. Third-party 広告 SDK 追加 (Google AdMob、Meta Audience Network、ironSource 等)
+2. PostHog または Sentry が first-party processor 分類から data-broker / cross-app-attribution 提供へ pivot。2026-05-12 時点 PostHog DPA は first-party processor 立場を明確にしている。PostHog / Sentry の契約更新毎に再検証。
+3. RevenueCat の subprocessor 関係が変化し、Skeinly ユーザーデータを広告 partner に共有する形に
+4. ATT 該当データを収集する新規 opt-in 機能 (例: Skeinly インストール記録を third-party インストール記録に join する referral プログラム)
+
+### App Store Connect Review Notes 提出用テキスト
+
+App Store Connect → App Review → Notes に以下を記載推奨:
+> Skeinly does not show the App Tracking Transparency prompt. Per Apple's ATT guidance, the prompt is required only when an app links user or device data with other companies' apps/websites for advertising or shares data with data brokers. Skeinly's only data collectors are first-party processors under DPA (Supabase / Sentry / PostHog / RevenueCat / APNs / FCM / GitHub bug-report proxy). Sentry and PostHog are opt-in and use anonymous installation UUIDs that are never joined to any cross-app advertising graph. No advertising SDK is integrated. No data is shared with data brokers.
+
 ## 更新履歴
 
 | 日付 | 変更 | 実施者 |
@@ -234,3 +276,4 @@ iOS jobs で観測された 4× 高速化 (6m18s self-hosted vs 25min on `macos-
 | 2026-04-27 | 初回 `main-strict` ruleset 作成 (id `15581036`) | b150005 |
 | 2026-04-27 | Self-hosted runner 稼働開始、security audit + hardening 完了 (Fork PR approval、third-party SHA pin、ci.yml permissions block、pages.yml の ubuntu-latest 復帰、env-var step output pattern)。Commits `1a119e1` + `8d6c6ae` 参照 | b150005 |
 | 2026-04-27 | Self-hosted runner を GitHub-hosted に revert (security + maintenance trade-off — 「Historical: self-hosted runner experiment」section 参照)。Hardening は全て維持。Runner deregister + LaunchAgent 削除 + ディレクトリ削除 | b150005 |
+| 2026-05-12 | App Tracking Transparency 判断根拠 section 追加 (pre-alpha audit 項目 A22) | b150005 |
