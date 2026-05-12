@@ -32,8 +32,8 @@ Sandbox 経由なら **全部** をテストできる。さらに sandbox の **
 
 - [ ] Migration 023 (`upsert_subscription_from_webhook` RPC) が prod に適用済み。`mcp__supabase__list_migrations` で `phase_39_revenuecat_webhook_helper` が並んでいるか確認。
 - [ ] `revenuecat-webhook` Edge Function がデプロイ済み（`supabase functions deploy revenuecat-webhook`）。
-- [ ] `REVENUECAT_WEBHOOK_SECRET` が Supabase Edge Function secret に登録済み（[release-secrets.md EF-5](../release-secrets.md#ef-5-revenuecat_webhook_secret)）。
-- [ ] RevenueCat Dashboard → Webhooks → Add Webhook 設定済み（同 EF-5 セクション参照）。「Send test event」が緑チェック。
+- [ ] `REVENUECAT_WEBHOOK_SECRET` が Supabase Edge Function secret に登録済み（[release-secrets.md EF-4](../release-secrets.md#ef-4-revenuecat_webhook_secret)）。
+- [ ] RevenueCat Dashboard → Webhooks → Add Webhook 設定済み（同 EF-4 セクション参照）。「Send test event」が緑チェック。
 - [ ] RevenueCat Dashboard → Project Settings → Apps → Skeinly iOS + Android 両方に Public SDK Key（`appl_...` / `goog_...`）が設定済み（[vendor-setup.md A0d-2 / A0d-3](../vendor-setup.md)）。
 - [ ] iOS app が `REVENUECAT_API_KEY_IOS` GitHub secret 配線でビルド済み（closed beta 用 TestFlight ビルド）。
 - [ ] Android app が `REVENUECAT_API_KEY_ANDROID` GitHub secret 配線でビルド済み（`gradle-play-publisher` 経由 Internal Testing track アップロード）。

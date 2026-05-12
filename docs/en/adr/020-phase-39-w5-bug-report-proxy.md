@@ -605,10 +605,12 @@ working bug-report flow.
 - `supabase/config.toml` — register `[functions.submit-bug-report]`
   with `verify_jwt = false`
 - `docs/{en,ja}/adr/020-phase-39-w5-bug-report-proxy.md` (this ADR)
-- `docs/{en,ja}/release-secrets.md` — new EF-7 entry for the GitHub
+- `docs/{en,ja}/release-secrets.md` — new EF-6 entry for the GitHub
   App trio (`SKEINLY_BUGREPORT_APP_ID` /
   `SKEINLY_BUGREPORT_INSTALLATION_ID` /
-  `SKEINLY_BUGREPORT_PRIVATE_KEY_PEM`)
+  `SKEINLY_BUGREPORT_PRIVATE_KEY_PEM`) — was EF-7 at the time of W5a
+  landing; renumbered to EF-6 after the 2026-05-12 dormant-entry
+  cleanup removed the original EF-4 (`GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON`)
 - `CLAUDE.md` — W5a entry under `### Completed`; W5b under
   `### Planned`
 

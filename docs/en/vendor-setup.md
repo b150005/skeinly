@@ -65,19 +65,15 @@ See [release-secrets.md §1](release-secrets.md#1-apple_distribution_cert_base64
 
 ### A0a-4: Provisioning Profile
 
-See [release-secrets.md §3](release-secrets.md#3-apple_provisioning_profile_base64).
+CI fetches the App Store Distribution profile from Apple Developer Portal at runtime via `sigh` (using the App Store Connect API key, A0a-5). No GitHub Secret carries the profile bytes.
 
-**Order matters**: Generate the profile **after** A0a-1 (so all 4 capabilities are baked into the profile). Profiles generated before adding a capability do not include it; you must regenerate the profile and re-register `APPLE_PROVISIONING_PROFILE_BASE64`.
+**Order matters**: Generate the profile **after** A0a-1 (so all 4 capabilities are baked into the profile). Profiles generated before adding a capability do not include it; regenerate the profile in the Apple Developer Portal Web UI. The next CI run picks up the updated profile automatically.
 
 ### A0a-5: App Store Connect API Key
 
-See [release-secrets.md §5–7](release-secrets.md#5-app_store_connect_api_key_base64).
+See [release-secrets.md §4–6](release-secrets.md#4-app_store_connect_api_key_base64).
 
-The same key is used for:
-- TestFlight upload via fastlane (CI / GitHub Secrets context).
-- IAP receipt validation server-side via App Store Server API (Supabase Edge Function context).
-
-Register the key in **both** contexts: GitHub Secret `APP_STORE_CONNECT_API_KEY_BASE64` AND Supabase Edge Function secret `APP_STORE_CONNECT_API_KEY` (single key file, two registration places).
+The same key is used for TestFlight upload via fastlane (CI / GitHub Secrets context). Register it as the GitHub Secret `APP_STORE_CONNECT_API_KEY_BASE64`.
 
 ## Phase A0b — App Store Connect (App + IAP)
 
@@ -210,7 +206,7 @@ Place at `<host>/.well-known/assetlinks.json`:
 }]
 ```
 
-Get the SHA-256 fingerprint via `keytool -list -v -keystore upload-keystore.jks` (see [release-secrets.md §8](release-secrets.md#8-keystore_base64) for the keystore generation procedure).
+Get the SHA-256 fingerprint via `keytool -list -v -keystore upload-keystore.jks` (see [release-secrets.md §7](release-secrets.md#7-keystore_base64) for the keystore generation procedure).
 
 ### A0c-4: Verification after deploy
 
@@ -227,7 +223,7 @@ curl -I https://b150005.github.io/.well-known/assetlinks.json
 
 ## Phase A0d — RevenueCat Setup
 
-RevenueCat is the cross-platform IAP / subscription orchestration layer. It abstracts Apple StoreKit and Google Play Billing into one Public SDK Key per platform that the client passes to `Purchases.configure()`. **Prerequisites**: A0a-5 (App Store Connect API Key) + A0b-3 (IAP products created in App Store Connect) + Google Play Console app published with Service Account API access enabled (covered server-side via [release-secrets EF-4 `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON`](release-secrets.md#ef-4-google_play_iap_validator_sa_json), which uses the `revenuecat@...` SA — single source of truth).
+RevenueCat is the cross-platform IAP / subscription orchestration layer. It abstracts Apple StoreKit and Google Play Billing into one Public SDK Key per platform that the client passes to `Purchases.configure()`. **Prerequisites**: A0a-5 (App Store Connect API Key) + A0b-3 (IAP products created in App Store Connect) + Google Play Console app published with Service Account API access enabled (granted to the `revenuecat@<project-ref>.iam.gserviceaccount.com` SA, whose JSON key is uploaded directly to the RevenueCat dashboard — see A0d-3 below).
 
 ### A0d-1: Create the RevenueCat Project
 
@@ -243,16 +239,16 @@ RevenueCat is the cross-platform IAP / subscription orchestration layer. It abst
 4. **App Store Connect API Key**: upload the `.p8` from A0a-5 + provide Key ID + Issuer ID (RevenueCat caches these to fetch product metadata + observe subscription state changes).
 5. **App-specific Shared Secret**: not required when API Key is uploaded (legacy mechanism).
 6. Save → wait for RevenueCat to fetch product list (typically <1 minute).
-7. **API Keys** tab → copy the **Public iOS SDK Key** (starts with `appl_`) — register as `REVENUECAT_API_KEY_IOS` per [release-secrets §19](release-secrets.md#19-revenuecat_api_key_ios).
+7. **API Keys** tab → copy the **Public iOS SDK Key** (starts with `appl_`) — register as `REVENUECAT_API_KEY_IOS` per [release-secrets §18](release-secrets.md#18-revenuecat_api_key_ios).
 
 ### A0d-3: Link the Android App (Google Play)
 
 1. Same Project: **Project Settings** → **Apps** → **+ New** → **Play Store**.
 2. App name: `Skeinly Android`.
 3. Package name: `io.github.b150005.skeinly`.
-4. **Service Account Credentials**: upload the `revenuecat@...` SA JSON file used for `GOOGLE_PLAY_IAP_VALIDATOR_SA_JSON` in [release-secrets EF-4](release-secrets.md#ef-4-google_play_iap_validator_sa_json) (single source of truth — RevenueCat needs Play Developer API read access for product + receipt validation).
+4. **Service Account Credentials**: upload the `revenuecat@<project-ref>.iam.gserviceaccount.com` SA JSON file (this SA is granted "View financial data" + "Manage orders and subscriptions" in Play Console → Users and permissions — RevenueCat needs Play Developer API read access for product + receipt validation). The JSON key is uploaded only here in the RevenueCat dashboard; it is not registered as a Supabase Edge Function secret.
 5. Save → wait for RevenueCat to fetch the Play Console product list.
-6. **API Keys** tab → copy the **Public Android SDK Key** (starts with `goog_`) — register as `REVENUECAT_API_KEY_ANDROID` per [release-secrets §20](release-secrets.md#20-revenuecat_api_key_android).
+6. **API Keys** tab → copy the **Public Android SDK Key** (starts with `goog_`) — register as `REVENUECAT_API_KEY_ANDROID` per [release-secrets §19](release-secrets.md#19-revenuecat_api_key_android).
 
 ### A0d-4: Create the Entitlement + Offering
 
@@ -282,7 +278,7 @@ Webhooks let RevenueCat push subscription state changes (renewal, cancel, refund
    - Authorization header: paste the secret from step 1.
    - Environment filter: leave default (both Sandbox + Production) for alpha.
 3. Save.
-4. Register the same secret value as `REVENUECAT_WEBHOOK_SECRET` per [release-secrets EF-5](release-secrets.md#ef-5-revenuecat_webhook_secret).
+4. Register the same secret value as `REVENUECAT_WEBHOOK_SECRET` per [release-secrets EF-4](release-secrets.md#ef-4-revenuecat_webhook_secret).
 
 The Edge Function itself is authored as part of F1 (Pro subscription rollout). Until then, this step can be deferred — RevenueCat correctly maintains client-side entitlement state without the webhook; the webhook is for server-side reconciliation.
 
@@ -299,8 +295,7 @@ Before tagging `v1.0.0-alpha1`:
 - [ ] Apple Developer App ID `io.github.b150005.skeinly` exists with 4 capabilities enabled (Sign In with Apple, Push Notifications, Associated Domains, In-App Purchase)
 - [ ] APNs Auth Key `.p8` downloaded and saved to password manager
 - [ ] APPLE_APNS_KEY_BASE64 + APPLE_APNS_KEY_ID registered as Supabase Edge Function secrets
-- [ ] Provisioning Profile regenerated after capabilities were added
-- [ ] APPLE_PROVISIONING_PROFILE_BASE64 (re-)registered as GitHub Secret
+- [ ] Provisioning Profile regenerated in Apple Developer Portal after capabilities were added (CI fetches it at runtime via sigh — no GitHub Secret carries the bytes)
 - [ ] App Store Connect app `Skeinly` created with bundle ID `io.github.b150005.skeinly`
 - [ ] Subscription Group `Skeinly Pro` created
 - [ ] 2 IAP products created: `skeinly.pro.monthly` ($3.99/¥600) and `skeinly.pro.yearly` ($24.99/¥3,800), both with 7-day free trial

@@ -21,7 +21,6 @@
 | Secret | 手順 | 頻度 |
 |---|---|---|
 | `APPLE_DISTRIBUTION_CERT_BASE64` + password | Apple Developer → Certificates → revoke + 新規 + `.p12` re-export → 両方再登録 | 年次 or インシデント時 |
-| `APPLE_PROVISIONING_PROFILE_BASE64` | DEPRECATED 2026-05-11。sigh が CI 毎回 Portal から fetch。Portal Web UI での再 Generate は capability 変更 or 年次失効時のみ | GitHub 側は N/A |
 | `APPLE_TEAM_ID` | 移籍しない限り変更不可 | 永久不要 |
 | `APP_STORE_CONNECT_API_KEY_*` (3 secrets) | ASC → Team Keys → revoke + 新規生成 + 3 個 (base64 / id / issuer) 全部再登録 | 年次 |
 | `KEYSTORE_*` (4 secrets) | **ローテートしない**。keystore 紛失は Play Store 更新を永久に壊す。Google Play "App Signing by Google Play" key reset は最終手段の recovery であって routine ローテーションではない | 永久不要 |

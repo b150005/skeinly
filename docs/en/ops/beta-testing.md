@@ -54,9 +54,9 @@ setup that should already be done):
 - [ ] `revenuecat-webhook` Edge Function deployed.
       `supabase functions deploy revenuecat-webhook`.
 - [ ] `REVENUECAT_WEBHOOK_SECRET` registered as Supabase Edge Function
-      secret (per [release-secrets.md EF-5](../release-secrets.md#ef-5-revenuecat_webhook_secret)).
+      secret (per [release-secrets.md EF-4](../release-secrets.md#ef-4-revenuecat_webhook_secret)).
 - [ ] RevenueCat Dashboard → Webhooks → Add Webhook configured with the
-      Edge Function URL + the same secret value (per same EF-5 section).
+      Edge Function URL + the same secret value (per same EF-4 section).
       "Send test event" returns green.
 - [ ] RevenueCat Dashboard → Project Settings → Apps → Skeinly iOS +
       Skeinly Android both have valid Public SDK Keys (`appl_...` /
