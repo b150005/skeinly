@@ -594,4 +594,8 @@
     <string name="title_force_update">アップデートが必要です</string>
     <string name="body_force_update_default">Skeinly を引き続き使用するには新しいバージョンが必要です。ストアからアップデートしてください。</string>
     <string name="action_update_now">今すぐアップデート</string>
+    <!-- Pre-alpha A15 — Maintenance mode kill switch (gates startup when the server flips `app_config.maintenance_mode_active`). -->
+    <string name="title_maintenance">Skeinly は一時的にご利用いただけません</string>
+    <string name="body_maintenance_default">Skeinly バックエンドのメンテナンス中です。数分後に再度お試しください。</string>
+    <string name="action_maintenance_retry">再試行</string>
 </resources>

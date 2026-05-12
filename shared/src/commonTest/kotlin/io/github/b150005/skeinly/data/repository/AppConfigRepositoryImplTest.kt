@@ -27,6 +27,9 @@ class AppConfigRepositoryImplTest {
             minRequiredVersionIos = "0.1.0",
             forceUpdateMessageEn = null,
             forceUpdateMessageJa = null,
+            maintenanceModeActive = false,
+            maintenanceMessageEn = null,
+            maintenanceMessageJa = null,
         )
 
     @Test

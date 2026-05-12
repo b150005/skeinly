@@ -4,14 +4,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import io.github.b150005.skeinly.config.BuildFlags
 import io.github.b150005.skeinly.domain.model.AppConfig
-import io.github.b150005.skeinly.domain.model.ForceUpdateRequirement
+import io.github.b150005.skeinly.domain.model.AppGateRequirement
 import io.github.b150005.skeinly.domain.model.evaluate
 import io.github.b150005.skeinly.domain.repository.AppConfigRepository
 import io.github.b150005.skeinly.domain.repository.AppConfigState
 import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.platform.StoreUrlLauncher
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 /**
@@ -72,36 +74,58 @@ fun ForceUpdateGate(
     }
 
     val requirement = state.toRequirement()
-    if (requirement is ForceUpdateRequirement.UpdateRequired) {
-        val message =
-            selectMessageForLocale(
-                customMessageEn = requirement.customMessageEn,
-                customMessageJa = requirement.customMessageJa,
-                locale = deviceContext.locale,
+    val scope = rememberCoroutineScope()
+    when (requirement) {
+        // Pre-alpha A15 — maintenance mode takes priority over update.
+        // Retry CTA re-fetches `get_app_config()` so the user can recover
+        // immediately when the operator flips the flag back to false
+        // without re-launching the app.
+        is AppGateRequirement.MaintenanceMode -> {
+            val message =
+                selectMessageForLocale(
+                    customMessageEn = requirement.customMessageEn,
+                    customMessageJa = requirement.customMessageJa,
+                    locale = deviceContext.locale,
+                )
+            MaintenanceScreen(
+                customMessage = message,
+                onRetryClick = {
+                    scope.launch { repository.refresh() }
+                },
             )
-        ForceUpdateScreen(
-            customMessage = message,
-            onUpdateClick = { storeLauncher.open() },
-        )
-    } else {
-        content()
+        }
+
+        is AppGateRequirement.UpdateRequired -> {
+            val message =
+                selectMessageForLocale(
+                    customMessageEn = requirement.customMessageEn,
+                    customMessageJa = requirement.customMessageJa,
+                    locale = deviceContext.locale,
+                )
+            ForceUpdateScreen(
+                customMessage = message,
+                onUpdateClick = { storeLauncher.open() },
+            )
+        }
+
+        AppGateRequirement.Ok, AppGateRequirement.Unknown -> content()
     }
 }
 
 /**
- * Converts an [AppConfigState] to a [ForceUpdateRequirement] using the
+ * Converts an [AppConfigState] to an [AppGateRequirement] using the
  * current build's version + platform. Exposed internal-visible so
  * commonTest can pin the boundary semantics.
  */
-internal fun AppConfigState.toRequirement(): ForceUpdateRequirement =
+internal fun AppConfigState.toRequirement(): AppGateRequirement =
     when (this) {
         is AppConfigState.Live -> config.evaluateForBuild()
         is AppConfigState.Cached -> config.evaluateForBuild()
-        is AppConfigState.Loading -> ForceUpdateRequirement.Unknown
-        is AppConfigState.Unavailable -> ForceUpdateRequirement.Unknown
+        is AppConfigState.Loading -> AppGateRequirement.Unknown
+        is AppConfigState.Unavailable -> AppGateRequirement.Unknown
     }
 
-private fun AppConfig.evaluateForBuild(): ForceUpdateRequirement =
+private fun AppConfig.evaluateForBuild(): AppGateRequirement =
     evaluate(
         currentVersion = BuildFlags.versionName,
         platform = BuildFlags.platform,

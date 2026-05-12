@@ -65,24 +65,27 @@ class AppConfigTest {
             minRequiredVersionIos = "0.2.0",
             forceUpdateMessageEn = "Custom EN message",
             forceUpdateMessageJa = "カスタム JA メッセージ",
+            maintenanceModeActive = false,
+            maintenanceMessageEn = null,
+            maintenanceMessageJa = null,
         )
 
     @Test
     fun `evaluate current above floor returns Ok`() {
-        assertEquals(ForceUpdateRequirement.Ok, config.evaluate("0.3.0", AppPlatform.ANDROID))
-        assertEquals(ForceUpdateRequirement.Ok, config.evaluate("1.0.0", AppPlatform.IOS))
+        assertEquals(AppGateRequirement.Ok, config.evaluate("0.3.0", AppPlatform.ANDROID))
+        assertEquals(AppGateRequirement.Ok, config.evaluate("1.0.0", AppPlatform.IOS))
     }
 
     @Test
     fun `evaluate current equal to floor returns Ok`() {
-        assertEquals(ForceUpdateRequirement.Ok, config.evaluate("0.2.0", AppPlatform.ANDROID))
-        assertEquals(ForceUpdateRequirement.Ok, config.evaluate("0.2.0", AppPlatform.IOS))
+        assertEquals(AppGateRequirement.Ok, config.evaluate("0.2.0", AppPlatform.ANDROID))
+        assertEquals(AppGateRequirement.Ok, config.evaluate("0.2.0", AppPlatform.IOS))
     }
 
     @Test
     fun `evaluate current below floor returns UpdateRequired with custom messages`() {
         val result = config.evaluate("0.1.0", AppPlatform.ANDROID)
-        assertTrue(result is ForceUpdateRequirement.UpdateRequired)
+        assertTrue(result is AppGateRequirement.UpdateRequired)
         assertEquals("Custom EN message", result.customMessageEn)
         assertEquals("カスタム JA メッセージ", result.customMessageJa)
     }
@@ -95,18 +98,86 @@ class AppConfigTest {
                 minRequiredVersionIos = "0.5.0",
                 forceUpdateMessageEn = null,
                 forceUpdateMessageJa = null,
+                maintenanceModeActive = false,
+                maintenanceMessageEn = null,
+                maintenanceMessageJa = null,
             )
         // Android floor is 0.1.0 — current 0.3.0 is above.
-        assertEquals(ForceUpdateRequirement.Ok, asymmetric.evaluate("0.3.0", AppPlatform.ANDROID))
+        assertEquals(AppGateRequirement.Ok, asymmetric.evaluate("0.3.0", AppPlatform.ANDROID))
         // iOS floor is 0.5.0 — current 0.3.0 is below.
-        assertTrue(asymmetric.evaluate("0.3.0", AppPlatform.IOS) is ForceUpdateRequirement.UpdateRequired)
+        assertTrue(asymmetric.evaluate("0.3.0", AppPlatform.IOS) is AppGateRequirement.UpdateRequired)
     }
 
     @Test
     fun `evaluate unparseable currentVersion fails-open to Ok`() {
         // The gate must NEVER block users on a parser error — only on a
         // deliberate kill-switch trigger.
-        assertEquals(ForceUpdateRequirement.Ok, config.evaluate("garbage", AppPlatform.ANDROID))
-        assertEquals(ForceUpdateRequirement.Ok, config.evaluate("", AppPlatform.IOS))
+        assertEquals(AppGateRequirement.Ok, config.evaluate("garbage", AppPlatform.ANDROID))
+        assertEquals(AppGateRequirement.Ok, config.evaluate("", AppPlatform.IOS))
+    }
+
+    // ---------- A15 maintenance-mode evaluation ----------
+
+    @Test
+    fun `evaluate maintenance mode active returns MaintenanceMode regardless of version`() {
+        val maintenanceConfig =
+            AppConfig(
+                minRequiredVersionAndroid = "0.2.0",
+                minRequiredVersionIos = "0.2.0",
+                forceUpdateMessageEn = null,
+                forceUpdateMessageJa = null,
+                maintenanceModeActive = true,
+                maintenanceMessageEn = "Down for maintenance",
+                maintenanceMessageJa = "メンテナンス中",
+            )
+        // Above floor — still gated by maintenance.
+        val above = maintenanceConfig.evaluate("0.3.0", AppPlatform.ANDROID)
+        assertTrue(above is AppGateRequirement.MaintenanceMode)
+        assertEquals("Down for maintenance", above.customMessageEn)
+        assertEquals("メンテナンス中", above.customMessageJa)
+
+        // Below floor — maintenance still takes priority over UpdateRequired.
+        val below = maintenanceConfig.evaluate("0.1.0", AppPlatform.IOS)
+        assertTrue(below is AppGateRequirement.MaintenanceMode)
+    }
+
+    @Test
+    fun `evaluate maintenance mode active with null messages returns MaintenanceMode with null fields`() {
+        // When server has not set custom messages, the data-class fields
+        // carry null; the screen falls back to bundled defaults.
+        val maintenanceConfig =
+            AppConfig(
+                minRequiredVersionAndroid = "0.2.0",
+                minRequiredVersionIos = "0.2.0",
+                forceUpdateMessageEn = null,
+                forceUpdateMessageJa = null,
+                maintenanceModeActive = true,
+                maintenanceMessageEn = null,
+                maintenanceMessageJa = null,
+            )
+        val result = maintenanceConfig.evaluate("0.5.0", AppPlatform.ANDROID)
+        assertTrue(result is AppGateRequirement.MaintenanceMode)
+        assertEquals(null, result.customMessageEn)
+        assertEquals(null, result.customMessageJa)
+    }
+
+    @Test
+    fun `evaluate maintenance mode inactive falls through to version-floor check`() {
+        // Verify the priority logic: maintenance off ⇒ behave exactly as
+        // the pre-A15 version-floor-only contract.
+        val cfg =
+            AppConfig(
+                minRequiredVersionAndroid = "0.2.0",
+                minRequiredVersionIos = "0.2.0",
+                forceUpdateMessageEn = null,
+                forceUpdateMessageJa = null,
+                maintenanceModeActive = false,
+                maintenanceMessageEn = "Should be ignored",
+                maintenanceMessageJa = "無視されるべき",
+            )
+        // Above floor → Ok.
+        assertEquals(AppGateRequirement.Ok, cfg.evaluate("0.3.0", AppPlatform.ANDROID))
+        // Below floor → UpdateRequired (NOT MaintenanceMode because flag is off).
+        assertTrue(cfg.evaluate("0.1.0", AppPlatform.IOS) is AppGateRequirement.UpdateRequired)
     }
 }
