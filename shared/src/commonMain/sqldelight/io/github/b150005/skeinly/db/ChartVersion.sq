@@ -26,9 +26,9 @@ CREATE TABLE ChartVersionEntity (
     UNIQUE (pattern_id, revision_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_chart_revisions_pattern_id_created_at
+CREATE INDEX IF NOT EXISTS idx_chart_versions_pattern_id_created_at
     ON ChartVersionEntity(pattern_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_chart_revisions_revision_id
+CREATE INDEX IF NOT EXISTS idx_chart_versions_revision_id
     ON ChartVersionEntity(revision_id);
 
 -- No `update` query — revisions are immutable once written.

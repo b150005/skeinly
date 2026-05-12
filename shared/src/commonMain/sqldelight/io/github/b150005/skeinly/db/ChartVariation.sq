@@ -19,7 +19,7 @@ CREATE TABLE ChartVariationEntity (
     UNIQUE (pattern_id, branch_name)
 );
 
-CREATE INDEX IF NOT EXISTS idx_chart_branches_pattern_id ON ChartVariationEntity(pattern_id);
+CREATE INDEX IF NOT EXISTS idx_chart_variations_pattern_id ON ChartVariationEntity(pattern_id);
 
 getById:
 SELECT * FROM ChartVariationEntity WHERE id = ?;
