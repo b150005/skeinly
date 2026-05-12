@@ -23,6 +23,7 @@ import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.platform.StoreUrlLauncher
 import io.github.b150005.skeinly.platform.SubscriptionManagementLauncher
 import io.github.b150005.skeinly.platform.SupportContactLauncher
+import io.github.b150005.skeinly.ui.a11y.ReduceMotionDetector
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
@@ -91,4 +92,11 @@ val platformModule =
         // device, locale). Settings → Help & Support → Contact Support
         // entry point.
         single { SupportContactLauncher(get()) }
+        // Pre-alpha A25 — reads the OS-level "Reduce Motion" / "Remove
+        // animations" toggle so custom animations (HorizontalPager
+        // page-scroll, animateColorAsState splash transitions, etc.)
+        // can degrade to instant snaps when the user has opted out of
+        // motion. Stock Material 3 transitions auto-respect; this
+        // detector covers the few surfaces that bypass the stock path.
+        single { ReduceMotionDetector(get()) }
     }
