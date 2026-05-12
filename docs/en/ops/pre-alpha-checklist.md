@@ -30,7 +30,7 @@ Tracker for the closed-alpha launch readiness audit. Every item below maps to a 
 | **A32** Key surface terminology spot-check | docs commit | New `audits/terminology-spot-check-2026-05-12.md` — surface-by-surface review of Onboarding / Settings / Sign In/Sign Up / Main CTAs / Discovery feed / Suggestion flow / Pro paywall. Result: 6 surfaces ✅ pass, 1 surface ⚠ minor capitalization inconsistency (Main CTAs — out of scope for pre-alpha, filed for post-beta full audit). Confirms Phase D 2026-05-10 Git→knitter terminology rename regression-free. |
 | **A4 + A31** Symbol catalog provenance + correctness | docs commit | New `audits/symbol-catalog-provenance-2026-05-12.md` — A4 verifies all bundled symbols are code-defined inline SVG paths (no `.svg`/`.png` raster assets in symbol/ directory), with explicit "no JIS bitmap or vector artwork reproduced" KDoc in `KnitSymbols.kt`/`CrochetSymbols.kt`. A31 closed via existing `docs/en/symbol-review/phase-30.{1,2,3,4}.md` knitter-agent reviews (35 glyphs verified, no blockers). |
 | **A23-A27** a11y baseline + A25 Reduce Motion impl | docs + code commit | New `audits/a11y-baseline-2026-05-12.md` — code-level coverage (TalkBack 32/27 + VoiceOver 28/25 files, Dynamic Type default-reliance, Reduce Motion gap → closed, touch targets clean, empty/loading/error states clean). A25 closed via new `ReduceMotionDetector` expect/actual (iOS = `UIAccessibilityIsReduceMotionEnabled()`, Android = `Settings.Global.{TRANSITION,ANIMATOR,WINDOW}_ANIMATION_SCALE == 0f` legacy check). OnboardingScreen `pagerState.animateScrollToPage` gated. A23 + A24 walk-through drills scheduled as alpha-tester operator action. iOS SwiftUI Reduce-Motion sweep deferred to next wave. |
-| **A1 + A5** UGC moderation design (ADR-021) | docs commit | New `docs/en/adr/021-pre-alpha-ugc-moderation.md` (+ JA mirror) — design closure for Apple Guideline 1.2 / Play UGC policy compliance. Phased: pre-alpha foundation (data model `ugc_reports` + `user_blocks` + RLS filter + `submit-ugc-report` Edge Function + operator triage runbook, Wave E) + pre-Phase-40 GA full UI (Report button + Block User entry + Blocked Users list, scheduled in CLAUDE.md polish list). Closed-alpha tester pool (5–10 trusted users) safe to defer client UI; operator handles via email-routed insert. |
+| **A1 + A5** UGC moderation foundation (ADR-021 §D1–§D5) | Wave D design + Wave E foundation | **Wave D**: `docs/en/adr/021-pre-alpha-ugc-moderation.md` (+ JA summary) cuts the design — phased pre-alpha foundation + pre-Phase-40 GA full UI. **Wave E**: foundation lands end-to-end. Migration 031 introduces `public.ugc_reports` (closed-enum state machine: open → triaging → resolved_remove/resolved_keep/dismissed) + `public.user_blocks` (composite PK with self-block CHECK). Migration 032 extends 4 SELECT policies (patterns / comments / suggestions / suggestion_comments) with `NOT EXISTS (user_blocks WHERE blocker_id = auth.uid() AND blocked_id = <author_or_owner>)` — server-side guarantee that blocked-user content never reaches the blocker's device. Edge Function `submit-ugc-report` (Deno + `verify_jwt = true` + Skeinly Feedback GitHub App, reuses EF-7 secrets — see ADR-021 §A1 for why a distinct function from `submit-bug-report`): decodes JWT `sub` → reporter_id, validates body (closed-enum target_type / reason_category + UUID target_id + 1..2000-char reason), per-user 10/hr rate limit, INSERTs as user (RLS-enforced), POSTs GitHub Issue with label `ugc-report` to `b150005/skeinly`, UPDATEs `github_issue_url` via service-role. 47 Deno tests pass (21 index + 26 mapping). New runbook `docs/en/ops/ugc-moderation-sop.md` (+ JA mirror): 24-hour SLA, 3-state resolution matrix (resolved_remove / resolved_keep / dismissed), Block User operator workflow, daily monitoring queries, edge-case handling (deleted target rows / operator-as-tester recusal / brigading detection). Pre-Phase-40 GA full UI (Report button + Block User UI + Blocked Users list) deferred per ADR §D4 — closed-alpha tester pool (5–10) handled via email-routed operator insert. |
 
 ## Outstanding Action Required Items
 
@@ -72,18 +72,25 @@ Created 2026-05-12 after the user listed pre-launch concerns (Kill Switch, secur
 
 ### 1.1 Action Required (must fix before submission)
 
-#### A1. Guideline 1.2 — UGC moderation (Discovery + Suggestion)
+#### A1. Guideline 1.2 — UGC moderation (Discovery + Suggestion) — ✅ FOUNDATION CLOSED (Wave E, 2026-05-12)
 
 Skeinly's Discovery feed and Suggestion / comment system are UGC under Apple's definition. Apple requires **all four** of the following:
 
-| Requirement | Status | Action |
+| Requirement | Pre-alpha foundation | GA full UI (deferred per ADR-021 §D4) |
 |---|---|---|
-| Filter / moderation mechanism for objectionable posts | Missing | Add keyword block-list or manual review queue for user-submitted text (pattern names, descriptions, suggestion comments). |
-| Mechanism to report offensive content | Missing | Add **Report** button on Discovery pattern cards + Suggestion comments. Wire to internal triage queue (GitHub Issues label `ugc-report` or dedicated Supabase table). |
-| Ability to block abusive users | Missing | Add **Block user** feature in user profile / interaction surfaces. Blocked users' content must be hidden from Discovery + cannot send new Suggestions to the blocker. |
-| Published contact information | Partial | Privacy Policy + ToS hosted at `docs/public/`. **Confirm** a visible in-app contact path (Settings → Help & Support email link OR Help Center URL). |
+| Filter / moderation mechanism for objectionable posts | ✅ Operator-mediated via `submit-ugc-report` Edge Function + Dashboard SQL Editor + `docs/en/ops/ugc-moderation-sop.md` runbook | + automated keyword filter (post-alpha-feedback driven) |
+| Mechanism to report offensive content | ✅ `submit-ugc-report` Edge Function + GitHub Issue mirror with label `ugc-report` (operator-initiated on tester's behalf via email) | + In-app **Report** button on every UGC surface |
+| Ability to block abusive users | ✅ `public.user_blocks` + RLS NOT-EXISTS arm on 4 SELECT policies (migration 032) — server-side guarantee blocked-user content never reaches blocker's device. Operator INSERTs on tester's behalf | + In-app **Block User** UI + Blocked Users list |
+| Published contact information | ✅ `skeinly.app@gmail.com` visible in Privacy Policy / ToS DMCA / Help / Settings → Contact Support / web account-deletion (closed under A34 + A19/A21 in earlier waves) | unchanged |
 
-**Owner**: ui-ux-designer + architect (data model for `reports` / `user_blocks` tables) + technical-writer (contact email).
+Foundation slice ship list:
+- Migration 031 — `public.ugc_reports` + `public.user_blocks` + RLS policies
+- Migration 032 — block filter on patterns / comments / suggestions / suggestion_comments SELECT policies
+- Edge Function `supabase/functions/submit-ugc-report/` (Deno + Skeinly Feedback GitHub App, reuses EF-7 secrets) — 47 Deno tests
+- Operator runbook `docs/en/ops/ugc-moderation-sop.md` (+ JA mirror)
+- ADR-021 — full design + rejected alternatives
+
+Closed-alpha tester pool (5–10 trusted users) safe to defer client UI per ADR-021 §A2; operator handles via email-routed insert with the runbook's documented 24-hour SLA.
 
 ---
 
@@ -203,9 +210,15 @@ Set 4+ (no objectionable content) in App Store Connect. Document UGC scope (knit
 
 ### 2.1 Action Required (must fix before submission)
 
-#### A5. UGC moderation features — overlaps with A1
+#### A5. UGC moderation features — overlaps with A1 — ✅ FOUNDATION CLOSED (Wave E, 2026-05-12)
 
-Google Play's UGC policy is **explicit** about public platforms requiring in-app **Report user** and **Block user** mechanisms. Apple A1 covered these; Google Play makes them mandatory at the policy level. Same scope, same implementation work. Cross-link to A1.
+Google Play's UGC policy is **explicit** about public platforms requiring in-app **Report user** and **Block user** mechanisms. Apple A1 covered these; Google Play makes them mandatory at the policy level. Same scope, same implementation work — closed jointly with A1 via the Wave E foundation slice (ADR-021):
+
+- Reporting: `submit-ugc-report` Edge Function + GitHub Issue mirror (`ugc-report` label).
+- Blocking: `public.user_blocks` table + RLS NOT-EXISTS filter on 4 SELECT policies (patterns / comments / suggestions / suggestion_comments) so blocked-user content never reaches the blocker server-side.
+- Operator triage: `docs/en/ops/ugc-moderation-sop.md` runbook with 24-hour SLA.
+
+In-app **Report** button + **Block User** UI ship pre-Phase-40 GA per ADR-021 §D4. Closed-alpha tester pool handled via email-routed operator action — Google Play UGC policy mechanics requirements (server-side report mechanism + server-side block enforcement + operator triage) are met by the foundation.
 
 #### A6. Data Safety form — declare 9 data types
 

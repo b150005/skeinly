@@ -448,3 +448,18 @@ verify_jwt = false
 # `notify-on-write` / `revenuecat-webhook` (both verify_jwt = false).
 [functions.submit-bug-report]
 verify_jwt = false
+
+# Pre-alpha A1/A5 (ADR-021 §D3) — UGC report proxy. Authenticated
+# client-invoked function: reporter identity is captured for false-
+# report abuse investigation. Supabase platform validates the JWT
+# before the request reaches the function; the handler then decodes
+# the `sub` claim to derive `reporter_id`, INSERTs into
+# public.ugc_reports (RLS-enforced as the user via Authorization-
+# forwarded supabase-js client), and mirrors a GitHub Issue with
+# label `ugc-report` to b150005/skeinly via the Skeinly Feedback
+# App (re-using the EF-7 secrets registered for submit-bug-report).
+# Rate limit: 10/hr per `auth.uid()`. See ADR-021 for the full
+# design + the alternative-considered "reuse submit-bug-report"
+# rejection in §A1.
+[functions.submit-ugc-report]
+verify_jwt = true
