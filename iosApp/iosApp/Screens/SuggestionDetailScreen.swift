@@ -241,8 +241,8 @@ struct SuggestionDetailScreen: View {
                     commentComposeBox(state: state)
                 }
 
-                if state.canMerge || state.canClose {
-                    actionBar(canMerge: state.canMerge, canClose: state.canClose)
+                if state.canApply || state.canClose {
+                    actionBar(canApply: state.canApply, canClose: state.canClose)
                 }
             }
         } else {
@@ -394,7 +394,7 @@ struct SuggestionDetailScreen: View {
     }
 
     @ViewBuilder
-    private func actionBar(canMerge: Bool, canClose: Bool) -> some View {
+    private func actionBar(canApply: Bool, canClose: Bool) -> some View {
         HStack(spacing: 8) {
             Spacer()
             if canClose {
@@ -404,7 +404,7 @@ struct SuggestionDetailScreen: View {
                 .buttonStyle(.bordered)
                 .accessibilityIdentifier("closeButton")
             }
-            if canMerge {
+            if canApply {
                 Button(LocalizedStringKey("action_apply_suggestion")) {
                     viewModel.onEvent(event: SuggestionDetailEventRequestMerge.shared)
                 }

@@ -92,8 +92,8 @@ class SuggestionDetailViewModelTest {
         title = "Reworked sleeve",
         description = "Adjusted decreases.",
         status = status,
-        mergedRevisionId = null,
-        mergedAt = null,
+        appliedVersionId = null,
+        appliedAt = null,
         closedAt = null,
         createdAt = Instant.parse("2026-04-25T10:00:00Z"),
         updatedAt = Instant.parse("2026-04-25T10:00:00Z"),
@@ -167,18 +167,18 @@ class SuggestionDetailViewModelTest {
         }
 
     @Test
-    fun `canMerge gate is true when current user is target owner and PR is open`() =
+    fun `canApply gate is true when current user is target owner and PR is open`() =
         runTest {
             patternRepo.create(makeUpstreamPattern())
             prRepo.seedById(makePr())
 
             val vm = makeViewModel()
 
-            assertTrue(vm.state.value.canMerge)
+            assertTrue(vm.state.value.canApply)
         }
 
     @Test
-    fun `canMerge gate is false when current user is the source author not the target owner`() =
+    fun `canApply gate is false when current user is the source author not the target owner`() =
         runTest {
             authRepo.setAuthState(AuthState.Authenticated(userId = "user-fork", email = "f@example.com"))
             patternRepo.create(makeUpstreamPattern())
@@ -186,7 +186,7 @@ class SuggestionDetailViewModelTest {
 
             val vm = makeViewModel()
 
-            assertFalse(vm.state.value.canMerge)
+            assertFalse(vm.state.value.canApply)
         }
 
     @Test

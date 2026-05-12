@@ -11,8 +11,8 @@ import kotlin.time.Instant
 class SuggestionMapperTest {
     private fun entity(
         status: String = "open",
-        mergedRevisionId: String? = null,
-        mergedAt: String? = null,
+        appliedVersionId: String? = null,
+        appliedAt: String? = null,
         closedAt: String? = null,
     ): SuggestionEntity =
         SuggestionEntity(
@@ -27,8 +27,8 @@ class SuggestionMapperTest {
             title = "Reworked rows 12-20",
             description = "details",
             status = status,
-            merged_revision_id = mergedRevisionId,
-            merged_at = mergedAt,
+            merged_revision_id = appliedVersionId,
+            merged_at = appliedAt,
             closed_at = closedAt,
             created_at = "2026-04-25T10:00:00Z",
             updated_at = "2026-04-25T10:00:00Z",
@@ -39,23 +39,23 @@ class SuggestionMapperTest {
         val pr = entity().toDomain()
 
         assertEquals(SuggestionStatus.OPEN, pr.status)
-        assertNull(pr.mergedRevisionId)
-        assertNull(pr.mergedAt)
+        assertNull(pr.appliedVersionId)
+        assertNull(pr.appliedAt)
         assertNull(pr.closedAt)
     }
 
     @Test
-    fun `entity with status=merged round-trips with mergedRevisionId and mergedAt`() {
+    fun `entity with status=merged round-trips with appliedVersionId and appliedAt`() {
         val pr =
             entity(
                 status = "applied",
-                mergedRevisionId = "rev-merged",
-                mergedAt = "2026-04-26T15:30:00Z",
+                appliedVersionId = "rev-merged",
+                appliedAt = "2026-04-26T15:30:00Z",
             ).toDomain()
 
         assertEquals(SuggestionStatus.APPLIED, pr.status)
-        assertEquals("rev-merged", pr.mergedRevisionId)
-        assertEquals(Instant.parse("2026-04-26T15:30:00Z"), pr.mergedAt)
+        assertEquals("rev-merged", pr.appliedVersionId)
+        assertEquals(Instant.parse("2026-04-26T15:30:00Z"), pr.appliedAt)
         assertNull(pr.closedAt)
     }
 
@@ -65,7 +65,7 @@ class SuggestionMapperTest {
 
         assertEquals(SuggestionStatus.CLOSED, pr.status)
         assertEquals(Instant.parse("2026-04-26T16:00:00Z"), pr.closedAt)
-        assertNull(pr.mergedRevisionId)
+        assertNull(pr.appliedVersionId)
     }
 
     @Test
@@ -86,23 +86,23 @@ class SuggestionMapperTest {
     }
 
     @Test
-    fun `canMerge returns true only when caller is target owner and PR is open`() {
+    fun `canApply returns true only when caller is target owner and PR is open`() {
         val open =
             entity().toDomain().copy(
                 status = SuggestionStatus.OPEN,
                 authorId = "fork-author",
             )
 
-        assertEquals(true, open.canMerge(currentUserId = "upstream-owner", targetOwnerId = "upstream-owner"))
+        assertEquals(true, open.canApply(currentUserId = "upstream-owner", targetOwnerId = "upstream-owner"))
         // Author cannot merge their own PR.
-        assertEquals(false, open.canMerge(currentUserId = "fork-author", targetOwnerId = "upstream-owner"))
+        assertEquals(false, open.canApply(currentUserId = "fork-author", targetOwnerId = "upstream-owner"))
         // Stranger cannot merge.
-        assertEquals(false, open.canMerge(currentUserId = "stranger", targetOwnerId = "upstream-owner"))
+        assertEquals(false, open.canApply(currentUserId = "stranger", targetOwnerId = "upstream-owner"))
         // Already-merged PR cannot be re-merged.
         val merged = open.copy(status = SuggestionStatus.APPLIED)
-        assertEquals(false, merged.canMerge(currentUserId = "upstream-owner", targetOwnerId = "upstream-owner"))
+        assertEquals(false, merged.canApply(currentUserId = "upstream-owner", targetOwnerId = "upstream-owner"))
         // Already-closed PR cannot be merged.
         val closed = open.copy(status = SuggestionStatus.CLOSED)
-        assertEquals(false, closed.canMerge(currentUserId = "upstream-owner", targetOwnerId = "upstream-owner"))
+        assertEquals(false, closed.canApply(currentUserId = "upstream-owner", targetOwnerId = "upstream-owner"))
     }
 }

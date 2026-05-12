@@ -113,7 +113,7 @@ data class ChartViewerState(
      *
      * Routed through a derived property (not a top-level extension) so the
      * Swift bridge reads it as a plain `Bool` getter — same pattern as
-     * `SuggestionDetailState.canMerge` / `canClose`.
+     * `SuggestionDetailState.canApply` / `canClose`.
      */
     val canOpenSuggestion: Boolean
         get() {

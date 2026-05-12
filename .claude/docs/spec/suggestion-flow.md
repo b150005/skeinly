@@ -86,7 +86,7 @@
 - `OpenPullRequestUseCaseTest` — 9 tests (parent-chain walk, fork-point shortcut, empty-target-history, validation paths)
 - `MergePullRequestUseCaseTest` — 13 tests (RPC error mapping, idempotent revision-id, the HIGH-1 + HIGH-2 regression anchors)
 - `ConflictDetectorTest` — 14 tests (full partition matrix, polar parity, multi-layer mixed change)
-- `PullRequestDetailViewModelTest` — 14 tests (load + subscribe-before-seed + canMerge/canClose gates + nav events)
+- `SuggestionDetailViewModelTest` — 14 tests (load + subscribe-before-seed + canApply/canClose gates + nav events)
 - `PullRequestListViewModelTest` — 12 tests (filter switch + flatMapLatest seed + race-fix anchors)
 - `ConflictResolutionViewModelTest` — 8 tests (loadInitial → detect → picker state → ApplyAndMerge dispatch)
 - `RealtimeSyncManagerPullRequestTest` — 4 tests (7-channel subscribe count, outgoing `author_id` filter, incoming-no-filter, unsubscribe)

@@ -86,7 +86,7 @@ sealed interface ChartConflictResolutionEvent {
 
 sealed interface ChartConflictResolutionNavEvent {
     data class MergeApplied(
-        val mergedRevisionId: String,
+        val appliedVersionId: String,
     ) : ChartConflictResolutionNavEvent
 }
 
@@ -231,7 +231,7 @@ class ChartConflictResolutionViewModel(
                     )
                     _navEvents.trySend(
                         ChartConflictResolutionNavEvent.MergeApplied(
-                            mergedRevisionId = result.value.mergedRevisionId,
+                            appliedVersionId = result.value.appliedVersionId,
                         ),
                     )
                 }

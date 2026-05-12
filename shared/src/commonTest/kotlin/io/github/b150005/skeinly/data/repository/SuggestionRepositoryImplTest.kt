@@ -79,7 +79,7 @@ class SuggestionRepositoryImplTest {
         description: String? = null,
         status: SuggestionStatus = SuggestionStatus.OPEN,
         createdAtIso: String = "2026-04-25T10:00:00Z",
-        mergedRevisionId: String? = null,
+        appliedVersionId: String? = null,
         mergedAtIso: String? = null,
         closedAtIso: String? = null,
     ): Suggestion =
@@ -95,8 +95,8 @@ class SuggestionRepositoryImplTest {
             title = title,
             description = description,
             status = status,
-            mergedRevisionId = mergedRevisionId,
-            mergedAt = mergedAtIso?.let { Instant.parse(it) },
+            appliedVersionId = appliedVersionId,
+            appliedAt = mergedAtIso?.let { Instant.parse(it) },
             closedAt = closedAtIso?.let { Instant.parse(it) },
             createdAt = Instant.parse(createdAtIso),
             updatedAt = Instant.parse(createdAtIso),
@@ -325,9 +325,9 @@ class SuggestionRepositoryImplTest {
     // ---- merged-PR round-trip via local upsert (Realtime echo simulation) ----
 
     @Test
-    fun `merged PR round-trip preserves mergedRevisionId and mergedAt`() =
+    fun `merged PR round-trip preserves appliedVersionId and appliedAt`() =
         runTest {
-            val mergedAt = "2026-04-26T15:30:00Z"
+            val appliedAt = "2026-04-26T15:30:00Z"
             // Simulate a Realtime echo of an apply transaction that landed
             // server-side via the apply_suggestion RPC. The local upsert
             // path is the only consumer of APPLIED rows in Phase 38.1 —
@@ -335,15 +335,15 @@ class SuggestionRepositoryImplTest {
             val merged =
                 testPr(
                     status = SuggestionStatus.APPLIED,
-                    mergedRevisionId = "rev-merged",
-                    mergedAtIso = mergedAt,
+                    appliedVersionId = "rev-merged",
+                    mergedAtIso = appliedAt,
                 )
             local.upsert(merged)
 
             val retrieved = repository.getById(merged.id)
             assertNotNull(retrieved)
             assertEquals(SuggestionStatus.APPLIED, retrieved.status)
-            assertEquals("rev-merged", retrieved.mergedRevisionId)
-            assertEquals(Instant.parse(mergedAt), retrieved.mergedAt)
+            assertEquals("rev-merged", retrieved.appliedVersionId)
+            assertEquals(Instant.parse(appliedAt), retrieved.appliedAt)
         }
 }
