@@ -91,9 +91,9 @@ Tables, grouped by domain. All tables are RLS-enabled. Migrations live at [supab
 | Domain | Tables |
 |---|---|
 | **Auth + Account** | `auth.users` (Supabase-managed); `delete_own_account()` RPC for account deletion (ADR-005) |
-| **Pattern + Chart** | `patterns`, `charts`, `chart_variations` (formerly `chart_branches`), `chart_versions` (formerly `chart_revisions`) |
+| **Pattern + Chart** | `patterns`, `charts`, `chart_variations`, `chart_versions` |
 | **Project + Progress** | `projects`, `project_segments`, `progress`, `chart_segments` |
-| **Collaboration** | `suggestions` (formerly `pull_requests`), `suggestion_comments` (formerly `pull_request_comments`) |
+| **Collaboration** | `suggestions`, `suggestion_comments` |
 | **Subscription** | `subscriptions` (RevenueCat-mirrored); `upsert_subscription_from_webhook()` RPC; `is_pro(uid)` helper |
 | **Symbol packs** | `symbol_packs` (catalog), `symbol_pack_locales`, `user_symbol_pack_state` |
 | **Push** | `device_tokens` |

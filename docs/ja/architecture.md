@@ -89,9 +89,9 @@ skeinly/
 | ドメイン | テーブル |
 |---|---|
 | **Auth / アカウント** | `auth.users` (Supabase 管理) + `delete_own_account()` RPC (ADR-005) |
-| **編み図 / Chart** | `patterns` / `charts` / `chart_variations` (旧 `chart_branches`) / `chart_versions` (旧 `chart_revisions`) |
+| **編み図 / Chart** | `patterns` / `charts` / `chart_variations` / `chart_versions` |
 | **プロジェクト / 進捗** | `projects` / `project_segments` / `progress` / `chart_segments` |
-| **コラボ** | `suggestions` (旧 `pull_requests`) / `suggestion_comments` (旧 `pull_request_comments`) |
+| **コラボ** | `suggestions` / `suggestion_comments` |
 | **サブスク** | `subscriptions` (RevenueCat 同期) + `upsert_subscription_from_webhook()` RPC + `is_pro(uid)` ヘルパー |
 | **シンボルパック** | `symbol_packs` (catalog) / `symbol_pack_locales` / `user_symbol_pack_state` |
 | **Push** | `device_tokens` |
