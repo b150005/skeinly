@@ -51,6 +51,17 @@ struct PaywallScreen: View {
                         .font(.body)
                         .foregroundStyle(.secondary)
 
+                    // Feature bullets — required by App Store Review § 3.1.2(c) +
+                    // Play subscription policy: paywall must enumerate what the
+                    // subscription includes BEFORE the StoreKit/Billing system
+                    // sheet confirms purchase. The `\n` separators inside the
+                    // localized string render as a multi-line Text block;
+                    // bullets are part of the localized copy so JA/EN parity is
+                    // enforced via i18n diff.
+                    Text(LocalizedStringKey("body_paywall_features"))
+                        .font(.body)
+                        .foregroundStyle(.primary)
+
                     Divider()
 
                     // Hoist `if let offering = state.offering` to the

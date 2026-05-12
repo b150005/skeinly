@@ -71,6 +71,7 @@
     <string name="body_contact_support_helper">Email the Skeinly team for account questions, refund requests, DMCA notices, or other support.</string>
     <!-- Pre-alpha A35 — Help & FAQ entry in Settings → About / Legal. Opens the static help page in the system browser. -->
     <string name="action_help_faq">Help &amp; FAQ</string>
+    <string name="action_open_source_licenses">Open Source Licenses</string>
     <string name="dialog_change_password_title">Change Password</string>
     <string name="dialog_change_email_title">Change Email</string>
     <string name="label_new_password">New Password</string>
@@ -752,8 +753,9 @@
 
          `label_subscribe_to_pro` is the Settings ListItem entry. -->
     <string name="title_paywall">Skeinly Pro</string>
-    <string name="body_paywall_pitch">Unlock the full symbol library and support indie development.</string>
-    <string name="body_paywall_trial_disclosure">7-day free trial. Auto-renews until canceled.</string>
+    <string name="body_paywall_pitch">Skeinly Pro gives you access to premium content and helps support independent development.</string>
+    <string name="body_paywall_features">• Download premium symbol packs (advanced stitches + future content additions)\n• Future Pro-only features as they ship\n• Help fund continued development of Skeinly</string>
+    <string name="body_paywall_trial_disclosure">7-day free trial. Auto-renews until canceled. Manage or cancel anytime from Settings &gt; Manage Subscription.</string>
     <string name="action_subscribe_monthly">Monthly · %1$s</string>
     <string name="action_subscribe_annual">Annual · %1$s</string>
     <!-- Fallback label for [PaywallPeriod.OTHER] packages (lifetime, weekly,

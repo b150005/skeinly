@@ -63,6 +63,7 @@
     <string name="body_contact_support_helper">アカウントに関するお問い合わせ、返金依頼、DMCA 通知などはこちらから Skeinly チームへメールでご連絡ください。</string>
     <!-- Pre-alpha A35 — Help & FAQ entry in Settings → About / Legal. Opens the static help page in the system browser. -->
     <string name="action_help_faq">ヘルプとよくある質問</string>
+    <string name="action_open_source_licenses">オープンソースライセンス</string>
     <string name="dialog_change_password_title">パスワードを変更</string>
     <string name="dialog_change_email_title">メールアドレスを変更</string>
     <string name="label_new_password">新しいパスワード</string>
@@ -539,8 +540,9 @@
            - `action_subscribe_monthly` / `_annual`: JA prefixes the price
              with 月額 / 年額 per JP App Store marketing convention. -->
     <string name="title_paywall">Skeinly Pro</string>
-    <string name="body_paywall_pitch">シンボルライブラリの全機能をアンロックしてインディー開発をサポート</string>
-    <string name="body_paywall_trial_disclosure">7日間の無料トライアル。キャンセルするまで自動更新されます。</string>
+    <string name="body_paywall_pitch">Skeinly Pro でプレミアムコンテンツをアンロック、個人開発をサポート。</string>
+    <string name="body_paywall_features">• プレミアム編み目記号パックのダウンロード (上級者向け記号 + 今後追加されるコンテンツ)\n• 今後追加される Pro 限定機能\n• Skeinly の継続開発を支援</string>
+    <string name="body_paywall_trial_disclosure">7日間の無料トライアル。キャンセルするまで自動更新されます。設定 &gt; サブスクリプション管理からいつでも変更・解約できます。</string>
     <string name="action_subscribe_monthly">月額 %1$s</string>
     <string name="action_subscribe_annual">年額 %1$s</string>
     <!-- OTHER (買い切り / 週額 / カスタム期間) のフォールバック。誤って「月額」

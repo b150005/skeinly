@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>オープンソースライセンス - Skeinly</title>
+  <link rel="icon" type="image/x-icon" href="../../favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="../../favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="../../favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="../../apple-touch-icon.png">
+  <link rel="manifest" href="../../site.webmanifest">
+  <meta property="og:image" content="../../og.png">
+  <style>
+    :root {
+      --color-bg: #faf9f7;
+      --color-text: #2d2a26;
+      --color-accent: #7B61FF;
+      --color-muted: #6b6560;
+      --color-border: #e8e4df;
+      --max-width: 760px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+      color: var(--color-text);
+      background: var(--color-bg);
+      line-height: 1.8;
+      padding: 2rem 1.5rem 4rem;
+    }
+    main { max-width: var(--max-width); margin: 0 auto; }
+    h1 { font-size: 1.85rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--color-muted); font-size: 0.9rem; margin-bottom: 2rem; }
+    h2 {
+      font-size: 1.05rem; font-weight: 600;
+      margin-top: 2rem; margin-bottom: 0.5rem;
+      padding-bottom: 0.25rem; border-bottom: 1px solid var(--color-border);
+    }
+    p { margin-bottom: 0.75rem; }
+    a { color: var(--color-accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    table {
+      width: 100%; border-collapse: collapse;
+      margin: 0.75rem 0 1rem; font-size: 0.93rem;
+    }
+    th, td {
+      text-align: left; padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--color-border);
+      vertical-align: top;
+    }
+    th { font-weight: 600; background: #f3eee7; }
+    .footer-note {
+      margin-top: 2rem; color: var(--color-muted);
+      font-size: 0.85rem; font-style: italic;
+    }
+    .lang-switch {
+      text-align: right; margin-bottom: 1rem; font-size: 0.85rem;
+    }
+    code {
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.88em; background: #efeae3;
+      padding: 0.1rem 0.35rem; border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="lang-switch">
+      <a href="../privacy-policy/">プライバシーポリシー</a> &middot; <a href="../terms-of-service/">利用規約</a> &middot; <a href="../help/">ヘルプ</a> &middot; <a href="../../licenses/">English</a>
+    </div>
+    <h1>オープンソースライセンス</h1>
+    <p class="subtitle">最終更新日: 2026-05-12 &middot; Skeinly バージョン 0.1.0</p>
+
+    <p>Skeinly はオープンソースソフトウェアの恩恵を受けて構築されています。このページでは Skeinly が依存するライブラリと、それぞれのライセンスへのリンクを掲載しています。Skeinly 自体のソースコードは <a href="https://github.com/b150005/skeinly">github.com/b150005/skeinly</a> で公開しています。</p>
+
+    <h2>Kotlin Multiplatform + Compose</h2>
+    <table>
+      <thead><tr><th>ライブラリ</th><th>バージョン</th><th>ライセンス</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://github.com/JetBrains/kotlin">Kotlin</a></td><td>2.3.21</td><td><a href="https://github.com/JetBrains/kotlin/blob/master/LICENSE">Apache-2.0</a></td></tr>
+        <tr><td><a href="https://github.com/JetBrains/compose-multiplatform">Compose Multiplatform</a></td><td>1.10.3</td><td><a href="https://github.com/JetBrains/compose-multiplatform/blob/master/LICENSE.txt">Apache-2.0</a></td></tr>
+        <tr><td><a href="https://github.com/Kotlin/kotlinx.coroutines">kotlinx.coroutines</a></td><td>1.10.2</td><td><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/LICENSE.txt">Apache-2.0</a></td></tr>
+        <tr><td><a href="https://github.com/Kotlin/kotlinx-datetime">kotlinx.datetime</a></td><td>0.7.1</td><td><a href="https://github.com/Kotlin/kotlinx-datetime/blob/master/LICENSE.txt">Apache-2.0</a></td></tr>
+        <tr><td><a href="https://github.com/Kotlin/kotlinx.serialization">kotlinx.serialization</a></td><td>1.11.0</td><td><a href="https://github.com/Kotlin/kotlinx.serialization/blob/master/LICENSE.txt">Apache-2.0</a></td></tr>
+      </tbody>
+    </table>
+
+    <h2>ネットワーク + 永続化</h2>
+    <table>
+      <thead><tr><th>ライブラリ</th><th>バージョン</th><th>ライセンス</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://github.com/ktorio/ktor">Ktor</a></td><td>3.4.3</td><td><a href="https://github.com/ktorio/ktor/blob/main/LICENSE">Apache-2.0</a></td></tr>
+        <tr><td><a href="https://github.com/supabase-community/supabase-kt">supabase-kt</a></td><td>3.6.0</td><td><a href="https://github.com/supabase-community/supabase-kt/blob/main/LICENSE">MIT</a></td></tr>
+        <tr><td><a href="https://github.com/cashapp/sqldelight">SQLDelight</a></td><td>2.3.2</td><td><a href="https://github.com/cashapp/sqldelight/blob/master/LICENSE.txt">Apache-2.0</a></td></tr>
+        <tr><td><a href="https://github.com/russhwolf/multiplatform-settings">multiplatform-settings</a></td><td>1.3.0</td><td><a href="https://github.com/russhwolf/multiplatform-settings/blob/main/LICENSE">Apache-2.0</a></td></tr>
+      </tbody>
+    </table>
+
+    <h2>DI + ナビゲーション + 画像ローディング</h2>
+    <table>
+      <thead><tr><th>ライブラリ</th><th>バージョン</th><th>ライセンス</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://github.com/InsertKoinIO/koin">Koin</a></td><td>4.2.1</td><td><a href="https://github.com/InsertKoinIO/koin/blob/main/LICENSE">Apache-2.0</a></td></tr>
+        <tr><td><a href="https://developer.android.com/jetpack/androidx/releases/navigation">AndroidX Navigation Compose</a></td><td>2.9.2</td><td><a href="https://www.apache.org/licenses/LICENSE-2.0">Apache-2.0</a></td></tr>
+        <tr><td><a href="https://github.com/coil-kt/coil">Coil</a></td><td>3.4.0</td><td><a href="https://github.com/coil-kt/coil/blob/main/LICENSE.txt">Apache-2.0</a></td></tr>
+        <tr><td><a href="https://developer.android.com/jetpack/androidx/releases/activity">AndroidX Activity Compose</a></td><td>1.13.0</td><td><a href="https://www.apache.org/licenses/LICENSE-2.0">Apache-2.0</a></td></tr>
+        <tr><td><a href="https://developer.android.com/jetpack/androidx/releases/lifecycle">AndroidX Lifecycle</a></td><td>2.10.0</td><td><a href="https://www.apache.org/licenses/LICENSE-2.0">Apache-2.0</a></td></tr>
+      </tbody>
+    </table>
+
+    <h2>セキュリティ + Push + IAP</h2>
+    <table>
+      <thead><tr><th>ライブラリ</th><th>バージョン</th><th>ライセンス</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://developer.android.com/jetpack/androidx/releases/security">AndroidX Security Crypto</a></td><td>1.1.0</td><td><a href="https://www.apache.org/licenses/LICENSE-2.0">Apache-2.0</a></td></tr>
+        <tr><td><a href="https://firebase.google.com/docs/cloud-messaging">Firebase Messaging</a></td><td>24.1.0</td><td><a href="https://firebase.google.com/terms">Firebase ToS</a> (Apache-2.0 client libs)</td></tr>
+        <tr><td><a href="https://github.com/RevenueCat/purchases-kmp">purchases-kmp</a></td><td>2.10.2+17.55.1</td><td><a href="https://github.com/RevenueCat/purchases-kmp/blob/main/LICENSE">MIT</a></td></tr>
+      </tbody>
+    </table>
+
+    <h2>計測 (Observability)</h2>
+    <table>
+      <thead><tr><th>ライブラリ</th><th>バージョン</th><th>ライセンス</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://github.com/getsentry/sentry-java">Sentry SDK</a></td><td>7.22.0</td><td><a href="https://github.com/getsentry/sentry-java/blob/main/LICENSE.txt">Apache-2.0 / MIT</a></td></tr>
+        <tr><td><a href="https://github.com/PostHog/posthog-android">PostHog Android SDK</a></td><td>3.30.0</td><td><a href="https://github.com/PostHog/posthog-android/blob/main/LICENSE">MIT</a></td></tr>
+      </tbody>
+    </table>
+
+    <h2>テスト専用</h2>
+    <table>
+      <thead><tr><th>ライブラリ</th><th>バージョン</th><th>ライセンス</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://github.com/cashapp/turbine">Turbine</a></td><td>1.2.1</td><td><a href="https://github.com/cashapp/turbine/blob/main/LICENSE.txt">Apache-2.0</a></td></tr>
+      </tbody>
+    </table>
+
+    <h2>共通ライセンス</h2>
+    <p>上記ライブラリは以下の標準ライセンスのいずれかで配布されています:</p>
+    <ul>
+      <li><a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a></li>
+      <li><a href="https://opensource.org/license/mit/">MIT License</a></li>
+    </ul>
+
+    <p class="footer-note">本リストは pre-alpha 期間中は手動メンテナンスです。Phase 40 GA 前に <a href="https://github.com/mikepenz/AboutLibraries"><code>AboutLibraries</code></a> Gradle plugin による自動生成へ切り替え予定。記載漏れにお気付きの場合は <a href="mailto:skeinly.app@gmail.com">こちら</a> までご連絡ください。</p>
+  </main>
+</body>
+</html>

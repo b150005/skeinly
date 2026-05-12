@@ -283,6 +283,16 @@ struct SettingsScreen: View {
                 }
                 .accessibilityIdentifier("helpFaqButton")
 
+                // Pre-alpha A33 — Open Source Licenses page link.
+                // Required attribution for Apache-2.0 / MIT licensed
+                // dependencies (Kotlin, Compose Multiplatform, Ktor,
+                // Coil, etc.). Manual list for alpha; pre-Phase-40 GA
+                // upgrade to AboutLibraries Gradle plugin scheduled.
+                Link(destination: URL(string: "https://b150005.github.io/skeinly/licenses/")!) {
+                    Label("action_open_source_licenses", systemImage: "doc.append")
+                }
+                .accessibilityIdentifier("openSourceLicensesButton")
+
                 // Pre-alpha A34 — Contact Support row. Opens mailto:
                 // composer via the shared `SupportContactLauncher`
                 // Kotlin actual; the URL is built in commonMain with
