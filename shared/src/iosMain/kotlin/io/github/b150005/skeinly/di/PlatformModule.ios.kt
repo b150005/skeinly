@@ -1,5 +1,7 @@
 package io.github.b150005.skeinly.di
 
+import com.russhwolf.settings.ExperimentalSettingsImplementation
+import com.russhwolf.settings.KeychainSettings
 import com.russhwolf.settings.NSUserDefaultsSettings
 import com.russhwolf.settings.Settings
 import io.github.b150005.skeinly.data.remote.ConnectivityMonitor
@@ -8,6 +10,7 @@ import io.github.b150005.skeinly.notifications.OsSettingsLauncher
 import io.github.b150005.skeinly.notifications.PushTokenRegistrar
 import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.platform.StoreUrlLauncher
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 val platformModule =
@@ -15,8 +18,34 @@ val platformModule =
         single { DriverFactory() }
         single { ConnectivityMonitor() }
         // skeinly_prefs is unencrypted NSUserDefaults — suitable for non-sensitive UX flags only.
-        // Use Keychain for auth tokens and user PII.
+        // Auth tokens go to the qualifier("auth") binding below.
         single<Settings> { NSUserDefaultsSettings.Factory().create("skeinly_prefs") }
+        // Pre-alpha A14 (HIGH severity) — encrypted Settings for Supabase
+        // Auth session storage. SupabaseModule passes this instance to
+        // `SettingsSessionManager` so refresh + access tokens land in the
+        // iOS Keychain (`kSecClassGenericPassword`) rather than the
+        // standard NSUserDefaults plist that supabase-kt 3.6.0 falls back
+        // to. multiplatform-settings 1.3.0's `KeychainSettings` wraps the
+        // standard `SecItemAdd` / `SecItemCopyMatching` SecItem API and
+        // applies `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` by
+        // default — entries are not synced to iCloud Keychain and remain
+        // device-local after the first post-boot unlock.
+        //
+        // Service identifier is reverse-DNS app-bundle scoped so a future
+        // shared-app-bundle or app-group scenario doesn't collide. Migration
+        // from the prior unencrypted-NSUserDefaults default is implicit
+        // per the pre-v1 breaking-change policy: existing users sign in
+        // again on first launch after this change ships.
+        single<Settings>(qualifier = named("auth")) {
+            // multiplatform-settings 1.3.0 marks KeychainSettings as
+            // @ExperimentalSettingsImplementation because the API surface
+            // (initialization parameters, error handling on SecItem
+            // failures) may evolve. Behavior on iOS is production-stable
+            // — SecItemAdd / SecItemCopyMatching are documented public
+            // APIs; the experimental tag is wrapper-API-level only.
+            @OptIn(ExperimentalSettingsImplementation::class)
+            KeychainSettings(service = "io.github.b150005.skeinly.auth")
+        }
         // Phase 39 W5b (ADR-020) — bug-report submission moved from
         // platform `BugSubmissionLauncher` expect/actual to the
         // commonMain `BugReportProxyClient` (registered in

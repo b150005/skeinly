@@ -259,6 +259,17 @@ kotlin {
                 // independent from `androidApp`'s.
                 implementation(libs.firebase.messaging)
                 implementation(libs.kotlinx.coroutines.play.services)
+                // Pre-alpha A14 (HIGH security) — EncryptedSharedPreferences
+                // for Supabase Auth session storage. PlatformModule.android.kt
+                // wraps an `EncryptedSharedPreferences` instance in
+                // `SharedPreferencesSettings` and registers it under the
+                // Koin qualifier `named("auth")`, which SupabaseModule
+                // passes to `SettingsSessionManager` so refresh + access
+                // tokens are stored AES256-GCM encrypted with the key
+                // managed by the Android Keystore via Tink. Replaces the
+                // prior implicit default of unencrypted SharedPreferences
+                // (`PreferenceManager.getDefaultSharedPreferences`).
+                implementation(libs.androidx.security.crypto)
             }
         }
         getByName("androidHostTest") {
