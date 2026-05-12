@@ -21,6 +21,7 @@ import io.github.b150005.skeinly.notifications.OsSettingsLauncher
 import io.github.b150005.skeinly.notifications.PushTokenRegistrar
 import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.platform.StoreUrlLauncher
+import io.github.b150005.skeinly.platform.SubscriptionManagementLauncher
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
@@ -80,4 +81,8 @@ val platformModule =
         // launcher for the force-update gate's "Update now" CTA. Takes
         // application Context for `Intent(VIEW, market://) + startActivity`.
         single { StoreUrlLauncher(get()) }
+        // Pre-alpha A30 — opens Play Store → Account → Subscriptions so
+        // a Pro subscriber can review / change / cancel from inside the
+        // app. Required by Google Play subscription disclosure policy.
+        single { SubscriptionManagementLauncher(get()) }
     }

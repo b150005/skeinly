@@ -10,6 +10,7 @@ import io.github.b150005.skeinly.notifications.OsSettingsLauncher
 import io.github.b150005.skeinly.notifications.PushTokenRegistrar
 import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.platform.StoreUrlLauncher
+import io.github.b150005.skeinly.platform.SubscriptionManagementLauncher
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
@@ -66,4 +67,9 @@ val platformModule =
         // force-update gate's "Update now" CTA. Parameterless on iOS
         // (UIApplication.openURL doesn't need an injected Context).
         single { StoreUrlLauncher() }
+        // Pre-alpha A30 — opens App Store → Account → Subscriptions so
+        // a Pro subscriber can review / change / cancel from inside the
+        // app. Apple HIG-recommended; mirrors the Android binding for
+        // symmetry across platforms.
+        single { SubscriptionManagementLauncher() }
     }

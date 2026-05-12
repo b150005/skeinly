@@ -55,6 +55,9 @@
     <string name="message_reset_email_sent">このメールアドレスのアカウントが存在する場合、まもなくリセットリンクが届きます。</string>
     <string name="action_change_password">パスワードを変更</string>
     <string name="action_change_email">メールアドレスを変更</string>
+    <!-- Pre-alpha A30 — Subscription management deep link in Settings → Account. -->
+    <string name="action_manage_subscription">サブスクリプションの管理</string>
+    <string name="body_manage_subscription_helper">プラットフォームストアで Skeinly Pro サブスクリプションを確認・変更・解約できます。</string>
     <string name="dialog_change_password_title">パスワードを変更</string>
     <string name="dialog_change_email_title">メールアドレスを変更</string>
     <string name="label_new_password">新しいパスワード</string>

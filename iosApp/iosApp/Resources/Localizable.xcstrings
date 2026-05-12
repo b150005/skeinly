@@ -188,6 +188,40 @@
         }
       }
     },
+    "action_manage_subscription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage Subscription"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サブスクリプションの管理"
+          }
+        }
+      }
+    },
+    "body_manage_subscription_helper": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review, change, or cancel your Skeinly Pro subscription in the platform store."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プラットフォームストアで Skeinly Pro サブスクリプションを確認・変更・解約できます。"
+          }
+        }
+      }
+    },
     "action_change_password": {
       "extractionState": "manual",
       "localizations": {

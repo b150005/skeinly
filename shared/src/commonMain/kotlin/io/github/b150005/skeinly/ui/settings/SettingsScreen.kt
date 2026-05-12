@@ -59,6 +59,7 @@ import io.github.b150005.skeinly.generated.resources.action_change_email
 import io.github.b150005.skeinly.generated.resources.action_change_password
 import io.github.b150005.skeinly.generated.resources.action_delete
 import io.github.b150005.skeinly.generated.resources.action_delete_account
+import io.github.b150005.skeinly.generated.resources.action_manage_subscription
 import io.github.b150005.skeinly.generated.resources.action_privacy_policy
 import io.github.b150005.skeinly.generated.resources.action_save
 import io.github.b150005.skeinly.generated.resources.action_send_feedback
@@ -66,6 +67,7 @@ import io.github.b150005.skeinly.generated.resources.action_sign_out
 import io.github.b150005.skeinly.generated.resources.action_terms_of_service
 import io.github.b150005.skeinly.generated.resources.body_delete_account_warning
 import io.github.b150005.skeinly.generated.resources.body_diagnostic_data_explanation
+import io.github.b150005.skeinly.generated.resources.body_manage_subscription_helper
 import io.github.b150005.skeinly.generated.resources.body_notifications_disabled_hint
 import io.github.b150005.skeinly.generated.resources.body_notifications_setting_explanation
 import io.github.b150005.skeinly.generated.resources.body_send_feedback_explanation
@@ -93,6 +95,7 @@ import io.github.b150005.skeinly.generated.resources.title_settings
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.localized
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 private const val URL_PRIVACY_POLICY = "https://b150005.github.io/skeinly/privacy-policy/"
@@ -124,6 +127,11 @@ fun SettingsScreen(
     // explainer dialog. Default-injected via Koin for production; tests
     // can pass a stub via the parameter.
     notificationViewModel: io.github.b150005.skeinly.ui.notifications.NotificationPermissionViewModel = koinViewModel(),
+    // Pre-alpha A30 — opens the platform's subscription management UI
+    // (Play Store → Subscriptions / App Store → Subscriptions). Default-
+    // injected via Koin for production; tests can pass a stub. Same DI
+    // pattern as `storeLauncher` in `ForceUpdateGate`.
+    subscriptionLauncher: io.github.b150005.skeinly.platform.SubscriptionManagementLauncher = koinInject(),
 ) {
     val state by viewModel.state.collectAsState()
     val notificationState by notificationViewModel.state.collectAsState()
@@ -246,6 +254,27 @@ fun SettingsScreen(
                                 .clickable(role = Role.Button) {
                                     viewModel.onEvent(SettingsEvent.RequestChangeEmail)
                                 }.testTag("changeEmailButton"),
+                    )
+
+                    // Pre-alpha A30 — Manage subscription deep link. Required
+                    // by Google Play subscription policy ("provide an in-app
+                    // path to manage / cancel") and recommended by Apple HIG.
+                    // Opens Play Store / App Store native subscription
+                    // management UI. Shown to all signed-in users regardless
+                    // of Pro subscription state — non-subscribers see an
+                    // empty subscriptions list which is informative, not an
+                    // error.
+                    ListItem(
+                        headlineContent = { Text(stringResource(Res.string.action_manage_subscription)) },
+                        supportingContent = {
+                            Text(stringResource(Res.string.body_manage_subscription_helper))
+                        },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable(role = Role.Button) {
+                                    subscriptionLauncher.open()
+                                }.testTag("manageSubscriptionButton"),
                     )
 
                     Spacer(Modifier.height(24.dp))
