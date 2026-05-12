@@ -93,13 +93,13 @@ Quick entry points by task:
 ## Domain Model (Core Concepts)
 
 - **Pattern**: A knitting pattern with metadata (name, difficulty, gauge, yarn info, chart/reference images)
-- **Chart** (内部実装名: `Chart`, formerly `StructuredChart`): The symbol-grid editor surface — cells × layers × symbols. JA UI: 「編み図」.
+- **Chart** (model: `Chart`): The symbol-grid editor surface — cells × layers × symbols. JA UI: 「編み図」.
 - **Project**: An instance of working on a pattern (start date, current row/round, status)
 - **Progress**: Row-by-row or section-based progress tracking with timestamps
 - **Share**: Exported pattern or progress snapshot for sharing with others
-- **Variation** (model: `ChartVariation`, table: `chart_variations`, formerly `ChartBranch` / `chart_branches`): A named parallel design forked off a base chart. JA UI: 「アレンジ」.
-- **Version** (model: `ChartVersion`, table: `chart_versions`, formerly `ChartRevision` / `chart_revisions`): An append-only saved snapshot of a chart. JA UI: 「バージョン」.
-- **Suggestion** (model: `Suggestion`, table: `suggestions`, formerly `PullRequest` / `pull_requests`): A proposed change to another user's chart. JA UI: 「提案」.
+- **Variation** (model: `ChartVariation`, table: `chart_variations`): A named parallel design forked off a base chart. JA UI: 「アレンジ」.
+- **Version** (model: `ChartVersion`, table: `chart_versions`): An append-only saved snapshot of a chart. JA UI: 「バージョン」.
+- **Suggestion** (model: `Suggestion`, table: `suggestions`): A proposed change to another user's chart. JA UI: 「提案」.
 
 ### Vocabulary mapping (Git mental model → user-facing language)
 
