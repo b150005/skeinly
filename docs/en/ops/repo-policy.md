@@ -221,6 +221,44 @@ The 4× speedup observed on iOS jobs (6m18s self-hosted vs 25min on `macos-lates
 
 If a future revisit is warranted (e.g., monthly GHA minutes spend exceeds a threshold, or beta moves to a high-frequency-push phase), the right shape is a Lume VM runner with `--ephemeral` JIT registration so each job gets a fresh isolated environment — not the host-direct setup tried here.
 
+## App Tracking Transparency (ATT) — decision rationale
+
+**Decision (2026-05-12, pre-alpha audit item A22)**: Skeinly does **not** show the iOS App Tracking Transparency (`AppTrackingTransparency.framework`) prompt and is **not** classified as requiring one.
+
+**Source**: Apple guidance ([App Tracking Transparency · Apple Developer](https://developer.apple.com/app-store/user-privacy-and-data-use/)) — ATT is required ONLY when an app *"links user or device data collected from your app with user or device data collected from other companies' apps, websites, or offline properties for targeted advertising or advertising measurement purposes, or shares user or device data with data brokers"*. Both conditions are evaluated separately; ATT is required if either applies.
+
+### Per-subprocessor analysis (verified 2026-05-12)
+
+| Subprocessor | Data collected | Linked across third-party properties? | Shared with data brokers? | ATT required? |
+|---|---|---|---|---|
+| **PostHog** (opt-in) | Anonymous per-install `distinct_id`, page views, button taps | **No** — PostHog is a first-party analytics processor under Skeinly's controller relationship per the PostHog DPA. The `distinct_id` is an anonymous installation UUID; it is never joined to any third-party graph. | **No** — PostHog is not a data broker. | ❌ |
+| **Sentry** (opt-in) | Anonymous installation UUID, stack traces, device model, OS version | **No** — Sentry is a first-party error-reporting processor. The installation UUID is local to Skeinly's Sentry project and is never cross-linked to other apps. | **No** — Sentry is not a data broker. | ❌ |
+| **RevenueCat** | Subscription state, `app_user_id` (= Supabase UID), platform, product_id, transaction_id | **No** — RevenueCat receives Apple/Google IAP receipts on Skeinly's behalf as an IAP-state proxy. No advertising or cross-app linkage. | **No** — RevenueCat is not a data broker. | ❌ |
+| **Apple APNs / Google FCM** | Opaque device push token + notification body | **No** — Used solely for push notification delivery to the Skeinly app on the user's own device. No cross-app linkage. | **No**. | ❌ |
+| **Supabase** | All app data (auth + UGC + Storage) | **No** — Supabase is Skeinly's primary backend processor under DPA. | **No**. | ❌ |
+| **GitHub** (bug-report-proxy, opt-in per submission) | Bug report title + body + PostHog `distinct_id` for cross-reference | **No** — Issues are filed by the Skeinly Feedback GitHub App on Skeinly's own repository for support correlation. Not advertising. | **No**. | ❌ |
+
+### Conclusion
+
+Skeinly does not engage in either of the two ATT-triggering activities:
+- **No cross-app linkage for advertising**: all analytics and crash-reporting are first-party processors; no advertising attribution SDKs ship with the app; no ad networks are integrated.
+- **No data-broker sharing**: no subprocessor is a data broker.
+
+Therefore the `NSUserTrackingUsageDescription` Info.plist key is intentionally absent and `ATTrackingManager.requestTrackingAuthorization` is never called.
+
+### Conditions that would require re-evaluation
+
+If any of the following changes, A22 must be re-opened:
+1. A third-party advertising SDK is added (e.g., Google AdMob, Meta Audience Network, ironSource).
+2. PostHog or Sentry pivots from first-party-processor classification to a data-broker / cross-app-attribution offering. As of 2026-05-12 the PostHog DPA explicitly positions PostHog as a first-party processor. Re-verify at every PostHog/Sentry contract renewal.
+3. RevenueCat's subprocessor relationship changes such that it shares Skeinly user data with an ad partner.
+4. A new opt-in feature collects data subject to ATT semantics (e.g., a referral program that joins Skeinly install records to third-party install records).
+
+### Reviewer-facing summary (for App Store Connect Review Notes)
+
+Recommended text for App Store Connect → App Review → Notes:
+> Skeinly does not show the App Tracking Transparency prompt. Per Apple's ATT guidance, the prompt is required only when an app links user or device data with other companies' apps/websites for advertising or shares data with data brokers. Skeinly's only data collectors are first-party processors under DPA (Supabase / Sentry / PostHog / RevenueCat / APNs / FCM / GitHub bug-report proxy). Sentry and PostHog are opt-in and use anonymous installation UUIDs that are never joined to any cross-app advertising graph. No advertising SDK is integrated. No data is shared with data brokers.
+
 ## Update history
 
 | Date | Change | By |
@@ -228,3 +266,4 @@ If a future revisit is warranted (e.g., monthly GHA minutes spend exceeds a thre
 | 2026-04-27 | Initial `main-strict` ruleset created (id `15581036`) | b150005 |
 | 2026-04-27 | Self-hosted runner activated; security audit + hardening landed (Fork PR approval, third-party SHA pin, ci.yml permissions block, pages.yml reverted to ubuntu-latest, env-var step output pattern). See commits `1a119e1` + `8d6c6ae`. | b150005 |
 | 2026-04-27 | Self-hosted runner reverted back to GitHub-hosted (security + maintenance trade-off — see "Historical: self-hosted runner experiment" section). All hardening retained. Runner deregistered + LaunchAgent removed + directory deleted. | b150005 |
+| 2026-05-12 | Added App Tracking Transparency decision rationale section (pre-alpha audit item A22). | b150005 |
