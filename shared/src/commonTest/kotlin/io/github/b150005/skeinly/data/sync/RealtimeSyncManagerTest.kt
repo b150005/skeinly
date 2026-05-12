@@ -222,7 +222,8 @@ class RealtimeSyncManagerTest {
     )
 
     private fun createManager(
-        isOnline: kotlinx.coroutines.flow.StateFlow<Boolean>? = null,
+        isOnline: kotlinx.coroutines.flow.StateFlow<Boolean> =
+            kotlinx.coroutines.flow.MutableStateFlow(false),
         config: RealtimeConfig = RealtimeConfig(),
         scope: CoroutineScope = CoroutineScope(Dispatchers.Unconfined),
     ): ManagerSetup {
@@ -250,19 +251,30 @@ class RealtimeSyncManagerTest {
                 isOnline = isOnline,
                 config = config,
                 random = kotlin.random.Random(seed = 42),
+                localChartVersion =
+                    io.github.b150005.skeinly.data.local.LocalChartVersionDataSource(
+                        db,
+                        testDispatcher,
+                        io.github.b150005.skeinly.testJson,
+                    ),
+                localSuggestion =
+                    io.github.b150005.skeinly.data.local.LocalSuggestionDataSource(
+                        db,
+                        testDispatcher,
+                    ),
             )
         return ManagerSetup(manager, channelProvider, logger)
     }
 
-    private fun createManager(): Pair<RealtimeSyncManager, FakeRealtimeChannelProvider> {
-        val setup = createManager(isOnline = null)
+    private fun createManagerPair(): Pair<RealtimeSyncManager, FakeRealtimeChannelProvider> {
+        val setup = createManager(isOnline = kotlinx.coroutines.flow.MutableStateFlow(false))
         return setup.manager to setup.channelProvider
     }
 
     @Test
-    fun `subscribe creates 4 channels with correct names`() =
+    fun `subscribe creates the seven channels with correct names`() =
         runTest {
-            val (manager, channelProvider) = createManager()
+            val (manager, channelProvider) = createManagerPair()
 
             manager.subscribe("owner-1")
 
@@ -270,13 +282,16 @@ class RealtimeSyncManagerTest {
             assertNotNull(channelProvider.channelFor("progress-owner-1"))
             assertNotNull(channelProvider.channelFor("patterns-owner-1"))
             assertNotNull(channelProvider.channelFor("project-segments-owner-1"))
-            assertEquals(4, channelProvider.createdChannels.size)
+            assertNotNull(channelProvider.channelFor("chart-versions-owner-1"))
+            assertNotNull(channelProvider.channelFor("suggestions-incoming-owner-1"))
+            assertNotNull(channelProvider.channelFor("suggestions-outgoing-owner-1"))
+            assertEquals(7, channelProvider.createdChannels.size)
         }
 
     @Test
     fun `subscribe sets all channels to subscribed`() =
         runTest {
-            val (manager, channelProvider) = createManager()
+            val (manager, channelProvider) = createManagerPair()
 
             manager.subscribe("owner-1")
 
@@ -288,7 +303,7 @@ class RealtimeSyncManagerTest {
     @Test
     fun `unsubscribe calls unsubscribe on all channels`() =
         runTest {
-            val (manager, channelProvider) = createManager()
+            val (manager, channelProvider) = createManagerPair()
 
             manager.subscribe("owner-1")
             manager.unsubscribe()
@@ -301,7 +316,7 @@ class RealtimeSyncManagerTest {
     @Test
     fun `subscribe configures correct table and filters`() =
         runTest {
-            val (manager, channelProvider) = createManager()
+            val (manager, channelProvider) = createManagerPair()
 
             manager.subscribe("owner-1")
 
@@ -324,7 +339,7 @@ class RealtimeSyncManagerTest {
     @Test
     fun `re-subscribe unsubscribes old channels before creating new ones`() =
         runTest {
-            val (manager, channelProvider) = createManager()
+            val (manager, channelProvider) = createManagerPair()
 
             manager.subscribe("owner-1")
             val firstHandles = channelProvider.createdChannels.values.toList()
@@ -348,7 +363,7 @@ class RealtimeSyncManagerTest {
         runTest {
             val setup =
                 createManager(
-                    isOnline = null,
+                    isOnline = kotlinx.coroutines.flow.MutableStateFlow(false),
                     scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
                 )
 
@@ -370,20 +385,20 @@ class RealtimeSyncManagerTest {
         runTest {
             val setup =
                 createManager(
-                    isOnline = null,
+                    isOnline = kotlinx.coroutines.flow.MutableStateFlow(false),
                     config = RealtimeConfig(baseDelayMs = 10),
                     scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
                 )
 
             setup.manager.subscribe("owner-1")
             testScheduler.advanceUntilIdle()
-            assertEquals(4, setup.channelProvider.createCount)
+            assertEquals(7, setup.channelProvider.createCount)
 
             setup.channelProvider.channelFor("projects-owner-1")!!.completeWithError(RuntimeException("connection lost"))
             testScheduler.advanceUntilIdle()
 
-            // After error + retry, 4 new channels should be created (total 8)
-            assertTrue(setup.channelProvider.createCount > 4)
+            // After error + retry, 7 new channels should be created (total 14)
+            assertTrue(setup.channelProvider.createCount > 7)
         }
 
     @Test
@@ -391,7 +406,7 @@ class RealtimeSyncManagerTest {
         runTest {
             val setup =
                 createManager(
-                    isOnline = null,
+                    isOnline = kotlinx.coroutines.flow.MutableStateFlow(false),
                     config = RealtimeConfig(maxRetries = 1, baseDelayMs = 10),
                     scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
                 )
@@ -422,7 +437,7 @@ class RealtimeSyncManagerTest {
         runTest {
             val setup =
                 createManager(
-                    isOnline = null,
+                    isOnline = kotlinx.coroutines.flow.MutableStateFlow(false),
                     config = RealtimeConfig(baseDelayMs = 10),
                     scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
                 )
