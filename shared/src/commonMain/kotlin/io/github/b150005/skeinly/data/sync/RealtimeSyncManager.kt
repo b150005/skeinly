@@ -43,21 +43,17 @@ class RealtimeSyncManager(
     private val authRepository: AuthRepository,
     private val scope: CoroutineScope,
     private val logger: SyncLogger = DefaultSyncLogger,
-    private val isOnline: StateFlow<Boolean>? = null,
+    private val isOnline: StateFlow<Boolean>,
     private val config: RealtimeConfig = RealtimeConfig(),
     private val random: Random = Random.Default,
-    // Phase 37.1 (ADR-013 §8): chart-versions-<ownerId> 5th channel.
-    // Optional with `null` default so existing test call-sites that don't
-    // exercise versions continue to construct this manager unchanged.
-    private val localChartVersion: LocalChartVersionDataSource? = null,
-    // Phase 38.1 (ADR-014 §7): suggestions-incoming-<ownerId> + outgoing
-    // 6th + 7th channels. Optional with `null` default so existing test
-    // call-sites that don't exercise suggestions continue to construct
-    // this manager unchanged — same pattern as chart versions above.
-    // The dynamic per-suggestion comments channel (suggestion-comments-<id>)
-    // lands in Phase 38.3 alongside SuggestionDetailScreen and is NOT
-    // managed by RealtimeSyncManager — it's opened/closed on view lifecycle.
-    private val localSuggestion: LocalSuggestionDataSource? = null,
+    // Phase 37.1 (ADR-013 §8) — chart-versions-<ownerId> channel target.
+    private val localChartVersion: LocalChartVersionDataSource,
+    // Phase 38.1 (ADR-014 §7) — suggestions-incoming + outgoing channel
+    // targets. The dynamic per-suggestion comments channel
+    // (suggestion-comments-<id>) lands in Phase 38.3 alongside
+    // SuggestionDetailScreen and is NOT managed by RealtimeSyncManager —
+    // it's opened/closed on view lifecycle.
+    private val localSuggestion: LocalSuggestionDataSource,
 ) {
     private var projectChannel: ChannelHandle? = null
     private var progressChannel: ChannelHandle? = null
@@ -97,14 +93,14 @@ class RealtimeSyncManager(
         connectivityJob?.cancel()
         connectivityJob =
             isOnline
-                ?.onEach { online ->
+                .onEach { online ->
                     if (online) {
                         lastOwnerId?.let { ownerId ->
                             retryCount = 0
                             subscribe(ownerId)
                         }
                     }
-                }?.launchIn(scope)
+                }.launchIn(scope)
     }
 
     suspend fun stop() {
@@ -451,17 +447,16 @@ class RealtimeSyncManager(
      * handler is the explicit version-side cleanup.
      */
     private suspend fun handleChartVersionAction(action: PostgresAction) {
-        val ds = localChartVersion ?: return
         when (action) {
             is PostgresAction.Insert -> {
                 val revision = action.decodeRecord<ChartVersion>()
-                ds.upsert(revision)
+                localChartVersion.upsert(revision)
             }
             is PostgresAction.Delete -> {
                 // CASCADE delete from pattern. Decode the old record to recover
                 // pattern_id, then bulk-clear local revisions for that pattern.
                 val old = action.decodeOldRecord<ChartVersion>()
-                ds.deleteByPatternId(old.patternId)
+                localChartVersion.deleteByPatternId(old.patternId)
             }
             is PostgresAction.Update,
             is PostgresAction.Select,
@@ -490,19 +485,18 @@ class RealtimeSyncManager(
      * the asymmetry is deliberate, not an oversight.
      */
     private suspend fun handleSuggestionAction(action: PostgresAction) {
-        val ds = localSuggestion ?: return
         when (action) {
             is PostgresAction.Insert -> {
-                val pr = action.decodeRecord<Suggestion>()
-                ds.upsert(pr)
+                val suggestion = action.decodeRecord<Suggestion>()
+                localSuggestion.upsert(suggestion)
             }
             is PostgresAction.Update -> {
-                val pr = action.decodeRecord<Suggestion>()
-                ds.upsert(pr)
+                val suggestion = action.decodeRecord<Suggestion>()
+                localSuggestion.upsert(suggestion)
             }
             is PostgresAction.Delete -> {
                 val old = action.decodeOldRecord<Suggestion>()
-                ds.deleteById(old.id)
+                localSuggestion.deleteById(old.id)
             }
             is PostgresAction.Select -> { /* no-op */ }
         }

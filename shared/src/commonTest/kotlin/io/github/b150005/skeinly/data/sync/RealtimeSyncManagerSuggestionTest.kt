@@ -21,16 +21,12 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Phase 38.1: RealtimeSyncManager subscription contract for the two new
+ * Phase 38.1: RealtimeSyncManager subscription contract for the two
  * suggestion channels (ADR-014 §7).
  *
- * Lives in its own test class because the existing [RealtimeSyncManagerTest]
- * setup helper doesn't wire `localSuggestion` (kept null-default so existing
- * tests construct the manager unchanged — the precedent set by Phase 37.1
- * for `localChartVersion`). Threading the new local data source through the
- * existing helper would widen its signature and force every other test in
- * the file to learn about a parameter they don't exercise; a dedicated class
- * is the lighter touch.
+ * Lives in its own test class so its assertions stay focused on the
+ * suggestion-channel surface; the broader [RealtimeSyncManagerTest]
+ * exercises connectivity + retry + the other five channels.
  */
 class RealtimeSyncManagerSuggestionTest {
     private fun createManager(): Pair<RealtimeSyncManager, FakeRealtimeChannelProvider> {
@@ -49,7 +45,7 @@ class RealtimeSyncManagerSuggestionTest {
                 localProjectSegment = LocalProjectSegmentDataSource(db, testDispatcher),
                 authRepository = fakeAuth,
                 scope = CoroutineScope(Dispatchers.Unconfined),
-                isOnline = null,
+                isOnline = kotlinx.coroutines.flow.MutableStateFlow(false),
                 config = RealtimeConfig(),
                 random = kotlin.random.Random(seed = 42),
                 localChartVersion = LocalChartVersionDataSource(db, testDispatcher, testJson),
