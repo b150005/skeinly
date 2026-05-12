@@ -3,7 +3,7 @@ package io.github.b150005.skeinly.domain.subscription
 /**
  * Phase 41.3 (ADR-016 §6 §41.3) — domain port over the RevenueCat KMP SDK.
  *
- * Skeinly takes the ports-and-adapters shape (same as `SuggestionMergeOperations`
+ * Skeinly takes the ports-and-adapters shape (same as `SuggestionApplyOperations`
  * for Phase 38.4 and `SymbolPackRemoteOperations` for Phase 41.2b): the
  * domain-layer interface is suspendable + maps to domain types; the
  * `data.subscription.RevenueCatServiceImpl` adapter wraps `Purchases.sharedInstance`

@@ -183,12 +183,12 @@ val useCaseModule =
         // SECURITY DEFINER `apply_suggestion` RPC; bypasses the standard
         // local-then-sync orchestration since the RPC is the only writer
         // permitted to produce author_id != owner_id rows.
-        // `getOrNull<SuggestionMergeOperations>()` so local-only mode (no
+        // `getOrNull<SuggestionApplyOperations>()` so local-only mode (no
         // Supabase) surfaces a Validation error rather than a NPE on first
         // tap — see ApplySuggestionUseCase.invoke for the offline branch.
         factory {
             ApplySuggestionUseCase(
-                mergeOperations = getOrNull<io.github.b150005.skeinly.domain.repository.SuggestionMergeOperations>(),
+                applyOperations = getOrNull<io.github.b150005.skeinly.domain.repository.SuggestionApplyOperations>(),
                 patternRepository = get(),
                 authRepository = get(),
                 json = get(),

@@ -155,7 +155,7 @@ val repositoryModule =
             single<DeviceTokenRemoteOperations> { get<RemoteDeviceTokenDataSource>() }
             // Interface alias lets SubscriptionRepositoryImpl be tested
             // with an in-memory fake without standing up Supabase. Same
-            // shape as SuggestionMergeOperations above.
+            // shape as SuggestionApplyOperations above.
             single<SubscriptionRemoteOperations> { get<RemoteSubscriptionDataSource>() }
             // Phase 41.2b (ADR-016 §3.3, §4.3): symbol pack catalog +
             // Edge Function download mediation. The injected HttpClient is
@@ -190,10 +190,10 @@ val repositoryModule =
                     json = get(),
                 )
             }
-            // Phase 38.4: Expose the merge RPC port as a domain-layer
+            // Phase 38.4: Expose the apply RPC port as a domain-layer
             // interface so ApplySuggestionUseCase doesn't take a hard
             // dependency on the Supabase-typed data source.
-            single<io.github.b150005.skeinly.domain.repository.SuggestionMergeOperations> {
+            single<io.github.b150005.skeinly.domain.repository.SuggestionApplyOperations> {
                 get<RemoteSuggestionDataSource>()
             }
             single<ShareDataSourceOperations> { RemoteShareDataSource(get<SupabaseClient>()) }

@@ -4,7 +4,7 @@ import io.github.b150005.skeinly.data.sync.RemoteSuggestionCommentSyncOperations
 import io.github.b150005.skeinly.data.sync.RemoteSuggestionSyncOperations
 import io.github.b150005.skeinly.domain.model.Suggestion
 import io.github.b150005.skeinly.domain.model.SuggestionComment
-import io.github.b150005.skeinly.domain.repository.SuggestionMergeOperations
+import io.github.b150005.skeinly.domain.repository.SuggestionApplyOperations
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
@@ -26,7 +26,7 @@ class RemoteSuggestionDataSource(
     private val supabaseClient: SupabaseClient,
 ) : RemoteSuggestionSyncOperations,
     RemoteSuggestionCommentSyncOperations,
-    SuggestionMergeOperations {
+    SuggestionApplyOperations {
     private val prTable get() = supabaseClient.postgrest["suggestions"]
     private val commentTable get() = supabaseClient.postgrest["suggestion_comments"]
 
@@ -113,19 +113,19 @@ class RemoteSuggestionDataSource(
      * `p_applied_content_hash`, `p_resolved_revision_id`) — supabase-kt's
      * `rpc(name, parameters)` overload sends these as JSON keys.
      */
-    override suspend fun merge(
+    override suspend fun apply(
         suggestionId: String,
         strategy: String,
-        mergedDocument: JsonElement,
-        mergedContentHash: String,
+        appliedDocument: JsonElement,
+        appliedContentHash: String,
         resolvedRevisionId: String,
     ): String {
         val params: JsonObject =
             buildJsonObject {
                 put("p_suggestion_id", JsonPrimitive(suggestionId))
                 put("p_strategy", JsonPrimitive(strategy))
-                put("p_applied_document", mergedDocument)
-                put("p_applied_content_hash", JsonPrimitive(mergedContentHash))
+                put("p_applied_document", appliedDocument)
+                put("p_applied_content_hash", JsonPrimitive(appliedContentHash))
                 put("p_resolved_revision_id", JsonPrimitive(resolvedRevisionId))
             }
         val result = supabaseClient.postgrest.rpc("apply_suggestion", params)

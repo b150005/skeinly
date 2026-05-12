@@ -8,7 +8,7 @@ import io.github.b150005.skeinly.domain.model.Suggestion
 import io.github.b150005.skeinly.domain.model.SuggestionStatus
 import io.github.b150005.skeinly.domain.repository.AuthRepository
 import io.github.b150005.skeinly.domain.repository.PatternRepository
-import io.github.b150005.skeinly.domain.repository.SuggestionMergeOperations
+import io.github.b150005.skeinly.domain.repository.SuggestionApplyOperations
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlin.coroutines.cancellation.CancellationException
@@ -53,16 +53,16 @@ import kotlin.uuid.Uuid
  */
 @OptIn(ExperimentalUuidApi::class)
 class ApplySuggestionUseCase(
-    private val mergeOperations: SuggestionMergeOperations?,
+    private val applyOperations: SuggestionApplyOperations?,
     private val patternRepository: PatternRepository,
     private val authRepository: AuthRepository,
     private val json: Json,
 ) {
     /**
      * Invoke with [resolvedChart]'s drawing payload (extents + layers + craft
-     * metadata) as the merge result. The chart's row-level fields (id, owner,
+     * metadata) as the apply result. The chart's row-level fields (id, owner,
      * etc.) are NOT used — the RPC writes its own envelope. Only the document
-     * payload + content hash matter for the merge result.
+     * payload + content hash matter for the apply result.
      *
      * [strategy] is currently always [MergeStrategy.SQUASH] in v1 (the
      * fast-forward path is a server-side enum value reserved for forward
@@ -104,15 +104,15 @@ class ApplySuggestionUseCase(
             )
         }
 
-        val merge =
-            mergeOperations ?: return UseCaseResult.Failure(
+        val apply =
+            applyOperations ?: return UseCaseResult.Failure(
                 UseCaseError.RequiresConnectivity,
             )
 
         val newRevisionId = Uuid.random().toString()
-        val mergedDocument: JsonElement =
+        val appliedDocument: JsonElement =
             json.parseToJsonElement(resolvedChart.toDocumentJson(json))
-        val mergedContentHash =
+        val appliedContentHash =
             Chart.computeContentHash(
                 extents = resolvedChart.extents,
                 layers = resolvedChart.layers,
@@ -121,24 +121,24 @@ class ApplySuggestionUseCase(
 
         return try {
             val returnedRevisionId =
-                merge.merge(
+                apply.apply(
                     suggestionId = suggestion.id,
                     strategy = strategy.wireValue,
-                    mergedDocument = mergedDocument,
-                    mergedContentHash = mergedContentHash,
+                    appliedDocument = appliedDocument,
+                    appliedContentHash = appliedContentHash,
                     resolvedRevisionId = newRevisionId,
                 )
             UseCaseResult.Success(
                 MergeResult(
                     suggestionId = suggestion.id,
                     mergedRevisionId = returnedRevisionId,
-                    mergedContentHash = mergedContentHash,
+                    mergedContentHash = appliedContentHash,
                 ),
             )
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            UseCaseResult.Failure(mapMergeError(e))
+            UseCaseResult.Failure(mapApplyError(e))
         }
     }
 
@@ -149,19 +149,23 @@ class ApplySuggestionUseCase(
      * consistency with the client-side defense-in-depth check earlier in this
      * use case (which guards on the same logical condition). Anything not
      * recognised falls back to the generic [Exception.toUseCaseError] mapping.
+     *
+     * Exception strings are coupled to the `apply_suggestion` RPC body
+     * defined in migration 027. If the RPC's RAISE EXCEPTION messages change,
+     * the `contains` patterns below must be updated in lockstep.
      */
-    private fun mapMergeError(e: Exception): UseCaseError {
+    private fun mapApplyError(e: Exception): UseCaseError {
         val msg = e.message.orEmpty()
         return when {
             msg.contains("Source tip drifted", ignoreCase = true) ->
                 UseCaseError.OperationNotAllowed
-            msg.contains("PR not open", ignoreCase = true) ->
+            msg.contains("Suggestion not open", ignoreCase = true) ->
                 UseCaseError.OperationNotAllowed
             msg.contains("Caller is not target owner", ignoreCase = true) ->
                 UseCaseError.PermissionDenied
-            msg.contains("PR not found", ignoreCase = true) ->
+            msg.contains("Suggestion not found", ignoreCase = true) ->
                 UseCaseError.ResourceNotFound
-            msg.contains("Target branch has no tip", ignoreCase = true) ->
+            msg.contains("Target variation has no tip", ignoreCase = true) ->
                 UseCaseError.OperationNotAllowed
             else -> e.toUseCaseError()
         }

@@ -27,7 +27,7 @@ import kotlinx.serialization.json.Json
  * The interface exists so the [io.github.b150005.skeinly.data.sync.SymbolPackSyncManager]
  * test can inject an in-memory fake without standing up Supabase. Same
  * precedent as [SubscriptionRemoteOperations] (Phase 41.2a) and
- * [io.github.b150005.skeinly.domain.repository.SuggestionMergeOperations]
+ * [io.github.b150005.skeinly.domain.repository.SuggestionApplyOperations]
  * (Phase 38.4).
  */
 interface SymbolPackRemoteOperations {
