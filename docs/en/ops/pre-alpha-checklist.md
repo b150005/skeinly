@@ -14,6 +14,10 @@ Tracker for the closed-alpha launch readiness audit. Every item below maps to a 
 | **A30** Subscription management deep link | [2a5e74b](https://github.com/b150005/skeinly/commit/2a5e74b) | `SubscriptionManagementLauncher` expect/actual; iOS opens `https://apps.apple.com/account/subscriptions`, Android opens `market://account/subscriptions?package=...` with web fallback. Settings → Manage Subscription row in both Compose + SwiftUI. |
 | **A34** In-app Contact Support entry | [a8a94df](https://github.com/b150005/skeinly/commit/a8a94df) | `SupportContactLauncher` expect/actual + pure `composeSupportMailtoUrl()` URL composer with RFC 6068-compliant percent encoding. Settings → Contact Support row opens mailto: with diagnostic context (app version / OS / device / locale) pre-filled. +13 commonTest. |
 | **A35** Help / FAQ pages + Settings link | [d6f07db](https://github.com/b150005/skeinly/commit/d6f07db) | New `docs/public/help/index.html` (EN + JA) with 10+ Q&A covering pattern creation, sharing, projects, Suggestions, Pro subscribe/cancel, account deletion, bug reporting, push permission, locale propagation, offline mode, language switch. Settings → Help & FAQ link in both Compose + SwiftUI. |
+| **A10** Lock `search_path` on 4 SECURITY DEFINER + trigger functions | Migration 030 | `ALTER FUNCTION ... SET search_path = ''` on `handle_new_user`, `set_progress_owner_id`, `touch_subscriptions_updated_at`, `update_updated_at`. Supabase lint 0011 (`function_search_path_mutable`) cleared (4 → 0 advisor findings). |
+| **A11** Revoke EXECUTE on internal SECURITY DEFINER functions | Migration 030 | Three-tier matrix: (a) `get_app_config` keeps anon + authenticated (intentional pre-sign-in surface); (b) `apply_suggestion` / `delete_own_account` / `is_pro` revoked from anon, kept on authenticated; (c) `grant_alpha_pro` / `handle_new_user` / `rls_auto_enable` / `set_progress_owner_id` / `touch_app_config_updated_at` / `upsert_subscription_from_webhook` revoked from anon + authenticated + PUBLIC. Supabase lints 0028 / 0029 reduced from 18 → 5 advisor findings (all 5 remaining intentional). |
+| **A12** Tighten `comments` SELECT policy | Migration 030 | Dropped the bare `s.share_token IS NOT NULL` arm; token-shared project comments now require the caller to be the explicit `s.to_user_id`. Token-based viewers (anonymous-link recipients) no longer see comments, matching the read-only "view this pattern" UX. |
+| **A13** Tighten `avatars` storage bucket SELECT policy | Migration 030 | Dropped broad `Anyone can read avatars` SELECT policy on `storage.objects`. The avatars bucket is `public = true`, so the Storage HTTP API continues to serve files via URL without an RLS policy. Owner upload/update/delete policies retained (scoped by `auth.uid()::text = (storage.foldername(name))[1]`). Supabase lint 0025 (`public_bucket_allows_listing`) cleared. App code does not call `.list()` on this bucket. |
 
 ## Outstanding Action Required Items
 
@@ -24,10 +28,6 @@ Tracker for the closed-alpha launch readiness audit. Every item below maps to a 
 - **A6** Play Console Data Safety form — user-side (per A6 matrix in §2.1)
 - **A7** Web-based account deletion URL — `docs/public/account-deletion/` form
 - **A9 / V13** Enable HIBP leaked-password protection in Supabase Dashboard — user-side toggle
-- **A10** Lock `search_path` on 4 SECURITY DEFINER functions — migration
-- **A11** Revoke EXECUTE on internal SECURITY DEFINER functions from anon — migration
-- **A12** Tighten `comments` SELECT policy `share_token IS NOT NULL` arm — migration
-- **A13** Tighten `avatars` storage bucket SELECT policy — RLS policy update
 - **A16** iOS Universal Links — entitlement + AASA file + Apple Developer provisioning profile regen
 - **A17** Supabase PITR / DR drill SOP — operational doc
 - **A18** Migration rollback procedure doc — `docs/en/ops/release.md`
@@ -350,7 +350,7 @@ AI-generated content: Skeinly currently has no generative AI. If future phases a
 
 ---
 
-#### A10. Lock `search_path` on 4 functions
+#### A10. Lock `search_path` on 4 functions — ✅ CLOSED (migration 030, 2026-05-12)
 
 **Advisor finding**: `function_search_path_mutable` on:
 1. `public.handle_new_user()` — auth bootstrap trigger
@@ -358,44 +358,44 @@ AI-generated content: Skeinly currently has no generative AI. If future phases a
 3. `public.update_updated_at()` — generic touch trigger
 4. `public.set_progress_owner_id()` — progress bootstrap trigger
 
-**Risk**: Without `SET search_path = public, pg_temp`, an attacker who can control the schema search path (via session-level config or schema injection) can hijack function calls inside the function body, executing arbitrary code as the function definer.
+**Risk**: Without `SET search_path`, an attacker who can control the schema search path (via session-level config or schema injection) can hijack function calls inside the function body, executing arbitrary code as the function definer.
 
-**Action**: Create migration that ALTERs each function to add `SET search_path = public, pg_temp`. Phase 24.1 already did this for `touch_device_tokens_updated_at` — follow that pattern.
-
-**Owner**: architect / implementer.
+**Resolution**: Migration `030_pre_alpha_security_hardening.sql` applied `ALTER FUNCTION ... SET search_path = ''` to all four functions. Empty-string search_path is the strictest configuration — every identifier must be schema-qualified. All four function bodies either reference no schema objects (just `now()` from the always-implicit `pg_catalog`) or already fully qualify their references (`public.profiles`, `public.projects`), so the strict setting is safe. Advisor scan after apply: 4 → 0 `function_search_path_mutable` findings.
 
 **Source**: https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable
 
 ---
 
-#### A11. Revoke EXECUTE on internal SECURITY DEFINER functions from `anon` + `authenticated`
+#### A11. Revoke EXECUTE on internal SECURITY DEFINER functions — ✅ CLOSED (migration 030, 2026-05-12)
 
-**Advisor finding**: 9 SECURITY DEFINER functions are exposed via `/rest/v1/rpc/<name>` to anon + authenticated roles. Many of these are internal triggers or admin-only and should NOT be RPC-callable.
+**Advisor finding**: 9 SECURITY DEFINER functions exposed via `/rest/v1/rpc/<name>` to anon + authenticated roles. Many internal triggers / admin-only.
 
-| Function | Intended caller | Action |
-|---|---|---|
-| `apply_suggestion(...)` | authenticated user (PR target owner) | **Keep authenticated, revoke anon**. Internal RLS check exists inside the function. |
-| `delete_own_account()` | authenticated user (self) | **Keep authenticated, revoke anon**. |
-| `get_app_config()` | anyone (force-update needs to work pre-login) | **Keep anon + authenticated** — INTENTIONAL per Phase 39 W4. Document. |
-| `is_pro(uid uuid)` | authenticated user (own check) + service-role (Edge Function) | **Keep authenticated, revoke anon**. |
-| `grant_alpha_pro(uid uuid)` | service-role / admin only | **Revoke EXECUTE from anon AND authenticated**. |
-| `handle_new_user()` | trigger ONLY, never as RPC | **Revoke RPC EXECUTE from anon AND authenticated**. |
-| `rls_auto_enable()` | internal admin / one-shot bootstrap | **Revoke RPC EXECUTE from anon AND authenticated**. |
-| `set_progress_owner_id()` | trigger ONLY | **Revoke RPC EXECUTE from anon AND authenticated**. |
-| `touch_app_config_updated_at()` | trigger ONLY | **Revoke RPC EXECUTE from anon AND authenticated**. |
-| `upsert_subscription_from_webhook(...)` | service-role only (revenuecat-webhook Edge Function) | **Revoke EXECUTE from anon AND authenticated**. Most security-critical revoke. |
+**Resolution**: Migration `030_pre_alpha_security_hardening.sql` applied the three-tier matrix below.
 
-**Action**: Single migration `REVOKE EXECUTE ON FUNCTION ... FROM anon, authenticated` (or just `anon`) per row above. Document each revocation rationale in the migration comment.
+| Function | Resolution applied |
+|---|---|
+| `apply_suggestion(uuid, text, jsonb, text, uuid)` | `REVOKE EXECUTE FROM anon` — authenticated retains (Phase 38 PR apply). |
+| `delete_own_account()` | `REVOKE EXECUTE FROM anon` — authenticated retains (ADR-005). |
+| `get_app_config()` | **No revoke** — INTENTIONAL public surface for the pre-sign-in force-update gate (Phase 39 W4). Advisor warning explicitly accepted. |
+| `is_pro(uuid)` | `REVOKE EXECUTE FROM anon` — authenticated retains (RLS policy dependency for Pro symbol packs etc.). |
+| `grant_alpha_pro(uuid)` | `REVOKE EXECUTE FROM anon, authenticated, PUBLIC` — admin-only. |
+| `handle_new_user()` | `REVOKE EXECUTE FROM anon, authenticated, PUBLIC` — trigger only. |
+| `rls_auto_enable()` | `REVOKE EXECUTE FROM anon, authenticated, PUBLIC` — internal one-shot bootstrap. |
+| `set_progress_owner_id()` | `REVOKE EXECUTE FROM anon, authenticated, PUBLIC` — trigger only. |
+| `touch_app_config_updated_at()` | `REVOKE EXECUTE FROM anon, authenticated, PUBLIC` — trigger only. |
+| `upsert_subscription_from_webhook(...)` | `REVOKE EXECUTE FROM anon, authenticated, PUBLIC` — service-role-only (revenuecat-webhook Edge Function). Most security-critical revoke. |
 
-**Owner**: architect / implementer.
+Trigger functions retain firing semantics without EXECUTE — Postgres invokes them as part of the table operation regardless of caller grants. Webhook RPCs run under `service_role` which bypasses ACL checks.
+
+Advisor scan after apply: 18 SD-exposure findings (9 anon + 9 authenticated) → 5 (`get_app_config` anon + 4 intentional authenticated-keepers: `apply_suggestion` / `delete_own_account` / `get_app_config` / `is_pro`). All 5 remaining findings are deliberate per the matrix.
 
 **Source**: https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable + 0029
 
 ---
 
-#### A12. Tighten `comments` SELECT policy — token-shared project leakage
+#### A12. Tighten `comments` SELECT policy — token-shared project leakage — ✅ CLOSED (migration 030, 2026-05-12)
 
-**Finding**: The `comments` SELECT policy's project-share clause uses:
+**Finding**: The `comments` SELECT policy's project-share clause used:
 ```sql
 EXISTS (SELECT 1 FROM projects pr JOIN shares s ON s.pattern_id = pr.pattern_id
         WHERE pr.id = comments.target_id
@@ -403,21 +403,19 @@ EXISTS (SELECT 1 FROM projects pr JOIN shares s ON s.pattern_id = pr.pattern_id
           AND (s.to_user_id = auth.uid() OR s.share_token IS NOT NULL))
 ```
 
-The `s.share_token IS NOT NULL` arm grants comment-read access to **any authenticated user** when a token-share exists on the underlying pattern — regardless of whether that user actually holds the token. Token-based share access should require the user to **present** the token (e.g., via a function parameter that the client passes), not just for a token-share to exist.
+The `s.share_token IS NOT NULL` arm granted comment-read access to **any authenticated user** when a token-share existed on the underlying pattern — regardless of whether that user actually held the token.
 
-**Action**: Refactor the policy to remove the bare `share_token IS NOT NULL` arm. Replace with a function-based check that requires the caller to present the token. Alternatively, accept that token-shared content is "anyone authenticated can read if they know about the token mechanism" but explicitly document this in the share UX.
+**Resolution**: Migration `030_pre_alpha_security_hardening.sql` recreated the policy with the share-recipient arm tightened to `s.to_user_id = auth.uid()` only. The bare `share_token IS NOT NULL` clause was deleted. Token-based share viewers (anonymous-link recipients on the read-only "view this pattern" UX) now correctly do not see comments — only the explicit share recipient does. This matches the share-flow UX where token-share is read-only viewing, not engagement.
 
-**Owner**: architect.
+**Source**: manual RLS audit (no Supabase advisor lint for this semantic).
 
 ---
 
-#### A13. Tighten `avatars` storage bucket SELECT policy — listing exposure
+#### A13. Tighten `avatars` storage bucket SELECT policy — listing exposure — ✅ CLOSED (migration 030, 2026-05-12)
 
-**Advisor finding**: `public_bucket_allows_listing` on `storage.objects` for `avatars` bucket — broad SELECT policy "Anyone can read avatars" allows listing all files. Public buckets serve files via direct URL; listing exposes more data than intended.
+**Advisor finding**: `public_bucket_allows_listing` on `storage.objects` for `avatars` bucket — broad SELECT policy "Anyone can read avatars" allowed listing all files.
 
-**Action**: Restrict SELECT to specific object paths (e.g., own-avatar by file naming convention `<user_id>/avatar.jpg`) OR rely on URL knowledge only (signed URLs / known paths).
-
-**Owner**: architect.
+**Resolution**: Migration `030_pre_alpha_security_hardening.sql` dropped the `Anyone can read avatars` SELECT policy. The avatars bucket has `public = true`, so the Storage HTTP API continues to serve files via the public-URL code path without consulting RLS. Owner upload / update / delete policies retained — all scoped by `auth.uid()::text = (storage.foldername(name))[1]`. App code does not call `.list()` on this bucket (verified via grep across `shared/`, `androidApp/`, `iosApp/` — only `upload` / `createSignedUrl` / `delete` / `publicUrl` are used). Advisor scan after apply: 1 → 0 `public_bucket_allows_listing` findings.
 
 **Source**: https://supabase.com/docs/guides/database/database-linter?lint=0025_public_bucket_allows_listing
 
