@@ -17,7 +17,7 @@ import io.github.b150005.skeinly.domain.model.Suggestion
 import io.github.b150005.skeinly.domain.model.SuggestionStatus
 import io.github.b150005.skeinly.domain.model.Visibility
 import io.github.b150005.skeinly.domain.repository.ChartVersionRepository
-import io.github.b150005.skeinly.domain.repository.SuggestionMergeOperations
+import io.github.b150005.skeinly.domain.repository.SuggestionApplyOperations
 import io.github.b150005.skeinly.domain.usecase.ApplySuggestionUseCase
 import io.github.b150005.skeinly.domain.usecase.ConflictResolution
 import io.github.b150005.skeinly.domain.usecase.FakeAuthRepository
@@ -163,7 +163,7 @@ class ChartConflictResolutionViewModelTest {
         theirsLayers: List<ChartLayer>,
         mineLayers: List<ChartLayer>,
         signedInAs: String = "owner-id",
-        mergeOps: SuggestionMergeOperations? = NoOpMergeOps(),
+        mergeOps: SuggestionApplyOperations? = NoOpMergeOps(),
         analyticsTracker: AnalyticsTracker? = null,
     ): Harness {
         val prRepo =
@@ -204,7 +204,7 @@ class ChartConflictResolutionViewModelTest {
 
     private data class Harness(
         val viewModel: ChartConflictResolutionViewModel,
-        val mergeOps: SuggestionMergeOperations?,
+        val mergeOps: SuggestionApplyOperations?,
     )
 
     @Test
@@ -471,27 +471,27 @@ class ChartConflictResolutionViewModelTest {
             assertNull(harness.viewModel.state.value.error)
         }
 
-    private class NoOpMergeOps : SuggestionMergeOperations {
-        override suspend fun merge(
+    private class NoOpMergeOps : SuggestionApplyOperations {
+        override suspend fun apply(
             suggestionId: String,
             strategy: String,
-            mergedDocument: JsonElement,
-            mergedContentHash: String,
+            appliedDocument: JsonElement,
+            appliedContentHash: String,
             resolvedRevisionId: String,
         ): String = resolvedRevisionId
     }
 
     private class RecordingMergeOps(
         var throwOnNext: Throwable? = null,
-    ) : SuggestionMergeOperations {
+    ) : SuggestionApplyOperations {
         var callCount = 0
             private set
 
-        override suspend fun merge(
+        override suspend fun apply(
             suggestionId: String,
             strategy: String,
-            mergedDocument: JsonElement,
-            mergedContentHash: String,
+            appliedDocument: JsonElement,
+            appliedContentHash: String,
             resolvedRevisionId: String,
         ): String {
             callCount += 1

@@ -15,7 +15,7 @@ import kotlinx.serialization.Serializable
  * in-memory fake without standing up Supabase. Same precedent as
  * [io.github.b150005.skeinly.data.remote.SubscriptionRemoteOperations]
  * (ADR-016 §4.2) and
- * [io.github.b150005.skeinly.domain.repository.SuggestionMergeOperations]
+ * [io.github.b150005.skeinly.domain.repository.SuggestionApplyOperations]
  * (ADR-014 §5).
  */
 interface DeviceTokenRemoteOperations {

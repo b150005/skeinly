@@ -10,7 +10,7 @@ import io.github.b150005.skeinly.domain.model.StorageVariant
 import io.github.b150005.skeinly.domain.model.Suggestion
 import io.github.b150005.skeinly.domain.model.SuggestionStatus
 import io.github.b150005.skeinly.domain.model.Visibility
-import io.github.b150005.skeinly.domain.repository.SuggestionMergeOperations
+import io.github.b150005.skeinly.domain.repository.SuggestionApplyOperations
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -25,7 +25,7 @@ import kotlin.time.Instant
  *  1. status not OPEN → Validation
  *  2. unauthenticated → Authentication
  *  3. caller not target owner → Validation (defense-in-depth before RPC)
- *  4. mergeOperations null (offline-only) → Validation
+ *  4. applyOperations null (offline-only) → Validation
  *  5. happy path → Success carrying merged revision id from the RPC return
  *  6. RPC error "Source tip drifted" → Validation
  *  7. RPC error "PR not open" → Validation
@@ -93,7 +93,7 @@ class ApplySuggestionUseCaseTest {
 
     private class FakeMergeOps(
         var nextError: Throwable? = null,
-    ) : SuggestionMergeOperations {
+    ) : SuggestionApplyOperations {
         var lastPrId: String? = null
             private set
         var lastStrategy: String? = null
@@ -107,19 +107,19 @@ class ApplySuggestionUseCaseTest {
         var callCount: Int = 0
             private set
 
-        override suspend fun merge(
+        override suspend fun apply(
             suggestionId: String,
             strategy: String,
-            mergedDocument: JsonElement,
-            mergedContentHash: String,
+            appliedDocument: JsonElement,
+            appliedContentHash: String,
             resolvedRevisionId: String,
         ): String {
             callCount += 1
             lastPrId = suggestionId
             lastStrategy = strategy
             lastRevisionId = resolvedRevisionId
-            lastContentHash = mergedContentHash
-            lastDocument = mergedDocument
+            lastContentHash = appliedContentHash
+            lastDocument = appliedDocument
             nextError?.let {
                 nextError = null
                 throw it
@@ -187,7 +187,7 @@ class ApplySuggestionUseCaseTest {
         }
 
     @Test
-    fun `offline only mode with null mergeOperations returns RequiresConnectivity`() =
+    fun `offline only mode with null applyOperations returns RequiresConnectivity`() =
         runTest {
             val auth =
                 FakeAuthRepository().apply {
@@ -249,7 +249,7 @@ class ApplySuggestionUseCaseTest {
         }
 
     @Test
-    fun `PR not open RPC error maps to OperationNotAllowed`() =
+    fun `Suggestion not open RPC error maps to OperationNotAllowed`() =
         runTest {
             val auth =
                 FakeAuthRepository().apply {
@@ -259,7 +259,7 @@ class ApplySuggestionUseCaseTest {
                     )
                 }
             val patterns = FakePatternRepository().apply { seed(targetPattern("owner-id")) }
-            val ops = FakeMergeOps(nextError = RuntimeException("PR not open"))
+            val ops = FakeMergeOps(nextError = RuntimeException("Suggestion not open"))
             val useCase = ApplySuggestionUseCase(ops, patterns, auth, json)
 
             val result = useCase(openPr(), resolvedChart())
@@ -289,7 +289,7 @@ class ApplySuggestionUseCaseTest {
         }
 
     @Test
-    fun `PR not found RPC error maps to NotFound`() =
+    fun `Suggestion not found RPC error maps to NotFound`() =
         runTest {
             val auth =
                 FakeAuthRepository().apply {
@@ -299,7 +299,7 @@ class ApplySuggestionUseCaseTest {
                     )
                 }
             val patterns = FakePatternRepository().apply { seed(targetPattern("owner-id")) }
-            val ops = FakeMergeOps(nextError = RuntimeException("PR not found"))
+            val ops = FakeMergeOps(nextError = RuntimeException("Suggestion not found"))
             val useCase = ApplySuggestionUseCase(ops, patterns, auth, json)
 
             val result = useCase(openPr(), resolvedChart())
