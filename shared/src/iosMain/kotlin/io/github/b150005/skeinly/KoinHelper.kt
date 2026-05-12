@@ -443,6 +443,20 @@ fun openSubscriptionManagement() {
     launcher.open()
 }
 
+/**
+ * Pre-alpha A34 — opens the mailto: support composer from SwiftUI.
+ * Bridges through Koin so the SwiftUI call site stays a one-liner.
+ * The DeviceContextProvider for the pre-fill is also resolved through
+ * Koin to keep the diagnostic context current at invocation time.
+ */
+fun openSupportEmail() {
+    val launcher: io.github.b150005.skeinly.platform.SupportContactLauncher =
+        KoinPlatform.getKoin().get()
+    val deviceContext: io.github.b150005.skeinly.platform.DeviceContextProvider =
+        KoinPlatform.getKoin().get()
+    launcher.openSupportEmail(deviceContext)
+}
+
 fun wrapSymbolGalleryState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.symbol.SymbolGalleryState>,
 ): FlowWrapper<io.github.b150005.skeinly.ui.symbol.SymbolGalleryState> = FlowWrapper(flow)

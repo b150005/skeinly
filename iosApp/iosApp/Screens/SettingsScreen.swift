@@ -276,6 +276,23 @@ struct SettingsScreen: View {
                     Label("action_terms_of_service", systemImage: "doc.text")
                 }
                 .accessibilityIdentifier("termsOfServiceButton")
+
+                // Pre-alpha A34 — Contact Support row. Opens mailto:
+                // composer via the shared `SupportContactLauncher`
+                // Kotlin actual; the URL is built in commonMain with
+                // diagnostic context pre-filled (app version / OS /
+                // device / locale).
+                Button {
+                    KoinHelperKt.openSupportEmail()
+                } label: {
+                    VStack(alignment: .leading) {
+                        Label("action_contact_support", systemImage: "envelope.badge")
+                        Text("body_contact_support_helper")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .accessibilityIdentifier("contactSupportButton")
             }
 
             // Phase 41.3b (ADR-016 §5.1) — Skeinly Pro section. Always-on,
