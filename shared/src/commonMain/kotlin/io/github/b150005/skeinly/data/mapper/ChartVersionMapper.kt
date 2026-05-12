@@ -16,7 +16,7 @@ import kotlin.time.Instant
 
 /**
  * Document envelope shared with [ChartMapper] — same shape lives
- * inside `chart_revisions.document` jsonb. Kept private to this file so the
+ * inside `chart_versions.document` jsonb. Kept private to this file so the
  * two mappers can evolve independently if envelope semantics ever diverge
  * (none today; ADR-013 §3 preserves the shape on purpose).
  */

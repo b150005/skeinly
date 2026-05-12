@@ -130,15 +130,16 @@ class SyncExecutor(
     private suspend fun executeSuggestion(entry: PendingSyncEntry): Boolean {
         val remote = remoteSuggestion ?: return true
         when (entry.operation) {
-            // INSERT (open PR) and UPDATE (close PR) both map to upsert per
-            // ADR-014 §7. Idempotent on `id`. Status → MERGED is NOT enqueued
-            // here — it transitions via the merge_pull_request RPC and Realtime
-            // echoes the merged row back through the local data source.
+            // INSERT (open suggestion) and UPDATE (close suggestion) both map
+            // to upsert per ADR-014 §7. Idempotent on `id`. Status → APPLIED
+            // is NOT enqueued here — it transitions via the apply_suggestion
+            // RPC and Realtime echoes the applied row back through the local
+            // data source.
             SyncOperation.INSERT -> remote.upsert(json.decodeFromString<Suggestion>(entry.payload))
             SyncOperation.UPDATE -> remote.upsert(json.decodeFromString<Suggestion>(entry.payload))
-            // DELETE is structurally forbidden (PRs are kept as audit trail).
-            // SyncManager never enqueues this; defensive silent no-op same as
-            // executeChartVersion's UPDATE/DELETE branches.
+            // DELETE is structurally forbidden (suggestions are kept as audit
+            // trail). SyncManager never enqueues this; defensive silent no-op
+            // same as executeChartVersion's UPDATE/DELETE branches.
             SyncOperation.DELETE -> return true
         }
         return true

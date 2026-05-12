@@ -256,7 +256,7 @@ class ChartVersionRepositoryImplTest {
     //
     // We can't observe the cross-table inconsistency window here without remote
     // wiring (the local DS has no FK between chart_documents.revision_id and
-    // chart_revisions.revision_id — both are independent local tables). What
+    // chart_versions.revision_id — both are independent local tables). What
     // this asserts is that a re-append of the same revisionId after a transient
     // failure is idempotent at the (pattern_id, revision_id) UNIQUE constraint:
     // INSERT OR IGNORE in the local upsert path silently no-ops, and getRevision

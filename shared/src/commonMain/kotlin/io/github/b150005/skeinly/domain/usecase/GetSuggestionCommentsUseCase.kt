@@ -6,12 +6,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
- * Phase 38.3 (ADR-014 §6, §8) — comment thread for a single pull request.
+ * Phase 38.3 (ADR-014 §6, §8) — comment thread for a single suggestion.
  *
  * Local-only observe; the cold-launch seed is owned by [SuggestionRepository.subscribeToCommentsChannel]
  * which kicks a remote fetch under the same lock as the channel attach. The
- * [observe] Flow stays warm thereafter via the per-PR Realtime channel
- * (`pull-request-comments-<prId>` per ADR-014 §7).
+ * [observe] Flow stays warm thereafter via the per-suggestion Realtime channel
+ * (`suggestion-comments-<suggestionId>` per ADR-014 §7).
  *
  * Comments are append-only at RLS, so observers never see UPDATE / DELETE.
  */

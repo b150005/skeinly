@@ -22,14 +22,15 @@ import kotlin.test.assertTrue
 
 /**
  * Phase 38.1: RealtimeSyncManager subscription contract for the two new
- * pull-request channels (ADR-014 §7).
+ * suggestion channels (ADR-014 §7).
  *
  * Lives in its own test class because the existing [RealtimeSyncManagerTest]
- * setup helper doesn't wire `localSuggestion` (kept null-default for
- * backward compatibility — the precedent set by Phase 37.1 chart_revisions).
- * Threading the new local data source through the existing helper would
- * widen its signature and force every other test in the file to learn about
- * a parameter they don't exercise; a dedicated class is the lighter touch.
+ * setup helper doesn't wire `localSuggestion` (kept null-default so existing
+ * tests construct the manager unchanged — the precedent set by Phase 37.1
+ * for `localChartVersion`). Threading the new local data source through the
+ * existing helper would widen its signature and force every other test in
+ * the file to learn about a parameter they don't exercise; a dedicated class
+ * is the lighter touch.
  */
 class RealtimeSyncManagerSuggestionTest {
     private fun createManager(): Pair<RealtimeSyncManager, FakeRealtimeChannelProvider> {
@@ -58,7 +59,7 @@ class RealtimeSyncManagerSuggestionTest {
     }
 
     @Test
-    fun `subscribe creates pull-request incoming and outgoing channels alongside the others`() =
+    fun `subscribe creates suggestion incoming and outgoing channels alongside the others`() =
         runTest {
             val (manager, channelProvider) = createManager()
 
@@ -69,10 +70,10 @@ class RealtimeSyncManagerSuggestionTest {
             assertNotNull(channelProvider.channelFor("progress-owner-1"))
             assertNotNull(channelProvider.channelFor("patterns-owner-1"))
             assertNotNull(channelProvider.channelFor("project-segments-owner-1"))
-            assertNotNull(channelProvider.channelFor("chart-revisions-owner-1"))
+            assertNotNull(channelProvider.channelFor("chart-versions-owner-1"))
             // Phase 38.1 additions — 6 + 7 channels.
-            assertNotNull(channelProvider.channelFor("pull-requests-incoming-owner-1"))
-            assertNotNull(channelProvider.channelFor("pull-requests-outgoing-owner-1"))
+            assertNotNull(channelProvider.channelFor("suggestions-incoming-owner-1"))
+            assertNotNull(channelProvider.channelFor("suggestions-outgoing-owner-1"))
             assertEquals(7, channelProvider.createdChannels.size)
         }
 
@@ -83,7 +84,7 @@ class RealtimeSyncManagerSuggestionTest {
 
             manager.subscribe("owner-1")
 
-            val outgoingHandle = channelProvider.channelFor("pull-requests-outgoing-owner-1")!!
+            val outgoingHandle = channelProvider.channelFor("suggestions-outgoing-owner-1")!!
             assertEquals("suggestions", outgoingHandle.subscribedTable)
             assertEquals("author_id", outgoingHandle.subscribedFilter?.column)
             assertEquals("owner-1", outgoingHandle.subscribedFilter?.value)
@@ -96,7 +97,7 @@ class RealtimeSyncManagerSuggestionTest {
 
             manager.subscribe("owner-1")
 
-            val incomingHandle = channelProvider.channelFor("pull-requests-incoming-owner-1")!!
+            val incomingHandle = channelProvider.channelFor("suggestions-incoming-owner-1")!!
             assertEquals("suggestions", incomingHandle.subscribedTable)
             // Single-eq ChangeFilter cannot express "target_pattern_id IN
             // owned_patterns"; ADR-014 §7 routes incoming through RLS scoping.
@@ -104,7 +105,7 @@ class RealtimeSyncManagerSuggestionTest {
         }
 
     @Test
-    fun `unsubscribe closes pull-request channels alongside the others`() =
+    fun `unsubscribe closes suggestion channels alongside the others`() =
         runTest {
             val (manager, channelProvider) = createManager()
 

@@ -179,8 +179,8 @@ val useCaseModule =
         // common-ancestor walk per ADR-014 §3.
         factory { OpenSuggestionUseCase(get(), get(), get()) }
 
-        // Phase 38.4 merge use case (ADR-014 §5). Routes through the
-        // SECURITY DEFINER `merge_pull_request` RPC; bypasses the standard
+        // Phase 38.4 apply use case (ADR-014 §5). Routes through the
+        // SECURITY DEFINER `apply_suggestion` RPC; bypasses the standard
         // local-then-sync orchestration since the RPC is the only writer
         // permitted to produce author_id != owner_id rows.
         // `getOrNull<SuggestionMergeOperations>()` so local-only mode (no

@@ -46,14 +46,15 @@ class RealtimeSyncManager(
     private val isOnline: StateFlow<Boolean>? = null,
     private val config: RealtimeConfig = RealtimeConfig(),
     private val random: Random = Random.Default,
-    // Phase 37.1 (ADR-013 §8): chart-revisions-<ownerId> 5th channel.
+    // Phase 37.1 (ADR-013 §8): chart-versions-<ownerId> 5th channel.
     // Optional with `null` default so existing test call-sites that don't
-    // exercise revisions continue to construct this manager unchanged.
+    // exercise versions continue to construct this manager unchanged.
     private val localChartVersion: LocalChartVersionDataSource? = null,
-    // Phase 38.1 (ADR-014 §7): pull-requests-incoming-<ownerId> + outgoing
-    // 6th + 7th channels. Optional with `null` default for backward compat
-    // with existing test call-sites — same pattern as chart_revisions above.
-    // The dynamic per-PR comments channel (pull-request-comments-<prId>)
+    // Phase 38.1 (ADR-014 §7): suggestions-incoming-<ownerId> + outgoing
+    // 6th + 7th channels. Optional with `null` default so existing test
+    // call-sites that don't exercise suggestions continue to construct
+    // this manager unchanged — same pattern as chart versions above.
+    // The dynamic per-suggestion comments channel (suggestion-comments-<id>)
     // lands in Phase 38.3 alongside SuggestionDetailScreen and is NOT
     // managed by RealtimeSyncManager — it's opened/closed on view lifecycle.
     private val localSuggestion: LocalSuggestionDataSource? = null,
@@ -268,7 +269,7 @@ class RealtimeSyncManager(
     }
 
     private suspend fun subscribeToChartVersions(ownerId: String) {
-        val handle = channelProvider.createChannel("chart-revisions-$ownerId")
+        val handle = channelProvider.createChannel("chart-versions-$ownerId")
         chartVersionChannel = handle
 
         handle
@@ -279,7 +280,7 @@ class RealtimeSyncManager(
                 handleChartVersionAction(action)
             }.catch { e ->
                 if (e is CancellationException) throw e
-                logger.log(TAG, "Channel flow error on chart_revisions", e)
+                logger.log(TAG, "Channel flow error on chart_versions", e)
                 scheduleRetry(ownerId)
             }.launchIn(scope)
 
@@ -287,15 +288,15 @@ class RealtimeSyncManager(
     }
 
     /**
-     * Outgoing PRs the user authored. Server-side filter `author_id eq ownerId`
-     * narrows the broadcast cleanly — RLS would also restrict to participant
-     * visibility, but with the eq filter the server doesn't even broadcast
-     * incoming PRs to this channel (Realtime publishes through the union of
-     * RLS visibility AND any client filter, so the eq filter is the tighter
-     * constraint here).
+     * Outgoing suggestions the user authored. Server-side filter
+     * `author_id eq ownerId` narrows the broadcast cleanly — RLS would also
+     * restrict to participant visibility, but with the eq filter the server
+     * doesn't even broadcast incoming suggestions to this channel (Realtime
+     * publishes through the union of RLS visibility AND any client filter, so
+     * the eq filter is the tighter constraint here).
      */
     private suspend fun subscribeToSuggestionsOutgoing(ownerId: String) {
-        val handle = channelProvider.createChannel("pull-requests-outgoing-$ownerId")
+        val handle = channelProvider.createChannel("suggestions-outgoing-$ownerId")
         suggestionOutgoingChannel = handle
 
         handle
@@ -306,7 +307,7 @@ class RealtimeSyncManager(
                 handleSuggestionAction(action)
             }.catch { e ->
                 if (e is CancellationException) throw e
-                logger.log(TAG, "Channel flow error on pull_requests outgoing", e)
+                logger.log(TAG, "Channel flow error on suggestions outgoing", e)
                 scheduleRetry(ownerId)
             }.launchIn(scope)
 
@@ -314,21 +315,21 @@ class RealtimeSyncManager(
     }
 
     /**
-     * Incoming PRs targeting any of the user's patterns. Cannot use a single-
-     * eq [ChangeFilter] for "target_pattern_id IN (patterns I own)" — the
-     * filter API only supports equality. Subscribed without a client-side
-     * filter; RLS scopes the broadcast to PRs where the user is participant
-     * (author OR target owner) per migration 016 — the same union the
-     * outgoing channel sees, just differently labeled. The local handler
+     * Incoming suggestions targeting any of the user's patterns. Cannot use a
+     * single-eq [ChangeFilter] for "target_pattern_id IN (patterns I own)" —
+     * the filter API only supports equality. Subscribed without a client-side
+     * filter; RLS scopes the broadcast to suggestions where the user is
+     * participant (author OR target owner) per migration 016 — the same union
+     * the outgoing channel sees, just differently labeled. The local handler
      * upserts unconditionally; the [Suggestion.id] PRIMARY KEY makes
-     * outgoing-PR events arriving on both channels idempotent. Cost: each
-     * outgoing PR change fires once on each channel (2x bandwidth on
-     * outgoing events only); each incoming PR change fires once. Acceptable
-     * given the v1 channel budget — revisit consolidation in Phase 39 if
-     * connection caps become tight.
+     * outgoing-suggestion events arriving on both channels idempotent. Cost:
+     * each outgoing suggestion change fires once on each channel (2x bandwidth
+     * on outgoing events only); each incoming suggestion change fires once.
+     * Acceptable given the v1 channel budget — revisit consolidation in
+     * Phase 39 if connection caps become tight.
      */
     private suspend fun subscribeToSuggestionsIncoming(ownerId: String) {
-        val handle = channelProvider.createChannel("pull-requests-incoming-$ownerId")
+        val handle = channelProvider.createChannel("suggestions-incoming-$ownerId")
         suggestionIncomingChannel = handle
 
         handle
@@ -339,7 +340,7 @@ class RealtimeSyncManager(
                 handleSuggestionAction(action)
             }.catch { e ->
                 if (e is CancellationException) throw e
-                logger.log(TAG, "Channel flow error on pull_requests incoming", e)
+                logger.log(TAG, "Channel flow error on suggestions incoming", e)
                 scheduleRetry(ownerId)
             }.launchIn(scope)
 
@@ -435,19 +436,19 @@ class RealtimeSyncManager(
     }
 
     /**
-     * Revisions are append-only at RLS — the policies in migration 015 permit
+     * Versions are append-only at RLS — the policies in migration 015 permit
      * SELECT + INSERT only. UPDATE events are therefore impossible.
      *
-     * DELETE events DO occur via `ON DELETE CASCADE` on `chart_revisions.pattern_id`:
-     * when a pattern is deleted, Postgres cascades the delete to every revision
+     * DELETE events DO occur via `ON DELETE CASCADE` on `chart_versions.pattern_id`:
+     * when a pattern is deleted, Postgres cascades the delete to every version
      * row and emits a Realtime DELETE event for each. We mirror that to local
-     * by clearing the revision rows whose `pattern_id` matches the deleted
+     * by clearing the version rows whose `pattern_id` matches the deleted
      * pattern. A single CASCADE delete on the pattern fires one DELETE per
-     * revision row — calling `deleteByPatternId` on every event is wasteful
+     * version row — calling `deleteByPatternId` on every event is wasteful
      * but idempotent (subsequent calls on the same `patternId` are no-ops),
      * and avoids tracking which row triggered the cascade. The pattern-side
      * `handlePatternAction` Delete already removes the parent row locally; this
-     * handler is the explicit revision-side cleanup.
+     * handler is the explicit version-side cleanup.
      */
     private suspend fun handleChartVersionAction(action: PostgresAction) {
         val ds = localChartVersion ?: return
@@ -469,24 +470,24 @@ class RealtimeSyncManager(
     }
 
     /**
-     * Pull request Realtime handler (Phase 38.1, ADR-014 §7).
+     * Suggestion Realtime handler (Phase 38.1, ADR-014 §7).
      *
      * INSERT and UPDATE both upsert via the same path — the local
      * [LocalSuggestionDataSource.upsert] uses INSERT OR REPLACE on `id` so
-     * a re-arrived event from the dual-channel subscription (outgoing PR
-     * delivered through both incoming + outgoing channels) is a silent
-     * overwrite with the same row.
+     * a re-arrived event from the dual-channel subscription (outgoing
+     * suggestion delivered through both incoming + outgoing channels) is a
+     * silent overwrite with the same row.
      *
      * DELETE: there is no DELETE policy in migration 016, so application
      * code never produces DELETE events directly. The only deletion path is
      * CASCADE on pattern delete, which Postgres emits as one DELETE event
-     * per cascaded PR row. Each event carries the deleted PR id in the
-     * `old` record, and we clear that single row via [deleteById] — NOT a
-     * bulk-clear by `pattern_id`, because a PR sits at the join of two
-     * patterns (source + target) and each cascade fires its own per-row
-     * event. The chart_revisions handler bulk-clears via `deleteByPatternId`
-     * because a revision's parent is a single pattern; the asymmetry is
-     * deliberate, not an oversight.
+     * per cascaded suggestion row. Each event carries the deleted suggestion
+     * id in the `old` record, and we clear that single row via [deleteById]
+     * — NOT a bulk-clear by `pattern_id`, because a suggestion sits at the
+     * join of two patterns (source + target) and each cascade fires its own
+     * per-row event. The chart_versions handler bulk-clears via
+     * `deleteByPatternId` because a version's parent is a single pattern;
+     * the asymmetry is deliberate, not an oversight.
      */
     private suspend fun handleSuggestionAction(action: PostgresAction) {
         val ds = localSuggestion ?: return

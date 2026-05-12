@@ -20,7 +20,7 @@ class LocalSuggestionDataSource(
     private val prQueries get() = db.suggestionQueries
     private val commentQueries get() = db.suggestionCommentQueries
 
-    // ---- pull_requests ----
+    // ---- suggestions ----
 
     suspend fun getById(id: String): Suggestion? =
         withContext(ioDispatcher) {
@@ -67,9 +67,10 @@ class LocalSuggestionDataSource(
         }
 
     /**
-     * Idempotent INSERT-OR-REPLACE. Used by both the open-PR path and the
-     * Realtime backfill path: a re-applied event simply overwrites with the
-     * same row (PR carries its own updatedAt so consumers can detect drift).
+     * Idempotent INSERT-OR-REPLACE. Used by both the open-suggestion path and
+     * the Realtime backfill path: a re-applied event simply overwrites with
+     * the same row (suggestion carries its own updatedAt so consumers can
+     * detect drift).
      */
     suspend fun upsert(suggestion: Suggestion): Suggestion =
         withContext(ioDispatcher) {
@@ -119,7 +120,7 @@ class LocalSuggestionDataSource(
             prQueries.deleteByPatternId(patternId, patternId)
         }
 
-    // ---- pull_request_comments ----
+    // ---- suggestion_comments ----
 
     suspend fun getCommentById(id: String): SuggestionComment? =
         withContext(ioDispatcher) {

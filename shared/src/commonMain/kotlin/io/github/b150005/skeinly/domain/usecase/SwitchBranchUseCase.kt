@@ -26,8 +26,8 @@ import kotlinx.coroutines.CancellationException
  *
  * Failures:
  * - Unknown `(patternId, branchName)` → `NotFound`.
- * - Branch's `tip_revision_id` doesn't resolve (rare; would indicate a sync
- *   tear between `chart_branches` and `chart_revisions`) → `NotFound`.
+ * - Variation's `tip_revision_id` doesn't resolve (rare; would indicate a
+ *   sync tear between `chart_variations` and `chart_versions`) → `NotFound`.
  * - No tip pointer row exists for the pattern at all → `NotFound`. This
  *   shouldn't happen post-37.1 since `ensureDefaultBranch` only fires when
  *   the chart was created, but the guard surfaces broken invariants

@@ -160,7 +160,7 @@ class SuggestionRepositoryImpl(
                 subscribedPrId = null
             }
 
-            val handle = provider.createChannel("pull-request-comments-$suggestionId")
+            val handle = provider.createChannel("suggestion-comments-$suggestionId")
             commentsChannel = handle
             subscribedPrId = suggestionId
 

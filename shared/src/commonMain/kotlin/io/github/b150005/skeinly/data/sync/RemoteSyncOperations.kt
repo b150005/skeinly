@@ -92,15 +92,16 @@ interface RemoteChartVariationSyncOperations {
 /**
  * Remote write operations for [Suggestion] (ADR-014 §7).
  *
- * INSERT and UPDATE both map to `upsert` — open-PR is the only INSERT path,
- * close-PR is the only UPDATE path, and both are idempotent on `id`.
- * Status → MERGED transitions via the `merge_pull_request` SECURITY DEFINER
- * RPC, NOT through this interface — the RPC is invoked directly by
- * `ApplySuggestionUseCase` (Phase 38.4) and Realtime echoes the resulting
- * PR row back through the local data source.
+ * INSERT and UPDATE both map to `upsert` — open-suggestion is the only
+ * INSERT path, close-suggestion is the only UPDATE path, and both are
+ * idempotent on `id`. Status → APPLIED transitions via the
+ * `apply_suggestion` SECURITY DEFINER RPC, NOT through this interface — the
+ * RPC is invoked directly by `ApplySuggestionUseCase` (Phase 38.4) and
+ * Realtime echoes the resulting suggestion row back through the local data
+ * source.
  *
- * No `delete` — PRs are kept as audit trail. CASCADE on pattern deletion is
- * the only cleanup path server-side.
+ * No `delete` — suggestions are kept as audit trail. CASCADE on pattern
+ * deletion is the only cleanup path server-side.
  */
 interface RemoteSuggestionSyncOperations {
     suspend fun upsert(suggestion: Suggestion): Suggestion
