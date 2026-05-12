@@ -2,6 +2,65 @@
 
 Tracker for the closed-alpha launch readiness audit. Every item below maps to a TODO in the active development session and progresses through Open → In Progress → Confirmed / Action Required.
 
+## Completed Action Items (as of 2026-05-12)
+
+| Action | Commit | Summary |
+|---|---|---|
+| **A14** Encrypt Supabase session tokens at rest | [7712136](https://github.com/b150005/skeinly/commit/7712136) | iOS `KeychainSettings` + Android `EncryptedSharedPreferences` via Koin `named("auth")` Settings; `SettingsSessionManager` wired in `SupabaseModule`. Existing 2 prod users re-authenticate on first launch per pre-v1 breaking-change policy. |
+| **A15** Kill Switch / Maintenance mode | [e1e5b66](https://github.com/b150005/skeinly/commit/e1e5b66) | Migration 029 adds `maintenance_mode_active` + `maintenance_message_{en,ja}` to `public.app_config`. New `MaintenanceScreen` Composable; `ForceUpdateRequirement` renamed to `AppGateRequirement` with new `MaintenanceMode` variant that takes priority over `UpdateRequired`. |
+| **A19** ToS DMCA safe-harbor (Apple 5.2 / Play UGC) | [e3dca48](https://github.com/b150005/skeinly/commit/e3dca48) | ToS §6.5 with 17 U.S.C. § 512 elements + counter-notification + repeat-infringer policy + designated agent (skeinly.app@gmail.com). EN + JA. |
+| **A19a** Privacy Policy subprocessor table | [e3dca48](https://github.com/b150005/skeinly/commit/e3dca48) | 8-row subprocessor disclosure (Supabase, RevenueCat, Sentry, PostHog, Apple APNs, Google FCM, GitHub, Apple/Google IAP) replacing the prior single-line reference. EN + JA. |
+| **A21** Data retention table | [e3dca48](https://github.com/b150005/skeinly/commit/e3dca48) | Per-data-type retention periods + deletion triggers (9 rows). EN + JA. |
+| **A30** Subscription management deep link | [2a5e74b](https://github.com/b150005/skeinly/commit/2a5e74b) | `SubscriptionManagementLauncher` expect/actual; iOS opens `https://apps.apple.com/account/subscriptions`, Android opens `market://account/subscriptions?package=...` with web fallback. Settings → Manage Subscription row in both Compose + SwiftUI. |
+| **A34** In-app Contact Support entry | [a8a94df](https://github.com/b150005/skeinly/commit/a8a94df) | `SupportContactLauncher` expect/actual + pure `composeSupportMailtoUrl()` URL composer with RFC 6068-compliant percent encoding. Settings → Contact Support row opens mailto: with diagnostic context (app version / OS / device / locale) pre-filled. +13 commonTest. |
+| **A35** Help / FAQ pages + Settings link | [d6f07db](https://github.com/b150005/skeinly/commit/d6f07db) | New `docs/public/help/index.html` (EN + JA) with 10+ Q&A covering pattern creation, sharing, projects, Suggestions, Pro subscribe/cancel, account deletion, bug reporting, push permission, locale propagation, offline mode, language switch. Settings → Help & FAQ link in both Compose + SwiftUI. |
+
+## Outstanding Action Required Items
+
+- **A1 / A5** UGC moderation (Report content + Block user + filter) — big scope, multiple sub-slices
+- **A2** Review demo account + reproduction docs — user-side seed data + App Store / Play Console wiring
+- **A3 / A8** Paywall pre-purchase disclosure audit (Apple 3.1.2(c) + Play subscription policy) — verify existing F1 Pro paywall ships 5-item checklist
+- **A4** Symbol catalog JIS provenance audit — knitter agent walk-through
+- **A6** Play Console Data Safety form — user-side (per A6 matrix in §2.1)
+- **A7** Web-based account deletion URL — `docs/public/account-deletion/` form
+- **A9 / V13** Enable HIBP leaked-password protection in Supabase Dashboard — user-side toggle
+- **A10** Lock `search_path` on 4 SECURITY DEFINER functions — migration
+- **A11** Revoke EXECUTE on internal SECURITY DEFINER functions from anon — migration
+- **A12** Tighten `comments` SELECT policy `share_token IS NOT NULL` arm — migration
+- **A13** Tighten `avatars` storage bucket SELECT policy — RLS policy update
+- **A16** iOS Universal Links — entitlement + AASA file + Apple Developer provisioning profile regen
+- **A17** Supabase PITR / DR drill SOP — operational doc
+- **A18** Migration rollback procedure doc — `docs/en/ops/release.md`
+- **A20** GDPR / CCPA data portability path — email-based SOP or in-app Export button
+- **A22** ATT decision rationale doc — for App Store reviewer
+- **A23-A27** a11y audits (TalkBack/VoiceOver, Dynamic Type, Reduce Motion, color contrast, touch targets, focus order, states)
+- **A28** Sentry crash-free SLO target alert
+- **A29** Play Vitals + Sentry ANR alerts wire
+- **A31** Knitter-agent symbol catalog correctness review
+- **A32** Spot-check terminology on key surfaces
+- **A33** OSS attribution screen + Gradle license report
+- **A36** User-prioritized golden-path verification
+
+## Outstanding Needs Verification Items (user-side)
+
+- **V1** Privacy Policy link accessible from within the app (in addition to App Store Connect metadata)
+- **V2** ATT classification of PostHog / Sentry per current DPA
+- **V3** iOS binary scan to confirm no private API selectors
+- **V4** App Store Connect Review Notes content (PostHog / Sentry opt-in, bug-report proxy, BuildFlags.isBeta gating)
+- **V5** Read Apple Developer Program License Agreement Schedule 2 for paywall string requirements
+- **V6** Set Age Rating to 4+ in App Store Connect
+- **V7** Play Console target audience = Adults (avoid Families / COPPA)
+- **V8** Play Console IARC content rating questionnaire — Everyone target
+- **V9** Privacy Policy in-app link verification
+- **V10** Android `assetlinks.json` deployment verification — already confirmed at `https://b150005.github.io/.well-known/assetlinks.json` per Section 25.1
+- **V11** Subscription cancellation deep link verification — closed by A30
+- **V12** `shares.share_token` entropy audit (cryptographic RNG verification)
+- **V13-V16** Supabase Auth Dashboard verifications (HIBP, password policy, rate limits, session timeout)
+- **V17** Supabase Pro tier verification for PITR
+- **V18** Apple Sandbox + Play License tester registration
+- **V19-V21** App Store Connect + Play Console listing setup + demo account
+- **V22** Family Sharing enable on Pro subscription
+
 Created 2026-05-12 after the user listed pre-launch concerns (Kill Switch, security audit, deep link verification, privacy compliance, accessibility, store policies, crash/ANR, etc.) and explicitly requested no-cost-cutting pursuit of the best possible v1.0 outcome.
 
 > **Discipline**: Every item below must be Confirmed (with code/config citation) OR have a follow-up Action Required line with owner + target slice. No item is closed by hand-wave.
