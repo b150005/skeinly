@@ -130,41 +130,36 @@ data class Chart(
     val extents: ChartExtents,
     val layers: List<ChartLayer>,
     @SerialName("revision_id") val revisionId: String,
-    // Phase 36.2 audit (ADR-012 §2): no default value, so kotlinx-serialization
-    // always emits this field on the wire regardless of `encodeDefaults`. That
-    // structurally protects against the silent-overwrite-to-null footgun that
-    // Phase 36.1 fixed on `Pattern.parentPatternId` via `@EncodeDefault(NEVER)`
-    // — `Pattern` had `= null` as a backward-compat default for legacy clients,
-    // `Chart.parentRevisionId` has been a required field since
-    // Phase 29 so legacy clients always carried it. Do NOT add a default here.
+    // No default value: kotlinx-serialization emits this field on the wire
+    // regardless of `encodeDefaults`. That protects against the silent
+    // overwrite-to-null footgun that `Pattern.parentPatternId` guards against
+    // via `@EncodeDefault(NEVER)`. Do NOT add a default here.
     //
-    // Asymmetry note for the next reader: the neighboring `craftType` /
-    // `readingConvention` fields below DO carry defaults. Those are deliberate
-    // schema-v1 backward-compat anchors — under `encodeDefaults = false` (the
-    // 1.11.0 runtime default used by `SyncModule.kt:34`'s Json instance), a v2
-    // chart whose `craftType == KNIT` serializes WITHOUT the field, and a v1
-    // remote row missing the field deserializes back to `KNIT` via the same
-    // default. The round-trip is symmetric and intentional. Do NOT
-    // `@EncodeDefault(NEVER)`-annotate those — that would change nothing for
-    // them (they're already elided when matching the default) but would
-    // entrench the asymmetry as if it were a footgun fix; it isn't.
+    // `craftType` / `readingConvention` below DO carry defaults — those are
+    // UX choices (KNIT + KNIT_FLAT are the dominant case), and under
+    // `encodeDefaults = false` (the default of `SyncModule.kt:34`'s Json
+    // instance) they round-trip symmetrically (a `KNIT` chart serializes
+    // without the field, a row missing the field deserializes back to
+    // `KNIT`). Do NOT annotate them with `@EncodeDefault(NEVER)` — they
+    // already elide when matching the default; the annotation would entrench
+    // the asymmetry as if it were a footgun fix.
     @SerialName("parent_revision_id") val parentRevisionId: String?,
     @SerialName("content_hash") val contentHash: String,
     @SerialName("created_at") val createdAt: Instant,
     @SerialName("updated_at") val updatedAt: Instant,
-    // Phase 32.1 (schema v2): craft + reading metadata. Persisted inside the
-    // document envelope. Defaults preserve behavior for any schema v1 row on
-    // first read — the value is promoted to v2 on the next save.
+    // Craft + reading metadata. Persisted inside the document envelope. The
+    // defaults are the UX-dominant case (knit + reading rows alternately
+    // L→R / R→L), used both for new charts that did not specify and for any
+    // legacy row that lacks the keys.
     @SerialName("craft_type") val craftType: CraftType = CraftType.KNIT,
     @SerialName("reading_convention") val readingConvention: ReadingConvention = ReadingConvention.KNIT_FLAT,
 ) {
     companion object {
         /**
-         * Document-envelope schema version.
-         * - v1 (Phase 29): `extents` + `layers` only.
-         * - v2 (Phase 32.1): adds `craft_type` + `reading_convention`. Backward
-         *   compatible — v1 rows deserialize with defaults and are promoted to
-         *   v2 on the next save.
+         * Document-envelope schema version. Bumped at Phase 32.1 to add
+         * `craft_type` + `reading_convention`. Rows missing those keys
+         * deserialize with defaults and the value is promoted to the
+         * current version on the next save.
          */
         const val CURRENT_SCHEMA_VERSION: Int = 2
 
