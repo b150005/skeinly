@@ -58,6 +58,9 @@
     <!-- Pre-alpha A30 — Subscription management deep link in Settings → Account. -->
     <string name="action_manage_subscription">サブスクリプションの管理</string>
     <string name="body_manage_subscription_helper">プラットフォームストアで Skeinly Pro サブスクリプションを確認・変更・解約できます。</string>
+    <!-- Pre-alpha A34 — Contact Support entry in Settings → About / Legal. Distinct from beta-section "Send Feedback" (bug report). -->
+    <string name="action_contact_support">サポートに連絡</string>
+    <string name="body_contact_support_helper">アカウントに関するお問い合わせ、返金依頼、DMCA 通知などはこちらから Skeinly チームへメールでご連絡ください。</string>
     <string name="dialog_change_password_title">パスワードを変更</string>
     <string name="dialog_change_email_title">メールアドレスを変更</string>
     <string name="label_new_password">新しいパスワード</string>

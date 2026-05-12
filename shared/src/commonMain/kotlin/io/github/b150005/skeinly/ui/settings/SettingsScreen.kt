@@ -15,6 +15,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Star
@@ -57,6 +58,7 @@ import io.github.b150005.skeinly.generated.resources.action_back
 import io.github.b150005.skeinly.generated.resources.action_cancel
 import io.github.b150005.skeinly.generated.resources.action_change_email
 import io.github.b150005.skeinly.generated.resources.action_change_password
+import io.github.b150005.skeinly.generated.resources.action_contact_support
 import io.github.b150005.skeinly.generated.resources.action_delete
 import io.github.b150005.skeinly.generated.resources.action_delete_account
 import io.github.b150005.skeinly.generated.resources.action_manage_subscription
@@ -65,6 +67,7 @@ import io.github.b150005.skeinly.generated.resources.action_save
 import io.github.b150005.skeinly.generated.resources.action_send_feedback
 import io.github.b150005.skeinly.generated.resources.action_sign_out
 import io.github.b150005.skeinly.generated.resources.action_terms_of_service
+import io.github.b150005.skeinly.generated.resources.body_contact_support_helper
 import io.github.b150005.skeinly.generated.resources.body_delete_account_warning
 import io.github.b150005.skeinly.generated.resources.body_diagnostic_data_explanation
 import io.github.b150005.skeinly.generated.resources.body_manage_subscription_helper
@@ -132,6 +135,12 @@ fun SettingsScreen(
     // injected via Koin for production; tests can pass a stub. Same DI
     // pattern as `storeLauncher` in `ForceUpdateGate`.
     subscriptionLauncher: io.github.b150005.skeinly.platform.SubscriptionManagementLauncher = koinInject(),
+    // Pre-alpha A34 — opens mailto: support composer with diagnostic
+    // pre-fill. Same DI pattern.
+    supportContactLauncher: io.github.b150005.skeinly.platform.SupportContactLauncher = koinInject(),
+    // Pre-alpha A34 — needed to pull the diagnostic context fields into
+    // the mailto pre-fill.
+    deviceContext: io.github.b150005.skeinly.platform.DeviceContextProvider = koinInject(),
 ) {
     val state by viewModel.state.collectAsState()
     val notificationState by notificationViewModel.state.collectAsState()
@@ -317,6 +326,28 @@ fun SettingsScreen(
                             .clickable(role = Role.Button) {
                                 uriHandler.openUri(URL_TERMS_OF_SERVICE)
                             }.testTag("termsOfServiceButton"),
+                )
+
+                // Pre-alpha A34 — Contact Support row. Opens the user's
+                // default mail composer with a mailto: URL pre-filled
+                // with the support email + diagnostic context block
+                // (app version / OS / device / locale). Distinct from
+                // the Beta-section "Send Feedback" entry: this is the
+                // general-purpose support channel (account questions,
+                // refunds, DMCA notices), Send Feedback is for
+                // structured bug reports.
+                ListItem(
+                    headlineContent = { Text(stringResource(Res.string.action_contact_support)) },
+                    supportingContent = {
+                        Text(stringResource(Res.string.body_contact_support_helper))
+                    },
+                    leadingContent = { Icon(Icons.Filled.Email, contentDescription = null) },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable(role = Role.Button) {
+                                supportContactLauncher.openSupportEmail(deviceContext)
+                            }.testTag("contactSupportButton"),
                 )
 
                 // Phase 41.3b (ADR-016 §5.1) — Skeinly Pro section. Always-on

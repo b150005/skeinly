@@ -11,6 +11,7 @@ import io.github.b150005.skeinly.notifications.PushTokenRegistrar
 import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.platform.StoreUrlLauncher
 import io.github.b150005.skeinly.platform.SubscriptionManagementLauncher
+import io.github.b150005.skeinly.platform.SupportContactLauncher
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
@@ -72,4 +73,8 @@ val platformModule =
         // app. Apple HIG-recommended; mirrors the Android binding for
         // symmetry across platforms.
         single { SubscriptionManagementLauncher() }
+        // Pre-alpha A34 — opens mail composer with mailto: pre-filled
+        // with support email + diagnostic context (app version, OS,
+        // device, locale). Settings → Help & Support → Contact Support.
+        single { SupportContactLauncher() }
     }

@@ -222,6 +222,40 @@
         }
       }
     },
+    "action_contact_support": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact Support"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サポートに連絡"
+          }
+        }
+      }
+    },
+    "body_contact_support_helper": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Email the Skeinly team for account questions, refund requests, DMCA notices, or other support."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アカウントに関するお問い合わせ、返金依頼、DMCA 通知などはこちらから Skeinly チームへメールでご連絡ください。"
+          }
+        }
+      }
+    },
     "action_change_password": {
       "extractionState": "manual",
       "localizations": {
