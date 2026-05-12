@@ -66,6 +66,8 @@ class ChartHistoryViewModelTest {
             contentHash = "h1-test",
             commitMessage = commitMessage,
             createdAt = Instant.parse(createdAtIso),
+            craftType = io.github.b150005.skeinly.domain.model.CraftType.KNIT,
+            readingConvention = io.github.b150005.skeinly.domain.model.ReadingConvention.KNIT_FLAT,
         )
 
     private fun createViewModel(patternId: String = "pat-1"): ChartHistoryViewModel =

@@ -89,6 +89,8 @@ class ApplySuggestionUseCaseTest {
             contentHash = "h1-foo",
             createdAt = now,
             updatedAt = now,
+            craftType = io.github.b150005.skeinly.domain.model.CraftType.KNIT,
+            readingConvention = io.github.b150005.skeinly.domain.model.ReadingConvention.KNIT_FLAT,
         )
 
     private class FakeMergeOps(
@@ -349,6 +351,8 @@ class ApplySuggestionUseCaseTest {
                     contentHash = "h-a",
                     createdAt = now,
                     updatedAt = now,
+                    craftType = io.github.b150005.skeinly.domain.model.CraftType.KNIT,
+                    readingConvention = io.github.b150005.skeinly.domain.model.ReadingConvention.KNIT_FLAT,
                 )
             // Theirs adds (1, 0); mine adds (2, 0) — disjoint, both auto.
             val theirs =
@@ -430,6 +434,8 @@ class ApplySuggestionUseCaseTest {
                     contentHash = "h-a",
                     createdAt = now,
                     updatedAt = now,
+                    craftType = io.github.b150005.skeinly.domain.model.CraftType.KNIT,
+                    readingConvention = io.github.b150005.skeinly.domain.model.ReadingConvention.KNIT_FLAT,
                 )
             // Theirs removes L2 entirely.
             val theirs =

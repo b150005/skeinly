@@ -62,22 +62,7 @@ class ChartMapperTest {
     )
 
     @Test
-    fun `v1 envelope without craft_type decodes to KNIT and KNIT_FLAT`() {
-        val v1Document =
-            """
-            {
-              "extents": { "type": "rect", "min_x": 0, "max_x": 1, "min_y": 0, "max_y": 0 },
-              "layers": []
-            }
-            """.trimIndent()
-        val domain = entity(v1Document).toDomain(json)
-
-        assertEquals(CraftType.KNIT, domain.craftType)
-        assertEquals(ReadingConvention.KNIT_FLAT, domain.readingConvention)
-    }
-
-    @Test
-    fun `v2 envelope preserves explicit craft_type and reading_convention`() {
+    fun `envelope preserves explicit craft_type and reading_convention`() {
         val v2Document =
             """
             {
@@ -121,25 +106,6 @@ class ChartMapperTest {
 
         assertEquals(CraftType.CROCHET, restored.craftType)
         assertEquals(ReadingConvention.ROUND, restored.readingConvention)
-    }
-
-    @Test
-    fun `envelope with explicit JSON null values falls back to defaults`() {
-        val envelopeWithNulls =
-            """
-            {
-              "extents": { "type": "rect", "min_x": 0, "max_x": 1, "min_y": 0, "max_y": 0 },
-              "layers": [],
-              "craft_type": null,
-              "reading_convention": null
-            }
-            """.trimIndent()
-        val domain = entity(envelopeWithNulls).toDomain(json)
-
-        // Explicit JSON null must not throw — it should collapse to the defaults,
-        // matching the behavior of a missing key.
-        assertEquals(CraftType.KNIT, domain.craftType)
-        assertEquals(ReadingConvention.KNIT_FLAT, domain.readingConvention)
     }
 
     @Test

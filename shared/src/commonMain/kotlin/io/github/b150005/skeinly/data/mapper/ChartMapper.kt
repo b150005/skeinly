@@ -8,22 +8,15 @@ import io.github.b150005.skeinly.domain.model.CoordinateSystem
 import io.github.b150005.skeinly.domain.model.CraftType
 import io.github.b150005.skeinly.domain.model.ReadingConvention
 import io.github.b150005.skeinly.domain.model.StorageVariant
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
 import kotlin.time.Instant
 
 /**
  * Internal JSON body carried inside the SQLite `document` column.
- * Contains only the document-scoped fields; row-level fields (id, ownerId, timestamps,
- * revisionId, etc.) live in their own columns to keep them queryable without jsonb.
- *
- * `craft_type` + `reading_convention` (added at schema v2 / Phase 32.1) read
- * with `decodeOrDefault` so a row that omits the key — or that carries an
- * explicit JSON `null` — deserializes to `CraftType.KNIT` /
- * `ReadingConvention.KNIT_FLAT` rather than throwing.
+ * Contains only the document-scoped fields; row-level fields (id, ownerId,
+ * timestamps, revisionId, etc.) live in their own columns to keep them
+ * queryable without jsonb.
  */
 private object DocumentEnvelope {
     val extentsSerializer = ChartExtents.serializer()
@@ -39,18 +32,6 @@ private data class DocumentEnvelopeValues(
     val readingConvention: ReadingConvention,
 )
 
-/**
- * Decode an optional envelope field, returning [default] for both missing
- * keys AND explicit JSON `null` values. Bare `json.decodeFromJsonElement`
- * on a non-nullable serializer throws on `JsonNull` — this helper keeps
- * both absence shapes symmetric.
- */
-private fun <T> JsonElement?.decodeOrDefault(
-    json: Json,
-    serializer: KSerializer<T>,
-    default: T,
-): T = if (this == null || this is JsonNull) default else json.decodeFromJsonElement(serializer, this)
-
 internal fun ChartEntity.toDomain(json: Json): Chart {
     val envelope =
         json.parseToJsonElement(document).let { element ->
@@ -59,20 +40,14 @@ internal fun ChartEntity.toDomain(json: Json): Chart {
                     ?: error("Chart.document is not a JSON object")
             val extentsElement = obj["extents"] ?: error("Chart.document missing 'extents'")
             val layersElement = obj["layers"] ?: error("Chart.document missing 'layers'")
+            val craftTypeElement = obj["craft_type"] ?: error("Chart.document missing 'craft_type'")
+            val readingConventionElement =
+                obj["reading_convention"] ?: error("Chart.document missing 'reading_convention'")
             val extents = json.decodeFromJsonElement(DocumentEnvelope.extentsSerializer, extentsElement)
             val layers = json.decodeFromJsonElement(DocumentEnvelope.layersSerializer, layersElement)
-            val craftType =
-                obj["craft_type"].decodeOrDefault(
-                    json,
-                    DocumentEnvelope.craftTypeSerializer,
-                    CraftType.KNIT,
-                )
+            val craftType = json.decodeFromJsonElement(DocumentEnvelope.craftTypeSerializer, craftTypeElement)
             val readingConvention =
-                obj["reading_convention"].decodeOrDefault(
-                    json,
-                    DocumentEnvelope.readingConventionSerializer,
-                    ReadingConvention.KNIT_FLAT,
-                )
+                json.decodeFromJsonElement(DocumentEnvelope.readingConventionSerializer, readingConventionElement)
             DocumentEnvelopeValues(extents, layers, craftType, readingConvention)
         }
     return Chart(

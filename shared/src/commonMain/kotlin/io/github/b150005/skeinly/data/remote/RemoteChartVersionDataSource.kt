@@ -24,8 +24,8 @@ import kotlin.time.Instant
 private data class RevisionDocumentPayload(
     val extents: ChartExtents,
     val layers: List<ChartLayer>,
-    @SerialName("craft_type") val craftType: CraftType = CraftType.KNIT,
-    @SerialName("reading_convention") val readingConvention: ReadingConvention = ReadingConvention.KNIT_FLAT,
+    @SerialName("craft_type") val craftType: CraftType,
+    @SerialName("reading_convention") val readingConvention: ReadingConvention,
 )
 
 @Serializable

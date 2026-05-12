@@ -134,33 +134,18 @@ data class Chart(
     // regardless of `encodeDefaults`. That protects against the silent
     // overwrite-to-null footgun that `Pattern.parentPatternId` guards against
     // via `@EncodeDefault(NEVER)`. Do NOT add a default here.
-    //
-    // `craftType` / `readingConvention` below DO carry defaults — those are
-    // UX choices (KNIT + KNIT_FLAT are the dominant case), and under
-    // `encodeDefaults = false` (the default of `SyncModule.kt:34`'s Json
-    // instance) they round-trip symmetrically (a `KNIT` chart serializes
-    // without the field, a row missing the field deserializes back to
-    // `KNIT`). Do NOT annotate them with `@EncodeDefault(NEVER)` — they
-    // already elide when matching the default; the annotation would entrench
-    // the asymmetry as if it were a footgun fix.
     @SerialName("parent_revision_id") val parentRevisionId: String?,
     @SerialName("content_hash") val contentHash: String,
     @SerialName("created_at") val createdAt: Instant,
     @SerialName("updated_at") val updatedAt: Instant,
-    // Craft + reading metadata. Persisted inside the document envelope. The
-    // defaults are the UX-dominant case (knit + reading rows alternately
-    // L→R / R→L), used both for new charts that did not specify and for any
-    // legacy row that lacks the keys.
-    @SerialName("craft_type") val craftType: CraftType = CraftType.KNIT,
-    @SerialName("reading_convention") val readingConvention: ReadingConvention = ReadingConvention.KNIT_FLAT,
+    // Craft + reading metadata. Persisted inside the document envelope.
+    // Required at construction — every chart has an authored craft type
+    // and a reading direction.
+    @SerialName("craft_type") val craftType: CraftType,
+    @SerialName("reading_convention") val readingConvention: ReadingConvention,
 ) {
     companion object {
-        /**
-         * Document-envelope schema version. Bumped at Phase 32.1 to add
-         * `craft_type` + `reading_convention`. Rows missing those keys
-         * deserialize with defaults and the value is promoted to the
-         * current version on the next save.
-         */
+        /** Document-envelope schema version. */
         const val CURRENT_SCHEMA_VERSION: Int = 2
 
         /**

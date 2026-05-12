@@ -797,6 +797,8 @@ class ProjectDetailViewModelTest {
             contentHash = "h1-00000000",
             createdAt = Clock.System.now(),
             updatedAt = Clock.System.now(),
+            craftType = io.github.b150005.skeinly.domain.model.CraftType.KNIT,
+            readingConvention = io.github.b150005.skeinly.domain.model.ReadingConvention.KNIT_FLAT,
         )
 
     private fun segment(
@@ -1035,6 +1037,8 @@ class ProjectDetailViewModelTest {
                     contentHash = "h1-00000000",
                     createdAt = Clock.System.now(),
                     updatedAt = Clock.System.now(),
+                    craftType = io.github.b150005.skeinly.domain.model.CraftType.CROCHET,
+                    readingConvention = io.github.b150005.skeinly.domain.model.ReadingConvention.ROUND,
                 )
             chartRepo.seed(polarChart)
             val segmentRepo = FakeProjectSegmentRepository()

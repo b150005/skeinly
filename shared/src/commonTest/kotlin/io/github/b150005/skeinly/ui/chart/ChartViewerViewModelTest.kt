@@ -86,6 +86,8 @@ class ChartViewerViewModelTest {
             contentHash = "h",
             createdAt = now,
             updatedAt = now,
+            craftType = io.github.b150005.skeinly.domain.model.CraftType.KNIT,
+            readingConvention = io.github.b150005.skeinly.domain.model.ReadingConvention.KNIT_FLAT,
         )
 
     private fun makeViewModel(
@@ -1051,6 +1053,8 @@ private class ForkChartVersionFake(
                 commitMessage = null,
                 contentHash = "h",
                 createdAt = Instant.parse("2026-04-26T00:00:00Z"),
+                craftType = io.github.b150005.skeinly.domain.model.CraftType.KNIT,
+                readingConvention = io.github.b150005.skeinly.domain.model.ReadingConvention.KNIT_FLAT,
             )
         } else {
             null
