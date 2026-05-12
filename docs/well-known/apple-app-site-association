@@ -1,0 +1,19 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["TEAMID_PLACEHOLDER.io.github.b150005.skeinly"],
+        "components": [
+          {
+            "/": "/pull-request/*",
+            "comment": "Suggestion detail deep link (Phase 38 / Phase 24.5 parsePushRoute)"
+          },
+          {
+            "/": "/skeinly/pull-request/*",
+            "comment": "Same deep link served under Project Pages base path"
+          }
+        ]
+      }
+    ]
+  }
+}

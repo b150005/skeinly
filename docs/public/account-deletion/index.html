@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Deletion - Skeinly</title>
+  <link rel="icon" type="image/x-icon" href="../favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+  <link rel="manifest" href="../site.webmanifest">
+  <meta property="og:image" content="../og.png">
+  <style>
+    :root {
+      --color-bg: #faf9f7;
+      --color-text: #2d2a26;
+      --color-accent: #7B61FF;
+      --color-muted: #6b6560;
+      --color-border: #e8e4df;
+      --color-warn-bg: #fff4e6;
+      --color-warn-border: #ffb84d;
+      --max-width: 680px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: var(--color-text);
+      background: var(--color-bg);
+      line-height: 1.7;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    main {
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .subtitle {
+      color: var(--color-muted);
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
+    }
+
+    h2 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-top: 2rem;
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    p { margin-bottom: 0.75rem; }
+
+    ul, ol {
+      margin-left: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    li { margin-bottom: 0.35rem; }
+
+    strong { font-weight: 600; }
+
+    code {
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.9em;
+      background: #efeae3;
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+    }
+
+    a {
+      color: var(--color-accent);
+      text-decoration: none;
+    }
+
+    a:hover { text-decoration: underline; }
+
+    .warning {
+      margin: 1.5rem 0;
+      padding: 1rem 1.25rem;
+      background: var(--color-warn-bg);
+      border: 1px solid var(--color-warn-border);
+      border-radius: 8px;
+    }
+
+    .contact {
+      margin-top: 2rem;
+      padding: 1rem 1.25rem;
+      background: #fff;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+    }
+
+    .button {
+      display: inline-block;
+      margin-top: 0.5rem;
+      padding: 0.6rem 1.25rem;
+      background: var(--color-accent);
+      color: #fff;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    .button:hover { text-decoration: none; opacity: 0.9; }
+
+    .footer-note {
+      margin-top: 2rem;
+      color: var(--color-muted);
+      font-size: 0.85rem;
+      font-style: italic;
+    }
+
+    .lang-switch {
+      text-align: right;
+      margin-bottom: 1rem;
+      font-size: 0.85rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.75rem 0 1rem;
+      font-size: 0.95rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    th {
+      font-weight: 600;
+      background: #f3eee7;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="lang-switch">
+      <a href="../privacy-policy/">Privacy Policy</a> &middot; <a href="../terms-of-service/">Terms of Service</a> &middot; <a href="../help/">Help</a> &middot; <a href="../ja/account-deletion/">日本語</a>
+    </div>
+    <h1>Account Deletion</h1>
+    <p class="subtitle">Last updated: 2026-05-12</p>
+
+    <p>You can delete your Skeinly account at any time. The fastest way is from within the app — the in-app flow runs the deletion as your authenticated session, so there is no waiting period and no manual identity verification. This page also describes a web-based fallback for cases where you cannot access the app.</p>
+
+    <h2>Option 1 — Delete from the app (recommended)</h2>
+
+    <ol>
+      <li>Open Skeinly on your phone.</li>
+      <li>Tap <strong>Settings</strong> (gear icon in the navigation bar).</li>
+      <li>Scroll to <strong>Account</strong>.</li>
+      <li>Tap <strong>Delete Account</strong>.</li>
+      <li>Read the confirmation dialog, then confirm.</li>
+    </ol>
+
+    <p>Your account is deleted immediately. You will be signed out and the app returns to the sign-in screen.</p>
+
+    <h2>Option 2 — Web-based deletion request</h2>
+
+    <p>Use this option only if you cannot sign in to the app (lost device, forgotten password, etc.). The web flow requires manual identity verification by our operator and takes up to 7 calendar days.</p>
+
+    <ol>
+      <li>Send an email to <a href="mailto:skeinly.app@gmail.com?subject=Account%20Deletion%20Request&amp;body=I%20am%20requesting%20deletion%20of%20my%20Skeinly%20account.%0A%0AAccount%20email%3A%20%3Cthe%20email%20you%20used%20to%20sign%20up%3E%0ADisplay%20name%20(if%20remembered)%3A%20%3Coptional%3E%0AApproximate%20signup%20date%3A%20%3Coptional%3E">skeinly.app@gmail.com</a> with the subject line <code>Account Deletion Request</code>.</li>
+      <li>Send the email <strong>from the email address associated with your Skeinly account</strong>. This is the identity verification step — we cannot process a deletion request from a different address (per GDPR Article 12(6)).</li>
+      <li>We will reply within 7 calendar days confirming the deletion. If we cannot verify your identity (e.g., the From address does not match any Skeinly account), we will reply asking for a verifiable channel.</li>
+    </ol>
+
+    <p style="text-align: center;">
+      <a class="button" href="mailto:skeinly.app@gmail.com?subject=Account%20Deletion%20Request&amp;body=I%20am%20requesting%20deletion%20of%20my%20Skeinly%20account.%0A%0AAccount%20email%3A%20%3Cthe%20email%20you%20used%20to%20sign%20up%3E%0ADisplay%20name%20(if%20remembered)%3A%20%3Coptional%3E%0AApproximate%20signup%20date%3A%20%3Coptional%3E">Email a deletion request</a>
+    </p>
+
+    <h2>What gets deleted</h2>
+
+    <p>When your account is deleted, the following data is removed from Skeinly's systems:</p>
+
+    <table>
+      <thead>
+        <tr><th>Data type</th><th>Removal</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Account record (email, sign-in metadata)</td><td>Immediate</td></tr>
+        <tr><td>Profile (display name, bio, avatar)</td><td>Immediate (cascades)</td></tr>
+        <tr><td>Patterns, projects, progress, charts, variations</td><td>Immediate (cascades)</td></tr>
+        <tr><td>Suggestions, comments, activities you authored</td><td>Immediate (cascades)</td></tr>
+        <tr><td>Shares (from you and to you)</td><td>Immediate (cascades)</td></tr>
+        <tr><td>Push notification tokens</td><td>Immediate (cascades)</td></tr>
+        <tr><td>Subscription record (Skeinly side)</td><td>Immediate</td></tr>
+        <tr><td>Avatar image file (Skeinly Storage)</td><td>Immediate</td></tr>
+        <tr><td>Sentry / PostHog data (if you opted in)</td><td>Anonymous &mdash; you may request removal directly from Sentry / PostHog using your anonymous install UUID</td></tr>
+        <tr><td>Apple App Store / Google Play purchase history</td><td>Out of Skeinly's control &mdash; managed by Apple / Google; you may request removal directly from them</td></tr>
+        <tr><td>RevenueCat subscription analytics</td><td>Out of Skeinly's direct control; contact RevenueCat support if you want their records purged</td></tr>
+        <tr><td>GitHub Issues filed via in-app bug report</td><td>Visible publicly at <a href="https://github.com/b150005/skeinly/issues">github.com/b150005/skeinly/issues</a>; request deletion individually if needed</td></tr>
+        <tr><td>Supabase database backups</td><td>Auto-expire per 7-day PITR retention</td></tr>
+      </tbody>
+    </table>
+
+    <div class="warning">
+      <p><strong>Deletion is permanent.</strong> Once your account is deleted, your patterns, projects, and progress cannot be recovered. If you have a pending Pro subscription, cancel it from Apple Subscriptions or Google Play before deletion to stop future charges (deleting the Skeinly account does NOT cancel Apple/Google IAP subscriptions).</p>
+    </div>
+
+    <h2>Cancel your Pro subscription separately (if applicable)</h2>
+
+    <p>Deleting your Skeinly account does NOT automatically cancel your Apple App Store or Google Play subscription. Cancel directly with the store before (or after) deleting your account:</p>
+
+    <ul>
+      <li><strong>iOS</strong>: <a href="https://apps.apple.com/account/subscriptions">apps.apple.com/account/subscriptions</a> or Settings → Apple ID → Subscriptions on the device.</li>
+      <li><strong>Android</strong>: <a href="https://play.google.com/store/account/subscriptions">play.google.com/store/account/subscriptions</a> or Play Store → Profile → Payments &amp; subscriptions.</li>
+    </ul>
+
+    <h2>If you change your mind</h2>
+
+    <p>Once an account is deleted, it cannot be restored. You are free to sign up again with the same email address &mdash; this will create a new account with no link to the deleted one.</p>
+
+    <div class="contact">
+      <p><strong>Questions or issues with deletion?</strong> Email <a href="mailto:skeinly.app@gmail.com">skeinly.app@gmail.com</a>.</p>
+    </div>
+
+    <p class="footer-note">Cross-reference: <a href="../privacy-policy/">Privacy Policy</a> &middot; <a href="../terms-of-service/">Terms of Service</a></p>
+  </main>
+</body>
+</html>

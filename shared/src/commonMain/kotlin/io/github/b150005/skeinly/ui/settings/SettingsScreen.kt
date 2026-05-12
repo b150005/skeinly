@@ -64,6 +64,7 @@ import io.github.b150005.skeinly.generated.resources.action_delete
 import io.github.b150005.skeinly.generated.resources.action_delete_account
 import io.github.b150005.skeinly.generated.resources.action_help_faq
 import io.github.b150005.skeinly.generated.resources.action_manage_subscription
+import io.github.b150005.skeinly.generated.resources.action_open_source_licenses
 import io.github.b150005.skeinly.generated.resources.action_privacy_policy
 import io.github.b150005.skeinly.generated.resources.action_save
 import io.github.b150005.skeinly.generated.resources.action_send_feedback
@@ -112,6 +113,13 @@ private const val URL_TERMS_OF_SERVICE = "https://b150005.github.io/skeinly/term
 // the "日本語" link in the page header to switch — same pattern as the
 // Privacy Policy + ToS pages.
 private const val URL_HELP = "https://b150005.github.io/skeinly/help/"
+
+// Pre-alpha A33 — Open Source Licenses page. Static attribution list
+// served from `docs/public/licenses/` (EN) + `docs/public/ja/licenses/`
+// (JA). Manual maintenance for alpha; pre-Phase-40 GA we switch to the
+// AboutLibraries Gradle plugin for automated generation (see
+// CLAUDE.md `### Pre-Phase-40 polish` for the upgrade plan).
+private const val URL_OPEN_SOURCE_LICENSES = "https://b150005.github.io/skeinly/licenses/"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -351,6 +359,26 @@ fun SettingsScreen(
                             .clickable(role = Role.Button) {
                                 uriHandler.openUri(URL_HELP)
                             }.testTag("helpFaqButton"),
+                )
+
+                // Pre-alpha A33 — Open Source Licenses page. Required
+                // attribution for Apache-2.0 / MIT licensed dependencies
+                // (e.g. Kotlin, Compose Multiplatform, Ktor, Coil).
+                // Opens the static HTML page in the system browser; the
+                // page is maintained manually until pre-Phase-40 GA
+                // when AboutLibraries Gradle plugin takes over.
+                ListItem(
+                    headlineContent = { Text(stringResource(Res.string.action_open_source_licenses)) },
+                    leadingContent = { Icon(Icons.AutoMirrored.Filled.Help, contentDescription = null) },
+                    trailingContent = {
+                        Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null)
+                    },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable(role = Role.Button) {
+                                uriHandler.openUri(URL_OPEN_SOURCE_LICENSES)
+                            }.testTag("openSourceLicensesButton"),
                 )
 
                 // Pre-alpha A34 — Contact Support row. Opens the user's

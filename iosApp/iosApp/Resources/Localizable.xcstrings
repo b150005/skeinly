@@ -273,6 +273,23 @@
         }
       }
     },
+    "action_open_source_licenses": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Source Licenses"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オープンソースライセンス"
+          }
+        }
+      }
+    },
     "action_change_password": {
       "extractionState": "manual",
       "localizations": {
@@ -6974,13 +6991,30 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Unlock the full symbol library and support indie development."
+            "value": "Skeinly Pro gives you access to premium content and helps support independent development."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "シンボルライブラリの全機能をアンロックしてインディー開発をサポート"
+            "value": "Skeinly Pro でプレミアムコンテンツをアンロック、個人開発をサポート。"
+          }
+        }
+      }
+    },
+    "body_paywall_features": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• Download premium symbol packs (advanced stitches + future content additions)\n• Future Pro-only features as they ship\n• Help fund continued development of Skeinly"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "• プレミアム編み目記号パックのダウンロード (上級者向け記号 + 今後追加されるコンテンツ)\n• 今後追加される Pro 限定機能\n• Skeinly の継続開発を支援"
           }
         }
       }
@@ -6991,13 +7025,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "7-day free trial. Auto-renews until canceled."
+            "value": "7-day free trial. Auto-renews until canceled. Manage or cancel anytime from Settings > Manage Subscription."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "7日間の無料トライアル。キャンセルするまで自動更新されます。"
+            "value": "7日間の無料トライアル。キャンセルするまで自動更新されます。設定 > サブスクリプション管理からいつでも変更・解約できます。"
           }
         }
       }

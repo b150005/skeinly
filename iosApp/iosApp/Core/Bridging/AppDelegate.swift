@@ -103,6 +103,39 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         // will re-attempt.
         KoinHelperKt.handleApnsTokenReceived(token: nil)
     }
+
+    /// Pre-alpha A16 — Universal Link handler. Fires when iOS hands the
+    /// app a `https://` URL claimed by the Associated Domains entitlement
+    /// (`applinks:b150005.github.io`, see iosApp.entitlements). Apple
+    /// validates the URL against the AASA file at
+    /// `<host>/.well-known/apple-app-site-association` BEFORE this
+    /// callback fires; we trust the URL host/path at this layer.
+    ///
+    /// Wire-up shape: extract the `pull-request/<id>` style path from
+    /// `webpageURL` and post the same `.openPushRoute` notification used
+    /// by APNs taps. `AppRootView`'s `.onReceive(...)` then routes via
+    /// `NavigationPath.append`. This keeps a single deep-link consumer
+    /// at the SwiftUI layer instead of two parallel pipelines.
+    func application(
+        _ application: UIApplication,
+        continue userActivity: NSUserActivity,
+        restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
+    ) -> Bool {
+        guard
+            userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+            let url = userActivity.webpageURL,
+            let route = extractUniversalLinkRoute(from: url),
+            !route.isEmpty
+        else {
+            return false
+        }
+        NotificationCenter.default.post(
+            name: .openPushRoute,
+            object: nil,
+            userInfo: [openPushRouteUserInfoKey: route]
+        )
+        return true
+    }
 }
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
@@ -158,4 +191,44 @@ private func postRouteIfPresent(userInfo: [AnyHashable: Any]) {
         object: nil,
         userInfo: [openPushRouteUserInfoKey: route]
     )
+}
+
+/// Pre-alpha A16 — Universal Link path extractor. Converts an inbound
+/// `https://<host>/<deep-link-path>` into the host-relative route string
+/// the shared `parsePushRoute` (commonMain) consumes. Designed to be
+/// symmetric with the APNs `data.route` field so the SwiftUI consumer
+/// at `AppRootView` does not need to distinguish the source.
+///
+/// Examples:
+///   - `https://b150005.github.io/skeinly/pull-request/abc` → `pull-request/abc`
+///   - `https://skeinly.app/pull-request/abc`              → `pull-request/abc`
+///   - `https://b150005.github.io/skeinly/`                → `nil` (no deep-link path)
+///   - `https://b150005.github.io/skeinly/unknown/x`       → `unknown/x`
+///     (let `parsePushRoute` decide whether the route is recognized;
+///      unknown prefixes return nil downstream and the consumer drops)
+///
+/// We strip a leading `/skeinly/` Project Pages prefix if present so the
+/// same route shape works regardless of the final deploy decision
+/// (Project Pages with `/skeinly/` base path, custom domain at root, or
+/// User Pages repo at root). The strip is a no-op for the latter two.
+internal func extractUniversalLinkRoute(from url: URL) -> String? {
+    var path = url.path
+    // Drop the Project-Pages base path if present so downstream consumers
+    // see the same canonical `pull-request/<id>` shape regardless of host.
+    let projectPagesPrefix = "/skeinly/"
+    if path.hasPrefix(projectPagesPrefix) {
+        path = String(path.dropFirst(projectPagesPrefix.count - 1))
+    }
+    // Trim the leading "/" so the route is host-relative (matches the
+    // APNs `data.route` convention: `pull-request/<id>`, not
+    // `/pull-request/<id>`).
+    if path.hasPrefix("/") {
+        path = String(path.dropFirst())
+    }
+    // Strip trailing slash so `pull-request/<id>/` and `pull-request/<id>`
+    // resolve to the same route.
+    if path.hasSuffix("/") {
+        path = String(path.dropLast())
+    }
+    return path.isEmpty ? nil : path
 }

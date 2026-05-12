@@ -21,24 +21,24 @@ Tracker for the closed-alpha launch readiness audit. Every item below maps to a 
 | **A18** Migration rollback procedure doc | docs commit | New `docs/en/ops/migration-rollback.md` (+ JA mirror) covering: forward-only principle, destructive-migration matrix with recovery paths (DROP TABLE / DROP COLUMN / lossy ALTER / DROP FUNCTION / REVOKE / RLS DISABLE), pre-migration safety discipline (BREAKING tag + inline rollback plan + low-write window), drill procedure, PITR procedure, forward-fix vs PITR decision matrix. Cross-linked from `release.md`. |
 | **A22** ATT decision rationale doc | docs commit | New section in `docs/en/ops/repo-policy.md` (+ JA mirror) — App Tracking Transparency NOT required, per-subprocessor analysis (PostHog / Sentry / RevenueCat / APNs / FCM / Supabase / GitHub all confirmed non-tracking + non-data-broker), conditions for re-evaluation, reviewer-facing summary text for App Store Connect Review Notes. |
 | **A20** GDPR / CCPA data portability (alpha-scope) | docs commit | New SOP `docs/en/ops/data-export-sop.md` (+ JA mirror) covering email-based fulfillment: 7-day SLA, identity verification, Supabase Dashboard CSV export of all 17 user-scoped tables, Storage avatar enumeration, out-of-scope subprocessor instructions, response templates. Satisfies GDPR Art. 20 / CCPA right-to-know for alpha tester scope. Option B (in-app "Export My Data" + Edge Function) scheduled pre-Phase-40 GA in CLAUDE.md polish list. |
+| **A7** Web-based account deletion URL | docs commit | New `docs/public/account-deletion/index.html` (+ JA mirror) with Option 1 (in-app deletion recommended) + Option 2 (web fallback via mailto with identity verification + 7-day SLA) + table of what gets deleted + warning on Apple/Google subscription cancellation. Linked from Privacy Policy "Your Rights" + landing `index.html` Support section. Satisfies Apple Guideline 5.1.1(v) web-accessible deletion path + Google Play account-deletion URL requirement. |
+| **A17** Supabase PITR / DR drill SOP | docs commit | New `docs/en/ops/dr-drill-sop.md` (+ JA mirror) — RTO ≤ 1 h / RPO ≤ 5 min targets, 5-scenario drill catalog (accidental DELETE / DROP TABLE / faulty migration / Dashboard compromise / RLS bug mass overwrite), quarterly drill procedure with drill log table, real-incident PITR procedure, Free-tier fallback. Distinct from A18 migration-rollback runbook (different incident class). |
+| **A3 / A8** Paywall pre-purchase disclosure | code commit | 5-item Apple 3.1.2(c) audit + 3-item Play subscription policy audit confirm 4/5 + 3/3 pass. Improved item 1 (vague "full symbol library" → enumerated feature bullets: premium symbol packs, future Pro-only features, indie development support) via new `body_paywall_features` i18n key + Compose + SwiftUI render. Expanded `body_paywall_trial_disclosure` to point at Settings → Manage Subscription. Restore Purchases + ToS + Privacy links unchanged (already passing). |
+| **A16** iOS Universal Links — code wired, deploy pending | code commit | `iosApp.entitlements` already declared `applinks:b150005.github.io`. Added `application(_:continue:restorationHandler:)` to `AppDelegate.swift` that extracts the URL path via new `extractUniversalLinkRoute(from:)` helper and routes through the existing `.openPushRoute` notification (same SwiftUI consumer as APNs taps). AASA file template under `docs/well-known/apple-app-site-association` with `TEAMID_PLACEHOLDER` to fill at deploy time. `docs/well-known/README.md` documents the 3 deploy targets (custom domain / User Pages repo / external PaaS) with recommendation = User Pages repo for alpha. **User-side actions remaining**: pick deploy target, deploy AASA file, regenerate Distribution Provisioning Profile with Associated Domains capability. |
+| **A33** OSS attribution screen | code commit | New `docs/public/licenses/index.html` (+ JA mirror) enumerating 21 OSS dependencies grouped by stack (KMP+Compose / Networking+Persistence / DI+Nav+Image / Security+Push+IAP / Observability / Test-only) with version + license link. New Settings → "Open Source Licenses" entry on Compose + SwiftUI opens the page in system browser. New `action_open_source_licenses` i18n key. Manual maintenance for alpha; AboutLibraries Gradle plugin upgrade scheduled pre-Phase-40 GA in CLAUDE.md polish list. |
 
 ## Outstanding Action Required Items
 
 - **A1 / A5** UGC moderation (Report content + Block user + filter) — big scope, multiple sub-slices
 - **A2** Review demo account + reproduction docs — user-side seed data + App Store / Play Console wiring
-- **A3 / A8** Paywall pre-purchase disclosure audit (Apple 3.1.2(c) + Play subscription policy) — verify existing F1 Pro paywall ships 5-item checklist
 - **A4** Symbol catalog JIS provenance audit — knitter agent walk-through
 - **A6** Play Console Data Safety form — user-side (per A6 matrix in §2.1)
-- **A7** Web-based account deletion URL — `docs/public/account-deletion/` form
 - **A9 / V13** Enable HIBP leaked-password protection in Supabase Dashboard — user-side toggle
-- **A16** iOS Universal Links — entitlement + AASA file + Apple Developer provisioning profile regen
-- **A17** Supabase PITR / DR drill SOP — operational doc
 - **A23-A27** a11y audits (TalkBack/VoiceOver, Dynamic Type, Reduce Motion, color contrast, touch targets, focus order, states)
 - **A28** Sentry crash-free SLO target alert
 - **A29** Play Vitals + Sentry ANR alerts wire
 - **A31** Knitter-agent symbol catalog correctness review
 - **A32** Spot-check terminology on key surfaces
-- **A33** OSS attribution screen + Gradle license report
 - **A36** User-prioritized golden-path verification
 
 ## Outstanding Needs Verification Items (user-side)

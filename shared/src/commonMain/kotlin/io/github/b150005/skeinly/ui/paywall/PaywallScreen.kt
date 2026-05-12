@@ -44,6 +44,7 @@ import io.github.b150005.skeinly.generated.resources.action_subscribe_annual
 import io.github.b150005.skeinly.generated.resources.action_subscribe_monthly
 import io.github.b150005.skeinly.generated.resources.action_subscribe_other
 import io.github.b150005.skeinly.generated.resources.action_terms_of_service
+import io.github.b150005.skeinly.generated.resources.body_paywall_features
 import io.github.b150005.skeinly.generated.resources.body_paywall_pitch
 import io.github.b150005.skeinly.generated.resources.body_paywall_trial_disclosure
 import io.github.b150005.skeinly.generated.resources.state_paywall_unavailable
@@ -137,6 +138,17 @@ fun PaywallScreen(
                 text = stringResource(Res.string.body_paywall_pitch),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            // Feature bullets — required by App Store Review § 3.1.2(c) +
+            // Play subscription policy: paywall must enumerate what the
+            // subscription includes BEFORE the StoreKit/Billing system sheet
+            // confirms purchase. The string uses `\n` separators rendered as
+            // a single Text block; bullets in the copy are part of the
+            // string itself so JA/EN parity is enforced via i18n diff.
+            Text(
+                text = stringResource(Res.string.body_paywall_features),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
             HorizontalDivider()
