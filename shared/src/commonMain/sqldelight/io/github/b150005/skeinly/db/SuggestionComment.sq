@@ -1,11 +1,14 @@
--- Phase 38.1: Pull request comments (ADR-014 §1, §2).
+-- Suggestion comments (ADR-014 §1, §2 + migration 027).
 --
--- Append-only flat thread per PR. RLS forbids UPDATE / DELETE server-side
--- (ADR-014 §1 — comments are immutable once posted, mirroring chart_revisions
--- and Git's history invariant). Local schema includes ON DELETE CASCADE on
--- pull_request_id so deleting a PR locally clears its comment chain, even
--- though no caller exercises PR delete in v1 (CASCADE on pattern delete is
--- the only cleanup path for PRs themselves).
+-- Append-only flat thread per suggestion. RLS forbids UPDATE / DELETE
+-- server-side (ADR-014 §1 — comments are immutable once posted, mirroring
+-- chart_versions and Git's history invariant). Local schema includes
+-- ON DELETE CASCADE on pull_request_id so deleting a suggestion locally
+-- clears its comment chain, even though no caller exercises suggestion
+-- delete in v1 (CASCADE on pattern delete is the only cleanup path for
+-- suggestions themselves). The `pull_request_id` column retains the
+-- pre-027 name per migration 027's "internal column names not renamed"
+-- scope.
 
 CREATE TABLE SuggestionCommentEntity (
     id TEXT NOT NULL PRIMARY KEY,
@@ -16,7 +19,7 @@ CREATE TABLE SuggestionCommentEntity (
     FOREIGN KEY (pull_request_id) REFERENCES SuggestionEntity(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_pr_comments_pr_id_created
+CREATE INDEX IF NOT EXISTS idx_suggestion_comments_pull_request_id_created
     ON SuggestionCommentEntity(pull_request_id, created_at);
 
 getById:

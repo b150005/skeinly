@@ -1,20 +1,22 @@
--- Phase 38.1: Pull request entity (ADR-014 §1, §2).
+-- Suggestion entity (ADR-014 §1, §2 + migration 027).
 --
--- One row per PR. Status enum is closed: open, merged, closed.
+-- One row per suggestion. Status enum is closed: open, applied, closed.
 -- author_id is nullable to mirror Postgres ON DELETE SET NULL — local writes
 -- always populate it; null only appears when remote-side cascade clears it
 -- after author account deletion.
 --
--- merged_revision_id, merged_at, closed_at are populated by the merge RPC
--- (status → merged) or the close UPDATE path (status → closed). NULL on
--- OPEN PRs.
+-- merged_revision_id, merged_at, closed_at are populated by the apply RPC
+-- (status → applied) or the close UPDATE path (status → closed). NULL on
+-- OPEN suggestions. (Column names retain the pre-027 "merged_*" form per
+-- migration 027's "internal column names not renamed" scope.)
 --
 -- ON DELETE CASCADE on source_pattern_id and target_pattern_id mirrors the
 -- Postgres FKs in migration 016 — when either pattern is deleted locally,
--- its PR rows go with it. No FK on revision_id columns at the SQLite layer
--- (Postgres-side has hard FKs to chart_revisions(revision_id) with
--- ON DELETE RESTRICT; locally we tolerate the brief append-then-update
--- window where a revision id may not yet have landed via Realtime).
+-- its suggestion rows go with it. No FK on revision_id columns at the
+-- SQLite layer (Postgres-side has hard FKs to chart_versions(revision_id)
+-- with ON DELETE RESTRICT; locally we tolerate the brief
+-- append-then-update window where a version id may not yet have landed
+-- via Realtime).
 
 CREATE TABLE SuggestionEntity (
     id TEXT NOT NULL PRIMARY KEY,
