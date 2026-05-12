@@ -15,9 +15,10 @@ import kotlin.test.assertTrue
 
 /**
  * Exercises the document envelope written to and read from the SQLite
- * `document` text column (see [ChartMapper]). Phase 32.1 adds
- * `craft_type` + `reading_convention` to the envelope; these tests lock in
- * both forward serialization and backward deserialization of v1 payloads.
+ * `document` text column (see [ChartMapper]). Schema v2 (Phase 32.1)
+ * adds `craft_type` + `reading_convention` to the envelope; these tests
+ * lock in serialization round-trip + the missing-key default-fallback
+ * path that protects against any row that lacks those keys.
  */
 class ChartMapperTest {
     private val json = testJson

@@ -20,9 +20,10 @@ import kotlin.time.Instant
  * Contains only the document-scoped fields; row-level fields (id, ownerId, timestamps,
  * revisionId, etc.) live in their own columns to keep them queryable without jsonb.
  *
- * Schema v2 (Phase 32.1) adds `craft_type` + `reading_convention`. Reads are
- * backward compatible — missing keys (and explicit JSON `null`s) fall back to
- * `CraftType.KNIT` / `ReadingConvention.KNIT_FLAT`.
+ * `craft_type` + `reading_convention` (added at schema v2 / Phase 32.1) read
+ * with `decodeOrDefault` so a row that omits the key — or that carries an
+ * explicit JSON `null` — deserializes to `CraftType.KNIT` /
+ * `ReadingConvention.KNIT_FLAT` rather than throwing.
  */
 private object DocumentEnvelope {
     val extentsSerializer = ChartExtents.serializer()

@@ -229,8 +229,10 @@ class ChartTest {
     }
 
     @Test
-    fun `schema v1 JSON without craft or reading keys decodes with defaults`() {
-        // Simulates a row written by Phase 29 code (schema_version = 1, no craft_type key).
+    fun `JSON without craft or reading keys decodes with defaults`() {
+        // A row that omits the optional craft_type / reading_convention keys
+        // must still deserialize without throwing — fallback is to KNIT +
+        // KNIT_FLAT. This locks in the default-on-missing-key contract.
         val v1Json =
             """
             {
