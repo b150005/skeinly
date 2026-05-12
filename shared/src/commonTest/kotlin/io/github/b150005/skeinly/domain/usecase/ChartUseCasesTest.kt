@@ -48,6 +48,8 @@ class ChartUseCasesTest {
             contentHash = "seed-hash",
             createdAt = now,
             updatedAt = now,
+            craftType = io.github.b150005.skeinly.domain.model.CraftType.KNIT,
+            readingConvention = io.github.b150005.skeinly.domain.model.ReadingConvention.KNIT_FLAT,
         )
 
     @Test

@@ -6,11 +6,9 @@ import io.github.b150005.skeinly.domain.model.ChartLayer
 import io.github.b150005.skeinly.domain.model.ChartVersion
 import io.github.b150005.skeinly.domain.model.CraftType
 import io.github.b150005.skeinly.domain.model.ReadingConvention
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlin.time.Instant
 
@@ -34,12 +32,6 @@ private data class RevisionEnvelopeValues(
     val readingConvention: ReadingConvention,
 )
 
-private fun <T> JsonElement?.decodeOrDefault(
-    json: Json,
-    serializer: KSerializer<T>,
-    default: T,
-): T = if (this == null || this is JsonNull) default else json.decodeFromJsonElement(serializer, this)
-
 internal fun ChartVersionEntity.toDomain(json: Json): ChartVersion {
     val envelope =
         json.parseToJsonElement(document).let { element ->
@@ -48,20 +40,16 @@ internal fun ChartVersionEntity.toDomain(json: Json): ChartVersion {
                     ?: error("ChartVersion.document is not a JSON object")
             val extentsElement = obj["extents"] ?: error("ChartVersion.document missing 'extents'")
             val layersElement = obj["layers"] ?: error("ChartVersion.document missing 'layers'")
+            val craftTypeElement =
+                obj["craft_type"] ?: error("ChartVersion.document missing 'craft_type'")
+            val readingConventionElement =
+                obj["reading_convention"] ?: error("ChartVersion.document missing 'reading_convention'")
             val extents = json.decodeFromJsonElement(RevisionEnvelope.extentsSerializer, extentsElement)
             val layers = json.decodeFromJsonElement(RevisionEnvelope.layersSerializer, layersElement)
             val craftType =
-                obj["craft_type"].decodeOrDefault(
-                    json,
-                    RevisionEnvelope.craftTypeSerializer,
-                    CraftType.KNIT,
-                )
+                json.decodeFromJsonElement(RevisionEnvelope.craftTypeSerializer, craftTypeElement)
             val readingConvention =
-                obj["reading_convention"].decodeOrDefault(
-                    json,
-                    RevisionEnvelope.readingConventionSerializer,
-                    ReadingConvention.KNIT_FLAT,
-                )
+                json.decodeFromJsonElement(RevisionEnvelope.readingConventionSerializer, readingConventionElement)
             RevisionEnvelopeValues(extents, layers, craftType, readingConvention)
         }
     return ChartVersion(

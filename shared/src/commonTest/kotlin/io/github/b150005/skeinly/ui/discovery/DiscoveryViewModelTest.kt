@@ -254,6 +254,8 @@ class DiscoveryViewModelTest {
                     contentHash = "h1-deadbeef",
                     createdAt = Instant.fromEpochMilliseconds(500),
                     updatedAt = Instant.fromEpochMilliseconds(500),
+                    craftType = io.github.b150005.skeinly.domain.model.CraftType.KNIT,
+                    readingConvention = io.github.b150005.skeinly.domain.model.ReadingConvention.KNIT_FLAT,
                 ),
             )
             chartRepo.failNext = RuntimeException("transient storage error")

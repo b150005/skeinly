@@ -57,6 +57,8 @@ class ConflictDetectorTest {
             contentHash = "h1-$revisionId",
             createdAt = now,
             updatedAt = now,
+            craftType = io.github.b150005.skeinly.domain.model.CraftType.KNIT,
+            readingConvention = io.github.b150005.skeinly.domain.model.ReadingConvention.KNIT_FLAT,
         )
 
     @Test

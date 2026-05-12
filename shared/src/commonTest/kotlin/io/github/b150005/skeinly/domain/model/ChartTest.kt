@@ -43,6 +43,8 @@ class ChartTest {
         contentHash = "hash-abc",
         createdAt = now,
         updatedAt = now,
+        craftType = CraftType.KNIT,
+        readingConvention = ReadingConvention.KNIT_FLAT,
     )
 
     @Test
@@ -226,36 +228,6 @@ class ChartTest {
             "round",
             json.encodeToString(ReadingConvention.serializer(), ReadingConvention.ROUND).trim('"'),
         )
-    }
-
-    @Test
-    fun `JSON without craft or reading keys decodes with defaults`() {
-        // A row that omits the optional craft_type / reading_convention keys
-        // must still deserialize without throwing — fallback is to KNIT +
-        // KNIT_FLAT. This locks in the default-on-missing-key contract.
-        val v1Json =
-            """
-            {
-              "id": "chart-legacy",
-              "pattern_id": "pat-legacy",
-              "owner_id": "user-1",
-              "schema_version": 1,
-              "storage_variant": "inline",
-              "coordinate_system": "rect_grid",
-              "extents": { "type": "rect", "min_x": 0, "max_x": 1, "min_y": 0, "max_y": 0 },
-              "layers": [],
-              "revision_id": "rev-legacy",
-              "parent_revision_id": null,
-              "content_hash": "h1-00000000",
-              "created_at": "2026-04-17T10:00:00Z",
-              "updated_at": "2026-04-17T10:00:00Z"
-            }
-            """.trimIndent()
-        val decoded = json.decodeFromString(Chart.serializer(), v1Json)
-
-        assertEquals(1, decoded.schemaVersion)
-        assertEquals(CraftType.KNIT, decoded.craftType)
-        assertEquals(ReadingConvention.KNIT_FLAT, decoded.readingConvention)
     }
 
     @Test

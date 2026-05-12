@@ -1098,6 +1098,11 @@ private fun PolarEditorCanvas(
     // contentHash, createdAt, updatedAt, ...), update this stub accordingly.
     val draftChart =
         remember(layers, extents) {
+            // Polar editor draft is a render-only wrapper; the values not
+            // exercised by drawing (id / patternId / ownerId / timestamps
+            // / craftType / readingConvention) carry sentinel values.
+            // craftType = CROCHET + readingConvention = ROUND because
+            // polar-round coordinate space is the crochet-round convention.
             io.github.b150005.skeinly.domain.model
                 .Chart(
                     id = "editor-draft",
@@ -1113,6 +1118,8 @@ private fun PolarEditorCanvas(
                     contentHash = "",
                     createdAt = kotlin.time.Instant.DISTANT_PAST,
                     updatedAt = kotlin.time.Instant.DISTANT_PAST,
+                    craftType = io.github.b150005.skeinly.domain.model.CraftType.CROCHET,
+                    readingConvention = io.github.b150005.skeinly.domain.model.ReadingConvention.ROUND,
                 )
         }
 

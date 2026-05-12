@@ -44,8 +44,8 @@ data class ChartVersion(
     @SerialName("content_hash") val contentHash: String,
     @SerialName("commit_message") val commitMessage: String?,
     @SerialName("created_at") val createdAt: Instant,
-    @SerialName("craft_type") val craftType: CraftType = CraftType.KNIT,
-    @SerialName("reading_convention") val readingConvention: ReadingConvention = ReadingConvention.KNIT_FLAT,
+    @SerialName("craft_type") val craftType: CraftType,
+    @SerialName("reading_convention") val readingConvention: ReadingConvention,
 )
 
 /**

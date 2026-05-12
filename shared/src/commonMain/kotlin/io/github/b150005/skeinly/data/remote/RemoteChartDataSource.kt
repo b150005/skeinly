@@ -24,15 +24,8 @@ import kotlin.time.Instant
 private data class ChartDocumentPayload(
     val extents: ChartExtents,
     val layers: List<ChartLayer>,
-    // Non-nullable with enum defaults so that:
-    //  - rows missing the key deserialize to the default value
-    //  - writes with the default enum value may be omitted by
-    //    `encodeDefaults = false` kotlinx-serialization config, and the
-    //    absence round-trips back to the same default — symmetric and safe
-    //  - non-default values (CROCHET, ROUND) are always emitted regardless of
-    //    the `encodeDefaults` setting
-    @SerialName("craft_type") val craftType: CraftType = CraftType.KNIT,
-    @SerialName("reading_convention") val readingConvention: ReadingConvention = ReadingConvention.KNIT_FLAT,
+    @SerialName("craft_type") val craftType: CraftType,
+    @SerialName("reading_convention") val readingConvention: ReadingConvention,
 )
 
 @Serializable

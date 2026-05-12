@@ -71,6 +71,8 @@ class GetChartComparisonUseCaseTest {
             contentHash = "h1-$revisionId",
             commitMessage = null,
             createdAt = Instant.parse("2026-04-25T10:00:00Z"),
+            craftType = io.github.b150005.skeinly.domain.model.CraftType.KNIT,
+            readingConvention = io.github.b150005.skeinly.domain.model.ReadingConvention.KNIT_FLAT,
         )
 
     @Test

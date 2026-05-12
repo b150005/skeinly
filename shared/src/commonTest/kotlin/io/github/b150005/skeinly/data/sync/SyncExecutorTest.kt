@@ -333,6 +333,8 @@ class SyncExecutorTest {
             contentHash = "h1-00000000",
             createdAt = Instant.fromEpochMilliseconds(1000),
             updatedAt = Instant.fromEpochMilliseconds(2000),
+            craftType = io.github.b150005.skeinly.domain.model.CraftType.KNIT,
+            readingConvention = io.github.b150005.skeinly.domain.model.ReadingConvention.KNIT_FLAT,
         )
 
     @Test
