@@ -1,6 +1,21 @@
 // Local Xcode build settings — copy to local.xcconfig and fill in your values.
 // This file is committed to version control as a template.
 // local.xcconfig is git-ignored and must NOT be committed.
+//
+// AUTOMATED BOOTSTRAP: `make ios-build` / `make ios-test` / `make
+// release-ipa-local` auto-copy this file to local.xcconfig when missing,
+// and substitute DEVELOPMENT_TEAM from the APPLE_DEVELOPMENT_TEAM_ID
+// shell env var (if set). To zero-config local builds:
+//
+//   echo 'export APPLE_DEVELOPMENT_TEAM_ID=ABCDEF1234' >> ~/.zshrc
+//   source ~/.zshrc
+//   rm iosApp/local.xcconfig  # if it already exists with the placeholder
+//   make ios-build
+//
+// Without the env var, the bootstrap leaves DEVELOPMENT_TEAM empty (matches
+// the CI pattern; Simulator builds succeed but Xcode UI shows "Team: None").
+// You can also bypass the env-var path and hand-edit this file directly —
+// the Makefile prereq is a no-op once local.xcconfig exists.
 
 // Apple Developer Team ID (10-char alphanumeric)
 // Find via: security find-identity -v -p codesigning | grep "Developer"
