@@ -308,13 +308,24 @@ Play Console → Skeinly アプリ → サイドバー **Monetize with Play → 
 
 テスト合格後 **Save changes** クリック。
 
-## ステップ 11 — RevenueCat で検証
+## ステップ 11 — RevenueCat で RTDN 検証
 
 RevenueCat Dashboard → Skeinly Android アプリ設定 → テスト通知到達を示す **Last received** タイムスタンプを探す。
 
 任意で RevenueCat の Purchase Tracking 設定で **Track new purchases from server-to-server notifications** を有効化 — クライアント SDK が取りこぼした購入を RevenueCat がキャッチできるように (ネットワーク問題、フロー途中のアンインストール/再インストール)。
 
 正典: [RevenueCat — Google Server Notifications](https://www.revenuecat.com/docs/google-server-notifications)。
+
+## ステップ 12 — RevenueCat にプロダクトを Import (手動 dashboard 操作)
+
+**必須** — Play Console でプロダクトを作っても service-account credentials + RTDN が wired していても **自動同期されない**。iOS 側 ([iap-setup-app-store-connect.md ステップ 10](iap-setup-app-store-connect.md)) と同じく RevenueCat dashboard で手動 Import が必要。
+
+1. RevenueCat Dashboard → **Project Settings → Apps & providers** → Skeinly Android アプリをクリック → **Products** セクションまでスクロール
+2. **+ New** ボタンの右に **Import** ボタンがある。クリック
+3. RevenueCat が現在の Play Console プロダクトカタログを取得して、RevenueCat プロジェクトへの登録を提案。`skeinly_pro:pro-monthly` と `skeinly_pro:pro-yearly` 両方の Import を確認 (2023 年 2 月以降の Google Play プロダクト用のコロン区切り RC 識別子フォーマット)
+4. Import 完了後、**Products** に 2 プロダクトが colon-separated RC identifier で出現
+
+dashboard Import がユーザ側のアクション、MCP パスは下流の binding work (products → packages → entitlement) で次セッションが活用。
 
 ## RevenueCat プロダクト紐付け前の検証
 
@@ -350,11 +361,9 @@ Play Console で確認:
 
 ## Phase 39 全体パイプライン内の位置
 
-1. **App Store Connect セットアップ** ([iap-setup-app-store-connect.md](iap-setup-app-store-connect.md)) → 両プロダクト「Ready to Submit」
-2. **Play Console セットアップ** (この runbook) → 両 base plan Active
-3. **RevenueCat プロダクト登録** (次セッション) — Claude が RevenueCat MCP を使って:
-   - iOS プロダクト `io.github.b150005.skeinly.pro.monthly` + `.yearly` をインポート
-   - Android プロダクト `skeinly_pro:pro-monthly` + `skeinly_pro:pro-yearly` をインポート
-   - 4 つ全てを既存の `$rc_monthly` / `$rc_annual` パッケージに紐付け
-   - Skeinly Pro エンタイトルメント `entlaaca26b181` が 4 つ全てをカバーしていることを確認
-4. **End-to-end smoke test** — ライセンステスター signed in 状態の Play Internal Testing ビルドでペイウォール開いて購入、エンタイトルメント付与と `revenuecat-webhook` 経由の `subscriptions` 行書き込みを確認。
+1. **App Store Connect セットアップ** ([iap-setup-app-store-connect.md](iap-setup-app-store-connect.md) ステップ 9 まで) → プロダクトが「メタデータが不足」または「Ready to Submit」
+2. **ASC dashboard Import in RevenueCat** ([iap-setup-app-store-connect.md ステップ 10](iap-setup-app-store-connect.md)) → iOS プロダクトが RC に出現
+3. **Play Console セットアップ** (この runbook、ステップ 11 まで) → 両 base plan Active
+4. **Play dashboard Import in RevenueCat** (この runbook ステップ 12) → Android プロダクトが RC に出現
+5. **RevenueCat MCP binding** (次セッション、エージェント側) — 4 プロダクトを packages に attach + entitlement カバレッジ確認
+6. **End-to-end smoke test** — ライセンステスター signed in 状態の Play Internal Testing ビルドでペイウォール開いて購入、エンタイトルメント付与と `revenuecat-webhook` 経由の `subscriptions` 行書き込みを確認。

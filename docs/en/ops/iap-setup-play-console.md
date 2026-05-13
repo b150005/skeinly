@@ -308,13 +308,24 @@ Common causes:
 
 Click **Save changes** once the test passes.
 
-## Step 11 — Verify in RevenueCat
+## Step 11 — Verify RTDN in RevenueCat
 
 RevenueCat Dashboard → Skeinly Android app settings → look for **Last received** timestamp confirming the test notification arrived.
 
 Optionally enable **Track new purchases from server-to-server notifications** in RevenueCat's Purchase Tracking settings — this lets RevenueCat catch purchases the client SDK might miss (network issues, app uninstall/reinstall mid-flow).
 
 Authoritative reference: [RevenueCat — Google Server Notifications](https://www.revenuecat.com/docs/google-server-notifications).
+
+## Step 12 — Import products into RevenueCat (manual dashboard step)
+
+**Required** — Play Console product creation does NOT auto-sync to RevenueCat even with service-account credentials and RTDN configured. The operator must trigger the import manually from RevenueCat's dashboard, the same way as the iOS side ([iap-setup-app-store-connect.md Step 10](iap-setup-app-store-connect.md)).
+
+1. RevenueCat Dashboard → **Project Settings → Apps & providers** → click the Skeinly Android app → scroll to **Products**.
+2. To the right of **+ New** there is an **Import** button. Click it.
+3. RevenueCat fetches the current Play Console product catalog and offers to register them in your RevenueCat project. Confirm the import for both `skeinly_pro:pro-monthly` and `skeinly_pro:pro-yearly` (the colon-separated RC identifier format for post-Feb-2023 Google Play products).
+4. After Import completes, both products appear in **Products** with the colon-separated RC identifiers.
+
+The dashboard Import is the user-side action; the MCP path remains useful for the downstream binding work (attaching products to packages + entitlement) which the next session performs.
 
 ## Verification before handoff to RevenueCat product binding
 
@@ -350,11 +361,9 @@ Confirm in Play Console:
 
 ## Where this fits in the wider Phase 39 pipeline
 
-1. **App Store Connect setup** ([iap-setup-app-store-connect.md](iap-setup-app-store-connect.md)) → both products "Ready to Submit"
-2. **Play Console setup** (this runbook) → both base plans Active
-3. **RevenueCat product registration** (next session) — Claude uses the RevenueCat MCP to:
-   - Import iOS products `io.github.b150005.skeinly.pro.monthly` + `.yearly`
-   - Import Android products `skeinly_pro:pro-monthly` + `skeinly_pro:pro-yearly`
-   - Attach all four to the existing `$rc_monthly` / `$rc_annual` packages
-   - Confirm Skeinly Pro entitlement `entlaaca26b181` covers all four
-4. **End-to-end smoke test** — open paywall on a Play Internal Testing build with a license tester signed in, purchase, verify entitlement granted and `subscriptions` row written via `revenuecat-webhook`.
+1. **App Store Connect setup** ([iap-setup-app-store-connect.md](iap-setup-app-store-connect.md) through its Step 9) → products in 「メタデータが不足」or higher
+2. **ASC dashboard Import in RevenueCat** ([iap-setup-app-store-connect.md Step 10](iap-setup-app-store-connect.md)) → iOS products in RC
+3. **Play Console setup** (this runbook through Step 11) → both base plans Active
+4. **Play dashboard Import in RevenueCat** (this runbook Step 12) → Android products in RC
+5. **RevenueCat MCP binding** (next session, agent-side) — attach all 4 products to packages + verify entitlement coverage
+6. **End-to-end smoke test** — open paywall on a Play Internal Testing build with a license tester signed in, purchase, verify entitlement granted and `subscriptions` row written via `revenuecat-webhook`.

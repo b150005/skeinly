@@ -292,15 +292,40 @@ App Store Connect で確認:
 | **税金カテゴリ** — デフォルト「親アプリに一致する」(親 app のカテゴリ継承)。Skeinly の親 app カテゴリは「Digital App Sales」(デジタルアプリの販売)。 | **デフォルトのまま。** サブスクリプションは digital app sale と同一課税 — 継承カテゴリで正解。 | 同上 — 税制ガイダンス変更がない限り override 不要。 |
 | **審査に関する情報** — Apple 審査員が IAP を実テストするための スクリーンショット + Review Notes。 | **Skip。** クローズドベータの購入は Sandbox + TestFlight ビルド経由で IAP ごとの App Review を通らない。 | **GA 前 TODO**: (1) in-app paywall (月額 + 年額 + 7 日トライアルが見える画面) のスクショ取得 (2) Review Notes に paywall への到達手順を記載: "Sign up → Settings → tap 'Upgrade to Pro' → paywall surfaces both subscription products"。Apple 審査員が Phase 40 GA 審査でこれらを使って IAP をテストする。submission 前必須。 |
 
+## ステップ 10 — RevenueCat にプロダクトを Import (手動 dashboard 操作)
+
+**必須** — ASC でプロダクトを作っても RevenueCat ↔ ASC 連携が wired していても **自動同期されない**。RevenueCat の dashboard 側で手動 Import が必要。
+
+1. RevenueCat Dashboard → **Project Settings → Apps & providers** → Skeinly iOS アプリをクリック → **Products** セクションまでスクロール
+2. **+ New** ボタンの右に **Import** ボタンがある。クリック
+3. RevenueCat が現在の ASC プロダクトリストを取得して、RevenueCat プロジェクトへの登録を提案。`io.github.b150005.skeinly.pro.monthly` と `io.github.b150005.skeinly.pro.yearly` 両方の Import を確認
+4. Import 完了後、**Products** に 2 プロダクトが ASC product ID と同じ RC identifier で出現
+
+オペレータ実機確認 2026-05-13: **Import** ボタンが canonical な同期パス。この runbook 初版の「次セッションで Claude が RevenueCat MCP 経由でインポート」表現は auto-sync を示唆していたが不正確だった。dashboard Import がユーザ側のアクション、MCP パスは下流の binding work (products → packages → entitlement) で活躍。
+
+dashboard Import 後、次セッションで RevenueCat MCP を使って:
+- インポート済 products が MCP から見えることを確認
+- 既存の `$rc_monthly` / `$rc_annual` パッケージ (`default` offering 上) に両方を attach
+- Skeinly Pro エンタイトルメント `entlaaca26b181` が両方をカバーしていることを `attach-products-to-entitlement` で確認
+
+## 「メタデータが不足」ステータスについて
+
+プロダクト作成後、ASC は各サブスクリプションを **「メタデータが不足」** ステータスで表示する。これは Phase 39 クローズドベータでは **想定通りの状態**、Sandbox テストを **ブロックしない**。
+
+ステータスが残る理由:
+- **審査スクリーンショット** (審査に関する情報) が空 — Phase 40 GA 提出時に必須
+- **画像 (任意)** 1024×1024 プロモーション画像が空 — optional だが App Store Promotion / win-back offer 使用時に必要
+
+Phase 39 では、この状態でも sandbox 購入フローは動作する。「メタデータが不足」バッジは Phase 40 GA の App Review 提出のみブロック。GA 前に上述の「プロダクト単位の optional フィールド」表に従って両フィールドを埋めるのが計画。
+
+もしバッジが原因で Sandbox 反映が文書化された ~1 時間遅延を超える場合は、配信可否で **Cleared for Sale** に設定されているか念のため確認 — それが Sandbox availability を実際にゲートする唯一のメタデータ条件 (App Review readiness ゲートとは別)。
+
 ## Phase 39 全体パイプライン内の位置
 
 この runbook は RevenueCat プロダクト ↔ パッケージ紐付けステップの前に完了する 2 つのストア side のうちの 1 つ。順序:
 
-1. **App Store Connect セットアップ** (この runbook) → ステータス「Ready to Submit」
-2. **Play Console セットアップ** ([iap-setup-play-console.md](iap-setup-play-console.md)) → 両 base plan Active
-3. **RevenueCat プロダクト登録** (次セッション) — Claude が RevenueCat MCP を使って:
-   - iOS プロダクト `io.github.b150005.skeinly.pro.monthly` + `.yearly` をインポート
-   - Android プロダクト `skeinly_pro:pro-monthly` + `skeinly_pro:pro-yearly` をインポート
-   - 4 つ全てを既存の `$rc_monthly` / `$rc_annual` パッケージに紐付け
-   - Skeinly Pro エンタイトルメント `entlaaca26b181` が 4 つ全てをカバーしていることを確認
-4. **End-to-end smoke test** — sandbox テスター signed in 状態の TestFlight ビルドでペイウォール開いて購入、エンタイトルメント付与と `revenuecat-webhook` 経由の `subscriptions` 行書き込みを確認。
+1. **App Store Connect セットアップ** (この runbook、Step 9 まで) → ステータス「メタデータが不足」または「Ready to Submit」
+2. **RevenueCat dashboard Import** (この runbook Step 10、ユーザ側クリック) → products が RC に出現
+3. **Play Console セットアップ** ([iap-setup-play-console.md](iap-setup-play-console.md)) → 両 base plan Active + dashboard Import equivalent
+4. **RevenueCat MCP binding** (次セッション、エージェント側) — products を packages に attach + entitlement カバレッジ確認
+5. **End-to-end smoke test** — sandbox テスター signed in 状態の TestFlight ビルドでペイウォール開いて購入、エンタイトルメント付与と `revenuecat-webhook` 経由の `subscriptions` 行書き込みを確認。

@@ -292,15 +292,40 @@ Each subscription product detail page has three sections that are NOT required f
 | **税金カテゴリ (Tax Category)** — defaults to "親アプリに一致する" (matches parent app). Parent app's category for Skeinly is "Digital App Sales" (デジタルアプリの販売). | **Leave default.** Subscription is taxed identically to a digital app sale — the inherited category is correct. | Same — no override needed unless tax-law guidance changes. |
 | **審査に関する情報 (Review Information)** — Screenshot + Review Notes for the App Review reviewer to test the IAP. | **Skip.** Closed-beta purchases route through Sandbox + TestFlight builds, which do NOT go through App Review for each IAP. | **TODO before GA**: (1) capture a screenshot of the in-app paywall (the screen where the user sees both monthly + yearly + 7-day trial); (2) write Review Notes explaining the path to the paywall: "Sign up → Settings → tap 'Upgrade to Pro' → paywall surfaces both subscription products." Apple reviewers will use these to test the IAP during Phase 40 GA review. Mandatory before submission. |
 
+## Step 10 — Import products into RevenueCat (manual dashboard step)
+
+**Required** — ASC product creation does NOT auto-sync to RevenueCat even when the RevenueCat ↔ ASC integration is wired. The operator must trigger the import manually from RevenueCat's dashboard.
+
+1. RevenueCat Dashboard → **Project Settings → Apps & providers** → click the Skeinly iOS app → scroll to **Products**.
+2. To the right of **+ New** there is an **Import** button. Click it.
+3. RevenueCat fetches the current ASC product list and offers to register them in your RevenueCat project. Confirm the import for both `io.github.b150005.skeinly.pro.monthly` and `io.github.b150005.skeinly.pro.yearly`.
+4. After Import completes, the two products appear in **Products** with their ASC product IDs as the RC identifiers.
+
+Operator-confirmed 2026-05-13: the **Import** button is the canonical sync path. The runbook's earlier "next session, Claude uses RevenueCat MCP to import" framing implied auto-sync — that was inaccurate. The dashboard Import is the user-side action; the MCP path remains useful for the downstream binding work (attaching products to packages + entitlement).
+
+After dashboard Import, the next session uses the RevenueCat MCP to:
+- Verify the imported products are visible to the MCP
+- Attach both to the existing `$rc_monthly` / `$rc_annual` packages on the `default` offering
+- Confirm the Skeinly Pro entitlement `entlaaca26b181` includes both via `attach-products-to-entitlement`
+
+## On the "メタデータが不足" (Missing Metadata) status
+
+After product creation, ASC shows each subscription with **「メタデータが不足」** (Missing Metadata) status. This is **expected** during Phase 39 closed beta and does NOT block sandbox testing.
+
+The status persists because:
+- The **App Review Screenshot** (in 審査に関する情報) is empty — required for Phase 40 GA submission
+- The **Image (任意)** 1024×1024 promotional image is empty — optional, but required for App Store Promotion / win-back offers
+
+For Phase 39, the sandbox purchase flow still works against products in this status. The metadata-missing badge only blocks Phase 40 GA submission to App Review. Plan to address both fields per the "Optional product-level fields (Phase 39: skip; Phase 40 GA: address)" table above before GA.
+
+If the badge causes Sandbox propagation to take more than the documented ~1 hour delay, double-check the product is set to **Cleared for Sale** in 配信可否 — that's the only metadata gate that actually blocks Sandbox availability, separate from the App Review readiness gate.
+
 ## Where this fits in the wider Phase 39 pipeline
 
 This runbook is one of two stores you complete before the RevenueCat product-to-package binding step. Sequence:
 
-1. **App Store Connect setup** (this runbook) → status "Ready to Submit"
-2. **Play Console setup** ([iap-setup-play-console.md](iap-setup-play-console.md)) → both base plans Active
-3. **RevenueCat product registration** (next session) — Claude uses the RevenueCat MCP to:
-   - Import iOS products `io.github.b150005.skeinly.pro.monthly` + `.yearly`
-   - Import Android products `skeinly_pro:pro-monthly` + `skeinly_pro:pro-yearly`
-   - Attach all four to the existing `$rc_monthly` / `$rc_annual` packages
-   - Confirm Skeinly Pro entitlement `entlaaca26b181` covers all four
-4. **End-to-end smoke test** — open paywall on a TestFlight build with a sandbox tester signed in, purchase, verify entitlement granted and `subscriptions` row written via `revenuecat-webhook`.
+1. **App Store Connect setup** (this runbook through Step 9) → status「メタデータが不足」or higher
+2. **RevenueCat dashboard Import** (this runbook Step 10, user-side click) → products visible in RC
+3. **Play Console setup** ([iap-setup-play-console.md](iap-setup-play-console.md)) → both base plans Active + dashboard Import equivalent
+4. **RevenueCat MCP binding** (next session, agent-side) — attach products to packages + verify entitlement coverage
+5. **End-to-end smoke test** — open paywall on a TestFlight build with a sandbox tester signed in, purchase, verify entitlement granted and `subscriptions` row written via `revenuecat-webhook`.
