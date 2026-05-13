@@ -229,6 +229,14 @@ Required even when ASC ↔ RC OAuth is wired. The MCP binding (A0f-4) is the nex
 
 The「メタデータが不足」(Missing Metadata) badge persists until App Review Screenshot + promotional 1024×1024 image are added. Phase 39 alpha does NOT need those — sandbox purchase still works. Address before Phase 40 GA submission.
 
+### A0b — Phase-40-GA-only ASC surfaces (skip for Phase 39 alpha)
+
+These ASC surfaces only render on the public App Store product page. Phase 39 alpha is TestFlight Internal only, so they have zero display value during alpha. Skipping is the correct call; address them as part of the Phase 40 GA submission audit.
+
+- **App 情報 → アプリのアクセシビリティ** (App Accessibility) — declares which assistive-tech features the app supports end-to-end (VoiceOver / Voice Control / Dynamic Type / Dark Interface / Differentiate Without Color / Sufficient Contrast / Reduce Motion / Captions / Audio Descriptions). Apple compliance: you may only declare features you've **verified work end-to-end for core tasks**. False declarations are App-Review rejectable. Skeinly's a11y audit is mid-flight (see CLAUDE.md Tech Debt: A25 Reduce Motion iOS SwiftUI sweep + M5 ChartEditor zoom WCAG 2.5.8 both pre-Phase-40-GA). Defer until the audit closes.
+- **App プライバシー → プライバシーニュートリションラベル — App Review Information screenshots** — required for IAP review only (the IAP "メタデータが不足" badge above).
+- **App 内イベント / カスタムプロダクトページ / プロダクトページの最適化 / プロモーションコード / Game Center / ノミネート** — growth / marketing surfaces; not used in Phase 39.
+
 ### A0b common gotchas
 
 - Product ID is permanent. Triple-check before saving.

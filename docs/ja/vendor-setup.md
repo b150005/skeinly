@@ -229,6 +229,14 @@ ASC ↔ RC OAuth が wired でも必須。MCP binding (A0f-4) は次の step。
 
 「メタデータが不足」バッジは App Review Screenshot + 1024×1024 promotional image を追加するまで残るが、Phase 39 alpha では sandbox 購入は機能する。Phase 40 GA 提出前に対応。
 
+### A0b — Phase 40 GA でのみ対応する ASC サーフェス (Phase 39 alpha ではスキップ)
+
+以下の ASC サーフェスは **App Store 公開商品ページにしか表示されない**。Phase 39 alpha は TestFlight Internal 配信のみで公開商品ページが存在しないため、alpha 段階の表示価値はゼロ。スキップが正解で、Phase 40 GA 提出前に audit して対応する。
+
+- **App 情報 → アプリのアクセシビリティ** — VoiceOver / 音声コントロール / さらに大きな文字 / ダークインターフェイス / カラー以外で区別 / 十分なコントラスト / 視差効果を減らす / キャプション / バリアフリー音声ガイド など、支援技術によるコアタスク完遂を申告。Apple コンプライアンス: **エンドツーエンドで動作確認済の機能のみ申告可**。虚偽申告は App Review reject 対象。Skeinly の a11y audit は途中 (CLAUDE.md Tech Debt: A25 Reduce Motion iOS SwiftUI sweep + M5 ChartEditor zoom WCAG 2.5.8 両方 pre-Phase-40-GA)。audit 完了後に申告。
+- **App プライバシー → プライバシーニュートリションラベル — App Review Information screenshots** — IAP レビュー時のみ必要 (上記 IAP 「メタデータが不足」バッジ)。
+- **App 内イベント / カスタムプロダクトページ / プロダクトページの最適化 / プロモーションコード / Game Center / ノミネート** — growth / marketing サーフェス。Phase 39 では使用しない。
+
 ### A0b よくある落とし穴
 
 - Product ID は永続。保存前に三重確認。
