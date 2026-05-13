@@ -146,7 +146,9 @@ base plan のオーバーフローメニュー (**⋯**) を開く → **Use for
 **アクティブ化は base plan edit page の最下部にある standalone ボタン — base plan 行の 3 点リーダー ⋮ メニューには存在しません。** ソース: [Play Console Help — Create and manage subscriptions](https://support.google.com/googleplay/android-developer/answer/140504)、2026-05-13 verified。
 
 パス:
-1. サブスクリプション詳細ページから **`monthly` の文字 (ID 列のテキスト)** をクリック — 現在の Play Console UI ではテキスト自体が hyperlink になっている (青/下線スタイル)。旧 UI では `›` 右矢印があったが、現行 UI ではテキスト click に置き換わっている。テキストがリンクっぽくなければ **行のどこかをクリック** (table-wide click navigation も有効) してみる。
+1. サブスクリプション詳細ページから base plan の edit page に遷移する。現行 Play Console UI には 2 つの等価なクリックターゲットがある:
+   - **base plan 行の右端にある `›` (右矢印) ボタン** — 2026-05-13 オペレータ確認で存在を確認、ただし**表示テーブルの可視カラムより右にあるため、横方向にテーブルをスクロール**して表示させる必要あり。狭いビューポートではデフォルトで隠れている。
+   - **ID 列の base plan ID テキスト (`monthly`)** — hyperlink としてレンダリング (横スクロール不要)。矢印と同じナビゲーション先。
 2. base plan の edit page が開く
 3. ページ最下部までスクロール
 4. **「有効にする」** (新しい UI では "Enable" 系の表現、旧 UI では「アクティブ化」と表示される場合あり — 同一アクション) をクリック → ダイアログで確認。ステータスが **未公開** → **有効** に変化

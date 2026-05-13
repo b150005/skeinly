@@ -146,7 +146,9 @@ This makes the monthly base plan visible to clients on older Play Billing Librar
 **Activation is a standalone button at the bottom of the base plan edit page — NOT in the 3-dot ⋮ overflow menu on the base plan row.** Source: [Play Console Help — Create and manage subscriptions](https://support.google.com/googleplay/android-developer/answer/140504), verified 2026-05-13.
 
 Path:
-1. From the subscription details page, **click the base plan ID text (`monthly`) in the ID column** — it is rendered as a clickable hyperlink in the current Play Console UI. (Some older Play Console help articles describe a `›` right-arrow on the row, but that visual affordance has been replaced by the clickable ID text in the current UI. If the ID text doesn't act as a link, try clicking anywhere on the row — table-wide click navigation also works.)
+1. From the subscription details page, navigate to the base plan edit page. There are TWO equivalent click targets in the current Play Console UI:
+   - **The `›` (right arrow) button at the far right of the base plan row** — operator-confirmed 2026-05-13 to exist, but it's positioned past the visible table columns, so you may need to **scroll the table horizontally** to reveal it. On narrow viewports the arrow is hidden by default.
+   - **The base plan ID text (`monthly`) in the ID column** — rendered as a clickable hyperlink (no horizontal scroll needed). Equivalent navigation target to the arrow.
 2. The base plan edit page opens.
 3. Scroll to the bottom of the page.
 4. Click **Activate** (the newer label is **Enable** in some JA locales — 「有効にする」 — and the older label is 「アクティブ化」; both trigger the same action) → confirm in the dialog. Status changes from **Inactive** (未公開) to **Active** (有効).
