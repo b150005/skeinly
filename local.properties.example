@@ -78,8 +78,18 @@ SENTRY_DSN_ANDROID=
 #   PostHog > Settings > Project > Project API Key.
 POSTHOG_API_KEY=
 
-# PostHog host. Default is the public US cloud. Override only if you self-
-# host PostHog or use the EU region (https://eu.i.posthog.com).
+# PostHog SDK ingestion endpoint. The `i.` subdomain is load-bearing —
+# this is the *ingestion* host (event capture + feature flags), distinct
+# from the dashboard URL you see in your browser:
+#   - SDK ingestion (this value):  https://us.i.posthog.com  |  https://eu.i.posthog.com
+#   - Dashboard / private API:     https://us.posthog.com    |  https://eu.posthog.com
+#
+# Pasting the dashboard URL here (the one shown in the PostHog onboarding
+# page address bar) will silently fail to deliver events. Verified against:
+#   - https://posthog.com/docs/api (canonical region reference)
+#   - https://posthog.com/docs/libraries/android (Android SDK example uses
+#     `host = "https://us.i.posthog.com"`)
+# Self-hosted installations should use their own configured ingestion host.
 POSTHOG_HOST=https://us.i.posthog.com
 
 # === Optional: F1 Pro subscription (Phase 41) ================================
