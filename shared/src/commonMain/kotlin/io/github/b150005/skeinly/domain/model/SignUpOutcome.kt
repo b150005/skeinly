@@ -41,4 +41,29 @@ sealed interface SignUpOutcome {
     data class EmailConfirmationRequired(
         val email: String,
     ) : SignUpOutcome
+
+    /**
+     * Sign-up succeeded at the HTTP level but the email is already
+     * registered in `auth.users`. Supabase's security-by-obscurity policy
+     * returns HTTP 200 OK with `UserInfo.identities = []` in this case
+     * to prevent email enumeration attacks — distinguish from a genuine
+     * new signup via the empty identities array.
+     *
+     * The UI surfaces this as `ErrorMessage.UserAlreadyExists` and
+     * auto-switches the form to sign-in mode so the (likely) legitimate
+     * owner can authenticate without re-typing.
+     *
+     * Root cause trail: pre-alpha 2026-05-13 sign-up bug where the
+     * operator tried to signup with their own pre-existing
+     * `b150005@outlook.jp` 7 times in succession — Supabase logged
+     * each as `user_repeated_signup` action with HTTP 200, no audit
+     * trail at the auth.users level, and the prior `SessionCreated /
+     * EmailConfirmationRequired` two-branch model mis-classified the
+     * repeated-signup case as EmailConfirmationRequired (also-no-session
+     * shape). [email] is the address the operator tried to sign up
+     * with so the UI can surface it during the auto-switch.
+     */
+    data class AlreadyRegistered(
+        val email: String,
+    ) : SignUpOutcome
 }
