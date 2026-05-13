@@ -177,14 +177,14 @@ App Store Connect → Skeinly app → sidebar **General → App Information** �
 **Production Server URL:**
 - Click **Set Up URL** under Production Server URL.
 - Paste the RevenueCat URL.
-- Notification Version: **Version 2**.
 - Click **Save**.
+- The **Notification Version** selector (Version 1 [deprecated] / Version 2) appears **only after the URL is saved** — it is NOT shown on the blank form. Click **Edit** to surface the picker → select **Version 2** → **Save** again. (Confirmed 2026-05-13 against [Apple Developer Forums thread 822543](https://developer.apple.com/forums/thread/822543) — multiple developers hit the same "where's the picker?" confusion before realizing it's conditional on URL entry.)
 
 **Sandbox Server URL:**
 - Click **Set Up URL** under Sandbox Server URL.
 - Paste the **same RevenueCat URL**.
-- Notification Version: **Version 2**.
 - Click **Save**.
+- Then click **Edit** to surface the Notification Version picker → select **Version 2** → **Save**.
 
 Setting both URLs explicitly (rather than relying on Apple's default routing of sandbox to production) keeps the configuration visible and self-documenting in App Store Connect.
 
@@ -210,6 +210,30 @@ Click **+** (or **Create Test Accounts** for the first tester). For each tester:
 | App Store Country or Region | Initial storefront. **This field IS editable later** if you need to switch a tester between US and Japan storefronts. |
 
 Click **Create**.
+
+### Naming convention for Phase 39 closed beta
+
+Sandbox testers do NOT have a "group" UI field — the list is flat. Use the First Name field as a group prefix so the list sorts intuitively:
+
+| Tester cohort | First Name | Last Name | Example |
+|---|---|---|---|
+| Core (operator + close friends, internal TestFlight) | `Core` | `Tester-<n>` or `Tester-<locale>-<n>` | First: `Core` / Last: `Tester-JP-1` |
+| General closed beta | `Beta` | `Tester-<n>` or `Tester-<locale>-<n>` | First: `Beta` / Last: `Tester-US-1` |
+
+Pseudonymous labels are explicitly allowed — Apple does not require name realism on sandbox accounts. Cannot be edited after creation, so pick the convention before creating the first tester.
+
+### Email best practice: plus-subaddressing on a real inbox
+
+Apple does not send a verification-click-through email at sandbox account creation (the account is usable immediately), but Apple DOES send communications to the address afterward (e.g., password reset if a tester forgets credentials). Use a **real, deliverable inbox** with plus-subaddressing so all sandbox testers route to one real mailbox:
+
+| Tester cohort | Email pattern (assuming `you@example.com` is your real base) |
+|---|---|
+| Core US | `you+core-us-1@example.com` |
+| Core JP | `you+core-jp-1@example.com` |
+| Beta US | `you+beta-us-1@example.com` |
+| Beta JP | `you+beta-jp-1@example.com` |
+
+Plus-subaddressing is the documented Apple pattern ([Apple's own sandbox account help page](https://developer.apple.com/help/app-store-connect/test-in-app-purchases/create-a-sandbox-apple-account/) uses `billjames2+UK@icloud.com` as an example). Gmail, iCloud Mail, Fastmail, ProtonMail all support `+` subaddressing — Outlook/Hotmail does NOT, so use a Gmail/iCloud base.
 
 ### Using sandbox testers on device
 
@@ -248,6 +272,16 @@ Allow ~1 hour for metadata propagation before testing in sandbox — newly-creat
 | 10 | Apple ID sign-in flow | On iOS device, sign out of Media & Purchases — NOT iCloud — before sandbox testing. |
 | 11 | Description char limit | ASC UI currently enforces **55 characters per locale** (operator-confirmed empirically 2026-05-13). Apple's public docs ([promoting-in-app-purchases](https://developer.apple.com/app-store/promoting-in-app-purchases/) + [help/app-store-connect/reference/in-app-purchase-information](https://developer.apple.com/help/app-store-connect/reference/in-app-purchase-information/)) still state **45 characters** — Apple raised the cap without updating docs. To stay safe under either limit, keep copy ≤45 chars; the runbook's current copy is calibrated to 55 (yearly EN sits at exactly 55). Display Name caps at 30. No soft warning — over-limit is rejected at save time. |
 | 12 | Description content compliance | Apple's content requirement on Description is "clearly distinguish the benefits of each offering" — the in-depth feature enumeration and price/auto-renew/free-trial disclosure obligations live on the **in-app sign-up screen** (paywall), NOT the Description field, per [App Store Review Guidelines §3.1.2(c)](https://developer.apple.com/app-store/review/guidelines/) + [Apple Subscriptions page](https://developer.apple.com/app-store/subscriptions/). "All Pro features" + savings claim style is compliant. Comparative savings claims ("Save 40%+") are explicitly permitted per the Subscriptions page "Billing amount" section, provided they sit subordinate to the total billing amount in the purchase flow. |
+
+## Optional product-level fields (Phase 39: skip; Phase 40 GA: address)
+
+Each subscription product detail page has three sections that are NOT required for Phase 39 closed beta. They appear in the ASC UI alongside the required fields; mention is kept here so they aren't accidentally treated as broken or missing.
+
+| Section | Phase 39 action | Phase 40 GA action |
+|---|---|---|
+| **画像 (Image, optional)** — 1024×1024 px image representing the subscription. Used for win-back offers, offer codes, and (if App Store Promotion enabled) shown on the App Store product page. | **Skip.** Phase 39 closed beta does not use win-back / offer codes / App Store Promotion — image is not in any active flow. | **TODO before GA**: prepare a 1024×1024 image. Skeinly's existing brand iconography (yarn-skein motif on `#EED952` background, [AppIcon refresh 2026-05-08](https://github.com/b150005/skeinly/commit/43a472c)) is the natural visual basis. Designer/operator action; not autonomously executable. |
+| **税金カテゴリ (Tax Category)** — defaults to "親アプリに一致する" (matches parent app). Parent app's category for Skeinly is "Digital App Sales" (デジタルアプリの販売). | **Leave default.** Subscription is taxed identically to a digital app sale — the inherited category is correct. | Same — no override needed unless tax-law guidance changes. |
+| **審査に関する情報 (Review Information)** — Screenshot + Review Notes for the App Review reviewer to test the IAP. | **Skip.** Closed-beta purchases route through Sandbox + TestFlight builds, which do NOT go through App Review for each IAP. | **TODO before GA**: (1) capture a screenshot of the in-app paywall (the screen where the user sees both monthly + yearly + 7-day trial); (2) write Review Notes explaining the path to the paywall: "Sign up → Settings → tap 'Upgrade to Pro' → paywall surfaces both subscription products." Apple reviewers will use these to test the IAP during Phase 40 GA review. Mandatory before submission. |
 
 ## Where this fits in the wider Phase 39 pipeline
 
