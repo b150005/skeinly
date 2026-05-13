@@ -77,11 +77,21 @@ Before per-tester setup, decide which TestFlight group each tester belongs to. T
 | **Skeinly Core** (JA: 「Skeinly コアチーム」) | Internal Testing (max 100) — members must be ASC team members | Operator + 1–2 close-friend collaborators (≤3 total) | Auto-deliver every build (unstable OK) — fast iteration | Direct Slack / LINE channel; immediate feedback |
 | **Skeinly Closed Beta** (JA: 「Skeinly クローズドベータ」) | External Testing (max 10,000) — email invite, no ASC team membership required | General testers (3–8) including ≥1 round-chart author + ≥1 ja-JP tester per the [Phase 39 rubric](../phase/phase-39-beta-rubric.md) | Tagged-stable builds only; first build needs Apple Beta App Review (24–48h) | Email + GitHub Issue ([beta-bug.yml template](../../../.github/ISSUE_TEMPLATE/beta-bug.yml)) |
 
-Create groups in ASC → TestFlight:
-- Internal Group: TestFlight → **内部テスト → グループを作成** → Group name `Skeinly Core` → "自動配信を有効にする" ON → Save.
-- External Group: TestFlight → **外部テスト → グループを作成** → Group name `Skeinly Closed Beta` → email invite each tester individually.
+### Default recommendation: External-only (skip Internal Group)
 
-Members of Skeinly Core must first be added as ASC team members (ASC → Users and Access → Users → +). Skeinly Closed Beta members do NOT need to be ASC team members.
+For most Phase 39 closed-beta operators, **only Skeinly Closed Beta (External) is needed**. Reasons:
+
+- The operator (ASC Account Holder) is automatically an Internal Tester by virtue of being on the team — they can self-test TestFlight builds on their own device without creating an Internal Group at all.
+- Adding close-friend testers to Internal requires granting ASC team membership (sales data, crash reports, full app visibility) — over-share for typical "test my app" relationships.
+- External Group covers all closed-beta testers including close friends with the only cost being Apple Beta App Review (24–48h on the FIRST build only; subsequent builds in the same train ship immediately).
+
+**Create Skeinly Core (Internal) only if** you have a co-developer / co-founder you'd already grant ASC team access to anyway AND want fast unstable-build iteration with them.
+
+### Create groups in ASC → TestFlight:
+- Internal Group (skip unless needed per above): TestFlight → **内部テスト → グループを作成** → Group name `Skeinly Core` → "自動配信を有効にする" ON → Save.
+- External Group (required): TestFlight → **外部テスト → グループを作成** → Group name `Skeinly Closed Beta` → email invite each tester individually.
+
+Members of Skeinly Core (if created) must first be added as ASC team members (ASC → Users and Access → Users → +). Skeinly Closed Beta members do NOT need to be ASC team members.
 
 ## Per-tester setup (repeat for each beta tester)
 

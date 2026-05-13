@@ -177,14 +177,23 @@ App Store Connect → Skeinly アプリ → サイドバー **General → App In
 **Production Server URL:**
 - Production Server URL 配下の **Set Up URL** クリック。
 - RevenueCat URL をペースト。
-- **Save** クリック。
-- **Notification Version** セレクタ (Version 1 [deprecated] / Version 2) は **URL を保存した後** にしか表示されない — 空のフォーム上では出現しない。**Edit** クリックでセレクタを surface → **Version 2** を選択 → 再度 **Save**。(2026-05-13 [Apple Developer Forums thread 822543](https://developer.apple.com/forums/thread/822543) で確認 — 「セレクタが見当たらない」混乱を複数の開発者が報告、URL 入力条件付き UI と判明)。
+- **Save** クリック。これで URL が設定される。
+- **Notification Version セレクタは新規 endpoint では出現しない場合あり**。Apple 公式 docs ([Apple Help — Enter server URLs](https://developer.apple.com/help/app-store-connect/configure-in-app-purchase-settings/enter-server-urls-for-app-store-server-notifications/)) + [Apple Developer Forums thread 822543](https://developer.apple.com/forums/thread/822543) は Version 1 (deprecated) / Version 2 picker の存在を記述しているが、オペレータが 2026-05-13 に実機確認したところ **新規 endpoint では picker が silently 不在** — Apple が docs 更新せずに default-to-V2 の UI 変更を deploy したと推定 (45-vs-55 字 Description cap 不一致と同じパターン)。Save → Edit で **picker が出れば Version 2 を選択**、出なければ **V2 が自動適用される**ので追加操作不要。どちらのパスでも V2 ルートの endpoint になる。
 
 **Sandbox Server URL:**
 - Sandbox Server URL 配下の **Set Up URL** クリック。
 - **同じ RevenueCat URL** をペースト。
-- **Save** クリック。
-- **Edit** クリックで Notification Version セレクタを surface → **Version 2** 選択 → **Save**。
+- **Save** クリック。Production と同じく picker 表示の有無に関わらず V2 が適用される。
+
+### V2 設定の検証手順
+
+ASC UI 上で picker 不表示時はバージョンが見えないが、RevenueCat の webhook 受信側で確認できる:
+
+1. RevenueCat Dashboard → Apps & providers → Skeinly iOS app → Apple Server to Server notification settings
+2. **Send test event** (RevenueCat 提供のボタン) → 設定済 ASC server URL 経由でテスト通知を発火
+3. Response 200 OK + 「Last received」タイムスタンプ更新 → V2 routing 確認完了
+
+これは元の `revenuecat-webhook` Edge Function deployment (Phase 39.0.1, 2026-05-08) で使用したのと同じ end-to-end 検証フロー。
 
 両 URL を明示的に設定することで (sandbox を production に自動ルーティングさせるのではなく)、App Store Connect 上で構成が可視化され自己記述的になります。
 
