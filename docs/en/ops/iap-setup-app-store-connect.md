@@ -94,14 +94,16 @@ Click **Create**, then on the product detail page:
 Scroll to **App Store Localizations** within the product detail page.
 
 Add **English (U.S.)**:
-- Display Name: `Skeinly Pro Monthly`
-- Description: `Unlock all Skeinly Pro features with a monthly subscription. Renews automatically each month.`
+- Display Name: `Skeinly Pro Monthly` (30-char limit; this fits at 19)
+- Description: `Unlock all Pro features. Auto-renews monthly.` (45 chars — limit is 55 regardless of language)
 
 Add **Japanese (Japan)**:
-- Display Name: `Skeinly Pro 月額プラン`
-- Description: `Skeinly Pro のすべての機能を月額サブスクリプションでご利用いただけます。毎月自動更新されます。`
+- Display Name: `Skeinly Pro 月額プラン` (15 chars)
+- Description: `Skeinly Pro の全機能を解放。毎月自動更新。` (22 chars)
 
 Click **Save**.
+
+> **Description 55-char limit:** Apple's Description field enforces a hard cap of 55 characters per locale. The cap is the same in EN and JA. Stay safely under 55 — there is no soft-warning state, just a save-time rejection.
 
 Authoritative reference: [Apple — Manage pricing for auto-renewable subscriptions](https://developer.apple.com/help/app-store-connect/manage-subscriptions/manage-pricing-for-auto-renewable-subscriptions/).
 
@@ -115,10 +117,10 @@ Same procedure as Step 3 with these values:
 | Product ID | `io.github.b150005.skeinly.pro.yearly` |
 | Subscription Duration | **1 Year** |
 | Base Price (USD) | **$24.99** |
-| EN Display Name | `Skeinly Pro Yearly` |
-| EN Description | `Unlock all Skeinly Pro features with a yearly subscription. Best value — save over 40% vs monthly. Renews automatically each year.` |
-| JA Display Name | `Skeinly Pro 年額プラン` |
-| JA Description | `Skeinly Pro のすべての機能を年額サブスクリプションでご利用いただけます。月額プランより 40% 以上お得。毎年自動更新されます。` |
+| EN Display Name | `Skeinly Pro Yearly` (18 chars; 30-char limit) |
+| EN Description | `Unlock all Pro features. Auto-renews yearly. Save 40%+.` (55 chars — exactly at the limit) |
+| JA Display Name | `Skeinly Pro 年額プラン` (15 chars) |
+| JA Description | `Skeinly Pro の全機能を解放。毎年自動更新、40% お得。` (30 chars) |
 
 For Japan (JPY), Apple will propose somewhere in the ¥3,600–¥4,000 range. Accept unless overriding.
 
@@ -243,6 +245,7 @@ Allow ~1 hour for metadata propagation before testing in sandbox — newly-creat
 | 8 | Metadata propagation delay | ~1 hour after product creation/edit before sandbox sees the change. |
 | 9 | Paid Apps agreement must be active | Otherwise subscriptions cannot be submitted for review. |
 | 10 | Apple ID sign-in flow | On iOS device, sign out of Media & Purchases — NOT iCloud — before sandbox testing. |
+| 11 | Description char limit | Apple's Description field caps at **55 characters per locale** (same in EN + JA). Display Name caps at 30 characters. No soft warning — over-limit input is rejected at save time. |
 
 ## Where this fits in the wider Phase 39 pipeline
 
