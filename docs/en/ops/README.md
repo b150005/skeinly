@@ -18,8 +18,9 @@
 |---|---|
 | [release.md](release.md) | Tag-driven release procedure — versioning, validation, what happens on tag push, post-upload manual steps. |
 | [beta-testing.md](beta-testing.md) | Inviting a closed-beta tester (TestFlight + Play Internal + RevenueCat sandbox configuration). |
-| [iap-setup-app-store-connect.md](iap-setup-app-store-connect.md) | Creating the two Skeinly Pro subscription products + 7-day Free Trial + ASSN V2 webhook + sandbox testers on the Apple side. |
-| [iap-setup-play-console.md](iap-setup-play-console.md) | Creating the `io.github.b150005.skeinly.pro` subscription + two base plans (`monthly` / `yearly`) + 7-day Free Trial offers + Pub/Sub RTDN + license testers on the Google side. |
+
+
+> One-time vendor portal setup (IAP product creation, App Store Connect / Play Console config, App content + store listing, Internal Testing track) has moved out of `ops/` into [../vendor-setup.md](../vendor-setup.md) per the "one-off setup → vendor-setup.md" rule below. Run that doc before tagging the first alpha; `ops/release.md` + `ops/beta-testing.md` cover the repeated operations after that.
 
 ### Incident response
 
