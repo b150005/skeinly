@@ -24,6 +24,15 @@ class FakeAuthRepository : AuthRepository {
      * deferred-confirmation path). Tests override per-case.
      */
     var signUpEmailConfirmationRequired: Boolean = false
+
+    /**
+     * When true, the next `signUpWithEmail` call returns
+     * [SignUpOutcome.AlreadyRegistered]. Models the Supabase production
+     * security-by-obscurity case: HTTP 200 OK + empty identities array
+     * when the email already corresponds to an existing user. Takes
+     * priority over [signUpEmailConfirmationRequired] when both are set.
+     */
+    var signUpEmailAlreadyRegistered: Boolean = false
     var lastPasswordResetEmail: String? = null
     var lastUpdatedPassword: String? = null
     var lastUpdatedEmail: String? = null
@@ -45,16 +54,23 @@ class FakeAuthRepository : AuthRepository {
         password: String,
     ): SignUpOutcome {
         signUpError?.let { throw it }
-        return if (signUpEmailConfirmationRequired) {
-            // Account row exists in auth.users but session is NOT created
-            // until the user clicks the email confirmation link. Match the
-            // production behavior of supabase-kt 3.x when the dashboard
-            // has Confirm email enabled.
-            SignUpOutcome.EmailConfirmationRequired(email = email)
-        } else {
-            currentUserId = "new-user-id"
-            authStateFlow.value = AuthState.Authenticated(userId = "new-user-id", email = email)
-            SignUpOutcome.SessionCreated
+        return when {
+            signUpEmailAlreadyRegistered ->
+                // Models Supabase 200 OK + empty identities for an email
+                // that already exists in auth.users. NEVER auto-authenticates
+                // — the legitimate owner must go through sign-in.
+                SignUpOutcome.AlreadyRegistered(email = email)
+            signUpEmailConfirmationRequired ->
+                // Account row exists in auth.users but session is NOT
+                // created until the user clicks the email confirmation
+                // link. Matches production behavior when Confirm email
+                // is enabled on the dashboard.
+                SignUpOutcome.EmailConfirmationRequired(email = email)
+            else -> {
+                currentUserId = "new-user-id"
+                authStateFlow.value = AuthState.Authenticated(userId = "new-user-id", email = email)
+                SignUpOutcome.SessionCreated
+            }
         }
     }
 

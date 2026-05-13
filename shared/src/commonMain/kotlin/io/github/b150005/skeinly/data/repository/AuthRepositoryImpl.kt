@@ -78,20 +78,33 @@ class AuthRepositoryImpl(
             supabaseClient
                 ?: throw IllegalStateException("Supabase is not configured")
 
-        client.auth.signUpWith(Email) {
-            this.email = email
-            this.password = password
+        val userInfo =
+            client.auth.signUpWith(Email) {
+                this.email = email
+                this.password = password
+            }
+
+        // Supabase security-by-obscurity: when the email already
+        // corresponds to an existing user, the /signup endpoint returns
+        // HTTP 200 OK with `UserInfo.identities = []` (instead of an
+        // error, to prevent email enumeration). Detect this branch
+        // BEFORE the session-presence check — both AlreadyRegistered and
+        // EmailConfirmationRequired produce a no-session response, so
+        // identities is the only signal distinguishing them.
+        if (userInfo?.identities?.isEmpty() == true) {
+            return SignUpOutcome.AlreadyRegistered(email = email)
         }
 
-        // Inspect the post-call session state to determine whether Supabase
-        // auto-signed-in the user (Confirm-email = OFF on the dashboard) or
-        // deferred session creation pending email confirmation
-        // (Confirm-email = ON). The shared module has no a priori knowledge
-        // of the dashboard setting, so this post-hoc inspection is the
-        // canonical detection path. supabase-kt populates
-        // `currentSessionOrNull()` synchronously inside `signUpWith` on the
-        // session-created path; on the confirmation-pending path the
-        // accessor stays null because no session token was issued.
+        // Otherwise inspect the post-call session state to determine
+        // whether Supabase auto-signed-in the user (Confirm-email = OFF
+        // on the dashboard) or deferred session creation pending email
+        // confirmation (Confirm-email = ON). The shared module has no
+        // a priori knowledge of the dashboard setting, so this post-hoc
+        // inspection is the canonical detection path. supabase-kt
+        // populates `currentSessionOrNull()` synchronously inside
+        // `signUpWith` on the session-created path; on the confirmation-
+        // pending path the accessor stays null because no session token
+        // was issued.
         return if (client.auth.currentSessionOrNull() != null) {
             SignUpOutcome.SessionCreated
         } else {

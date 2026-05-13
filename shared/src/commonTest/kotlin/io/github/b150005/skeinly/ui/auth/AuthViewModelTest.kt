@@ -2,6 +2,7 @@ package io.github.b150005.skeinly.ui.auth
 
 import app.cash.turbine.test
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.usecase.ErrorMessage
 import io.github.b150005.skeinly.domain.usecase.FakeAuthRepository
 import io.github.b150005.skeinly.domain.usecase.ObserveAuthStateUseCase
 import io.github.b150005.skeinly.domain.usecase.SignInUseCase
@@ -225,6 +226,43 @@ class AuthViewModelTest {
                 // Email is intentionally retained so the user can sign-in
                 // immediately after confirming via the link — not blanked.
                 assertEquals("new@example.com", state.email)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `sign up with already-registered email auto-switches to sign-in mode and surfaces UserAlreadyExists error`() =
+        runTest {
+            // Models the 2026-05-13 operator confusion: user repeatedly
+            // tried to sign up with their own pre-existing
+            // b150005@outlook.jp email. Supabase returned HTTP 200 OK
+            // with empty identities each time (security-by-obscurity to
+            // prevent email enumeration), so the prior 2-branch
+            // SessionCreated/EmailConfirmationRequired model
+            // mis-classified this as "confirmation pending" and showed
+            // the wrong UI. With the AlreadyRegistered branch, the
+            // ViewModel must:
+            //   - flip isSignUp = false so the user can sign in next tap
+            //   - surface ErrorMessage.UserAlreadyExists so the alert
+            //     explains the auto-switch
+            //   - retain the password (user might have typed their real
+            //     credential and can sign in immediately)
+            authRepo.signUpEmailAlreadyRegistered = true
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(AuthEvent.ToggleMode)
+            viewModel.onEvent(AuthEvent.UpdateEmail("existing@example.com"))
+            viewModel.onEvent(AuthEvent.UpdatePassword("realpassword"))
+            viewModel.onEvent(AuthEvent.Submit)
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertFalse(state.isSubmitting)
+                assertFalse(state.isSignUp)
+                assertEquals(ErrorMessage.UserAlreadyExists, state.error)
+                assertEquals("realpassword", state.password)
+                assertEquals("existing@example.com", state.email)
+                assertNull(state.emailConfirmationSentTo)
                 cancelAndIgnoreRemainingEvents()
             }
         }

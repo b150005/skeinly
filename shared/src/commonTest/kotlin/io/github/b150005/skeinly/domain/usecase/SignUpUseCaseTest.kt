@@ -36,6 +36,25 @@ class SignUpUseCaseTest {
         }
 
     @Test
+    fun `sign up returns Success with AlreadyRegistered when email exists in auth_users`() =
+        runTest {
+            // Models Supabase's security-by-obscurity behavior surfaced
+            // 2026-05-13: when the email already exists, Supabase returns
+            // HTTP 200 OK with `UserInfo.identities = []` instead of an
+            // error (to prevent email enumeration). The use case must
+            // distinguish this from EmailConfirmationRequired — both have
+            // no session, but AlreadyRegistered routes to "switch to
+            // sign-in" UX vs "check your email".
+            fakeAuth.signUpEmailAlreadyRegistered = true
+
+            val result = signUp("existing@example.com", "password123")
+
+            assertIs<UseCaseResult.Success<SignUpOutcome>>(result)
+            val outcome = assertIs<SignUpOutcome.AlreadyRegistered>(result.value)
+            assertEquals("existing@example.com", outcome.email)
+        }
+
+    @Test
     fun `sign up with blank email returns FieldRequired`() =
         runTest {
             val result = signUp("", "password123")
