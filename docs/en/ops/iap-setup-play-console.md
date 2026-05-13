@@ -91,6 +91,14 @@ After creating, click **Edit subscription details**. Add **up to 4 benefit lines
 
 **Do not mention "free trial" or specific prices in benefit text** — Play policy prohibits it. The trial and price are surfaced separately in the user's subscription UI.
 
+### Add the internal-only Description (optional, max 200 chars)
+
+Below the benefits, there is a 説明 / Description field (200-char cap, Google Play does NOT show this to users — "Google Play でユーザーには表示されません"). It's an internal note for the developer team. You can leave it blank, or paste this 181-char reference (well under the 200 limit):
+
+```
+Skeinly Pro auto-renewable subscription. Monthly ($3.99) + yearly ($24.99) base plans, 7-day free trial. RevenueCat entitlement entlaaca26b181 via $rc_monthly / $rc_annual packages.
+```
+
 Authoritative reference: [Play Console Help — Create and manage subscriptions](https://support.google.com/googleplay/android-developer/answer/140504).
 
 ## Step 2 — Add the Monthly Base Plan

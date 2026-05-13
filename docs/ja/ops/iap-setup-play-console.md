@@ -91,6 +91,14 @@ Product ID は変更も再利用も不可。タイポした場合、プロダク
 
 **ベネフィットテキストに「無料トライアル」や具体的な価格を書かないこと** — Play ポリシー違反。トライアルと価格はユーザのサブスクリプション UI に別途表示されます。
 
+### 内部用「説明」追加 (任意、最大 200 字)
+
+ベネフィットの下に「説明」フィールドあり (200 字上限、Google Play でユーザには表示されない内部メモ用)。空欄でも問題なし、または下記の 181 字版 (200 字制限内に余裕あり) を貼り付け:
+
+```
+Skeinly Pro auto-renewable subscription. Monthly ($3.99) + yearly ($24.99) base plans, 7-day free trial. RevenueCat entitlement entlaaca26b181 via $rc_monthly / $rc_annual packages.
+```
+
 正典: [Play Console Help — Create and manage subscriptions](https://support.google.com/googleplay/android-developer/answer/140504)。
 
 ## ステップ 2 — 月額 Base Plan 追加

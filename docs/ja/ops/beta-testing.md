@@ -38,6 +38,24 @@ Sandbox 経由なら **全部** をテストできる。さらに sandbox の **
 - [ ] iOS app が `REVENUECAT_API_KEY_IOS` GitHub secret 配線でビルド済み（closed beta 用 TestFlight ビルド）。
 - [ ] Android app が `REVENUECAT_API_KEY_ANDROID` GitHub secret 配線でビルド済み（`gradle-play-publisher` 経由 Internal Testing track アップロード）。
 - [ ] `RevenueCatAuthBridge` が production code に入っている（commit `e1088d1` 以降）。Skeinly auth 後に `Purchases.logIn(userId)` が発火することを保証。
+- [ ] **Supabase Auth Site URL** が production の email-confirmation landing page を指している (dev デフォルトの `http://localhost:3000` ではない)。詳細は下記「Supabase Auth URL 設定」セクション。
+
+## Supabase Auth URL 設定
+
+Supabase Dashboard で **Confirm email** が ON のとき (prod デフォルト)、Supabase は全ての新規 signup に確認リンクを送信。リンクは Supabase の `/auth/v1/verify` endpoint を経由してから `${Site URL}?code=...` にユーザのブラウザをリダイレクト。Site URL が dev デフォルトの `http://localhost:3000` のままだと、リダイレクト先がブラウザで解決できない URL になり、テスターは「このサイトにアクセスできません」エラーを目にする — 実際にはリダイレクト発火前に Supabase backend 側でメール検証は正常完了しているにもかかわらず混乱の元になる。
+
+一度限りの設定:
+
+1. Supabase Dashboard で Skeinly プロジェクトを開く → **Authentication → URL Configuration**
+2. **Site URL** を `https://b150005.github.io/skeinly/email-confirmed/` に設定
+3. **Redirect URLs** に以下を追加 (まだ allow-list されていなければ):
+   - `https://b150005.github.io/skeinly/email-confirmed/`
+   - `https://b150005.github.io/skeinly/ja/email-confirmed/`
+4. **Save** クリック
+
+Landing page は [`docs/public/email-confirmed/index.html`](../../public/email-confirmed/index.html) (EN) + [`docs/public/ja/email-confirmed/index.html`](../../public/ja/email-confirmed/index.html) (JA) に置かれ、リポジトリの `main` ブランチから GitHub Pages 経由で serve される。ページ修正は HTML を編集して push するだけ — URL 自体が変わらない限り Supabase Dashboard 側の更新は不要。
+
+**Phase 40 GA 向けの forward-compat note**: Universal Links / App Links を使えば email-confirmation リンクが Skeinly アプリを直接開いて PKCE `code` をアプリ内で認証済セッションと交換でき、手動の「アプリに戻ってサインイン」ステップが不要になる。配線済 ([CLAUDE.md A16](../../../.claude/CLAUDE.md) Tech Debt — `AppDelegate.application(_:continue:restorationHandler:)` + AASA テンプレート `docs/well-known/`) だが、AASA ファイルを **ルートドメイン** パス (`https://<host>/.well-known/apple-app-site-association`) に置く必要があり、現在の Project Pages サイト `b150005.github.io/skeinly/` ではこれを serve できない。カスタムドメインまたは User Pages リポジトリ準備まで保留。
 
 ## TestFlight テスターグループ構造
 
