@@ -6,12 +6,14 @@
 
 Create the Skeinly Pro auto-renewable subscription on the Google side end-to-end:
 
-- **Subscription Product:** `skeinly_pro`
-- **Monthly Base Plan:** `pro-monthly` — $3.99/month
-- **Yearly Base Plan:** `pro-yearly` — $24.99/year
+- **Subscription Product:** `io.github.b150005.skeinly.pro` (reverse-DNS, iOS-symmetric)
+- **Monthly Base Plan:** `monthly` — $3.99/month
+- **Yearly Base Plan:** `yearly` — $24.99/year
 - **7-day Free Trial** offer attached to each base plan
 - **Real-time Developer Notifications (RTDN)** routed through Google Cloud Pub/Sub to RevenueCat
 - **License testers** registered so closed-beta testers can purchase without real charges
+
+> **Note on the reverse-DNS scheme** (Agent Team decision 2026-05-13): the subscription product ID matches the iOS bundle-ID prefix (`io.github.b150005.skeinly.pro`) so the resulting RevenueCat identifiers — `io.github.b150005.skeinly.pro:monthly` + `io.github.b150005.skeinly.pro:yearly` — share the common prefix `io.github.b150005.skeinly.pro` with the iOS product IDs `io.github.b150005.skeinly.pro.monthly` + `.yearly`. Only the separator differs (`:` on Android, `.` on iOS — both forced by their respective ecosystem conventions). Cross-platform Pro entitlement debugging in RC dashboard / analytics groups naturally by the shared prefix.
 
 After this runbook completes, the operator hands off to the next session for the [RevenueCat side](../adr/016-phase-41-revenuecat-subscription.md) (product-to-package binding via the RevenueCat MCP).
 
@@ -31,27 +33,29 @@ Counterpart for iOS: [iap-setup-app-store-connect.md](iap-setup-app-store-connec
 | Pricing | $3.99/mo + $24.99/yr | ADR-016 §50 |
 | Free trial duration | 7 days | ADR-016 §50 |
 | Structure | 1 Subscription Product × 2 Base Plans | Modern PBL 7+ idiom. Free trial eligibility is enforced at subscription-product scope = one redemption per user across both base plans → trial cost protected. RevenueCat product identifier `subscription_id:base_plan_id` (colon-separated) is the post-Feb-2023 format. |
-| Subscription Product ID | `skeinly_pro` | App-prefixed for future-proofing; underscores are allowed for subscription product IDs. |
-| Base Plan IDs | `pro-monthly` + `pro-yearly` | **Hyphens only — underscores are NOT allowed for base plan IDs.** This is a Google Play API constraint, not a style preference. |
+| Subscription Product ID | `io.github.b150005.skeinly.pro` (reverse-DNS, iOS-symmetric) | Item ID character set per Play Console dialog hint: lowercase letters (`a-z`), digits (`0-9`), underscores (`_`), periods (`.`), starting with letter or digit. 29 chars, under the 40-char limit. Matches the iOS bundle ID prefix so cross-platform RC dashboard grouping is natural. |
+| Base Plan IDs | `monthly` + `yearly` (single-word, no separator needed) | **Hyphens-allowed but unused here — Base Plan IDs accept `a-z`, `0-9`, `-` per Google Publisher API.** Single-word names sidestep the underscore-vs-hyphen issue entirely. Per [research-critic 2026-05-13](https://developers.google.com/android-publisher/api-ref/rest/v3/monetization.subscriptions). |
 | Backwards compatibility | Monthly base plan marked compatible | RevenueCat docs note older SDK versions only see base plans marked "Use for deprecated billing methods". Marking the monthly plan keeps that fallback path open. |
 | Base region for pricing | USD | Play Console auto-converts to all enabled countries; per-country override available. |
 | Track for license testers | Internal Testing | License testers can purchase from any published track; Internal is the lowest-friction one. |
 
 ### ID validity reference
 
-| Field | Allowed characters | Examples |
+| Field | Allowed characters | Skeinly value |
 |---|---|---|
-| Subscription Product ID | `a-z`, `0-9`, `_`, `.` | `skeinly_pro` ✅ |
-| Base Plan ID | `a-z`, `0-9`, `-` only | `pro-monthly` ✅ — `pro_monthly` ❌ rejected by Play Console |
-| Offer ID | same as base plan | `pro-monthly-trial` ✅ |
+| Subscription Product ID | `a-z`, `0-9`, `_`, `.` (must start with letter or digit, max 40 chars) | `io.github.b150005.skeinly.pro` (reverse-DNS — matches iOS bundle ID prefix) |
+| Base Plan ID | `a-z`, `0-9`, `-` only (max 63 chars) | `monthly` / `yearly` (single-word, no separator needed) |
+| Offer ID | same as base plan | `monthly-trial` / `yearly-trial` |
 
-Source: [Google Publisher API — Subscriptions reference](https://developers.google.com/android-publisher/api-ref/rest/v3/monetization.subscriptions).
+Source: Play Console dialog hint (Subscription Product ID), [Google Publisher API — Subscriptions reference](https://developers.google.com/android-publisher/api-ref/rest/v3/monetization.subscriptions) (Base Plan ID).
+
+> **Forward-compat note**: Earlier iterations of this runbook used `skeinly_pro` + `pro-monthly` / `pro-yearly` (Android-native short form). The 2026-05-13 Agent Team agreed on the reverse-DNS scheme to maximize iOS symmetry, since Base Plan IDs accepting only hyphens means we can't use periods there anyway — and naming Base Plans as single words (`monthly`, `yearly`) sidesteps the hyphen-vs-underscore issue entirely while keeping the Subscription Product ID prefix-identical to iOS.
 
 ## Order of operations
 
-1. Create Subscription Product `skeinly_pro` (no base plan yet)
-2. Add monthly base plan `pro-monthly` + set prices + mark backwards compatible + activate
-3. Add yearly base plan `pro-yearly` + set prices + activate
+1. Create Subscription Product `io.github.b150005.skeinly.pro` (no base plan yet)
+2. Add monthly base plan `monthly` + set prices + mark backwards compatible + activate
+3. Add yearly base plan `yearly` + set prices + activate
 4. Create 7-day Free Trial offer on monthly base plan + activate
 5. Create 7-day Free Trial offer on yearly base plan + activate
 6. Add Japanese (ja-JP) translation for store listing
@@ -71,7 +75,7 @@ Play Console → Skeinly app → sidebar **Monetize with Play → Products → S
 
 | Field | Value |
 |---|---|
-| Product ID | `skeinly_pro` |
+| Product ID (アイテム ID) | `io.github.b150005.skeinly.pro` (reverse-DNS, iOS bundle ID prefix; 29 chars under 40 limit) |
 | Name | `Skeinly Pro` (max 55 chars; user-visible in subscription emails and the Google Play subscription center) |
 
 Click **Create**.
@@ -107,7 +111,7 @@ From the subscription details page, click **Add base plan**.
 
 | Field | Value |
 |---|---|
-| Base Plan ID | `pro-monthly` (hyphens only — underscores rejected) |
+| Base Plan ID | `monthly` (single word, no separator) |
 | Type | **Auto-renewing** |
 | Billing period | Monthly |
 | Grace period | 3 days (Play default; consider 7 days for better retention) |
@@ -149,7 +153,7 @@ Same procedure as Step 2 with these values:
 
 | Field | Value |
 |---|---|
-| Base Plan ID | `pro-yearly` |
+| Base Plan ID | `yearly` (single word, no separator) |
 | Type | Auto-renewing |
 | Billing period | **Yearly** |
 | Grace period | 7 days (recommended for annual — longer grace appropriate for higher-value commitment) |
@@ -165,12 +169,12 @@ Click **Activate**.
 
 Free trials are not embedded inside base plans — they are **separate Offer objects** attached to each base plan. Create one offer per base plan.
 
-From the subscription details page → **Base plans and offers** section → on the `pro-monthly` row click **Add offer**.
+From the subscription details page → **Base plans and offers** section → on the `monthly` row click **Add offer**.
 
 | Field | Value |
 |---|---|
-| Associated base plan | `pro-monthly` (pre-selected) |
-| Offer ID | `pro-monthly-trial` (hyphens only) |
+| Associated base plan | `monthly` (pre-selected) |
+| Offer ID | `monthly-trial` (single hyphen separator; base plan ID is one word so this stays parseable) |
 | Eligibility | **New customer acquisition** → **"The user has never had entitlement to this subscription"** |
 | Country availability | Same set as the base plan |
 
@@ -193,12 +197,12 @@ Authoritative reference: [Play Console Help — Understanding subscriptions](htt
 
 ## Step 5 — Free Trial offer (Yearly)
 
-Repeat Step 4 on the `pro-yearly` row.
+Repeat Step 4 on the `yearly` row.
 
 | Field | Value |
 |---|---|
-| Offer ID | `pro-yearly-trial` |
-| Associated base plan | `pro-yearly` |
+| Offer ID | `yearly-trial` |
+| Associated base plan | `yearly` |
 | Eligibility | New customer acquisition → "The user has never had entitlement to this subscription" |
 | Phase | Free trial, 7 days |
 
@@ -330,7 +334,7 @@ Authoritative reference: [RevenueCat — Google Server Notifications](https://ww
 
 1. RevenueCat Dashboard → **Project Settings → Apps & providers** → click the Skeinly Android app → scroll to **Products**.
 2. To the right of **+ New** there is an **Import** button. Click it.
-3. RevenueCat fetches the current Play Console product catalog and offers to register them in your RevenueCat project. Confirm the import for both `skeinly_pro:pro-monthly` and `skeinly_pro:pro-yearly` (the colon-separated RC identifier format for post-Feb-2023 Google Play products).
+3. RevenueCat fetches the current Play Console product catalog and offers to register them in your RevenueCat project. Confirm the import for both `io.github.b150005.skeinly.pro:monthly` and `io.github.b150005.skeinly.pro:yearly` (the colon-separated RC identifier format for post-Feb-2023 Google Play products).
 4. After Import completes, both products appear in **Products** with the colon-separated RC identifiers.
 
 The dashboard Import is the user-side action; the MCP path remains useful for the downstream binding work (attaching products to packages + entitlement) which the next session performs.
@@ -339,11 +343,11 @@ The dashboard Import is the user-side action; the MCP path remains useful for th
 
 Confirm in Play Console:
 
-- [ ] Subscription Product `skeinly_pro` exists.
-- [ ] Base plan `pro-monthly` exists, status **Active**, marked **Use for deprecated billing methods**.
-- [ ] Base plan `pro-yearly` exists, status **Active**.
-- [ ] Free Trial offer `pro-monthly-trial` exists, status **Active**, 7-day phase, "Never had entitlement to this subscription" eligibility.
-- [ ] Free Trial offer `pro-yearly-trial` exists, status **Active**, same shape.
+- [ ] Subscription Product `io.github.b150005.skeinly.pro` exists.
+- [ ] Base plan `monthly` exists, status **Active**, marked **Use for deprecated billing methods**.
+- [ ] Base plan `yearly` exists, status **Active**.
+- [ ] Free Trial offer `monthly-trial` exists, status **Active**, 7-day phase, "Never had entitlement to this subscription" eligibility.
+- [ ] Free Trial offer `yearly-trial` exists, status **Active**, same shape.
 - [ ] Japanese (ja-JP) translation added for benefits.
 - [ ] App is published to Internal Testing (or higher).
 - [ ] At least one license tester registered (one US + one JP recommended).
@@ -356,14 +360,14 @@ Confirm in Play Console:
 | # | Gotcha | Detail |
 |---|---|---|
 | 1 | Subscription Product ID is permanent and non-reusable | Even archived IDs cannot be reused. Type carefully. |
-| 2 | Base Plan ID uses hyphens, Product ID uses underscores | `skeinly_pro` (product) vs `pro-monthly` (base plan). Mixing them up = Play Console rejection. |
+| 2 | Subscription Product ID + Base Plan ID have different character sets | `io.github.b150005.skeinly.pro` (product, supports `_` `.`) vs `monthly` / `yearly` (base plan, only `a-z` `0-9` `-`). Skeinly's chosen names sidestep the issue (single-word base plans need no separator) but the constraint is real if you ever rename. |
 | 3 | Only one base plan can be "backwards compatible" | Mark monthly. Older SDKs only see the marked one. |
 | 4 | Benefits text cannot mention "free trial" or specific prices | Play policy. Surface those through paywall copy + StoreKit dialog only. |
 | 5 | License tester needs app published to a track | Internal Testing minimum. Draft app won't accept purchases. |
 | 6 | Free trial eligibility scope | "Has never had entitlement to this subscription" = once per user across both base plans. Protected. |
 | 7 | GCP credentials need ~36 hr warmup | Set up RevenueCat's Play Console service credentials well before Pub/Sub Connect step. |
 | 8 | Domain Restricted Sharing org policy may block IAM grant | Add `system.gserviceaccount.com` exception if grant fails. |
-| 9 | RevenueCat identifier format for post-Feb-2023 products | `subscription_id:base_plan_id` colon-separated. For us: `skeinly_pro:pro-monthly` + `skeinly_pro:pro-yearly`. |
+| 9 | RevenueCat identifier format for post-Feb-2023 products | `subscription_id:base_plan_id` colon-separated. For us: `io.github.b150005.skeinly.pro:monthly` + `io.github.b150005.skeinly.pro:yearly`. Shares the prefix `io.github.b150005.skeinly.pro` with the iOS product IDs (only the separator differs — `:` Android, `.` iOS). |
 | 10 | Pricing in JPY rounded by Play Console's "charming" | Review auto-converted yen values; override if Play's rounding differs from your intent. |
 | 11 | PBL version is RevenueCat's concern, not yours | We use RevenueCat KMP SDK; PBL version (currently 7.x inside `purchases-android` 17.55.x) is managed for us. |
 

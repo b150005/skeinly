@@ -21,7 +21,7 @@
 | [release.md](release.md) | タグ駆動リリース手順 — バージョン管理、検証、タグ push 時の挙動、アップロード後の手動操作 |
 | [beta-testing.md](beta-testing.md) | クローズドベータテスター招待 (TestFlight + Play Internal + RevenueCat sandbox 設定) |
 | [iap-setup-app-store-connect.md](iap-setup-app-store-connect.md) | Apple 側で Skeinly Pro サブスクリプション 2 種 + 7 日間無料トライアル + ASSN V2 webhook + sandbox テスター作成 |
-| [iap-setup-play-console.md](iap-setup-play-console.md) | Google 側で `skeinly_pro` サブスクリプション + 2 base plan + 7 日間無料トライアルオファー + Pub/Sub RTDN + ライセンステスター作成 |
+| [iap-setup-play-console.md](iap-setup-play-console.md) | Google 側で `io.github.b150005.skeinly.pro` サブスクリプション + 2 base plan (`monthly` / `yearly`) + 7 日間無料トライアルオファー + Pub/Sub RTDN + ライセンステスター作成 |
 
 ### 障害対応
 
