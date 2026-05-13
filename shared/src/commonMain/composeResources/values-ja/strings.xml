@@ -217,6 +217,11 @@
     <string name="action_toggle_to_sign_up">アカウントをお持ちでない方？登録</string>
     <string name="action_continue_with_google">Googleで続ける（近日公開）</string>
     <string name="action_continue_with_apple">Appleで続ける（近日公開）</string>
+    <!-- Supabase の Confirm-email が ON のとき、サインアップ成功後に表示する画面 -->
+    <string name="title_email_confirmation_sent">メールを確認してください</string>
+    <string name="body_email_confirmation_sent">確認リンクを %1$s に送信しました。メール内のリンクをクリックしてサインインを完了してください。</string>
+    <string name="body_email_confirmation_check_spam">数分以内にメールが届かない場合は迷惑メールフォルダもご確認ください。</string>
+    <string name="action_return_to_sign_in">ログイン画面に戻る</string>
 
     <!-- Profile screen -->
     <string name="title_profile">プロフィール</string>

@@ -375,6 +375,74 @@
         }
       }
     },
+    "action_return_to_sign_in": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return to sign-in"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログイン画面に戻る"
+          }
+        }
+      }
+    },
+    "body_email_confirmation_check_spam": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If you don't see it within a few minutes, check your spam folder."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "数分以内にメールが届かない場合は迷惑メールフォルダもご確認ください。"
+          }
+        }
+      }
+    },
+    "body_email_confirmation_sent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We sent a confirmation link to %@. Click the link to complete sign-in."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確認リンクを %@ に送信しました。メール内のリンクをクリックしてサインインを完了してください。"
+          }
+        }
+      }
+    },
+    "title_email_confirmation_sent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check your email"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メールを確認してください"
+          }
+        }
+      }
+    },
     "action_continue_with_google": {
       "extractionState": "manual",
       "localizations": {

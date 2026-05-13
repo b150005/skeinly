@@ -1,6 +1,7 @@
 package io.github.b150005.skeinly.domain.repository
 
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.SignUpOutcome
 import kotlinx.coroutines.flow.Flow
 
 interface AuthRepository {
@@ -11,10 +12,19 @@ interface AuthRepository {
         password: String,
     )
 
+    /**
+     * Creates a new Supabase auth account. Returns [SignUpOutcome] indicating
+     * whether the call also created an authenticated session
+     * ([SignUpOutcome.SessionCreated]) or whether Supabase deferred session
+     * creation pending email confirmation
+     * ([SignUpOutcome.EmailConfirmationRequired]). The UI uses this to
+     * decide between waiting on `observeAuthState()` for the Authenticated
+     * transition vs. surfacing a "check your email" view.
+     */
     suspend fun signUpWithEmail(
         email: String,
         password: String,
-    )
+    ): SignUpOutcome
 
     suspend fun signOut()
 

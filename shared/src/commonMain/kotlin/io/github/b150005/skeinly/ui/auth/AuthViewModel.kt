@@ -3,6 +3,7 @@ package io.github.b150005.skeinly.ui.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.SignUpOutcome
 import io.github.b150005.skeinly.domain.usecase.ErrorMessage
 import io.github.b150005.skeinly.domain.usecase.ObserveAuthStateUseCase
 import io.github.b150005.skeinly.domain.usecase.SignInUseCase
@@ -24,6 +25,14 @@ data class AuthUiState(
     val isSignUp: Boolean = false,
     val isSubmitting: Boolean = false,
     val error: ErrorMessage? = null,
+    /**
+     * Non-null while the screen is in the "check your email" state after a
+     * sign-up that returned [SignUpOutcome.EmailConfirmationRequired].
+     * Carries the email address the confirmation link was sent to so the
+     * UI can surface it ("確認メールを X に送信しました"). UI returns to the
+     * sign-in form via [AuthEvent.DismissEmailConfirmation].
+     */
+    val emailConfirmationSentTo: String? = null,
 )
 
 sealed interface AuthEvent {
@@ -40,6 +49,14 @@ sealed interface AuthEvent {
     data object Submit : AuthEvent
 
     data object ClearError : AuthEvent
+
+    /**
+     * Dismisses the "check your email" confirmation view and returns the
+     * form to the sign-in mode (`isSignUp = false`, password cleared,
+     * `emailConfirmationSentTo = null`). Fires when the user taps the
+     * "ログイン画面に戻る" CTA on the post-sign-up screen.
+     */
+    data object DismissEmailConfirmation : AuthEvent
 }
 
 private data class FormState(
@@ -48,6 +65,7 @@ private data class FormState(
     val isSignUp: Boolean = false,
     val isSubmitting: Boolean = false,
     val error: ErrorMessage? = null,
+    val emailConfirmationSentTo: String? = null,
 )
 
 class AuthViewModel(
@@ -66,6 +84,7 @@ class AuthViewModel(
                 isSignUp = formState.isSignUp,
                 isSubmitting = formState.isSubmitting,
                 error = formState.error,
+                emailConfirmationSentTo = formState.emailConfirmationSentTo,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -80,6 +99,14 @@ class AuthViewModel(
             AuthEvent.ToggleMode -> form.update { it.copy(isSignUp = !it.isSignUp, error = null) }
             AuthEvent.Submit -> submit()
             AuthEvent.ClearError -> form.update { it.copy(error = null) }
+            AuthEvent.DismissEmailConfirmation ->
+                form.update {
+                    it.copy(
+                        emailConfirmationSentTo = null,
+                        isSignUp = false,
+                        password = "",
+                    )
+                }
         }
     }
 
@@ -90,21 +117,54 @@ class AuthViewModel(
         viewModelScope.launch {
             form.update { it.copy(isSubmitting = true, error = null) }
 
-            val result =
-                if (current.isSignUp) {
-                    signUp(current.email, current.password)
-                } else {
-                    signIn(current.email, current.password)
-                }
+            if (current.isSignUp) {
+                handleSignUp(current.email, current.password)
+            } else {
+                handleSignIn(current.email, current.password)
+            }
+        }
+    }
 
-            when (result) {
-                is UseCaseResult.Success -> {
-                    form.update { it.copy(isSubmitting = false) }
-                }
-                is UseCaseResult.Failure -> {
-                    form.update { it.copy(isSubmitting = false, error = result.error.toErrorMessage()) }
+    private suspend fun handleSignUp(
+        email: String,
+        password: String,
+    ) {
+        when (val result = signUp(email, password)) {
+            is UseCaseResult.Success -> {
+                when (val outcome = result.value) {
+                    is SignUpOutcome.SessionCreated ->
+                        // observeAuthState() will emit Authenticated; the
+                        // root navigator switches away from LoginScreen on
+                        // that transition. Just clear the submitting flag.
+                        form.update { it.copy(isSubmitting = false) }
+                    is SignUpOutcome.EmailConfirmationRequired ->
+                        // Surface the "check your email" view by storing
+                        // the destination address. Clear the password
+                        // field so it isn't retained if the user dismisses
+                        // and re-enters sign-up flow.
+                        form.update {
+                            it.copy(
+                                isSubmitting = false,
+                                emailConfirmationSentTo = outcome.email,
+                                password = "",
+                            )
+                        }
                 }
             }
+            is UseCaseResult.Failure ->
+                form.update { it.copy(isSubmitting = false, error = result.error.toErrorMessage()) }
+        }
+    }
+
+    private suspend fun handleSignIn(
+        email: String,
+        password: String,
+    ) {
+        when (val result = signIn(email, password)) {
+            is UseCaseResult.Success ->
+                form.update { it.copy(isSubmitting = false) }
+            is UseCaseResult.Failure ->
+                form.update { it.copy(isSubmitting = false, error = result.error.toErrorMessage()) }
         }
     }
 }

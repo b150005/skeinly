@@ -177,7 +177,7 @@ private class ControlledAuthRepository : AuthRepository {
     override suspend fun signUpWithEmail(
         email: String,
         password: String,
-    ) {
+    ): io.github.b150005.skeinly.domain.model.SignUpOutcome {
         error("not used in bridge tests")
     }
 
