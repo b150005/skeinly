@@ -193,38 +193,26 @@ Apple auto-enforces "one redemption per customer per subscription group" — bot
   - **身体**: 手 / 頭 (no body tracking)
   - **その他のデータ**
 
-- [ ] **保存** → Apple shows a per-checkbox follow-up modal asking which of 6 purposes apply ("該当するものをすべて選択")
+- [ ] **保存** → Apple opens a per-checkbox follow-up modal listing 6 purposes ("該当するものをすべて選択")
 
-**Purposes** (6 options, same set for every data type):
+**Per-checkbox selection** — pick only what's listed below; leave every other purpose unchecked:
 
-| Apple option | Definition (Apple text) | Skeinly use? |
-|---|---|---|
-| サードパーティ広告 | Display third-party ads / share with third-party ad entities | **No** (ad-free) |
-| デベロッパの広告またはマーケティング | First-party ads, direct marketing, share with own ad entities | **No** (transactional auth emails are not marketing) |
-| アナリティクス | Evaluating user behavior — feature effectiveness, planning, audience measurement | **Limited** — see table below |
-| 製品のパーソナライズ | Customize content (recommended products, posts, suggestions) | **No** (Discovery is recency / activity-ranked, not per-user) |
-| アプリの機能 | User auth, feature enablement, fraud prevention, security, server uptime, **crash minimization**, **scaling and performance**, **customer support execution** | **Yes** — see table below |
-| その他の目的 | Other unstated | **No** |
+| Selection | Data types |
+|---|---|
+| **アプリの機能** only | 名前 / メールアドレス / 写真またはビデオ / カスタマーサポート / その他のユーザコンテンツ / ユーザID / 購入 / クラッシュデータ / パフォーマンスデータ |
+| **アプリの機能 + アナリティクス** | デバイスID |
+| **アナリティクス** only | 製品の操作 |
 
-**Per-checkbox selections** (every entry maps to a deliberate subset of the 6 purposes; Apple penalizes both over-declaration and under-declaration):
+- [ ] Per data type, then answer:
+  - **Linked to user?** → **Yes** (all 11)
+  - **Used for tracking?** → **No** (all 11)
 
-| Data type | Purposes to select | Why |
-|---|---|---|
-| 名前 (display_name) | アプリの機能 | Account management + UGC attribution |
-| メールアドレス | アプリの機能 | Supabase Auth login only; transactional auth emails are not "marketing" under Apple's definition |
-| 写真またはビデオ | アプリの機能 | Project progress photos feature |
-| カスタマーサポート | アプリの機能 | Apple's own definition explicitly lists "customer support execution" |
-| その他のユーザコンテンツ | アプリの機能 | UGC (chart / pattern / comment / suggestion) — core app feature |
-| ユーザID (Supabase UUID) | アプリの機能 | Pure auth identifier. `PostHog.identify(supabaseUid)` is intentionally NOT wired (CLAUDE.md "strict anonymity stance") — User ID never enters the analytics stream |
-| デバイスID | **アプリの機能 + アナリティクス** | APNs token = push routing (App Functionality); PostHog `distinct_id` = device-level analytics linkage (Analytics) — two distinct uses |
-| 購入 | アプリの機能 | RevenueCat subscription state gates Pro features |
-| 製品の操作 | **アナリティクス** | PostHog page views / taps / scrolls — pure product analytics |
-| クラッシュデータ | アプリの機能 | Apple's own definition explicitly lists "crash minimization" — NOT analytics (analytics is user-behavior evaluation, crash data is app-behavior diagnostics) |
-| パフォーマンスデータ | アプリの機能 | Apple's own definition explicitly lists "scaling and performance" — same reasoning as crash data |
+Why this mapping (one-liners):
 
-- [ ] Apple then asks two cross-cutting questions per data type:
-  - **Linked to user?** **Yes** for everything (User ID anchors the whole graph; PostHog `distinct_id` is device-level but still linkable to the Skeinly account via session correlation)
-  - **Used for tracking?** **No** for everything (no cross-app advertising; the SDK transfers to Sentry / PostHog / RevenueCat / GitHub are service-provider processing under Apple's definition)
+- クラッシュデータ / パフォーマンスデータ are NOT アナリティクス — Apple's アプリの機能 definition explicitly lists "crash minimization" + "scaling and performance"; アナリティクス is user-behavior evaluation, not app-behavior diagnostics.
+- ユーザID stays at アプリの機能 only because `PostHog.identify(supabaseUid)` is intentionally unwired (CLAUDE.md "strict anonymity stance").
+- デバイスID gets both: APNs token = push routing (アプリの機能), PostHog `distinct_id` = device-level analytics linkage (アナリティクス).
+- メール / 名前 do NOT need デベロッパの広告またはマーケティング — transactional auth emails are not marketing under Apple's definition.
 
 ### A0b-11: Import products into RevenueCat (manual dashboard step)
 
