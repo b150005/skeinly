@@ -41,6 +41,17 @@
 #
 # In short: copy-paste your URL / key value verbatim from the dashboard. No
 # escaping is needed for any of the values listed below.
+#
+# What's NOT in this template (intentional):
+#   - `sdk.dir` (Android SDK absolute path). Android Studio auto-writes this
+#     entry to `local.properties` on first project open with the developer-
+#     specific path (e.g. `/Users/<you>/Library/Android/sdk` on macOS). If you
+#     build via CLI only without ever opening Android Studio, set the
+#     `ANDROID_HOME` shell env var instead — AGP's resolution order is
+#     `sdk.dir` → `ANDROID_HOME` → `ANDROID_SDK_ROOT` (deprecated) → OS
+#     defaults, then it errors out clearly if none resolve. The value is
+#     machine-specific and changes per developer, so it is deliberately NOT
+#     templated here.
 
 # === Required: backend connectivity =========================================
 # Empty values cause the app to start in local-only mode — sign-in, profile,
