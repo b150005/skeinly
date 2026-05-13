@@ -177,21 +177,9 @@ Apple auto-enforces "one redemption per customer per subscription group" — bot
 | **診断** (Diagnostics) | **クラッシュデータ** (Crash Data) | Sentry crash logs (opt-in) |
 | 診断 | **パフォーマンスデータ** (Performance Data) | Sentry performance (opt-in; matches Apple's "起動時間、ハング率、エネルギー使用量") |
 
-- [ ] **Leave UNCHECKED** (explicit non-collection — misdeclaring as collected is also a violation):
-  - 連絡先情報: 電話番号 / 所在地 / ユーザのその他の連絡先情報
-  - **健康とフィットネス**: 健康 / フィットネス (none)
-  - **財務情報**: 支払い情報 (per Apple's inline note — "アプリが支払いサービスを利用している場合... デベロッパは支払い情報にアクセスできません。その場合、データは収集されないため、申告する必要はありません。" Skeinly uses StoreKit / RevenueCat — payment info stays out of our reach) / クレジット情報 / その他の財務情報
-  - **位置情報**: 詳細な位置情報 / おおよその場所 (Skeinly does not collect location)
-  - **機密情報** (Sensitive Info — race, sexual orientation, religion, etc.)
-  - **連絡先** (Contacts — address book access)
-  - ユーザコンテンツ: メールまたはテキストメッセージ / オーディオデータ / ゲームプレイコンテンツ
-  - **閲覧履歴** (Browsing History)
-  - **検索履歴** (Search History — pattern search queries are transient request params, not persisted)
-  - 使用状況データ: 広告データ (no ads) / その他の使用状況データ
-  - 診断: その他の診断データ
-  - **周囲**: 環境スキャン (no AR / scene scanning)
-  - **身体**: 手 / 頭 (no body tracking)
-  - **その他のデータ**
+- Every other sub-option stays unchecked. Two non-obvious ones worth knowing:
+  - **財務情報 > 支払い情報** — Apple's inline form note: StoreKit / RevenueCat flows are exempt because "デベロッパは支払い情報にアクセスできません".
+  - **検索履歴** — pattern search queries are transient request params, not persisted off-device.
 
 - [ ] **保存** → Apple opens a per-checkbox follow-up modal listing 6 purposes ("該当するものをすべて選択")
 
