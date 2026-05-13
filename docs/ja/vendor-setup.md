@@ -1,185 +1,522 @@
-# ベンダーアカウント設定 — Phase A0 手順書
+# ベンダーアカウント設定 — Phase A0 (alpha 公開前)
 
 > 英語原典: [docs/en/vendor-setup.md](../en/vendor-setup.md)
 
-ベンダーアカウントを設定し、[release-secrets.md](release-secrets.md) で登録対象となる成果物（証明書、鍵、プロファイル、JSON ファイル）を取得するための逐次手順です。alpha1 リリース前準備の Phase A0 で、`v1.0.0-alpha1` タグ push 前に完了している必要があります。
+最初の alpha (Phase 39) タグ push 前のベンダーポータル 1 回きりセットアップの single source of truth。Apple Developer Portal + App Store Connect + Google Play Console + Universal Links + RevenueCat をカバー。secret ごとの OBTAIN/REGISTER 手順は [release-secrets.md](release-secrets.md) を参照。繰り返し運用タスク (リリース、ベータテスター招待、障害対応) は [ops/](ops/) を参照。
 
-このドキュメントは **Apple 側の設定** (Apple Developer Portal + App Store Connect + Universal Links) に絞っています。理由は、Provisioning Profile 生成後に Capability を追加すると profile 再生成のサイクルが必要になり、これがクリティカルパスだからです。その他のベンダー（Google Play、Firebase、Sentry、PostHog）の取得手順は [release-secrets.md](release-secrets.md) の各 secret セクション内 OBTAIN ステップに記述しています（既存パターン）。
+ベンダーポータルでクリックしながら使う **チェックリスト** として使うこと。各決定の "なぜ" は [ADR-016](adr/016-phase-41-revenuecat-subscription.md) / [ADR-017](adr/017-phase-24-push-notifications.md) / [pre-alpha-checklist.md](ops/pre-alpha-checklist.md) にあり、ここでは link out のみ。
 
 ## Skeinly 定数
 
-ベンダーポータルのフォーム入力に使う値です。プロンプトされたら以下を入力してください。
+すべてのベンダーフォームで再利用される値。
 
-| 項目 | 値 |
+| フィールド | 値 |
 |---|---|
 | Bundle ID (iOS) | `io.github.b150005.skeinly` |
 | Application ID (Android) | `io.github.b150005.skeinly` |
-| アプリ名 | Skeinly |
+| Subscription Product ID (iOS — monthly) | `io.github.b150005.skeinly.pro.monthly` |
+| Subscription Product ID (iOS — yearly) | `io.github.b150005.skeinly.pro.yearly` |
+| Subscription Product ID (Android) | `io.github.b150005.skeinly.pro` (base plan `monthly` + `yearly`) |
+| 無料トライアル期間 | 7 日間 |
+| 価格 | $3.99 USD / 月 + $24.99 USD / 年 |
+| RevenueCat entitlement | `entlaaca26b181` (Skeinly Pro) |
+| RevenueCat packages | `$rc_monthly` + `$rc_annual` |
+| アプリ名 | `Skeinly` |
 | デフォルト言語 | English (U.S.) |
-| Apple Developer Team ID | (10文字の ID。enrollment 後に確認) |
-| プライバシーポリシー URL | `https://b150005.github.io/skeinly/privacy-policy/` |
+| Apple Developer Team ID | (10 文字; enrollment 後に確定) |
+| プライバシー ポリシー URL | `https://b150005.github.io/skeinly/privacy-policy/` |
+| アカウント削除 URL | `https://b150005.github.io/skeinly/account-deletion/` |
+| サポートメール | `skeinly.app@gmail.com` |
 | サポート URL | `https://github.com/b150005/skeinly/issues` |
 
 ## 前提条件
 
-- **Apple Developer Program 登録** — $99/年、<https://developer.apple.com/programs/>。Phase A0 全体の前提
-- **Xcode 26+ 環境の Mac** — Keychain Access と `.p12` エクスポート用。[README 前提条件](../../README.md#前提条件)参照
-- **`gh` CLI 認証済み** — `gh auth login`
+- **Apple Developer Program 登録** — $99/年、<https://developer.apple.com/programs/>
+- **Google Play Console publisher account** — $25 一回限り、<https://play.google.com/console/signup>
+- **Xcode 26+ の Mac** — Keychain Access + `.p12` export 用。[README Prerequisites](../../README.md#prerequisites) 参照
+- **`gh` CLI 認証済** — `gh auth login`
+- **RevenueCat account** — 無料、<https://app.revenuecat.com> ($2.5K MRR 超で paid Mid-Market)
+
+## Phase 概要
+
+順番に実行。`A0a` / `A0b` / `A0c` / `A0d` 内の step も順序依存 — 前 step の成果物に基づいて構築。
+
+| Phase | 内容 | 依存先 |
+|---|---|---|
+| **A0a** | Apple Developer Portal: App ID / APNs key / 証明書 / Profile / ASC API key | Apple 登録 |
+| **A0b** | App Store Connect: アプリ作成 / IAP / 無料トライアル / ASSN V2 / sandbox tester / App Privacy | A0a |
+| **A0c** | Google Play Console — IAP: subscription product / base plan / 無料トライアル offer / license tester / Pub/Sub + RTDN | Play Console 登録 + アプリアップロード |
+| **A0d** | Google Play Console — アプリのコンテンツ + ストア掲載情報 + Internal Testing | A0c |
+| **A0e** | Universal Links / App Links (AASA + assetlinks.json) | A0a + A0c |
+| **A0f** | RevenueCat: プロジェクト / アプリ連携 / product import / entitlement + offering binding / webhook | A0b + A0c |
+
+---
 
 ## Phase A0a — Apple Developer Portal
 
 ### A0a-1: App ID 作成
 
-1. <https://developer.apple.com/account> → **Certificates, Identifiers & Profiles** → **Identifiers** → **+**
-2. **App IDs** → Continue → **App** → Continue
-3. Description: `Skeinly`
-4. Bundle ID: **Explicit** → `io.github.b150005.skeinly`
-5. **Capabilities — 4つすべて有効化**:
-   - **Sign In with Apple** — *Configure* クリック → **Enable as a primary App ID** 選択 → Save
-   - **Push Notifications** — チェックボックスのみ。設定は APNs key 生成時 (Phase A0a-2) で実施
-   - **Associated Domains** — チェックボックスのみ。ドメイン値はアプリレベルの entitlements ファイルで設定（App ID 上ではない）
-   - **In-App Purchase** — チェックボックスのみ
-6. Continue → Register
+- [ ] <https://developer.apple.com/account> → **Certificates, Identifiers & Profiles** → **Identifiers** → **+** → **App IDs** → **App**
+- [ ] Description: `Skeinly`、Bundle ID: **Explicit** → `io.github.b150005.skeinly`
+- [ ] Capability 4 つを有効化: **Sign In with Apple** (Configure → Enable as a primary App ID)、**Push Notifications**、**Associated Domains**、**In-App Purchase**
+- [ ] Continue → Register
 
-その他の Capability (HealthKit、CloudKit、Game Center 等) は **alpha1 では不要**。後から追加すると Provisioning Profile 再生成が必要になるので、機能が実際に必要になってから有効化してください。
+Capability の後付けは Provisioning Profile 再生成を強制。alpha で本当に必要なものだけ enable。
 
 ### A0a-2: APNs Auth Key (`.p8`) 生成
 
-1. 同じ Certificates, Identifiers & Profiles → **Keys** → **+**
-2. Name: `skeinly APNs`
-3. Enable: **Apple Push Notifications service (APNs)**
-4. Continue → Register
-5. **`.p8` ファイルを即座にダウンロード**。一度限りのダウンロード — Apple 側は生成後に秘密鍵を破棄します。ダウンロードファイル名は `AuthKey_<KEY_ID>.p8`
-6. **10文字の Key ID** を控える（Keys 一覧に表示）
-7. `.p8` ファイルと Key ID をパスワードマネージャに保存
+- [ ] **Keys** → **+** → Name `skeinly APNs` → **Apple Push Notifications service (APNs)** を有効化 → Continue → Register
+- [ ] **`.p8` ファイルを即ダウンロード** (1 回限り; ファイル名 `AuthKey_<KEY_ID>.p8`)
+- [ ] 10 文字の **Key ID** をメモ
+- [ ] 両方をパスワードマネージャに保存
+- [ ] base64 encode + `APPLE_APNS_KEY_BASE64` を Edge Function secret として登録 ([release-secrets.md](release-secrets.md#supabase-edge-function-secrets) 参照)
+- [ ] `APPLE_APNS_KEY_ID` Edge Function secret 登録 (10 文字)
 
-同じ APNs key で **Production と TestFlight 両方**の push を Skeinly の Supabase Edge Function から送信できます — 環境別の鍵は不要です。
-
-**登録**:
-- Base64 エンコード → [release-secrets.md](release-secrets.md#supabase-edge-function-secrets) の通り `APPLE_APNS_KEY_BASE64` を Supabase Edge Function secret として登録
-- `APPLE_APNS_KEY_ID` Supabase Edge Function secret として登録 (10文字)
+同じ key が production + TestFlight 両方で動作。
 
 ### A0a-3: Apple Distribution Certificate
 
-[release-secrets.md §1](release-secrets.md#1-apple_distribution_cert_base64) 参照。alpha1 固有の変更はなし — 既存の Distribution 証明書は、App ID で Capability を有効化した後は4 capability 全てをカバーします。
+[release-secrets.md §1](release-secrets.md#1-apple_distribution_cert_base64) 参照。既存の証明書が 4 capability をカバー済。
 
 ### A0a-4: Provisioning Profile
 
-CI は実行時に `sigh` (App Store Connect API key, A0a-5 を使用) で Apple Developer Portal から App Store Distribution profile を fetch します。GitHub Secret に profile バイト列を保存する必要はありません。
+CI が ASC API key (A0a-5) を用いて `sigh` 経由で runtime fetch。GitHub Secret に profile バイトは保存しない。
 
-**順序が重要**: Profile は A0a-1 の **後** に生成（4 capability すべてが profile に焼き込まれるため）。Capability 追加前に生成された profile はそれを含みません。Apple Developer Portal Web UI で profile を再生成してください。次の CI run が自動取得します。
+**順序が重要**: A0a-1 の **後** に profile を再生成して 4 capability すべてを焼き込む。capability 追加前の profile は不完全。
 
 ### A0a-5: App Store Connect API Key
 
-[release-secrets.md §4–6](release-secrets.md#4-app_store_connect_api_key_base64) 参照。
+[release-secrets.md §4–6](release-secrets.md#4-app_store_connect_api_key_base64) 参照。`APP_STORE_CONNECT_API_KEY_BASE64` を GitHub Secret として登録。fastlane の TestFlight upload にも同じ key を使う。
 
-同じ key を fastlane 経由の TestFlight アップロード (CI / GitHub Secrets コンテキスト) に使います。GitHub Secret `APP_STORE_CONNECT_API_KEY_BASE64` として登録してください。
+---
 
-## Phase A0b — App Store Connect (アプリ + IAP)
+## Phase A0b — App Store Connect (App + IAP + Sandbox)
 
 ### A0b-1: アプリ作成
 
-1. <https://appstoreconnect.apple.com> → **My Apps** → **+** → **New App**
-2. Platform: **iOS** (チェックボックス)
-3. Name: `Skeinly`
-4. Primary Language: **English (U.S.)**
-5. Bundle ID: `io.github.b150005.skeinly` を選択 (Phase A0a-1 で作成済みのもの)
-6. SKU: `skeinly-001`
-7. User Access: **Full Access**
-8. Create
+- [ ] <https://appstoreconnect.apple.com> → **My Apps** → **+** → **New App**
+- [ ] Platform: iOS、Name `Skeinly`、Primary Language **English (U.S.)**、Bundle ID `io.github.b150005.skeinly`、SKU `skeinly-001`、User Access **Full Access** → Create
 
 ### A0b-2: Subscription Group
 
-1. アプリ詳細 → **Monetization** → **Subscriptions** → **Create Subscription Group**
-2. Reference Name: `Skeinly Pro`
-3. Localizations:
-   - English (U.S.): Display Name `Skeinly Pro`
-   - Japanese: Display Name `Skeinly Pro` (ブランド名は全 locale で同一)
+- [ ] App → **Monetization → Subscriptions** → **+** → Reference Name `Skeinly Pro` → Create
+- [ ] **App Store Localizations**: EN (U.S.) + Japanese (Japan) を追加、両方 Subscription Group Display Name = `Skeinly Pro`
 
-### A0b-3: IAP Products — Pro グループ内に2つの subscription
+### A0b-3: 月額プロダクト作成
 
-| 項目 | Monthly | Yearly |
+- [ ] `Skeinly Pro` group 内 → **Create**
+- [ ] Reference Name `Skeinly Pro Monthly`、Product ID **`io.github.b150005.skeinly.pro.monthly`** ⚠️ 永続
+- [ ] Subscription Duration **1 Month** → Save
+- [ ] Subscription Prices → US **$3.99** → JP 自動換算 (¥600 帯) を確認、デフォルト accept → Confirm
+- [ ] Availability: 全領域
+- [ ] App Store Localizations — EN (U.S.):
+  - Display Name `Skeinly Pro Monthly` (30 文字上限)
+  - Description `Unlock all Pro features. Auto-renews monthly.` (locale ごとに 55 文字上限)
+- [ ] App Store Localizations — Japanese:
+  - Display Name `Skeinly Pro 月額プラン`
+  - Description `Skeinly Pro の全機能を解放。毎月自動更新。`
+
+### A0b-4: 年額プロダクト作成
+
+- [ ] 同じ手順で: Reference `Skeinly Pro Yearly`、Product ID **`io.github.b150005.skeinly.pro.yearly`**、Duration **1 Year**、US **$24.99** (JP 自動換算 ¥3,600–¥4,000)
+- [ ] EN Display `Skeinly Pro Yearly`、EN Description `Unlock all Pro features. Auto-renews yearly. Save 40%+.` (55 文字ぴったり)
+- [ ] JA Display `Skeinly Pro 年額プラン`、JA Description `Skeinly Pro の全機能を解放。毎年自動更新、40% お得。`
+
+### A0b-5: Subscription levels
+
+- [ ] Group → **Edit Order** → **両プロダクトを Level 1** に → Save
+
+同 level = 次回更新時に crossgrade。両プロダクトとも同じ RC entitlement を付与。
+
+### A0b-6: 7 日間無料トライアル — 月額
+
+- [ ] 月額プロダクト詳細 → **Subscription Prices** → **View all Subscription pricing** → **Set up Introductory Offer**
+- [ ] Countries: 全領域 (availability に一致)、Start: today、**End: 空欄** (永続)、Offer Type: **Free Trial**、Duration: **1 Week** (7 日)、Price: $0 自動 → Confirm
+
+⚠️ Introductory offer は作成後編集不可 — 削除 + 再作成のみ。
+
+Apple は「サブスクリプショングループ内 1 ユーザー 1 回」を自動施行 — 両プロダクトで eligibility カウント共有。オペレータ操作不要。
+
+### A0b-7: 7 日間無料トライアル — 年額
+
+- [ ] A0b-6 と同じ手順を `Skeinly Pro Yearly` に対して実行
+
+### A0b-8: App Store Server Notifications V2
+
+- [ ] RevenueCat Dashboard → Apps & providers → Skeinly iOS → **Apple Server to Server notification settings** → URL コピー
+- [ ] ASC → App → **General → App Information → App Store Server Notifications**:
+  - Production Server URL: RC URL をペースト → Save
+  - Sandbox Server URL: **同じ** URL をペースト → Save
+- [ ] Notification Version picker が出れば **Version 2** を選択。出なければ V2 が自動適用される (Apple は doc 未更新のまま default-to-V2 UI 変更を出荷)
+- [ ] 検証: RC Dashboard → **Send test event** → 200 OK + "Last received" timestamp 更新
+
+### A0b-9: Sandbox tester
+
+- [ ] ASC ホーム → **Users and Access** → **Sandbox** タブ → **+** → 最低 2 名作成 (US 1 名 + JP 1 名推奨)
+- [ ] **Gmail プラスサブアドレッシング** を本物の inbox に使う (例: `skeinly.app+sandbox-us-1@gmail.com`) — Apple 自身の help page でも同パターン使用
+- [ ] First Name = cohort (`Core` / `Beta`)、Last Name = `Tester-<locale>-<n>` (作成後編集不可)
+- [ ] デバイス側: 設定 → [Apple ID] → **Media & Purchases** → サインアウト (iCloud top-level は **しない**)、StoreKit prompt でサンドボックス認証情報でサインイン
+
+### A0b-10: App Privacy 宣言
+
+- [ ] App 詳細 → **App Privacy** → Privacy Policy URL `https://b150005.github.io/skeinly/privacy-policy/`
+- [ ] 収集データ ([pre-alpha-checklist.md §35.1](ops/pre-alpha-checklist.md) 参照):
+  - **Identifiers**: User ID (Supabase UUID、必須)、Device ID (PostHog distinct_id、opt-in)
+  - **User Content**: Other User Content (UGC — パターン、コメント)
+  - **Diagnostics**: Crash Data + Performance Data (Sentry、opt-in)
+  - **Usage Data**: Product Interaction (PostHog、opt-in)
+  - **Purchases**: Purchase History (RevenueCat、Pro 加入者のみ)
+- [ ] 各データ: Linked to user = Yes (User ID anchor)、Used for tracking = **No**
+
+### A0b-11: RevenueCat に product import (ダッシュボード手動 step)
+
+- [ ] RC Dashboard → **Project Settings → Apps & providers** → Skeinly iOS → **Products** → **+ New** の右隣にある **Import** ボタンをクリック
+- [ ] `io.github.b150005.skeinly.pro.monthly` + `io.github.b150005.skeinly.pro.yearly` 両方の import を確認
+
+ASC ↔ RC OAuth が wired でも必須。MCP binding (A0f-4) は次の step。
+
+### A0b-12: ASC 検証
+
+- [ ] Subscription Group `Skeinly Pro` (EN + JA localization)
+- [ ] 両プロダクト存在、duration + 価格 + EN/JA localization 正常
+- [ ] 両プロダクト Level 1
+- [ ] 両方に 7 日間無料トライアル
+- [ ] Production + Sandbox Server URL 設定済 (V2)
+- [ ] sandbox tester ≥ 1 (US + JP 推奨)
+- [ ] RC dashboard で import 後に両プロダクト visible
+
+「メタデータが不足」バッジは App Review Screenshot + 1024×1024 promotional image を追加するまで残るが、Phase 39 alpha では sandbox 購入は機能する。Phase 40 GA 提出前に対応。
+
+### A0b よくある落とし穴
+
+- Product ID は永続。保存前に三重確認。
+- Duration は App Review 通過後変更不可。
+- Introductory offer は編集不可 — 削除 + 再作成のみ。
+- Description 文字数上限は locale ごとに 55 (2026-05-13 operator 検証; Apple doc では依然として 45)。Display Name は 30 上限。
+- Sandbox tester の email は real Apple ID として使われたことがあってはダメ。Plus-subaddressing で 1 inbox に集約可 (Gmail / iCloud / Fastmail / ProtonMail は `+` サポート; Outlook は NG)。
+- 新プロダクトが sandbox に見えるまで ~1 時間の伝播遅延。
+
+---
+
+## Phase A0c — Google Play Console (App + IAP + License tester + RTDN)
+
+### A0c-1: アプリレコード作成
+
+- [ ] <https://play.google.com/console> → **すべてのアプリ** → **アプリを作成**
+- [ ] アプリ名 `Skeinly`、デフォルトの言語 **English – en-US**、アプリかゲームか **アプリ**、無料・有料 **無料**
+- [ ] 宣言に同意 → 作成
+
+### A0c-2: Subscription Product 作成
+
+- [ ] アプリ → **Play で収益化 → プロダクト → 定期購入** → **定期購入の作成**
+- [ ] Product ID **`io.github.b150005.skeinly.pro`** ⚠️ 永続 + 再使用不可
+- [ ] 名前 `Skeinly Pro` (≤55 文字、ユーザー可視)
+- [ ] 作成 → **定期購入の詳細を編集** → 特典 (≤4 件、各 ≤40 文字) を追加:
+  - `無制限のチャート作成`
+  - `高度なパターン分析`
+  - `優先サポート`
+- [ ] 説明 (社内専用、≤200 文字): `Skeinly Pro auto-renewable subscription. Monthly ($3.99) + yearly ($24.99) base plans, 7-day free trial. RevenueCat entitlement entlaaca26b181 via $rc_monthly / $rc_annual packages.`
+
+⚠️ 特典テキストに「無料トライアル」や具体的価格を含めない — Play ポリシー違反。
+
+### A0c-3: 月額 base plan
+
+- [ ] 定期購入詳細 → **基本プランを追加**
+- [ ] Base Plan ID **`monthly`** (単語、`a-z 0-9 -` のみ、≤63 文字)、Type **自動更新**、請求期間 **1 か月**
+- [ ] 据置期間 3 日 (継続率上げるなら 7 日も可)、Account hold 30 日
+- [ ] ユーザーの基本プランと特典の変更: **次回の請求日に請求** (次回更新時まで billing 変更を defer)
+- [ ] 再加入: 有効、タグ: 空、Backwards compatible: **マークする** (これのみ)
+- [ ] **国/地域の公開設定の管理** → US + JP + 全ターゲット市場 + **新しい国/地域** (将来の Google 対応市場を自動追加) → 保存
+- [ ] **価格の更新** → 基本価格 **`3.99`** USD → JP 自動換算 (¥600 帯) を確認 → 保存
+- [ ] **アクティブ化**: `monthly` ID テキスト (またはテーブル右端の `›` 矢印 — 横スクロール必要な場合あり) をクリック → 編集ページが開く → ページ最下部までスクロール → **「有効にする」** をクリック。3 点リーダー ⋮ メニュー経由ではない。
+
+### A0c-4: 年額 base plan
+
+- [ ] 同じ手順で: Base Plan ID **`yearly`**、請求期間 **1 年**、据置期間 7 日 (年額推奨)
+- [ ] 次回の請求日に請求、再加入有効、タグ空、Backwards compatible **マークしない**
+- [ ] 基本価格 **`24.99`** USD (JP ¥3,600–¥4,000)
+- [ ] 同じ編集ページ最下部のボタンでアクティブ化
+
+### A0c-5: 無料トライアル offer — 月額
+
+- [ ] 定期購入詳細 → **基本プランと特典** セクション → 右上の **「特典を追加」リンク** → ダイアログで `monthly` を選択 → **「特典を追加」ボタン** → フォームが開く
+- [ ] 特典 ID **`monthly-trial`** ⚠️ 永続、`a-z 0-9 -` のみ、≤63 文字
+- [ ] 基本プランと公開設定: pre-selected `monthly`、提供地域 174/174 inherit
+- [ ] **提供の条件**: **新規ユーザーの獲得**
+- [ ] **資格** (サブフォーム): **この定期購入を利用したことがない** (デフォルト; subscription-product スコープ、将来複数 product 化に備えて future-proof)
+- [ ] タグ: 空
+- [ ] **段階** セクションまでスクロール → **「段階を追加」** → **無料トライアル** → Duration **7 日**
+- [ ] 保存 → offer 編集ページ最下部の **アクティブ化** をクリック
+
+### A0c-6: 無料トライアル offer — 年額
+
+- [ ] 同手順を `yearly` base plan に対して: 特典 ID `yearly-trial`、同 eligibility + 資格 + 7 日 phase
+- [ ] 保存 → アクティブ化
+
+### A0c-7: 日本語ローカライズ
+
+- [ ] **ユーザーを増やす → 翻訳 → 翻訳を管理 → 言語を選択 → 日本語 (日本) (ja-JP) → 適用**
+- [ ] ja-JP 文字列を入力: 定期購入名 `Skeinly Pro`、特典 1 `無制限のチャート作成`、特典 2 `高度なパターン分析`、特典 3 `優先サポート`
+
+Google 無料機械翻訳は日本語を含まない — 手動入力。
+
+### A0c-8: Internal Testing トラックに公開
+
+- [ ] `release.yml` CI flow で build + アップロード ([release.md](ops/release.md))。`gradle-play-publisher` で `DRAFT` 状態にアップロード。
+- [ ] License tester 購入の前提: アプリが少なくとも 1 つの track に公開されていること (Internal Testing 最低限)。draft 状態は購入を拒否する。
+
+⚠️ 初回 Bundle アップロードには Phase A0d (アプリのコンテンツ + ストア掲載情報) の完了が必須。A0d 完了後に「テスター宛にロールアウト開始」をクリック。
+
+### A0c-9: License testers
+
+- [ ] Play Console → **設定 → ライセンスのテスト**
+- [ ] Gmail アカウントを追加 (1 行 1 件、最大 2,000)
+- [ ] 変更を保存
+
+加速テスト更新時間 (RC tester ごと): 無料トライアル 3 分、月額 5 分、年額 30 分、grace 5 分。
+
+### A0c-10: RTDN 用 Pub/Sub topic
+
+- [ ] 推奨経路: RC Dashboard → Skeinly Android → service credentials → **Connect to Google** (RC が topic ID 自動生成)
+- [ ] または手動: [GCP Console → Pub/Sub → トピック → トピックを作成](https://console.cloud.google.com/cloudpubsub/topicList) → ID `play-billing-notifications`
+- [ ] Pub/Sub API を有効化: <https://console.cloud.google.com/flows/enableapi?apiid=pubsub>
+- [ ] topic → 権限タブ → **プリンシパルを追加**:
+  - 新しいプリンシパル: `google-play-developer-notifications@system.gserviceaccount.com`
+  - ロール: **Pub/Sub パブリッシャー** (`roles/pubsub.publisher`)
+  - 保存
+
+⚠️ GCP organization が Domain Restricted Sharing を強制している場合は `system.gserviceaccount.com` 例外を追加。
+
+### A0c-11: Play Console で RTDN 設定
+
+- [ ] アプリ → **Play で収益化 → 収益化の設定 → リアルタイム デベロッパー通知**
+- [ ] 有効化: ✅、トピック名: A0c-10 の `projects/<gcp_project>/topics/<topic_name>`
+- [ ] 通知内容: **定期購入、無効になった購入、すべての 1 回限りの商品**
+- [ ] **テスト メッセージを送信** → 成功を確認
+- [ ] 変更を保存
+
+### A0c-12: RC で RTDN 検証
+
+- [ ] RC Dashboard → Skeinly Android → **Last received** timestamp が更新されることを確認
+- [ ] (任意) **Track new purchases from server-to-server notifications** を有効化
+
+### A0c-13: RevenueCat に product import
+
+- [ ] RC Dashboard → **Project Settings → Apps & providers** → Skeinly Android → **Products** → **Import** ボタン
+- [ ] `io.github.b150005.skeinly.pro:monthly` + `io.github.b150005.skeinly.pro:yearly` の import を確認 (post-Feb-2023 Play products の colon-separated RC 識別子)
+
+### A0c-14: Play Console IAP 検証
+
+- [ ] Subscription Product `io.github.b150005.skeinly.pro` 存在
+- [ ] Base plan `monthly` 有効、backwards-compatible マーク済
+- [ ] Base plan `yearly` 有効
+- [ ] Offer `monthly-trial` 有効、7 日 phase
+- [ ] Offer `yearly-trial` 有効、7 日 phase
+- [ ] ja-JP 翻訳追加済
+- [ ] アプリが Internal Testing に公開済
+- [ ] License tester ≥ 1 (US + JP 推奨)
+- [ ] Pub/Sub topic + IAM Publisher grant
+- [ ] RTDN 設定済 + テストメッセージ成功
+- [ ] Import 後、RC dashboard に Android 両プロダクト visible
+
+### A0c よくある落とし穴
+
+- Subscription Product ID + Base Plan ID の文字集合が異なる (product は `_` `.` も可、base plan は `a-z 0-9 -` のみ)。単語 base plan で issue 回避済。
+- Backwards-compatible マークは 1 base plan のみ可。monthly を選択。
+- License tester はアプリが track に公開されている必要あり (draft は拒否)。
+- RC product 識別子は Android で `subscription_id:base_plan_id` の colon separator (iOS は `.`)。
+- RC の Play Console service credentials は Pub/Sub Connect 機能が動くまで ~36 時間の warmup 必要。
+
+---
+
+## Phase A0d — Google Play Console (アプリのコンテンツ + ストア掲載情報 + Internal Testing)
+
+**初回 App Bundle アップロード** に必須。設定は左メニュー **アプリのコンテンツ** 配下に集約。
+
+### A0d-1: プライバシー ポリシー
+
+- [ ] アプリのコンテンツ → **プライバシー ポリシー** → URL `https://b150005.github.io/skeinly/privacy-policy/` → 保存
+
+保存前に別タブで URL が 200 を返すことを確認 (GitHub Pages deploy 遅延 ~1–5 分)。
+
+### A0d-2: アプリのアクセス権 (レビュアー用 demo アカウント)
+
+- [ ] アプリのコンテンツ → **アプリのアクセス権** → **すべての機能または一部の機能のアクセスが制限されている** を選択 (Skeinly はサインアップ必須)
+- [ ] **手順を追加** → モーダルが開く
+
+Skeinly は Supabase email+password (ユーザー名なし)。レビュアーアカウントは [`beta-testing.md`](ops/beta-testing.md) の慣習に従い Gmail プラスサブアドレッシングを使用:
+
+| Platform | Email | 用途 |
 |---|---|---|
-| Product ID | `skeinly.pro.monthly` | `skeinly.pro.yearly` |
-| Reference Name | Monthly Pro | Yearly Pro |
-| 価格 (USD) | $3.99 | $24.99 |
-| 価格 (JPY) | ¥600 | ¥3,800 |
-| Subscription Duration | 1ヶ月 | 1年 |
-| Free Trial | 7日 (Introductory Offer → Free → 1 week) | 7日 |
-| Localized Display Name (EN) | Monthly Pro | Yearly Pro |
-| Localized Display Name (JA) | 月額 Pro | 年額 Pro |
-| 説明 (EN) | Unlimited projects, structured chart editing, share send, pull request creation. Renews monthly. | Unlimited projects, structured chart editing, share send, pull request creation. Renews yearly (about 48% off vs monthly). |
-| 説明 (JA) | プロジェクト無制限、構造化チャート編集、共有送信、PR 作成。毎月自動更新。 | プロジェクト無制限、構造化チャート編集、共有送信、PR 作成。年額更新（月額より約 48% お得）。 |
-| Family Sharing | Off (alpha) | Off (alpha) |
-| App Review Information | Sandbox tester credentials を申請時に App Review に提供 | Sandbox tester credentials を申請時に App Review に提供 |
+| iOS (ASC App Review Information) | `skeinly.app+review-ios@gmail.com` | Apple 審査員専用 |
+| **Android (本 step)** | `skeinly.app+review-android@gmail.com` | Google 審査員専用 |
 
-両方の product 作成後、Pro グループに格納され、StoreKit 2 SDK の `Product.products(for:)` 呼び出しで両方が surface します。
+プラットフォームごとに分離することで、レビューウィンドウ重複時の demo state 汚染を回避 + Supabase Auth audit trail で識別容易。
 
-### A0b-4: IAP テスト用 Sandbox Tester
+| フィールド | 文字数制限 | 値 |
+|---|---|---|
+| 手順の名前 | 60 | `Skeinly Reviewer Access (Android)` (33 文字) |
+| ユーザー名、メールアドレス、電話番号 | 100 | `skeinly.app+review-android@gmail.com` |
+| パスワード | 100 | 16+ 文字の強パスワードを 1Password で生成 |
+| アプリへのアクセスに必要なその他の情報 | 500 | 下記 478 文字英語サンプル |
+| アプリへのアクセスに必要な情報は他にない (チェックボックス) | — | **チェックしない** |
 
-1. App Store Connect → **Users and Access** → **Sandbox Testers** → **+**
-2. メールアドレスを別にした sandbox tester を最低2人作成。alpha 開発中の購入 + 復元 + 解約 + 自動更新フローのテストに使います
-3. 認証情報をパスワードマネージャに記録 — alpha テスター本人は sandbox tester を使えません。彼らは `subscriptions.platform = 'alpha-grant'` sentinel 経由で本物の Pro grant を受けます
+Play の helper text + 右サイドガイダンスは英語必須。サンプル (478 文字、英語のみ):
 
-### A0b-5: プライバシー宣言
+```
+Sign in with the credentials above (Supabase email+password auth, no 2FA). Demo data is pre-seeded: 3 patterns (rectangular / polar / variation), 1 in-progress project with row counter and photos, 1 active Suggestion in Discovery. The account is in Pro state, so Settings > Upgrade is reachable without a purchase. IAP runs in Play Billing sandbox via license tester registration. Delete the account via Settings > Account or https://b150005.github.io/skeinly/account-deletion/.
+```
 
-1. アプリ詳細 → **App Privacy**
-2. Privacy Policy URL: `https://b150005.github.io/skeinly/privacy-policy/`
-3. **収集データ種別** — alpha1 のスコープに合わせて以下を宣言 (Sentry + PostHog + Feedback と整合):
-   - **Identifiers**: User ID (Supabase auth UUID), Device ID (PostHog distinct_id, opt-in)
-   - **User Content**: Other User Content (knitting project data, patterns, comments)
-   - **Diagnostics**: Crash Data (Sentry), Performance Data (Sentry)
-   - **Usage Data**: Product Interaction (PostHog, opt-in)
-4. 各データ種別への回答:
-   - Linked to user? → Yes (User ID は紐付き)
-   - Used for tracking? → **No** (広告目的のサードパーティ共有なし)
+500 文字超過した場合: (a) 括弧書きパターン種類を削る → (b) Account deletion 行を削る、の順で短縮。
 
-Phase 27a プライバシーポリシーは既にこれらに言及済み — alpha1 アップデート時に整合確認すること。
+⚠️ **Demo アカウント前提条件** (Supabase 側、保存前に完了):
 
-## Phase A0c — Universal Links (AASA)
+- [ ] Supabase Auth Dashboard で `skeinly.app+review-ios@gmail.com` user 作成 (手動で Confirm 済状態に切替)
+- [ ] `skeinly.app+review-android@gmail.com` も同様に作成
+- [ ] 両アカウントに idempotent seed 投入 (3 patterns / 1 project / 1 Suggestion / Pro 状態)
+- [ ] RevenueCat で `grant-customer-entitlement` 経由で両アカウントに Skeinly Pro entitlement 直接付与 (paywall 強制を回避)
 
-### A0c-1: AASA ホスティング戦略の決定
+### A0d-3: 広告
 
-Apple は AASA ファイルを `https://<domain>/.well-known/apple-app-site-association` (またはルート `https://<domain>/apple-app-site-association`) に HTTPS で、**`Content-Type: application/json`** で、**リダイレクトなし**で配信する必要があります。アプリの `applinks:<domain>` entitlement は同じ `<domain>` を指します。
+- [ ] アプリのコンテンツ → **広告** → **いいえ、アプリに広告は含まれていません** (Skeinly は広告なし; 収益化は IAP のみ)
 
-**Skeinly のホスティング状況**: GitHub Pages は本プロジェクトを `https://b150005.github.io/skeinly/` (ユーザー `b150005` 配下のプロジェクトページ) で配信しています。AASA は関連ドメインの apex に必要 — `https://b150005.github.io/.well-known/apple-app-site-association`。この apex はユーザー `b150005` の **GitHub user site** に対応し、別リポジトリ `b150005/b150005.github.io` に存在します。プロジェクトリポジトリ `b150005/skeinly` ではこの apex で AASA を配信できません。
+### A0d-4: コンテンツのレーティング (IARC)
 
-3つの選択肢、推奨順:
+- [ ] アプリのコンテンツ → **コンテンツのレーティング** → 連絡先 email + カテゴリ登録 → IARC 質問票開始
 
-**選択肢 A — `b150005/b150005.github.io` user site を作成 (無料、alpha 推奨)**
-- ユーザー `b150005` 配下に新規 public リポジトリ `b150005.github.io`
-- リポジトリルートに `.well-known/apple-app-site-association` と `.well-known/assetlinks.json` を配置
-- GitHub Pages は `main` ブランチルートから自動デプロイ
-- 初回デプロイ後すぐに `https://b150005.github.io/.well-known/apple-app-site-association` で解決
-- アプリの entitlements に `applinks:b150005.github.io` を追加。path matching を `/skeinly/share/*` 等に制限することで、user site が他のパスを誤ってアプリに routing するのを防ぐ
+目標: **Everyone (全年齢)**。Skeinly 回答:
 
-**選択肢 B — カスタムドメイン (有料、v1.0 推奨)**
-- `skeinly.app` 等を購入 (Cloudflare Registrar at-cost で約 $10/年)
-- GitHub Pages CNAME → カスタムドメイン
-- AASA は `https://skeinly.app/.well-known/apple-app-site-association`
-- production リリース時のブランディングがクリーン
+| カテゴリ | 回答 |
+|---|---|
+| 暴力、性的コンテンツ、不適切な言葉、恐怖/ホラー、薬物/アルコール/タバコ、ギャンブル | **いいえ** |
+| ユーザー間のやりとり | **はい** (共有 / コメント / 提案 / アクティビティフィード) |
+| ユーザー生成コンテンツ (UGC) | **はい** (パターン + コメント) |
+| 位置情報の共有 | **いいえ** |
+| 個人情報のユーザー間共有 | **いいえ** (display name のみ公開) |
+| デジタル購入 | **はい** (IAP) |
+| 報告 / ブロック機能 | **はい** (ADR-021 Wave E foundation — `submit-ugc-report` + `user_blocks` + 24h オペレータトリアージ) |
 
-**選択肢 C — Universal Links を v1.0 に延期 (alpha でドメイン投資なし)**
-- alpha 中は `skeinly://share/<token>` URI scheme のみ
-- SMS / メール経由で送信された share URL がアプリを自動起動しないことを許容
-- App ID の Universal Links Capability は v1.0 まで無効のまま (その時点で Provisioning Profile 再生成 — 一回だけのコスト)
+ユーザー向け Report/Block UI は Phase 40 GA 前にリリース (ADR-021 §D4); foundation で policy 要件は既に満たしている。
 
-**alpha1 推奨**: 選択肢 A。コストはゼロ、ホスティングは `b150005` の他プロジェクトと統一、後から選択肢 B への移行は CNAME 変更のみ。
+### A0d-5: ターゲット ユーザー
 
-### A0c-2: AASA ファイル内容
+- [ ] アプリのコンテンツ → **ターゲット ユーザー** → **18 歳以上のみ (Adults only)** のみチェック — 子供年齢層は全外し
+- [ ] 子供向けの魅力: **いいえ**
+- [ ] (尋ねられたら) 子供がアプリを利用する可能性: **私のアプリは子供向けではありません**
 
-ホスティング先決定後、`<host>/.well-known/apple-app-site-association` に以下を配置:
+⚠️ いずれかの子供年齢層を選ぶと **Designed for Families (DFF) policy** が発動: COPPA 準拠、child-directed ad 制限、behavioral advertising 禁止。Skeinly は Adults only で全回避。
+
+### A0d-6: データ セーフティ
+
+- [ ] アプリのコンテンツ → **データ セーフティ** — 9 種データを申告 ([pre-alpha-checklist.md §35.1 A6](ops/pre-alpha-checklist.md#a6-data-safety-form) 参照):
+
+| データカテゴリ | 種類 | 必須? | 暗号化 | 削除可? |
+|---|---|---|---|---|
+| 個人情報 | メール | はい | はい | はい |
+| 個人情報 | Display name | はい | はい | はい |
+| 個人情報 | 不具合報告内容 | いいえ (ユーザー送信時のみ) | はい | サポート経由 |
+| 金融情報 | 購入履歴 (RevenueCat) | いいえ (Pro 加入者のみ) | はい | はい |
+| アプリのアクティビティ | PostHog イベント | いいえ (opt-in) | はい | 匿名化 |
+| アプリの情報とパフォーマンス | Sentry crash log | いいえ (opt-in) | はい | 匿名化 |
+| デバイス ID | FCM/APNs token | いいえ (push 許可後のみ) | はい | はい |
+| デバイス ID | Supabase user UUID | はい | はい | はい |
+| ファイルとドキュメント | UGC (チャート画像 / パターンデータ) | いいえ (Discovery 共有時のみ) | はい | はい |
+
+- [ ] データ共有: **いいえ** (Sentry / PostHog / RevenueCat / GitHub は Play の定義で service provider 扱い、sharing ではない)
+- [ ] セキュリティ プラクティス: 送信時暗号化 **はい**、ユーザー削除要求可能 **はい** (in-app + web)、独立検証 **いいえ**、Families Policy **いいえ**
+- [ ] アカウントとデータの削除:
+  - ウェブ URL: `https://b150005.github.io/skeinly/account-deletion/`
+  - 削除対象: アカウント情報、パターン、プロジェクト、進捗、コメント、提案、デバイストークン、サブスクリプション状態、UGC レポート、フィードバック、avatar 画像。保持: 法的要件の最小ログのみ。
+  - 一部削除可: **いいえ** (アカウント全削除のみ、`delete_own_account` atomic RPC)
+
+### A0d-7: 行政 / 金融 / 健康
+
+- [ ] **行政アプリ**: いいえ
+- [ ] **金融取引機能**: いいえ (IAP サブスクリプションは Play 定義の「金融サービス」非該当)
+- [ ] **健康**: いいえ
+
+### A0d-8: アプリのカテゴリと連絡先情報
+
+- [ ] ダッシュボード → **アプリのカテゴリを選択し、連絡先情報を提供する** (またはストア掲載情報の概要 → ストアの設定)
+- [ ] アプリ or ゲーム: **アプリ**
+- [ ] カテゴリ: **ライフスタイル** ([store-listing.md](store-listing.md) 参照)
+- [ ] タグ: Play 提示リストから選択 — `Knitting`、`Hobby`、`Craft`、`Pattern` (5 つまで; 自由入力ではない)
+- [ ] メール: `skeinly.app@gmail.com` (公開される)
+- [ ] ウェブサイト: `https://b150005.github.io/skeinly/`
+- [ ] 電話: 空
+- [ ] 外部マーケティング: **いいえ**
+
+### A0d-9: ストアの掲載情報
+
+- [ ] ストアでの表示 → **メインのストアの掲載情報**
+- [ ] アプリ名 `Skeinly` (30 文字)
+- [ ] 簡単な説明 (80 文字 EN/JA — [store-listing.md](store-listing.md))
+- [ ] 詳細な説明 (4000 文字 EN/JA — [store-listing.md](store-listing.md))
+- [ ] グラフィック アセット:
+  - アプリ アイコン 512×512 (`androidApp/src/main/ic_launcher-playstore.png` に配置済)
+  - **フィーチャー グラフィック 1024×500** ⚠️ 未作成 — Internal Testing rollout でも必須
+  - 電話 screenshot ≥ 2 枚 (EN + JA 推奨) ⚠️ 未作成
+  - 7"/10" タブレット任意
+
+### A0d-10: Internal Testing トラック設定
+
+- [ ] **テストとリリース → テスト → 内部テスト** → **新しいリリースを作成**
+- [ ] CI が `release.yml` + `gradle-play-publisher` で `releaseStatus = DRAFT` アップロード (CLAUDE.md Tech Debt エントリ)
+- [ ] リリースノート EN + JA 両方必須 ([release.md](ops/release.md))
+- [ ] **テスター** タブ → Google アカウントの email を追加 (Internal track は ≤100) — 「アプリのテスター ライセンス」セクションの opt-in リンクを共有
+- [ ] License tester (Settings → ライセンスのテスト の別リスト — 同じ email を両方に登録)
+- [ ] **保存 → 公開を確認** で DRAFT 停止 (safety: `releaseStatus = DRAFT` で auto-rollout 防止)
+- [ ] A0d 全て green になってから **テスター宛にロールアウト開始** を手動クリック
+
+### A0d-11: 公開可否チェックリスト (Internal Testing 配信前)
+
+- [ ] A0d-1: プライバシー ポリシー URL 登録済 + 200 OK
+- [ ] A0d-2: アプリのアクセス権 demo 認証情報登録 + 両 demo アカウント存在 + seed 済 + Pro entitlement grant 済
+- [ ] A0d-3: 広告 = なし
+- [ ] A0d-4: コンテンツのレーティング = Everyone
+- [ ] A0d-5: ターゲット ユーザー = Adults only (子供年齢層なし)
+- [ ] A0d-6: データ セーフティ 全カテゴリ申告 + Account Deletion URL 登録
+- [ ] A0d-7: 行政 / 金融 / 健康 = いいえ
+- [ ] A0d-8: カテゴリ ライフスタイル + 連絡先 email + ウェブサイト
+- [ ] A0d-9: 掲載情報文 EN + JA + アイコン + フィーチャー グラフィック + 電話 screenshot ≥ 2 枚
+- [ ] A0d-10: Internal Testing track + テスター + License tester + リリースノート EN + JA
+
+### A0d よくある落とし穴
+
+1. 保存せずタブ切替 — 各セクションで Save 必要。
+2. プライバシー URL 404 / 503 — GitHub Pages deploy 待ち (~1–5 分)。
+3. サインアップありで「データ収集なし」と申告 — 偽申告。最低限 email + display name は収集している。
+4. 子供年齢層チェック — DFF flag は解除が遅い。最初から Adults only。
+5. License tester ≠ Internal tester — Pro IAP テストには両リストに登録必要。
+6. Internal Testing でも feature graphic 必須 — track の visibility に関わらず掲載情報完成度を要求。
+
+---
+
+## Phase A0e — Universal Links (AASA) + Android App Links (assetlinks.json)
+
+### A0e-1: ホスティング戦略の決定
+
+Apple は AASA を `https://<domain>/.well-known/apple-app-site-association` で HTTPS, `Content-Type: application/json`, リダイレクトなし、で要求。Skeinly の GitHub Pages は `https://b150005.github.io/skeinly/` (project page) だが、AASA は apex `https://b150005.github.io/.well-known/...` (別 repo の user site) に置く必要がある。
+
+| Option | コスト | 用途 |
+|---|---|---|
+| **A — `b150005/b150005.github.io` user site 作成** | $0 | alpha 推奨 |
+| **B — カスタムドメイン (`skeinly.app` 等)** | ~$10/年 | v1.0 推奨 |
+| **C — v1.0 まで延期、URI scheme のみ** | $0 | Universal Links 待てる場合 |
+
+**alpha 推奨**: Option A。後で B への移行は CNAME 変更のみ。
+
+### A0e-2: AASA ファイル内容
 
 ```json
 {
   "applinks": {
+    "apps": [],
     "details": [
       {
-        "appIDs": ["TEAMID.io.github.b150005.skeinly"],
+        "appIDs": ["<TEAMID>.io.github.b150005.skeinly"],
         "components": [
-          { "/": "/skeinly/share/*", "comment": "Direct share invite deep link" },
-          { "/": "/skeinly/pull-request/*", "comment": "PR open/comment/merge deep link" },
-          { "/": "/skeinly/shared-content/*", "comment": "Shared pattern/project deep link" }
+          { "/": "/skeinly/share/*" }
         ]
       }
     ]
@@ -187,11 +524,11 @@ Apple は AASA ファイルを `https://<domain>/.well-known/apple-app-site-asso
 }
 ```
 
-`TEAMID` は 10 文字の Apple Developer Team ID に置換。選択肢 B の場合は `/skeinly/...` プレフィックスを削除（カスタムドメインなのでパス無し）。
+- [ ] `<TEAMID>` を 10 文字 Apple Developer Team ID に置換
+- [ ] `https://b150005.github.io/.well-known/apple-app-site-association` (拡張子 `.json` なし) にデプロイ
+- [ ] iOS app entitlements に `applinks:b150005.github.io` を追加
 
-### A0c-3: assetlinks.json (Android App Links 対応)
-
-`<host>/.well-known/assetlinks.json` に以下を配置:
+### A0e-3: assetlinks.json (Android App Links)
 
 ```json
 [{
@@ -199,117 +536,130 @@ Apple は AASA ファイルを `https://<domain>/.well-known/apple-app-site-asso
   "target": {
     "namespace": "android_app",
     "package_name": "io.github.b150005.skeinly",
-    "sha256_cert_fingerprints": [
-      "<upload-keystore.jks の SHA-256 fingerprint>"
-    ]
+    "sha256_cert_fingerprints": ["<APP_SIGNING_SHA256>"]
   }
 }]
 ```
 
-SHA-256 fingerprint は `keytool -list -v -keystore upload-keystore.jks` で取得 ([release-secrets.md §7](release-secrets.md#7-keystore_base64) の keystore 生成手順参照)。
+- [ ] Play Console → 設定 → アプリの完全性 → App signing key SHA-256 から `<APP_SIGNING_SHA256>` を取得
+- [ ] `https://b150005.github.io/.well-known/assetlinks.json` にデプロイ
 
-### A0c-4: デプロイ後の検証
+### A0e-4: デプロイ後の検証
 
 ```bash
-# AASA: 200 応答、JSON、リダイレクトなし、Content-Type: application/json 必須
 curl -I https://b150005.github.io/.well-known/apple-app-site-association
+# Expect: HTTP/2 200, content-type: application/json
+curl https://b150005.github.io/.well-known/apple-app-site-association | jq .
+# Expect: valid JSON parse
 
-# assetlinks.json も同条件
-curl -I https://b150005.github.io/.well-known/assetlinks.json
-
-# Apple 公式 validator (代替)
+# Apple 自身のバリデータ (alternative)
 # https://search.developer.apple.com/appsearch-validation-tool
 ```
 
-## Phase A0d — RevenueCat セットアップ
+---
 
-RevenueCat はクロスプラットフォーム IAP / サブスク管理レイヤ。Apple StoreKit と Google Play Billing を抽象化し、プラットフォームごとに Public SDK Key 1 個を発行 — クライアントは `Purchases.configure()` にこれを渡すだけで済む。**前提**: A0a-5 (App Store Connect API Key) + A0b-3 (App Store Connect で IAP product 作成済) + Google Play Console で本アプリを公開し Service Account API access を有効化済 (`revenuecat@<project-ref>.iam.gserviceaccount.com` SA に付与。SA の JSON 鍵は RevenueCat dashboard に直接アップロードする — A0d-3 参照)。
+## Phase A0f — RevenueCat
 
-### A0d-1: RevenueCat Project 作成
+RC はクロスプラットフォーム IAP / サブスクリプション orchestration レイヤ。Skeinly のプロダクトは A0b-11 + A0c-13 の import 経由で流入; 本 phase は entitlement + offering + webhook を配線。
 
-1. [RevenueCat Dashboard](https://app.revenuecat.com) にサインイン。
-2. **+ New Project** → Project Name: `Skeinly` → Create。
-3. **Project Settings** → **General** → Project ID を確認。
+### A0f-1: RevenueCat Project 作成
 
-### A0d-2: iOS App 連携 (App Store Connect)
+- [ ] RC Dashboard → **+ New Project** → Name `Skeinly` → Create
 
-1. 新 Project 内: **Project Settings** → **Apps** → **+ New** → **App Store**。
-2. App name: `Skeinly iOS`。
-3. Bundle ID: `io.github.b150005.skeinly`。
-4. **App Store Connect API Key**: A0a-5 で生成した `.p8` をアップロード + Key ID + Issuer ID を入力 (RevenueCat はこれをキャッシュして product メタデータ取得 + サブスク状態変化の観測に使う)。
-5. **App-specific Shared Secret**: API Key 提供時は不要 (legacy 仕組み)。
-6. Save → RevenueCat が product 一覧を取得するまで待機 (通常 1 分未満)。
-7. **API Keys** タブ → **Public iOS SDK Key** (`appl_` 始まり) をコピー → [release-secrets §18](release-secrets.md#18-revenuecat_api_key_ios) の手順で `REVENUECAT_API_KEY_IOS` として登録。
+### A0f-2: iOS App 連携
 
-### A0d-3: Android App 連携 (Google Play)
+- [ ] **Project Settings → Apps → + New → App Store**
+- [ ] App name `Skeinly iOS`、Bundle ID `io.github.b150005.skeinly`
+- [ ] A0a-5 の `.p8` をアップロード + Key ID + Issuer ID
+- [ ] Save → RC が product list を fetch するまで 1 分未満
+- [ ] **API Keys** タブ → **Public iOS SDK Key** (`appl_...`) をコピー → `REVENUECAT_API_KEY_IOS` を [release-secrets §18](release-secrets.md#18-revenuecat_api_key_ios) で登録
 
-1. 同 Project: **Project Settings** → **Apps** → **+ New** → **Play Store**。
-2. App name: `Skeinly Android`。
-3. Package name: `io.github.b150005.skeinly`。
-4. **Service Account Credentials**: `revenuecat@<project-ref>.iam.gserviceaccount.com` SA の JSON ファイルをアップロード (この SA は Play Console → ユーザーと権限で「View financial data」+「Manage orders and subscriptions」を付与済 — RevenueCat は product + receipt validation のために Play Developer API read access が必要)。JSON 鍵は RevenueCat dashboard 側にのみアップロードする (Supabase Edge Function secret として登録する必要はない)。
-5. Save → RevenueCat が Play Console product 一覧を取得するまで待機。
-6. **API Keys** タブ → **Public Android SDK Key** (`goog_` 始まり) をコピー → [release-secrets §19](release-secrets.md#19-revenuecat_api_key_android) の手順で `REVENUECAT_API_KEY_ANDROID` として登録。
+### A0f-3: Android App 連携
 
-### A0d-4: Entitlement + Offering の作成
+- [ ] **Project Settings → Apps → + New → Play Store**
+- [ ] App name `Skeinly Android`、Package `io.github.b150005.skeinly`
+- [ ] `revenuecat@<project-ref>.iam.gserviceaccount.com` SA JSON をアップロード (この SA は Play Console → ユーザーと権限 で「財務データの表示」+「注文と定期購入の管理」を付与済)
+- [ ] Save → RC が product list を fetch するまで待機
+- [ ] **API Keys** タブ → **Public Android SDK Key** (`goog_...`) をコピー → `REVENUECAT_API_KEY_ANDROID` を [release-secrets §19](release-secrets.md#19-revenuecat_api_key_android) で登録
 
-Entitlement は user に付与する*能力* (例: `pro`)。Offering はペイウォールが提示する*product バンドル*。両者とも RevenueCat 側の概念で、user が実際に購入した IAP product を RevenueCat が解決し対応 Entitlement を自動付与する。
+### A0f-4: Entitlement + Offering binding
 
-1. **Product Catalog** → **Entitlements** → **+ New Entitlement**:
-   - Identifier: `pro`
-   - Display Name: `Skeinly Pro`
-   - Attached Products (product import 後): `skeinly.pro.monthly` (iOS + Android variant、Play Console product ID が一致する場合) + `skeinly.pro.yearly` 両方。
+これは A0b-11 + A0c-13 ダッシュボード import 完了後に **次セッションで RevenueCat MCP 経由で実行**:
 
-2. **Product Catalog** → **Offerings** → **+ New Offering**:
-   - Identifier: `default`
-   - Description: `Default paywall offering`
-   - **+ Add Package** → identifier `$rc_monthly` → `skeinly.pro.monthly` (iOS + Android) 紐付け。
-   - **+ Add Package** → identifier `$rc_annual` → `skeinly.pro.yearly` (iOS + Android) 紐付け。
-   - この Offering を **Current** に設定。
+- [ ] `list-products` — 4 product 可視性を確認 (iOS monthly + yearly + Android `:monthly` + `:yearly`)
+- [ ] `list-offerings` → `list-packages` — `default` offering 上の既存 `$rc_monthly` / `$rc_annual` を確認
+- [ ] `attach-products-to-package` × 4: iOS+Android monthly → `$rc_monthly`、iOS+Android yearly → `$rc_annual`
+- [ ] `list-entitlements` + `attach-products-to-entitlement` — `entlaaca26b181` が 4 product すべてを含むことを確認
 
-クライアントは `Purchases.shared.getOfferings()` を呼び `current` offering の package を読んでペイウォールを描画する — クライアントコードに product ID をハードコードしない。
+クライアントは `Purchases.shared.getOfferings()` で `current` offering の package を読むだけ — クライアントコードに hardcoded product ID なし。
 
-### A0d-5: Webhook 統合 (alpha+)
+### A0f-5: Webhook 統合
 
-Webhook は RevenueCat からサブスク状態変化 (renewal / cancel / refund / billing issue) を Supabase Edge Function に push し、サーバーサイド Pro entitlement 状態をクライアント polling なしで同期する。
+- [ ] 共有 secret 生成: `openssl rand -hex 32`
+- [ ] RC → **Integrations → Webhooks → + New Webhook**:
+  - URL: `https://<project-ref>.supabase.co/functions/v1/revenuecat-webhook`
+  - Authorization header: secret をペースト
+  - 環境: デフォルト (Sandbox + Production)
+- [ ] Save → secret を `REVENUECAT_WEBHOOK_SECRET` として [release-secrets EF-4](release-secrets.md#ef-4-revenuecat_webhook_secret) で登録
+- [ ] RC dashboard から test event をトリガ → Edge Function ログで 200 受信を確認
 
-1. 強い shared secret 生成: `openssl rand -hex 32`。
-2. **Integrations** → **Webhooks** → **+ New Webhook**:
-   - Webhook URL: `https://<project-ref>.supabase.co/functions/v1/revenuecat-webhook` (Phase 41 — F1 で作成する Edge Function)。
-   - Authorization header: 手順 1 の secret を貼り付け。
-   - Environment filter: alpha 期間中は Sandbox + Production 両方 (デフォルト) のままで OK。
-3. Save。
-4. 同じ secret を [release-secrets EF-4](release-secrets.md#ef-4-revenuecat_webhook_secret) の手順で `REVENUECAT_WEBHOOK_SECRET` として登録。
+### A0f-6: エンドツーエンド smoke test
 
-Edge Function 自体は F1 (Pro サブスクロールアウト) と同時に作成する。それまではこのステップは保留可能 — RevenueCat はクライアント側 entitlement 状態を webhook なしでも正しく維持する。webhook はサーバーサイド reconciliation 用途。
+- [ ] iOS: TestFlight ビルドを実機に、Sandbox tester (US 1 + JP 1) でサインイン、paywall を開く、月額をタップ → StoreKit Sandbox ダイアログ → 購入完了 → entitlement grant + `subscriptions` 行を Supabase MCP `execute_sql` で確認
+- [ ] Android: Play Internal Testing ビルド、license tester Google アカウントでサインイン、paywall を開く、月額をタップ → Play Billing ダイアログ (テスト表記あり) → 購入完了 → 同じ `subscriptions` 行 write を確認
 
-### A0d-6: 統合テスト
+---
 
-1. A0b-4 で作成した Sandbox Tester (iOS) + Google Play Internal Testing トラックに登録した license tester アカウント (Android debug ビルド) を使う。
-2. debug ビルドからテスト購入実行 (`Purchases.configure(apiKey: "appl_..." or "goog_...")` + `Purchases.purchase(package:)`)。
-3. RevenueCat Dashboard → **Customers** → テスト user を検索 → `pro` entitlement が予期した有効期限で付与されていることを確認。
+## Phase A0 — 検証チェックリスト (最初の alpha タグ前)
 
-## Phase A0 検証チェックリスト
+### Apple 側
+- [ ] App ID `io.github.b150005.skeinly` + 4 capability
+- [ ] APNs `.p8` ダウンロード済、EF secret 登録済
+- [ ] capability 追加後に Provisioning Profile 再生成済
+- [ ] ASC アプリ + Subscription Group `Skeinly Pro` + EN/JA localization
+- [ ] 2 IAP product 正しい ID + EN/JA localization + 各々に 7 日間無料トライアル
+- [ ] 両 product Level 1
+- [ ] ASSN V2 webhook 設定 (Production + Sandbox) → RC test event 成功
+- [ ] Sandbox tester ≥ 2 (US 1 + JP 1 推奨)
+- [ ] App Privacy 宣言提出済
+- [ ] RC dashboard に product import 済
 
-`v1.0.0-alpha1` タグ push 前に確認:
+### Google 側
+- [ ] Play Console アプリ `Skeinly` を Internal Testing に公開
+- [ ] Subscription Product `io.github.b150005.skeinly.pro` + 両 base plan アクティブ + 両無料トライアル offer アクティブ
+- [ ] ja-JP 翻訳追加済
+- [ ] License tester ≥ 1 (US + JP 推奨)
+- [ ] Pub/Sub + IAM Publisher + RTDN test message 成功
+- [ ] RC dashboard に product import 済
+- [ ] アプリのコンテンツ全 green: プライバシー / アクセス権 / 広告 / レーティング / ターゲット / データ セーフティ / 行政 / 金融 / 健康 / カテゴリ / ストア掲載情報
+- [ ] Supabase に demo アカウント作成 + seed 済 + Pro entitlement grant 済
 
-- [ ] Apple Developer App ID `io.github.b150005.skeinly` が 4 capability 有効で存在 (Sign In with Apple、Push Notifications、Associated Domains、In-App Purchase)
-- [ ] APNs Auth Key `.p8` ダウンロード済 + パスワードマネージャ保存済
-- [ ] APPLE_APNS_KEY_BASE64 + APPLE_APNS_KEY_ID を Supabase Edge Function secret として登録済
-- [ ] Capability 追加後に Apple Developer Portal で Provisioning Profile を再生成済 (CI が runtime に sigh で fetch — GitHub Secret に bytes を保持する必要はない)
-- [ ] App Store Connect で `Skeinly` アプリを bundle ID `io.github.b150005.skeinly` で作成済
-- [ ] Subscription Group `Skeinly Pro` 作成済
-- [ ] 2 つの IAP product 作成済: `skeinly.pro.monthly` ($3.99/¥600)、`skeinly.pro.yearly` ($24.99/¥3,800)、両方 7日 free trial
-- [ ] Sandbox Tester を最低 2 人作成済
-- [ ] App Privacy 宣言を Sentry + PostHog + Feedback データ種別で提出済
-- [ ] AASA ホスティング決定 (選択肢 A / B / C) と AASA + assetlinks.json デプロイ済 (選択肢 A または B の場合)
-- [ ] RevenueCat Project `Skeinly` 作成済 + iOS + Android Apps 連携済
-- [ ] Entitlement `pro` + Offering `default` を monthly + yearly package 構成で設定済
-- [ ] `REVENUECAT_API_KEY_IOS` + `REVENUECAT_API_KEY_ANDROID` を GitHub Secret として登録済
-- [ ] Webhook 統合は F1 (Phase 41) まで保留 (それ以前にサーバーサイド entitlement reconciliation が必要な場合のみ先行設定)
+### クロスベンダー
+- [ ] AASA + assetlinks.json デプロイ済 (or Option C を明示的に accept)
+- [ ] RC Project + iOS + Android アプリ連携済
+- [ ] `REVENUECAT_API_KEY_IOS` + `REVENUECAT_API_KEY_ANDROID` GitHub Secret 登録済
+- [ ] Entitlement `entlaaca26b181` を MCP 経由で 4 product 全てに bind 済
+- [ ] `default` offering に `$rc_monthly` + `$rc_annual` package
+- [ ] `REVENUECAT_WEBHOOK_SECRET` EF secret 登録 + test webhook 200
+- [ ] エンドツーエンド smoke test を両プラットフォームで pass
 
-## 関連リンク
+## クロスリファレンス
 
-- 各 secret の OBTAIN/VERIFY/REGISTER 手順: [release-secrets.md](release-secrets.md)
-- ブランチ保護 + CI 要件: [repo-policy.md](repo-policy.md)
-- プライバシーポリシー原典: [docs/public/privacy-policy/](../public/privacy-policy/)
-- Phase 39 alpha rubric: [phase/phase-39-beta-rubric.md](phase/phase-39-beta-rubric.md)
+- secret ごとの OBTAIN / VERIFY / REGISTER 手順: [release-secrets.md](release-secrets.md)
+- ADR-016 (RevenueCat 決定、価格、entitlement): [adr/016-phase-41-revenuecat-subscription.md](adr/016-phase-41-revenuecat-subscription.md)
+- ADR-017 (Push 通知): [adr/017-phase-24-push-notifications.md](adr/017-phase-24-push-notifications.md)
+- ADR-021 (UGC moderation foundation): [adr/021-pre-alpha-ugc-moderation.md](adr/021-pre-alpha-ugc-moderation.md)
+- コンプライアンス監査 (policy ごとの検証): [ops/pre-alpha-checklist.md](ops/pre-alpha-checklist.md)
+- ブランチ保護 + CI: [ops/repo-policy.md](ops/repo-policy.md)
+- リリース flow (タグ push → CI → store upload): [ops/release.md](ops/release.md)
+- クローズドベータテスター招待運用: [ops/beta-testing.md](ops/beta-testing.md)
+- プライバシー ポリシーソース: [docs/public/privacy-policy/](../public/privacy-policy/)
+- アカウント削除ページソース: [docs/public/account-deletion/](../public/account-deletion/)
+- ストア掲載情報コピー (EN + JA): [store-listing.md](store-listing.md)
+
+## Revision history
+
+| 日付 | 内容 |
+|---|---|
+| 2026-05-13 | `ops/iap-setup-app-store-connect.md`、`ops/iap-setup-play-console.md`、`ops/play-console-app-setup.md` を本 file に統合 ([ops/README.md](ops/README.md) の「1 回きりセットアップ → vendor-setup.md」ルールに準拠)。Phase 番号を再構成 (Apple A0a+A0b、Google A0c+A0d、Universal Links A0e、RevenueCat A0f)。散文をチェックリスト形式に圧縮。 |
+| Earlier | Apple-side scoped の初版 Phase A0 手順。 |

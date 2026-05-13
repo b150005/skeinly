@@ -143,7 +143,7 @@ Collect the tester's:
   the operator typically uses Gmail plus-subaddressing on a centralized
   inbox like `skeinly.app+<cohort>-<locale>-<label>@gmail.com` so all
   sandbox account communications route to one mailbox — see
-  [iap-setup-app-store-connect.md](iap-setup-app-store-connect.md) Step 9
+  [vendor-setup.md](../vendor-setup.md#a0b-9-sandbox-testers) A0b-9
   for the full email pattern.
 - Which TestFlight group they belong to (Skeinly Core vs Skeinly Closed Beta — see "TestFlight tester group structure" above)
 - Whether they need iOS, Android, or both
