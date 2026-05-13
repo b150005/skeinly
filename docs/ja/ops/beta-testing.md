@@ -48,11 +48,21 @@ Sandbox 経由なら **全部** をテストできる。さらに sandbox の **
 | **Skeinly Core** (JA: 「Skeinly コアチーム」) | 内部テスト (最大 100 名) — メンバーは ASC team member 必須 | オペレータ + 親しい友人 1–2 名 (合計 ≤3) | 全 build 自動配信 (unstable OK) — 高速イテレーション | 直接 Slack / LINE / 即時フィードバック |
 | **Skeinly Closed Beta** (JA: 「Skeinly クローズドベータ」) | 外部テスト (最大 10,000 名) — メール招待、ASC team member 不要 | 一般テスター 3–8 名 ([Phase 39 rubric](../../en/phase/phase-39-beta-rubric.md) 通りラウンドチャート作者 ≥1 + ja-JP テスター ≥1 含む) | tagged-stable build のみ。初回 build は Apple Beta App Review 必要 (24–48h) | メール + GitHub Issue ([beta-bug.yml テンプレート](../../../.github/ISSUE_TEMPLATE/beta-bug.yml)) |
 
-ASC → TestFlight でグループ作成:
-- 内部グループ: TestFlight → **内部テスト → グループを作成** → グループ名 `Skeinly Core` → 「自動配信を有効にする」 ON → 保存
-- 外部グループ: TestFlight → **外部テスト → グループを作成** → グループ名 `Skeinly Closed Beta` → 各テスターをメール招待
+### デフォルト推奨: External のみ (Internal Group は skip)
 
-Skeinly Core のメンバーは事前に ASC team member 化が必要 (ASC → ユーザとアクセス → ユーザを追加 → +)。Skeinly Closed Beta のメンバーは ASC team member 化不要。
+ほとんどの Phase 39 クローズドベータオペレータには **Skeinly Closed Beta (External) のみ作成すれば十分**。理由:
+
+- オペレータ (ASC Account Holder) は team member である時点で自動的に Internal Tester → 自分の実機での TestFlight build セルフテストには Internal Group を作る必要なし
+- 親しい友人を Internal Tester に追加するには ASC team membership 付与が必要 (セールスデータ・クラッシュレポート・全アプリ可視性) — 一般的な「テストしてくれる友人」関係には過剰共有
+- 親しい友人含む全テスターを External Group で運用しても問題なし。唯一のコストは Apple Beta App Review (**初回 build のみ** 24–48h、同 train の以降の build は即配信)
+
+**Skeinly Core (Internal) を作るのは**: co-developer / co-founder 級で元々 ASC team access を渡したい相手がいて、かつその相手と unstable-build を fast iteration したい場合 **のみ**。
+
+### ASC → TestFlight でグループ作成:
+- 内部グループ (上記の条件に該当しなければ skip): TestFlight → **内部テスト → グループを作成** → グループ名 `Skeinly Core` → 「自動配信を有効にする」 ON → 保存
+- 外部グループ (必須): TestFlight → **外部テスト → グループを作成** → グループ名 `Skeinly Closed Beta` → 各テスターをメール招待
+
+Skeinly Core (作る場合) のメンバーは事前に ASC team member 化が必要 (ASC → ユーザとアクセス → ユーザを追加 → +)。Skeinly Closed Beta のメンバーは ASC team member 化不要。
 
 ## テスターごとのセットアップ（テスター人数分繰り返す）
 

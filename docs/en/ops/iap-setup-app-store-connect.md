@@ -177,14 +177,23 @@ App Store Connect → Skeinly app → sidebar **General → App Information** �
 **Production Server URL:**
 - Click **Set Up URL** under Production Server URL.
 - Paste the RevenueCat URL.
-- Click **Save**.
-- The **Notification Version** selector (Version 1 [deprecated] / Version 2) appears **only after the URL is saved** — it is NOT shown on the blank form. Click **Edit** to surface the picker → select **Version 2** → **Save** again. (Confirmed 2026-05-13 against [Apple Developer Forums thread 822543](https://developer.apple.com/forums/thread/822543) — multiple developers hit the same "where's the picker?" confusion before realizing it's conditional on URL entry.)
+- Click **Save**. The URL is now configured.
+- **Notification Version picker may not appear at all on new endpoints.** Apple's public docs ([Apple Help — Enter server URLs](https://developer.apple.com/help/app-store-connect/configure-in-app-purchase-settings/enter-server-urls-for-app-store-server-notifications/)) and [Apple Developer Forums thread 822543](https://developer.apple.com/forums/thread/822543) still describe a Version 1 (deprecated) / Version 2 picker, but operator-confirmed 2026-05-13 the picker is **silently absent on freshly-configured endpoints** — Apple appears to have shipped a default-to-V2 UI change without updating documentation (same pattern as the 45-vs-55 char Description cap discrepancy). If the picker DOES appear after Save → Edit, select **Version 2**. If absent, **V2 is auto-applied** and no further action is required. Either path produces the same V2-routed endpoint.
 
 **Sandbox Server URL:**
 - Click **Set Up URL** under Sandbox Server URL.
 - Paste the **same RevenueCat URL**.
-- Click **Save**.
-- Then click **Edit** to surface the Notification Version picker → select **Version 2** → **Save**.
+- Click **Save**. Same picker-may-or-may-not-appear behavior as Production — if shown, select Version 2; if absent, V2 is auto-applied.
+
+### Verification that V2 is configured
+
+The version is opaque from the ASC UI when no picker is shown. The authoritative confirmation comes from RevenueCat's webhook receipt:
+
+1. RevenueCat Dashboard → Apps & providers → Skeinly iOS app → Apple Server to Server notification settings.
+2. **Send test event** (RevenueCat provides this button) — generates a test notification routed through the configured ASC server URL.
+3. Response 200 OK + "Last received" timestamp updates → V2 routing confirmed live.
+
+This is the same end-to-end verification flow used during the original `revenuecat-webhook` Edge Function deployment 2026-05-08 (Phase 39.0.1).
 
 Setting both URLs explicitly (rather than relying on Apple's default routing of sandbox to production) keeps the configuration visible and self-documenting in App Store Connect.
 
