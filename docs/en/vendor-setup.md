@@ -160,13 +160,44 @@ Apple auto-enforces "one redemption per customer per subscription group" — bot
 ### A0b-10: App Privacy declaration
 
 - [ ] App detail → **App Privacy** → Privacy Policy URL `https://b150005.github.io/skeinly/privacy-policy/`
-- [ ] Data Types Collected (Skeinly's actual scope — see [pre-alpha-checklist.md §35.1](ops/pre-alpha-checklist.md)):
-  - **Identifiers**: User ID (Supabase UUID, required), Device ID (PostHog distinct_id, opt-in)
-  - **User Content**: Other User Content (UGC — patterns, comments)
-  - **Diagnostics**: Crash Data + Performance Data (Sentry, opt-in)
-  - **Usage Data**: Product Interaction (PostHog, opt-in)
-  - **Purchases**: Purchase History (RevenueCat, Pro subscribers only)
-- [ ] For each type: Linked to user = Yes (User ID anchors), Used for tracking = **No**
+- [ ] Click **Edit** on "Data Collection" → checkbox dialog opens listing 14 categories
+- [ ] **Check exactly these 11 boxes** (Apple labels in JA; cross-references to Skeinly's data flow in [pre-alpha-checklist.md §35.1 A6](ops/pre-alpha-checklist.md#a6-data-safety-form)):
+
+| Apple category | Sub-option (check this) | Skeinly source |
+|---|---|---|
+| **連絡先情報** (Contact Info) | **名前** (Name) | `display_name` in Supabase profile — freeform; users may put real names |
+| 連絡先情報 | **メールアドレス** (Email Address) | Supabase Auth email (raw + hashed both count per Apple's note) |
+| **ユーザコンテンツ** (User Content) | **写真またはビデオ** (Photos or Videos) | Project progress photos in Supabase Storage |
+| ユーザコンテンツ | **カスタマーサポート** (Customer Support) | Bug report content → GitHub Issue via `submit-bug-report` Edge Function |
+| ユーザコンテンツ | **その他のユーザコンテンツ** (Other User Content) | Chart data, patterns, comments, suggestions |
+| **ID** (Identifiers) | **ユーザID** (User ID) | Supabase UUID; also covers `display_name` as a handle per Apple's definition ("スクリーン名、ハンドル、アカウントID") |
+| ID | **デバイスID** (Device ID) | APNs device token + PostHog `distinct_id` (opt-in) |
+| **購入** (Purchases) | **購入** (Purchases) | RevenueCat subscription state via webhook (`subscriptions` table — Pro entitlement, product, expires_at) |
+| **使用状況データ** (Usage Data) | **製品の操作** (Product Interaction) | PostHog page views / taps / scrolls (opt-in via consent screen) |
+| **診断** (Diagnostics) | **クラッシュデータ** (Crash Data) | Sentry crash logs (opt-in) |
+| 診断 | **パフォーマンスデータ** (Performance Data) | Sentry performance (opt-in; matches Apple's "起動時間、ハング率、エネルギー使用量") |
+
+- [ ] **Leave UNCHECKED** (explicit non-collection — misdeclaring as collected is also a violation):
+  - 連絡先情報: 電話番号 / 所在地 / ユーザのその他の連絡先情報
+  - **健康とフィットネス**: 健康 / フィットネス (none)
+  - **財務情報**: 支払い情報 (per Apple's inline note — "アプリが支払いサービスを利用している場合... デベロッパは支払い情報にアクセスできません。その場合、データは収集されないため、申告する必要はありません。" Skeinly uses StoreKit / RevenueCat — payment info stays out of our reach) / クレジット情報 / その他の財務情報
+  - **位置情報**: 詳細な位置情報 / おおよその場所 (Skeinly does not collect location)
+  - **機密情報** (Sensitive Info — race, sexual orientation, religion, etc.)
+  - **連絡先** (Contacts — address book access)
+  - ユーザコンテンツ: メールまたはテキストメッセージ / オーディオデータ / ゲームプレイコンテンツ
+  - **閲覧履歴** (Browsing History)
+  - **検索履歴** (Search History — pattern search queries are transient request params, not persisted)
+  - 使用状況データ: 広告データ (no ads) / その他の使用状況データ
+  - 診断: その他の診断データ
+  - **周囲**: 環境スキャン (no AR / scene scanning)
+  - **身体**: 手 / 頭 (no body tracking)
+  - **その他のデータ**
+
+- [ ] Click **保存** → next screen asks per-checkbox follow-up questions
+- [ ] For **every** checked item:
+  - Linked to user? **Yes** (User ID anchors the whole graph)
+  - Used for tracking? **No** (Skeinly does not share with third parties for cross-app advertising; the SDK transfers to Sentry / PostHog / RevenueCat / GitHub are service-provider processing under Apple's definition)
+  - Purposes: pick **App Functionality** for everything required-for-feature. Additionally pick **Analytics** for Diagnostics + Usage Data + Device ID (PostHog opt-in path)
 
 ### A0b-11: Import products into RevenueCat (manual dashboard step)
 
