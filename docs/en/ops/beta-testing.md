@@ -67,6 +67,47 @@ setup that should already be done):
       wired (Internal Testing track upload via `gradle-play-publisher`).
 - [ ] `RevenueCatAuthBridge` is in production code (commit `e1088d1` or
       later) so `Purchases.logIn(userId)` fires after Skeinly auth.
+- [ ] **Supabase Auth Site URL** points at the production
+      email-confirmation landing page (NOT the dev default
+      `http://localhost:3000`). See "Supabase Auth URL configuration"
+      below.
+
+## Supabase Auth URL configuration
+
+When the Supabase Dashboard has **Confirm email** enabled (the prod
+default), Supabase sends a confirmation link to every new sign-up. The
+link routes through Supabase's `/auth/v1/verify` endpoint and then
+redirects the user's browser to `${Site URL}?code=...`. If Site URL is
+left at the dev default `http://localhost:3000` the redirect lands on a
+URL the browser can't resolve and testers see a "this site can't be
+reached" error — even though the email itself was confirmed
+successfully at Supabase's backend before the redirect fired.
+
+One-time setup:
+
+1. Open the Supabase Dashboard for the Skeinly project →
+   **Authentication → URL Configuration**.
+2. Set **Site URL** to: `https://b150005.github.io/skeinly/email-confirmed/`
+3. Under **Redirect URLs**, add (if not already allow-listed):
+   - `https://b150005.github.io/skeinly/email-confirmed/`
+   - `https://b150005.github.io/skeinly/ja/email-confirmed/`
+4. Click **Save**.
+
+The landing page lives at [`docs/public/email-confirmed/index.html`](../../public/email-confirmed/index.html)
+(EN) + [`docs/public/ja/email-confirmed/index.html`](../../public/ja/email-confirmed/index.html)
+(JA), served by GitHub Pages from the repo's `main` branch. Modifying
+the page only requires editing the HTML and pushing — no Supabase
+Dashboard update needed unless the URL itself changes.
+
+**Forward-compat note (Phase 40 GA)**: Universal Links / App Links
+would let the email-confirmation link open the Skeinly app directly +
+exchange the PKCE `code` for an authenticated session in-app, removing
+the manual "go back to the app and sign in" step. Wiring is in place
+([CLAUDE.md A16](../../../.claude/CLAUDE.md) Tech Debt — `AppDelegate.application(_:continue:restorationHandler:)`
++ AASA template at `docs/well-known/`) but the AASA file needs to land
+at a **root domain** path (`https://<host>/.well-known/apple-app-site-association`)
+that the current Project Pages site at `b150005.github.io/skeinly/`
+cannot serve. Deferred until a custom domain or User Pages repo lands.
 
 ## TestFlight tester group structure
 
