@@ -32,6 +32,7 @@ Counterpart for Android: [iap-setup-play-console.md](iap-setup-play-console.md).
 | Subscription Group | one group, both products at the same level | Crossgrade behavior between monthly ↔ yearly takes effect at next renewal date; both products grant identical Pro access (same RevenueCat entitlement `entlaaca26b181`) |
 | Notification version | **V2 (recommended)** | RevenueCat docs explicitly recommend V2 for auto-detected price changes; V1 still works but is not the preferred path |
 | Base region for pricing | **United States (USD)** | Apple auto-generates equivalent prices for all 174 other storefronts; manual override per territory available |
+| Yearly product billing structure | **「1年間前払い」(annual prepay)** — NOT「12か月契約の月額プラン」(annual contract paid monthly) | The latter option is iOS 26.4+ / SDK 26.5+ only. Skeinly's deployment target is iOS 17.0, so 26.4-gated surfaces would exclude the vast majority of users from purchasing the yearly plan. Annual prepay is also the industry-standard form, aligns with our existing "Save 40%+ vs monthly" marketing narrative ($24.99 one-shot vs 12 × $3.99 = $47.88), matches knitter-craft prepay subscription convention, and is the only form with parity to Play Console's base-plan model. Decided 2026-05-13 via Agent Team deliberation. |
 
 ## Order of operations
 

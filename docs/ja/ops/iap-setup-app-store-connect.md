@@ -32,6 +32,7 @@ Android 側: [iap-setup-play-console.md](iap-setup-play-console.md)。
 | Subscription Group | 1 グループ、両プロダクト同レベル | 月額 ↔ 年額 のクロスグレードは次回更新日に有効化。両プロダクトとも同じ Pro アクセスを付与 (同一 RevenueCat エンタイトルメント `entlaaca26b181`) |
 | 通知バージョン | **V2 (推奨)** | RevenueCat docs が自動価格変更検出のために V2 を明示推奨。V1 はまだ valid だが新規連携では V2 を選択 |
 | 価格設定基準リージョン | **United States (USD)** | 他 174 ストアフロント分は Apple が自動換算、テリトリー単位の手動上書きも可能 |
+| 年額プロダクトの課金形態 | **「1 年間前払い」** — 「12 か月契約の月額プラン」ではない | 後者は iOS 26.4+ / SDK 26.5+ 限定。Skeinly の deployment target は iOS 17.0 のため、26.4 ゲートのオプションを選ぶと大多数のユーザを年額プラン購入対象から除外することになる。「1 年間前払い」は業界標準形、既存「Save 40%+ vs monthly」マーケティングナラティブ ($24.99 一括 vs 12×$3.99=$47.88) と整合、knitter-craft の前払いサブスクリプション慣習に合致、Play Console の base-plan モデルとの parity 維持にも必要。2026-05-13 に Agent Team 協議で確定。 |
 
 ## 操作順序
 
