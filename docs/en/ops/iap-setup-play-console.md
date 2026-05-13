@@ -146,11 +146,12 @@ This makes the monthly base plan visible to clients on older Play Billing Librar
 **Activation is a standalone button at the bottom of the base plan edit page — NOT in the 3-dot ⋮ overflow menu on the base plan row.** Source: [Play Console Help — Create and manage subscriptions](https://support.google.com/googleplay/android-developer/answer/140504), verified 2026-05-13.
 
 Path:
-1. From the subscription details page, click the **›** (right arrow) on the `monthly` row to open the base plan edit page.
-2. Scroll to the bottom of the page.
-3. Click **Activate** (`アクティブ化`) → confirm in the dialog. Status changes from **Inactive** (未公開) to **Active** (有効).
+1. From the subscription details page, **click the base plan ID text (`monthly`) in the ID column** — it is rendered as a clickable hyperlink in the current Play Console UI. (Some older Play Console help articles describe a `›` right-arrow on the row, but that visual affordance has been replaced by the clickable ID text in the current UI. If the ID text doesn't act as a link, try clicking anywhere on the row — table-wide click navigation also works.)
+2. The base plan edit page opens.
+3. Scroll to the bottom of the page.
+4. Click **Activate** (the newer label is **Enable** in some JA locales — 「有効にする」 — and the older label is 「アクティブ化」; both trigger the same action) → confirm in the dialog. Status changes from **Inactive** (未公開) to **Active** (有効).
 
-The 3-dot ⋮ menu on the base plan row exposes secondary actions like **View legacy price points** and **Use for deprecated billing methods** — NOT Activate. If you only see the deprecated-billing-methods option in the ⋮ menu, that's expected; the Activate button lives one level deeper, on the edit page itself.
+The 3-dot ⋮ menu on the base plan row exposes secondary actions ONLY — typically just **Use for deprecated billing methods** (`サポートを終了した請求方法で使用`) for a draft base plan. Activate is NOT in that menu. If clicking the ⋮ menu only shows the deprecated-billing-methods option, that's expected — keep looking at the row text instead.
 
 ### Critical constraint
 
@@ -174,7 +175,7 @@ Same procedure as Step 2 with these values:
 
 Set base price to **`24.99`** USD; Play Console auto-converts. Japan typically lands in the ¥3,600–¥4,000 range.
 
-Click **Activate**.
+Click **Activate** (same path as monthly in Step 2d: open the base plan edit page by clicking the `yearly` ID text → scroll to bottom → click the Activate / 「有効にする」 button. NOT via the 3-dot ⋮ menu).
 
 ## Step 4 — Free Trial offer (Monthly)
 
