@@ -177,14 +177,14 @@ App Store Connect → Skeinly アプリ → サイドバー **General → App In
 **Production Server URL:**
 - Production Server URL 配下の **Set Up URL** クリック。
 - RevenueCat URL をペースト。
-- Notification Version: **Version 2**。
 - **Save** クリック。
+- **Notification Version** セレクタ (Version 1 [deprecated] / Version 2) は **URL を保存した後** にしか表示されない — 空のフォーム上では出現しない。**Edit** クリックでセレクタを surface → **Version 2** を選択 → 再度 **Save**。(2026-05-13 [Apple Developer Forums thread 822543](https://developer.apple.com/forums/thread/822543) で確認 — 「セレクタが見当たらない」混乱を複数の開発者が報告、URL 入力条件付き UI と判明)。
 
 **Sandbox Server URL:**
 - Sandbox Server URL 配下の **Set Up URL** クリック。
 - **同じ RevenueCat URL** をペースト。
-- Notification Version: **Version 2**。
 - **Save** クリック。
+- **Edit** クリックで Notification Version セレクタを surface → **Version 2** 選択 → **Save**。
 
 両 URL を明示的に設定することで (sandbox を production に自動ルーティングさせるのではなく)、App Store Connect 上で構成が可視化され自己記述的になります。
 
@@ -210,6 +210,30 @@ App Store Connect → **Users and Access** (App Store Connect ホームから、
 | App Store Country or Region | 初期ストアフロント。**このフィールドは後から編集可能** — US ↔ Japan ストアフロント切替に使える。 |
 
 **Create** クリック。
+
+### Phase 39 クローズドベータ向け命名規約
+
+Sandbox テスターには「グループ」UI フィールドが存在せず、リストはフラット。First Name にグループ prefix を入れて一覧 sort が直感的になるようにする:
+
+| テスター cohort | First Name | Last Name | 例 |
+|---|---|---|---|
+| Core (オペレータ + 親しい友人、internal TestFlight) | `Core` | `Tester-<n>` または `Tester-<locale>-<n>` | First: `Core` / Last: `Tester-JP-1` |
+| 一般クローズドベータ | `Beta` | `Tester-<n>` または `Tester-<locale>-<n>` | First: `Beta` / Last: `Tester-US-1` |
+
+仮名ラベルは明示的に許可 — Apple は sandbox アカウントの名前 realism を要求しない。作成後は編集不可なので、最初のテスターを作る前に規約を固める。
+
+### メールベストプラクティス: 実在 inbox の plus-subaddressing
+
+Apple は sandbox アカウント作成時に verification-click-through メールを送らない (アカウントは即座に使用可能)、しかし作成後はアドレスに communication を送る (例: テスターが認証情報を忘れたときのパスワードリセット)。**実在の受信可能 inbox** に plus-subaddressing で全 sandbox テスターを 1 つの mailbox にルートさせる:
+
+| テスター cohort | メールパターン (実 base が `you@example.com` の場合) |
+|---|---|
+| Core US | `you+core-us-1@example.com` |
+| Core JP | `you+core-jp-1@example.com` |
+| Beta US | `you+beta-us-1@example.com` |
+| Beta JP | `you+beta-jp-1@example.com` |
+
+Plus-subaddressing は Apple 推奨パターン ([Apple sandbox account help page](https://developer.apple.com/help/app-store-connect/test-in-app-purchases/create-a-sandbox-apple-account/) でも `billjames2+UK@icloud.com` を例示)。Gmail / iCloud Mail / Fastmail / ProtonMail は全て `+` subaddressing 対応、**Outlook/Hotmail は非対応**なので Gmail/iCloud ベース推奨。
 
 ### Sandbox テスターを実機で使用
 
@@ -248,6 +272,16 @@ App Store Connect で確認:
 | 10 | Apple ID サインインフロー | iOS デバイスで「メディアと購入」をサインアウト — **iCloud ではない** — sandbox テスト前。 |
 | 11 | Description 字数上限 | ASC UI は現状ロケールあたり **55 字** を施行 (2026-05-13 オペレータ実測確認)。Apple 公式 docs ([promoting-in-app-purchases](https://developer.apple.com/app-store/promoting-in-app-purchases/) + [help/app-store-connect/reference/in-app-purchase-information](https://developer.apple.com/help/app-store-connect/reference/in-app-purchase-information/)) は依然として **45 字** と記載 — Apple が docs を更新せずに cap を引き上げたケース。どちらの limit でも safe に収めるなら 45 字以内。本 runbook の現行 copy は 55 字向けに最適化 (EN yearly がちょうど 55)。Display Name は 30 字上限。soft warning なし — 上限超過は保存時に reject。 |
 | 12 | Description content compliance | Apple の Description フィールドへの content 要件は「各オファリングのメリットを明確に区別する」ことのみ — feature 詳細列挙 + 価格 / 自動更新 / 無料トライアル開示の義務は **in-app sign-up screen (paywall)** にあり Description field ではない ([App Store Review Guidelines §3.1.2(c)](https://developer.apple.com/app-store/review/guidelines/) + [Apple Subscriptions page](https://developer.apple.com/app-store/subscriptions/) 参照)。「all Pro features」「全機能を解放」+ savings claim スタイルは compliant。比較 savings claim (「Save 40%+」「40% お得」) は Subscriptions ページ「Billing amount」節で明示的に許可 (purchase flow 内で total billing amount より subordinate に表示する条件)。 |
+
+## プロダクト単位の optional フィールド (Phase 39: skip / Phase 40 GA: 対応)
+
+各サブスクリプションプロダクト詳細ページには、Phase 39 クローズドベータでは不要な 3 セクションがある。ASC UI 上に必須フィールドと並んで表示されるので「壊れている / 欠落している」と誤認しないように明記:
+
+| セクション | Phase 39 アクション | Phase 40 GA アクション |
+|---|---|---|
+| **画像 (任意)** — サブスクリプションを最もよく表す 1024×1024 px 画像。win-back オファー、オファーコード、(App Store プロモーション有効化時は) App Store プロダクトページにも表示。 | **Skip。** Phase 39 クローズドベータでは win-back / オファーコード / App Store プロモーション未使用 — 画像は active flow に乗らない。 | **GA 前 TODO**: 1024×1024 画像を準備。Skeinly 既存のブランド iconography (`#EED952` 背景のヤーン-スケイン motif、[AppIcon refresh 2026-05-08](https://github.com/b150005/skeinly/commit/43a472c)) が自然なビジュアル基盤。デザイナー/オペレータ操作、自動実行不可。 |
+| **税金カテゴリ** — デフォルト「親アプリに一致する」(親 app のカテゴリ継承)。Skeinly の親 app カテゴリは「Digital App Sales」(デジタルアプリの販売)。 | **デフォルトのまま。** サブスクリプションは digital app sale と同一課税 — 継承カテゴリで正解。 | 同上 — 税制ガイダンス変更がない限り override 不要。 |
+| **審査に関する情報** — Apple 審査員が IAP を実テストするための スクリーンショット + Review Notes。 | **Skip。** クローズドベータの購入は Sandbox + TestFlight ビルド経由で IAP ごとの App Review を通らない。 | **GA 前 TODO**: (1) in-app paywall (月額 + 年額 + 7 日トライアルが見える画面) のスクショ取得 (2) Review Notes に paywall への到達手順を記載: "Sign up → Settings → tap 'Upgrade to Pro' → paywall surfaces both subscription products"。Apple 審査員が Phase 40 GA 審査でこれらを使って IAP をテストする。submission 前必須。 |
 
 ## Phase 39 全体パイプライン内の位置
 
