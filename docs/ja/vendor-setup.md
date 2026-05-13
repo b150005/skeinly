@@ -439,7 +439,7 @@ Sign in with the credentials above (Supabase email+password auth, no 2FA). Demo 
 
 ### A0d-4: コンテンツのレーティング (IARC)
 
-- [ ] アプリのコンテンツ → **コンテンツのレーティング** → 連絡先 email + カテゴリ登録 → IARC 質問票開始
+- [ ] アプリのコンテンツ → **コンテンツのレーティング** → 連絡先 email **`skeinly.app+iarc@gmail.com`** (IARC 専用 plus-alias — レーティング証明書、基準改定通知、レーティング異議申立 / 再審査時の IARC 担当者連絡が届く先。support と分離) + カテゴリ登録 → IARC 質問票開始
 
 目標: **Everyone (全年齢)**。Skeinly 回答:
 
