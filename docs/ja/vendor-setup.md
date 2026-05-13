@@ -235,7 +235,7 @@ ASC ↔ RC OAuth が wired でも必須。MCP binding (A0f-4) は次の step。
 
 - **App 情報 → アプリのアクセシビリティ** — VoiceOver / 音声コントロール / さらに大きな文字 / ダークインターフェイス / カラー以外で区別 / 十分なコントラスト / 視差効果を減らす / キャプション / バリアフリー音声ガイド など、支援技術によるコアタスク完遂を申告。Apple コンプライアンス: **エンドツーエンドで動作確認済の機能のみ申告可**。虚偽申告は App Review reject 対象。Skeinly の a11y audit は途中 (CLAUDE.md Tech Debt: A25 Reduce Motion iOS SwiftUI sweep + M5 ChartEditor zoom WCAG 2.5.8 両方 pre-Phase-40-GA)。audit 完了後に申告。
 - **App プライバシー → プライバシーニュートリションラベル — App Review Information screenshots** — IAP レビュー時のみ必要 (上記 IAP 「メタデータが不足」バッジ)。
-- **App 内イベント / カスタムプロダクトページ / プロダクトページの最適化 / プロモーションコード / Game Center / ノミネート** — growth / marketing サーフェス。Phase 39 では使用しない。
+- **成長とマーケティング** 群 (アプリ内イベント / カスタムプロダクトページ / プロダクトページの最適化 / プロモーションコード / Game Center) + **フィーチャー → ノミネート** — App Store **公開商品ページ** のマーケティング surface。公開商品ページが存在する場合のみレンダリングされ、Phase 39 TestFlight Internal では存在しない。**これらは RevenueCat の管理範囲ではない** — ASC はインストール前のマーケティング (App Store 商品ページ内容)、RevenueCat はインストール後のマネタイズ (アプリ内 paywall + サブスクリプションオファリング) を担当し、両者は重ならない。特に ASC の「プロモーションコード」はアプリや IAP 商品を **無料で配るコード** を発行する機能で、RC の「Promotional Offers」は既存 subscriber に対する **割引・無料延長**。完全に別の仕組みで、両方を Phase 40 以降併用可能。Game Center は N/A (Skeinly はゲームではない)。
 
 ### A0b よくある落とし穴
 
