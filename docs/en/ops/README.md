@@ -18,6 +18,8 @@
 |---|---|
 | [release.md](release.md) | Tag-driven release procedure — versioning, validation, what happens on tag push, post-upload manual steps. |
 | [beta-testing.md](beta-testing.md) | Inviting a closed-beta tester (TestFlight + Play Internal + RevenueCat sandbox configuration). |
+| [iap-setup-app-store-connect.md](iap-setup-app-store-connect.md) | Creating the two Skeinly Pro subscription products + 7-day Free Trial + ASSN V2 webhook + sandbox testers on the Apple side. |
+| [iap-setup-play-console.md](iap-setup-play-console.md) | Creating the `skeinly_pro` subscription + two base plans + 7-day Free Trial offers + Pub/Sub RTDN + license testers on the Google side. |
 
 ### Incident response
 
