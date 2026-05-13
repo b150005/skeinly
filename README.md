@@ -159,6 +159,8 @@ FCM Push Notifications additionally require `androidApp/src/{debug,release}/goog
 
 **Custom keystore filename**: the Android signing keystore path is configurable. By default Gradle looks for `keystore.jks` at the repo root, but the lookup is overridable via `KEYSTORE_FILE=<path>` in `local.properties` (relative paths resolve against the repo root; absolute paths are used verbatim). Use whichever filename matches your local convention — `keystore.jks`, `upload-keystore.jks` (Google Play default), `skeinly-release.jks`, etc. CI uses the same `KEYSTORE_FILE` env var per `release.yml`, so the resolution chain is uniform local ↔ CI.
 
+**Android SDK path (`sdk.dir`)**: Android Studio auto-writes the developer-specific `sdk.dir=...` entry to `local.properties` the first time you open the project — most contributors don't need to do anything. CLI-only workflows (no Android Studio) should set the `ANDROID_HOME` shell env var instead. AGP's resolution chain is `sdk.dir` (local.properties) → `ANDROID_HOME` → `ANDROID_SDK_ROOT` (deprecated) → OS defaults. The value is intentionally NOT in `local.properties.example` because it's machine-specific (absolute path differs per developer + OS).
+
 #### Common tasks (Makefile)
 
 All build, test, lint, and release tasks are exposed as Makefile targets. Run `make help` for the full list with descriptions.
@@ -464,6 +466,8 @@ FCM Push Notification を受信する場合は別途 `androidApp/src/{debug,rele
 **値の escape ルール**: `local.properties` は Java Properties フォーマット準拠。`iosApp/local.xcconfig` (`//` が行コメント、`https://...` を `https:/$()/...` と書く必要あり) とは異なり、Properties の value 内 `://` はそのまま記述可 — ダッシュボードから取得した `SUPABASE_URL` をそのまま貼り付けて OK。フル escape ルールは `local.properties.example` のヘッダコメント参照。
 
 **Keystore ファイル名のカスタマイズ**: Android 署名 keystore のパスは設定可能。デフォルトでは Gradle がリポジトリルートの `keystore.jks` を探しますが、`local.properties` に `KEYSTORE_FILE=<path>` を追加すれば上書きできます (相対パスはリポジトリルート基準、絶対パスはそのまま使用)。ローカル運用の慣習に合わせて `keystore.jks` / `upload-keystore.jks` (Google Play 標準) / `skeinly-release.jks` 等の任意のファイル名で OK。CI も `release.yml` で同じ `KEYSTORE_FILE` env var を使うため、ローカル ↔ CI で解決ロジックが統一されています。
+
+**Android SDK パス (`sdk.dir`)**: Android Studio で本プロジェクトを最初に開いた時点で、開発者ごとの `sdk.dir=...` が `local.properties` に自動追記されます — ほとんどのコントリビューターは特別な操作不要。CLI のみで運用する場合 (Android Studio を開かない) は代わりに `ANDROID_HOME` 環境変数を設定してください。AGP の解決順序は `sdk.dir` (local.properties) → `ANDROID_HOME` → `ANDROID_SDK_ROOT` (deprecated) → OS デフォルトパス。値は machine-specific な絶対パスのため `local.properties.example` には意図的に含めていません (開発者・OS ごとに異なるため)。
 
 #### 主なタスク (Makefile)
 
