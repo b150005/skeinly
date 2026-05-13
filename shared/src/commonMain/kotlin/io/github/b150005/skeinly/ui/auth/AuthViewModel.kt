@@ -137,33 +137,23 @@ class AuthViewModel(
                         // root navigator switches away from LoginScreen on
                         // that transition. Just clear the submitting flag.
                         form.update { it.copy(isSubmitting = false) }
-                    is SignUpOutcome.EmailConfirmationRequired ->
-                        // Surface the "check your email" view by storing
-                        // the destination address. Clear the password
-                        // field so it isn't retained if the user dismisses
-                        // and re-enters sign-up flow.
+                    is SignUpOutcome.AwaitingEmailAction ->
+                        // Both EmailConfirmationRequired (new signup
+                        // pending confirmation) and AlreadyRegistered
+                        // (existing email) route to the same "check your
+                        // email" UI state — deliberately, to preserve
+                        // Supabase's email-enumeration security-by-
+                        // obscurity at the UI layer (OWASP A07). The
+                        // legitimate owner discovers their existing
+                        // account via the "you may already have an
+                        // account" hint on the confirmation screen.
+                        // Password is cleared so it isn't retained if
+                        // the user dismisses and re-enters sign-up flow.
                         form.update {
                             it.copy(
                                 isSubmitting = false,
                                 emailConfirmationSentTo = outcome.email,
                                 password = "",
-                            )
-                        }
-                    is SignUpOutcome.AlreadyRegistered ->
-                        // Email already exists in auth.users; Supabase's
-                        // security-by-obscurity returned 200 OK with empty
-                        // identities. Auto-switch to sign-in mode (most
-                        // likely the legitimate owner is here) and surface
-                        // the existing UserAlreadyExists error message
-                        // so the UI alert explains the auto-switch.
-                        // Password is intentionally retained — if the user
-                        // typed their real password they can just tap
-                        // "Sign in" immediately without re-entering it.
-                        form.update {
-                            it.copy(
-                                isSubmitting = false,
-                                isSignUp = false,
-                                error = ErrorMessage.UserAlreadyExists,
                             )
                         }
                 }

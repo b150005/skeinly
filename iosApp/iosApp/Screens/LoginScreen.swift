@@ -156,6 +156,11 @@ private struct EmailConfirmationSentView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
+
+                Text(LocalizedStringKey("body_email_confirmation_check_existing_account"))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
             }
             .padding(.horizontal)
 
