@@ -68,12 +68,33 @@ setup that should already be done):
 - [ ] `RevenueCatAuthBridge` is in production code (commit `e1088d1` or
       later) so `Purchases.logIn(userId)` fires after Skeinly auth.
 
+## TestFlight tester group structure
+
+Before per-tester setup, decide which TestFlight group each tester belongs to. Two groups recommended for Phase 39 (Agent Team decision 2026-05-13):
+
+| Group | TestFlight type | Members | Build policy | Feedback channel |
+|---|---|---|---|---|
+| **Skeinly Core** (JA: 「Skeinly コアチーム」) | Internal Testing (max 100) — members must be ASC team members | Operator + 1–2 close-friend collaborators (≤3 total) | Auto-deliver every build (unstable OK) — fast iteration | Direct Slack / LINE channel; immediate feedback |
+| **Skeinly Closed Beta** (JA: 「Skeinly クローズドベータ」) | External Testing (max 10,000) — email invite, no ASC team membership required | General testers (3–8) including ≥1 round-chart author + ≥1 ja-JP tester per the [Phase 39 rubric](../phase/phase-39-beta-rubric.md) | Tagged-stable builds only; first build needs Apple Beta App Review (24–48h) | Email + GitHub Issue ([beta-bug.yml template](../../../.github/ISSUE_TEMPLATE/beta-bug.yml)) |
+
+Create groups in ASC → TestFlight:
+- Internal Group: TestFlight → **内部テスト → グループを作成** → Group name `Skeinly Core` → "自動配信を有効にする" ON → Save.
+- External Group: TestFlight → **外部テスト → グループを作成** → Group name `Skeinly Closed Beta` → email invite each tester individually.
+
+Members of Skeinly Core must first be added as ASC team members (ASC → Users and Access → Users → +). Skeinly Closed Beta members do NOT need to be ASC team members.
+
 ## Per-tester setup (repeat for each beta tester)
 
 Collect the tester's:
 - Email address (the one they'll use for App Store / Google Play sign-in
   during sandbox purchases — does NOT have to be the same as their
-  Skeinly login email; it's the platform sandbox account)
+  Skeinly login email; it's the platform sandbox account). For Phase 39,
+  the operator typically uses Gmail plus-subaddressing on a centralized
+  inbox like `skeinly.app+<cohort>-<locale>-<label>@gmail.com` so all
+  sandbox account communications route to one mailbox — see
+  [iap-setup-app-store-connect.md](iap-setup-app-store-connect.md) Step 9
+  for the full email pattern.
+- Which TestFlight group they belong to (Skeinly Core vs Skeinly Closed Beta — see "TestFlight tester group structure" above)
 - Whether they need iOS, Android, or both
 
 ### iOS — Apple Sandbox tester
