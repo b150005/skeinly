@@ -113,7 +113,23 @@ Optional but recommended for contributors:
 brew install xcodegen maestro
 ```
 
-If you intend to run the app against a live Supabase backend, copy `iosApp/local.xcconfig.example` to `iosApp/local.xcconfig` and add your `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` to a root-level `local.properties` file (both are git-ignored).
+##### Local config files (gitignored)
+
+Skeinly's build system reads two layers of configuration that must NEVER be committed: build credentials (Supabase URL, Sentry DSN, signing keystore, etc.) and developer-personal identifiers (Apple Developer Team ID). Each layer has a committed `*.example` template that the developer copies to a gitignored sibling and fills in. Without these files the app builds and runs, but every backend-dependent feature falls back to "local-only mode" (sign-in, Discovery, Profile, etc. show empty/error states).
+
+The full set of files a contributor manages locally:
+
+| Path | Required? | Template (committed) | Purpose | Created by |
+|---|---|---|---|---|
+| `local.properties` | **Yes** | [`local.properties.example`](./local.properties.example) | Android + KMP shared module — Supabase URL/key, Sentry DSN, PostHog, RevenueCat, Release signing | Hand-copy from `.example` |
+| `iosApp/local.xcconfig` | **Yes** for iOS builds | [`iosApp/local.xcconfig.example`](./iosApp/local.xcconfig.example) | iOS Xcode build settings — Apple Developer Team ID, Supabase URL/key, Sentry DSN, PostHog, RevenueCat | Auto-copied by Makefile prereq `.ensure-local-xcconfig` on first `make ios-build` |
+| `androidApp/src/debug/google-services.json` | Optional (FCM Push only) | none — download from Firebase Console | Firebase Cloud Messaging client config for the Skeinly-Dev (Spark) project, `io.github.b150005.skeinly.dev` package | Download from [Firebase Console](https://console.firebase.google.com/) → Skeinly-Dev project |
+| `androidApp/src/release/google-services.json` | Optional (FCM Push only) | none — download from Firebase Console | Firebase Cloud Messaging client config for the Skeinly (Blaze) project, `io.github.b150005.skeinly` package | Download from Firebase Console → Skeinly project |
+| `keystore.jks` | Optional (Release builds only) | none — generate locally or share via Bitwarden | Android Release APK/AAB signing keystore | Android Studio → Build → Generate Signed Bundle / APK → new keystore, OR `keytool -genkey -v -keystore keystore.jks ...` |
+
+CI reproduces this matrix from GitHub Environment Secrets — see [`docs/en/ops/release-secrets.md`](./docs/en/ops/release-secrets.md) for the server-side rotation procedure. The local hierarchy mirrors the CI hierarchy 1:1 so contributors can validate end-to-end paths (TestFlight upload, Play Internal Testing release) locally before tag push.
+
+The minimum viable setup for sign-in + browsing Discovery: fill in `SUPABASE_URL` + `SUPABASE_PUBLISHABLE_KEY` in **both** `local.properties` (Android) and `iosApp/local.xcconfig` (iOS). Everything else can stay empty for local development.
 
 ##### iOS code signing — edit `iosApp/local.xcconfig`
 
@@ -122,6 +138,22 @@ First time you run `make ios-build` / `make ios-test` / `make release-ipa-local`
 Find your Team ID at Apple Developer portal → Membership.
 
 The Team ID is a public identifier (it appears in App Store URLs and the AASA file), but per repo hygiene it is not committed — `iosApp/local.xcconfig` stays git-ignored and CI injects via the `APPLE_TEAM_ID` GitHub Secret on tag-driven release builds. The configuration is intentionally project-local (no shell env vars) so multiple Xcode projects on the same machine never collide on Team ID selection.
+
+##### Android — edit `local.properties`
+
+Copy [`local.properties.example`](./local.properties.example) (committed at the repository root) to `local.properties` and fill in the Supabase backend credentials at minimum:
+
+```bash
+cp local.properties.example local.properties
+# Open local.properties and fill SUPABASE_URL + SUPABASE_PUBLISHABLE_KEY.
+# Other keys (SENTRY_DSN_ANDROID, POSTHOG_API_KEY, REVENUECAT_API_KEY_ANDROID,
+# KEYSTORE_PASSWORD/KEY_ALIAS/KEY_PASSWORD) are optional — leave them empty
+# for local-only mode unless you specifically need the SDK.
+```
+
+The Gradle build readers (`shared/build.gradle.kts` + `androidApp/build.gradle.kts`) load `local.properties` at configuration time and generate `BuildConfig` constants / Kotlin codegen objects from the values; rebuild after editing for changes to take effect (`./gradlew :androidApp:installDebug` / `make android-install`).
+
+FCM Push Notifications additionally require `androidApp/src/{debug,release}/google-services.json` (the Firebase Console JSON config). Without those files the FCM Gradle plugin auto-disables itself and the rest of the app works in local-only mode (no Push only); see the Local config files table above.
 
 #### Common tasks (Makefile)
 
@@ -383,7 +415,23 @@ make setup            # Bundler 経由で fastlane gem をインストール
 brew install xcodegen maestro
 ```
 
-ライブの Supabase バックエンドに接続して動作確認する場合は、`iosApp/local.xcconfig.example` を `iosApp/local.xcconfig` にコピーし、ルートの `local.properties` ファイルに `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` を追加してください（両方とも git 管理外）。
+##### ローカル設定ファイル（git 管理外）
+
+Skeinly のビルドは 2 層の設定を読み込みますが、いずれもコミットしてはいけません: ビルド資格情報（Supabase URL、Sentry DSN、署名 keystore など）と開発者個別の識別子（Apple Developer Team ID）。各層には `*.example` のテンプレートがコミット済で、開発者がそれを git 管理外の同名ファイルへコピーして値を埋めます。これらのファイルが無くてもアプリ自体はビルド + 起動しますが、バックエンド依存機能はすべて「local-only モード」にフォールバックします（サインイン / Discovery / Profile 等が空 or エラー状態になる）。
+
+コントリビューターがローカルで管理するファイル一覧:
+
+| パス | 必須？ | テンプレート（コミット済） | 用途 | 作成方法 |
+|---|---|---|---|---|
+| `local.properties` | **必須** | [`local.properties.example`](./local.properties.example) | Android + KMP shared モジュール — Supabase URL/Key、Sentry DSN、PostHog、RevenueCat、Release 署名 | `.example` から手動コピー |
+| `iosApp/local.xcconfig` | **iOS ビルド時必須** | [`iosApp/local.xcconfig.example`](./iosApp/local.xcconfig.example) | iOS Xcode ビルド設定 — Apple Developer Team ID、Supabase URL/Key、Sentry DSN、PostHog、RevenueCat | 初回 `make ios-build` 時に Makefile prereq `.ensure-local-xcconfig` が自動コピー |
+| `androidApp/src/debug/google-services.json` | 任意（FCM Push 受信時のみ） | テンプレートなし — Firebase Console からダウンロード | Skeinly-Dev (Spark) プロジェクトの FCM クライアント設定、`io.github.b150005.skeinly.dev` パッケージ用 | [Firebase Console](https://console.firebase.google.com/) → Skeinly-Dev からダウンロード |
+| `androidApp/src/release/google-services.json` | 任意（FCM Push 受信時のみ） | テンプレートなし — Firebase Console からダウンロード | Skeinly (Blaze) プロジェクトの FCM クライアント設定、`io.github.b150005.skeinly` パッケージ用 | Firebase Console → Skeinly からダウンロード |
+| `keystore.jks` | 任意（Release ビルド時のみ） | テンプレートなし — ローカル生成 or Bitwarden 経由共有 | Android Release APK/AAB 署名 keystore | Android Studio → Build → Generate Signed Bundle / APK → 新規 keystore 作成、もしくは `keytool -genkey -v -keystore keystore.jks ...` |
+
+CI は GitHub Environment Secrets から同マトリクスを再現しています — サーバー側のローテーション手順は [`docs/en/ops/release-secrets.md`](./docs/en/ops/release-secrets.md) を参照。ローカルの階層は CI 階層と 1:1 で対応するため、コントリビューターはタグ push 前に TestFlight アップロードや Play Internal Testing リリースを end-to-end でローカル検証できます。
+
+サインイン + Discovery 閲覧の最小構成は `local.properties` (Android) と `iosApp/local.xcconfig` (iOS) **両方** で `SUPABASE_URL` + `SUPABASE_PUBLISHABLE_KEY` を埋めるだけ。その他は空のまま local-only モードで開発可能です。
 
 ##### iOS コード署名 — `iosApp/local.xcconfig` を編集
 
@@ -392,6 +440,22 @@ brew install xcodegen maestro
 Team ID は Apple Developer portal → Membership で確認できます。
 
 Team ID 自体は public identifier（App Store URL や AASA ファイルに公開される）ですが、リポジトリ hygiene のためコミット対象外とし、`iosApp/local.xcconfig` は git-ignore、CI はタグ駆動の Release ビルドで `APPLE_TEAM_ID` GitHub Secret から注入する方針です。Team ID 設定はあえてプロジェクト内ローカルに閉じており（shell 環境変数は使わない）、同一マシン上で複数の Xcode プロジェクトが Team ID 選択で衝突することを避けています。
+
+##### Android — `local.properties` を編集
+
+リポジトリルートにコミット済の [`local.properties.example`](./local.properties.example) を `local.properties` にコピーし、最低限 Supabase バックエンドの認証情報を埋めてください:
+
+```bash
+cp local.properties.example local.properties
+# local.properties を開いて SUPABASE_URL + SUPABASE_PUBLISHABLE_KEY を埋める。
+# 他のキー (SENTRY_DSN_ANDROID, POSTHOG_API_KEY, REVENUECAT_API_KEY_ANDROID,
+# KEYSTORE_PASSWORD/KEY_ALIAS/KEY_PASSWORD) は任意 — 該当 SDK が必要でない
+# 限り空のままで local-only モードとして動作します。
+```
+
+Gradle 読み込み側 (`shared/build.gradle.kts` + `androidApp/build.gradle.kts`) は構成フェーズで `local.properties` をロードし、値から `BuildConfig` 定数 / Kotlin codegen オブジェクトを生成するため、編集後は再ビルドが必要です（`./gradlew :androidApp:installDebug` または `make android-install`）。
+
+FCM Push Notification を受信する場合は別途 `androidApp/src/{debug,release}/google-services.json` (Firebase Console の JSON 設定) が必要です。当該ファイルが無ければ FCM Gradle plugin は自動的に無効化され、Push 以外の機能は local-only モードで通常通り動作します。詳細は上記「ローカル設定ファイル」表参照。
 
 #### 主なタスク (Makefile)
 
