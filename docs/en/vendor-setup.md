@@ -181,17 +181,25 @@ Apple auto-enforces "one redemption per customer per subscription group" — bot
   - **財務情報 > 支払い情報** — Apple's inline form note: StoreKit / RevenueCat flows are exempt because "デベロッパは支払い情報にアクセスできません".
   - **検索履歴** — pattern search queries are transient request params, not persisted off-device.
 
-- [ ] **保存** → Apple opens a per-checkbox follow-up modal listing 6 purposes ("該当するものをすべて選択")
+- [ ] **保存** → Apple flags each checked data type with a yellow ⚠️ "X を設定" button on the dashboard. Click each one to open a follow-up modal listing 6 purposes ("該当するものをすべて選択") and fill it per the table below.
 
-**Per-checkbox selection** — pick only what's listed below; leave every other purpose unchecked:
+**Per-data-type purpose selection** — open each modal, check only what's listed, save:
 
-| Selection | Data types |
+| Modal title (Apple) | Check these (only) |
 |---|---|
-| **アプリの機能** only | 名前 / メールアドレス / 写真またはビデオ / カスタマーサポート / その他のユーザコンテンツ / ユーザID / 購入 / クラッシュデータ / パフォーマンスデータ |
-| **アプリの機能 + アナリティクス** | デバイスID |
-| **アナリティクス** only | 製品の操作 |
+| 名前 | アプリの機能 |
+| メールアドレス | アプリの機能 |
+| 写真またはビデオ | アプリの機能 |
+| カスタマーサポート | アプリの機能 |
+| その他のユーザコンテンツ | アプリの機能 |
+| ユーザID | アプリの機能 |
+| デバイスID | **アプリの機能 + アナリティクス** |
+| 購入履歴 | アプリの機能 |
+| 製品の操作 | **アナリティクス** |
+| クラッシュデータ | アプリの機能 |
+| パフォーマンスデータ | アプリの機能 |
 
-- [ ] Per data type, then answer:
+- [ ] After 次へ on each modal, Apple asks:
   - **Linked to user?** → **Yes** (all 11)
   - **Used for tracking?** → **No** (all 11)
 
