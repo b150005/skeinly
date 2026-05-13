@@ -118,6 +118,7 @@ From the subscription details page, click **Add base plan**.
 | Account hold | 30 days (default) |
 | User's base plan and offer changes | **Charge on next billing date** (`次回の請求日に請求`) — defer billing change to the next renewal, do NOT charge immediately. Industry standard for subscription plan changes (Netflix / Spotify / YouTube Premium / Apple Music all use this); reduces chargeback risk + matches user mental model of "switch plan → next bill reflects new plan". Agent Team decision 2026-05-13. |
 | Resubscribe | Enabled |
+| Tags | **Leave empty** (Phase 39). Tags are an internal label (max 20 chars, lowercase + digits + hyphen) used for client-side `queryProductDetailsAsync` filtering or Play Console analytics grouping. Skeinly's RevenueCat abstraction (via `$rc_monthly` / `$rc_annual` lookup keys) bypasses client-side base-plan queries entirely, and with only 2 base plans there's no grouping need. Tags are editable post-activation, so future-state needs (intro-pricing A/B test, holiday campaigns, legacy-price grandfather) can be added when actually required. |
 
 ### 2a. Country availability
 
@@ -161,6 +162,7 @@ Same procedure as Step 2 with these values:
 | Account hold | 30 days |
 | User's base plan and offer changes | **Charge on next billing date** — same as monthly base plan. Symmetric defer-billing for plan switches; for yearly→monthly downgrades this means the user remains on yearly until the current year ends, then switches to monthly — acceptable per the established industry pattern. |
 | Resubscribe | Enabled |
+| Tags | **Leave empty** — same rationale as monthly base plan. |
 | Backwards compatible | **Do NOT mark** |
 
 Set base price to **`24.99`** USD; Play Console auto-converts. Japan typically lands in the ¥3,600–¥4,000 range.
