@@ -426,6 +426,13 @@ Sign in with the credentials above (Supabase email+password auth, no 2FA). Demo 
 - [ ] 両アカウントに idempotent seed 投入 (3 patterns / 1 project / 1 Suggestion / Pro 状態)
 - [ ] RevenueCat で `grant-customer-entitlement` 経由で両アカウントに Skeinly Pro entitlement 直接付与 (paywall 強制を回避)
 
+手順登録後、「**提供した認証情報を Android がパフォーマンスやアプリの互換性のテストに使用することを許可する**」チェックボックスは **有効化のまま** (デフォルト ON):
+
+- これは Google の **Pre-Launch Report** インフラに demo 認証情報でログインしてアプリを実機ラボ (各種 OEM / 画面サイズ / API レベル) で自動テストする許可を与える。結果は App Bundle アップロード数十分後に テストとリリース → Pre-launch reports に表示される。
+- 個人開発者では Samsung / Pixel / 低 RAM / 折りたたみのマトリクスを揃えられない — Google のラボがリリース毎に無料で実行してくれる費用対効果は非常に高い。
+- 信頼モデルは変化なし: 認証情報は App Review 時に Google 人間レビュアーと既に共有済 — これは Google 自動テストインフラを consumer に加えるだけ。
+- 運用注意: demo アカウントに定期的に bot トラフィックが流入する。上記の idempotent seed が正しい形 — Pre-Launch 実行間で「fresh state」を仮定しない seed にすること。Sentry / PostHog に bot 由来イベントが乗る — メトリクスノイズが気になる場合は `app_user_id` でフィルタ可能。
+
 ### A0d-3: 広告
 
 - [ ] アプリのコンテンツ → **広告** → **いいえ、アプリに広告は含まれていません** (Skeinly は広告なし; 収益化は IAP のみ)

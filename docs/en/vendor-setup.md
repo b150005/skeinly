@@ -426,6 +426,13 @@ If you re-edit and overflow 500: drop the parenthetical pattern types first, the
 - [ ] Run idempotent seed for both accounts (3 patterns / 1 project / 1 Suggestion / Pro state)
 - [ ] Grant Skeinly Pro entitlement to both in RevenueCat via `grant-customer-entitlement` (so the Pro state is already visible without forcing a paywall purchase)
 
+After adding instructions, leave the "**提供した認証情報を Android がパフォーマンスやアプリの互換性のテストに使用することを許可する**" checkbox **enabled** (default ON):
+
+- This grants Google's **Pre-Launch Report** infrastructure permission to sign in with the demo credentials and auto-test the app across Google's real-device lab (multiple OEMs / screen sizes / API levels). Results appear at テストとリリース → Pre-launch reports minutes after each App Bundle upload.
+- Value-for-cost is high — individual developers cannot maintain a Samsung / Pixel / low-RAM / foldable matrix; Google's lab runs every release for free.
+- Trust-model is unchanged: the credentials are already shared with Google human reviewers at App Review time; this just adds Google's automated test infrastructure as another consumer.
+- Operational caveat: bot traffic will hit the demo account periodically. The idempotent seed above is the right shape; the seed should not assume a "fresh state" between Pre-Launch runs. Sentry / PostHog will receive some bot-origin events — filter by `app_user_id` if metrics noise becomes a concern.
+
 ### A0d-3: Ads
 
 - [ ] App content → **Ads** → **No, my app does not contain ads** (Skeinly is ad-free; monetization is IAP only)
