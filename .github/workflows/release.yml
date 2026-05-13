@@ -96,8 +96,14 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/keystore.jks"
-          echo "KEYSTORE_FILE=$RUNNER_TEMP/keystore.jks" >> "$GITHUB_ENV"
+          # Filename matches the local-dev convention documented in
+          # local.properties.example + README ("upload-keystore.jks", the
+          # Play App Signing upload key per release-secrets.md §7). The
+          # CI decode location is ephemeral ($RUNNER_TEMP), so the name
+          # is cosmetic here — but keeping it identical to the local
+          # default surfaces the convention in CI logs too.
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload-keystore.jks"
+          echo "KEYSTORE_FILE=$RUNNER_TEMP/upload-keystore.jks" >> "$GITHUB_ENV"
 
       # Phase 24.2e (ADR-017 §3.5) — Firebase config for the release
       # variant (Skeinly Blaze project, package

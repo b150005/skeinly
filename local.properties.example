@@ -94,23 +94,39 @@ REVENUECAT_API_KEY_ANDROID=
 # builds (`./gradlew :androidApp:installDebug` / `make android-install`) do
 # not need signing — they sign with the default Android debug keystore.
 #
-# Setup: generate or import a signing keystore via Android Studio
-#   (Build > Generate Signed Bundle / APK > new keystore) or via keytool.
-# `androidApp/build.gradle.kts` resolves the keystore path in this order:
+# Setup: generate the upload keystore via keytool per `docs/en/ops/
+# release-secrets.md §7` (or via Android Studio: Build > Generate Signed
+# Bundle / APK > new keystore). `androidApp/build.gradle.kts` resolves
+# the keystore path in this order:
 #   1. `KEYSTORE_FILE` in local.properties (this file)
-#   2. `KEYSTORE_FILE` env var (used by CI)
-#   3. Fallback: `keystore.jks` at the repository root
-# A relative path is resolved against the repo root; absolute paths are used
-# verbatim. The file should be git-ignored (the patterns `*.keystore` /
-# `*.jks` in .gitignore cover the common cases).
+#   2. `KEYSTORE_FILE` env var (used by CI release.yml)
+#   3. Default: `upload-keystore.jks` at the repository root
 #
-# CI release builds receive these via GitHub Secrets (KEYSTORE_FILE_BASE64
-# + KEYSTORE_PASSWORD + KEY_ALIAS + KEY_PASSWORD) per release-secrets.md.
+# Relative paths are resolved against the repo root; absolute paths are
+# used verbatim. The file is git-ignored by the .gitignore pattern `*.jks`
+# (also `*.keystore` is covered) — no need to add a per-file rule.
+#
+# === Canonical default filename =============================================
+# `upload-keystore.jks` is the project default. Rationale:
+#   - Skeinly publishes via Google Play App Signing (Play Console manages
+#     the actual app signing key server-side; the developer's local key
+#     is the *upload key* that proves authorship of every AAB upload).
+#   - `docs/en/ops/release-secrets.md §7` already uses `upload-keystore.jks`
+#     in keytool generation commands + SHA-1 verification examples.
+#   - Google's official Android Studio docs use `your-upload-keystore.jks`
+#     as the placeholder pattern (developer.android.com/studio/publish/
+#     app-signing#generate-key).
+# Following the runbook with no overrides produces `upload-keystore.jks` at
+# the repo root, which the build then picks up zero-config.
+#
+# CI release builds receive the matching values via GitHub Secrets
+# (KEYSTORE_BASE64 / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD) and the
+# release.yml workflow decodes to `$RUNNER_TEMP/upload-keystore.jks` then
+# exports `KEYSTORE_FILE` — so the env-var branch above (#2) fires on CI.
 
-# Path to your Android signing keystore. Common conventions: `keystore.jks`,
-# `upload-keystore.jks` (Google Play default), or a project-specific name
-# like `skeinly-release.jks`. Defaults to `keystore.jks` if omitted.
-# KEYSTORE_FILE=keystore.jks
+# Override the keystore path if you use a custom filename or location.
+# Leave commented out to use the `upload-keystore.jks` default.
+# KEYSTORE_FILE=upload-keystore.jks
 
 # KEYSTORE_PASSWORD=
 # KEY_ALIAS=
