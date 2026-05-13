@@ -14,8 +14,9 @@
 #   - shared/build.gradle.kts          → SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY,
 #                                          REVENUECAT_API_KEY_ANDROID
 #   - androidApp/build.gradle.kts      → SENTRY_DSN_ANDROID, POSTHOG_API_KEY,
-#                                          POSTHOG_HOST, KEYSTORE_PASSWORD,
-#                                          KEY_ALIAS, KEY_PASSWORD
+#                                          POSTHOG_HOST, KEYSTORE_FILE,
+#                                          KEYSTORE_PASSWORD, KEY_ALIAS,
+#                                          KEY_PASSWORD
 #
 # These keys are shared with iosApp/local.xcconfig where applicable (Supabase
 # URL + Publishable Key are the same on both platforms; Sentry and PostHog
@@ -25,6 +26,21 @@
 # variable when local.properties is absent. CI workflows inject these via
 # GitHub Environment Secrets — see docs/en/ops/release-secrets.md for the
 # server-side rotation matrix.
+#
+# Value escape rules (Java Properties format, java.util.Properties):
+#   - `://` in URLs is SAFE without escape (different from `iosApp/local.xcconfig`,
+#     where `//` is a line-comment marker). E.g. `SUPABASE_URL=https://...` works
+#     verbatim; do NOT write `https:/$()/` as the xcconfig sibling requires.
+#   - `:` and `=` inside VALUES are literal (only meaningful in keys).
+#   - `\` must be escaped as `\\` if the value contains a literal backslash.
+#   - `#` and `!` are comment markers only when they start a line, so values
+#     containing them mid-string are fine.
+#   - Leading whitespace on a value is stripped; quote with backslash-space
+#     if you need leading whitespace (very rare).
+#   - Unicode escapes: `\uXXXX` for non-ASCII characters.
+#
+# In short: copy-paste your URL / key value verbatim from the dashboard. No
+# escaping is needed for any of the values listed below.
 
 # === Required: backend connectivity =========================================
 # Empty values cause the app to start in local-only mode — sign-in, profile,
@@ -68,12 +84,22 @@ REVENUECAT_API_KEY_ANDROID=
 # not need signing — they sign with the default Android debug keystore.
 #
 # Setup: generate or import a signing keystore via Android Studio
-#   (Build > Generate Signed Bundle / APK > new keystore) or via keytool,
-#   save it as `keystore.jks` at the REPOSITORY ROOT (also git-ignored),
-#   then fill in the three values below.
+#   (Build > Generate Signed Bundle / APK > new keystore) or via keytool.
+# `androidApp/build.gradle.kts` resolves the keystore path in this order:
+#   1. `KEYSTORE_FILE` in local.properties (this file)
+#   2. `KEYSTORE_FILE` env var (used by CI)
+#   3. Fallback: `keystore.jks` at the repository root
+# A relative path is resolved against the repo root; absolute paths are used
+# verbatim. The file should be git-ignored (the patterns `*.keystore` /
+# `*.jks` in .gitignore cover the common cases).
 #
 # CI release builds receive these via GitHub Secrets (KEYSTORE_FILE_BASE64
 # + KEYSTORE_PASSWORD + KEY_ALIAS + KEY_PASSWORD) per release-secrets.md.
+
+# Path to your Android signing keystore. Common conventions: `keystore.jks`,
+# `upload-keystore.jks` (Google Play default), or a project-specific name
+# like `skeinly-release.jks`. Defaults to `keystore.jks` if omitted.
+# KEYSTORE_FILE=keystore.jks
 
 # KEYSTORE_PASSWORD=
 # KEY_ALIAS=

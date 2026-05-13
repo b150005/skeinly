@@ -1,5 +1,6 @@
 @file:OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
 
+import java.io.File
 import java.io.FileInputStream
 import java.util.Properties
 
@@ -118,20 +119,46 @@ android {
 
     signingConfigs {
         create("release") {
-            val keystoreFile = rootProject.file("keystore.jks")
+            // Resolution order for the keystore file path:
+            //   1. `KEYSTORE_FILE` in local.properties — developer can name
+            //      the file whatever they like (e.g. `skeinly-release.jks`,
+            //      `upload-keystore.jks`) at the repo root or pass an
+            //      absolute path. This is the recommended local dev path.
+            //   2. `KEYSTORE_FILE` env var — used by CI (release.yml line ~100
+            //      decodes the GitHub Secret into $RUNNER_TEMP/keystore.jks
+            //      then exports `KEYSTORE_FILE=$RUNNER_TEMP/keystore.jks`).
+            //   3. Hardcoded fallback `keystore.jks` at repo root — backward
+            //      compatibility for setups that follow the original
+            //      convention.
+            //
+            // Password / alias / key password fields follow the same
+            // local.properties → env var precedence so a single
+            // `local.properties` can drive both signing key location AND
+            // creds without overlapping with the CI env-var path.
+            val keystorePath =
+                localProps.getProperty("KEYSTORE_FILE")
+                    ?: System.getenv("KEYSTORE_FILE")
+                    ?: "keystore.jks"
+            val keystoreFile =
+                if (File(keystorePath).isAbsolute) {
+                    file(keystorePath)
+                } else {
+                    rootProject.file(keystorePath)
+                }
             if (keystoreFile.exists()) {
                 storeFile = keystoreFile
-                storePassword = localProps.getProperty("KEYSTORE_PASSWORD", "")
-                keyAlias = localProps.getProperty("KEY_ALIAS", "")
-                keyPassword = localProps.getProperty("KEY_PASSWORD", "")
-            } else {
-                val ciKeystorePath = System.getenv("KEYSTORE_FILE")
-                if (ciKeystorePath != null) {
-                    storeFile = file(ciKeystorePath)
-                    storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
-                    keyAlias = System.getenv("KEY_ALIAS") ?: ""
-                    keyPassword = System.getenv("KEY_PASSWORD") ?: ""
-                }
+                storePassword =
+                    localProps.getProperty("KEYSTORE_PASSWORD")
+                        ?: System.getenv("KEYSTORE_PASSWORD")
+                        ?: ""
+                keyAlias =
+                    localProps.getProperty("KEY_ALIAS")
+                        ?: System.getenv("KEY_ALIAS")
+                        ?: ""
+                keyPassword =
+                    localProps.getProperty("KEY_PASSWORD")
+                        ?: System.getenv("KEY_PASSWORD")
+                        ?: ""
             }
         }
     }

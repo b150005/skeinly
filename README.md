@@ -125,7 +125,7 @@ The full set of files a contributor manages locally:
 | `iosApp/local.xcconfig` | **Yes** for iOS builds | [`iosApp/local.xcconfig.example`](./iosApp/local.xcconfig.example) | iOS Xcode build settings — Apple Developer Team ID, Supabase URL/key, Sentry DSN, PostHog, RevenueCat | Auto-copied by Makefile prereq `.ensure-local-xcconfig` on first `make ios-build` |
 | `androidApp/src/debug/google-services.json` | Optional (FCM Push only) | none — download from Firebase Console | Firebase Cloud Messaging client config for the Skeinly-Dev (Spark) project, `io.github.b150005.skeinly.dev` package | Download from [Firebase Console](https://console.firebase.google.com/) → Skeinly-Dev project |
 | `androidApp/src/release/google-services.json` | Optional (FCM Push only) | none — download from Firebase Console | Firebase Cloud Messaging client config for the Skeinly (Blaze) project, `io.github.b150005.skeinly` package | Download from Firebase Console → Skeinly project |
-| `keystore.jks` | Optional (Release builds only) | none — generate locally or share via Bitwarden | Android Release APK/AAB signing keystore | Android Studio → Build → Generate Signed Bundle / APK → new keystore, OR `keytool -genkey -v -keystore keystore.jks ...` |
+| Android keystore (`*.jks`, configurable via `KEYSTORE_FILE` in `local.properties`) | Optional (Release builds only) | none — generate locally or share via Bitwarden | Android Release APK/AAB signing keystore | Android Studio → Build → Generate Signed Bundle / APK → new keystore, OR `keytool -genkey -v -keystore <filename>.jks ...`. Path is configurable — default `keystore.jks` at repo root; override via `KEYSTORE_FILE=<path>` in `local.properties` |
 
 CI reproduces this matrix from GitHub Environment Secrets — see [`docs/en/ops/release-secrets.md`](./docs/en/ops/release-secrets.md) for the server-side rotation procedure. The local hierarchy mirrors the CI hierarchy 1:1 so contributors can validate end-to-end paths (TestFlight upload, Play Internal Testing release) locally before tag push.
 
@@ -154,6 +154,10 @@ cp local.properties.example local.properties
 The Gradle build readers (`shared/build.gradle.kts` + `androidApp/build.gradle.kts`) load `local.properties` at configuration time and generate `BuildConfig` constants / Kotlin codegen objects from the values; rebuild after editing for changes to take effect (`./gradlew :androidApp:installDebug` / `make android-install`).
 
 FCM Push Notifications additionally require `androidApp/src/{debug,release}/google-services.json` (the Firebase Console JSON config). Without those files the FCM Gradle plugin auto-disables itself and the rest of the app works in local-only mode (no Push only); see the Local config files table above.
+
+**Value escaping**: `local.properties` follows the Java Properties format. Unlike `iosApp/local.xcconfig` (where `//` is a line comment and `https://...` must be written `https:/$()/...`), Properties values can contain `://` verbatim — paste your `SUPABASE_URL` from the dashboard with no transformation. See the header of `local.properties.example` for the full escape-rule reference.
+
+**Custom keystore filename**: the Android signing keystore path is configurable. By default Gradle looks for `keystore.jks` at the repo root, but the lookup is overridable via `KEYSTORE_FILE=<path>` in `local.properties` (relative paths resolve against the repo root; absolute paths are used verbatim). Use whichever filename matches your local convention — `keystore.jks`, `upload-keystore.jks` (Google Play default), `skeinly-release.jks`, etc. CI uses the same `KEYSTORE_FILE` env var per `release.yml`, so the resolution chain is uniform local ↔ CI.
 
 #### Common tasks (Makefile)
 
@@ -427,7 +431,7 @@ Skeinly のビルドは 2 層の設定を読み込みますが、いずれもコ
 | `iosApp/local.xcconfig` | **iOS ビルド時必須** | [`iosApp/local.xcconfig.example`](./iosApp/local.xcconfig.example) | iOS Xcode ビルド設定 — Apple Developer Team ID、Supabase URL/Key、Sentry DSN、PostHog、RevenueCat | 初回 `make ios-build` 時に Makefile prereq `.ensure-local-xcconfig` が自動コピー |
 | `androidApp/src/debug/google-services.json` | 任意（FCM Push 受信時のみ） | テンプレートなし — Firebase Console からダウンロード | Skeinly-Dev (Spark) プロジェクトの FCM クライアント設定、`io.github.b150005.skeinly.dev` パッケージ用 | [Firebase Console](https://console.firebase.google.com/) → Skeinly-Dev からダウンロード |
 | `androidApp/src/release/google-services.json` | 任意（FCM Push 受信時のみ） | テンプレートなし — Firebase Console からダウンロード | Skeinly (Blaze) プロジェクトの FCM クライアント設定、`io.github.b150005.skeinly` パッケージ用 | Firebase Console → Skeinly からダウンロード |
-| `keystore.jks` | 任意（Release ビルド時のみ） | テンプレートなし — ローカル生成 or Bitwarden 経由共有 | Android Release APK/AAB 署名 keystore | Android Studio → Build → Generate Signed Bundle / APK → 新規 keystore 作成、もしくは `keytool -genkey -v -keystore keystore.jks ...` |
+| Android keystore (`*.jks`、`local.properties` の `KEYSTORE_FILE` で設定可能) | 任意（Release ビルド時のみ） | テンプレートなし — ローカル生成 or Bitwarden 経由共有 | Android Release APK/AAB 署名 keystore | Android Studio → Build → Generate Signed Bundle / APK → 新規 keystore 作成、もしくは `keytool -genkey -v -keystore <filename>.jks ...`。ファイル名は設定可能 — デフォルトは repo ルート `keystore.jks`、`local.properties` の `KEYSTORE_FILE=<path>` で上書き可 |
 
 CI は GitHub Environment Secrets から同マトリクスを再現しています — サーバー側のローテーション手順は [`docs/en/ops/release-secrets.md`](./docs/en/ops/release-secrets.md) を参照。ローカルの階層は CI 階層と 1:1 で対応するため、コントリビューターはタグ push 前に TestFlight アップロードや Play Internal Testing リリースを end-to-end でローカル検証できます。
 
@@ -456,6 +460,10 @@ cp local.properties.example local.properties
 Gradle 読み込み側 (`shared/build.gradle.kts` + `androidApp/build.gradle.kts`) は構成フェーズで `local.properties` をロードし、値から `BuildConfig` 定数 / Kotlin codegen オブジェクトを生成するため、編集後は再ビルドが必要です（`./gradlew :androidApp:installDebug` または `make android-install`）。
 
 FCM Push Notification を受信する場合は別途 `androidApp/src/{debug,release}/google-services.json` (Firebase Console の JSON 設定) が必要です。当該ファイルが無ければ FCM Gradle plugin は自動的に無効化され、Push 以外の機能は local-only モードで通常通り動作します。詳細は上記「ローカル設定ファイル」表参照。
+
+**値の escape ルール**: `local.properties` は Java Properties フォーマット準拠。`iosApp/local.xcconfig` (`//` が行コメント、`https://...` を `https:/$()/...` と書く必要あり) とは異なり、Properties の value 内 `://` はそのまま記述可 — ダッシュボードから取得した `SUPABASE_URL` をそのまま貼り付けて OK。フル escape ルールは `local.properties.example` のヘッダコメント参照。
+
+**Keystore ファイル名のカスタマイズ**: Android 署名 keystore のパスは設定可能。デフォルトでは Gradle がリポジトリルートの `keystore.jks` を探しますが、`local.properties` に `KEYSTORE_FILE=<path>` を追加すれば上書きできます (相対パスはリポジトリルート基準、絶対パスはそのまま使用)。ローカル運用の慣習に合わせて `keystore.jks` / `upload-keystore.jks` (Google Play 標準) / `skeinly-release.jks` 等の任意のファイル名で OK。CI も `release.yml` で同じ `KEYSTORE_FILE` env var を使うため、ローカル ↔ CI で解決ロジックが統一されています。
 
 #### 主なタスク (Makefile)
 
