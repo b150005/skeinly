@@ -59,44 +59,36 @@ android-install:  ## Install debug APK on the connected device or emulator.
 
 # Auto-bootstrap iosApp/local.xcconfig from the committed example so
 # `xcodegen generate` finds the file referenced by `configFiles:` in
-# project.yml (Debug + Release both point at local.xcconfig). Behavior:
+# project.yml (Debug + Release both point at local.xcconfig).
 #
 #   - If iosApp/local.xcconfig already exists, this target is a no-op.
 #     Never overwrites a developer's customizations.
-#   - If absent: copy from local.xcconfig.example, then normalize the
-#     DEVELOPMENT_TEAM line:
-#       - APPLE_DEVELOPMENT_TEAM_ID env var set → write the value (Xcode
-#         UI shows the Team selected immediately, no manual edit).
-#       - Env var unset → write empty (matches the CI pattern; `make
-#         ios-build` succeeds for Simulator targets because
-#         CODE_SIGNING_ALLOWED=NO is forced on the xcodebuild command,
-#         but Xcode UI shows "Team: None" until the env var is set or
-#         local.xcconfig is hand-edited).
+#   - If absent: copy from local.xcconfig.example unchanged. The user
+#     edits DEVELOPMENT_TEAM (and any other settings — SUPABASE_URL,
+#     SENTRY_DSN_IOS, etc.) once after the first `make ios-build` and
+#     it stays in place for all subsequent runs. Once project.yml stopped
+#     overriding DEVELOPMENT_TEAM (the same commit that simplified this
+#     target), the value in local.xcconfig flows through to the .xcodeproj
+#     and Xcode UI shows the Team selected.
+#
+# A previous iteration of this target offered an `APPLE_DEVELOPMENT_TEAM_ID`
+# env var path for zero-config bootstrap; it was removed because per-user
+# shell env vars are project-leaky (other Xcode projects on the same
+# machine would pick up the same variable). Editing iosApp/local.xcconfig
+# directly keeps the configuration project-scoped.
 #
 # CI never reaches this target — workflows (ci.yml, e2e.yml, security.yml,
 # release.yml) write iosApp/local.xcconfig with explicit values and call
 # xcodebuild directly, not via `make ios-*`. So this prereq is strictly a
 # local DX improvement.
-#
-# Tech note: a SECRET-style approach (committing DEVELOPMENT_TEAM directly
-# in project.yml) was rejected because the existing convention (per CLAUDE.md
-# A16 AASA TEAMID_PLACEHOLDER discipline) keeps Apple Team IDs out of the
-# public repo for hygiene + fork-friendliness. The env var path preserves
-# that property — APPLE_DEVELOPMENT_TEAM_ID lives in the developer's shell
-# rc file (or direnv `.envrc`), never in tracked files.
 .ensure-local-xcconfig:
 	@if [ ! -f iosApp/local.xcconfig ]; then \
 		cp iosApp/local.xcconfig.example iosApp/local.xcconfig; \
-		if [ -n "$$APPLE_DEVELOPMENT_TEAM_ID" ]; then \
-			sed -i.bak "s|^DEVELOPMENT_TEAM = .*$$|DEVELOPMENT_TEAM = $$APPLE_DEVELOPMENT_TEAM_ID|" iosApp/local.xcconfig && rm iosApp/local.xcconfig.bak; \
-			echo "[ios-setup] Created iosApp/local.xcconfig with DEVELOPMENT_TEAM=$$APPLE_DEVELOPMENT_TEAM_ID from APPLE_DEVELOPMENT_TEAM_ID env var."; \
-		else \
-			sed -i.bak "s|^DEVELOPMENT_TEAM = .*$$|DEVELOPMENT_TEAM =|" iosApp/local.xcconfig && rm iosApp/local.xcconfig.bak; \
-			echo "[ios-setup] WARNING: Created iosApp/local.xcconfig with empty DEVELOPMENT_TEAM."; \
-			echo "[ios-setup]   'make ios-build' (Simulator) succeeds without a Team, but Xcode UI will show 'Team: None'."; \
-			echo "[ios-setup]   To set: 'export APPLE_DEVELOPMENT_TEAM_ID=ABCDEF1234' in ~/.zshrc, then 'rm iosApp/local.xcconfig && make ios-build'."; \
-			echo "[ios-setup]   Find your Team ID at: Apple Developer portal -> Membership -> Team ID (10-char alphanumeric)."; \
-		fi; \
+		echo "[ios-setup] Created iosApp/local.xcconfig from local.xcconfig.example."; \
+		echo "[ios-setup]   Open iosApp/local.xcconfig and replace YOUR_TEAM_ID_HERE with your 10-char Apple Developer Team ID."; \
+		echo "[ios-setup]   Find your Team ID at: Apple Developer portal -> Membership -> Team ID."; \
+		echo "[ios-setup]   Other settings (SUPABASE_URL, SENTRY_DSN_IOS, REVENUECAT_API_KEY, etc.) are optional — leave empty for local-only mode."; \
+		echo "[ios-setup]   After editing, re-run 'make ios-build'."; \
 	fi
 
 ios-build: .ensure-local-xcconfig  ## Build iOS app (debug, simulator). Requires Xcode 26+ and xcodegen.

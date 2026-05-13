@@ -48,14 +48,18 @@ packages:
 configFiles:
   Debug: local.xcconfig
   Release: local.xcconfig
+# DEVELOPMENT_TEAM is intentionally NOT listed in settings.base — xcodegen
+# writes any key declared here into the .pbxproj's XCBuildConfiguration
+# buildSettings dict, where it OVERRIDES the value from `configFiles:`.
+# Earlier versions of this file declared `DEVELOPMENT_TEAM: ""` in the
+# (mistaken) belief that an empty value would defer to the xcconfig; in
+# practice xcodegen writes `DEVELOPMENT_TEAM = "";` into the pbxproj and
+# the explicit override always wins over the xcconfig base, leaving
+# Xcode UI stuck at "Team: None" regardless of what's in local.xcconfig.
+# Leaving the key un-declared lets the value flow from local.xcconfig
+# (developer local builds) or the CI-written xcconfig (Release builds)
+# naturally.
 settings:
-  base:
-    # DEVELOPMENT_TEAM is injected by local.xcconfig (developer local
-    # builds use their personal team; CI release builds use the CI-written
-    # xcconfig with the project's team ID). Empty here so xcodegen
-    # generates the project with the xcconfig reference intact rather
-    # than baking a literal team into the .xcodeproj.
-    DEVELOPMENT_TEAM: ""
   # Phase 39 (W3 / 2026-05-11) — manual signing for Release archives.
   # Without these settings, xcodegen generates a Release configuration
   # with `CODE_SIGN_STYLE = Automatic` (the Xcode default), and the
