@@ -1,0 +1,360 @@
+# IAP Setup — Google Play Console (Skeinly Pro)
+
+> Japanese translation: [docs/ja/ops/iap-setup-play-console.md](../../ja/ops/iap-setup-play-console.md)
+
+## Goal
+
+Create the Skeinly Pro auto-renewable subscription on the Google side end-to-end:
+
+- **Subscription Product:** `skeinly_pro`
+- **Monthly Base Plan:** `pro-monthly` — $3.99/month
+- **Yearly Base Plan:** `pro-yearly` — $24.99/year
+- **7-day Free Trial** offer attached to each base plan
+- **Real-time Developer Notifications (RTDN)** routed through Google Cloud Pub/Sub to RevenueCat
+- **License testers** registered so closed-beta testers can purchase without real charges
+
+After this runbook completes, the operator hands off to the next session for the [RevenueCat side](../adr/016-phase-41-revenuecat-subscription.md) (product-to-package binding via the RevenueCat MCP).
+
+Counterpart for iOS: [iap-setup-app-store-connect.md](iap-setup-app-store-connect.md).
+
+## Prerequisites
+
+- Admin role in Google Play Console for the Skeinly app.
+- Skeinly app record exists in Play Console (package name `io.github.b150005.skeinly`) and is published to **at least one track** (Internal Testing is sufficient). **License tester purchases will not work on an unreleased draft app.**
+- Google Cloud Console access in the same GCP project that holds the Play Console service account credentials (typically created during initial Play Console setup).
+- RevenueCat project exists with Android app registered.
+
+## Critical decisions (already locked in)
+
+| Decision | Value | Rationale |
+|---|---|---|
+| Pricing | $3.99/mo + $24.99/yr | ADR-016 §50 |
+| Free trial duration | 7 days | ADR-016 §50 |
+| Structure | 1 Subscription Product × 2 Base Plans | Modern PBL 7+ idiom. Free trial eligibility is enforced at subscription-product scope = one redemption per user across both base plans → trial cost protected. RevenueCat product identifier `subscription_id:base_plan_id` (colon-separated) is the post-Feb-2023 format. |
+| Subscription Product ID | `skeinly_pro` | App-prefixed for future-proofing; underscores are allowed for subscription product IDs. |
+| Base Plan IDs | `pro-monthly` + `pro-yearly` | **Hyphens only — underscores are NOT allowed for base plan IDs.** This is a Google Play API constraint, not a style preference. |
+| Backwards compatibility | Monthly base plan marked compatible | RevenueCat docs note older SDK versions only see base plans marked "Use for deprecated billing methods". Marking the monthly plan keeps that fallback path open. |
+| Base region for pricing | USD | Play Console auto-converts to all enabled countries; per-country override available. |
+| Track for license testers | Internal Testing | License testers can purchase from any published track; Internal is the lowest-friction one. |
+
+### ID validity reference
+
+| Field | Allowed characters | Examples |
+|---|---|---|
+| Subscription Product ID | `a-z`, `0-9`, `_`, `.` | `skeinly_pro` ✅ |
+| Base Plan ID | `a-z`, `0-9`, `-` only | `pro-monthly` ✅ — `pro_monthly` ❌ rejected by Play Console |
+| Offer ID | same as base plan | `pro-monthly-trial` ✅ |
+
+Source: [Google Publisher API — Subscriptions reference](https://developers.google.com/android-publisher/api-ref/rest/v3/monetization.subscriptions).
+
+## Order of operations
+
+1. Create Subscription Product `skeinly_pro` (no base plan yet)
+2. Add monthly base plan `pro-monthly` + set prices + mark backwards compatible + activate
+3. Add yearly base plan `pro-yearly` + set prices + activate
+4. Create 7-day Free Trial offer on monthly base plan + activate
+5. Create 7-day Free Trial offer on yearly base plan + activate
+6. Add Japanese (ja-JP) translation for store listing
+7. Publish app to Internal Testing track if not already
+8. Add license tester Google accounts
+9. Create Pub/Sub topic in GCP + grant IAM Publisher permission to Google's RTDN service account
+10. Configure RTDN in Play Console pointing at the Pub/Sub topic
+11. Verify in RevenueCat dashboard that the test notification was received
+
+Steps 9–11 can be ordered slightly differently: if RevenueCat's "Connect to Google" flow generates the topic ID for you, do Step 11a (generate topic ID in RevenueCat) before Step 9.
+
+---
+
+## Step 1 — Create Subscription Product
+
+Play Console → Skeinly app → sidebar **Monetize with Play → Products → Subscriptions** → **Create subscription**.
+
+| Field | Value |
+|---|---|
+| Product ID | `skeinly_pro` |
+| Name | `Skeinly Pro` (max 55 chars; user-visible in subscription emails and the Google Play subscription center) |
+
+Click **Create**.
+
+### Permanent fields
+
+The product ID can never be changed or reused. If you typo it, you must archive the product and create a new one with a different ID. Reuse of an archived ID is also blocked. Plan before you type.
+
+### Add subscription benefits
+
+After creating, click **Edit subscription details**. Add **up to 4 benefit lines** (max 40 chars each):
+
+- `Unlimited chart creation`
+- `Advanced pattern analysis`
+- `Priority support`
+- (optional 4th)
+
+**Do not mention "free trial" or specific prices in benefit text** — Play policy prohibits it. The trial and price are surfaced separately in the user's subscription UI.
+
+Authoritative reference: [Play Console Help — Create and manage subscriptions](https://support.google.com/googleplay/android-developer/answer/140504).
+
+## Step 2 — Add the Monthly Base Plan
+
+From the subscription details page, click **Add base plan**.
+
+| Field | Value |
+|---|---|
+| Base Plan ID | `pro-monthly` (hyphens only — underscores rejected) |
+| Type | **Auto-renewing** |
+| Billing period | Monthly |
+| Grace period | 3 days (Play default; consider 7 days for better retention) |
+| Account hold | 30 days (default) |
+| Resubscribe | Enabled |
+
+### 2a. Country availability
+
+Click **Manage country/region availability** → check **United States**, **Japan**, and any other target markets. Optionally check **New countries/regions** to auto-include future Google-supported markets. **Apply** → **Save**.
+
+### 2b. Prices
+
+Click **Update prices**:
+1. Select all countries you just enabled.
+2. Enter base price: **`3.99`** USD.
+3. Play Console auto-converts to each selected country's local currency using current exchange rates and applies local "price charming" (rounding patterns).
+4. Review the auto-converted price for Japan (JPY). Typical conversion lands in the ¥600–¥700 range. Click the pencil icon to override if you have a specific preference.
+5. **Apply** → **Save**.
+
+### 2c. Mark backwards compatible (RevenueCat-critical)
+
+Open the base plan's **overflow menu (⋯)** → select **Use for deprecated billing methods** (sometimes labeled "Mark as backwards compatible").
+
+This makes the monthly base plan visible to clients on older Play Billing Library versions. RevenueCat's documentation calls this out explicitly: *"Only base plans marked as 'backwards compatible' in Google Play Console are available in older SDK versions."*
+
+**Mark only the monthly base plan as backwards compatible**, not the yearly one. Only one base plan per subscription product can be marked.
+
+### 2d. Activate
+
+Click **Activate** → confirm in the dialog. Status changes to **Active**.
+
+### Critical constraint
+
+Once a base plan is **activated and a purchase has been made against it**, the parent subscription product can no longer be deleted (only archived). Plan IDs are also permanent.
+
+## Step 3 — Add the Yearly Base Plan
+
+Same procedure as Step 2 with these values:
+
+| Field | Value |
+|---|---|
+| Base Plan ID | `pro-yearly` |
+| Type | Auto-renewing |
+| Billing period | **Yearly** |
+| Grace period | 7 days (recommended for annual — longer grace appropriate for higher-value commitment) |
+| Account hold | 30 days |
+| Resubscribe | Enabled |
+| Backwards compatible | **Do NOT mark** |
+
+Set base price to **`24.99`** USD; Play Console auto-converts. Japan typically lands in the ¥3,600–¥4,000 range.
+
+Click **Activate**.
+
+## Step 4 — Free Trial offer (Monthly)
+
+Free trials are not embedded inside base plans — they are **separate Offer objects** attached to each base plan. Create one offer per base plan.
+
+From the subscription details page → **Base plans and offers** section → on the `pro-monthly` row click **Add offer**.
+
+| Field | Value |
+|---|---|
+| Associated base plan | `pro-monthly` (pre-selected) |
+| Offer ID | `pro-monthly-trial` (hyphens only) |
+| Eligibility | **New customer acquisition** → **"The user has never had entitlement to this subscription"** |
+| Country availability | Same set as the base plan |
+
+### Add the trial phase
+
+Click **Add phase** → select **Free trial** → Duration: **7 days**.
+
+No price fields appear for the Free Trial phase — it's zero-cost by definition.
+
+Click **Save** → **Activate**.
+
+### Eligibility scope notes
+
+- **"The user has never had entitlement to this subscription"** = applies once per user across the WHOLE subscription product (both monthly and yearly base plans share the eligibility count). This is the desired behavior — trial cost protected.
+- Alternative: "the user has never had any subscription in this app" would block trial users who had a different Skeinly subscription historically. Not our case.
+- **Eligibility is enforced automatically by Google Play.** No backend check required.
+- Google Play requires a valid payment method on file before starting a trial.
+
+Authoritative reference: [Play Console Help — Understanding subscriptions](https://support.google.com/googleplay/android-developer/answer/12154973).
+
+## Step 5 — Free Trial offer (Yearly)
+
+Repeat Step 4 on the `pro-yearly` row.
+
+| Field | Value |
+|---|---|
+| Offer ID | `pro-yearly-trial` |
+| Associated base plan | `pro-yearly` |
+| Eligibility | New customer acquisition → "The user has never had entitlement to this subscription" |
+| Phase | Free trial, 7 days |
+
+**Save** → **Activate**.
+
+## Step 6 — Japanese localization
+
+Play Console → **Grow users → Translations → Manage translations → Select languages → Japanese (Japan) (ja-JP) → Apply**.
+
+Localize:
+
+| Field | English (en-US) | Japanese (ja-JP) |
+|---|---|---|
+| Subscription Name | `Skeinly Pro` | `Skeinly Pro` (proper noun; kept in Latin script) |
+| Benefit 1 | `Unlimited chart creation` | `無制限のチャート作成` |
+| Benefit 2 | `Advanced pattern analysis` | `高度なパターン分析` |
+| Benefit 3 | `Priority support` | `優先サポート` |
+
+Japanese is **not in Google's free machine translation set** — enter the strings manually. The technical-writer reviews the JA copy at GA prep.
+
+Authoritative reference: [Play Console Help — Translate and localize your app](https://support.google.com/googleplay/android-developer/answer/9844778).
+
+## Step 7 — Publish to Internal Testing track
+
+If Skeinly is not already released to a track, build and upload to Internal Testing. License tester purchases require the app to be published to at least one track — an unreleased draft will not accept purchases even for license testers.
+
+This step has no IAP-specific UI work; it's the standard release upload flow covered in [release.md](release.md).
+
+## Step 8 — Register License Testers
+
+Play Console → sidebar **Setup → License testing**.
+
+Under **Gmail accounts with testing access**, enter the Google account email addresses of all closed-beta testers, one per line (up to 2,000 addresses). Your own publisher account is always included automatically.
+
+Click **Save changes**.
+
+### Sandbox accelerated renewal times
+
+When a license tester purchases a subscription, renewals run on an accelerated schedule (max 6 renewals per purchase):
+
+| Production period | Accelerated test period |
+|---|---|
+| Free trial | 3 minutes |
+| 1 month | 5 minutes |
+| 1 year | 30 minutes |
+| Grace period | 5 minutes |
+
+This is enforced by Play automatically — no operator action required. Useful for verifying the renewal → RevenueCat webhook → `subscriptions` table row update path in minutes instead of months.
+
+### Optional: Play Billing Lab
+
+[Play Billing Lab](https://play.google.com/store/apps/details?id=com.google.android.apps.play.billingtestcompanion) is a companion app installed on the test device. It enables:
+- Switching the Play country (test JPY pricing without a real JP Google account)
+- Resetting trial eligibility on the same test account
+- Triggering subscription state transitions (grace period, account hold) on demand
+
+Configurations expire after 2 hours.
+
+Authoritative reference: [Android Developers — Test in-app billing](https://developer.android.com/google/play/billing/test).
+
+## Step 9 — Pub/Sub topic for RTDN
+
+### 9a. Generate the topic via RevenueCat (recommended)
+
+RevenueCat Dashboard → Skeinly Android app settings → under the service credentials section → click **Connect to Google**.
+
+RevenueCat generates a Pub/Sub topic ID in the form `projects/<your_gcp_project_id>/topics/<auto_name>`. Copy this to clipboard.
+
+If you set up RevenueCat's Play Console service credentials less than 36 hours ago, give it time — Google credentials need that warmup before the Connect flow works reliably.
+
+### 9b. Or create the topic manually in GCP
+
+Alternative path if you prefer manual setup. [Google Cloud Console → Pub/Sub → Topics → Create topic](https://console.cloud.google.com/cloudpubsub/topicList).
+
+- Topic ID: e.g. `play-billing-notifications`
+- Full resource name becomes: `projects/<your_gcp_project_id>/topics/play-billing-notifications`
+
+### 9c. Enable Pub/Sub API if not already
+
+Visit https://console.cloud.google.com/flows/enableapi?apiid=pubsub in the GCP project that hosts your Play service account → click **Enable**.
+
+### 9d. Grant IAM Publisher permission
+
+GCP Console → Pub/Sub → Topics → click your topic name → **Permissions** tab → **Add Principal**.
+
+| Field | Value |
+|---|---|
+| New principals | `google-play-developer-notifications@system.gserviceaccount.com` |
+| Role | **Pub/Sub Publisher** (`roles/pubsub.publisher`) |
+
+Click **Save**.
+
+**Gotcha — Domain Restricted Sharing:** if your GCP organization enforces Domain Restricted Sharing org policy, adding an external `@system.gserviceaccount.com` principal may be blocked. Add an exception for `system.gserviceaccount.com` in the org policy if needed. Symptom: the Add Principal flow returns "principal does not match domain restriction" or similar.
+
+Authoritative reference: [Android Developers — Get ready for Play Billing Library](https://developer.android.com/google/play/billing/getting-ready) (RTDN configuration section).
+
+## Step 10 — Configure RTDN in Play Console
+
+Play Console → Skeinly app → sidebar **Monetize with Play → Monetization setup** → scroll to **Real-time developer notifications**.
+
+| Field | Value |
+|---|---|
+| Enable real-time notifications | ✅ checked |
+| Topic name | Paste the full topic name from Step 9: `projects/<gcp_project_id>/topics/<topic_name>` |
+| Notification content | **Subscriptions, voided purchases, and all one-time products** (broadest coverage) |
+
+Click **Send Test Message** to verify the connection.
+
+### If the test message fails
+
+Common causes:
+- Topic name typo. Confirm exact string matches what's in GCP Console.
+- IAM publisher permission hasn't propagated yet. Wait 5–10 minutes and retry.
+- Pub/Sub API not enabled in the GCP project.
+
+Click **Save changes** once the test passes.
+
+## Step 11 — Verify in RevenueCat
+
+RevenueCat Dashboard → Skeinly Android app settings → look for **Last received** timestamp confirming the test notification arrived.
+
+Optionally enable **Track new purchases from server-to-server notifications** in RevenueCat's Purchase Tracking settings — this lets RevenueCat catch purchases the client SDK might miss (network issues, app uninstall/reinstall mid-flow).
+
+Authoritative reference: [RevenueCat — Google Server Notifications](https://www.revenuecat.com/docs/google-server-notifications).
+
+## Verification before handoff to RevenueCat product binding
+
+Confirm in Play Console:
+
+- [ ] Subscription Product `skeinly_pro` exists.
+- [ ] Base plan `pro-monthly` exists, status **Active**, marked **Use for deprecated billing methods**.
+- [ ] Base plan `pro-yearly` exists, status **Active**.
+- [ ] Free Trial offer `pro-monthly-trial` exists, status **Active**, 7-day phase, "Never had entitlement to this subscription" eligibility.
+- [ ] Free Trial offer `pro-yearly-trial` exists, status **Active**, same shape.
+- [ ] Japanese (ja-JP) translation added for benefits.
+- [ ] App is published to Internal Testing (or higher).
+- [ ] At least one license tester registered (one US + one JP recommended).
+- [ ] Pub/Sub topic created with Publisher IAM granted to `google-play-developer-notifications@system.gserviceaccount.com`.
+- [ ] RTDN configured in Monetization setup; test message returned success.
+- [ ] RevenueCat dashboard shows "Last received" timestamp.
+
+## Common gotchas
+
+| # | Gotcha | Detail |
+|---|---|---|
+| 1 | Subscription Product ID is permanent and non-reusable | Even archived IDs cannot be reused. Type carefully. |
+| 2 | Base Plan ID uses hyphens, Product ID uses underscores | `skeinly_pro` (product) vs `pro-monthly` (base plan). Mixing them up = Play Console rejection. |
+| 3 | Only one base plan can be "backwards compatible" | Mark monthly. Older SDKs only see the marked one. |
+| 4 | Benefits text cannot mention "free trial" or specific prices | Play policy. Surface those through paywall copy + StoreKit dialog only. |
+| 5 | License tester needs app published to a track | Internal Testing minimum. Draft app won't accept purchases. |
+| 6 | Free trial eligibility scope | "Has never had entitlement to this subscription" = once per user across both base plans. Protected. |
+| 7 | GCP credentials need ~36 hr warmup | Set up RevenueCat's Play Console service credentials well before Pub/Sub Connect step. |
+| 8 | Domain Restricted Sharing org policy may block IAM grant | Add `system.gserviceaccount.com` exception if grant fails. |
+| 9 | RevenueCat identifier format for post-Feb-2023 products | `subscription_id:base_plan_id` colon-separated. For us: `skeinly_pro:pro-monthly` + `skeinly_pro:pro-yearly`. |
+| 10 | Pricing in JPY rounded by Play Console's "charming" | Review auto-converted yen values; override if Play's rounding differs from your intent. |
+| 11 | PBL version is RevenueCat's concern, not yours | We use RevenueCat KMP SDK; PBL version (currently 7.x inside `purchases-android` 17.55.x) is managed for us. |
+
+## Where this fits in the wider Phase 39 pipeline
+
+1. **App Store Connect setup** ([iap-setup-app-store-connect.md](iap-setup-app-store-connect.md)) → both products "Ready to Submit"
+2. **Play Console setup** (this runbook) → both base plans Active
+3. **RevenueCat product registration** (next session) — Claude uses the RevenueCat MCP to:
+   - Import iOS products `io.github.b150005.skeinly.pro.monthly` + `.yearly`
+   - Import Android products `skeinly_pro:pro-monthly` + `skeinly_pro:pro-yearly`
+   - Attach all four to the existing `$rc_monthly` / `$rc_annual` packages
+   - Confirm Skeinly Pro entitlement `entlaaca26b181` covers all four
+4. **End-to-end smoke test** — open paywall on a Play Internal Testing build with a license tester signed in, purchase, verify entitlement granted and `subscriptions` row written via `revenuecat-webhook`.
