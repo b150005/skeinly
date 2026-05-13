@@ -116,6 +116,7 @@ From the subscription details page, click **Add base plan**.
 | Billing period | Monthly |
 | Grace period | 3 days (Play default; consider 7 days for better retention) |
 | Account hold | 30 days (default) |
+| User's base plan and offer changes | **Charge on next billing date** (`次回の請求日に請求`) — defer billing change to the next renewal, do NOT charge immediately. Industry standard for subscription plan changes (Netflix / Spotify / YouTube Premium / Apple Music all use this); reduces chargeback risk + matches user mental model of "switch plan → next bill reflects new plan". Agent Team decision 2026-05-13. |
 | Resubscribe | Enabled |
 
 ### 2a. Country availability
@@ -158,6 +159,7 @@ Same procedure as Step 2 with these values:
 | Billing period | **Yearly** |
 | Grace period | 7 days (recommended for annual — longer grace appropriate for higher-value commitment) |
 | Account hold | 30 days |
+| User's base plan and offer changes | **Charge on next billing date** — same as monthly base plan. Symmetric defer-billing for plan switches; for yearly→monthly downgrades this means the user remains on yearly until the current year ends, then switches to monthly — acceptable per the established industry pattern. |
 | Resubscribe | Enabled |
 | Backwards compatible | **Do NOT mark** |
 
