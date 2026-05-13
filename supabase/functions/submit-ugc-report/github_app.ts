@@ -58,41 +58,41 @@ const USER_AGENT = "Skeinly-Feedback/1.0";
 // ---------------------------------------------------------------------
 
 export interface GithubAppCredentials {
-    /** Numeric App ID from GitHub App settings page. */
-    appId: string;
-    /** Numeric Installation ID from the post-install URL
-     *  (`/settings/installations/<id>`). */
-    installationId: string;
-    /** Full PEM body of the .pem downloaded from the App settings page.
-     *  Includes header / footer lines and base64 body. PKCS#1 ("RSA
-     *  PRIVATE KEY") OR PKCS#8 ("PRIVATE KEY") both accepted. */
-    privateKeyPem: string;
+  /** Numeric App ID from GitHub App settings page. */
+  appId: string;
+  /** Numeric Installation ID from the post-install URL
+   *  (`/settings/installations/<id>`). */
+  installationId: string;
+  /** Full PEM body of the .pem downloaded from the App settings page.
+   *  Includes header / footer lines and base64 body. PKCS#1 ("RSA
+   *  PRIVATE KEY") OR PKCS#8 ("PRIVATE KEY") both accepted. */
+  privateKeyPem: string;
 }
 
 export interface CreateIssueInput {
-    title: string;
-    body: string;
-    labels: readonly string[];
+  title: string;
+  body: string;
+  labels: readonly string[];
 }
 
 export type CreateIssueResult =
-    | { kind: "success"; issueNumber: number; htmlUrl: string }
-    | { kind: "auth_failed"; message: string }
-    | { kind: "validation_failed"; message: string }
-    | { kind: "api_failed"; message: string };
+  | { kind: "success"; issueNumber: number; htmlUrl: string }
+  | { kind: "auth_failed"; message: string }
+  | { kind: "validation_failed"; message: string }
+  | { kind: "api_failed"; message: string };
 
 // ---------------------------------------------------------------------
 // Per-instance caches
 // ---------------------------------------------------------------------
 
 interface JwtCacheEntry {
-    value: string;
-    expiresAt: number;
+  value: string;
+  expiresAt: number;
 }
 
 interface InstallationTokenCacheEntry {
-    value: string;
-    expiresAt: number;
+  value: string;
+  expiresAt: number;
 }
 
 let appJwtCache: JwtCacheEntry | null = null;
@@ -100,8 +100,8 @@ let installationTokenCache: InstallationTokenCacheEntry | null = null;
 
 /** Test-only. */
 export function _resetCachesForTests(): void {
-    appJwtCache = null;
-    installationTokenCache = null;
+  appJwtCache = null;
+  installationTokenCache = null;
 }
 
 // ---------------------------------------------------------------------
@@ -115,27 +115,27 @@ export function _resetCachesForTests(): void {
  * GitHub Apps spec.
  */
 export async function getAppJwt(creds: GithubAppCredentials): Promise<string> {
-    const now = Date.now();
-    if (appJwtCache && appJwtCache.expiresAt - now > APP_JWT_REFRESH_MARGIN_MS) {
-        return appJwtCache.value;
-    }
+  const now = Date.now();
+  if (appJwtCache && appJwtCache.expiresAt - now > APP_JWT_REFRESH_MARGIN_MS) {
+    return appJwtCache.value;
+  }
 
-    const privateKey = await importRsaPrivateKey(creds.privateKeyPem);
-    const header = { alg: "RS256" as const, typ: "JWT" };
-    const payload = {
-        // GitHub spec: iat allowed up to 60s in the past to absorb
-        // clock skew. We use that margin defensively.
-        iat: getNumericDate(-60),
-        exp: getNumericDate(APP_JWT_TTL_SECONDS),
-        iss: creds.appId,
-    };
+  const privateKey = await importRsaPrivateKey(creds.privateKeyPem);
+  const header = { alg: "RS256" as const, typ: "JWT" };
+  const payload = {
+    // GitHub spec: iat allowed up to 60s in the past to absorb
+    // clock skew. We use that margin defensively.
+    iat: getNumericDate(-60),
+    exp: getNumericDate(APP_JWT_TTL_SECONDS),
+    iss: creds.appId,
+  };
 
-    const jwt = await createJwt(header, payload, privateKey);
-    appJwtCache = {
-        value: jwt,
-        expiresAt: now + APP_JWT_TTL_SECONDS * 1000,
-    };
-    return jwt;
+  const jwt = await createJwt(header, payload, privateKey);
+  appJwtCache = {
+    value: jwt,
+    expiresAt: now + APP_JWT_TTL_SECONDS * 1000,
+  };
+  return jwt;
 }
 
 /**
@@ -146,27 +146,27 @@ export async function getAppJwt(creds: GithubAppCredentials): Promise<string> {
  * the secret); the function detects header form and routes accordingly.
  */
 async function importRsaPrivateKey(pem: string): Promise<CryptoKey> {
-    const trimmed = pem.trim();
-    const isPkcs1 = trimmed.includes("-----BEGIN RSA PRIVATE KEY-----");
-    const isPkcs8 = trimmed.includes("-----BEGIN PRIVATE KEY-----");
-    if (!isPkcs1 && !isPkcs8) {
-        throw new Error("private_key_pem is not in a recognised PEM format");
-    }
+  const trimmed = pem.trim();
+  const isPkcs1 = trimmed.includes("-----BEGIN RSA PRIVATE KEY-----");
+  const isPkcs8 = trimmed.includes("-----BEGIN PRIVATE KEY-----");
+  if (!isPkcs1 && !isPkcs8) {
+    throw new Error("private_key_pem is not in a recognised PEM format");
+  }
 
-    const bodyB64 = trimmed
-        .replace(/-----BEGIN (RSA )?PRIVATE KEY-----/g, "")
-        .replace(/-----END (RSA )?PRIVATE KEY-----/g, "")
-        .replace(/\s+/g, "");
-    const bodyBytes = base64DecodeToBuffer(bodyB64);
-    const pkcs8Buffer = isPkcs8 ? bodyBytes : wrapPkcs1AsPkcs8(bodyBytes);
+  const bodyB64 = trimmed
+    .replace(/-----BEGIN (RSA )?PRIVATE KEY-----/g, "")
+    .replace(/-----END (RSA )?PRIVATE KEY-----/g, "")
+    .replace(/\s+/g, "");
+  const bodyBytes = base64DecodeToBuffer(bodyB64);
+  const pkcs8Buffer = isPkcs8 ? bodyBytes : wrapPkcs1AsPkcs8(bodyBytes);
 
-    return await crypto.subtle.importKey(
-        "pkcs8",
-        pkcs8Buffer,
-        { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-        false,
-        ["sign"],
-    );
+  return await crypto.subtle.importKey(
+    "pkcs8",
+    pkcs8Buffer,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
 }
 
 /**
@@ -191,34 +191,48 @@ async function importRsaPrivateKey(pem: string): Promise<CryptoKey> {
  * form. We compute both lengths defensively to handle 4096-bit keys.
  */
 function wrapPkcs1AsPkcs8(pkcs1: ArrayBuffer): ArrayBuffer {
-    const pkcs1Bytes = new Uint8Array(pkcs1);
-    // AlgorithmIdentifier for rsaEncryption (OID 1.2.840.113549.1.1.1)
-    //  + NULL parameters: SEQUENCE(13) { OID(9) ..., NULL }
-    const algIdentifier = new Uint8Array([
-        0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01, 0x05, 0x00,
-    ]);
-    // version INTEGER 0
-    const version = new Uint8Array([0x02, 0x01, 0x00]);
-    // OCTET STRING wrapping the PKCS#1 body
-    const octetStringHeader = encodeAsn1TlvHeader(0x04, pkcs1Bytes.length);
-    // Outer SEQUENCE wrapping {version, algIdentifier, octetString}
-    const innerLength =
-        version.length + algIdentifier.length + octetStringHeader.length + pkcs1Bytes.length;
-    const outerSeqHeader = encodeAsn1TlvHeader(0x30, innerLength);
+  const pkcs1Bytes = new Uint8Array(pkcs1);
+  // AlgorithmIdentifier for rsaEncryption (OID 1.2.840.113549.1.1.1)
+  //  + NULL parameters: SEQUENCE(13) { OID(9) ..., NULL }
+  const algIdentifier = new Uint8Array([
+    0x30,
+    0x0d,
+    0x06,
+    0x09,
+    0x2a,
+    0x86,
+    0x48,
+    0x86,
+    0xf7,
+    0x0d,
+    0x01,
+    0x01,
+    0x01,
+    0x05,
+    0x00,
+  ]);
+  // version INTEGER 0
+  const version = new Uint8Array([0x02, 0x01, 0x00]);
+  // OCTET STRING wrapping the PKCS#1 body
+  const octetStringHeader = encodeAsn1TlvHeader(0x04, pkcs1Bytes.length);
+  // Outer SEQUENCE wrapping {version, algIdentifier, octetString}
+  const innerLength = version.length + algIdentifier.length +
+    octetStringHeader.length + pkcs1Bytes.length;
+  const outerSeqHeader = encodeAsn1TlvHeader(0x30, innerLength);
 
-    const total = outerSeqHeader.length + innerLength;
-    const out = new Uint8Array(total);
-    let offset = 0;
-    out.set(outerSeqHeader, offset);
-    offset += outerSeqHeader.length;
-    out.set(version, offset);
-    offset += version.length;
-    out.set(algIdentifier, offset);
-    offset += algIdentifier.length;
-    out.set(octetStringHeader, offset);
-    offset += octetStringHeader.length;
-    out.set(pkcs1Bytes, offset);
-    return out.buffer;
+  const total = outerSeqHeader.length + innerLength;
+  const out = new Uint8Array(total);
+  let offset = 0;
+  out.set(outerSeqHeader, offset);
+  offset += outerSeqHeader.length;
+  out.set(version, offset);
+  offset += version.length;
+  out.set(algIdentifier, offset);
+  offset += algIdentifier.length;
+  out.set(octetStringHeader, offset);
+  offset += octetStringHeader.length;
+  out.set(pkcs1Bytes, offset);
+  return out.buffer;
 }
 
 /**
@@ -227,25 +241,25 @@ function wrapPkcs1AsPkcs8(pkcs1: ArrayBuffer): ArrayBuffer {
  * (0x80|len_octets followed by big-endian length) otherwise.
  */
 function encodeAsn1TlvHeader(tag: number, contentLength: number): Uint8Array {
-    if (contentLength < 0x80) {
-        return new Uint8Array([tag, contentLength]);
-    }
-    const lengthBytes: number[] = [];
-    let n = contentLength;
-    while (n > 0) {
-        lengthBytes.unshift(n & 0xff);
-        n >>>= 8;
-    }
-    return new Uint8Array([tag, 0x80 | lengthBytes.length, ...lengthBytes]);
+  if (contentLength < 0x80) {
+    return new Uint8Array([tag, contentLength]);
+  }
+  const lengthBytes: number[] = [];
+  let n = contentLength;
+  while (n > 0) {
+    lengthBytes.unshift(n & 0xff);
+    n >>>= 8;
+  }
+  return new Uint8Array([tag, 0x80 | lengthBytes.length, ...lengthBytes]);
 }
 
 function base64DecodeToBuffer(b64: string): ArrayBuffer {
-    const bin = atob(b64);
-    const out = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) {
-        out[i] = bin.charCodeAt(i);
-    }
-    return out.buffer;
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) {
+    out[i] = bin.charCodeAt(i);
+  }
+  return out.buffer;
 }
 
 // ---------------------------------------------------------------------
@@ -258,60 +272,72 @@ function base64DecodeToBuffer(b64: string): ArrayBuffer {
  * is cleared so a subsequent call re-runs the exchange from scratch
  * (defensive against transient auth flaps and rotated App keys).
  */
-export async function getInstallationToken(creds: GithubAppCredentials): Promise<string> {
-    const now = Date.now();
-    if (
-        installationTokenCache &&
-        installationTokenCache.expiresAt - now > INSTALLATION_TOKEN_REFRESH_MARGIN_MS
-    ) {
-        return installationTokenCache.value;
-    }
+export async function getInstallationToken(
+  creds: GithubAppCredentials,
+): Promise<string> {
+  const now = Date.now();
+  if (
+    installationTokenCache &&
+    installationTokenCache.expiresAt - now >
+      INSTALLATION_TOKEN_REFRESH_MARGIN_MS
+  ) {
+    return installationTokenCache.value;
+  }
 
-    const jwt = await getAppJwt(creds);
-    const url = `${GITHUB_API_HOST}/app/installations/${creds.installationId}/access_tokens`;
-    const resp = await fetch(url, {
-        method: "POST",
-        headers: {
-            Authorization: `Bearer ${jwt}`,
-            Accept: "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-            "User-Agent": USER_AGENT,
-        },
-    });
+  const jwt = await getAppJwt(creds);
+  const url =
+    `${GITHUB_API_HOST}/app/installations/${creds.installationId}/access_tokens`;
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${jwt}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      "User-Agent": USER_AGENT,
+    },
+  });
 
-    if (resp.status === 401 || resp.status === 403) {
-        // Likely cause: App ID mismatch, key revoked, or installation
-        // uninstalled. Clear both caches so the next attempt starts
-        // fresh — the operator may have rotated the App secrets.
-        appJwtCache = null;
-        installationTokenCache = null;
-        const text = await resp.text();
-        throw new GithubAuthError(
-            `installation_token_exchange_failed: HTTP ${resp.status} — ${truncate(text, 200)}`,
-        );
-    }
-    if (!resp.ok) {
-        const text = await resp.text();
-        throw new GithubApiError(
-            `installation_token_exchange_failed: HTTP ${resp.status} — ${truncate(text, 200)}`,
-        );
-    }
+  if (resp.status === 401 || resp.status === 403) {
+    // Likely cause: App ID mismatch, key revoked, or installation
+    // uninstalled. Clear both caches so the next attempt starts
+    // fresh — the operator may have rotated the App secrets.
+    appJwtCache = null;
+    installationTokenCache = null;
+    const text = await resp.text();
+    throw new GithubAuthError(
+      `installation_token_exchange_failed: HTTP ${resp.status} — ${
+        truncate(text, 200)
+      }`,
+    );
+  }
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new GithubApiError(
+      `installation_token_exchange_failed: HTTP ${resp.status} — ${
+        truncate(text, 200)
+      }`,
+    );
+  }
 
-    const payload = (await resp.json()) as { token: string; expires_at: string };
-    if (!payload.token || !payload.expires_at) {
-        throw new GithubApiError("installation_token response missing token or expires_at");
-    }
+  const payload = (await resp.json()) as { token: string; expires_at: string };
+  if (!payload.token || !payload.expires_at) {
+    throw new GithubApiError(
+      "installation_token response missing token or expires_at",
+    );
+  }
 
-    const expiresAtMs = Date.parse(payload.expires_at);
-    if (Number.isNaN(expiresAtMs)) {
-        throw new GithubApiError("installation_token expires_at is not a valid ISO-8601 timestamp");
-    }
+  const expiresAtMs = Date.parse(payload.expires_at);
+  if (Number.isNaN(expiresAtMs)) {
+    throw new GithubApiError(
+      "installation_token expires_at is not a valid ISO-8601 timestamp",
+    );
+  }
 
-    installationTokenCache = {
-        value: payload.token,
-        expiresAt: expiresAtMs,
-    };
-    return payload.token;
+  installationTokenCache = {
+    value: payload.token,
+    expiresAt: expiresAtMs,
+  };
+  return payload.token;
 }
 
 // ---------------------------------------------------------------------
@@ -325,83 +351,96 @@ export async function getInstallationToken(creds: GithubAppCredentials): Promise
  * api_failed). Caller maps to the public error envelope.
  */
 export async function createIssue(
-    creds: GithubAppCredentials,
-    input: CreateIssueInput,
+  creds: GithubAppCredentials,
+  input: CreateIssueInput,
 ): Promise<CreateIssueResult> {
-    let installationToken: string;
-    try {
-        installationToken = await getInstallationToken(creds);
-    } catch (error: unknown) {
-        if (error instanceof GithubAuthError) {
-            return { kind: "auth_failed", message: error.message };
-        }
-        if (error instanceof GithubApiError) {
-            return { kind: "api_failed", message: error.message };
-        }
-        return { kind: "api_failed", message: errorMessage(error) };
+  let installationToken: string;
+  try {
+    installationToken = await getInstallationToken(creds);
+  } catch (error: unknown) {
+    if (error instanceof GithubAuthError) {
+      return { kind: "auth_failed", message: error.message };
     }
+    if (error instanceof GithubApiError) {
+      return { kind: "api_failed", message: error.message };
+    }
+    return { kind: "api_failed", message: errorMessage(error) };
+  }
 
-    const url = `${GITHUB_API_HOST}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues`;
-    let resp: Response;
-    try {
-        resp = await fetch(url, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${installationToken}`,
-                Accept: "application/vnd.github+json",
-                "Content-Type": "application/json",
-                "X-GitHub-Api-Version": "2022-11-28",
-                "User-Agent": USER_AGENT,
-            },
-            body: JSON.stringify({
-                title: input.title,
-                body: input.body,
-                labels: input.labels,
-            }),
-        });
-    } catch (error: unknown) {
-        return { kind: "api_failed", message: errorMessage(error) };
-    }
+  const url = `${GITHUB_API_HOST}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues`;
+  let resp: Response;
+  try {
+    resp = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${installationToken}`,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": USER_AGENT,
+      },
+      body: JSON.stringify({
+        title: input.title,
+        body: input.body,
+        labels: input.labels,
+      }),
+    });
+  } catch (error: unknown) {
+    return { kind: "api_failed", message: errorMessage(error) };
+  }
 
-    if (resp.status === 401 || resp.status === 403) {
-        // Installation token was rejected — likely revoked since
-        // issuance. Clear cache so the next call re-issues.
-        installationTokenCache = null;
-        const text = await resp.text();
-        return {
-            kind: "auth_failed",
-            message: `issue_create_unauthorized: HTTP ${resp.status} — ${truncate(text, 200)}`,
-        };
-    }
-    if (resp.status === 422) {
-        const text = await resp.text();
-        return {
-            kind: "validation_failed",
-            message: `issue_create_invalid: ${truncate(text, 400)}`,
-        };
-    }
-    if (!resp.ok) {
-        const text = await resp.text();
-        return {
-            kind: "api_failed",
-            message: `issue_create_failed: HTTP ${resp.status} — ${truncate(text, 200)}`,
-        };
-    }
+  if (resp.status === 401 || resp.status === 403) {
+    // Installation token was rejected — likely revoked since
+    // issuance. Clear cache so the next call re-issues.
+    installationTokenCache = null;
+    const text = await resp.text();
+    return {
+      kind: "auth_failed",
+      message: `issue_create_unauthorized: HTTP ${resp.status} — ${
+        truncate(text, 200)
+      }`,
+    };
+  }
+  if (resp.status === 422) {
+    const text = await resp.text();
+    return {
+      kind: "validation_failed",
+      message: `issue_create_invalid: ${truncate(text, 400)}`,
+    };
+  }
+  if (!resp.ok) {
+    const text = await resp.text();
+    return {
+      kind: "api_failed",
+      message: `issue_create_failed: HTTP ${resp.status} — ${
+        truncate(text, 200)
+      }`,
+    };
+  }
 
-    let payload: { number?: number; html_url?: string };
-    try {
-        payload = (await resp.json()) as { number?: number; html_url?: string };
-    } catch (error: unknown) {
-        return {
-            kind: "api_failed",
-            message: `issue_create_response_unparseable: ${errorMessage(error)}`,
-        };
-    }
+  let payload: { number?: number; html_url?: string };
+  try {
+    payload = (await resp.json()) as { number?: number; html_url?: string };
+  } catch (error: unknown) {
+    return {
+      kind: "api_failed",
+      message: `issue_create_response_unparseable: ${errorMessage(error)}`,
+    };
+  }
 
-    if (typeof payload.number !== "number" || typeof payload.html_url !== "string") {
-        return { kind: "api_failed", message: "issue_create_response missing number or html_url" };
-    }
-    return { kind: "success", issueNumber: payload.number, htmlUrl: payload.html_url };
+  if (
+    typeof payload.number !== "number" || typeof payload.html_url !== "string"
+  ) {
+    return {
+      kind: "api_failed",
+      message: "issue_create_response missing number or html_url",
+    };
+  }
+  return {
+    kind: "success",
+    issueNumber: payload.number,
+    htmlUrl: payload.html_url,
+  };
 }
 
 // ---------------------------------------------------------------------
@@ -409,17 +448,17 @@ export async function createIssue(
 // ---------------------------------------------------------------------
 
 export class GithubAuthError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = "GithubAuthError";
-    }
+  constructor(message: string) {
+    super(message);
+    this.name = "GithubAuthError";
+  }
 }
 
 export class GithubApiError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = "GithubApiError";
-    }
+  constructor(message: string) {
+    super(message);
+    this.name = "GithubApiError";
+  }
 }
 
 // ---------------------------------------------------------------------
@@ -427,13 +466,13 @@ export class GithubApiError extends Error {
 // ---------------------------------------------------------------------
 
 function errorMessage(error: unknown): string {
-    if (error instanceof Error) {
-        return error.message;
-    }
-    return String(error);
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
 }
 
 function truncate(s: string, max: number): string {
-    if (s.length <= max) return s;
-    return `${s.slice(0, max)}…`;
+  if (s.length <= max) return s;
+  return `${s.slice(0, max)}…`;
 }

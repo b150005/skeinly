@@ -34,10 +34,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { createIssue, type GithubAppCredentials } from "./github_app.ts";
 import {
-    buildIssueBody,
-    buildIssueTitle,
-    type SubmitUgcReportInput,
-    validateInput,
+  buildIssueBody,
+  buildIssueTitle,
+  type SubmitUgcReportInput,
+  validateInput,
 } from "./mapping.ts";
 
 // ---------------------------------------------------------------------
@@ -60,25 +60,25 @@ const ISSUE_LABEL = "ugc-report";
 // ---------------------------------------------------------------------
 
 type ErrorCode =
-    | "UNAUTHORIZED"
-    | "RATE_LIMITED"
-    | "VALIDATION_FAILED"
-    | "DB_INSERT_FAILED"
-    | "CONFIG_MISSING";
+  | "UNAUTHORIZED"
+  | "RATE_LIMITED"
+  | "VALIDATION_FAILED"
+  | "DB_INSERT_FAILED"
+  | "CONFIG_MISSING";
 
 interface SuccessEnvelope {
-    ok: true;
-    report_id: string;
-    /** Null when Issue POST failed — DB row is canonical and the
-     *  operator monitors `WHERE state = 'open' AND github_issue_url
-     *  IS NULL` to catch this case. */
-    github_issue_url: string | null;
+  ok: true;
+  report_id: string;
+  /** Null when Issue POST failed — DB row is canonical and the
+   *  operator monitors `WHERE state = 'open' AND github_issue_url
+   *  IS NULL` to catch this case. */
+  github_issue_url: string | null;
 }
 
 interface FailureEnvelope {
-    ok: false;
-    code: ErrorCode;
-    message: string;
+  ok: false;
+  code: ErrorCode;
+  message: string;
 }
 
 // ---------------------------------------------------------------------
@@ -86,14 +86,14 @@ interface FailureEnvelope {
 // ---------------------------------------------------------------------
 
 interface RateWindow {
-    timestamps: number[]; // ms epoch
+  timestamps: number[]; // ms epoch
 }
 
 const rateLimitMap = new Map<string, RateWindow>();
 
 /** Test-only — drains the in-memory window so tests start from 0. */
 export function _resetRateLimitMapForTests(): void {
-    rateLimitMap.clear();
+  rateLimitMap.clear();
 }
 
 /**
@@ -101,22 +101,22 @@ export function _resetRateLimitMapForTests(): void {
  *   the user has hit their quota.
  */
 function checkRateLimit(userId: string): { retryAfterMinutes: number } | null {
-    const now = Date.now();
-    const window = rateLimitMap.get(userId);
-    const fresh: number[] = (window?.timestamps ?? []).filter(
-        (ts) => now - ts < RATE_LIMIT_WINDOW_MS,
-    );
+  const now = Date.now();
+  const window = rateLimitMap.get(userId);
+  const fresh: number[] = (window?.timestamps ?? []).filter(
+    (ts) => now - ts < RATE_LIMIT_WINDOW_MS,
+  );
 
-    if (fresh.length >= RATE_LIMIT_MAX) {
-        const oldest = fresh[0];
-        const retryMs = RATE_LIMIT_WINDOW_MS - (now - oldest);
-        const retryAfterMinutes = Math.max(1, Math.ceil(retryMs / 60_000));
-        rateLimitMap.set(userId, { timestamps: fresh });
-        return { retryAfterMinutes };
-    }
-    fresh.push(now);
+  if (fresh.length >= RATE_LIMIT_MAX) {
+    const oldest = fresh[0];
+    const retryMs = RATE_LIMIT_WINDOW_MS - (now - oldest);
+    const retryAfterMinutes = Math.max(1, Math.ceil(retryMs / 60_000));
     rateLimitMap.set(userId, { timestamps: fresh });
-    return null;
+    return { retryAfterMinutes };
+  }
+  fresh.push(now);
+  rateLimitMap.set(userId, { timestamps: fresh });
+  return null;
 }
 
 // ---------------------------------------------------------------------
@@ -136,31 +136,33 @@ function checkRateLimit(userId: string): { retryAfterMinutes: number } | null {
  * Test paths can synthesize fake JWTs with any signature; production
  * paths can only reach this code with a Supabase-validated JWT.
  */
-export function extractUserIdFromAuthHeader(authHeader: string | null): string | null {
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return null;
-    }
-    const jwt = authHeader.slice("Bearer ".length).trim();
-    const parts = jwt.split(".");
-    if (parts.length !== 3) return null;
+export function extractUserIdFromAuthHeader(
+  authHeader: string | null,
+): string | null {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+  const jwt = authHeader.slice("Bearer ".length).trim();
+  const parts = jwt.split(".");
+  if (parts.length !== 3) return null;
 
-    let payload: unknown;
-    try {
-        const json = base64UrlDecode(parts[1]);
-        payload = JSON.parse(json);
-    } catch {
-        return null;
-    }
-    if (typeof payload !== "object" || payload === null) return null;
-    const sub = (payload as Record<string, unknown>).sub;
-    if (typeof sub !== "string" || sub.length === 0) return null;
-    return sub;
+  let payload: unknown;
+  try {
+    const json = base64UrlDecode(parts[1]);
+    payload = JSON.parse(json);
+  } catch {
+    return null;
+  }
+  if (typeof payload !== "object" || payload === null) return null;
+  const sub = (payload as Record<string, unknown>).sub;
+  if (typeof sub !== "string" || sub.length === 0) return null;
+  return sub;
 }
 
 function base64UrlDecode(s: string): string {
-    const pad = (4 - (s.length % 4)) % 4;
-    const padded = s.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat(pad);
-    return atob(padded);
+  const pad = (4 - (s.length % 4)) % 4;
+  const padded = s.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat(pad);
+  return atob(padded);
 }
 
 // ---------------------------------------------------------------------
@@ -168,35 +170,35 @@ function base64UrlDecode(s: string): string {
 // ---------------------------------------------------------------------
 
 interface RuntimeConfig {
-    supabaseUrl: string;
-    anonKey: string;
-    serviceRoleKey: string;
-    github: GithubAppCredentials;
+  supabaseUrl: string;
+  anonKey: string;
+  serviceRoleKey: string;
+  github: GithubAppCredentials;
 }
 
 function readConfig(): RuntimeConfig | null {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const appId = Deno.env.get("SKEINLY_BUGREPORT_APP_ID");
-    const installationId = Deno.env.get("SKEINLY_BUGREPORT_INSTALLATION_ID");
-    const privateKeyPem = Deno.env.get("SKEINLY_BUGREPORT_PRIVATE_KEY_PEM");
-    if (
-        !supabaseUrl ||
-        !anonKey ||
-        !serviceRoleKey ||
-        !appId ||
-        !installationId ||
-        !privateKeyPem
-    ) {
-        return null;
-    }
-    return {
-        supabaseUrl,
-        anonKey,
-        serviceRoleKey,
-        github: { appId, installationId, privateKeyPem },
-    };
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const appId = Deno.env.get("SKEINLY_BUGREPORT_APP_ID");
+  const installationId = Deno.env.get("SKEINLY_BUGREPORT_INSTALLATION_ID");
+  const privateKeyPem = Deno.env.get("SKEINLY_BUGREPORT_PRIVATE_KEY_PEM");
+  if (
+    !supabaseUrl ||
+    !anonKey ||
+    !serviceRoleKey ||
+    !appId ||
+    !installationId ||
+    !privateKeyPem
+  ) {
+    return null;
+  }
+  return {
+    supabaseUrl,
+    anonKey,
+    serviceRoleKey,
+    github: { appId, installationId, privateKeyPem },
+  };
 }
 
 // ---------------------------------------------------------------------
@@ -208,125 +210,130 @@ function readConfig(): RuntimeConfig | null {
  * fakes can drive it without spawning a Deno.serve listener.
  */
 export async function handleRequest(req: Request): Promise<Response> {
-    if (req.method === "OPTIONS") {
-        return jsonResponse(null, 204);
-    }
-    if (req.method !== "POST") {
-        return jsonResponse({ error: "method_not_allowed" }, 405);
-    }
+  if (req.method === "OPTIONS") {
+    return jsonResponse(null, 204);
+  }
+  if (req.method !== "POST") {
+    return jsonResponse({ error: "method_not_allowed" }, 405);
+  }
 
-    const config = readConfig();
-    if (!config) {
-        return envelope({
-            ok: false,
-            code: "CONFIG_MISSING",
-            message: "edge function missing one or more required secrets",
-        });
-    }
-
-    const authHeader = req.headers.get("Authorization");
-    const reporterId = extractUserIdFromAuthHeader(authHeader);
-    if (!reporterId) {
-        return envelope({
-            ok: false,
-            code: "UNAUTHORIZED",
-            message: "request missing valid Bearer JWT",
-        });
-    }
-
-    const rate = checkRateLimit(reporterId);
-    if (rate) {
-        return envelope({
-            ok: false,
-            code: "RATE_LIMITED",
-            message: `try again in ${rate.retryAfterMinutes} minute(s)`,
-        });
-    }
-
-    let parsed: unknown;
-    try {
-        parsed = await req.json();
-    } catch {
-        return envelope({
-            ok: false,
-            code: "VALIDATION_FAILED",
-            message: "request body is not valid JSON",
-        });
-    }
-    const validation = validateInput(parsed);
-    if (!validation.ok) {
-        return envelope({
-            ok: false,
-            code: "VALIDATION_FAILED",
-            message: validation.message,
-        });
-    }
-    const input: SubmitUgcReportInput = validation.value;
-
-    // INSERT via user-JWT client so RLS policy "Users can file own
-    // reports" enforces reporter_id = auth.uid() natively (defense in
-    // depth vs the JWT-decoded reporter_id we also write explicitly).
-    // authHeader is non-null by virtue of reporterId being non-null.
-    const userClient = createClient(config.supabaseUrl, config.anonKey, {
-        global: { headers: { Authorization: authHeader as string } },
-        auth: { persistSession: false, autoRefreshToken: false },
-    });
-
-    const insertResult = await userClient
-        .from("ugc_reports")
-        .insert({
-            reporter_id: reporterId,
-            target_type: input.target_type,
-            target_id: input.target_id,
-            reason: input.reason,
-            reason_category: input.reason_category,
-        })
-        .select("id")
-        .single();
-
-    if (insertResult.error || !insertResult.data) {
-        return envelope({
-            ok: false,
-            code: "DB_INSERT_FAILED",
-            message: insertResult.error?.message ?? "ugc_reports insert returned no row",
-        });
-    }
-    const reportId = insertResult.data.id as string;
-
-    // Best-effort GitHub Issue mirror. Failure leaves the DB row in
-    // place with github_issue_url = NULL — operator monitors that
-    // condition in their triage SOP.
-    let htmlUrl: string | null = null;
-    const issueResult = await createIssue(config.github, {
-        title: buildIssueTitle(input),
-        body: buildIssueBody({ reporterId, reportId, input }),
-        labels: [ISSUE_LABEL],
-    });
-
-    if (issueResult.kind === "success") {
-        htmlUrl = issueResult.htmlUrl;
-        const adminClient = createClient(config.supabaseUrl, config.serviceRoleKey, {
-            auth: { persistSession: false, autoRefreshToken: false },
-        });
-        // Ignore UPDATE error — DB row is canonical. The htmlUrl back-
-        // link is operator convenience; missing it does not invalidate
-        // the report. Worst case the operator does a manual JOIN by id.
-        await adminClient
-            .from("ugc_reports")
-            .update({ github_issue_url: htmlUrl })
-            .eq("id", reportId);
-    } else {
-        console.error(
-            `submit_ugc_report ${reportId}: GitHub Issue creation failed kind=${issueResult.kind}`,
-            issueResult,
-        );
-    }
-
+  const config = readConfig();
+  if (!config) {
     return envelope({
-        ok: true,
-        report_id: reportId,
-        github_issue_url: htmlUrl,
+      ok: false,
+      code: "CONFIG_MISSING",
+      message: "edge function missing one or more required secrets",
     });
+  }
+
+  const authHeader = req.headers.get("Authorization");
+  const reporterId = extractUserIdFromAuthHeader(authHeader);
+  if (!reporterId) {
+    return envelope({
+      ok: false,
+      code: "UNAUTHORIZED",
+      message: "request missing valid Bearer JWT",
+    });
+  }
+
+  const rate = checkRateLimit(reporterId);
+  if (rate) {
+    return envelope({
+      ok: false,
+      code: "RATE_LIMITED",
+      message: `try again in ${rate.retryAfterMinutes} minute(s)`,
+    });
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = await req.json();
+  } catch {
+    return envelope({
+      ok: false,
+      code: "VALIDATION_FAILED",
+      message: "request body is not valid JSON",
+    });
+  }
+  const validation = validateInput(parsed);
+  if (!validation.ok) {
+    return envelope({
+      ok: false,
+      code: "VALIDATION_FAILED",
+      message: validation.message,
+    });
+  }
+  const input: SubmitUgcReportInput = validation.value;
+
+  // INSERT via user-JWT client so RLS policy "Users can file own
+  // reports" enforces reporter_id = auth.uid() natively (defense in
+  // depth vs the JWT-decoded reporter_id we also write explicitly).
+  // authHeader is non-null by virtue of reporterId being non-null.
+  const userClient = createClient(config.supabaseUrl, config.anonKey, {
+    global: { headers: { Authorization: authHeader as string } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const insertResult = await userClient
+    .from("ugc_reports")
+    .insert({
+      reporter_id: reporterId,
+      target_type: input.target_type,
+      target_id: input.target_id,
+      reason: input.reason,
+      reason_category: input.reason_category,
+    })
+    .select("id")
+    .single();
+
+  if (insertResult.error || !insertResult.data) {
+    return envelope({
+      ok: false,
+      code: "DB_INSERT_FAILED",
+      message: insertResult.error?.message ??
+        "ugc_reports insert returned no row",
+    });
+  }
+  const reportId = insertResult.data.id as string;
+
+  // Best-effort GitHub Issue mirror. Failure leaves the DB row in
+  // place with github_issue_url = NULL — operator monitors that
+  // condition in their triage SOP.
+  let htmlUrl: string | null = null;
+  const issueResult = await createIssue(config.github, {
+    title: buildIssueTitle(input),
+    body: buildIssueBody({ reporterId, reportId, input }),
+    labels: [ISSUE_LABEL],
+  });
+
+  if (issueResult.kind === "success") {
+    htmlUrl = issueResult.htmlUrl;
+    const adminClient = createClient(
+      config.supabaseUrl,
+      config.serviceRoleKey,
+      {
+        auth: { persistSession: false, autoRefreshToken: false },
+      },
+    );
+    // Ignore UPDATE error — DB row is canonical. The htmlUrl back-
+    // link is operator convenience; missing it does not invalidate
+    // the report. Worst case the operator does a manual JOIN by id.
+    await adminClient
+      .from("ugc_reports")
+      .update({ github_issue_url: htmlUrl })
+      .eq("id", reportId);
+  } else {
+    console.error(
+      `submit_ugc_report ${reportId}: GitHub Issue creation failed kind=${issueResult.kind}`,
+      issueResult,
+    );
+  }
+
+  return envelope({
+    ok: true,
+    report_id: reportId,
+    github_issue_url: htmlUrl,
+  });
 }
 
 // ---------------------------------------------------------------------
@@ -334,20 +341,20 @@ export async function handleRequest(req: Request): Promise<Response> {
 // ---------------------------------------------------------------------
 
 function envelope(payload: SuccessEnvelope | FailureEnvelope): Response {
-    // Application-level errors return HTTP 200 with `ok: false` in the
-    // body (same shape as submit-bug-report per ADR-020 §2). Non-200 is
-    // reserved for platform-level problems so clients can distinguish
-    // "the proxy refused" from "the proxy is broken".
-    return jsonResponse(payload, 200);
+  // Application-level errors return HTTP 200 with `ok: false` in the
+  // body (same shape as submit-bug-report per ADR-020 §2). Non-200 is
+  // reserved for platform-level problems so clients can distinguish
+  // "the proxy refused" from "the proxy is broken".
+  return jsonResponse(payload, 200);
 }
 
 function jsonResponse(payload: unknown, status: number): Response {
-    return new Response(payload === null ? null : JSON.stringify(payload), {
-        status,
-        headers: { "Content-Type": "application/json" },
-    });
+  return new Response(payload === null ? null : JSON.stringify(payload), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 if (import.meta.main) {
-    Deno.serve(handleRequest);
+  Deno.serve(handleRequest);
 }
