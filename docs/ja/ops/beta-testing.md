@@ -39,10 +39,26 @@ Sandbox 経由なら **全部** をテストできる。さらに sandbox の **
 - [ ] Android app が `REVENUECAT_API_KEY_ANDROID` GitHub secret 配線でビルド済み（`gradle-play-publisher` 経由 Internal Testing track アップロード）。
 - [ ] `RevenueCatAuthBridge` が production code に入っている（commit `e1088d1` 以降）。Skeinly auth 後に `Purchases.logIn(userId)` が発火することを保証。
 
+## TestFlight テスターグループ構造
+
+各テスターのセットアップに入る前に、テスターをどちらの TestFlight グループに入れるか決める。Phase 39 では 2 グループ構成を推奨 (Agent Team 決定 2026-05-13):
+
+| グループ | TestFlight 種別 | メンバー | ビルド配信ポリシー | フィードバック経路 |
+|---|---|---|---|---|
+| **Skeinly Core** (JA: 「Skeinly コアチーム」) | 内部テスト (最大 100 名) — メンバーは ASC team member 必須 | オペレータ + 親しい友人 1–2 名 (合計 ≤3) | 全 build 自動配信 (unstable OK) — 高速イテレーション | 直接 Slack / LINE / 即時フィードバック |
+| **Skeinly Closed Beta** (JA: 「Skeinly クローズドベータ」) | 外部テスト (最大 10,000 名) — メール招待、ASC team member 不要 | 一般テスター 3–8 名 ([Phase 39 rubric](../../en/phase/phase-39-beta-rubric.md) 通りラウンドチャート作者 ≥1 + ja-JP テスター ≥1 含む) | tagged-stable build のみ。初回 build は Apple Beta App Review 必要 (24–48h) | メール + GitHub Issue ([beta-bug.yml テンプレート](../../../.github/ISSUE_TEMPLATE/beta-bug.yml)) |
+
+ASC → TestFlight でグループ作成:
+- 内部グループ: TestFlight → **内部テスト → グループを作成** → グループ名 `Skeinly Core` → 「自動配信を有効にする」 ON → 保存
+- 外部グループ: TestFlight → **外部テスト → グループを作成** → グループ名 `Skeinly Closed Beta` → 各テスターをメール招待
+
+Skeinly Core のメンバーは事前に ASC team member 化が必要 (ASC → ユーザとアクセス → ユーザを追加 → +)。Skeinly Closed Beta のメンバーは ASC team member 化不要。
+
 ## テスターごとのセットアップ（テスター人数分繰り返す）
 
 各テスターから以下を確認:
-- メールアドレス（sandbox 購入時に App Store / Google Play サインインに使うもの — Skeinly ログインのメールと別でも OK、プラットフォーム側の sandbox アカウント）
+- メールアドレス（sandbox 購入時に App Store / Google Play サインインに使うもの — Skeinly ログインのメールと別でも OK、プラットフォーム側の sandbox アカウント）。Phase 39 では、オペレータが Gmail プラスサブアドレッシングを `skeinly.app+<cohort>-<locale>-<label>@gmail.com` パターンで中央集約 inbox に向けて運用するのが標準 — メールパターン詳細は [iap-setup-app-store-connect.md](iap-setup-app-store-connect.md) のステップ 9 参照
+- どちらの TestFlight グループに入るか (Skeinly Core vs Skeinly Closed Beta — 上記「TestFlight テスターグループ構造」参照)
 - iOS / Android / 両方どれか
 
 ### iOS — Apple Sandbox tester 登録
