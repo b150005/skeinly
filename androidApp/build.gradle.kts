@@ -120,16 +120,25 @@ android {
     signingConfigs {
         create("release") {
             // Resolution order for the keystore file path:
-            //   1. `KEYSTORE_FILE` in local.properties — developer can name
-            //      the file whatever they like (e.g. `skeinly-release.jks`,
-            //      `upload-keystore.jks`) at the repo root or pass an
-            //      absolute path. This is the recommended local dev path.
-            //   2. `KEYSTORE_FILE` env var — used by CI (release.yml line ~100
-            //      decodes the GitHub Secret into $RUNNER_TEMP/keystore.jks
-            //      then exports `KEYSTORE_FILE=$RUNNER_TEMP/keystore.jks`).
-            //   3. Hardcoded fallback `keystore.jks` at repo root — backward
-            //      compatibility for setups that follow the original
-            //      convention.
+            //   1. `KEYSTORE_FILE` in local.properties — overrides the
+            //      default with a custom filename / absolute path (e.g.
+            //      `skeinly-release.jks` for historical reasons).
+            //   2. `KEYSTORE_FILE` env var — used by CI (release.yml
+            //      decodes the GitHub Secret into a tempdir and exports
+            //      the env var with the absolute path).
+            //   3. Default: `upload-keystore.jks` at the repo root.
+            //
+            // Default rationale: Skeinly publishes via Google Play App
+            // Signing (per docs/en/ops/release-secrets.md §7 + Play
+            // Console release setup), where the developer's local key
+            // is semantically the *upload key* (Google manages the
+            // actual app signing key server-side). Google's official
+            // documentation example uses `your-upload-keystore.jks` as
+            // the keytool placeholder, and Skeinly's release-secrets
+            // runbook uses `upload-keystore.jks` consistently in
+            // keytool examples + SHA-1 verification commands. The
+            // build now matches that convention so a fresh keystore
+            // generated via the runbook works zero-config.
             //
             // Password / alias / key password fields follow the same
             // local.properties → env var precedence so a single
@@ -138,7 +147,7 @@ android {
             val keystorePath =
                 localProps.getProperty("KEYSTORE_FILE")
                     ?: System.getenv("KEYSTORE_FILE")
-                    ?: "keystore.jks"
+                    ?: "upload-keystore.jks"
             val keystoreFile =
                 if (File(keystorePath).isAbsolute) {
                     file(keystorePath)
