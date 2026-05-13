@@ -1,0 +1,80 @@
+# Local Gradle build settings — copy to local.properties and fill in your values.
+# This file is committed to version control as a template.
+# local.properties is git-ignored and must NOT be committed.
+#
+# First-time setup:
+#
+#   cp local.properties.example local.properties
+#   # Edit local.properties and fill in SUPABASE_URL + SUPABASE_PUBLISHABLE_KEY
+#   # (the only two required keys for backend connectivity). Other settings
+#   # are optional — leave them empty for local-only mode (no analytics, no
+#   # subscription, no live backend).
+#
+# Read by:
+#   - shared/build.gradle.kts          → SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY,
+#                                          REVENUECAT_API_KEY_ANDROID
+#   - androidApp/build.gradle.kts      → SENTRY_DSN_ANDROID, POSTHOG_API_KEY,
+#                                          POSTHOG_HOST, KEYSTORE_PASSWORD,
+#                                          KEY_ALIAS, KEY_PASSWORD
+#
+# These keys are shared with iosApp/local.xcconfig where applicable (Supabase
+# URL + Publishable Key are the same on both platforms; Sentry and PostHog
+# have iOS-specific equivalents — see iosApp/local.xcconfig.example).
+#
+# CI fallback: each key is also read from the matching shell environment
+# variable when local.properties is absent. CI workflows inject these via
+# GitHub Environment Secrets — see docs/en/ops/release-secrets.md for the
+# server-side rotation matrix.
+
+# === Required: backend connectivity =========================================
+# Empty values cause the app to start in local-only mode — sign-in, profile,
+# Discovery feed, and every backend-dependent screen will fail. Setting these
+# is the only step needed to unblock account creation + basic app usage.
+
+# Supabase project URL — from Supabase Dashboard > Project Settings > API.
+SUPABASE_URL=
+
+# Supabase Publishable key (`sb_publishable_…` form, post-2025-11-01). Safe
+# to embed in client binaries (RLS enforced server-side). The legacy `anon`
+# JWT key was deprecated 2025-11-01 — do not use it for new builds.
+SUPABASE_PUBLISHABLE_KEY=
+
+# === Optional: analytics + crash reporting ===================================
+# Empty values disable each SDK. Even with keys configured, init is also
+# gated on the user's analytics opt-in toggle in Settings (Phase 39.2).
+
+# Sentry DSN for the Android Sentry project. Get this from:
+#   Sentry > Settings > Projects > skeinly-android > Client Keys (DSN).
+SENTRY_DSN_ANDROID=
+
+# PostHog Project API Key (phc_… prefix). Get from:
+#   PostHog > Settings > Project > Project API Key.
+POSTHOG_API_KEY=
+
+# PostHog host. Default is the public US cloud. Override only if you self-
+# host PostHog or use the EU region (https://eu.i.posthog.com).
+POSTHOG_HOST=https://us.i.posthog.com
+
+# === Optional: F1 Pro subscription (Phase 41) ================================
+# RevenueCat Public Android SDK Key — Dashboard > API Keys > Public Android
+# SDK Key (starts with `goog_`). See vendor-setup.md A0d-1 + release-secrets
+# §20. Empty key ⇒ RevenueCatConfig.isConfigured = false ⇒ paywall surfaces
+# a "subscriptions unavailable in this build" message rather than crashing.
+REVENUECAT_API_KEY_ANDROID=
+
+# === Optional: Android Release signing =======================================
+# Required ONLY for `make release-aab-local` / Play Store uploads. Debug
+# builds (`./gradlew :androidApp:installDebug` / `make android-install`) do
+# not need signing — they sign with the default Android debug keystore.
+#
+# Setup: generate or import a signing keystore via Android Studio
+#   (Build > Generate Signed Bundle / APK > new keystore) or via keytool,
+#   save it as `keystore.jks` at the REPOSITORY ROOT (also git-ignored),
+#   then fill in the three values below.
+#
+# CI release builds receive these via GitHub Secrets (KEYSTORE_FILE_BASE64
+# + KEYSTORE_PASSWORD + KEY_ALIAS + KEY_PASSWORD) per release-secrets.md.
+
+# KEYSTORE_PASSWORD=
+# KEY_ALIAS=
+# KEY_PASSWORD=
