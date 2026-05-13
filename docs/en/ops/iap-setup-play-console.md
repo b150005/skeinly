@@ -143,7 +143,14 @@ This makes the monthly base plan visible to clients on older Play Billing Librar
 
 ### 2d. Activate
 
-Click **Activate** → confirm in the dialog. Status changes to **Active**.
+**Activation is a standalone button at the bottom of the base plan edit page — NOT in the 3-dot ⋮ overflow menu on the base plan row.** Source: [Play Console Help — Create and manage subscriptions](https://support.google.com/googleplay/android-developer/answer/140504), verified 2026-05-13.
+
+Path:
+1. From the subscription details page, click the **›** (right arrow) on the `monthly` row to open the base plan edit page.
+2. Scroll to the bottom of the page.
+3. Click **Activate** (`アクティブ化`) → confirm in the dialog. Status changes from **Inactive** (未公開) to **Active** (有効).
+
+The 3-dot ⋮ menu on the base plan row exposes secondary actions like **View legacy price points** and **Use for deprecated billing methods** — NOT Activate. If you only see the deprecated-billing-methods option in the ⋮ menu, that's expected; the Activate button lives one level deeper, on the edit page itself.
 
 ### Critical constraint
 
@@ -184,11 +191,22 @@ From the subscription details page → **Base plans and offers** section → on 
 
 ### Add the trial phase
 
-Click **Add phase** → select **Free trial** → Duration: **7 days**.
+### Finding Add phase in the offer creation form
 
-No price fields appear for the Free Trial phase — it's zero-cost by definition.
+After filling in the offer ID + base plan association + eligibility, scroll within the same offer-creation form to the **Phases** / **フェーズ** section. The **Add phase** / **フェーズを追加** button lives there — NOT on a separate sub-page. You do not need to save the offer first to access it.
 
-Click **Save** → **Activate**.
+Click **Add phase** / **フェーズを追加** → three phase types appear:
+- **Free trial** — zero cost for a duration you specify (3 days minimum, 3 years maximum)
+- **Single payment** — one-time discounted upfront payment
+- **Recurring payment** — discounted recurring billing for N billing periods
+
+Select **Free trial** → set Duration to **7 days**. No price fields appear for Free Trial — it's zero-cost by definition.
+
+### Activate the offer
+
+Click **Save** to persist the offer. Then click **Activate** at the bottom of the offer edit page to make it purchasable. The offer's Activate button is separate from the base plan's Activate button (an offer can be in draft state even on an activated base plan, and vice versa).
+
+> **Prerequisites verified 2026-05-13** (Google Play Console Help): the base plan does NOT need to be Activated before you can create + configure an offer with phases on it. A draft (Inactive / 未公開) base plan accepts offer creation just fine. Country availability is parallel-configurable (not a gate). The offer itself must be Activated for it to be purchasable.
 
 ### Eligibility scope notes
 
