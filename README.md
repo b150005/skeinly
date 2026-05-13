@@ -115,6 +115,19 @@ brew install xcodegen maestro
 
 If you intend to run the app against a live Supabase backend, copy `iosApp/local.xcconfig.example` to `iosApp/local.xcconfig` and add your `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` to a root-level `local.properties` file (both are git-ignored).
 
+##### iOS code signing — `APPLE_DEVELOPMENT_TEAM_ID` env var
+
+`make ios-build` / `make ios-test` / `make release-ipa-local` auto-bootstrap `iosApp/local.xcconfig` from the committed `local.xcconfig.example` when missing. To skip the manual edit step, export your Apple Developer Team ID:
+
+```bash
+echo 'export APPLE_DEVELOPMENT_TEAM_ID=ABCDEF1234' >> ~/.zshrc
+source ~/.zshrc
+```
+
+Then any `make ios-*` run writes the Team ID into `iosApp/local.xcconfig` and Xcode UI shows the team selected (no "Team: None" red banner). Without the env var, the bootstrap still works for Simulator builds (Team stays empty, matches the CI pattern), but the Xcode UI will show a signing-config error until you hand-edit `iosApp/local.xcconfig`. Find your Team ID at Apple Developer portal → Membership.
+
+The Team ID is a public identifier (it appears in App Store URLs and the AASA file), but per repo hygiene it is not committed — `iosApp/local.xcconfig` stays git-ignored and CI injects via the `APPLE_TEAM_ID` GitHub Secret on tag-driven release builds.
+
 #### Common tasks (Makefile)
 
 All build, test, lint, and release tasks are exposed as Makefile targets. Run `make help` for the full list with descriptions.
@@ -376,6 +389,19 @@ brew install xcodegen maestro
 ```
 
 ライブの Supabase バックエンドに接続して動作確認する場合は、`iosApp/local.xcconfig.example` を `iosApp/local.xcconfig` にコピーし、ルートの `local.properties` ファイルに `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` を追加してください（両方とも git 管理外）。
+
+##### iOS コード署名 — `APPLE_DEVELOPMENT_TEAM_ID` 環境変数
+
+`make ios-build` / `make ios-test` / `make release-ipa-local` は `iosApp/local.xcconfig` が存在しない場合に、コミット済みの `local.xcconfig.example` から自動コピーします。手動編集を省略するには Apple Developer Team ID を環境変数として export してください:
+
+```bash
+echo 'export APPLE_DEVELOPMENT_TEAM_ID=ABCDEF1234' >> ~/.zshrc
+source ~/.zshrc
+```
+
+これで `make ios-*` 実行時に Team ID が `iosApp/local.xcconfig` に書き込まれ、Xcode UI で Team が選択された状態になります（"Team: None" の赤バナーが消える）。環境変数未設定の場合でも Simulator ビルドは成功します（Team は空のまま、CI と同じ挙動）が、Xcode UI を開くと署名設定エラーが表示されるので必要に応じて手動で `iosApp/local.xcconfig` を編集してください。Team ID は Apple Developer portal → Membership で確認できます。
+
+Team ID 自体は public identifier（App Store URL や AASA ファイルに公開される）ですが、リポジトリ hygiene のためコミット対象外とし、`iosApp/local.xcconfig` は git-ignore、CI はタグ駆動の Release ビルドで `APPLE_TEAM_ID` GitHub Secret から注入する方針です。
 
 #### 主なタスク (Makefile)
 
