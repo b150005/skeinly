@@ -35,8 +35,20 @@ SENTRY_DSN_IOS =
 
 // Phase F2 — PostHog Project API Key + Host. Get the key from:
 // PostHog > Settings > Project > Project API Key (phc_… prefix).
-// Default host is https://us.i.posthog.com or https://eu.i.posthog.com.
 // Empty key disables PostHog init (privacy-safe local-only mode).
+//
+// POSTHOG_HOST: the `i.` subdomain is load-bearing — this is the *SDK
+// ingestion* endpoint (event capture + feature flags), distinct from
+// the dashboard URL you see in your browser:
+//   - SDK ingestion (this value):  https:/$()/us.i.posthog.com  |  https:/$()/eu.i.posthog.com
+//   - Dashboard / private API:     https:/$()/us.posthog.com    |  https:/$()/eu.posthog.com
+// Pasting the dashboard URL here will silently fail to deliver events.
+// Verified against PostHog docs (api / libraries/ios) as of 2026-05.
+//
+// xcconfig // escape: as with SUPABASE_URL above, write the value as
+//   POSTHOG_HOST = https:/$()/us.i.posthog.com
+// to break the literal `//` sequence that the xcconfig parser would
+// otherwise treat as a line comment.
 POSTHOG_API_KEY =
 POSTHOG_HOST =
 
