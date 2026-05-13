@@ -40,4 +40,30 @@ class SignUpUseCaseTest {
             assertIs<UseCaseResult.Failure>(result)
             assertIs<UseCaseError.Unknown>(result.error)
         }
+
+    @Test
+    fun `sign up timeout propagates to Failure not silent hang`() =
+        runTest {
+            // Pre-alpha 2026-05-13 regression guard. Symptom that triggered
+            // this test: SUPABASE init had no `requestTimeout` configured,
+            // so a network-unreachable host blocked the Ktor coroutine
+            // indefinitely. The ViewModel never saw a Failure and the UI
+            // alert never fired — user perceived "tap button, nothing
+            // happens". With `SUPABASE_REQUEST_TIMEOUT = 20 s` set on
+            // SupabaseClientBuilder.requestTimeout, the network layer now
+            // throws an Exception subclass on timeout, which
+            // SignUpUseCase's `catch (e: Exception)` arm converts to
+            // UseCaseResult.Failure. This test locks in that contract at
+            // the use-case layer without depending on supabase-kt internals
+            // by simulating any network-IO exception (the canonical
+            // production timeout shape is HttpRequestTimeoutException,
+            // which is an IOException subtype).
+            fakeAuth.signUpError = RuntimeException("HTTP request timed out")
+            val result = signUp("user@example.com", "password123")
+            assertIs<UseCaseResult.Failure>(result)
+            // The error type doesn't need to be specific — what matters is
+            // that the failure is observable. Mapping to a specific
+            // user-facing message ("Connection timed out, please retry") is
+            // an i18n + UseCaseError catalog concern, not this test's scope.
+        }
 }
