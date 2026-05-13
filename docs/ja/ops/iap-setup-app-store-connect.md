@@ -245,7 +245,8 @@ App Store Connect で確認:
 | 8 | メタデータ伝播遅延 | プロダクト作成/編集後 sandbox で見えるまで 約 1 時間。 |
 | 9 | Paid Apps 契約がアクティブである必要 | そうでなければサブスクリプションを審査に提出できない。 |
 | 10 | Apple ID サインインフロー | iOS デバイスで「メディアと購入」をサインアウト — **iCloud ではない** — sandbox テスト前。 |
-| 11 | Description 字数上限 | Apple の Description フィールドはロケールあたり **55 字** ハード上限 (EN + JA 同一)。Display Name は 30 字上限。soft warning なし — 上限超過は保存時に reject。 |
+| 11 | Description 字数上限 | ASC UI は現状ロケールあたり **55 字** を施行 (2026-05-13 オペレータ実測確認)。Apple 公式 docs ([promoting-in-app-purchases](https://developer.apple.com/app-store/promoting-in-app-purchases/) + [help/app-store-connect/reference/in-app-purchase-information](https://developer.apple.com/help/app-store-connect/reference/in-app-purchase-information/)) は依然として **45 字** と記載 — Apple が docs を更新せずに cap を引き上げたケース。どちらの limit でも safe に収めるなら 45 字以内。本 runbook の現行 copy は 55 字向けに最適化 (EN yearly がちょうど 55)。Display Name は 30 字上限。soft warning なし — 上限超過は保存時に reject。 |
+| 12 | Description content compliance | Apple の Description フィールドへの content 要件は「各オファリングのメリットを明確に区別する」ことのみ — feature 詳細列挙 + 価格 / 自動更新 / 無料トライアル開示の義務は **in-app sign-up screen (paywall)** にあり Description field ではない ([App Store Review Guidelines §3.1.2(c)](https://developer.apple.com/app-store/review/guidelines/) + [Apple Subscriptions page](https://developer.apple.com/app-store/subscriptions/) 参照)。「all Pro features」「全機能を解放」+ savings claim スタイルは compliant。比較 savings claim (「Save 40%+」「40% お得」) は Subscriptions ページ「Billing amount」節で明示的に許可 (purchase flow 内で total billing amount より subordinate に表示する条件)。 |
 
 ## Phase 39 全体パイプライン内の位置
 
