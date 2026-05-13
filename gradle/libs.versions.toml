@@ -8,8 +8,8 @@ androidx-activityCompose = "1.13.0"
 androidx-lifecycle = "2.10.0"
 
 # KMP Libraries
-kotlinx-coroutines = "1.10.2"
-kotlinx-datetime = "0.7.1"
+kotlinx-coroutines = "1.11.0"
+kotlinx-datetime = "0.8.0"
 kotlinx-serialization = "1.11.0"
 sqlDelight = "2.3.2"
 ktor = "3.4.3"
