@@ -1,6 +1,7 @@
 package io.github.b150005.skeinly.domain.usecase
 
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.SignUpOutcome
 import io.github.b150005.skeinly.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +15,15 @@ class FakeAuthRepository : AuthRepository {
     var sendPasswordResetError: Throwable? = null
     var updatePasswordError: Throwable? = null
     var updateEmailError: Throwable? = null
+
+    /**
+     * Determines whether the next `signUpWithEmail` call returns
+     * [SignUpOutcome.SessionCreated] (default — Confirm email disabled on
+     * the Supabase dashboard, immediate session) or
+     * [SignUpOutcome.EmailConfirmationRequired] (Confirm email enabled,
+     * deferred-confirmation path). Tests override per-case.
+     */
+    var signUpEmailConfirmationRequired: Boolean = false
     var lastPasswordResetEmail: String? = null
     var lastUpdatedPassword: String? = null
     var lastUpdatedEmail: String? = null
@@ -33,10 +43,19 @@ class FakeAuthRepository : AuthRepository {
     override suspend fun signUpWithEmail(
         email: String,
         password: String,
-    ) {
+    ): SignUpOutcome {
         signUpError?.let { throw it }
-        currentUserId = "new-user-id"
-        authStateFlow.value = AuthState.Authenticated(userId = "new-user-id", email = email)
+        return if (signUpEmailConfirmationRequired) {
+            // Account row exists in auth.users but session is NOT created
+            // until the user clicks the email confirmation link. Match the
+            // production behavior of supabase-kt 3.x when the dashboard
+            // has Confirm email enabled.
+            SignUpOutcome.EmailConfirmationRequired(email = email)
+        } else {
+            currentUserId = "new-user-id"
+            authStateFlow.value = AuthState.Authenticated(userId = "new-user-id", email = email)
+            SignUpOutcome.SessionCreated
+        }
     }
 
     override suspend fun signOut() {

@@ -1,6 +1,7 @@
 package io.github.b150005.skeinly.data.repository
 
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.SignUpOutcome
 import io.github.b150005.skeinly.domain.repository.AuthRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.annotations.SupabaseExperimental
@@ -72,7 +73,7 @@ class AuthRepositoryImpl(
     override suspend fun signUpWithEmail(
         email: String,
         password: String,
-    ) {
+    ): SignUpOutcome {
         val client =
             supabaseClient
                 ?: throw IllegalStateException("Supabase is not configured")
@@ -80,6 +81,21 @@ class AuthRepositoryImpl(
         client.auth.signUpWith(Email) {
             this.email = email
             this.password = password
+        }
+
+        // Inspect the post-call session state to determine whether Supabase
+        // auto-signed-in the user (Confirm-email = OFF on the dashboard) or
+        // deferred session creation pending email confirmation
+        // (Confirm-email = ON). The shared module has no a priori knowledge
+        // of the dashboard setting, so this post-hoc inspection is the
+        // canonical detection path. supabase-kt populates
+        // `currentSessionOrNull()` synchronously inside `signUpWith` on the
+        // session-created path; on the confirmation-pending path the
+        // accessor stays null because no session token was issued.
+        return if (client.auth.currentSessionOrNull() != null) {
+            SignUpOutcome.SessionCreated
+        } else {
+            SignUpOutcome.EmailConfirmationRequired(email = email)
         }
     }
 

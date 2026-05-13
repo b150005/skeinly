@@ -33,14 +33,18 @@ import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_continue_with_apple
 import io.github.b150005.skeinly.generated.resources.action_continue_with_google
 import io.github.b150005.skeinly.generated.resources.action_forgot_password
+import io.github.b150005.skeinly.generated.resources.action_return_to_sign_in
 import io.github.b150005.skeinly.generated.resources.action_sign_in
 import io.github.b150005.skeinly.generated.resources.action_sign_up
 import io.github.b150005.skeinly.generated.resources.action_toggle_to_sign_in
 import io.github.b150005.skeinly.generated.resources.action_toggle_to_sign_up
 import io.github.b150005.skeinly.generated.resources.app_name
+import io.github.b150005.skeinly.generated.resources.body_email_confirmation_check_spam
+import io.github.b150005.skeinly.generated.resources.body_email_confirmation_sent
 import io.github.b150005.skeinly.generated.resources.label_email
 import io.github.b150005.skeinly.generated.resources.label_password
 import io.github.b150005.skeinly.generated.resources.title_create_account
+import io.github.b150005.skeinly.generated.resources.title_email_confirmation_sent
 import io.github.b150005.skeinly.generated.resources.title_sign_in
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.localized
@@ -66,6 +70,20 @@ fun LoginScreen(
     Scaffold(
         snackbarHost = { LiveSnackbarHost(snackbarHostState) },
     ) { padding ->
+        val confirmationEmail = state.emailConfirmationSentTo
+        if (confirmationEmail != null) {
+            EmailConfirmationSentView(
+                email = confirmationEmail,
+                onReturnToSignIn = { viewModel.onEvent(AuthEvent.DismissEmailConfirmation) },
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(horizontal = 32.dp),
+            )
+            return@Scaffold
+        }
+
         Column(
             modifier =
                 Modifier
@@ -195,6 +213,52 @@ fun LoginScreen(
             ) {
                 Text(stringResource(Res.string.action_continue_with_apple))
             }
+        }
+    }
+}
+
+@Composable
+private fun EmailConfirmationSentView(
+    email: String,
+    onReturnToSignIn: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.testTag("emailConfirmationSentScreen"),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = stringResource(Res.string.title_email_confirmation_sent),
+            style = MaterialTheme.typography.headlineSmall,
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        Text(
+            text = stringResource(Res.string.body_email_confirmation_sent, email),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        Text(
+            text = stringResource(Res.string.body_email_confirmation_check_spam),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(32.dp))
+
+        Button(
+            onClick = onReturnToSignIn,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .testTag("returnToSignInButton"),
+        ) {
+            Text(stringResource(Res.string.action_return_to_sign_in))
         }
     }
 }

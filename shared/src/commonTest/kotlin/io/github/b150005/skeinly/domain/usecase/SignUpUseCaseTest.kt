@@ -1,5 +1,6 @@
 package io.github.b150005.skeinly.domain.usecase
 
+import io.github.b150005.skeinly.domain.model.SignUpOutcome
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -10,10 +11,28 @@ class SignUpUseCaseTest {
     private val signUp = SignUpUseCase(fakeAuth)
 
     @Test
-    fun `sign up with valid credentials returns Success`() =
+    fun `sign up with valid credentials returns Success with SessionCreated by default`() =
         runTest {
             val result = signUp("user@example.com", "password123")
-            assertIs<UseCaseResult.Success<Unit>>(result)
+            assertIs<UseCaseResult.Success<SignUpOutcome>>(result)
+            assertIs<SignUpOutcome.SessionCreated>(result.value)
+        }
+
+    @Test
+    fun `sign up returns Success with EmailConfirmationRequired when Supabase confirm-email is enabled`() =
+        runTest {
+            // Models the post-bug behavior surfaced 2026-05-13: Supabase
+            // Dashboard had Confirm email enabled in production, so
+            // signUpWith succeeded at HTTP but no session was created.
+            // The use case must propagate that outcome so the ViewModel
+            // can surface the "check your email" UI state.
+            fakeAuth.signUpEmailConfirmationRequired = true
+
+            val result = signUp("user@example.com", "password123")
+
+            assertIs<UseCaseResult.Success<SignUpOutcome>>(result)
+            val outcome = assertIs<SignUpOutcome.EmailConfirmationRequired>(result.value)
+            assertEquals("user@example.com", outcome.email)
         }
 
     @Test

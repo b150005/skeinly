@@ -168,6 +168,63 @@ class AuthViewModelTest {
                 val state = awaitItem()
                 assertFalse(state.isSubmitting)
                 assertNull(state.error)
+                assertNull(state.emailConfirmationSentTo)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `sign up with email-confirmation required surfaces emailConfirmationSentTo and clears password`() =
+        runTest {
+            // Locks the post-bug behavior surfaced 2026-05-13: Supabase
+            // Dashboard had Confirm email enabled in production, so
+            // signUpWith succeeded at HTTP but no session was created.
+            // The ViewModel must transition to a "check your email" state
+            // and clear the password field — NOT stay silent waiting for
+            // an Authenticated transition that will never arrive.
+            authRepo.signUpEmailConfirmationRequired = true
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(AuthEvent.ToggleMode)
+            viewModel.onEvent(AuthEvent.UpdateEmail("new@example.com"))
+            viewModel.onEvent(AuthEvent.UpdatePassword("password"))
+            viewModel.onEvent(AuthEvent.Submit)
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertFalse(state.isSubmitting)
+                assertNull(state.error)
+                assertEquals("new@example.com", state.emailConfirmationSentTo)
+                assertEquals("", state.password)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `dismiss email confirmation returns to sign-in mode with cleared password`() =
+        runTest {
+            // After EmailConfirmationRequired surfaces the "check your
+            // email" view, the user taps "ログイン画面に戻る" to return.
+            // The ViewModel must reset emailConfirmationSentTo, flip
+            // isSignUp back to false, and ensure no stale password
+            // remains in form state.
+            authRepo.signUpEmailConfirmationRequired = true
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(AuthEvent.ToggleMode)
+            viewModel.onEvent(AuthEvent.UpdateEmail("new@example.com"))
+            viewModel.onEvent(AuthEvent.UpdatePassword("password"))
+            viewModel.onEvent(AuthEvent.Submit)
+            viewModel.onEvent(AuthEvent.DismissEmailConfirmation)
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertNull(state.emailConfirmationSentTo)
+                assertFalse(state.isSignUp)
+                assertEquals("", state.password)
+                // Email is intentionally retained so the user can sign-in
+                // immediately after confirming via the link — not blanked.
+                assertEquals("new@example.com", state.email)
                 cancelAndIgnoreRemainingEvents()
             }
         }

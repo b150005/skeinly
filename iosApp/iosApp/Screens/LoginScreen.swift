@@ -15,6 +15,25 @@ struct LoginScreen: View {
         let state = holder.state
         let viewModel = holder.viewModel
 
+        // When Supabase has Confirm-email enabled on the dashboard,
+        // signUp succeeds at HTTP but no session is created — the
+        // ViewModel surfaces that via emailConfirmationSentTo. Show a
+        // dedicated "check your email" view in that case; otherwise
+        // the standard sign-in / sign-up form.
+        if let confirmationEmail = state.emailConfirmationSentTo {
+            EmailConfirmationSentView(
+                email: confirmationEmail,
+                onReturnToSignIn: {
+                    viewModel.onEvent(event: AuthEventDismissEmailConfirmation.shared)
+                }
+            )
+        } else {
+            signInForm(state: state, viewModel: viewModel)
+        }
+    }
+
+    @ViewBuilder
+    private func signInForm(state: AuthUiState, viewModel: AuthViewModel) -> some View {
         VStack(spacing: 24) {
             Spacer()
 
@@ -108,5 +127,51 @@ struct LoginScreen: View {
                 ForgotPasswordScreen(onDone: { showForgotPassword = false })
             }
         }
+    }
+}
+
+/// "Check your email" view shown after a sign-up call returns
+/// `SignUpOutcome.EmailConfirmationRequired` (Supabase dashboard has
+/// Confirm-email enabled, so signUp succeeded at HTTP but no session
+/// was issued until the user confirms via the link).
+private struct EmailConfirmationSentView: View {
+    let email: String
+    let onReturnToSignIn: () -> Void
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            Text(LocalizedStringKey("title_email_confirmation_sent"))
+                .font(.title2)
+                .fontWeight(.semibold)
+
+            VStack(spacing: 12) {
+                Text(String(format: NSLocalizedString("body_email_confirmation_sent", comment: ""), email))
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+
+                Text(LocalizedStringKey("body_email_confirmation_check_spam"))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal)
+
+            Button {
+                onReturnToSignIn()
+            } label: {
+                Text(LocalizedStringKey("action_return_to_sign_in"))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.horizontal)
+            .accessibilityIdentifier("returnToSignInButton")
+
+            Spacer()
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("emailConfirmationSentScreen")
     }
 }
