@@ -234,6 +234,8 @@
     <string name="title_email_confirmation_sent">Check your email</string>
     <string name="body_email_confirmation_sent">We sent a confirmation link to %1$s. Click the link to complete sign-in.</string>
     <string name="body_email_confirmation_check_spam">If you don\'t see it within a few minutes, check your spam folder.</string>
+    <!-- Surfaced to help a user who attempted to sign up with an email that already has an account discover the right action. Wording is deliberately conditional ("may have") to preserve Supabase's security-by-obscurity. -->
+    <string name="body_email_confirmation_check_existing_account">If the email still doesn\'t arrive, you may already have an account. Try signing in instead.</string>
     <string name="action_return_to_sign_in">Return to sign-in</string>
 
     <!-- Profile screen -->

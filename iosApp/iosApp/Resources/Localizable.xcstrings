@@ -392,6 +392,23 @@
         }
       }
     },
+    "body_email_confirmation_check_existing_account": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If the email still doesn't arrive, you may already have an account. Try signing in instead."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "それでも届かない場合は、すでにアカウントをお持ちの可能性があります。サインインをお試しください。"
+          }
+        }
+      }
+    },
     "body_email_confirmation_check_spam": {
       "extractionState": "manual",
       "localizations": {

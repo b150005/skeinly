@@ -39,6 +39,7 @@ import io.github.b150005.skeinly.generated.resources.action_sign_up
 import io.github.b150005.skeinly.generated.resources.action_toggle_to_sign_in
 import io.github.b150005.skeinly.generated.resources.action_toggle_to_sign_up
 import io.github.b150005.skeinly.generated.resources.app_name
+import io.github.b150005.skeinly.generated.resources.body_email_confirmation_check_existing_account
 import io.github.b150005.skeinly.generated.resources.body_email_confirmation_check_spam
 import io.github.b150005.skeinly.generated.resources.body_email_confirmation_sent
 import io.github.b150005.skeinly.generated.resources.label_email
@@ -245,6 +246,14 @@ private fun EmailConfirmationSentView(
 
         Text(
             text = stringResource(Res.string.body_email_confirmation_check_spam),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        Text(
+            text = stringResource(Res.string.body_email_confirmation_check_existing_account),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

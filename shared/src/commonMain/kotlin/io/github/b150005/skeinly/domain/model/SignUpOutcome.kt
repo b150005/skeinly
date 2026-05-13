@@ -32,38 +32,63 @@ sealed interface SignUpOutcome {
     data object SessionCreated : SignUpOutcome
 
     /**
+     * Common supertype for the two outcomes that share a UI surface:
+     * `EmailConfirmationRequired` (genuine new signup pending
+     * confirmation) and `AlreadyRegistered` (signup attempted with an
+     * email that already exists in `auth.users`).
+     *
+     * Both produce the **same** "check your email" UI state, deliberately,
+     * to preserve Supabase's email-enumeration security-by-obscurity at
+     * the UI layer (OWASP A07 — Identification and Authentication
+     * Failures). The Repository layer detects which one occurred via
+     * `UserInfo.identities`, but the UI cannot expose that distinction
+     * — otherwise an attacker who can decompile or screen-record the
+     * app could probe arbitrary emails through the sign-up form and
+     * observe which message appears to enumerate valid Skeinly accounts.
+     *
+     * The supertype keeps the variants as distinct types so that
+     * future-state features (logging / analytics / rate-limit detection
+     * / timing equalization) can branch on them in the Repository or
+     * orchestration layers without re-introducing the UI-layer leak.
+     */
+    sealed interface AwaitingEmailAction : SignUpOutcome {
+        /** The email address the user submitted, surfaced by the UI so the user knows which inbox to check. */
+        val email: String
+    }
+
+    /**
      * Sign-up succeeded at the HTTP level but Supabase did NOT create a
      * session — the user must confirm the email address Supabase sent a
-     * verification link to before they can sign in. [email] is the
-     * address the verification was sent to, surfaced by the UI so the
-     * user knows which inbox to check.
+     * verification link to before they can sign in.
      */
     data class EmailConfirmationRequired(
-        val email: String,
-    ) : SignUpOutcome
+        override val email: String,
+    ) : AwaitingEmailAction
 
     /**
      * Sign-up succeeded at the HTTP level but the email is already
      * registered in `auth.users`. Supabase's security-by-obscurity policy
      * returns HTTP 200 OK with `UserInfo.identities = []` in this case
-     * to prevent email enumeration attacks — distinguish from a genuine
-     * new signup via the empty identities array.
-     *
-     * The UI surfaces this as `ErrorMessage.UserAlreadyExists` and
-     * auto-switches the form to sign-in mode so the (likely) legitimate
-     * owner can authenticate without re-typing.
+     * to prevent email enumeration attacks; the UI must surface this
+     * **identically** to `EmailConfirmationRequired` (same "check your
+     * email" view + same wording) so an attacker cannot distinguish via
+     * the UI surface.
      *
      * Root cause trail: pre-alpha 2026-05-13 sign-up bug where the
      * operator tried to signup with their own pre-existing
      * `b150005@outlook.jp` 7 times in succession — Supabase logged
      * each as `user_repeated_signup` action with HTTP 200, no audit
-     * trail at the auth.users level, and the prior `SessionCreated /
-     * EmailConfirmationRequired` two-branch model mis-classified the
-     * repeated-signup case as EmailConfirmationRequired (also-no-session
-     * shape). [email] is the address the operator tried to sign up
-     * with so the UI can surface it during the auto-switch.
+     * trail at the auth.users level. The 20d65a5 commit initially
+     * routed this case to an explicit "An account with this email
+     * already exists" alert + auto-switch to sign-in, but that surface
+     * leaked the existence signal at the UI layer (security-reviewer
+     * flag) — reverted in the next commit to share UI with
+     * `EmailConfirmationRequired` and added an
+     * "if email doesn't arrive, you may already have an account, try
+     * signing in" hint that helps the legitimate owner discover the
+     * right action without exposing the existence signal to attackers.
      */
     data class AlreadyRegistered(
-        val email: String,
-    ) : SignUpOutcome
+        override val email: String,
+    ) : AwaitingEmailAction
 }
