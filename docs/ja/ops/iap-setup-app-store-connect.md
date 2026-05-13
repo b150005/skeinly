@@ -94,14 +94,16 @@ App Store Connect → Skeinly アプリ → サイドバー **Monetization → S
 プロダクト詳細ページの **App Store Localizations** までスクロール。
 
 **English (U.S.)** 追加:
-- Display Name: `Skeinly Pro Monthly`
-- Description: `Unlock all Skeinly Pro features with a monthly subscription. Renews automatically each month.`
+- Display Name: `Skeinly Pro Monthly` (上限 30 字、19 字で収まる)
+- Description: `Unlock all Pro features. Auto-renews monthly.` (45 字 — 上限は言語によらず 55 字)
 
 **Japanese (Japan)** 追加:
-- Display Name: `Skeinly Pro 月額プラン`
-- Description: `Skeinly Pro のすべての機能を月額サブスクリプションでご利用いただけます。毎月自動更新されます。`
+- Display Name: `Skeinly Pro 月額プラン` (15 字)
+- Description: `Skeinly Pro の全機能を解放。毎月自動更新。` (22 字)
 
 **Save** クリック。
+
+> **Description 55 字制限:** Apple の Description フィールドはロケールあたり 55 字のハード上限。EN でも JA でも同じ。55 字未満で余裕を持って収める — soft warning は出ず保存時に reject されます。
 
 正典: [Apple — Manage pricing for auto-renewable subscriptions](https://developer.apple.com/help/app-store-connect/manage-subscriptions/manage-pricing-for-auto-renewable-subscriptions/)。
 
@@ -115,10 +117,10 @@ App Store Connect → Skeinly アプリ → サイドバー **Monetization → S
 | Product ID | `io.github.b150005.skeinly.pro.yearly` |
 | Subscription Duration | **1 Year** |
 | Base Price (USD) | **$24.99** |
-| EN Display Name | `Skeinly Pro Yearly` |
-| EN Description | `Unlock all Skeinly Pro features with a yearly subscription. Best value — save over 40% vs monthly. Renews automatically each year.` |
-| JA Display Name | `Skeinly Pro 年額プラン` |
-| JA Description | `Skeinly Pro のすべての機能を年額サブスクリプションでご利用いただけます。月額プランより 40% 以上お得。毎年自動更新されます。` |
+| EN Display Name | `Skeinly Pro Yearly` (18 字、上限 30 字) |
+| EN Description | `Unlock all Pro features. Auto-renews yearly. Save 40%+.` (55 字 — 上限ちょうど) |
+| JA Display Name | `Skeinly Pro 年額プラン` (15 字) |
+| JA Description | `Skeinly Pro の全機能を解放。毎年自動更新、40% お得。` (30 字) |
 
 日本 (JPY) は ¥3,600–¥4,000 帯を Apple が提示。特に理由がなければ受け入れる。
 
@@ -243,6 +245,7 @@ App Store Connect で確認:
 | 8 | メタデータ伝播遅延 | プロダクト作成/編集後 sandbox で見えるまで 約 1 時間。 |
 | 9 | Paid Apps 契約がアクティブである必要 | そうでなければサブスクリプションを審査に提出できない。 |
 | 10 | Apple ID サインインフロー | iOS デバイスで「メディアと購入」をサインアウト — **iCloud ではない** — sandbox テスト前。 |
+| 11 | Description 字数上限 | Apple の Description フィールドはロケールあたり **55 字** ハード上限 (EN + JA 同一)。Display Name は 30 字上限。soft warning なし — 上限超過は保存時に reject。 |
 
 ## Phase 39 全体パイプライン内の位置
 
