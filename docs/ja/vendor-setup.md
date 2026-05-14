@@ -446,7 +446,9 @@ Sign in with the credentials above (Supabase email+password auth, no 2FA). Demo 
 - [ ] ☑ **International Age Rating Coalition (IARC) の利用規約に同意します** にチェック
 - [ ] **次へ** → ステップ 2 アンケート (IARC 質問票本体)
 
-目標: **Everyone (全年齢)**。ステップ 2 は 5 セクションの質問票 — ゲート (はい/いいえ) があるのは最初のセクションのみで、残りはサブ質問がインラインで直接表示される。下表の matrix で回答。
+**想定結果**: PEGI 12 / USK 12+ / IARC 12+ / ACB 12+ / ESRB Teen (13+) / Russia RARS 14+。**Everyone / 4+ にはならない**。UGC + ユーザー間 interaction を持つアプリ (Instagram / Twitter / Reddit / Pinterest 等) の標準的なレーティング帯。PEGI / USK / ESRB は moderation 品質に関わらず「UGC を持つアプリは自動 12+」というポリシー (UGC は本質的に rating-relevant content を含み得るという原則)。Skeinly の collaboration はコア (Phase 36-38) なのでこれは不可避かつ accept 可能。Internal Testing track はレーティング非表示; A0d-5 Target Audience 18+ ≥ IARC 12+ で申告整合; Apple の age rating (別 questionnaire) は UGC を自動 12+ ドライバーにしないので 4+ or 9+ に落ち着く可能性が高い。
+
+ステップ 2 は 5 セクションの質問票 — ゲート (はい/いいえ) があるのは最初のセクションのみで、残りはサブ質問がインラインで直接表示される。下表の matrix で回答。
 
 | セクション | トップレベル ゲート? | Skeinly 方針 |
 |---|---|---|
@@ -479,7 +481,7 @@ Sign in with the credentials above (Supabase email+password auth, no 2FA). Demo 
 | ウェブブラウザまたは検索エンジン? | **いいえ** | Skeinly は craft プロジェクト管理アプリでブラウザではない |
 | 主にニュースまたは教育商品? | **いいえ** | コアはプロジェクト管理 + collaboration。Discovery でパターンから技法を学べるのは副次的、curriculum 型の教育商品 / ニュース商品ではない |
 
-ステップ 2 送信後、IARC が各地域別レーティング (ESRB / PEGI / USK / CERO / ClassInd / ACB) を自動算出。Skeinly の craft + UGC + curated-online + IAP の組合せでも、IAP のデジタル購入申告以外に rating-relevant なサブ質問は該当しないので Everyone を維持できる。
+ステップ 2 送信後、IARC が各地域別レーティングを自動算出。**2026-05-14 検証結果**: PEGI 12 / USK 12+ / IARC 12+ / ACB 12+ / ESRB Teen / RARS 14+。ドライバーは UGC + Users-Interact descriptor + IAP 申告であり、Skeinly のコンテンツ自体は craft-safe (rating-relevant content なし)。collaboration を持つアプリの標準帯なので accept してそのまま進める。
 
 ### A0d-5: ターゲット ユーザー
 
