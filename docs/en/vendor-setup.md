@@ -552,8 +552,8 @@ Play groups data into 14 collapsible categories. Expand each, check only the lis
 
 **音声ファイル** (0/3): no checks. No voice recording / music files / other audio.
 
-**ファイルとドキュメント** (1/1 checked):
-- ☑ **ファイルとドキュメント** — chart data / pattern data exports as user content (UGC).
+**ファイル、ドキュメント** (1/1 checked):
+- ☑ **ファイル、ドキュメント** — chart data / pattern data exports as user content (UGC).
 
 **カレンダー** (0/1): no checks. No calendar event integration.
 
@@ -573,7 +573,15 @@ Play groups data into 14 collapsible categories. Expand each, check only the lis
 **デバイスまたはその他の ID** (1/1 checked):
 - ☑ **デバイスまたはその他の ID** — FCM/APNs push token + PostHog distinct_id.
 
-Total expected checks: 10 across 14 categories. Bug-report content does NOT have a clean home in Play's category list (Play's "メッセージ" sub-types are SMS / email-style; bug reports are closer to "アプリのアクティビティ > その他の操作" but the GitHub-Issue destination + GitHub App proxy puts it in a distinct lane). Operator judgment call at submission time — pick the most-honest fit, often **アプリのアクティビティ > その他の操作** or leave undeclared if Play's form rejects either route.
+Total expected checks: 10 across 14 categories.
+
+**Bug-report content has no clean home in Play's taxonomy**:
+- メッセージ > その他のアプリ内メッセージ — Play's intent is real-time / DM user-to-user messaging, not user-to-developer support submissions
+- メッセージ > メール — bug body is not "user's email content"
+- アプリのアクティビティ — the captured PostHog events do not include bug-report bodies
+- 個人情報 > その他の情報 — stretches the definition
+
+**Recommendation: leave undeclared** in Play Data Safety. The bug-report flow is already disclosed in the privacy policy (Phase 39 W5b — Edge Function proxy + Skeinly Feedback GitHub App + Issue body data). Operator can revisit at Phase 40 GA submission if Play's form review flags it.
 
 #### Page 4: データの使用と処理
 
