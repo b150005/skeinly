@@ -517,10 +517,10 @@ Sign in with the credentials above (Supabase email+password auth, no 2FA). Demo 
 | Phase 26 の状態 | チェックする項目 |
 |---|---|
 | **Pre-Phase-26** (現状 — email/password のみ) | **「ユーザー名とパスワード」のみ** |
-| **Post-Phase-26** (Apple Sign-In + Google Sign-In shipped — alpha-launch HARD-GATE) | **「ユーザー名とパスワード」** + **「OAuth」** |
-| 任意の Phase 26 サブスライスで MFA / 生体認証も実装した場合 | **「ユーザー名、パスワード、その他の認証」** も追加 |
+| **Post-Phase-26 26.1-26.4** (Apple Sign-In + Google Sign-In + account-merge shipped) | **「ユーザー名とパスワード」** + **「OAuth」** |
+| **Post-Phase-26 26.5+** (MFA TOTP shipped) | 上記 + **「ユーザー名、パスワード、その他の認証」** |
 
-Phase 26 は alpha-launch HARD-GATE (上記 Planned セクション参照)。提出時、ビルドに実際 shipped されている内容に合わせて本セクションの選択を更新する。
+Phase 26 は alpha-launch HARD-GATE (上記 Planned セクション参照) で、OAuth + MFA + 生体認証 を 1 wave で ship する設計。提出時、ビルドに実際 shipped されている内容に合わせて本セクションの選択を更新する。Phase 26 完了後の最終選択は **「ユーザー名とパスワード」 + 「OAuth」 + 「ユーザー名、パスワード、その他の認証」** の 3 つチェック。
 
 「**その他のバッジ**」セクション (任意):
 - **独自のセキュリティ審査**: チェックしない (3rd-party security audit 未実施)
