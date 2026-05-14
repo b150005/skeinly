@@ -485,11 +485,12 @@ After Step 2 submission, IARC computes region-specific ratings automatically. **
 
 ### A0d-5: Target audience
 
-- [ ] App content → **Target audience** → check **18 and older (Adults only)** only — uncheck every child age band
-- [ ] Appeal to children: **No**
+- [ ] App content → **Target audience** — the form lists 6 age bands but **Play Console blocks the under-13 three (5歳以下 / 6〜8歳 / 9〜12歳)** because the A0d-4 IARC outcome includes ESRB Teen (13+). Only 13〜15歳 / 16〜17歳 / 18歳以上 are selectable.
+- [ ] **Check all three available bands** (13〜15歳 + 16〜17歳 + 18歳以上). Reasoning: (1) the DFF (Designed for Families) policy is already structurally avoided because ESRB 13+ blocks the child age bands; (2) teens are a legitimate Skeinly audience (knitting / crochet learners from school clubs, family teaching) — restricting to 18+ artificially excludes real users and reduces Play Store discoverability; (3) [pre-alpha-checklist V7](ops/pre-alpha-checklist.md) explicitly accepts both "Adults only" and "Teens and adults" as compliant.
+- [ ] Appeal to children: **No** (Skeinly is not directed at under-13 even though teens are a target)
 - [ ] (If asked) Children may use the app: **My app is not directed at children**
 
-⚠️ Any child age band triggers the **Designed for Families (DFF) policy**: COPPA compliance, child-directed ad restrictions, no behavioral advertising. Skeinly sidesteps this entirely by declaring Adults only.
+If you want the strictest declaration, check **18歳以上 only** instead. Trade-off: smallest policy surface but excludes a legitimate teen audience and reduces Play Store algorithmic reach. The 3-band selection is the recommended default.
 
 ### A0d-6: Data safety
 

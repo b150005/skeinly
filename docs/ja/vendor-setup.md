@@ -485,11 +485,12 @@ Sign in with the credentials above (Supabase email+password auth, no 2FA). Demo 
 
 ### A0d-5: ターゲット ユーザー
 
-- [ ] アプリのコンテンツ → **ターゲット ユーザー** → **18 歳以上のみ (Adults only)** のみチェック — 子供年齢層は全外し
-- [ ] 子供向けの魅力: **いいえ**
+- [ ] アプリのコンテンツ → **ターゲット ユーザー** — 6 つの年齢層が表示されるが、A0d-4 IARC 結果に ESRB Teen (13+) が含まれるため、**Play Console が 13 歳未満の 3 つ (5歳以下 / 6〜8歳 / 9〜12歳) を選択不能** に gate する。選べるのは 13〜15歳 / 16〜17歳 / 18歳以上 の 3 つのみ。
+- [ ] **選択可能な 3 つすべてをチェック** (13〜15歳 + 16〜17歳 + 18歳以上)。理由: (1) ESRB 13+ で under-13 が構造的に排除されるため DFF (Designed for Families) policy は既に回避済; (2) teen は Skeinly の正当なユーザー層 (祖母から教わる、学校クラブ等) — 18+ のみに制限すると実ユーザーを排除し Play Store discoverability も下がる; (3) [pre-alpha-checklist V7](ops/pre-alpha-checklist.md) は "Adults only" / "Teens and adults" 両方を policy-compliant として明示。
+- [ ] 子供向けの魅力: **いいえ** (teen をターゲットに含めるが、under-13 向けではない)
 - [ ] (尋ねられたら) 子供がアプリを利用する可能性: **私のアプリは子供向けではありません**
 
-⚠️ いずれかの子供年齢層を選ぶと **Designed for Families (DFF) policy** が発動: COPPA 準拠、child-directed ad 制限、behavioral advertising 禁止。Skeinly は Adults only で全回避。
+より厳格な declaration を求める場合は **18歳以上のみ** チェックでも policy 上 OK。トレードオフ: policy surface 最小だが正当な teen 層を排除 + Play Store algorithmic reach 低下。3-band 選択がデフォルト推奨。
 
 ### A0d-6: データ セーフティ
 
