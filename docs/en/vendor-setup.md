@@ -517,10 +517,10 @@ App content → **データ セーフティ**. The form is a 5-page wizard:
 | Phase 26 state | Check |
 |---|---|
 | **Pre-Phase-26** (current — email/password only) | **「ユーザー名とパスワード」のみ** |
-| **Post-Phase-26** (Apple Sign-In + Google Sign-In shipped — HARD-GATE for alpha launch) | **「ユーザー名とパスワード」** + **「OAuth」** |
-| If MFA / biometric is also wired in any Phase 26 sub-slice | Add **「ユーザー名、パスワード、その他の認証」** |
+| **Post-Phase-26 26.1-26.4** (Apple Sign-In + Google Sign-In + account-merge shipped) | **「ユーザー名とパスワード」** + **「OAuth」** |
+| **Post-Phase-26 26.5+** (MFA TOTP shipped) | Above + **「ユーザー名、パスワード、その他の認証」** |
 
-Phase 26 is the alpha-launch HARD-GATE (per the Planned section above). At submission time, update this section to reflect what is actually shipped in the build being submitted.
+Phase 26 is the alpha-launch HARD-GATE (per the Planned section above) and currently expands to OAuth + MFA + biometric in a single wave. At submission time, update this section to reflect what is actually shipped in the build being submitted. The full post-Phase-26 selection set should be **「ユーザー名とパスワード」 + 「OAuth」 + 「ユーザー名、パスワード、その他の認証」** (3 boxes checked).
 
 「**その他のバッジ**」セクション (任意):
 - **独自のセキュリティ審査**: チェックしない (3rd-party security audit 未実施)
