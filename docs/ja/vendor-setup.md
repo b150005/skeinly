@@ -439,7 +439,12 @@ Sign in with the credentials above (Supabase email+password auth, no 2FA). Demo 
 
 ### A0d-4: コンテンツのレーティング (IARC)
 
-- [ ] アプリのコンテンツ → **コンテンツのレーティング** → 連絡先 email **`skeinly.app+rating@gmail.com`** (コンテンツレーティング専用 plus-alias — フォームの helper text に「このメールアドレスはレーティング機関や IARC と共有されることがあります」とある通り、IARC + 各国レーティング機関 (ESRB / PEGI / USK / CERO / ClassInd / ACB 等) の Skeinly 向け通知すべてを受ける lane。レーティング証明書、基準改定通知、異議申立 / 再審査時の各機関担当者連絡が届く先。support と分離) + カテゴリ登録 → IARC 質問票開始
+アプリのコンテンツ → **コンテンツのレーティング** → ステップ 1 / 3 **カテゴリ** ページ:
+
+- [ ] メールアドレス: **`skeinly.app+rating@gmail.com`** (コンテンツレーティング専用 plus-alias — フォーム helper に「このメールアドレスはレーティング機関や IARC と共有されることがあります」とある通り、IARC + 各国レーティング機関 (ESRB / PEGI / USK / CERO / ClassInd / ACB 等) すべてを受ける lane)
+- [ ] カテゴリ: **その他のすべてのアプリの種類** — Skeinly のコアはプロジェクト + パターン管理 (個人作業)、UGC / Discovery / コメント / 提案は副次的。**ゲーム** ではない、**ソーシャルまたはコミュニケーション** でもない (コミュニケーションは Skeinly の主目的ではない、Facebook / Twitter / Skype とは異質)。さらに「その他」を選ぶと質問票が UGC / デジタル購入中心の **短い path** にルーティングされる — ゲームを選ぶと暴力 / ギャンブル / 性的描写などの不要な分岐を引き込む。
+- [ ] ☑ **International Age Rating Coalition (IARC) の利用規約に同意します** にチェック
+- [ ] **次へ** → ステップ 2 アンケート (IARC 質問票本体)
 
 目標: **Everyone (全年齢)**。Skeinly 回答:
 
