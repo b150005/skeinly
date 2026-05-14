@@ -439,7 +439,7 @@ After adding instructions, leave the "**提供した認証情報を Android が�
 
 ### A0d-4: Content rating (IARC)
 
-- [ ] App content → **Content rating** → register contact email **`skeinly.app+iarc@gmail.com`** (plus-alias dedicated to IARC correspondence — rating certificate, standards-update notices, and dispute / re-rating contact land here, separate from the support lane) + category → start the IARC questionnaire
+- [ ] App content → **Content rating** → register contact email **`skeinly.app+rating@gmail.com`** (plus-alias dedicated to content-rating correspondence — the form helper notes the address "may be shared with rating bodies and IARC", so this lane covers IARC + every regional body that issues a Skeinly rating: ESRB / PEGI / USK / CERO / ClassInd / ACB / etc. Certificates, standards-update notices, and dispute / re-rating contact all land here, separate from the support lane.) + category → start the IARC questionnaire
 
 Target: **Everyone** (all ages). Skeinly answers:
 
