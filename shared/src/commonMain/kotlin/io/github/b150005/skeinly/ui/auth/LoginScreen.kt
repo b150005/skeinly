@@ -199,10 +199,6 @@ fun LoginScreen(
             // Phase 26.2 (ADR-022 §6.2) — Google Sign-In CTA. Enabled
             // when not currently submitting; on tap fires
             // `OAuthClient.acquireGoogleIdToken()` → `signInWithGoogle()`.
-            // Apple-on-Android stays disabled — iOS uses the SwiftUI
-            // SignInWithAppleButton primary CTA; Apple-on-Android lands
-            // in a later sub-slice (would parallel the Credential Manager
-            // flow with a SignInWithApple credential type).
             OutlinedButton(
                 onClick = { viewModel.onEvent(AuthEvent.SignInWithGoogle) },
                 modifier =
@@ -216,10 +212,26 @@ fun LoginScreen(
 
             Spacer(Modifier.height(8.dp))
 
+            // Phase 26.x (ADR-022 §6.1) — Apple-on-Android Sign-In CTA
+            // via Supabase web-OAuth + Custom Tabs. On tap, supabase-kt
+            // launches a Chrome Custom Tab to Supabase's hosted auth
+            // endpoint, which then routes through Apple's OAuth flow.
+            // On completion Supabase redirects to `skeinly://auth-callback`,
+            // `MainActivity.handleDeeplinks(intent)` resolves the
+            // session, and `observeAuthState()` emits Authenticated.
+            //
+            // iOS Compose path never renders this screen — iOS uses
+            // SwiftUI's `LoginScreen.swift` with the native
+            // SignInWithAppleButton from Phase 26.1. The button
+            // appears on Android only (the Compose tree backing
+            // `:androidApp:`).
             OutlinedButton(
-                onClick = { },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = false,
+                onClick = { viewModel.onEvent(AuthEvent.SignInWithAppleViaWebOAuth) },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .testTag("signInWithAppleButton"),
+                enabled = !state.isSubmitting,
             ) {
                 Text(stringResource(Res.string.action_continue_with_apple))
             }

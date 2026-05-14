@@ -22,6 +22,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import io.github.b150005.skeinly.auth.OAuthClient
+import io.github.b150005.skeinly.auth.handleAuthDeeplink
 import io.github.b150005.skeinly.config.BuildFlags
 import io.github.b150005.skeinly.data.analytics.AnalyticsEvent
 import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
@@ -100,6 +101,30 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         deepLinkUrl = extractDeepLinkUrl(intent)
         pushRoute = extractPushRoute(intent)
+        // Phase 26.x (ADR-022 §6.1) — feed the launch Intent to the
+        // shared `handleAuthDeeplink` helper so the Apple-on-Android
+        // web-OAuth callback URL (`skeinly://auth-callback?code=...`)
+        // gets parsed. The helper kicks off supabase-kt's async PKCE
+        // code-exchange coroutine which performs an HTTP round-trip to
+        // Supabase. The Authenticated session emerges on
+        // `observeAuthState()` AFTER the round-trip completes — almost
+        // certainly after `setContent { }` below mounts the NavGraph,
+        // so the LoginScreen → Authenticated transition is driven by
+        // the NavHost LaunchedEffect that observes auth state. On slow
+        // connections the user sees LoginScreen for the duration of
+        // the code exchange (typically <1 s, up to the 20 s Supabase
+        // request timeout configured in SupabaseModule).
+        //
+        // Cold-start path: user tapped Continue-with-Apple, Activity
+        // was killed during the Custom Tab session, OS launches a
+        // fresh Activity with the callback URL as Intent.data. The
+        // helper (shared/androidMain) resolves the SupabaseClient via
+        // Koin (nullable to handle SupabaseConfig.isConfigured =
+        // false) and calls the supabase-kt extension function. No-op
+        // on launches without the callback URL — supabase-kt inspects
+        // Intent.data scheme/host against the configured `auth.scheme`
+        // / `auth.host` and early-returns on mismatch.
+        handleAuthDeeplink(intent)
         // Phase 24.2e — wire the Activity-scoped permission launcher to the
         // shared `PushTokenRegistrar`. The closure fires the Activity's
         // `ActivityResultLauncher.launch(POST_NOTIFICATIONS)`; the registered
@@ -292,6 +317,13 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         deepLinkUrl = extractDeepLinkUrl(intent)
+        // Phase 26.x (ADR-022 §6.1) — warm-start OAuth callback path.
+        // `singleTop` launchMode delivers the Custom Tab callback URL
+        // (`skeinly://auth-callback?code=...`) here when the Activity
+        // is already in the back-stack. Shared helper extracts the
+        // code, exchanges it server-side, and emits the new session
+        // on the auth-state flow.
+        handleAuthDeeplink(intent)
         // Phase 24.5 — `singleTop` launchMode delivers FCM-tap intents
         // here when the app is already in foreground/background.
         // Re-extract on every fresh intent so the NavHost LaunchedEffect

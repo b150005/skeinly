@@ -97,4 +97,29 @@ interface AuthRepository {
         idToken: String,
         nonce: String? = null,
     ): OAuthSignInOutcome
+
+    /**
+     * Phase 26.x (ADR-022 §6.1) — Apple Sign-In on Android via web-OAuth
+     * + Custom Tabs (supabase-kt's `signInWith(Apple)` non-IDToken path).
+     * Mirrors the cross-platform symmetric-coverage decision: Apple-iOS
+     * uses native `SignInWithAppleButton` + IDToken (Phase 26.1);
+     * Apple-Android uses Supabase's browser-OAuth flow because Android
+     * has no first-party Apple SDK.
+     *
+     * **Side effect, not return value**: kicks off the Custom Tabs
+     * browser flow and returns immediately. The session emerges
+     * asynchronously on `observeAuthState()` once the browser redirects
+     * back to `skeinly://auth-callback` and `MainActivity.onNewIntent`
+     * calls `supabase.auth.handleDeeplinks(intent)`. The caller MUST
+     * NOT await a `OAuthSignInOutcome` here — the success path is
+     * observed via the auth-state flow, the cancel/error path is
+     * silent (user closed the Custom Tab without completing).
+     *
+     * iOS callers should NOT invoke this — the iOS Apple path goes
+     * through the native `signInWithApple(idToken, nonce)` IDToken
+     * bridge from Phase 26.1. Surface here is platform-agnostic for
+     * KMP cohesion; the Android Compose LoginScreen is the only
+     * production consumer.
+     */
+    suspend fun signInWithAppleViaWebOAuth()
 }

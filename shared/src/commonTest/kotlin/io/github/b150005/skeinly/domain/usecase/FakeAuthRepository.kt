@@ -150,6 +150,21 @@ class FakeAuthRepository : AuthRepository {
         return OAuthSignInOutcome.SessionCreated
     }
 
+    /**
+     * Phase 26.x — call-counter for the Android web-OAuth Apple path.
+     * Production fires a Custom Tab; the fake just records the call so
+     * the ViewModel can verify it routed the event correctly. Session
+     * emergence is simulated by setting [authStateFlow] in test code
+     * post-call (mirrors the real `handleDeeplinks` callback path).
+     */
+    var signInWithAppleViaWebOAuthCallCount: Int = 0
+    var signInWithAppleViaWebOAuthError: Throwable? = null
+
+    override suspend fun signInWithAppleViaWebOAuth() {
+        signInWithAppleViaWebOAuthCallCount++
+        signInWithAppleViaWebOAuthError?.let { throw it }
+    }
+
     fun setAuthState(state: AuthState) {
         authStateFlow.value = state
         currentUserId =

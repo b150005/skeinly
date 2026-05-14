@@ -75,6 +75,34 @@
                     android:host="b150005.github.io"
                     android:pathPrefix="/skeinly/" />
             </intent-filter>
+
+            <!--
+                Phase 26.x (ADR-022 §6.1) — OAuth callback URL scheme
+                for the Apple-on-Android web-OAuth flow (supabase-kt
+                Custom Tabs integration). Composes as `skeinly://auth-callback`,
+                matching the `scheme` + `host` values configured in
+                `SupabaseModule.kt`'s `install(Auth) { ... }` block.
+
+                Operator-side prerequisite: this URI must ALSO be added
+                to Supabase Dashboard → Authentication → URL Configuration
+                → Additional Redirect URLs. Apple's Services ID config
+                does NOT need this (Apple sees only Supabase's HTTPS
+                callback URL); the custom scheme is the FINAL redirect
+                from Supabase back to the mobile app.
+
+                MainActivity.onCreate + onNewIntent both call
+                `supabaseClient.auth.handleDeeplinks(intent)` so the
+                callback URL is parsed (cold start + warm start parity
+                via `launchMode="singleTop"` above).
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="skeinly"
+                    android:host="auth-callback" />
+            </intent-filter>
         </activity>
 
         <!-- Phase 24.5 (ADR-017 §3.8) — FCM message handler. Receives

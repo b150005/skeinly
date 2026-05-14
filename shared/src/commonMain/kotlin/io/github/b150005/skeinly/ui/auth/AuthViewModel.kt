@@ -128,6 +128,24 @@ sealed interface AuthEvent {
         val idToken: String,
         val nonce: String?,
     ) : AuthEvent
+
+    /**
+     * Phase 26.x (ADR-022 §6.1) — user tapped the Continue-with-Apple
+     * button on the **Android** Compose LoginScreen. The ViewModel
+     * kicks off Supabase's browser-based OAuth flow via
+     * `AuthRepository.signInWithAppleViaWebOAuth()`. The Custom Tab
+     * opens; on completion Supabase redirects to `skeinly://auth-callback`
+     * and `MainActivity.handleDeeplinks(intent)` completes the session
+     * — the new session emerges on `observeAuthState()` and the root
+     * navigator routes away from LoginScreen automatically.
+     *
+     * No outcome routing here: cancel/error paths leave `isSubmitting`
+     * cleared (the browser is now in charge), and there is no
+     * `LinkIdentityRequired` envelope on the web-OAuth flow. iOS does
+     * NOT consume this event — the iOS Apple path uses native
+     * SignInWithAppleButton + IDToken (Phase 26.1).
+     */
+    data object SignInWithAppleViaWebOAuth : AuthEvent
 }
 
 private data class FormState(
@@ -164,6 +182,13 @@ class AuthViewModel(
      * actual returns Failure (iOS Google sign-in lands in Phase 26.3).
      */
     private val acquireGoogleIdToken: suspend () -> OAuthIdTokenResult,
+    /**
+     * Phase 26.x (ADR-022 §6.1) — Apple-on-Android web-OAuth hook,
+     * lambda-seam pattern. Production wiring binds
+     * `authRepository::signInWithAppleViaWebOAuth`. Tests inject a
+     * call-counting stub.
+     */
+    private val signInWithAppleViaWebOAuth: suspend () -> Unit,
 ) : ViewModel() {
     private val form = MutableStateFlow(FormState())
 
@@ -205,6 +230,7 @@ class AuthViewModel(
                 form.update { it.copy(linkIdentityRequired = null) }
             AuthEvent.SignInWithGoogle -> handleGoogleSignIn()
             is AuthEvent.SignInWithGoogleIdToken -> handleGoogleIdToken(event.idToken, event.nonce)
+            AuthEvent.SignInWithAppleViaWebOAuth -> handleAppleViaWebOAuth()
         }
     }
 
@@ -315,6 +341,69 @@ class AuthViewModel(
         viewModelScope.launch {
             form.update { it.copy(isSubmitting = true, error = null) }
             forwardGoogleIdToken(idToken, nonce)
+        }
+    }
+
+    /**
+     * Phase 26.x (ADR-022 §6.1) — kicks off Apple-on-Android web-OAuth
+     * via Supabase's Custom Tabs flow. Unlike the IDToken paths
+     * ([handleAppleIdToken] / [handleGoogleIdToken]) which wait for a
+     * `OAuthSignInOutcome` envelope, this path returns immediately
+     * after launching the Custom Tab — the session emerges
+     * asynchronously on `observeAuthState()` once
+     * `MainActivity.handleAuthDeeplink(intent)` resolves the callback
+     * URL.
+     *
+     * UX contract:
+     *  - On launch: clear submit flag immediately (the browser is now
+     *    in charge of the user's attention; keeping `isSubmitting = true`
+     *    would block the email/password form for the indefinite
+     *    duration of the browser session).
+     *  - On cancel: silent (no banner). The user closed the Custom Tab
+     *    without completing; matches the Apple iOS SignInWithAppleButton
+     *    cancel UX.
+     *  - On Custom-Tab-launch failure (e.g. no browser installed):
+     *    surface generic error so the user knows something went wrong.
+     *
+     * **Accepted alpha trade-off — post-launch re-entrancy window**:
+     * after the Custom Tab launches, the button is re-enabled (button
+     * disabled-binding is `!state.isSubmitting`). If the user
+     * backgrounds Skeinly's Custom Tab without completing sign-in,
+     * returns to the LoginScreen, and taps Continue-with-Apple again,
+     * a second Custom Tab launches with a NEW PKCE verifier — the
+     * first session's verifier is invalidated and its eventual code
+     * exchange (if the user returns to it) silently fails on the
+     * Supabase backend. No app-side state corruption + no security
+     * escalation (each Custom Tab has its own verifier), but the
+     * first browser tab becomes a dead end. Tech Debt: Phase 26.4 +
+     * 26.7 may introduce a separate `isCustomTabPending: Boolean`
+     * state cleared only on an `authState → Authenticated` transition
+     * or explicit Cancel — defer until alpha tester signal shows the
+     * dead-tab UX is confusing in practice.
+     */
+    private fun handleAppleViaWebOAuth() {
+        val current = form.value
+        if (current.isSubmitting) return
+        viewModelScope.launch {
+            form.update { it.copy(isSubmitting = true, error = null) }
+            try {
+                signInWithAppleViaWebOAuth()
+                // Immediately clear the submit flag — Custom Tab is up,
+                // the user has left the app surface. Session emergence
+                // (success path) will flip authState to Authenticated
+                // via observeAuthState; cancel/failure paths leave the
+                // form untouched (matches the Apple iOS UX).
+                form.update { it.copy(isSubmitting = false) }
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
+            } catch (_: Throwable) {
+                form.update {
+                    it.copy(
+                        isSubmitting = false,
+                        error = ErrorMessage.Generic,
+                    )
+                }
+            }
         }
     }
 

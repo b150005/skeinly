@@ -172,6 +172,27 @@ class AuthRepositoryImpl(
         nonce: String?,
     ): OAuthSignInOutcome = signInWithOAuthIdToken(idToken, nonce, OAuthProviderKind.Google)
 
+    override suspend fun signInWithAppleViaWebOAuth() {
+        val client =
+            supabaseClient
+                ?: throw IllegalStateException("Supabase is not configured")
+        // No outcome-mapping path here: the session emerges
+        // asynchronously on the auth-state flow once Custom Tabs
+        // redirects back to `skeinly://auth-callback` and
+        // `MainActivity.handleDeeplinks(intent)` fires. This call
+        // returns once the Custom Tab is launched; user cancel /
+        // browser failure path silently leaves auth-state untouched.
+        //
+        // LinkIdentityRequired is NOT distinguishable here because
+        // the supabase-kt browser-OAuth flow doesn't return an
+        // outcome envelope — Supabase emits the collision via the
+        // hosted auth UI which the user sees in the Custom Tab.
+        // Phase 26.4 (linkIdentity) addresses the merge UX from the
+        // post-IDToken side; the Android web-OAuth path falls back
+        // to Supabase's hosted error rendering for the alpha scope.
+        client.auth.signInWith(Apple)
+    }
+
     /**
      * Phase 26.1 / 26.2 — shared IDToken path. The two OAuth provider
      * methods diverge only in `IDTokenProvider` (Apple / Google) and

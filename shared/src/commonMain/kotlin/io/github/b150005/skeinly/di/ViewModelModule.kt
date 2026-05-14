@@ -76,6 +76,10 @@ val viewModelModule =
                 signInWithApple = authRepository::signInWithApple,
                 signInWithGoogle = authRepository::signInWithGoogle,
                 acquireGoogleIdToken = oauthClient::acquireGoogleIdToken,
+                // Phase 26.x (ADR-022 §6.1) — Apple-on-Android
+                // web-OAuth lambda-seam, mirroring the signInWithApple
+                // / signInWithGoogle pattern above.
+                signInWithAppleViaWebOAuth = authRepository::signInWithAppleViaWebOAuth,
             )
         }
         viewModelOf(::ForgotPasswordViewModel)

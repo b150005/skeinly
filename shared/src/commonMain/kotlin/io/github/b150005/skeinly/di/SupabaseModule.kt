@@ -86,6 +86,41 @@ val supabaseModule =
                         // The qualifier("auth") Settings comes from
                         // `PlatformModule.{android,ios}.kt`.
                         sessionManager = SettingsSessionManager(authSettings)
+                        // Phase 26.x (ADR-022 §6.1) — web-OAuth deep-link
+                        // redirect URI for Android Custom Tabs flow. Used
+                        // by `signInWith(Apple)` (browser-based OAuth) to
+                        // route the callback from Supabase's hosted auth
+                        // back into the app via a custom URL scheme. The
+                        // value composes as `skeinly://auth-callback`.
+                        //
+                        // Operator-side: this same URI must be added to
+                        // Supabase Dashboard → Authentication → URL
+                        // Configuration → Additional Redirect URLs.
+                        // Apple's Services ID does NOT need the value
+                        // (Apple sees only Supabase's HTTPS callback URL);
+                        // the custom scheme is the FINAL redirect from
+                        // Supabase back to the mobile app.
+                        //
+                        // Reused on iOS for the future iOS web-OAuth
+                        // fallback paths (not exercised today — iOS
+                        // Apple + Google ship via native IDToken bridges
+                        // in Phase 26.1 + 26.3). Setting unconditionally
+                        // here keeps the cross-platform config symmetric.
+                        //
+                        // **iOS forward-compat caveat**: activating the
+                        // iOS web-OAuth path additionally requires (a)
+                        // adding `skeinly` to `iosApp/project.yml`
+                        // `CFBundleURLTypes` (mirrors the Phase 26.3
+                        // `$(GOOGLE_REVERSE_CLIENT_ID)` URL scheme
+                        // entry) and (b) handling
+                        // `application(_:open:options:)` (UIKit) or
+                        // `scene(_:openURLContexts:)` (SwiftUI) to
+                        // forward the URL into supabase-kt's iOS
+                        // `handleDeeplinks`. Neither is wired today;
+                        // the Phase 26.x slice ships Apple-on-Android
+                        // only.
+                        scheme = "skeinly"
+                        host = "auth-callback"
                     }
                     install(Postgrest)
                     install(Realtime)

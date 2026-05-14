@@ -53,6 +53,7 @@ class AuthViewModelTest {
             signInWithApple = { idToken, nonce -> authRepo.signInWithApple(idToken, nonce) },
             signInWithGoogle = { idToken, nonce -> authRepo.signInWithGoogle(idToken, nonce) },
             acquireGoogleIdToken = { fakeGoogleAcquisition },
+            signInWithAppleViaWebOAuth = { authRepo.signInWithAppleViaWebOAuth() },
         )
 
     @Test
@@ -398,6 +399,7 @@ class AuthViewModelTest {
                     signInWithApple = { idToken, nonce -> slowRepo.signInWithApple(idToken, nonce) },
                     signInWithGoogle = { idToken, nonce -> authRepo.signInWithGoogle(idToken, nonce) },
                     acquireGoogleIdToken = { fakeGoogleAcquisition },
+                    signInWithAppleViaWebOAuth = { authRepo.signInWithAppleViaWebOAuth() },
                 )
 
             viewModel.onEvent(
@@ -565,6 +567,7 @@ class AuthViewModelTest {
                     signInWithApple = { idToken, nonce -> authRepo.signInWithApple(idToken, nonce) },
                     signInWithGoogle = { idToken, nonce -> authRepo.signInWithGoogle(idToken, nonce) },
                     acquireGoogleIdToken = { throw RuntimeException("Play Services missing") },
+                    signInWithAppleViaWebOAuth = { authRepo.signInWithAppleViaWebOAuth() },
                 )
 
             viewModel.onEvent(AuthEvent.SignInWithGoogle)
@@ -596,6 +599,7 @@ class AuthViewModelTest {
                         callCount++
                         gate.await()
                     },
+                    signInWithAppleViaWebOAuth = { authRepo.signInWithAppleViaWebOAuth() },
                 )
 
             viewModel.onEvent(AuthEvent.SignInWithGoogle)
@@ -729,6 +733,7 @@ class AuthViewModelTest {
                     signInWithApple = { idToken, nonce -> authRepo.signInWithApple(idToken, nonce) },
                     signInWithGoogle = { idToken, nonce -> slowRepo.signInWithGoogle(idToken, nonce) },
                     acquireGoogleIdToken = { fakeGoogleAcquisition },
+                    signInWithAppleViaWebOAuth = { authRepo.signInWithAppleViaWebOAuth() },
                 )
 
             viewModel.onEvent(
@@ -764,6 +769,7 @@ class AuthViewModelTest {
                         io.github.b150005.skeinly.auth.OAuthIdTokenResult
                             .Failure("should not be called")
                     },
+                    signInWithAppleViaWebOAuth = { authRepo.signInWithAppleViaWebOAuth() },
                 )
 
             viewModel.onEvent(
@@ -778,6 +784,84 @@ class AuthViewModelTest {
                 cancelAndIgnoreRemainingEvents()
             }
             assertFalse(acquisitionCalled, "acquireGoogleIdToken must not be called on iOS direct-bridge path")
+        }
+
+    // ----------------------------------------------------------------
+    // Phase 26.x (ADR-022 §6.1) — Apple-on-Android web-OAuth flows
+    // ----------------------------------------------------------------
+
+    @Test
+    fun `apple via web oauth kicks off custom tabs and clears submit`() =
+        runTest {
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(AuthEvent.SignInWithAppleViaWebOAuth)
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertFalse(state.isSubmitting)
+                assertNull(state.error)
+                // Repository was called exactly once. Session emergence
+                // is asynchronous (handleDeeplinks → observeAuthState);
+                // FakeAuthRepository does NOT auto-flip authState here
+                // because production also does not — the ViewModel just
+                // clears the spinner.
+                assertEquals(1, authRepo.signInWithAppleViaWebOAuthCallCount)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `apple via web oauth launch failure surfaces generic error`() =
+        runTest {
+            // Simulates "no browser installed" / "Custom Tabs unavailable"
+            // — the supabase-kt call throws on launch.
+            authRepo.signInWithAppleViaWebOAuthError = RuntimeException("No browser available")
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(AuthEvent.SignInWithAppleViaWebOAuth)
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertFalse(state.isSubmitting)
+                assertNotNull(state.error)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `apple via web oauth submit guards reentry`() =
+        runTest {
+            val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+            val slowRepo =
+                object {
+                    var callCount = 0
+
+                    suspend fun signInWithAppleViaWebOAuth() {
+                        callCount++
+                        gate.await()
+                    }
+                }
+            val viewModel =
+                AuthViewModel(
+                    observeAuthState = ObserveAuthStateUseCase(authRepo),
+                    signIn = SignInUseCase(authRepo),
+                    signUp = SignUpUseCase(authRepo),
+                    signInWithApple = { idToken, nonce -> authRepo.signInWithApple(idToken, nonce) },
+                    signInWithGoogle = { idToken, nonce -> authRepo.signInWithGoogle(idToken, nonce) },
+                    acquireGoogleIdToken = { fakeGoogleAcquisition },
+                    signInWithAppleViaWebOAuth = { slowRepo.signInWithAppleViaWebOAuth() },
+                )
+
+            // First tap — kicks off, suspends in the gate. Second tap
+            // while the first is still in-flight — re-entrant guard
+            // must short-circuit (Custom Tab is up; a second launch
+            // would risk a double-modal stack).
+            viewModel.onEvent(AuthEvent.SignInWithAppleViaWebOAuth)
+            viewModel.onEvent(AuthEvent.SignInWithAppleViaWebOAuth)
+
+            assertEquals(1, slowRepo.callCount)
+            gate.complete(Unit)
         }
 
     @Test
