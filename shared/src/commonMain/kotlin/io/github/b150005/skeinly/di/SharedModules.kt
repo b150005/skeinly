@@ -9,6 +9,7 @@ val sharedModules =
         syncModule,
         symbolModule,
         repositoryModule,
+        biometricModule,
         useCaseModule,
         viewModelModule,
     )

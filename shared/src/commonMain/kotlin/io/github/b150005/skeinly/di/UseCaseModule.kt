@@ -84,6 +84,11 @@ val useCaseModule =
         factory { SignUpUseCase(get()) }
         factory { CloseRealtimeChannelsUseCase(getOrNull(), getOrNull(), getOrNull()) }
         factory { SignOutUseCase(get(), get()) }
+        // Phase 26.6 (ADR-022 §6.5) — the biometric sensitive-action gate
+        // for account deletion lives at the SettingsViewModel layer
+        // (mirrors the MFA-disable shape), NOT inside this UseCase, so
+        // the VM can distinguish user-cancel (silent UI reset) from
+        // OS-failure (error toast). See SettingsViewModel.performDeleteAccount.
         factory { DeleteAccountUseCase(get(), get()) }
         factory { SendPasswordResetUseCase(get()) }
         factory { UpdatePasswordUseCase(get()) }

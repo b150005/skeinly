@@ -102,6 +102,14 @@ struct iOSApp: App {
         // flow. See `RevenueCatAuthBridge.kt` for the full rationale.
         KoinHelperKt.startRevenueCatAuthBridge()
 
+        // Phase 26.6 (ADR-022 §6.5) — bridge process-level
+        // UIApplication{WillEnterForeground,DidEnterBackground}Notification
+        // to the shared BiometricGuardian. On each Background→Foreground
+        // transition past the user-configured threshold, the Guardian
+        // fires the OS biometric prompt via LAContext. No-ops when the
+        // user hasn't opted in via Settings → Security → Biometric.
+        KoinHelperKt.startBiometricLifecycleBridge()
+
         // Phase F2: PostHog product analytics. Default OFF (opt-in, not
         // opt-out). SDK is initialized lazily on the first ON flip; toggling
         // OFF mid-session calls optOut() to suspend further capture; toggling

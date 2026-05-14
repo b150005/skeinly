@@ -1,5 +1,6 @@
 package io.github.b150005.skeinly.di
 
+import io.github.b150005.skeinly.biometric.BiometricAuthenticator
 import io.github.b150005.skeinly.config.BuildFlags
 import io.github.b150005.skeinly.data.bug.BugReportProxyClient
 import io.github.b150005.skeinly.notifications.OsSettingsLauncher
@@ -11,6 +12,7 @@ import io.github.b150005.skeinly.ui.auth.AuthViewModel
 import io.github.b150005.skeinly.ui.auth.ForgotPasswordViewModel
 import io.github.b150005.skeinly.ui.auth.MfaChallengeViewModel
 import io.github.b150005.skeinly.ui.auth.MfaEnrollmentViewModel
+import io.github.b150005.skeinly.ui.biometric.BiometricSettingsViewModel
 import io.github.b150005.skeinly.ui.bugreport.BugReportPreviewViewModel
 import io.github.b150005.skeinly.ui.chart.ChartComparisonViewModel
 import io.github.b150005.skeinly.ui.chart.ChartEditorViewModel
@@ -114,6 +116,7 @@ val viewModelModule =
         // attach it.
         viewModel {
             val authRepository: io.github.b150005.skeinly.domain.repository.AuthRepository = get()
+            val biometricGuardian: io.github.b150005.skeinly.biometric.BiometricGuardian = get()
             SettingsViewModel(
                 observeAuthState = get(),
                 signOut = get(),
@@ -130,6 +133,35 @@ val viewModelModule =
                 // that don't wire this; production binds to repo methods.
                 observeMfaStatusFlow = { authRepository.observeMfaStatus() },
                 disableMfa = authRepository::disableMfa,
+                // Phase 26.6 (ADR-022 §6.5) — MFA-disable sensitive-action
+                // gate. Lambda seam over the Guardian's `requireForAction`
+                // so tests can short-circuit to Success without the
+                // BiometricAuthenticator+ProcessLifecycleOwner surface.
+                requireBiometricForMfaDisable = {
+                    biometricGuardian.requireForAction(
+                        io.github.b150005.skeinly.biometric.SensitiveAction.MfaDisable,
+                    )
+                },
+                // Phase 26.6 (ADR-022 §6.5) — account-delete sensitive-
+                // action gate. Same lambda-seam shape as MFA disable;
+                // gate lives at the VM layer (not the UseCase) so
+                // Cancelled → silent reset, Failed → generic error.
+                requireBiometricForAccountDelete = {
+                    biometricGuardian.requireForAction(
+                        io.github.b150005.skeinly.biometric.SensitiveAction.AccountDeletion,
+                    )
+                },
+            )
+        }
+        // Phase 26.6 (ADR-022 §6.5) — biometric settings screen.
+        // Lambda-seam DI mirrors NotificationPermissionViewModel: the
+        // `expect class` BiometricAuthenticator surfaces as a `final`
+        // class to commonTest which cannot be subclassed for fakes.
+        viewModel {
+            val authenticator: BiometricAuthenticator = get()
+            BiometricSettingsViewModel(
+                preferences = get(),
+                queryAvailability = { authenticator.canAuthenticate() },
             )
         }
         viewModel { ActivityFeedViewModel(get(), get(), get()) }

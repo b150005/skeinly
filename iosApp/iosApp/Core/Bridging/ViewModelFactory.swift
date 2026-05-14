@@ -152,4 +152,9 @@ enum ViewModelFactory {
     static func mfaChallengeViewModel() -> MfaChallengeViewModel {
         KoinHelperKt.getMfaChallengeViewModel()
     }
+
+    /// Phase 26.6 (ADR-022 §6.5) — biometric settings ViewModel.
+    static func biometricSettingsViewModel() -> BiometricSettingsViewModel {
+        KoinHelperKt.getBiometricSettingsViewModel()
+    }
 }

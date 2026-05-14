@@ -87,6 +87,32 @@ class SkeinlyApplication : Application() {
             revenueCatService = revenueCatService,
         )
 
+        // Phase 26.6 (ADR-022 §6.5) — biometric re-auth lifecycle
+        // bridge. Collects from ProcessLifecycleOwner via the shared
+        // AppLifecycleObserver; on each Background→Foreground transition
+        // past the user-configured threshold, fires the OS biometric
+        // prompt. On Failed/Cancelled outcome the supplied closure
+        // invokes the SignOut use case so the next AuthState emission
+        // routes the user back to LoginScreen (per ADR §3.8). Wiring
+        // the sign-out closure inside the bridge fn — rather than
+        // returning a SharedFlow for the caller to collect — closes
+        // the security loop by construction.
+        val biometricGuardian: io.github.b150005.skeinly.biometric.BiometricGuardian = get()
+        val lifecycleObserver: io.github.b150005.skeinly.platform.AppLifecycleObserver = get()
+        val signOutUseCase: io.github.b150005.skeinly.domain.usecase.SignOutUseCase = get()
+        io.github.b150005.skeinly.biometric.startBiometricLifecycleBridge(
+            scope = applicationScope,
+            guardian = biometricGuardian,
+            lifecycleObserver = lifecycleObserver,
+            onResumeAuthInvalidated = {
+                // Best-effort sign-out: a Failure inside SignOut still
+                // emits a non-Authenticated AuthState through the
+                // observer flow because the use case surfaces the
+                // local session-clear regardless of remote success.
+                signOutUseCase()
+            },
+        )
+
         // Phase 39.3 (ADR-015 §6) — bug-report event trail. Starts the
         // FIFO collector regardless of `BuildFlags.isBeta` or PostHog
         // configuration: the trail is for `Phase 39.5` bug-report

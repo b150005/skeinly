@@ -30,6 +30,9 @@ enum Route: Hashable {
     /// the AAL2 gate via the back stack; only verify-success or
     /// sign-out exits).
     case mfaChallenge
+    /// Phase 26.6 (ADR-022 §6.5) — biometric authentication settings.
+    /// Reached from Settings → Security → "Biometric authentication".
+    case biometricSettings
     /// Phase 41.3b (ADR-016 §5.1) — paywall route. Uses
     /// `PaywallTrigger.wireValue` for the Hashable representation so the
     /// case stays Codable / Hashable without forcing PaywallTrigger to
@@ -105,6 +108,8 @@ enum Route: Hashable {
             hasher.combine("mfaEnrollment")
         case .mfaChallenge:
             hasher.combine("mfaChallenge")
+        case .biometricSettings:
+            hasher.combine("biometricSettings")
         }
     }
 }
@@ -310,6 +315,12 @@ struct AppRootView: View {
                 // Enable 2FA routes to the TOTP enrollment screen.
                 onEnableMfaClick: {
                     path.append(Route.mfaEnrollment)
+                },
+                // Phase 26.6 (ADR-022 §6.5) — Settings → Security →
+                // Biometric authentication routes to the biometric
+                // settings screen.
+                onBiometricSettingsClick: {
+                    path.append(Route.biometricSettings)
                 }
             )
                 .trackScreen(.settings)
@@ -412,6 +423,12 @@ struct AppRootView: View {
             // exists in the Route enum for type completeness but is
             // unreachable via `path.append(.mfaChallenge)`.
             MfaChallengeScreen()
+        case .biometricSettings:
+            // Phase 26.6 (ADR-022 §6.5) — biometric re-auth + threshold
+            // picker. Pushed from Settings → Security → "Biometric
+            // authentication" entry.
+            BiometricSettingsScreen()
+                .skeinlyBackButton(path: $path)
         }
     }
 

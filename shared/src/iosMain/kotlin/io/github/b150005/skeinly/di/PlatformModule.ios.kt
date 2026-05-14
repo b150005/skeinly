@@ -4,6 +4,7 @@ import com.russhwolf.settings.ExperimentalSettingsImplementation
 import com.russhwolf.settings.KeychainSettings
 import com.russhwolf.settings.NSUserDefaultsSettings
 import com.russhwolf.settings.Settings
+import io.github.b150005.skeinly.biometric.BiometricAuthenticator
 import io.github.b150005.skeinly.data.remote.ConnectivityMonitor
 import io.github.b150005.skeinly.db.DriverFactory
 import io.github.b150005.skeinly.notifications.OsSettingsLauncher
@@ -84,6 +85,16 @@ val platformModule =
         // instant snaps when the user has Reduce Motion on. Stock
         // Material 3 transitions auto-respect via the UIKit bridge.
         single { ReduceMotionDetector() }
+        // Phase 26.6 (ADR-022 §6.5) — biometric prompt + process-level
+        // lifecycle. LAContext is allocated per evaluation; observer
+        // registers NSNotificationCenter on first subscription via the
+        // Flow's onStart. No constructor args on iOS (parameterless,
+        // mirroring the parameterless PushTokenRegistrar.ios actual).
+        single { BiometricAuthenticator() }
+        single {
+            io.github.b150005.skeinly.platform
+                .AppLifecycleObserver()
+        }
         // Phase 26.2 (ADR-022 §6.2) — Google Sign-In `expect/actual`
         // surface. The iOS actual returns a Failure for now (iOS
         // Google sign-in lands in Phase 26.3); registered here so

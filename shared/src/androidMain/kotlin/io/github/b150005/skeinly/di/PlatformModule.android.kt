@@ -16,6 +16,7 @@ import androidx.security.crypto.MasterKey
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.SharedPreferencesSettings
 import io.github.b150005.skeinly.auth.OAuthClient
+import io.github.b150005.skeinly.biometric.BiometricAuthenticator
 import io.github.b150005.skeinly.data.remote.ConnectivityMonitor
 import io.github.b150005.skeinly.db.DriverFactory
 import io.github.b150005.skeinly.notifications.OsSettingsLauncher
@@ -100,6 +101,18 @@ val platformModule =
         // motion. Stock Material 3 transitions auto-respect; this
         // detector covers the few surfaces that bypass the stock path.
         single { ReduceMotionDetector(get()) }
+        // Phase 26.6 (ADR-022 §6.5) — biometric prompt + process-level
+        // lifecycle. BiometricAuthenticator takes a `FragmentActivity`
+        // reference attached at MainActivity.onCreate / detached at
+        // onDestroy (mirrors the PushTokenRegistrar.attachLauncher
+        // pattern). AppLifecycleObserver observes ProcessLifecycleOwner
+        // lazily on first subscription — registration is main-thread,
+        // implemented inside the Flow's onStart.
+        single { BiometricAuthenticator(get()) }
+        single {
+            io.github.b150005.skeinly.platform
+                .AppLifecycleObserver()
+        }
         // Phase 26.2 (ADR-022 §6.2) — Google Sign-In via Credential
         // Manager. The Web Client ID is generated automatically by
         // the google-services Gradle plugin into the Android

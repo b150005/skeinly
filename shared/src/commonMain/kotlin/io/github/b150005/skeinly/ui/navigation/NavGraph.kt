@@ -229,6 +229,14 @@ data object MfaEnrollment
 @Serializable
 data object MfaChallenge
 
+/**
+ * Phase 26.6 (ADR-022 §6.5) — biometric authentication settings.
+ * Reached from Settings → Security → "Biometric authentication".
+ * Houses the opt-in toggle + re-auth threshold picker.
+ */
+@Serializable
+data object BiometricSettings
+
 @Composable
 fun SkeinlyNavHost(
     navController: NavHostController,
@@ -511,6 +519,13 @@ private fun SkeinlyNavHostContent(
                 onManagePacksClick = { navController.navigate(PackManagement) },
                 // Phase 26.5 (ADR-022 §6.4) — Security → 2-factor entry.
                 onEnableMfaClick = { navController.navigate(MfaEnrollment) },
+                // Phase 26.6 (ADR-022 §6.5) — Security → biometric entry.
+                onBiometricSettingsClick = { navController.navigate(BiometricSettings) },
+            )
+        }
+        composable<BiometricSettings> {
+            io.github.b150005.skeinly.ui.biometric.BiometricSettingsScreen(
+                onBack = { navController.popBackStack() },
             )
         }
         composable<MfaEnrollment> {

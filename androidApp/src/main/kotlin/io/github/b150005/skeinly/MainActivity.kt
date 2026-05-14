@@ -5,7 +5,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.MotionEvent
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
+import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -33,7 +33,15 @@ import io.github.b150005.skeinly.ui.navigation.BugReportPreview
 import io.github.b150005.skeinly.ui.navigation.SkeinlyNavHost
 import org.koin.android.ext.android.get
 
-class MainActivity : ComponentActivity() {
+/**
+ * Phase 26.6 (ADR-022 §6.5) — pivoted from `ComponentActivity` to
+ * `FragmentActivity` because the AndroidX [androidx.biometric.BiometricPrompt]
+ * constructor requires a `FragmentActivity` (or `Fragment`).
+ * `FragmentActivity` extends `ComponentActivity`, so every existing
+ * surface — `setContent`, `enableEdgeToEdge`, `registerForActivityResult`,
+ * `rememberNavController`, etc. — keeps working unchanged.
+ */
+class MainActivity : FragmentActivity() {
     /**
      * Phase 39 (W3 / 2026-05-11) — full Universal Link / App Link URL
      * captured from Intent.data when the OS routes a verified
@@ -96,6 +104,15 @@ class MainActivity : ComponentActivity() {
     // destroyed Activity. Same lifecycle shape as `PushTokenRegistrar`.
     private val oauthClient: OAuthClient by lazy { get<OAuthClient>() }
 
+    // Phase 26.6 (ADR-022 §6.5) — biometric prompt host. The shared
+    // `BiometricAuthenticator` (Koin singleton) holds a WeakReference
+    // to this Activity for the lifetime of the process; we attach on
+    // `onCreate` and detach on `onDestroy` so the BiometricPrompt
+    // constructor's FragmentActivity dependency is satisfied while the
+    // Activity is alive.
+    private val biometricAuthenticator: io.github.b150005.skeinly.biometric.BiometricAuthenticator
+        by lazy { get<io.github.b150005.skeinly.biometric.BiometricAuthenticator>() }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -139,6 +156,10 @@ class MainActivity : ComponentActivity() {
         // Credential Manager call inside `acquireGoogleIdToken()` has
         // an Activity Context for the UI.
         oauthClient.attachActivity(this)
+        // Phase 26.6 — attach this FragmentActivity to the
+        // BiometricAuthenticator so any in-flight requireForAction /
+        // requireForResume call has a host for BiometricPrompt.
+        biometricAuthenticator.attachActivity(this)
         // Phase 39.3 (ADR-015 §6) — resolve once at activity creation;
         // tracker is a Koin singleton so a second resolve from inside
         // the Composable would return the same instance, but pulling at
@@ -266,6 +287,11 @@ class MainActivity : ComponentActivity() {
         // Manager rejects) → returns Failure. Acceptable: in-flight
         // OAuth attempts straddling a config change are rare.
         oauthClient.detachActivity()
+        // Phase 26.6 — clear the BiometricAuthenticator's Activity ref.
+        // Any in-flight requireForAction / requireForResume observing
+        // a null Activity falls back to returning Unavailable
+        // structurally; the call site signs out or surfaces an error.
+        biometricAuthenticator.detachActivity()
         super.onDestroy()
     }
 

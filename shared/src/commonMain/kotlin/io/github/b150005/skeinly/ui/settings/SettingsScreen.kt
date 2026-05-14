@@ -99,11 +99,14 @@ import io.github.b150005.skeinly.generated.resources.label_subscribe_to_pro
 import io.github.b150005.skeinly.generated.resources.label_two_factor_auth
 import io.github.b150005.skeinly.generated.resources.message_email_change_pending
 import io.github.b150005.skeinly.generated.resources.message_password_changed
+import io.github.b150005.skeinly.generated.resources.state_biometric_disabled
+import io.github.b150005.skeinly.generated.resources.state_biometric_enabled
 import io.github.b150005.skeinly.generated.resources.state_deleting_account
 import io.github.b150005.skeinly.generated.resources.state_mfa_disabled
 import io.github.b150005.skeinly.generated.resources.state_mfa_enabled
 import io.github.b150005.skeinly.generated.resources.state_notifications_disabled
 import io.github.b150005.skeinly.generated.resources.state_notifications_enabled
+import io.github.b150005.skeinly.generated.resources.title_biometric_settings
 import io.github.b150005.skeinly.generated.resources.title_mfa_disable_confirm
 import io.github.b150005.skeinly.generated.resources.title_settings
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
@@ -153,12 +156,23 @@ fun SettingsScreen(
     // two-factor authentication" in the Security section. NavGraph wires
     // this to the `MfaEnrollment` route. Default no-op for test mounts.
     onEnableMfaClick: () -> Unit = {},
+    // Phase 26.6 (ADR-022 §6.5) — invoked when the user taps
+    // "Biometric authentication" in the Security section. NavGraph
+    // wires this to the `BiometricSettings` route.
+    onBiometricSettingsClick: () -> Unit = {},
     viewModel: SettingsViewModel = koinViewModel(),
     // Phase 24.2c (ADR-017 §3.6) — push notification consent VM. Drives
     // the Settings → Notifications row + the in-app pre-permission
     // explainer dialog. Default-injected via Koin for production; tests
     // can pass a stub via the parameter.
     notificationViewModel: io.github.b150005.skeinly.ui.notifications.NotificationPermissionViewModel = koinViewModel(),
+    // Phase 26.6 (ADR-022 §6.5) — biometric settings VM. Used here
+    // only to drive the Settings → Security row's trailing state
+    // label ("Enabled" / "Disabled"); the BiometricSettingsScreen
+    // itself resolves its own koinViewModel() instance because Koin's
+    // factory scoping returns the same singleton-scoped VM regardless
+    // of the call site.
+    biometricSettingsViewModel: io.github.b150005.skeinly.ui.biometric.BiometricSettingsViewModel = koinViewModel(),
     // Pre-alpha A30 — opens the platform's subscription management UI
     // (Play Store → Subscriptions / App Store → Subscriptions). Default-
     // injected via Koin for production; tests can pass a stub. Same DI
@@ -357,6 +371,36 @@ fun SettingsScreen(
                                         onEnableMfaClick()
                                     }
                                 }.testTag("twoFactorAuthRow"),
+                    )
+
+                    // Phase 26.6 (ADR-022 §6.5) — biometric authentication
+                    // entry. Routes to the BiometricSettings screen which
+                    // owns the toggle + threshold picker. Trailing state
+                    // label reads the preferences flow directly here so
+                    // the row reflects truth without re-entering the
+                    // screen.
+                    val biometricEnabled by biometricSettingsViewModel.state.collectAsState()
+                    ListItem(
+                        headlineContent = {
+                            Text(stringResource(Res.string.title_biometric_settings))
+                        },
+                        trailingContent = {
+                            Text(
+                                stringResource(
+                                    if (biometricEnabled.enabled) {
+                                        Res.string.state_biometric_enabled
+                                    } else {
+                                        Res.string.state_biometric_disabled
+                                    },
+                                ),
+                            )
+                        },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable(role = Role.Button) {
+                                    onBiometricSettingsClick()
+                                }.testTag("biometricSettingsRow"),
                     )
 
                     Spacer(Modifier.height(24.dp))

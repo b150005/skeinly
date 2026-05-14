@@ -656,4 +656,20 @@
     <string name="error_mfa_enroll_failed">設定に失敗しました。再度お試しください。</string>
     <string name="title_mfa_disable_confirm">2要素認証をオフにしますか？</string>
     <string name="body_mfa_disable_warning">サインイン時に2つ目の要素を求められなくなります。いつでも再度オンにできます。</string>
+
+    <!-- Phase 26.6 (ADR-022 §6.5) — 生体認証による再認証 + 重要操作ゲート -->
+    <string name="title_biometric_settings">生体認証</string>
+    <string name="state_biometric_enabled">オン</string>
+    <string name="state_biometric_disabled">オフ</string>
+    <string name="label_biometric_threshold_picker">再認証までの時間</string>
+    <string name="value_biometric_threshold_1m">1分</string>
+    <string name="value_biometric_threshold_5m">5分</string>
+    <string name="value_biometric_threshold_15m">15分</string>
+    <string name="value_biometric_threshold_1h">1時間</string>
+    <string name="body_biometric_reauth_reason">Skeinly に戻るには本人確認が必要です</string>
+    <string name="body_biometric_account_deletion_reason">アカウントを削除するため本人確認が必要です</string>
+    <string name="body_biometric_mfa_disable_reason">2要素認証をオフにするため本人確認が必要です</string>
+    <string name="state_biometric_unavailable_no_hw">このデバイスでは利用できません</string>
+    <string name="state_biometric_unavailable_not_enrolled">OS設定で生体認証または PIN を登録してください</string>
+    <string name="body_biometric_settings_explanation">オンにすると、設定した時間操作がないと再び Skeinly を開く際に生体認証 (またはデバイスPIN) を求められます。アカウント削除などの重要操作は、この設定がオフでも常に確認します。</string>
 </resources>

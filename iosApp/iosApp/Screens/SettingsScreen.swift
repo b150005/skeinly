@@ -10,6 +10,14 @@ struct SettingsScreen: View {
     @StateObject private var notificationHolder: ScopedViewModel<
         NotificationPermissionViewModel, NotificationPermissionState
     >
+    /// Phase 26.6 (ADR-022 §6.5) — biometric settings state for the
+    /// Settings → Security row's trailing label. Same singleton VM as
+    /// the BiometricSettingsScreen consumes (Koin returns the same
+    /// process-scope instance), so toggling on the screen reactively
+    /// updates the row's label without a manual refresh.
+    @StateObject private var biometricHolder: ScopedViewModel<
+        BiometricSettingsViewModel, BiometricSettingsState
+    >
     @State private var showDeleteConfirmation = false
     @State private var showError = false
     @State private var newPassword = ""
@@ -33,6 +41,10 @@ struct SettingsScreen: View {
     let onManagePacksClick: () -> Void
     /// Phase 26.5 (ADR-022 §6.4) — Security → Enable 2FA entry.
     let onEnableMfaClick: () -> Void
+    /// Phase 26.6 (ADR-022 §6.5) — invoked when the user taps "Biometric
+    /// authentication" in the Security section. AppRouter wires this to
+    /// `path.append(.biometricSettings)`.
+    let onBiometricSettingsClick: () -> Void
 
     private var viewModel: SettingsViewModel { holder.viewModel }
     private var notificationViewModel: NotificationPermissionViewModel { notificationHolder.viewModel }
@@ -72,12 +84,14 @@ struct SettingsScreen: View {
         onSendFeedback: @escaping () -> Void = {},
         onSubscribeToProClick: @escaping () -> Void = {},
         onManagePacksClick: @escaping () -> Void = {},
-        onEnableMfaClick: @escaping () -> Void = {}
+        onEnableMfaClick: @escaping () -> Void = {},
+        onBiometricSettingsClick: @escaping () -> Void = {}
     ) {
         self.onSendFeedback = onSendFeedback
         self.onSubscribeToProClick = onSubscribeToProClick
         self.onManagePacksClick = onManagePacksClick
         self.onEnableMfaClick = onEnableMfaClick
+        self.onBiometricSettingsClick = onBiometricSettingsClick
         let vm = ViewModelFactory.settingsViewModel()
         let wrapper = KoinHelperKt.wrapSettingsState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
@@ -85,6 +99,11 @@ struct SettingsScreen: View {
         let nWrapper = KoinHelperKt.wrapNotificationPermissionState(flow: nvm.state)
         _notificationHolder = StateObject(
             wrappedValue: ScopedViewModel(viewModel: nvm, wrapper: nWrapper)
+        )
+        let bvm = ViewModelFactory.biometricSettingsViewModel()
+        let bWrapper = KoinHelperKt.wrapBiometricSettingsState(flow: bvm.state)
+        _biometricHolder = StateObject(
+            wrappedValue: ScopedViewModel(viewModel: bvm, wrapper: bWrapper)
         )
     }
 
@@ -315,6 +334,27 @@ struct SettingsScreen: View {
                         }
                     }
                     .accessibilityIdentifier("twoFactorAuthRow")
+
+                    // Phase 26.6 (ADR-022 §6.5) — biometric entry routes to
+                    // a pushed BiometricSettingsScreen with the toggle +
+                    // threshold picker. Trailing state label reads from
+                    // the same VM singleton that drives the screen so a
+                    // toggle change reflects here reactively.
+                    Button {
+                        onBiometricSettingsClick()
+                    } label: {
+                        HStack {
+                            Text(LocalizedStringKey("title_biometric_settings"))
+                            Spacer()
+                            Text(LocalizedStringKey(
+                                biometricHolder.state.enabled
+                                    ? "state_biometric_enabled"
+                                    : "state_biometric_disabled"
+                            ))
+                            .foregroundStyle(.secondary)
+                        }
+                    }
+                    .accessibilityIdentifier("biometricSettingsRow")
                 }
             }
 

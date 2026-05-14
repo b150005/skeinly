@@ -57,4 +57,10 @@ class DeleteAccountUseCaseTest {
             assertTrue(comment.closeChannelCalled)
             assertTrue(activity.closeChannelCalled)
         }
+
+    // Phase 26.6 (ADR-022 §6.5) — biometric sensitive-action gate
+    // moved to SettingsViewModel.performDeleteAccount (see code review
+    // §HIGH-2). Coverage for the gate lives in
+    // SettingsViewModelTest.`DeleteAccount biometric ...` cases —
+    // tests here stay focused on the pure RPC behavior.
 }

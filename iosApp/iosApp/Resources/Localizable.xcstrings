@@ -8777,6 +8777,104 @@
           }
         }
       }
+    },
+    "title_biometric_settings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Biometric authentication" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "生体認証" } }
+      }
+    },
+    "state_biometric_enabled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enabled" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オン" } }
+      }
+    },
+    "state_biometric_disabled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Disabled" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オフ" } }
+      }
+    },
+    "label_biometric_threshold_picker" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Re-authenticate after" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "再認証までの時間" } }
+      }
+    },
+    "value_biometric_threshold_1m" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "1 minute" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "1分" } }
+      }
+    },
+    "value_biometric_threshold_5m" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "5 minutes" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "5分" } }
+      }
+    },
+    "value_biometric_threshold_15m" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "15 minutes" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "15分" } }
+      }
+    },
+    "value_biometric_threshold_1h" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "1 hour" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "1時間" } }
+      }
+    },
+    "body_biometric_reauth_reason" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirm it's you to re-enter Skeinly" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Skeinly に戻るには本人確認が必要です" } }
+      }
+    },
+    "body_biometric_account_deletion_reason" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirm it's you to delete your account" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウントを削除するため本人確認が必要です" } }
+      }
+    },
+    "body_biometric_mfa_disable_reason" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirm it's you to disable two-factor authentication" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "2要素認証をオフにするため本人確認が必要です" } }
+      }
+    },
+    "state_biometric_unavailable_no_hw" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Not available on this device" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このデバイスでは利用できません" } }
+      }
+    },
+    "state_biometric_unavailable_not_enrolled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No biometric or PIN enrolled in OS settings" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "OS設定で生体認証または PIN を登録してください" } }
+      }
+    },
+    "body_biometric_settings_explanation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "When enabled, Skeinly asks for biometric (or device PIN) after you've been away for the selected time. Sensitive actions like deleting your account always ask, even when this is off." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オンにすると、設定した時間操作がないと再び Skeinly を開く際に生体認証 (またはデバイスPIN) を求められます。アカウント削除などの重要操作は、この設定がオフでも常に確認します。" } }
+      }
     }
   },
   "version" : "1.1"

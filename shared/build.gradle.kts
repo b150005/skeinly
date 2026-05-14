@@ -282,6 +282,17 @@ kotlin {
                 implementation(libs.androidx.credentials)
                 implementation(libs.androidx.credentials.play.services.auth)
                 implementation(libs.google.identity.googleid)
+                // Phase 26.6 (ADR-022 §6.5) — biometric re-auth + sensitive-
+                // action gates. `BiometricAuthenticator.android.kt` calls
+                // `BiometricPrompt.PromptInfo.Builder` against the host
+                // FragmentActivity. `AppLifecycleObserver.android.kt` uses
+                // `ProcessLifecycleOwner.get().lifecycle` to surface the
+                // single Background→Foreground transition that drives
+                // BiometricGuardian.requireForResume(). Both deps must live
+                // on the shared module's classpath (not only androidApp's)
+                // because the actual classes import the symbols directly.
+                implementation(libs.androidx.biometric)
+                implementation(libs.androidx.lifecycle.process)
             }
         }
         getByName("androidHostTest") {
@@ -426,6 +437,27 @@ kover {
                     // AuthViewModel integration are exercised via
                     // the lambda-seam in `AuthViewModelTest`.
                     "io.github.b150005.skeinly.auth.OAuthClient",
+                    // Phase 26.6 (ADR-022 §6.5) — biometric Compose
+                    // screen untestable on JVM. The driving ViewModel
+                    // + the BiometricGuardian are exercised via
+                    // commonTest. The `BiometricAuthenticator`
+                    // platform actuals (Android BiometricPrompt / iOS
+                    // LAContext) similarly can't run on JVM; the
+                    // shared expect class surfaces via lambda seams
+                    // in BiometricGuardian + BiometricSettingsViewModel
+                    // tests. AppLifecycleObserver actuals wrap
+                    // ProcessLifecycleOwner / NSNotificationCenter —
+                    // same JVM-untestable shape.
+                    "io.github.b150005.skeinly.ui.biometric.BiometricSettingsScreenKt*",
+                    "io.github.b150005.skeinly.biometric.BiometricAuthenticator*",
+                    "io.github.b150005.skeinly.platform.AppLifecycleObserver*",
+                    // The lifecycle bridge is a single launched
+                    // collector behind a Koin singleton — uncovered
+                    // by commonTest (no Koin setup) and structurally
+                    // trivial (forward two enum branches to two
+                    // Guardian methods). The Guardian's methods are
+                    // exhaustively tested elsewhere.
+                    "io.github.b150005.skeinly.biometric.BiometricLifecycleBridgeKt*",
                 )
             }
         }

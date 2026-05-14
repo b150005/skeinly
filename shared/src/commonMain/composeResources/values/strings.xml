@@ -881,4 +881,20 @@
     <string name="error_mfa_enroll_failed">Enrollment failed. Please try again.</string>
     <string name="title_mfa_disable_confirm">Disable two-factor authentication?</string>
     <string name="body_mfa_disable_warning">Your account will no longer require a second factor at sign-in. You can re-enable it anytime.</string>
+
+    <!-- Phase 26.6 (ADR-022 §6.5) — biometric re-auth + sensitive-action gates. -->
+    <string name="title_biometric_settings">Biometric authentication</string>
+    <string name="state_biometric_enabled">Enabled</string>
+    <string name="state_biometric_disabled">Disabled</string>
+    <string name="label_biometric_threshold_picker">Re-authenticate after</string>
+    <string name="value_biometric_threshold_1m">1 minute</string>
+    <string name="value_biometric_threshold_5m">5 minutes</string>
+    <string name="value_biometric_threshold_15m">15 minutes</string>
+    <string name="value_biometric_threshold_1h">1 hour</string>
+    <string name="body_biometric_reauth_reason">Confirm it\'s you to re-enter Skeinly</string>
+    <string name="body_biometric_account_deletion_reason">Confirm it\'s you to delete your account</string>
+    <string name="body_biometric_mfa_disable_reason">Confirm it\'s you to disable two-factor authentication</string>
+    <string name="state_biometric_unavailable_no_hw">Not available on this device</string>
+    <string name="state_biometric_unavailable_not_enrolled">No biometric or PIN enrolled in OS settings</string>
+    <string name="body_biometric_settings_explanation">When enabled, Skeinly asks for biometric (or device PIN) after you\'ve been away for the selected time. Sensitive actions like deleting your account always ask, even when this is off.</string>
 </resources>

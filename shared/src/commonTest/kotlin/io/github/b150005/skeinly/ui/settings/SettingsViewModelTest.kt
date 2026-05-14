@@ -341,7 +341,125 @@ class SettingsViewModelTest {
             assertNotNull(viewModel.state.value.error)
         }
 
-    private fun createMfaAwareViewModel(): SettingsViewModel =
+    // Phase 26.6 (ADR-022 §6.5) — biometric sensitive-action gate on disable-MFA.
+
+    @Test
+    fun `DisableMfaConfirmed biometric Cancelled aborts without calling disable`() =
+        runTest {
+            authRepo.setAuthState(AuthState.Authenticated("user-1", "u@example.com"))
+            authRepo.setMfaStatus(
+                io.github.b150005.skeinly.domain.model.MfaEnrollmentStatus
+                    .Enrolled("active-1"),
+            )
+            val viewModel =
+                createMfaAwareViewModel(
+                    requireBiometricForMfaDisable = {
+                        io.github.b150005.skeinly.biometric.BiometricResult.Cancelled
+                    },
+                )
+            viewModel.onEvent(SettingsEvent.DisableMfaConfirmed)
+            assertEquals(0, authRepo.disableMfaCallCount, "Cancelled biometric must skip the disable RPC")
+            assertFalse(viewModel.state.value.isDisablingMfa)
+            assertNull(viewModel.state.value.error, "Cancelled is user intent — no error UI")
+        }
+
+    @Test
+    fun `DisableMfaConfirmed biometric Failed aborts and surfaces error`() =
+        runTest {
+            authRepo.setAuthState(AuthState.Authenticated("user-1", "u@example.com"))
+            authRepo.setMfaStatus(
+                io.github.b150005.skeinly.domain.model.MfaEnrollmentStatus
+                    .Enrolled("active-1"),
+            )
+            val viewModel =
+                createMfaAwareViewModel(
+                    requireBiometricForMfaDisable = {
+                        io.github.b150005.skeinly.biometric.BiometricResult.Failed
+                    },
+                )
+            viewModel.onEvent(SettingsEvent.DisableMfaConfirmed)
+            assertEquals(0, authRepo.disableMfaCallCount)
+            assertNotNull(viewModel.state.value.error)
+        }
+
+    @Test
+    fun `DisableMfaConfirmed biometric Success falls through to disable RPC`() =
+        runTest {
+            authRepo.setAuthState(AuthState.Authenticated("user-1", "u@example.com"))
+            authRepo.setMfaStatus(
+                io.github.b150005.skeinly.domain.model.MfaEnrollmentStatus
+                    .Enrolled("active-1"),
+            )
+            val viewModel =
+                createMfaAwareViewModel(
+                    requireBiometricForMfaDisable = {
+                        io.github.b150005.skeinly.biometric.BiometricResult.Success
+                    },
+                )
+            viewModel.onEvent(SettingsEvent.DisableMfaConfirmed)
+            assertEquals(1, authRepo.disableMfaCallCount)
+            assertEquals("active-1", authRepo.lastDisabledFactorId)
+        }
+
+    // Phase 26.6 (ADR-022 §6.5) — biometric gate on the delete-account path.
+    // The gate fires BEFORE the destructive RPC; Cancelled returns silently
+    // (no error toast), Failed surfaces ErrorMessage.Generic.
+
+    @Test
+    fun `DeleteAccount biometric Cancelled aborts without firing the RPC`() =
+        runTest {
+            authRepo.setAuthState(AuthState.Authenticated("user-1", "u@example.com"))
+            val viewModel =
+                createMfaAwareViewModel(
+                    requireBiometricForAccountDelete = {
+                        io.github.b150005.skeinly.biometric.BiometricResult.Cancelled
+                    },
+                )
+            viewModel.onEvent(SettingsEvent.DeleteAccountConfirmed)
+            // Auth state unchanged → RPC was never called.
+            assertEquals("user-1", authRepo.getCurrentUserId())
+            assertFalse(viewModel.state.value.isDeletingAccount)
+            assertNull(viewModel.state.value.error, "Cancelled is user intent — no error UI")
+        }
+
+    @Test
+    fun `DeleteAccount biometric Failed surfaces generic error without RPC`() =
+        runTest {
+            authRepo.setAuthState(AuthState.Authenticated("user-1", "u@example.com"))
+            val viewModel =
+                createMfaAwareViewModel(
+                    requireBiometricForAccountDelete = {
+                        io.github.b150005.skeinly.biometric.BiometricResult.Failed
+                    },
+                )
+            viewModel.onEvent(SettingsEvent.DeleteAccountConfirmed)
+            assertEquals("user-1", authRepo.getCurrentUserId())
+            assertNotNull(viewModel.state.value.error)
+        }
+
+    @Test
+    fun `DeleteAccount biometric Success falls through to delete RPC`() =
+        runTest {
+            authRepo.setAuthState(AuthState.Authenticated("user-1", "u@example.com"))
+            val viewModel =
+                createMfaAwareViewModel(
+                    requireBiometricForAccountDelete = {
+                        io.github.b150005.skeinly.biometric.BiometricResult.Success
+                    },
+                )
+            viewModel.onEvent(SettingsEvent.DeleteAccountConfirmed)
+            // Auth state cleared by the cascading delete → null after the RPC.
+            assertNull(authRepo.getCurrentUserId())
+        }
+
+    private fun createMfaAwareViewModel(
+        requireBiometricForMfaDisable: suspend () -> io.github.b150005.skeinly.biometric.BiometricResult = {
+            io.github.b150005.skeinly.biometric.BiometricResult.Success
+        },
+        requireBiometricForAccountDelete: suspend () -> io.github.b150005.skeinly.biometric.BiometricResult = {
+            io.github.b150005.skeinly.biometric.BiometricResult.Success
+        },
+    ): SettingsViewModel =
         SettingsViewModel(
             observeAuthState = ObserveAuthStateUseCase(authRepo),
             signOut = SignOutUseCase(authRepo, CloseRealtimeChannelsUseCase(null, null, null)),
@@ -351,6 +469,8 @@ class SettingsViewModelTest {
             analyticsPreferences = analyticsPrefs,
             observeMfaStatusFlow = { authRepo.observeMfaStatus() },
             disableMfa = authRepo::disableMfa,
+            requireBiometricForMfaDisable = requireBiometricForMfaDisable,
+            requireBiometricForAccountDelete = requireBiometricForAccountDelete,
         )
 }
 

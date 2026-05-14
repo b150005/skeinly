@@ -2,6 +2,7 @@ package io.github.b150005.skeinly.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.b150005.skeinly.biometric.BiometricResult
 import io.github.b150005.skeinly.data.analytics.AnalyticsEvent
 import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
 import io.github.b150005.skeinly.data.analytics.ClickActionId
@@ -145,6 +146,25 @@ class SettingsViewModel(
         kotlinx.coroutines.flow.flowOf(MfaEnrollmentStatus.NotEnrolled)
     },
     private val disableMfa: suspend (factorId: String) -> Unit = { /* no-op */ },
+    // Phase 26.6 (ADR-022 §6.5) — biometric sensitive-action gate
+    // fired immediately before the disable-MFA RPC. Lambda seam over
+    // [io.github.b150005.skeinly.biometric.BiometricGuardian.requireForAction]
+    // so the VM stays testable without standing up the biometric stack.
+    // Default returns Success — tests that don't care, and dev builds
+    // wired without the Guardian, structurally skip the gate.
+    private val requireBiometricForMfaDisable: suspend () -> BiometricResult = {
+        BiometricResult.Success
+    },
+    // Phase 26.6 (ADR-022 §6.5) — biometric sensitive-action gate
+    // fired immediately before the cascading account-deletion RPC.
+    // Same lambda-seam shape + same Cancelled-vs-Failed UI semantics
+    // as [requireBiometricForMfaDisable] above. The gate lives at the
+    // VM (not inside `DeleteAccountUseCase`) so user-cancel of the
+    // biometric prompt produces a silent UI reset rather than a
+    // "Permission denied" error toast.
+    private val requireBiometricForAccountDelete: suspend () -> BiometricResult = {
+        BiometricResult.Success
+    },
 ) : ViewModel() {
     private val _state = MutableStateFlow(SettingsState())
     val state: StateFlow<SettingsState> = _state.asStateFlow()
@@ -215,6 +235,14 @@ class SettingsViewModel(
     }
 
     private fun performDisableMfa() {
+        // Phase 26.6 (ADR-022 §6.5) — re-entry guard. Same rationale as
+        // performDeleteAccount: the biometric prompt suspends the
+        // coroutine for several seconds with `isDisablingMfa` already
+        // set to true, but a second tap before the first request lands
+        // could still race the `factorId` resolution if the state
+        // mutates between launch and gate. Defending at the entry
+        // point is the simplest invariant.
+        if (_state.value.isDisablingMfa) return
         val factorId =
             when (val status = _state.value.mfaStatus) {
                 is MfaEnrollmentStatus.Enrolled -> status.factorId
@@ -223,6 +251,29 @@ class SettingsViewModel(
             }
         viewModelScope.launch {
             _state.update { it.copy(isDisablingMfa = true, error = null) }
+            // Phase 26.6 (ADR-022 §6.5) — biometric gate. On Cancelled
+            // / Failed / Unavailable-via-error we abort without firing
+            // the disable RPC. Success (gate passed OR not enforceable
+            // — see BiometricGuardian.requireForAction) falls through
+            // to the RPC. We keep `isDisablingMfa = true` across the
+            // gate so the UI stays in the busy state during the OS
+            // prompt and there's no flicker on success.
+            val gate = requireBiometricForMfaDisable()
+            when (gate) {
+                BiometricResult.Success -> Unit
+                BiometricResult.Cancelled -> {
+                    _state.update { it.copy(isDisablingMfa = false) }
+                    return@launch
+                }
+                BiometricResult.Failed,
+                BiometricResult.Unavailable,
+                -> {
+                    _state.update {
+                        it.copy(isDisablingMfa = false, error = ErrorMessage.Generic)
+                    }
+                    return@launch
+                }
+            }
             try {
                 disableMfa(factorId)
                 _state.update { it.copy(isDisablingMfa = false) }
@@ -276,7 +327,33 @@ class SettingsViewModel(
     }
 
     private fun performDeleteAccount() {
+        // Phase 26.6 (ADR-022 §6.5) — re-entry guard. The biometric
+        // prompt suspends the coroutine for several seconds during
+        // which `isDeletingAccount` is still false (we deliberately
+        // don't flip it until after the gate to avoid spinner-flash
+        // behind the OS dialog). Without this guard, a user who
+        // dismisses the prompt + navigates away + re-taps delete +
+        // re-confirms would queue a second `deleteAccount()` RPC.
+        // Mirrors the MfaEnrollmentViewModel.Start idempotency pattern.
+        if (_state.value.isDeletingAccount) return
         viewModelScope.launch {
+            // Biometric gate BEFORE flipping `isDeletingAccount = true`
+            // so the spinner does not flash behind the OS biometric
+            // prompt. On Cancelled the UI returns to the pre-tap state
+            // without any error UI; on Failed/Unavailable surface a
+            // generic error (the in-app destructive-confirm dialog has
+            // already been dismissed by the caller, so a silent return
+            // would feel like a no-op).
+            when (requireBiometricForAccountDelete()) {
+                BiometricResult.Success -> Unit
+                BiometricResult.Cancelled -> return@launch
+                BiometricResult.Failed,
+                BiometricResult.Unavailable,
+                -> {
+                    _state.update { it.copy(error = ErrorMessage.Generic) }
+                    return@launch
+                }
+            }
             _state.update { it.copy(isDeletingAccount = true) }
             when (val result = deleteAccount()) {
                 is UseCaseResult.Success -> {

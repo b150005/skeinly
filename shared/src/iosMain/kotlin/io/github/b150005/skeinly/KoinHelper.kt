@@ -282,6 +282,46 @@ fun startRevenueCatAuthBridge() {
     )
 }
 
+/**
+ * Phase 26.6 (ADR-022 §6.5) — bridges process-level
+ * `UIApplicationWillEnterForegroundNotification` +
+ * `UIApplicationDidEnterBackgroundNotification` to the shared
+ * [io.github.b150005.skeinly.biometric.BiometricGuardian]. Called once
+ * from `iOSApp.init` after `initKoin` returns.
+ *
+ * On Failed/Cancelled outcome the supplied closure invokes the
+ * SignOut use case (per ADR §3.8). Wiring the sign-out call into the
+ * bridge — rather than returning a SharedFlow for the caller to
+ * collect — closes the security loop by construction.
+ *
+ * The lifecycle bridge runs for the process lifetime; explicit
+ * cancellation has no use case on iOS. Same shape as
+ * [startRevenueCatAuthBridge] (Phase 39.0.1).
+ */
+fun startBiometricLifecycleBridge() {
+    val koin = KoinPlatform.getKoin()
+    val scope =
+        koin.get<kotlinx.coroutines.CoroutineScope>(
+            io.github.b150005.skeinly.di.applicationScopeQualifier,
+        )
+    val guardian = koin.get<io.github.b150005.skeinly.biometric.BiometricGuardian>()
+    val lifecycleObserver = koin.get<io.github.b150005.skeinly.platform.AppLifecycleObserver>()
+    val signOutUseCase =
+        koin.get<io.github.b150005.skeinly.domain.usecase.SignOutUseCase>()
+    io.github.b150005.skeinly.biometric.startBiometricLifecycleBridge(
+        scope = scope,
+        guardian = guardian,
+        lifecycleObserver = lifecycleObserver,
+        onResumeAuthInvalidated = {
+            // Best-effort sign-out: a Failure inside SignOut still
+            // emits a non-Authenticated AuthState through the
+            // observer flow because the use case surfaces the local
+            // session-clear regardless of remote success.
+            signOutUseCase()
+        },
+    )
+}
+
 fun getActivityFeedViewModel(): ActivityFeedViewModel = KoinPlatform.getKoin().get()
 
 fun getSharedWithMeViewModel(): SharedWithMeViewModel = KoinPlatform.getKoin().get()
@@ -421,6 +461,15 @@ fun getMfaChallengeViewModel(): io.github.b150005.skeinly.ui.auth.MfaChallengeVi
 fun wrapMfaChallengeState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.auth.MfaChallengeUiState>,
 ): FlowWrapper<io.github.b150005.skeinly.ui.auth.MfaChallengeUiState> = FlowWrapper(flow)
+
+// Phase 26.6 (ADR-022 §6.5) — biometric settings ViewModel + state
+// wrapper. The SwiftUI BiometricSettingsScreen mirrors the Compose
+// surface and routes events through this VM.
+fun getBiometricSettingsViewModel(): io.github.b150005.skeinly.ui.biometric.BiometricSettingsViewModel = KoinPlatform.getKoin().get()
+
+fun wrapBiometricSettingsState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.biometric.BiometricSettingsState>,
+): FlowWrapper<io.github.b150005.skeinly.ui.biometric.BiometricSettingsState> = FlowWrapper(flow)
 
 fun wrapSettingsAccountDeletedFlow(flow: kotlinx.coroutines.flow.Flow<kotlin.Unit>): EventFlowWrapper<kotlin.Unit> = EventFlowWrapper(flow)
 
