@@ -526,21 +526,54 @@ Phase 26 is the alpha-launch HARD-GATE (per the Planned section above) and curre
 - **独自のセキュリティ審査**: チェックしない (3rd-party security audit 未実施)
 - **UPI での支払い確認済み**: チェックしない (Skeinly はインド NPCI 認定対象のファイナンスアプリではない)
 
-#### Page 3: データの種類 — 9-type declaration matrix
+#### Page 3: データの種類 — per-Play-category walkthrough
 
-Declare these per [pre-alpha-checklist.md §35.1 A6](ops/pre-alpha-checklist.md#a6-data-safety-form):
+Play groups data into 14 collapsible categories. Expand each, check only the listed items, leave the rest off. Source mapping cross-references [pre-alpha-checklist.md §35.1 A6](ops/pre-alpha-checklist.md#a6-data-safety-form).
 
-| Data category | Type | Required? | Encrypted | Deletable |
-|---|---|---|---|---|
-| Personal info | Email | Yes | Yes | Yes |
-| Personal info | Display name | Yes | Yes | Yes |
-| Personal info | Bug report content | No (user-submitted) | Yes | Via support |
-| Financial info | Purchase history (RevenueCat) | No (Pro only) | Yes | Yes |
-| App activity | PostHog events | No (opt-in) | Yes | Anonymized |
-| App info and performance | Sentry crash logs | No (opt-in) | Yes | Anonymized |
-| Device or other IDs | FCM/APNs token | No (push permission) | Yes | Yes |
-| Device or other IDs | Supabase user UUID | Yes | Yes | Yes |
-| Files and docs | UGC (chart images / pattern data) | No (Discovery share only) | Yes | Yes |
+**位置情報** (0/2): no checks. Skeinly does not collect location.
+
+**個人情報** (3/9 checked):
+- ☑ **名前** — Skeinly `display_name` (Supabase profile). Users may enter their real name; declare under Name for safety.
+- ☑ **メールアドレス** — Supabase Auth email.
+- ☑ **ユーザー ID** — Supabase UUID.
+- Leave unchecked: 住所 / 電話番号 / 人種、民族 / 政治信条、宗教 / 性的指向 / その他の情報 (生年月日 etc.) — none collected.
+
+**財務情報** (1/4 checked):
+- ☑ **購入履歴** — RevenueCat subscription state (Pro only).
+- Leave unchecked: 支払い情報 (Play / StoreKit handles, never reaches Skeinly — Apple's note on the parallel ASC form applies here too); 信用度 / 与信; その他の財務情報.
+
+**健康とフィットネス** (0/2): no checks. Skeinly does not collect health or fitness data.
+
+**メッセージ** (0/3): no checks. Skeinly has no chat / SMS-like messaging — patterns and comments are forum-style UGC, declared elsewhere.
+
+**写真と動画** (1/2 checked):
+- ☑ **写真** — project progress photos in Supabase Storage.
+- Leave unchecked: 動画 (no video features).
+
+**音声ファイル** (0/3): no checks. No voice recording / music files / other audio.
+
+**ファイルとドキュメント** (1/1 checked):
+- ☑ **ファイルとドキュメント** — chart data / pattern data exports as user content (UGC).
+
+**カレンダー** (0/1): no checks. No calendar event integration.
+
+**連絡先** (0/1): no checks. Skeinly does not access the contact list.
+
+**アプリのアクティビティ** (1/6 checked):
+- ☑ **アプリでの操作** — PostHog page views / taps / scrolls (opt-in via consent screen).
+- Leave unchecked: アプリ内検索履歴 (search queries are transient, not persisted); インストール済みのアプリ; その他のユーザー生成コンテンツ (handled under user content); その他の操作 (the captured PostHog events are app-actions).
+
+**ウェブ閲覧履歴** (0/1): no checks. No browsing history captured.
+
+**アプリの情報とパフォーマンス** (2/3 checked):
+- ☑ **クラッシュログ** — Sentry crash logs (opt-in).
+- ☑ **診断** — Sentry performance traces (opt-in).
+- Leave unchecked: その他のアプリパフォーマンスデータ.
+
+**デバイスまたはその他の ID** (1/1 checked):
+- ☑ **デバイスまたはその他の ID** — FCM/APNs push token + PostHog distinct_id.
+
+Total expected checks: 10 across 14 categories. Bug-report content does NOT have a clean home in Play's category list (Play's "メッセージ" sub-types are SMS / email-style; bug reports are closer to "アプリのアクティビティ > その他の操作" but the GitHub-Issue destination + GitHub App proxy puts it in a distinct lane). Operator judgment call at submission time — pick the most-honest fit, often **アプリのアクティビティ > その他の操作** or leave undeclared if Play's form rejects either route.
 
 #### Page 4: データの使用と処理
 
