@@ -439,7 +439,12 @@ After adding instructions, leave the "**提供した認証情報を Android が�
 
 ### A0d-4: Content rating (IARC)
 
-- [ ] App content → **Content rating** → register contact email **`skeinly.app+rating@gmail.com`** (plus-alias dedicated to content-rating correspondence — the form helper notes the address "may be shared with rating bodies and IARC", so this lane covers IARC + every regional body that issues a Skeinly rating: ESRB / PEGI / USK / CERO / ClassInd / ACB / etc. Certificates, standards-update notices, and dispute / re-rating contact all land here, separate from the support lane.) + category → start the IARC questionnaire
+Step 1 of 3 — **カテゴリ** (Category) page:
+
+- [ ] Email: **`skeinly.app+rating@gmail.com`** (plus-alias dedicated to content-rating correspondence — the form helper notes the address "may be shared with rating bodies and IARC", so this lane covers IARC + every regional body that issues a Skeinly rating: ESRB / PEGI / USK / CERO / ClassInd / ACB / etc.)
+- [ ] Category: **その他のすべてのアプリの種類** (All other app types) — Skeinly's core is project + pattern management (single-user); UGC / Discovery / comments / suggestions are secondary. NOT ゲーム (not a game) and NOT ソーシャルまたはコミュニケーション (communication is not Skeinly's primary purpose, unlike Facebook / Twitter / Skype). The "all other" category also routes the questionnaire down a shorter path focused on UGC / digital purchases — game-category questionnaires drag in violence / gambling / sexual-content branches Skeinly doesn't need.
+- [ ] ☑ **International Age Rating Coalition (IARC) の利用規約に同意します** — tick the agreement checkbox
+- [ ] **次へ** → Step 2 アンケート (the actual IARC questionnaire)
 
 Target: **Everyone** (all ages). Skeinly answers:
 
