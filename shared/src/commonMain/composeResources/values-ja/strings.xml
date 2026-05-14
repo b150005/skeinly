@@ -627,4 +627,33 @@
     <string name="title_maintenance">Skeinly は一時的にご利用いただけません</string>
     <string name="body_maintenance_default">Skeinly バックエンドのメンテナンス中です。数分後に再度お試しください。</string>
     <string name="action_maintenance_retry">再試行</string>
+
+    <!-- Phase 26.5 (ADR-022 §6.4) — 2要素認証 (TOTP). -->
+    <string name="label_security_section">セキュリティ</string>
+    <string name="label_two_factor_auth">2要素認証</string>
+    <string name="state_mfa_enabled">オン</string>
+    <string name="state_mfa_disabled">オフ</string>
+    <string name="action_enable_mfa">2要素認証をオンにする</string>
+    <string name="action_disable_mfa">2要素認証をオフにする</string>
+    <string name="title_mfa_enroll">認証アプリでスキャン</string>
+    <string name="body_mfa_enroll_scan_qr">Google Authenticator・1Password・Authy などの TOTP アプリで下の QR コードを読み取ってください。スキャンできない場合は、シークレットを手入力できます。</string>
+    <string name="label_mfa_manual_secret">手入力用シークレット</string>
+    <string name="action_mfa_advance_to_confirm">追加した — 認証に進む</string>
+    <string name="title_mfa_confirm_code">6桁のコードを入力</string>
+    <string name="body_mfa_confirm_code">ペアリングを完了するため、認証アプリに表示されている6桁のコードを入力してください。</string>
+    <string name="action_mfa_verify">認証</string>
+    <string name="title_mfa_recovery_code">復旧コードを保管してください</string>
+    <string name="body_mfa_recovery_code_warning">このコードを書き留めるかスクリーンショットを撮ってください。認証デバイスを紛失した場合、この使い切りコードがアクセスを取り戻す唯一の方法です。再表示はできません。</string>
+    <string name="action_mfa_recovery_code_saved">保管しました</string>
+    <string name="title_mfa_challenge">2要素認証</string>
+    <string name="body_mfa_challenge_prompt">続行するには、認証アプリに表示されている6桁のコードを入力してください。</string>
+    <string name="action_mfa_use_recovery_code">復旧コードを使う</string>
+    <string name="action_mfa_back_to_totp">認証コードに戻る</string>
+    <string name="label_mfa_recovery_code_input">復旧コード</string>
+    <string name="error_mfa_invalid_code">コードが正しくありません。再度お試しください。</string>
+    <string name="error_mfa_invalid_recovery_code">復旧コードが正しくありません。</string>
+    <string name="error_mfa_locked">失敗回数が多すぎます。少し時間をおいてから再度お試しください。</string>
+    <string name="error_mfa_enroll_failed">設定に失敗しました。再度お試しください。</string>
+    <string name="title_mfa_disable_confirm">2要素認証をオフにしますか？</string>
+    <string name="body_mfa_disable_warning">サインイン時に2つ目の要素を求められなくなります。いつでも再度オンにできます。</string>
 </resources>

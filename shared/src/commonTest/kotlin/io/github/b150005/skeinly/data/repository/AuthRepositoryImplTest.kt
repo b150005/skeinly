@@ -280,4 +280,75 @@ class AuthRepositoryImplTest {
             .replace('+', '-')
             .replace('/', '_')
     }
+
+    // =================================================================
+    // Phase 26.5 (ADR-022 §6.4) — MFA null-client / contract tests
+    // =================================================================
+
+    @Test
+    fun `observeMfaStatus emits NotEnrolled when client is null`() =
+        runTest {
+            val repo = AuthRepositoryImpl(supabaseClient = null)
+            repo.observeMfaStatus().test {
+                assertEquals(
+                    io.github.b150005.skeinly.domain.model.MfaEnrollmentStatus.NotEnrolled,
+                    awaitItem(),
+                )
+                awaitComplete()
+            }
+        }
+
+    @Test
+    fun `enrollMfaTotp throws when client is null`() =
+        runTest {
+            val repo = AuthRepositoryImpl(supabaseClient = null)
+            assertFailsWith<IllegalStateException> {
+                repo.enrollMfaTotp()
+            }
+        }
+
+    @Test
+    fun `verifyMfaEnrollment throws when client is null`() =
+        runTest {
+            val repo = AuthRepositoryImpl(supabaseClient = null)
+            assertFailsWith<IllegalStateException> {
+                repo.verifyMfaEnrollment(factorId = "any", code = "123456")
+            }
+        }
+
+    @Test
+    fun `submitMfaChallenge throws when client is null`() =
+        runTest {
+            val repo = AuthRepositoryImpl(supabaseClient = null)
+            assertFailsWith<IllegalStateException> {
+                repo.submitMfaChallenge(code = "123456")
+            }
+        }
+
+    @Test
+    fun `consumeRecoveryCode throws when client is null`() =
+        runTest {
+            val repo = AuthRepositoryImpl(supabaseClient = null)
+            assertFailsWith<IllegalStateException> {
+                repo.consumeRecoveryCode("plain")
+            }
+        }
+
+    @Test
+    fun `disableMfa throws when client is null`() =
+        runTest {
+            val repo = AuthRepositoryImpl(supabaseClient = null)
+            assertFailsWith<IllegalStateException> {
+                repo.disableMfa("any-factor-id")
+            }
+        }
+
+    @Test
+    fun `regenerateRecoveryCode throws when client is null`() =
+        runTest {
+            val repo = AuthRepositoryImpl(supabaseClient = null)
+            assertFailsWith<IllegalStateException> {
+                repo.regenerateRecoveryCode()
+            }
+        }
 }

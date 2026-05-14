@@ -54,6 +54,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.config.BuildFlags
+import io.github.b150005.skeinly.domain.model.MfaEnrollmentStatus
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_back
 import io.github.b150005.skeinly.generated.resources.action_cancel
@@ -62,6 +63,7 @@ import io.github.b150005.skeinly.generated.resources.action_change_password
 import io.github.b150005.skeinly.generated.resources.action_contact_support
 import io.github.b150005.skeinly.generated.resources.action_delete
 import io.github.b150005.skeinly.generated.resources.action_delete_account
+import io.github.b150005.skeinly.generated.resources.action_disable_mfa
 import io.github.b150005.skeinly.generated.resources.action_help_faq
 import io.github.b150005.skeinly.generated.resources.action_manage_subscription
 import io.github.b150005.skeinly.generated.resources.action_open_source_licenses
@@ -74,6 +76,7 @@ import io.github.b150005.skeinly.generated.resources.body_contact_support_helper
 import io.github.b150005.skeinly.generated.resources.body_delete_account_warning
 import io.github.b150005.skeinly.generated.resources.body_diagnostic_data_explanation
 import io.github.b150005.skeinly.generated.resources.body_manage_subscription_helper
+import io.github.b150005.skeinly.generated.resources.body_mfa_disable_warning
 import io.github.b150005.skeinly.generated.resources.body_notifications_disabled_hint
 import io.github.b150005.skeinly.generated.resources.body_notifications_setting_explanation
 import io.github.b150005.skeinly.generated.resources.body_send_feedback_explanation
@@ -91,12 +94,17 @@ import io.github.b150005.skeinly.generated.resources.label_new_password
 import io.github.b150005.skeinly.generated.resources.label_notifications_settings_row
 import io.github.b150005.skeinly.generated.resources.label_pack_management
 import io.github.b150005.skeinly.generated.resources.label_paywall_section
+import io.github.b150005.skeinly.generated.resources.label_security_section
 import io.github.b150005.skeinly.generated.resources.label_subscribe_to_pro
+import io.github.b150005.skeinly.generated.resources.label_two_factor_auth
 import io.github.b150005.skeinly.generated.resources.message_email_change_pending
 import io.github.b150005.skeinly.generated.resources.message_password_changed
 import io.github.b150005.skeinly.generated.resources.state_deleting_account
+import io.github.b150005.skeinly.generated.resources.state_mfa_disabled
+import io.github.b150005.skeinly.generated.resources.state_mfa_enabled
 import io.github.b150005.skeinly.generated.resources.state_notifications_disabled
 import io.github.b150005.skeinly.generated.resources.state_notifications_enabled
+import io.github.b150005.skeinly.generated.resources.title_mfa_disable_confirm
 import io.github.b150005.skeinly.generated.resources.title_settings
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.localized
@@ -141,6 +149,10 @@ fun SettingsScreen(
     // Symbol Packs". Always-on, NOT beta-gated. NavGraph wires this to
     // the `PackManagement` route.
     onManagePacksClick: () -> Unit = {},
+    // Phase 26.5 (ADR-022 §6.4) — invoked when the user taps "Enable
+    // two-factor authentication" in the Security section. NavGraph wires
+    // this to the `MfaEnrollment` route. Default no-op for test mounts.
+    onEnableMfaClick: () -> Unit = {},
     viewModel: SettingsViewModel = koinViewModel(),
     // Phase 24.2c (ADR-017 §3.6) — push notification consent VM. Drives
     // the Settings → Notifications row + the in-app pre-permission
@@ -163,6 +175,7 @@ fun SettingsScreen(
     val notificationState by notificationViewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showDisableMfaConfirmation by remember { mutableStateOf(false) }
 
     // state.error is still rendered raw here — ViewModel error-message
     // localization is deferred per Tech Debt Backlog.
@@ -301,6 +314,49 @@ fun SettingsScreen(
                                 .clickable(role = Role.Button) {
                                     subscriptionLauncher.open()
                                 }.testTag("manageSubscriptionButton"),
+                    )
+
+                    Spacer(Modifier.height(24.dp))
+                    HorizontalDivider()
+                    Spacer(Modifier.height(24.dp))
+
+                    // Phase 26.5 (ADR-022 §6.4) — Security section. Houses
+                    // the 2FA enable/disable row + (future) biometric +
+                    // session-management entries. Gated on `isSignedIn`
+                    // because all security controls require an active
+                    // session; nothing here makes sense for the unauth
+                    // surface.
+                    Text(
+                        text = stringResource(Res.string.label_security_section),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                    val mfaEnrolled = state.mfaStatus is MfaEnrollmentStatus.Enrolled
+                    ListItem(
+                        headlineContent = {
+                            Text(stringResource(Res.string.label_two_factor_auth))
+                        },
+                        trailingContent = {
+                            Text(
+                                stringResource(
+                                    if (mfaEnrolled) {
+                                        Res.string.state_mfa_enabled
+                                    } else {
+                                        Res.string.state_mfa_disabled
+                                    },
+                                ),
+                            )
+                        },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable(role = Role.Button) {
+                                    if (mfaEnrolled) {
+                                        showDisableMfaConfirmation = true
+                                    } else {
+                                        onEnableMfaClick()
+                                    }
+                                }.testTag("twoFactorAuthRow"),
                     )
 
                     Spacer(Modifier.height(24.dp))
@@ -685,6 +741,34 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmation = false }) {
+                    Text(stringResource(Res.string.action_cancel))
+                }
+            },
+        )
+    }
+
+    if (showDisableMfaConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDisableMfaConfirmation = false },
+            title = { Text(stringResource(Res.string.title_mfa_disable_confirm)) },
+            text = { Text(stringResource(Res.string.body_mfa_disable_warning)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDisableMfaConfirmation = false
+                        viewModel.onEvent(SettingsEvent.DisableMfaConfirmed)
+                    },
+                    colors =
+                        ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error,
+                        ),
+                    modifier = Modifier.testTag("disableMfaConfirmButton"),
+                ) {
+                    Text(stringResource(Res.string.action_disable_mfa))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDisableMfaConfirmation = false }) {
                     Text(stringResource(Res.string.action_cancel))
                 }
             },

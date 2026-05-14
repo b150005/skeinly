@@ -20,6 +20,8 @@ import io.github.b150005.skeinly.ui.activityfeed.ActivityFeedScreen
 import io.github.b150005.skeinly.ui.auth.AuthViewModel
 import io.github.b150005.skeinly.ui.auth.ForgotPasswordScreen
 import io.github.b150005.skeinly.ui.auth.LoginScreen
+import io.github.b150005.skeinly.ui.auth.MfaChallengeScreen
+import io.github.b150005.skeinly.ui.auth.MfaEnrollmentScreen
 import io.github.b150005.skeinly.ui.bugreport.BugReportPreviewScreen
 import io.github.b150005.skeinly.ui.chart.ChartComparisonScreen
 import io.github.b150005.skeinly.ui.chart.ChartEditorScreen
@@ -209,6 +211,24 @@ data class Paywall(
 @Serializable
 data object PackManagement
 
+/**
+ * Phase 26.5 (ADR-022 §6.4) — TOTP enrollment entry. Reached from
+ * Settings → Security → "Enable two-factor authentication".
+ */
+@Serializable
+data object MfaEnrollment
+
+/**
+ * Phase 26.5 (ADR-022 §6.4) — TOTP challenge gate. Routed-to
+ * automatically when [AuthState.MfaChallengeRequired] is observed
+ * (post-password sign-in with a verified factor). User cannot back
+ * out of this screen via the back stack — the only exit is a
+ * successful TOTP / recovery-code submission OR a sign-out (which
+ * flips to AuthState.Unauthenticated → routes to Login).
+ */
+@Serializable
+data object MfaChallenge
+
 @Composable
 fun SkeinlyNavHost(
     navController: NavHostController,
@@ -319,6 +339,9 @@ private fun SkeinlyNavHostContent(
                 is AuthState.Authenticated -> {
                     navController.navigate(ProjectList) {
                         popUpTo(Login) { inclusive = true }
+                        // Phase 26.5: also clear MfaChallenge from the stack
+                        // so verify-success pops the gate screen cleanly.
+                        popUpTo(MfaChallenge) { inclusive = true }
                     }
                     // Navigate to deep link after authentication. Phase 39 W3:
                     // pendingDeepLinkRoute is already parsed (URL → typed Route)
@@ -327,6 +350,17 @@ private fun SkeinlyNavHostContent(
                     pendingDeepLinkRoute?.let { route ->
                         navController.navigate(route)
                         pendingDeepLinkRoute = null
+                    }
+                }
+                is AuthState.MfaChallengeRequired -> {
+                    // Phase 26.5 (ADR-022 §6.4) — post-AAL1 session with a
+                    // verified factor. Surface the TOTP challenge as a
+                    // full-screen gate. popUpTo Login so a back-tap from
+                    // the challenge falls through to Unauthenticated /
+                    // signs out cleanly (the only legitimate exit besides
+                    // verify-success).
+                    navController.navigate(MfaChallenge) {
+                        popUpTo(Login) { inclusive = true }
                     }
                 }
                 is AuthState.Unauthenticated -> {
@@ -475,6 +509,28 @@ private fun SkeinlyNavHostContent(
                 // Phase 41.4 (ADR-016 §5.2) — Manage Symbol Packs routes
                 // to the pack-management screen. Always-on, NOT beta-gated.
                 onManagePacksClick = { navController.navigate(PackManagement) },
+                // Phase 26.5 (ADR-022 §6.4) — Security → 2-factor entry.
+                onEnableMfaClick = { navController.navigate(MfaEnrollment) },
+            )
+        }
+        composable<MfaEnrollment> {
+            MfaEnrollmentScreen(
+                onBack = { navController.popBackStack() },
+                onCompleted = {
+                    // Pop back to Settings; the observeMfaStatus flow
+                    // already updated the Settings row to "Enabled".
+                    navController.popBackStack()
+                },
+            )
+        }
+        composable<MfaChallenge> {
+            MfaChallengeScreen(
+                // No-op forwarding: NavGraph's authState observer routes
+                // off this screen on verify-success (AuthState transitions
+                // to Authenticated → popUpTo(MfaChallenge) inclusive).
+                // The ViewModel surface keeps the callback for tests that
+                // mount the screen without NavGraph.
+                onCompleted = { /* handled by authState observer */ },
             )
         }
         composable<PackManagement> {

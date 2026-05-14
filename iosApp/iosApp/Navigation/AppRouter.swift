@@ -21,6 +21,15 @@ enum Route: Hashable {
     case pullRequestDetail(prId: String)
     case chartConflictResolution(prId: String)
     case bugReportPreview
+    /// Phase 26.5 (ADR-022 §6.4) — TOTP enrollment entry. Reached from
+    /// Settings → Security → "Enable two-factor authentication".
+    case mfaEnrollment
+    /// Phase 26.5 (ADR-022 §6.4) — TOTP challenge gate. Surfaced as a
+    /// root-level screen when AuthState.MfaChallengeRequired is observed
+    /// (NOT pushed onto the path because the user cannot back out of
+    /// the AAL2 gate via the back stack; only verify-success or
+    /// sign-out exits).
+    case mfaChallenge
     /// Phase 41.3b (ADR-016 §5.1) — paywall route. Uses
     /// `PaywallTrigger.wireValue` for the Hashable representation so the
     /// case stays Codable / Hashable without forcing PaywallTrigger to
@@ -92,6 +101,10 @@ enum Route: Hashable {
             hasher.combine(trigger.wireValue)
         case .packManagement:
             hasher.combine("packManagement")
+        case .mfaEnrollment:
+            hasher.combine("mfaEnrollment")
+        case .mfaChallenge:
+            hasher.combine("mfaChallenge")
         }
     }
 }
@@ -169,6 +182,18 @@ struct AppRootView: View {
                         path.append(route)
                     }
                 }
+            } else if authState is AuthStateMfaChallengeRequired {
+                // Phase 26.5 (ADR-022 §6.4) — AAL1 session pending TOTP.
+                // Full-screen gate; no NavigationStack push because the
+                // user cannot back out via the gesture stack. Verify
+                // success elevates the session AAL → mfa.statusFlow re-
+                // emits → observeAuthState produces plain Authenticated
+                // → this branch yields to the projectlist branch above.
+                //
+                // No .trackScreen(...) modifier — the Screen enum doesn't
+                // carry a `mfaChallenge` case yet; analytics for this
+                // pre-AAL2 surface lands in a follow-up.
+                MfaChallengeScreen()
             } else if authState is AuthStateLoading {
                 ProgressView("Loading...")
             } else {
@@ -280,6 +305,11 @@ struct AppRootView: View {
                 // Packs". Always-on, NOT beta-gated.
                 onManagePacksClick: {
                     path.append(Route.packManagement)
+                },
+                // Phase 26.5 (ADR-022 §6.4) — Settings → Security →
+                // Enable 2FA routes to the TOTP enrollment screen.
+                onEnableMfaClick: {
+                    path.append(Route.mfaEnrollment)
                 }
             )
                 .trackScreen(.settings)
@@ -370,6 +400,18 @@ struct AppRootView: View {
             // Phase 41.4 (ADR-016 §5.2) — pack management screen.
             PackManagementScreen(path: $path)
                 .skeinlyBackButton(path: $path)
+        case .mfaEnrollment:
+            // Phase 26.5 (ADR-022 §6.4) — TOTP enrollment flow. Pushed
+            // from Settings → Security; the screen completes itself by
+            // popping back to Settings on recovery-code dismissal.
+            MfaEnrollmentScreen(onCompleted: { path.removeLast() })
+                .skeinlyBackButton(path: $path)
+        case .mfaChallenge:
+            // The MfaChallenge case is rendered as a root-level branch
+            // in AppRootView, NOT through navigation push. This case
+            // exists in the Route enum for type completeness but is
+            // unreachable via `path.append(.mfaChallenge)`.
+            MfaChallengeScreen()
         }
     }
 

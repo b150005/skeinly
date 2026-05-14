@@ -301,6 +301,57 @@ class SettingsViewModelTest {
             // Just verify no exception thrown.
             viewModel.onEvent(SettingsEvent.SubscribeToProTapped)
         }
+
+    // Phase 26.5 (ADR-022 §6.4) — MFA disable path coverage.
+
+    @Test
+    fun `DisableMfaConfirmed without enrolled factor is no-op`() =
+        runTest {
+            authRepo.setAuthState(AuthState.Authenticated("user-1", "u@example.com"))
+            val viewModel = createMfaAwareViewModel()
+            viewModel.onEvent(SettingsEvent.DisableMfaConfirmed)
+            assertEquals(0, authRepo.disableMfaCallCount)
+        }
+
+    @Test
+    fun `DisableMfaConfirmed targets the active factor ID`() =
+        runTest {
+            authRepo.setAuthState(AuthState.Authenticated("user-1", "u@example.com"))
+            authRepo.setMfaStatus(
+                io.github.b150005.skeinly.domain.model.MfaEnrollmentStatus
+                    .Enrolled("active-1"),
+            )
+            val viewModel = createMfaAwareViewModel()
+            viewModel.onEvent(SettingsEvent.DisableMfaConfirmed)
+            assertEquals(1, authRepo.disableMfaCallCount)
+            assertEquals("active-1", authRepo.lastDisabledFactorId)
+        }
+
+    @Test
+    fun `DisableMfaConfirmed failure surfaces Generic error`() =
+        runTest {
+            authRepo.setAuthState(AuthState.Authenticated("user-1", "u@example.com"))
+            authRepo.setMfaStatus(
+                io.github.b150005.skeinly.domain.model.MfaEnrollmentStatus
+                    .Enrolled("active-1"),
+            )
+            authRepo.disableMfaError = IllegalStateException("network")
+            val viewModel = createMfaAwareViewModel()
+            viewModel.onEvent(SettingsEvent.DisableMfaConfirmed)
+            assertNotNull(viewModel.state.value.error)
+        }
+
+    private fun createMfaAwareViewModel(): SettingsViewModel =
+        SettingsViewModel(
+            observeAuthState = ObserveAuthStateUseCase(authRepo),
+            signOut = SignOutUseCase(authRepo, CloseRealtimeChannelsUseCase(null, null, null)),
+            deleteAccount = DeleteAccountUseCase(authRepo, CloseRealtimeChannelsUseCase(null, null, null)),
+            updatePassword = UpdatePasswordUseCase(authRepo),
+            updateEmail = UpdateEmailUseCase(authRepo),
+            analyticsPreferences = analyticsPrefs,
+            observeMfaStatusFlow = { authRepo.observeMfaStatus() },
+            disableMfa = authRepo::disableMfa,
+        )
 }
 
 private class FakeAnalyticsPreferences : AnalyticsPreferences {

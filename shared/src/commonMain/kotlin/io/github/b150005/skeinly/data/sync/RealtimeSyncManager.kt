@@ -87,6 +87,11 @@ class RealtimeSyncManager(
                         is AuthState.Error,
                         -> unsubscribe()
                         is AuthState.Loading -> { /* wait */ }
+                        // Phase 26.5 (ADR-022 §6.4) — AAL1 session pending
+                        // TOTP verify. Don't subscribe to realtime
+                        // channels until the user satisfies MFA and the
+                        // flow transitions to Authenticated (AAL2).
+                        is AuthState.MfaChallengeRequired -> { /* wait */ }
                     }
                 }.launchIn(scope)
 

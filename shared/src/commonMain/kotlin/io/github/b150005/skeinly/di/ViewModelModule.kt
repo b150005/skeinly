@@ -9,6 +9,8 @@ import io.github.b150005.skeinly.platform.snapshotContext
 import io.github.b150005.skeinly.ui.activityfeed.ActivityFeedViewModel
 import io.github.b150005.skeinly.ui.auth.AuthViewModel
 import io.github.b150005.skeinly.ui.auth.ForgotPasswordViewModel
+import io.github.b150005.skeinly.ui.auth.MfaChallengeViewModel
+import io.github.b150005.skeinly.ui.auth.MfaEnrollmentViewModel
 import io.github.b150005.skeinly.ui.bugreport.BugReportPreviewViewModel
 import io.github.b150005.skeinly.ui.chart.ChartComparisonViewModel
 import io.github.b150005.skeinly.ui.chart.ChartEditorViewModel
@@ -88,12 +90,30 @@ val viewModelModule =
             )
         }
         viewModelOf(::ForgotPasswordViewModel)
+        // Phase 26.5 (ADR-022 §6.4) — MFA enrollment + challenge ViewModels.
+        // Lambda-seam DI mirrors AuthViewModel (Phase 26.1/26.4) — keeps the
+        // VMs testable without pulling the supabase-kt surface into commonTest.
+        viewModel {
+            val authRepository: io.github.b150005.skeinly.domain.repository.AuthRepository = get()
+            MfaEnrollmentViewModel(
+                enrollMfaTotp = authRepository::enrollMfaTotp,
+                verifyMfaEnrollment = authRepository::verifyMfaEnrollment,
+            )
+        }
+        viewModel {
+            val authRepository: io.github.b150005.skeinly.domain.repository.AuthRepository = get()
+            MfaChallengeViewModel(
+                submitMfaChallenge = authRepository::submitMfaChallenge,
+                consumeRecoveryCode = authRepository::consumeRecoveryCode,
+            )
+        }
         viewModelOf(::ProfileViewModel)
         // Phase 39.4 — `eventRingBuffer` ctor param threaded so a
         // toggle-OFF on diagnostic-data sharing clears the in-memory
         // event trail before any subsequent bug-report submission can
         // attach it.
         viewModel {
+            val authRepository: io.github.b150005.skeinly.domain.repository.AuthRepository = get()
             SettingsViewModel(
                 observeAuthState = get(),
                 signOut = get(),
@@ -104,6 +124,12 @@ val viewModelModule =
                 eventRingBuffer = get(),
                 // Phase 41.3b — ClickAction analytics for the Pro entry tap.
                 analyticsTracker = get(),
+                // Phase 26.5 (ADR-022 §6.4) — MFA observation + disable
+                // bound through lambda-seams (parallel to the AuthViewModel
+                // OAuth pattern). Defaults to flowOf(NotEnrolled) for tests
+                // that don't wire this; production binds to repo methods.
+                observeMfaStatusFlow = { authRepository.observeMfaStatus() },
+                disableMfa = authRepository::disableMfa,
             )
         }
         viewModel { ActivityFeedViewModel(get(), get(), get()) }

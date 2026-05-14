@@ -224,6 +224,32 @@ private class ControlledAuthRepository : AuthRepository {
     ) {
         error("not used in bridge tests")
     }
+
+    // Phase 26.5 (ADR-022 §6.4) — MFA methods not exercised by the
+    // RevenueCat auth bridge; the bridge only routes between
+    // Authenticated / Unauthenticated identity calls.
+    override fun observeMfaStatus(): Flow<io.github.b150005.skeinly.domain.model.MfaEnrollmentStatus> = error("not used in bridge tests")
+
+    override suspend fun enrollMfaTotp(): io.github.b150005.skeinly.domain.model.MfaEnrollment = error("not used in bridge tests")
+
+    override suspend fun verifyMfaEnrollment(
+        factorId: String,
+        code: String,
+    ) {
+        error("not used in bridge tests")
+    }
+
+    override suspend fun submitMfaChallenge(code: String) {
+        error("not used in bridge tests")
+    }
+
+    override suspend fun consumeRecoveryCode(plaintextCode: String): Boolean = error("not used in bridge tests")
+
+    override suspend fun disableMfa(factorId: String) {
+        error("not used in bridge tests")
+    }
+
+    override suspend fun regenerateRecoveryCode(): String = error("not used in bridge tests")
 }
 
 private sealed interface BridgeCall {

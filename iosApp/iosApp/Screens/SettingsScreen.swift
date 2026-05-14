@@ -16,6 +16,8 @@ struct SettingsScreen: View {
     @State private var newEmail = ""
     @State private var toastMessage: String?
     @State private var toastCloseable: Closeable?
+    /// Phase 26.5 (ADR-022 §6.4) — disable-2FA confirmation alert.
+    @State private var showDisableMfaConfirmation = false
 
     // Phase 39.4 (ADR-015 §6) — invoked when the user taps "Send
     // Feedback". Phase 39.5 will plumb this to BugReportPreviewScreen
@@ -29,6 +31,8 @@ struct SettingsScreen: View {
     let onSubscribeToProClick: () -> Void
     /// Phase 41.4 (ADR-016 §5.2) — Manage Symbol Packs entry. Always-on.
     let onManagePacksClick: () -> Void
+    /// Phase 26.5 (ADR-022 §6.4) — Security → Enable 2FA entry.
+    let onEnableMfaClick: () -> Void
 
     private var viewModel: SettingsViewModel { holder.viewModel }
     private var notificationViewModel: NotificationPermissionViewModel { notificationHolder.viewModel }
@@ -67,11 +71,13 @@ struct SettingsScreen: View {
     init(
         onSendFeedback: @escaping () -> Void = {},
         onSubscribeToProClick: @escaping () -> Void = {},
-        onManagePacksClick: @escaping () -> Void = {}
+        onManagePacksClick: @escaping () -> Void = {},
+        onEnableMfaClick: @escaping () -> Void = {}
     ) {
         self.onSendFeedback = onSendFeedback
         self.onSubscribeToProClick = onSubscribeToProClick
         self.onManagePacksClick = onManagePacksClick
+        self.onEnableMfaClick = onEnableMfaClick
         let vm = ViewModelFactory.settingsViewModel()
         let wrapper = KoinHelperKt.wrapSettingsState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
@@ -147,6 +153,21 @@ struct SettingsScreen: View {
             .disabled(notificationHolder.state.isRequestingPermission)
         } message: {
             Text("body_notifications_explainer")
+        }
+        // Phase 26.5 (ADR-022 §6.4) — disable-2FA confirmation alert.
+        // Confirm fires DisableMfaConfirmed; cancel dismisses with no
+        // ViewModel event (the row's tap is the only entry point).
+        .alert(
+            LocalizedStringKey("title_mfa_disable_confirm"),
+            isPresented: $showDisableMfaConfirmation
+        ) {
+            Button("action_disable_mfa", role: .destructive) {
+                viewModel.onEvent(event: SettingsEventDisableMfaConfirmed.shared)
+            }
+            .accessibilityIdentifier("disableMfaConfirmButton")
+            Button("action_cancel", role: .cancel) { }
+        } message: {
+            Text("body_mfa_disable_warning")
         }
         .sheet(isPresented: Binding(
             get: { state.pendingChangePasswordDialog },
@@ -262,6 +283,38 @@ struct SettingsScreen: View {
                         }
                     }
                     .accessibilityIdentifier("manageSubscriptionButton")
+                }
+            }
+
+            // Phase 26.5 (ADR-022 §6.4) — Security section. Houses the
+            // 2FA enable/disable row. Gated on `isSignedIn` because all
+            // security controls require an active session.
+            if state.isSignedIn {
+                Section("label_security_section") {
+                    // Kotlin sealed-interface data-class case `Enrolled` bridges
+                    // to Swift as `MfaEnrollmentStatusEnrolled` (concatenated
+                    // class name) — the dotted `.Enrolled` form is unavailable
+                    // because `MfaEnrollmentStatus` surfaces as a Swift protocol.
+                    let mfaEnrolled = state.mfaStatus is MfaEnrollmentStatusEnrolled
+                    Button {
+                        if mfaEnrolled {
+                            showDisableMfaConfirmation = true
+                        } else {
+                            onEnableMfaClick()
+                        }
+                    } label: {
+                        HStack {
+                            Text(LocalizedStringKey("label_two_factor_auth"))
+                            Spacer()
+                            Text(LocalizedStringKey(
+                                mfaEnrolled
+                                    ? "state_mfa_enabled"
+                                    : "state_mfa_disabled"
+                            ))
+                            .foregroundStyle(.secondary)
+                        }
+                    }
+                    .accessibilityIdentifier("twoFactorAuthRow")
                 }
             }
 

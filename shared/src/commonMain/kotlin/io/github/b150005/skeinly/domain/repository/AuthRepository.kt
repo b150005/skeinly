@@ -1,6 +1,8 @@
 package io.github.b150005.skeinly.domain.repository
 
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.MfaEnrollment
+import io.github.b150005.skeinly.domain.model.MfaEnrollmentStatus
 import io.github.b150005.skeinly.domain.model.OAuthSignInOutcome
 import io.github.b150005.skeinly.domain.model.SignUpOutcome
 import kotlinx.coroutines.flow.Flow
@@ -160,4 +162,102 @@ interface AuthRepository {
      * production consumer.
      */
     suspend fun signInWithAppleViaWebOAuth()
+
+    /**
+     * Phase 26.5 (ADR-022 §6.4) — observe the caller's MFA enrollment
+     * status. The flow re-emits whenever the session changes or the
+     * factor list mutates (enroll / unenroll / verify). Settings →
+     * Security mirrors this flow to keep the row state in sync without
+     * polling.
+     *
+     * Returns [MfaEnrollmentStatus.NotEnrolled] when the supabase
+     * client is unconfigured (local-only dev builds) so callers
+     * degrade gracefully — the Settings entry simply offers "Enable
+     * 2FA" which fails fast on tap.
+     */
+    fun observeMfaStatus(): Flow<MfaEnrollmentStatus>
+
+    /**
+     * Phase 26.5 (ADR-022 §6.4) — enrolls a new TOTP factor for the
+     * currently-authenticated user, generates a 16-char recovery code
+     * client-side, computes its bcrypt hash via the
+     * `hash_recovery_code` RPC, then registers the hash via the
+     * `register_mfa_recovery_code` RPC. Returns the full
+     * [MfaEnrollment] envelope (factor ID + base32 secret + otpauth
+     * URI + recovery code plaintext) for one-time display.
+     *
+     * The TOTP factor is created in an unverified state — the caller
+     * must follow up with [verifyMfaEnrollment] using a code from the
+     * user's authenticator app to complete enrollment.
+     */
+    suspend fun enrollMfaTotp(): MfaEnrollment
+
+    /**
+     * Phase 26.5 (ADR-022 §6.4) — verifies a TOTP code against the
+     * just-enrolled factor, completing the enrollment. Internally
+     * creates a challenge via Supabase's `auth.mfa.createChallenge`
+     * then immediately verifies it via `auth.mfa.verifyChallenge`.
+     * Throws on bad code / expired window / network failure; the
+     * caller maps the exception to a banner and stays on the
+     * enrollment screen.
+     */
+    suspend fun verifyMfaEnrollment(
+        factorId: String,
+        code: String,
+    )
+
+    /**
+     * Phase 26.5 (ADR-022 §6.4) — post-password-sign-in TOTP gate.
+     * Creates a fresh challenge on the verified factor, verifies the
+     * supplied [code], and elevates the session AAL to AAL2. Throws
+     * on bad code / expired challenge / network — caller stays on
+     * MfaChallengeScreen.
+     *
+     * Idempotent on factorId discovery: callers do not pass the
+     * factor ID; the repository resolves the verified factor itself
+     * via `auth.mfa.retrieveFactorsForCurrentUser`. Throws
+     * [IllegalStateException] if no verified factor exists (which
+     * would be a bug — only callers that reached this code path went
+     * through the [observeAuthState] gate where MfaChallengeRequired
+     * was emitted, which already proved a verified factor exists).
+     */
+    suspend fun submitMfaChallenge(code: String)
+
+    /**
+     * Phase 26.5 (ADR-022 §6.4) — recovery-code bypass path. Bcrypt-
+     * verifies the plaintext against the stored hash via the
+     * `consume_mfa_recovery_code` RPC. On match: unenrolls the TOTP
+     * factor via `auth.mfa.unenroll` (the recovery code is a "reset
+     * MFA enrollment" bypass, NOT a permanent AAL2 elevation; the
+     * user re-enrolls TOTP from scratch via Settings → Security after
+     * regaining access).
+     *
+     * Returns true on success, false on wrong / consumed / no-row
+     * code. Caller maps to UI state — Settings shows "MFA disabled"
+     * + offers re-enrollment.
+     */
+    suspend fun consumeRecoveryCode(plaintextCode: String): Boolean
+
+    /**
+     * Phase 26.5 (ADR-022 §6.4) — drops the TOTP factor without
+     * recovery-code bypass. Used when the user explicitly chooses to
+     * disable 2FA from Settings → Security (requires current TOTP
+     * code to gate the action — passed via [verifyMfaEnrollment]'s
+     * verify path before this call).
+     */
+    suspend fun disableMfa(factorId: String)
+
+    /**
+     * Phase 26.5 (ADR-022 §6.4) — regenerates the recovery code while
+     * the user retains TOTP access. Generates a fresh 16-char code,
+     * bcrypt-hashes it server-side via `hash_recovery_code`, replaces
+     * the active row via `register_mfa_recovery_code`. Returns the
+     * new plaintext for one-time display on the regen screen.
+     *
+     * Caller must gate this with a fresh TOTP verify in the UI layer
+     * — server-side does NOT re-verify TOTP; the threat model
+     * presumes an attacker with an active AAL2 session is a
+     * compromise regardless of which mutation they perform.
+     */
+    suspend fun regenerateRecoveryCode(): String
 }

@@ -68,6 +68,11 @@ fun startRevenueCatAuthBridge(
                 AuthState.Unauthenticated -> AuthIdentity.Anonymous
                 AuthState.Loading -> AuthIdentity.Transient
                 is AuthState.Error -> AuthIdentity.Transient
+                // Phase 26.5 (ADR-022 §6.4) — AAL1 session pending TOTP
+                // verify. Treat as transient: don't identify with
+                // RevenueCat until the user satisfies MFA and the flow
+                // transitions to Authenticated (AAL2).
+                is AuthState.MfaChallengeRequired -> AuthIdentity.Transient
             }
         }.distinctUntilChanged()
         .onEach { identity ->

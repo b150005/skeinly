@@ -9,6 +9,7 @@ import io.github.b150005.skeinly.data.analytics.EventRingBuffer
 import io.github.b150005.skeinly.data.analytics.Screen
 import io.github.b150005.skeinly.data.preferences.AnalyticsPreferences
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.MfaEnrollmentStatus
 import io.github.b150005.skeinly.domain.usecase.DeleteAccountUseCase
 import io.github.b150005.skeinly.domain.usecase.ErrorMessage
 import io.github.b150005.skeinly.domain.usecase.ObserveAuthStateUseCase
@@ -46,6 +47,15 @@ data class SettingsState(
     val pendingChangeEmailDialog: Boolean = false,
     val analyticsOptIn: Boolean = false,
     val error: ErrorMessage? = null,
+    /**
+     * Phase 26.5 (ADR-022 §6.4) — coarse MFA enrollment status used by
+     * the Settings → Security row. Default [MfaEnrollmentStatus.NotEnrolled]
+     * is correct for the unconfigured-supabase (local-only dev) path
+     * and the signed-out path; production wiring re-emits as the
+     * underlying status flow advances.
+     */
+    val mfaStatus: MfaEnrollmentStatus = MfaEnrollmentStatus.NotEnrolled,
+    val isDisablingMfa: Boolean = false,
 )
 
 sealed interface SettingsEvent {
@@ -84,6 +94,15 @@ sealed interface SettingsEvent {
      */
     data object SubscribeToProTapped : SettingsEvent
 
+    /**
+     * Phase 26.5 (ADR-022 §6.4) — fires the disable-MFA RPC (auth.mfa.unenroll)
+     * on the currently-enrolled factor. The Settings row pre-confirms via
+     * an AlertDialog at the UI layer; this event executes the action.
+     * Alpha scope does NOT gate on a fresh TOTP re-prompt — biometric +
+     * sensitive-action gating lands in 26.6.
+     */
+    data object DisableMfaConfirmed : SettingsEvent
+
     data object ClearError : SettingsEvent
 }
 
@@ -117,6 +136,15 @@ class SettingsViewModel(
     // preserves existing test compat; production wiring always supplies
     // the tracker via [ViewModelModule].
     private val analyticsTracker: AnalyticsTracker? = null,
+    // Phase 26.5 (ADR-022 §6.4) — MFA observation + disable. Defaulted
+    // to constant-NotEnrolled + no-op for tests that don't care; production
+    // wiring binds to `authRepository::observeMfaStatus` /
+    // `authRepository::disableMfa`. The factor ID is sourced from the
+    // observed status row at disable time (no parameter).
+    private val observeMfaStatusFlow: () -> Flow<MfaEnrollmentStatus> = {
+        kotlinx.coroutines.flow.flowOf(MfaEnrollmentStatus.NotEnrolled)
+    },
+    private val disableMfa: suspend (factorId: String) -> Unit = { /* no-op */ },
 ) : ViewModel() {
     private val _state = MutableStateFlow(SettingsState())
     val state: StateFlow<SettingsState> = _state.asStateFlow()
@@ -130,6 +158,15 @@ class SettingsViewModel(
     init {
         loadSettings()
         observeAnalyticsOptIn()
+        observeMfaStatusInternal()
+    }
+
+    private fun observeMfaStatusInternal() {
+        viewModelScope.launch {
+            observeMfaStatusFlow().collect { status ->
+                _state.update { it.copy(mfaStatus = status) }
+            }
+        }
     }
 
     private fun observeAnalyticsOptIn() {
@@ -172,7 +209,33 @@ class SettingsViewModel(
                 analyticsTracker?.track(
                     AnalyticsEvent.ClickAction(ClickActionId.SubscribeToPro, Screen.Settings),
                 )
+            SettingsEvent.DisableMfaConfirmed -> performDisableMfa()
             SettingsEvent.ClearError -> _state.update { it.copy(error = null) }
+        }
+    }
+
+    private fun performDisableMfa() {
+        val factorId =
+            when (val status = _state.value.mfaStatus) {
+                is MfaEnrollmentStatus.Enrolled -> status.factorId
+                is MfaEnrollmentStatus.EnrolledUnverified -> status.factorId
+                MfaEnrollmentStatus.NotEnrolled -> return
+            }
+        viewModelScope.launch {
+            _state.update { it.copy(isDisablingMfa = true, error = null) }
+            try {
+                disableMfa(factorId)
+                _state.update { it.copy(isDisablingMfa = false) }
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
+            } catch (_: Throwable) {
+                _state.update {
+                    it.copy(
+                        isDisablingMfa = false,
+                        error = ErrorMessage.Generic,
+                    )
+                }
+            }
         }
     }
 

@@ -1,6 +1,8 @@
 package io.github.b150005.skeinly.data.repository
 
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.MfaEnrollment
+import io.github.b150005.skeinly.domain.model.MfaEnrollmentStatus
 import io.github.b150005.skeinly.domain.model.OAuthProviderKind
 import io.github.b150005.skeinly.domain.model.OAuthSignInOutcome
 import io.github.b150005.skeinly.domain.model.SignUpOutcome
@@ -10,6 +12,8 @@ import io.github.jan.supabase.annotations.SupabaseExperimental
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.event.AuthEvent
 import io.github.jan.supabase.auth.exception.AuthRestException
+import io.github.jan.supabase.auth.mfa.FactorType
+import io.github.jan.supabase.auth.mfa.MfaStatus
 import io.github.jan.supabase.auth.providers.Apple
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
@@ -23,6 +27,10 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 class AuthRepositoryImpl(
     private val supabaseClient: SupabaseClient?,
@@ -45,13 +53,31 @@ class AuthRepositoryImpl(
                 .map<AuthEvent.RefreshFailure, RefreshFailureCause?> { it.cause }
                 .onStart { emit(null) }
 
-        return combine(auth.sessionStatus, refreshCauseFlow) { status, latestCause ->
+        // Phase 26.5 (ADR-022 §6.4) — observe MFA status alongside session
+        // status. `MfaStatus { enabled, active }` semantics:
+        //   - enabled  = the user has at least one verified MFA factor
+        //   - active   = the current session JWT carries AAL2
+        // Gate: enabled && !active → MfaChallengeRequired. The flow
+        // re-emits when verifyChallenge elevates the session (AAL flips
+        // to AAL2 → active becomes true → falls through to Authenticated)
+        // and when enroll / verify-enrollment lands a new verified
+        // factor (enabled flips). `onStart` seeds the default-off status
+        // so combine starts producing immediately rather than waiting
+        // for supabase-kt's first MFA observation.
+        val mfaStatusFlow: Flow<MfaStatus> =
+            auth.mfa.statusFlow.onStart { emit(MfaStatus(enabled = false, active = false)) }
+
+        return combine(auth.sessionStatus, refreshCauseFlow, mfaStatusFlow) { status, latestCause, mfa ->
             when (status) {
-                is SessionStatus.Authenticated ->
-                    AuthState.Authenticated(
-                        userId = status.session.user?.id ?: "",
-                        email = status.session.user?.email,
-                    )
+                is SessionStatus.Authenticated -> {
+                    val userId = status.session.user?.id ?: ""
+                    val email = status.session.user?.email
+                    if (mfa.enabled && !mfa.active) {
+                        AuthState.MfaChallengeRequired(userId = userId, email = email)
+                    } else {
+                        AuthState.Authenticated(userId = userId, email = email)
+                    }
+                }
                 is SessionStatus.NotAuthenticated -> AuthState.Unauthenticated
                 is SessionStatus.Initializing -> AuthState.Loading
                 is SessionStatus.RefreshFailure ->
@@ -291,6 +317,190 @@ class AuthRepositoryImpl(
         }
     }
 
+    // =============================================================
+    // Phase 26.5 (ADR-022 §6.4) — MFA enrollment / challenge / recovery
+    // =============================================================
+
+    override fun observeMfaStatus(): Flow<MfaEnrollmentStatus> {
+        val client =
+            supabaseClient
+                ?: return flowOf(MfaEnrollmentStatus.NotEnrolled)
+        // Re-emit on each MfaStatus change (enroll / unenroll / verify
+        // mutate the status flow). For each emission, re-query the
+        // factor list to surface the factor ID + verified flag.
+        return client.auth.mfa.statusFlow
+            .map { _ ->
+                val factors =
+                    try {
+                        client.auth.mfa.retrieveFactorsForCurrentUser()
+                    } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                        throw e
+                    } catch (_: Throwable) {
+                        // Network failure / unauthenticated. Degrade to
+                        // NotEnrolled so the UI surfaces "Enable 2FA" rather
+                        // than a misleading "Enrolled" state we can't verify.
+                        return@map MfaEnrollmentStatus.NotEnrolled
+                    }
+                val totp =
+                    factors.firstOrNull { it.factorType == "totp" }
+                        ?: return@map MfaEnrollmentStatus.NotEnrolled
+                if (totp.isVerified) {
+                    MfaEnrollmentStatus.Enrolled(factorId = totp.id)
+                } else {
+                    MfaEnrollmentStatus.EnrolledUnverified(factorId = totp.id)
+                }
+            }.onStart { emit(MfaEnrollmentStatus.NotEnrolled) }
+    }
+
+    override suspend fun enrollMfaTotp(): MfaEnrollment {
+        val client =
+            supabaseClient
+                ?: throw IllegalStateException("Supabase is not configured")
+        // Unenroll any prior unverified factor — Supabase rejects
+        // duplicate active TOTP factors. Verified factors are
+        // preserved by inspecting the verified flag first.
+        val existing =
+            try {
+                client.auth.mfa.retrieveFactorsForCurrentUser()
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
+            } catch (_: Throwable) {
+                emptyList()
+            }
+        existing
+            .filter { it.factorType == "totp" && !it.isVerified }
+            .forEach { stub ->
+                try {
+                    client.auth.mfa.unenroll(stub.id)
+                } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                    throw e
+                } catch (_: Throwable) {
+                    // Best-effort cleanup; if it fails the new enroll
+                    // call will surface the real error to the caller.
+                }
+            }
+
+        val factor =
+            client.auth.mfa.enroll(FactorType.TOTP, friendlyName = "Skeinly") {
+                issuer = "Skeinly"
+            }
+
+        val recoveryPlain = generateRecoveryCode()
+        val recoveryHash =
+            client.postgrest
+                .rpc(
+                    function = "hash_recovery_code",
+                    parameters = buildJsonObject { put("p_plain", JsonPrimitive(recoveryPlain)) },
+                ).decodeAs<String>()
+        client.postgrest.rpc(
+            function = "register_mfa_recovery_code",
+            parameters = buildJsonObject { put("p_code_hash", JsonPrimitive(recoveryHash)) },
+        )
+
+        return MfaEnrollment(
+            factorId = factor.id,
+            secret = factor.data.secret,
+            otpAuthUri = factor.data.uri,
+            recoveryCode = recoveryPlain,
+        )
+    }
+
+    override suspend fun verifyMfaEnrollment(
+        factorId: String,
+        code: String,
+    ) {
+        val client =
+            supabaseClient
+                ?: throw IllegalStateException("Supabase is not configured")
+        val challenge = client.auth.mfa.createChallenge(factorId = factorId)
+        client.auth.mfa.verifyChallenge(
+            factorId = factorId,
+            challengeId = challenge.id,
+            code = code,
+        )
+    }
+
+    override suspend fun submitMfaChallenge(code: String) {
+        val client =
+            supabaseClient
+                ?: throw IllegalStateException("Supabase is not configured")
+        val factors = client.auth.mfa.retrieveFactorsForCurrentUser()
+        val verified =
+            factors.firstOrNull { it.factorType == "totp" && it.isVerified }
+                ?: throw IllegalStateException(
+                    "submitMfaChallenge called without a verified TOTP factor",
+                )
+        val challenge = client.auth.mfa.createChallenge(factorId = verified.id)
+        client.auth.mfa.verifyChallenge(
+            factorId = verified.id,
+            challengeId = challenge.id,
+            code = code,
+        )
+    }
+
+    override suspend fun consumeRecoveryCode(plaintextCode: String): Boolean {
+        val client =
+            supabaseClient
+                ?: throw IllegalStateException("Supabase is not configured")
+        val consumed =
+            client.postgrest
+                .rpc(
+                    function = "consume_mfa_recovery_code",
+                    parameters = buildJsonObject { put("p_code", JsonPrimitive(plaintextCode)) },
+                ).decodeAs<Boolean>()
+        if (!consumed) return false
+        // Drop the verified TOTP factor so the user re-enrolls from
+        // scratch. Best-effort — if Supabase rejects (e.g. factor
+        // already gone) the recovery is still considered successful
+        // from the user's perspective; the next sign-in will see
+        // statusFlow.enabled = false and skip the AAL2 gate.
+        val factors =
+            try {
+                client.auth.mfa.retrieveFactorsForCurrentUser()
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
+            } catch (_: Throwable) {
+                emptyList()
+            }
+        factors
+            .filter { it.factorType == "totp" }
+            .forEach { f ->
+                try {
+                    client.auth.mfa.unenroll(f.id)
+                } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                    throw e
+                } catch (_: Throwable) {
+                    // Swallowed by design — see comment above.
+                }
+            }
+        return true
+    }
+
+    override suspend fun disableMfa(factorId: String) {
+        val client =
+            supabaseClient
+                ?: throw IllegalStateException("Supabase is not configured")
+        client.auth.mfa.unenroll(factorId)
+    }
+
+    override suspend fun regenerateRecoveryCode(): String {
+        val client =
+            supabaseClient
+                ?: throw IllegalStateException("Supabase is not configured")
+        val plain = generateRecoveryCode()
+        val hash =
+            client.postgrest
+                .rpc(
+                    function = "hash_recovery_code",
+                    parameters = buildJsonObject { put("p_plain", JsonPrimitive(plain)) },
+                ).decodeAs<String>()
+        client.postgrest.rpc(
+            function = "register_mfa_recovery_code",
+            parameters = buildJsonObject { put("p_code_hash", JsonPrimitive(hash)) },
+        )
+        return plain
+    }
+
     private companion object {
         /**
          * Supabase error-code aliases recognized as the "email already
@@ -303,6 +513,32 @@ class AuthRepositoryImpl(
                 "email_exists",
                 "identity_already_exists",
             )
+
+        /**
+         * Phase 26.5 — base32 alphabet (RFC 4648, without `0`/`1`/`8`
+         * to avoid visual confusion when the user copies the recovery
+         * code by hand). 32 chars.
+         */
+        private const val BASE32_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+
+        /**
+         * Phase 26.5 — generates a 16-character recovery code using
+         * [Uuid.random] as the cryptographically-secure entropy
+         * source (Kotlin 2.1+ stdlib; platform-backed by
+         * SecureRandom on JVM and arc4random on Native). 16 chars of
+         * 32-symbol base32 = 80 bits of entropy — well above the 64-
+         * bit floor for one-time codes.
+         */
+        @OptIn(ExperimentalUuidApi::class)
+        fun generateRecoveryCode(): String {
+            val bytes = (Uuid.random().toByteArray() + Uuid.random().toByteArray())
+            val sb = StringBuilder(16)
+            for (i in 0 until 16) {
+                val idx = bytes[i].toInt().and(0x1F)
+                sb.append(BASE32_ALPHABET[idx])
+            }
+            return sb.toString()
+        }
     }
 }
 

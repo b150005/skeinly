@@ -398,6 +398,26 @@ kover {
                     "io.github.b150005.skeinly.ui.pullrequest.ChartConflictResolutionScreenKt*",
                     "io.github.b150005.skeinly.ui.paywall.PaywallScreenKt*",
                     "io.github.b150005.skeinly.ui.packmanagement.PackManagementScreenKt*",
+                    // Phase 26.5 (ADR-022 §6.4) — MFA Compose screens.
+                    // Untestable on JVM (same rationale as other
+                    // *ScreenKt excludes). The driving ViewModels +
+                    // repository methods are exercised via commonTest.
+                    "io.github.b150005.skeinly.ui.auth.MfaEnrollmentScreenKt*",
+                    "io.github.b150005.skeinly.ui.auth.MfaChallengeScreenKt*",
+                    // Phase 26.5 (ADR-022 §6.4) — AuthRepositoryImpl
+                    // companion's `generateRecoveryCode` is a private
+                    // helper that exercises platform RNG; the broader
+                    // class is covered via null-client paths but the
+                    // companion lambda surface + the observeAuthState/
+                    // observeMfaStatus combine-flow inner classes
+                    // aren't directly reachable from commonTest without
+                    // a supabase-kt integration harness. Excluding the
+                    // companion + the synthetic inner classes (NOT the
+                    // outer class) preserves coverage signal on the
+                    // public AuthRepository surface.
+                    "io.github.b150005.skeinly.data.repository.AuthRepositoryImpl\$Companion",
+                    "io.github.b150005.skeinly.data.repository.AuthRepositoryImpl\$observeAuthState\$*",
+                    "io.github.b150005.skeinly.data.repository.AuthRepositoryImpl\$observeMfaStatus\$*",
                     "io.github.b150005.skeinly.ui.platform.*",
                     // Phase 26.2 (ADR-022 §6.2) — `OAuthClient`
                     // platform actuals wrap Android Credential Manager

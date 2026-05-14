@@ -852,4 +852,33 @@
     <string name="title_maintenance">Skeinly is temporarily unavailable</string>
     <string name="body_maintenance_default">We are performing scheduled maintenance on the Skeinly backend. Please try again in a few minutes.</string>
     <string name="action_maintenance_retry">Retry</string>
+
+    <!-- Phase 26.5 (ADR-022 §6.4) — Multi-factor authentication (TOTP). -->
+    <string name="label_security_section">Security</string>
+    <string name="label_two_factor_auth">Two-factor authentication</string>
+    <string name="state_mfa_enabled">Enabled</string>
+    <string name="state_mfa_disabled">Disabled</string>
+    <string name="action_enable_mfa">Enable two-factor authentication</string>
+    <string name="action_disable_mfa">Disable two-factor authentication</string>
+    <string name="title_mfa_enroll">Scan with your authenticator app</string>
+    <string name="body_mfa_enroll_scan_qr">Open Google Authenticator, 1Password, Authy, or any TOTP app and scan the QR code below. If you can\'t scan, enter the secret manually.</string>
+    <string name="label_mfa_manual_secret">Manual entry secret</string>
+    <string name="action_mfa_advance_to_confirm">I\'ve added it — verify</string>
+    <string name="title_mfa_confirm_code">Enter the 6-digit code</string>
+    <string name="body_mfa_confirm_code">Enter the current 6-digit code from your authenticator to confirm pairing.</string>
+    <string name="action_mfa_verify">Verify</string>
+    <string name="title_mfa_recovery_code">Save your recovery code</string>
+    <string name="body_mfa_recovery_code_warning">Write this code down or take a screenshot. If you lose your authenticator device, this single-use code is the only way to recover access. We will never show it again.</string>
+    <string name="action_mfa_recovery_code_saved">I\'ve saved it</string>
+    <string name="title_mfa_challenge">Two-factor authentication</string>
+    <string name="body_mfa_challenge_prompt">Enter the 6-digit code from your authenticator app to continue.</string>
+    <string name="action_mfa_use_recovery_code">Use recovery code instead</string>
+    <string name="action_mfa_back_to_totp">Back to authenticator code</string>
+    <string name="label_mfa_recovery_code_input">Recovery code</string>
+    <string name="error_mfa_invalid_code">Wrong code. Please try again.</string>
+    <string name="error_mfa_invalid_recovery_code">Invalid recovery code.</string>
+    <string name="error_mfa_locked">Too many failed attempts. Wait a moment and try again.</string>
+    <string name="error_mfa_enroll_failed">Enrollment failed. Please try again.</string>
+    <string name="title_mfa_disable_confirm">Disable two-factor authentication?</string>
+    <string name="body_mfa_disable_warning">Your account will no longer require a second factor at sign-in. You can re-enable it anytime.</string>
 </resources>

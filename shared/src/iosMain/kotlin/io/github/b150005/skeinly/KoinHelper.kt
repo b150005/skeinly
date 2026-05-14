@@ -407,6 +407,21 @@ fun wrapPackManagementState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.packmanagement.PackManagementState>,
 ): FlowWrapper<io.github.b150005.skeinly.ui.packmanagement.PackManagementState> = FlowWrapper(flow)
 
+// Phase 26.5 (ADR-022 §6.4) — MFA enrollment + challenge ViewModels +
+// state wrappers. The SwiftUI side mirrors the Compose MfaEnrollmentScreen
+// + MfaChallengeScreen and drives them through these helpers.
+fun getMfaEnrollmentViewModel(): io.github.b150005.skeinly.ui.auth.MfaEnrollmentViewModel = KoinPlatform.getKoin().get()
+
+fun wrapMfaEnrollmentState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.auth.MfaEnrollmentUiState>,
+): FlowWrapper<io.github.b150005.skeinly.ui.auth.MfaEnrollmentUiState> = FlowWrapper(flow)
+
+fun getMfaChallengeViewModel(): io.github.b150005.skeinly.ui.auth.MfaChallengeViewModel = KoinPlatform.getKoin().get()
+
+fun wrapMfaChallengeState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.auth.MfaChallengeUiState>,
+): FlowWrapper<io.github.b150005.skeinly.ui.auth.MfaChallengeUiState> = FlowWrapper(flow)
+
 fun wrapSettingsAccountDeletedFlow(flow: kotlinx.coroutines.flow.Flow<kotlin.Unit>): EventFlowWrapper<kotlin.Unit> = EventFlowWrapper(flow)
 
 fun wrapProfileState(

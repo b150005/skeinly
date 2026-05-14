@@ -143,4 +143,13 @@ enum ViewModelFactory {
     static func packManagementViewModel() -> PackManagementViewModel {
         KoinHelperKt.getPackManagementViewModel()
     }
+
+    /// Phase 26.5 (ADR-022 §6.4) — MFA enrollment + challenge ViewModels.
+    static func mfaEnrollmentViewModel() -> MfaEnrollmentViewModel {
+        KoinHelperKt.getMfaEnrollmentViewModel()
+    }
+
+    static func mfaChallengeViewModel() -> MfaChallengeViewModel {
+        KoinHelperKt.getMfaChallengeViewModel()
+    }
 }

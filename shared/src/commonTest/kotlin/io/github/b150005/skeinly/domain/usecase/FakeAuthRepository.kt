@@ -1,6 +1,8 @@
 package io.github.b150005.skeinly.domain.usecase
 
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.MfaEnrollment
+import io.github.b150005.skeinly.domain.model.MfaEnrollmentStatus
 import io.github.b150005.skeinly.domain.model.OAuthProviderKind
 import io.github.b150005.skeinly.domain.model.OAuthSignInOutcome
 import io.github.b150005.skeinly.domain.model.SignUpOutcome
@@ -205,7 +207,96 @@ class FakeAuthRepository : AuthRepository {
         currentUserId =
             when (state) {
                 is AuthState.Authenticated -> state.userId
+                is AuthState.MfaChallengeRequired -> state.userId
                 else -> null
             }
+    }
+
+    // ========================================================
+    // Phase 26.5 (ADR-022 §6.4) — MFA enrollment + challenge + recovery
+    // ========================================================
+
+    private val mfaStatusFlow =
+        MutableStateFlow<MfaEnrollmentStatus>(MfaEnrollmentStatus.NotEnrolled)
+
+    /** Test seam: override the next [enrollMfaTotp] return value. */
+    var enrollMfaTotpOutcome: MfaEnrollment? = null
+    var enrollMfaTotpError: Throwable? = null
+    var enrollMfaTotpCallCount: Int = 0
+
+    var lastVerifiedFactorId: String? = null
+    var lastVerifiedCode: String? = null
+    var verifyMfaEnrollmentError: Throwable? = null
+    var verifyMfaEnrollmentCallCount: Int = 0
+
+    var lastChallengeCode: String? = null
+    var submitMfaChallengeError: Throwable? = null
+    var submitMfaChallengeCallCount: Int = 0
+
+    /** Test seam: controls [consumeRecoveryCode]'s return value. */
+    var consumeRecoveryCodeResult: Boolean = true
+    var consumeRecoveryCodeError: Throwable? = null
+    var lastConsumedRecoveryCode: String? = null
+    var consumeRecoveryCodeCallCount: Int = 0
+
+    var lastDisabledFactorId: String? = null
+    var disableMfaError: Throwable? = null
+    var disableMfaCallCount: Int = 0
+
+    var regenerateRecoveryCodeResult: String = "FRESH-CODE-1234"
+    var regenerateRecoveryCodeError: Throwable? = null
+    var regenerateRecoveryCodeCallCount: Int = 0
+
+    override fun observeMfaStatus(): Flow<MfaEnrollmentStatus> = mfaStatusFlow
+
+    fun setMfaStatus(status: MfaEnrollmentStatus) {
+        mfaStatusFlow.value = status
+    }
+
+    override suspend fun enrollMfaTotp(): MfaEnrollment {
+        enrollMfaTotpCallCount++
+        enrollMfaTotpError?.let { throw it }
+        return enrollMfaTotpOutcome
+            ?: MfaEnrollment(
+                factorId = "test-factor-id",
+                secret = "JBSWY3DPEHPK3PXP",
+                otpAuthUri = "otpauth://totp/Skeinly:test?secret=JBSWY3DPEHPK3PXP&issuer=Skeinly",
+                recoveryCode = "ABCD-EFGH-JKLM-NPQR",
+            )
+    }
+
+    override suspend fun verifyMfaEnrollment(
+        factorId: String,
+        code: String,
+    ) {
+        verifyMfaEnrollmentCallCount++
+        lastVerifiedFactorId = factorId
+        lastVerifiedCode = code
+        verifyMfaEnrollmentError?.let { throw it }
+    }
+
+    override suspend fun submitMfaChallenge(code: String) {
+        submitMfaChallengeCallCount++
+        lastChallengeCode = code
+        submitMfaChallengeError?.let { throw it }
+    }
+
+    override suspend fun consumeRecoveryCode(plaintextCode: String): Boolean {
+        consumeRecoveryCodeCallCount++
+        lastConsumedRecoveryCode = plaintextCode
+        consumeRecoveryCodeError?.let { throw it }
+        return consumeRecoveryCodeResult
+    }
+
+    override suspend fun disableMfa(factorId: String) {
+        disableMfaCallCount++
+        lastDisabledFactorId = factorId
+        disableMfaError?.let { throw it }
+    }
+
+    override suspend fun regenerateRecoveryCode(): String {
+        regenerateRecoveryCodeCallCount++
+        regenerateRecoveryCodeError?.let { throw it }
+        return regenerateRecoveryCodeResult
     }
 }
