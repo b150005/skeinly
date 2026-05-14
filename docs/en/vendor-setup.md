@@ -544,11 +544,13 @@ Play groups data into 14 collapsible categories. Expand each, check only the lis
 
 **健康とフィットネス** (0/2): no checks. Skeinly does not collect health or fitness data.
 
-**メッセージ** (0/3): no checks. Skeinly has no chat / SMS-like messaging — patterns and comments are forum-style UGC, declared elsewhere.
+**メッセージ** (1/3 checked):
+- ☑ **その他のアプリ内メッセージ** — covers user-to-user text exchange (pattern comments, suggestion proposals + their threaded comments) AND user-to-developer text submission (bug report content via Settings → Send Feedback). Play's tooltip says "その他の種類のメッセージ（インスタント メッセージなど）" — "など" indicates a broad reading covering forum-style text exchange, not just real-time IM.
+- Leave unchecked: メール (Skeinly does not handle user email content); SMS または MMS (no SMS).
 
-**写真と動画** (1/2 checked):
+**写真と動画** (1/2 checked currently; will become 2/2 post-Phase-28):
 - ☑ **写真** — project progress photos in Supabase Storage.
-- Leave unchecked: 動画 (no video features).
+- ☐ 動画 — leave unchecked **until Phase 28 (Video Upload Pro Feature) ships**. Once shipped, check this and re-submit Data Safety.
 
 **音声ファイル** (0/3): no checks. No voice recording / music files / other audio.
 
@@ -557,31 +559,23 @@ Play groups data into 14 collapsible categories. Expand each, check only the lis
 
 **カレンダー** (0/1): no checks. No calendar event integration.
 
-**連絡先** (0/1): no checks. Skeinly does not access the contact list.
+**コンタクト** (0/1): no checks. Skeinly does not access the device contact list. Phase 25 friend-only mode adds in-app friend connections but those are not "contacts" in Play's sense (which targets device address-book / social-graph data drawn from contacts).
 
-**アプリのアクティビティ** (1/6 checked):
-- ☑ **アプリでの操作** — PostHog page views / taps / scrolls (opt-in via consent screen).
-- Leave unchecked: アプリ内検索履歴 (search queries are transient, not persisted); インストール済みのアプリ; その他のユーザー生成コンテンツ (handled under user content); その他の操作 (the captured PostHog events are app-actions).
+**アプリのアクティビティ** (1/5 checked):
+- ☑ **アプリのインタラクション数** — PostHog captures page views / taps / scrolls (opt-in via consent screen).
+- Leave unchecked: アプリ内の検索履歴 (search queries are transient, not persisted); インストール済みのアプリ (no other-app probing); その他のユーザー作成コンテンツ (Skeinly UGC is declared under ファイル、ドキュメント for charts and メッセージ for comments — no remainder); その他の操作 (PostHog's captured events are interaction-counts, not "other actions").
 
-**ウェブ閲覧履歴** (0/1): no checks. No browsing history captured.
+**ウェブ閲覧** (0/1): no checks. No browsing history captured.
 
-**アプリの情報とパフォーマンス** (2/3 checked):
+**アプリの情報、パフォーマンス** (2/3 checked):
 - ☑ **クラッシュログ** — Sentry crash logs (opt-in).
-- ☑ **診断** — Sentry performance traces (opt-in).
-- Leave unchecked: その他のアプリパフォーマンスデータ.
+- ☑ **診断情報** — Sentry performance traces (opt-in).
+- Leave unchecked: その他のアプリのパフォーマンス データ.
 
 **デバイスまたはその他の ID** (1/1 checked):
 - ☑ **デバイスまたはその他の ID** — FCM/APNs push token + PostHog distinct_id.
 
-Total expected checks: 10 across 14 categories.
-
-**Bug-report content has no clean home in Play's taxonomy**:
-- メッセージ > その他のアプリ内メッセージ — Play's intent is real-time / DM user-to-user messaging, not user-to-developer support submissions
-- メッセージ > メール — bug body is not "user's email content"
-- アプリのアクティビティ — the captured PostHog events do not include bug-report bodies
-- 個人情報 > その他の情報 — stretches the definition
-
-**Recommendation: leave undeclared** in Play Data Safety. The bug-report flow is already disclosed in the privacy policy (Phase 39 W5b — Edge Function proxy + Skeinly Feedback GitHub App + Issue body data). Operator can revisit at Phase 40 GA submission if Play's form review flags it.
+Total expected checks: **11 across 14 categories** (post-Phase-28 becomes 12 with 動画 added).
 
 #### Page 4: データの使用と処理
 
