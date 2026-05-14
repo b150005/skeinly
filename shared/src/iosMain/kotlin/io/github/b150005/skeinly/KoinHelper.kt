@@ -113,6 +113,44 @@ fun signInWithAppleIdToken(
     )
 }
 
+/**
+ * Phase 26.3 (ADR-022 §6.2) — bridges the SwiftUI `GoogleSignInBridge`
+ * completion handler into the shared [AuthViewModel].
+ *
+ * SwiftUI call sites:
+ *
+ * ```swift
+ * Button(action: {
+ *     GoogleSignInBridge.shared.signIn { idToken, nonce in
+ *         KoinHelperKt.signInWithGoogleIdToken(idToken: idToken, nonce: nonce)
+ *     }
+ * }) { ... }
+ * ```
+ *
+ * The [nonce] argument is intentionally nullable. The iOS GIDSignIn SDK
+ * does not stamp a nonce by default (parity with Android's
+ * `GetGoogleIdOption.Builder()` which Phase 26.2 also wires without
+ * `setNonce(...)`). Supabase accepts nonceless Google ID tokens; if a
+ * future replay-risk analysis surfaces, both platforms can wire a
+ * matched plaintext+digest nonce at the same time.
+ *
+ * Idempotent / safe to call from the main thread — the shared
+ * AuthViewModel runs its work on `viewModelScope`, so this just
+ * publishes an event.
+ */
+fun signInWithGoogleIdToken(
+    idToken: String,
+    nonce: String?,
+) {
+    val viewModel: AuthViewModel = KoinPlatform.getKoin().get()
+    viewModel.onEvent(
+        io.github.b150005.skeinly.ui.auth.AuthEvent.SignInWithGoogleIdToken(
+            idToken = idToken,
+            nonce = nonce,
+        ),
+    )
+}
+
 fun getProjectListViewModel(): ProjectListViewModel = KoinPlatform.getKoin().get()
 
 fun getProjectDetailViewModel(projectId: String): ProjectDetailViewModel = KoinPlatform.getKoin().get { parametersOf(projectId) }

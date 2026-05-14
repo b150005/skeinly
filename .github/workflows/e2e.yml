@@ -153,8 +153,14 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      # Phase 26.3 (ADR-022 §6.2) — see ci.yml for the rationale (empty
+      # value is valid; e2e does not exercise the Google Sign-In flow).
       - name: Create local.xcconfig for CI
-        run: echo 'DEVELOPMENT_TEAM =' > iosApp/local.xcconfig
+        run: |
+          cat > iosApp/local.xcconfig <<'EOF'
+          DEVELOPMENT_TEAM =
+          GOOGLE_REVERSE_CLIENT_ID =
+          EOF
 
       - name: Generate Xcode project
         run: cd iosApp && xcodegen generate

@@ -95,13 +95,39 @@ sealed interface AuthEvent {
 
     /**
      * Phase 26.2 (ADR-022 §6.2) — user tapped the Continue with Google
-     * button on LoginScreen. The ViewModel fires
-     * `OAuthClient.acquireGoogleIdToken()` (platform-specific
-     * Credential Manager flow on Android; Failure stub on iOS until
-     * Phase 26.3), then forwards the resulting ID token to
+     * button on Android LoginScreen. The ViewModel fires
+     * `OAuthClient.acquireGoogleIdToken()` (Android Credential Manager
+     * flow), then forwards the resulting ID token to
      * `AuthRepository.signInWithGoogle(idToken, nonce)`.
+     *
+     * **iOS path takes a different route**: SwiftUI's
+     * `GoogleSignInBridge` owns the GIDSignIn flow because it needs
+     * `UIWindow.rootViewController` for modal presentation, then
+     * forwards the resulting ID token through
+     * [SignInWithGoogleIdToken] (parallel to the Apple iOS pattern).
      */
     data object SignInWithGoogle : AuthEvent
+
+    /**
+     * Phase 26.3 (ADR-022 §6.2) — incoming Google ID token from the
+     * iOS `GoogleSignInBridge.handleCompletion(...)` callback, surfaced
+     * via the `KoinHelperKt.signInWithGoogleIdToken(...)` bridge.
+     * Mirrors [SignInWithAppleIdToken] — bypasses the
+     * `OAuthClient.acquireGoogleIdToken` seam because the iOS GIDSignIn
+     * flow needs SwiftUI/UIKit presentation context that doesn't
+     * generalize across platforms.
+     *
+     * The ViewModel forwards to the repository's `signInWithGoogle` and
+     * routes the outcome (SessionCreated → clear submit;
+     * LinkIdentityRequired → surface the link-identity prompt;
+     * exception → form.error). [nonce] may be null because the GIDSignIn
+     * SDK does not stamp a nonce by default and Supabase accepts
+     * nonceless Google ID tokens (same posture as Android).
+     */
+    data class SignInWithGoogleIdToken(
+        val idToken: String,
+        val nonce: String?,
+    ) : AuthEvent
 }
 
 private data class FormState(
@@ -178,6 +204,7 @@ class AuthViewModel(
             AuthEvent.DismissLinkIdentityPrompt ->
                 form.update { it.copy(linkIdentityRequired = null) }
             AuthEvent.SignInWithGoogle -> handleGoogleSignIn()
+            is AuthEvent.SignInWithGoogleIdToken -> handleGoogleIdToken(event.idToken, event.nonce)
         }
     }
 
@@ -266,6 +293,28 @@ class AuthViewModel(
                         )
                     }
             }
+        }
+    }
+
+    /**
+     * Phase 26.3 (ADR-022 §6.2) — handles a Google ID token that
+     * SwiftUI's `GoogleSignInBridge` already acquired natively. The iOS
+     * path skips [handleGoogleSignIn]'s `acquireGoogleIdToken()` step
+     * (the GIDSignIn flow needs UIKit's root view controller for modal
+     * presentation, which doesn't generalize across platforms) and
+     * jumps straight to the repository forward. Re-entrant guard
+     * mirrors the Apple path so a double-tap on Continue-with-Google
+     * cannot fire twice.
+     */
+    private fun handleGoogleIdToken(
+        idToken: String,
+        nonce: String?,
+    ) {
+        val current = form.value
+        if (current.isSubmitting) return
+        viewModelScope.launch {
+            form.update { it.copy(isSubmitting = true, error = null) }
+            forwardGoogleIdToken(idToken, nonce)
         }
     }
 

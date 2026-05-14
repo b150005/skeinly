@@ -199,6 +199,11 @@ jobs:
     name: Build iOS Release
     runs-on: macos-26
     needs: validate-tag
+    # Phase 26.3 (ADR-022 §6.2) — env-scoped because
+    # `IOS_GOOGLE_SERVICES_PLIST_BASE64` is registered under the
+    # `production` Environment alongside the Firebase per-environment
+    # plists. Repository-scope secrets remain readable.
+    environment: production
     outputs:
       ipa-available: ${{ steps.ios-signing.outputs.available }}
     steps:
@@ -292,12 +297,44 @@ jobs:
       # build_app's `build_xcargs` defensively re-asserts DEVELOPMENT_TEAM
       # at the xcodebuild invocation, in case the xcconfig substitution
       # somehow didn't land — belt-and-suspenders.
+      # Phase 26.3 (ADR-022 §6.2) — decode iOS Google Sign-In config
+      # plist + derive the reverse-client-ID for the OAuth URL scheme.
+      # When the secret is missing (half-configured release), the
+      # decode step skips and `GOOGLE_REVERSE_CLIENT_ID` stays empty.
+      # GIDSignIn fails at runtime (Apple Sign-In + email/password
+      # remain functional) — graceful degradation. PlistBuddy is the
+      # macOS-native plist reader; `|| true` swallows the absent-key
+      # exit code so a malformed plist surfaces empty rather than
+      # failing the build.
+      - name: Decode GoogleService-Info.plist + extract reverse client ID
+        id: google-signin-config
+        env:
+          IOS_PLIST_BASE64: ${{ secrets.IOS_GOOGLE_SERVICES_PLIST_BASE64 }}
+        run: |
+          if [ -n "$IOS_PLIST_BASE64" ]; then
+            echo "$IOS_PLIST_BASE64" | base64 -d > iosApp/iosApp/GoogleService-Info.plist
+            REVERSED_CLIENT_ID=$(
+              /usr/libexec/PlistBuddy -c "Print :REVERSED_CLIENT_ID" \
+                iosApp/iosApp/GoogleService-Info.plist 2>/dev/null || true
+            )
+            if [ -n "$REVERSED_CLIENT_ID" ]; then
+              echo "reversed-client-id=$REVERSED_CLIENT_ID" >> "$GITHUB_OUTPUT"
+              echo "GoogleService-Info.plist decoded + reversed-client-id extracted"
+            else
+              echo "::warning::REVERSED_CLIENT_ID missing from GoogleService-Info.plist — iOS Google Sign-In will fail at runtime"
+            fi
+          else
+            echo "::warning::IOS_GOOGLE_SERVICES_PLIST_BASE64 not set — iOS Google Sign-In unavailable in this build"
+          fi
+
       - name: Create local.xcconfig for CI
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          GOOGLE_REVERSE_CLIENT_ID: ${{ steps.google-signin-config.outputs.reversed-client-id }}
         run: |
           cat > iosApp/local.xcconfig <<EOF
           DEVELOPMENT_TEAM = $APPLE_TEAM_ID
+          GOOGLE_REVERSE_CLIENT_ID = $GOOGLE_REVERSE_CLIENT_ID
           EOF
 
       - name: Generate Xcode project

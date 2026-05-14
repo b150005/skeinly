@@ -88,8 +88,45 @@ struct LoginScreen: View {
             .disabled(state.isSubmitting)
             .accessibilityIdentifier("signInWithAppleButton")
 
+            // Phase 26.3 (ADR-022 §6.2) — Continue-with-Google secondary
+            // CTA. Sits BELOW Apple Sign-In per Apple HIG §"Sign in with
+            // Apple": when both OAuth options are offered, Apple Sign-In
+            // SHOULD be at least as prominent as the alternative.
+            // Apple's prominence is met by placement (top + dedicated
+            // section) AND by Apple's standard button styling; the
+            // Google button uses Material-style stroked styling with
+            // the brand "G" colored monogram drawn from the Google
+            // Identity branding guidelines.
+            Button(action: {
+                GoogleSignInBridge.shared.signIn { idToken, nonce in
+                    KoinHelperKt.signInWithGoogleIdToken(idToken: idToken, nonce: nonce)
+                }
+            }) {
+                HStack(spacing: 12) {
+                    // SF Symbol stand-in for the Google "G" — using the
+                    // platform-native symbol set avoids shipping a
+                    // licensed Google "G" PNG. The symbol resolves on
+                    // iOS 17.2+ which matches our deployment target.
+                    // Color is the Google red brand color (#EA4335) when
+                    // the symbol renders.
+                    Image(systemName: "g.circle.fill")
+                        .foregroundStyle(Color(red: 0.918, green: 0.263, blue: 0.208))
+                        .imageScale(.large)
+                    Text(LocalizedStringKey("action_continue_with_google"))
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 48)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .padding(.horizontal)
+            .disabled(state.isSubmitting)
+            .accessibilityIdentifier("continueWithGoogleButton")
+
             // "or sign in with email" divider — visually separates the
-            // primary Apple Sign-In path from the email/password
+            // primary OAuth paths above from the email/password
             // secondary fallback below.
             HStack(spacing: 8) {
                 Rectangle()

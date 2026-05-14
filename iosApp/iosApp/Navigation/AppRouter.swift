@@ -378,7 +378,20 @@ struct AppRootView: View {
     /// to the typed [Route] case. Authenticated path appends to the nav
     /// path immediately; unauthenticated path stashes the route in
     /// `pendingDeepLinkRoute` for the post-login `.onAppear` replay.
+    ///
+    /// Phase 26.3 (ADR-022 §6.2) — give the GoogleSignInBridge first
+    /// crack at the URL. The GIDSignIn OAuth flow returns to the app
+    /// via a custom URL scheme (the reverse-client-ID registered in
+    /// `Info.plist`'s `CFBundleURLTypes`); SwiftUI delivers it through
+    /// the same `.onOpenURL` hook. `GIDSignIn.sharedInstance.handle(_:)`
+    /// returns `true` if it recognized + consumed the URL — in that
+    /// case we short-circuit so `parseExternalRoute` (which only
+    /// recognizes `https://b150005.github.io/skeinly/...`) doesn't run
+    /// against a Google callback and silently drop it.
     func handleDeepLink(url: URL) {
+        if GoogleSignInBridge.shared.handle(url: url) {
+            return
+        }
         guard let route = parseExternalRoute(url: url) else { return }
         let authState = authHolder.state.authState
         if authState is AuthStateAuthenticated {

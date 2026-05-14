@@ -605,6 +605,181 @@ class AuthViewModelTest {
             gate.complete(io.github.b150005.skeinly.auth.OAuthIdTokenResult.UserCancelled)
         }
 
+    // ----------------------------------------------------------------
+    // Phase 26.3 (ADR-022 §6.2) — iOS Google Sign-In via direct
+    // SignInWithGoogleIdToken event (bypassing acquisition seam)
+    // ----------------------------------------------------------------
+
+    @Test
+    fun `google id token success transitions to authenticated`() =
+        runTest {
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(
+                AuthEvent.SignInWithGoogleIdToken(
+                    idToken = "fake.google.idtoken.ios",
+                    nonce = null,
+                ),
+            )
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertFalse(state.isSubmitting)
+                assertNull(state.error)
+                assertNull(state.linkIdentityRequired)
+                assertEquals("fake.google.idtoken.ios", authRepo.lastGoogleIdToken)
+                assertNull(authRepo.lastGoogleNonce)
+                assertTrue(state.authState is AuthState.Authenticated)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `google id token with explicit nonce forwards nonce to repo`() =
+        runTest {
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(
+                AuthEvent.SignInWithGoogleIdToken(
+                    idToken = "tok",
+                    nonce = "nonce-from-ios-bridge",
+                ),
+            )
+
+            viewModel.state.test {
+                awaitItem()
+                assertEquals("nonce-from-ios-bridge", authRepo.lastGoogleNonce)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `google id token link required surfaces challenge`() =
+        runTest {
+            authRepo.signInWithGoogleOutcome =
+                OAuthSignInOutcome.LinkIdentityRequired(
+                    email = "ios-user@gmail.com",
+                    provider = OAuthProviderKind.Google,
+                )
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(
+                AuthEvent.SignInWithGoogleIdToken(idToken = "tok", nonce = null),
+            )
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertFalse(state.isSubmitting)
+                val challenge = state.linkIdentityRequired
+                assertNotNull(challenge)
+                assertEquals("ios-user@gmail.com", challenge.email)
+                assertEquals(OAuthProviderKind.Google, challenge.provider)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `google id token repo failure surfaces generic error`() =
+        runTest {
+            authRepo.signInWithGoogleError = RuntimeException("nonce_mismatch")
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(
+                AuthEvent.SignInWithGoogleIdToken(idToken = "tok", nonce = null),
+            )
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertFalse(state.isSubmitting)
+                assertNotNull(state.error)
+                assertNull(state.linkIdentityRequired)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `google id token submit guards reentry`() =
+        runTest {
+            // Same gate pattern as Apple IdToken re-entrancy test — the
+            // iOS bridge path can fire `signInWithGoogleIdToken` twice
+            // if the user double-taps the Continue-with-Google button
+            // before the first round trip completes. Re-entrant guard
+            // on FormState.isSubmitting must short-circuit the second.
+            val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+            val slowRepo =
+                object {
+                    var callCount = 0
+                    var lastIdToken: String? = null
+
+                    suspend fun signInWithGoogle(
+                        idToken: String,
+                        @Suppress("UNUSED_PARAMETER") nonce: String?,
+                    ): OAuthSignInOutcome {
+                        callCount++
+                        lastIdToken = idToken
+                        gate.await()
+                        return OAuthSignInOutcome.SessionCreated
+                    }
+                }
+            val viewModel =
+                AuthViewModel(
+                    observeAuthState = ObserveAuthStateUseCase(authRepo),
+                    signIn = SignInUseCase(authRepo),
+                    signUp = SignUpUseCase(authRepo),
+                    signInWithApple = { idToken, nonce -> authRepo.signInWithApple(idToken, nonce) },
+                    signInWithGoogle = { idToken, nonce -> slowRepo.signInWithGoogle(idToken, nonce) },
+                    acquireGoogleIdToken = { fakeGoogleAcquisition },
+                )
+
+            viewModel.onEvent(
+                AuthEvent.SignInWithGoogleIdToken(idToken = "first", nonce = null),
+            )
+            viewModel.onEvent(
+                AuthEvent.SignInWithGoogleIdToken(idToken = "second", nonce = null),
+            )
+
+            assertEquals(1, slowRepo.callCount)
+            assertEquals("first", slowRepo.lastIdToken)
+            gate.complete(Unit)
+        }
+
+    @Test
+    fun `google id token bypasses acquisition seam`() =
+        runTest {
+            // CRITICAL: the iOS direct-bridge path MUST NOT call
+            // `acquireGoogleIdToken()` — that seam returns Failure on
+            // iOS and would surface a spurious error. Phase 26.3 fix:
+            // `handleGoogleIdToken` calls `forwardGoogleIdToken`
+            // directly, never the acquisition lambda.
+            var acquisitionCalled = false
+            val viewModel =
+                AuthViewModel(
+                    observeAuthState = ObserveAuthStateUseCase(authRepo),
+                    signIn = SignInUseCase(authRepo),
+                    signUp = SignUpUseCase(authRepo),
+                    signInWithApple = { idToken, nonce -> authRepo.signInWithApple(idToken, nonce) },
+                    signInWithGoogle = { idToken, nonce -> authRepo.signInWithGoogle(idToken, nonce) },
+                    acquireGoogleIdToken = {
+                        acquisitionCalled = true
+                        io.github.b150005.skeinly.auth.OAuthIdTokenResult
+                            .Failure("should not be called")
+                    },
+                )
+
+            viewModel.onEvent(
+                AuthEvent.SignInWithGoogleIdToken(idToken = "tok", nonce = null),
+            )
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertFalse(state.isSubmitting)
+                assertNull(state.error)
+                assertEquals("tok", authRepo.lastGoogleIdToken)
+                cancelAndIgnoreRemainingEvents()
+            }
+            assertFalse(acquisitionCalled, "acquireGoogleIdToken must not be called on iOS direct-bridge path")
+        }
+
     @Test
     fun `dismiss link identity prompt clears challenge`() =
         runTest {

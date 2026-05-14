@@ -1169,7 +1169,7 @@ Phase 26.2 ships Android Google Sign-In via `androidx.credentials.CredentialMana
 
 ### `IOS_GOOGLE_SERVICES_PLIST_BASE64` (GitHub Secret — `production` env)
 
-> **Phase 26.2 status**: documented here as a forward-compat slot for Phase 26.3 iOS Google Sign-In. Phase 26.2's iOS `OAuthClient` actual is a Failure stub, so the iOS app does not currently consume this plist. Wire the GitHub Secret + CI decode step now so 26.3 (which adds `GIDSignIn` import) can ship without a separate secret registration round.
+> **Phase 26.3 status**: WIRED. The iOS release workflow (`release.yml` `build-ios` job) decodes this secret back to `iosApp/iosApp/GoogleService-Info.plist` before `xcodegen generate`, then runs `PlistBuddy -c "Print :REVERSED_CLIENT_ID"` to extract the OAuth callback URL scheme and write it as `GOOGLE_REVERSE_CLIENT_ID` into `iosApp/local.xcconfig` — which `project.yml`'s `CFBundleURLTypes` substitutes into `Info.plist`. The `GIDSignIn` SDK reads `CLIENT_ID` from the bundled plist at runtime; the OAuth modal callback uses the URL scheme. Half-configured release (secret missing) degrades gracefully — Apple Sign-In + email/password unaffected, only Google Sign-In returns silent failure.
 
 This is the iOS counterpart to `FIREBASE_GOOGLE_SERVICES_JSON_BASE64`. The plist contains the iOS OAuth Client ID + reverse Client ID URL scheme + project number. Operator-side setup:
 
@@ -1180,9 +1180,11 @@ This is the iOS counterpart to `FIREBASE_GOOGLE_SERVICES_JSON_BASE64`. The plist
    base64 -i iosApp/iosApp/GoogleService-Info.plist | pbcopy
    gh secret set IOS_GOOGLE_SERVICES_PLIST_BASE64 --env production --body "$(pbpaste)"
    ```
-4. CI release workflow's iOS build step decodes the secret back to the plist path before invoking `xcodebuild`. The decode step is conditional on the secret being present — half-configured release degrades gracefully (iOS Google Sign-In returns Failure; Apple Sign-In + email/password unaffected).
+4. The CI release workflow's iOS build step decodes the secret to the plist path AND derives the reverse-client-ID URL scheme via PlistBuddy before invoking `xcodegen generate` + `xcodebuild`. The decode step is conditional on the secret being present — half-configured release degrades gracefully.
 
 **Rotation**: only on Cloud Console iOS Client re-creation. Same procedure: re-download → re-encode → re-set secret.
+
+**Local-dev iOS Google Sign-In testing**: place the plist at `iosApp/iosApp/GoogleService-Info.plist` (same path as CI extracts) AND write `GOOGLE_REVERSE_CLIENT_ID = com.googleusercontent.apps.<NUMERIC>-<HASH>` into `iosApp/local.xcconfig`. The reverse-client-ID value is the `REVERSED_CLIENT_ID` field of the plist; copy it verbatim. The Phase 26.3 `OAuthClient.ios` actual still returns Failure (the iOS path goes through `GoogleSignInBridge` direct), so the wiring works end-to-end with no further Kotlin changes.
 
 ## Bulk verification
 
@@ -1220,12 +1222,13 @@ SUPABASE_PUBLISHABLE_KEY              Updated YYYY-MM-DD
 SUPABASE_URL                          Updated YYYY-MM-DD
 ```
 
-Expected **`production` Environment scope** output (3 entries — Firebase prod ×2 + Android release publishing ×1):
+Expected **`production` Environment scope** output (4 entries — Firebase prod ×2 + Google Sign-In iOS plist ×1 + Android release publishing ×1):
 
 ```
 FIREBASE_GOOGLE_SERVICES_JSON_BASE64        Updated YYYY-MM-DD
 FIREBASE_GOOGLE_SERVICE_INFO_PLIST_BASE64   Updated YYYY-MM-DD
 GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64        Updated YYYY-MM-DD
+IOS_GOOGLE_SERVICES_PLIST_BASE64            Updated YYYY-MM-DD
 ```
 
 Expected **`development` Environment scope** output (2 entries — `Skeinly-Dev` Firebase project values):

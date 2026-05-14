@@ -44,6 +44,14 @@ packages:
   PurchasesHybridCommon:
     url: https://github.com/RevenueCat/purchases-hybrid-common
     from: "17.55.1"
+  # Phase 26.3 (ADR-022 §6.2) — Google Sign-In iOS SDK. Reads CLIENT_ID
+  # from `GoogleService-Info.plist` automatically at app launch and
+  # presents the modal sign-in flow via `signIn(withPresenting:)`.
+  # iOS-only dep: Android uses `androidx.credentials` instead, wired
+  # through `OAuthClient.android.kt`.
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS
+    from: "8.0.0"
 
 configFiles:
   Debug: local.xcconfig
@@ -163,6 +171,23 @@ targets:
           - CFBundleURLName: "io.github.b150005.skeinly.share"
             CFBundleURLSchemes:
               - skeinly
+          # Phase 26.3 (ADR-022 §6.2) — Google Sign-In OAuth callback URL
+          # scheme. The reverse-client-ID value is sourced from the
+          # `GOOGLE_REVERSE_CLIENT_ID` xcconfig variable (see
+          # `local.xcconfig` setup in `release-secrets.md`). When the
+          # value is empty (local-dev / CI without the secret) the URL
+          # scheme registers as empty and the Google Sign-In modal will
+          # fail to redirect — but the app still builds and runs (with
+          # Google sign-in path returning Failure). Apple Sign-In +
+          # email/password remain functional.
+          #
+          # Why not derive from `GoogleService-Info.plist`'s
+          # `REVERSED_CLIENT_ID` at build time: xcconfig substitution is
+          # the cheapest path; a custom Run Script Phase that parses the
+          # plist would add wall-time + complexity for no gain.
+          - CFBundleURLName: "io.github.b150005.skeinly.googlesignin"
+            CFBundleURLSchemes:
+              - "$(GOOGLE_REVERSE_CLIENT_ID)"
         UIRequiredDeviceCapabilities:
           - arm64
         UISupportedInterfaceOrientations:
@@ -260,6 +285,10 @@ targets:
         product: PurchasesHybridCommon
       - package: PurchasesHybridCommon
         product: RevenueCat
+      - package: GoogleSignIn
+        product: GoogleSignIn
+      - package: GoogleSignIn
+        product: GoogleSignInSwift
     preBuildScripts:
       - name: "Compile Shared Framework"
         script: |

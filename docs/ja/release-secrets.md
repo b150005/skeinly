@@ -1164,7 +1164,7 @@ Phase 26.2 で Android Google Sign-In を出荷（`androidx.credentials.Credenti
 
 ### `IOS_GOOGLE_SERVICES_PLIST_BASE64`（GitHub Secret — `production` env）
 
-> **Phase 26.2 ステータス**: Phase 26.3 iOS Google Sign-In の forward-compat スロットとしてここに記載。Phase 26.2 の iOS `OAuthClient` actual は Failure stub のため、iOS アプリは現状この plist を消費しない。GitHub Secret + CI デコードステップを今のうちに配線しておき、26.3（`GIDSignIn` import を追加）が別途 secret 登録ラウンドなしで出荷できるようにする。
+> **Phase 26.3 ステータス**: 配線済み。`release.yml` `build-ios` ジョブが `xcodegen generate` の前に secret を `iosApp/iosApp/GoogleService-Info.plist` にデコードし、`PlistBuddy -c "Print :REVERSED_CLIENT_ID"` で OAuth コールバック URL scheme を抽出して `iosApp/local.xcconfig` に `GOOGLE_REVERSE_CLIENT_ID` として書き込む。`project.yml` の `CFBundleURLTypes` がこれを `Info.plist` に substitute する。`GIDSignIn` SDK は実行時に bundle 内の plist から `CLIENT_ID` を読み出し、OAuth モーダルコールバックは URL scheme を使う。half-configured release（secret 不在）は gracefully degrade — Apple Sign-In + email/password に影響なし、Google Sign-In のみ silent failure。
 
 `FIREBASE_GOOGLE_SERVICES_JSON_BASE64` の iOS 対応版。plist は iOS OAuth Client ID + reverse Client ID URL scheme + project number を含む。オペレーター側セットアップ:
 
@@ -1175,9 +1175,11 @@ Phase 26.2 で Android Google Sign-In を出荷（`androidx.credentials.Credenti
    base64 -i iosApp/iosApp/GoogleService-Info.plist | pbcopy
    gh secret set IOS_GOOGLE_SERVICES_PLIST_BASE64 --env production --body "$(pbpaste)"
    ```
-4. CI リリースワークフローの iOS build step が `xcodebuild` 起動前に secret を plist パスにデコード。デコードステップは secret 存在時のみ条件実行 — half-configured release は gracefully degrade（iOS Google Sign-In は Failure を返す; Apple Sign-In + email/password は影響なし）。
+4. CI リリースワークフローの iOS build step が `xcodegen generate` + `xcodebuild` 起動前に secret を plist パスにデコードし、PlistBuddy で reverse-client-ID URL scheme を抽出する。デコードステップは secret 存在時のみ条件実行 — half-configured release は gracefully degrade。
 
 **ローテーション**: Cloud Console iOS Client 再作成時のみ。同じ手順: 再ダウンロード → 再エンコード → secret 再設定。
+
+**ローカル開発で iOS Google Sign-In を動作確認する**: `iosApp/iosApp/GoogleService-Info.plist` に plist を配置（CI が解凍する同一パス）し、`iosApp/local.xcconfig` に `GOOGLE_REVERSE_CLIENT_ID = com.googleusercontent.apps.<NUMERIC>-<HASH>` を書く。reverse-client-ID 値は plist の `REVERSED_CLIENT_ID` フィールドをそのままコピー。Phase 26.3 の `OAuthClient.ios` actual は依然として Failure を返す（iOS パスは `GoogleSignInBridge` 直結のため）、Kotlin 側の追加変更なしで end-to-end 動作する。
 
 ## 一括検証
 
@@ -1215,12 +1217,13 @@ SUPABASE_PUBLISHABLE_KEY              Updated YYYY-MM-DD
 SUPABASE_URL                          Updated YYYY-MM-DD
 ```
 
-期待される **`production` Environment scope** 出力（3 エントリ — Firebase prod 2 + Android リリース公開 1）:
+期待される **`production` Environment scope** 出力（4 エントリ — Firebase prod 2 + Google Sign-In iOS plist 1 + Android リリース公開 1）:
 
 ```
 FIREBASE_GOOGLE_SERVICES_JSON_BASE64        Updated YYYY-MM-DD
 FIREBASE_GOOGLE_SERVICE_INFO_PLIST_BASE64   Updated YYYY-MM-DD
 GOOGLE_PLAY_PUBLISHER_SA_JSON_BASE64        Updated YYYY-MM-DD
+IOS_GOOGLE_SERVICES_PLIST_BASE64            Updated YYYY-MM-DD
 ```
 
 期待される **`development` Environment scope** 出力（2 エントリ — Firebase dev プロジェクト由来）:

@@ -151,8 +151,19 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      # Phase 26.3 (ADR-022 §6.2) — GOOGLE_REVERSE_CLIENT_ID xcconfig
+      # variable is referenced by project.yml's CFBundleURLTypes. Empty
+      # value is valid: xcconfig substitution writes an empty URL
+      # scheme which iOS treats as no-op. CI does not exercise the
+      # Google Sign-In flow (no Skeinly-Dev iOS plist registered yet);
+      # local builds with the production plist auto-derive the value
+      # at release time.
       - name: Create local.xcconfig for CI
-        run: echo 'DEVELOPMENT_TEAM =' > iosApp/local.xcconfig
+        run: |
+          cat > iosApp/local.xcconfig <<'EOF'
+          DEVELOPMENT_TEAM =
+          GOOGLE_REVERSE_CLIENT_ID =
+          EOF
 
       - name: Generate Xcode project
         run: cd iosApp && xcodegen generate
