@@ -461,7 +461,7 @@ Sign in with the credentials above (Supabase email+password auth, no 2FA). Demo 
 | サブ質問 | 回答 | 理由 |
 |---|---|---|
 | 音声通信 / SMS / 画像オーディオ共有で交流・コンテンツ交換? | **はい** | [Google policy guidance (answer/11070862)](https://support.google.com/googleplay/android-developer/answer/11070862) の文言は JA UI より広く、「UGC を交換できるなら はい — **コメント、写真共有、その他あらゆる UGC 交換** を含む」と明示。音声 / SMS / messaging-style に限らない。Skeinly のパターンへのコメント + Discovery 画像共有 + 提案 (Suggestion) はすべて該当 |
-| UGC が **主要な** コンテンツソース? | **いいえ** | コア活動は自作パターン + 同梱 70 シンボル JIS catalog でプロジェクト管理。Discovery / 提案 / コメントは副次的。Twitter / Reddit / TikTok のような UGC primary なアプリ形態ではない |
+| UGC が **主要な** コンテンツソース? | **はい** | Skeinly の非 UGC 同梱コンテンツは 70 JIS シンボルのみで、これは primitives (アルファベット相当) であって "content" ではない。ユーザーが実質的に見る content はほぼ全て UGC (パターン / チャート / コメント / 提案)。製品ビジョンの中核は collaboration: Phase 36 Discovery+Fork / Phase 37 Collaboration Core / Phase 38 Pull Request workflow。Wave E UGC moderation foundation 投資 (ADR-021) も UGC-primary shape を裏付ける — `いいえ` だと moderation 規模と申告の不整合。逆説テスト: 共有 UGC を取り除くと Discovery + 提案 + コメントが消え、collaborative platform としての差別化価値が消失 |
 | ヌード公開を許可? | **いいえ** | 機能として存在せず、Terms of Service 禁止、UGC moderation で削除 |
 | 露骨な暴力表現の公開を許可? | **いいえ** | 同上 |
 | ユーザー / UGC をブロックする機能? | **はい** | Wave E foundation (ADR-021) — `user_blocks` テーブル + RLS NOT-EXISTS filter で server-side block 実装済。ユーザー向け UI は Phase 40 GA 前リリース (ADR-021 §D4)。代替は **いいえ** + GA 提出時に質問票 re-take だが、レーティング結果 (Everyone) は両 path 同一なので **はい** を推奨 |
