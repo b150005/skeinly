@@ -1,6 +1,7 @@
 package io.github.b150005.skeinly.domain.usecase
 
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.OAuthProviderKind
 import io.github.b150005.skeinly.domain.model.OAuthSignInOutcome
 import io.github.b150005.skeinly.domain.model.SignUpOutcome
 import io.github.b150005.skeinly.domain.repository.AuthRepository
@@ -57,10 +58,18 @@ class FakeAuthRepository : AuthRepository {
 
     override fun observeAuthState(): Flow<AuthState> = authStateFlow
 
+    /**
+     * Phase 26.4 — tests need to verify the link-identity resolution
+     * flow routes `challenge.email` (NOT the form's email) into the
+     * sign-in step. This call-trace makes that assertion possible.
+     */
+    var lastSignInEmail: String? = null
+
     override suspend fun signInWithEmail(
         email: String,
         password: String,
     ) {
+        lastSignInEmail = email
         signInError?.let { throw it }
         currentUserId = "test-user-id"
         authStateFlow.value = AuthState.Authenticated(userId = "test-user-id", email = email)
@@ -148,6 +157,32 @@ class FakeAuthRepository : AuthRepository {
         authStateFlow.value =
             AuthState.Authenticated(userId = "google-user-id", email = "google@example.com")
         return OAuthSignInOutcome.SessionCreated
+    }
+
+    /**
+     * Phase 26.4 (ADR-022 §6.3) — call-trace for the
+     * `linkPendingIdentity` resolution step. Tests verify
+     * (provider, idToken, nonce) routed through correctly + can
+     * inject failure for the identity-link-fails branch (production
+     * keeps the session intact in that case; user retries from
+     * Settings).
+     */
+    var lastLinkedProvider: OAuthProviderKind? = null
+    var lastLinkedIdToken: String? = null
+    var lastLinkedNonce: String? = null
+    var linkPendingIdentityCallCount: Int = 0
+    var linkPendingIdentityError: Throwable? = null
+
+    override suspend fun linkPendingIdentity(
+        provider: OAuthProviderKind,
+        pendingIdToken: String,
+        nonce: String?,
+    ) {
+        linkPendingIdentityCallCount++
+        lastLinkedProvider = provider
+        lastLinkedIdToken = pendingIdToken
+        lastLinkedNonce = nonce
+        linkPendingIdentityError?.let { throw it }
     }
 
     /**

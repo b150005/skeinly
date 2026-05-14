@@ -84,6 +84,26 @@ class AuthRepositoryImplTest {
             }
         }
 
+    // ----------------------------------------------------------------
+    // Phase 26.4 (ADR-022 §6.3) — linkPendingIdentity short-circuit.
+    // Full happy-path is exercised at AuthViewModel layer via the
+    // FakeAuthRepository call-counter; here we lock the null-client
+    // contract.
+    // ----------------------------------------------------------------
+
+    @Test
+    fun `linkPendingIdentity throws when client is null`() =
+        runTest {
+            val repo = AuthRepositoryImpl(supabaseClient = null)
+            assertFailsWith<IllegalStateException> {
+                repo.linkPendingIdentity(
+                    provider = io.github.b150005.skeinly.domain.model.OAuthProviderKind.Apple,
+                    pendingIdToken = "tok",
+                    nonce = "n",
+                )
+            }
+        }
+
     @Test
     fun `signInWithGoogle nonce defaults to null when omitted`() =
         runTest {
@@ -160,12 +180,18 @@ class AuthRepositoryImplTest {
             io.github.b150005.skeinly.domain.model.OAuthSignInOutcome.LinkIdentityRequired(
                 email = "user@gmail.com",
                 provider = io.github.b150005.skeinly.domain.model.OAuthProviderKind.Google,
+                pendingIdToken = "fake.google.idtoken",
+                nonce = null,
             )
         assertEquals("user@gmail.com", outcome.email)
         assertEquals(
             io.github.b150005.skeinly.domain.model.OAuthProviderKind.Google,
             outcome.provider,
         )
+        // Phase 26.4 — outcome carries the token + nonce for the
+        // post-password linkIdentity resolution step.
+        assertEquals("fake.google.idtoken", outcome.pendingIdToken)
+        assertEquals(null, outcome.nonce)
     }
 
     @Test

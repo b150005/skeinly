@@ -234,6 +234,12 @@
     <string name="action_sign_in_with_google">Sign in with Google</string>
     <string name="label_or_sign_in_with_email">or sign in with email</string>
     <string name="body_email_already_used_oauth_link_prompt">An account with %1$s already exists. Sign in with your password, then link Apple from Settings.</string>
+    <!-- Phase 26.4 (ADR-022 §6.3) — inline link-identity resolution prompt. Surfaces below the LoginScreen primary form when an OAuth sign-in returns Supabase's user-already-exists. The user types their existing email/password to merge the OAuth identity into the existing account. -->
+    <string name="title_link_identity">Link your account</string>
+    <string name="body_email_already_used_link_prompt">%1$s is already used by an existing Skeinly account. Enter your password to link your account.</string>
+    <string name="action_link_identity">Link account</string>
+    <string name="action_dismiss_link_identity">Cancel</string>
+    <string name="state_linking_identity">Linking…</string>
     <!-- Email-confirmation state shown after sign-up succeeds while Supabase has Confirm-email enabled. -->
     <string name="title_email_confirmation_sent">Check your email</string>
     <string name="body_email_confirmation_sent">We sent a confirmation link to %1$s. Click the link to complete sign-in.</string>

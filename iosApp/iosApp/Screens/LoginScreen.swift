@@ -8,7 +8,21 @@ struct LoginScreen: View {
     @State private var showForgotPassword = false
     /// Phase 26.1 — surfaced via `state.linkIdentityRequired` after the
     /// repository returns `OAuthSignInOutcome.LinkIdentityRequired`.
+    /// Phase 26.4 — re-purposed as the visibility binding for the
+    /// inline link-identity sheet (replaces the prior alert-only UX).
     @State private var showLinkIdentityPrompt = false
+    /// Phase 26.4 — scratch-buffer for the password the user types
+    /// into the link-identity sheet. Distinct from `state.password`
+    /// (which holds the regular form password). Cleared automatically
+    /// when the sheet dismisses (via `.onChange(of: showLinkIdentityPrompt)`).
+    @State private var linkIdentityPassword: String = ""
+    /// Phase 26.4 — captured at sheet-presentation time. Reading
+    /// `state.linkIdentityRequired?.email` directly inside the sheet
+    /// content closure causes a ~300 ms flicker to empty during the
+    /// dismiss animation (the Kotlin state flips to null BEFORE
+    /// SwiftUI finishes the sheet dismiss). Capturing the value
+    /// keeps the body text stable for the lifetime of the sheet.
+    @State private var capturedLinkEmail: String = ""
 
     init(viewModel: AuthViewModel) {
         let wrapper = KoinHelperKt.wrapAuthState(flow: viewModel.state)
@@ -208,6 +222,13 @@ struct LoginScreen: View {
             showError = hasError
         }
         .onChange(of: state.linkIdentityRequired != nil) { _, hasChallenge in
+            // Capture the email at presentation time (Phase 26.4 LOW
+            // finding): reading from `state` inside the sheet
+            // content closure flickers to empty during dismiss
+            // animation.
+            if hasChallenge {
+                capturedLinkEmail = state.linkIdentityRequired?.email ?? ""
+            }
             showLinkIdentityPrompt = hasChallenge
         }
         .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
@@ -217,25 +238,33 @@ struct LoginScreen: View {
         } message: {
             Text(state.error?.localizedString ?? "")
         }
-        .alert(
-            LocalizedStringKey("title_email_confirmation_sent"),
-            isPresented: $showLinkIdentityPrompt
-        ) {
-            Button("action_ok") {
-                viewModel.onEvent(event: AuthEventDismissLinkIdentityPrompt.shared)
-            }
-        } message: {
-            // The challenge carries the email Supabase reported as
-            // already-registered. Display it in the prompt body so the
-            // user can identify which credentials to retry with.
-            let challenge = state.linkIdentityRequired
-            let email = challenge?.email ?? ""
-            Text(
-                String(
-                    format: NSLocalizedString("body_email_already_used_oauth_link_prompt", comment: ""),
-                    email
+        // Phase 26.4 (ADR-022 §6.3) — inline link-identity sheet
+        // (replaces the Phase 26.1 alert-only UX). User types their
+        // existing password into the sheet to merge the OAuth
+        // identity into the existing account via supabase-kt's
+        // `linkIdentityWithIdToken`. Email is shown in the body but
+        // not editable (Supabase already knows it; typing risk
+        // removed).
+        .sheet(isPresented: $showLinkIdentityPrompt) {
+            // Clear the scratch password when the sheet dismisses,
+            // either by user-cancel or automatic post-resolution.
+            linkIdentityPassword = ""
+        } content: {
+            NavigationStack {
+                LinkIdentityForm(
+                    email: capturedLinkEmail,
+                    isSubmitting: state.isSubmitting,
+                    password: $linkIdentityPassword,
+                    onSubmit: {
+                        viewModel.onEvent(
+                            event: AuthEventSubmitLinkIdentity(password: linkIdentityPassword)
+                        )
+                    },
+                    onCancel: {
+                        viewModel.onEvent(event: AuthEventDismissLinkIdentityPrompt.shared)
+                    }
                 )
-            )
+            }
         }
         .sheet(isPresented: $showForgotPassword) {
             NavigationStack {
@@ -293,5 +322,91 @@ private struct EmailConfirmationSentView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("emailConfirmationSentScreen")
+    }
+}
+
+/// Phase 26.4 (ADR-022 §6.3) — inline link-identity sheet content.
+/// User types their existing email/password to merge the pending
+/// OAuth identity into the existing Skeinly account. Email is
+/// rendered as text (sourced from `LinkIdentityChallenge.email`, not
+/// editable — Supabase already knows the value; the user only types
+/// the password).
+///
+/// Mirrors the Compose LoginScreen `AlertDialog` shape: title + body
+/// + password TextField + Submit / Cancel buttons. Sheet-style (vs
+/// alert-style) chosen because SwiftUI alerts cannot contain editable
+/// SecureField content + a CircularProgressIndicator-equivalent
+/// state — sheets are the iOS-idiomatic container for password
+/// collection.
+private struct LinkIdentityForm: View {
+    let email: String
+    let isSubmitting: Bool
+    @Binding var password: String
+    let onSubmit: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text(LocalizedStringKey("title_link_identity"))
+                .font(.title2)
+                .fontWeight(.semibold)
+                .accessibilityAddTraits(.isHeader)
+
+            Text(
+                String(
+                    format: NSLocalizedString("body_email_already_used_link_prompt", comment: ""),
+                    email
+                )
+            )
+            .multilineTextAlignment(.center)
+            .foregroundStyle(.secondary)
+
+            SecureField(LocalizedStringKey("label_password"), text: $password)
+                .textContentType(.password)
+                .textFieldStyle(.roundedBorder)
+                .disabled(isSubmitting)
+                .accessibilityIdentifier("linkIdentityPasswordField")
+
+            HStack(spacing: 12) {
+                Button {
+                    onCancel()
+                } label: {
+                    Text(LocalizedStringKey("action_dismiss_link_identity"))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .disabled(isSubmitting)
+                .accessibilityIdentifier("linkIdentityCancelButton")
+
+                Button {
+                    onSubmit()
+                } label: {
+                    if isSubmitting {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                    } else {
+                        Text(LocalizedStringKey("action_link_identity"))
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isSubmitting || password.isEmpty)
+                // Phase 26.4 — VoiceOver gets the in-flight state
+                // surfaced through `state_linking_identity` so users
+                // who can't see the spinner know the action is
+                // pending.
+                .accessibilityLabel(
+                    isSubmitting
+                        ? Text(LocalizedStringKey("state_linking_identity"))
+                        : Text(LocalizedStringKey("action_link_identity"))
+                )
+                .accessibilityIdentifier("linkIdentitySubmitButton")
+            }
+
+            Spacer()
+        }
+        .padding(24)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("linkIdentitySheet")
     }
 }

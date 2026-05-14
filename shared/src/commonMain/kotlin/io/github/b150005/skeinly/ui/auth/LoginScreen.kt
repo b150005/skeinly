@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -21,10 +22,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -32,20 +38,25 @@ import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_continue_with_apple
 import io.github.b150005.skeinly.generated.resources.action_continue_with_google
+import io.github.b150005.skeinly.generated.resources.action_dismiss_link_identity
 import io.github.b150005.skeinly.generated.resources.action_forgot_password
+import io.github.b150005.skeinly.generated.resources.action_link_identity
 import io.github.b150005.skeinly.generated.resources.action_return_to_sign_in
 import io.github.b150005.skeinly.generated.resources.action_sign_in
 import io.github.b150005.skeinly.generated.resources.action_sign_up
 import io.github.b150005.skeinly.generated.resources.action_toggle_to_sign_in
 import io.github.b150005.skeinly.generated.resources.action_toggle_to_sign_up
 import io.github.b150005.skeinly.generated.resources.app_name
+import io.github.b150005.skeinly.generated.resources.body_email_already_used_link_prompt
 import io.github.b150005.skeinly.generated.resources.body_email_confirmation_check_existing_account
 import io.github.b150005.skeinly.generated.resources.body_email_confirmation_check_spam
 import io.github.b150005.skeinly.generated.resources.body_email_confirmation_sent
 import io.github.b150005.skeinly.generated.resources.label_email
 import io.github.b150005.skeinly.generated.resources.label_password
+import io.github.b150005.skeinly.generated.resources.state_linking_identity
 import io.github.b150005.skeinly.generated.resources.title_create_account
 import io.github.b150005.skeinly.generated.resources.title_email_confirmation_sent
+import io.github.b150005.skeinly.generated.resources.title_link_identity
 import io.github.b150005.skeinly.generated.resources.title_sign_in
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.localized
@@ -235,6 +246,117 @@ fun LoginScreen(
             ) {
                 Text(stringResource(Res.string.action_continue_with_apple))
             }
+        }
+
+        // Phase 26.4 (ADR-022 §6.3) — link-identity resolution
+        // AlertDialog. Surfaces when `state.linkIdentityRequired` is
+        // non-null (the user attempted OAuth sign-in with an email
+        // that already exists under a different auth method). User
+        // types their existing password to merge the OAuth identity
+        // into the existing account via supabase-kt's
+        // `linkIdentityWithIdToken`.
+        //
+        // Email is the `challenge.email` value Supabase reported —
+        // shown as part of the body copy so the user can identify
+        // which credentials to retry with. The user types only the
+        // password (no email field) to remove the typo risk on the
+        // already-Supabase-known email.
+        val challenge = state.linkIdentityRequired
+        if (challenge != null) {
+            // Password state lives at the call-site (NOT in
+            // ViewModel.form.password) because the form's password
+            // field is the regular sign-up/sign-in password; the
+            // link-identity password is a distinct scratch buffer
+            // for the duration of the dialog. Cleared automatically
+            // when the dialog dismisses (state.linkIdentityRequired
+            // flips back to null + the dialog leaves composition).
+            //
+            // Key on `pendingIdToken` (NOT `email`) so a same-email
+            // re-challenge (e.g. user dismisses Apple → tries Google
+            // with same email) gets a fresh password buffer. Each
+            // OAuth invocation issues a unique JWT, so the token is
+            // a safer freshness signal than the email value.
+            var linkPassword by rememberSaveable(challenge.pendingIdToken) {
+                mutableStateOf("")
+            }
+            AlertDialog(
+                onDismissRequest = {
+                    if (!state.isSubmitting) {
+                        viewModel.onEvent(AuthEvent.DismissLinkIdentityPrompt)
+                    }
+                },
+                title = {
+                    Text(stringResource(Res.string.title_link_identity))
+                },
+                text = {
+                    Column {
+                        Text(
+                            text =
+                                stringResource(
+                                    Res.string.body_email_already_used_link_prompt,
+                                    challenge.email,
+                                ),
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = linkPassword,
+                            onValueChange = { linkPassword = it },
+                            label = { Text(stringResource(Res.string.label_password)) },
+                            singleLine = true,
+                            enabled = !state.isSubmitting,
+                            visualTransformation = PasswordVisualTransformation(),
+                            keyboardOptions =
+                                KeyboardOptions(
+                                    keyboardType = KeyboardType.Password,
+                                    imeAction = ImeAction.Done,
+                                ),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .testTag("linkIdentityPasswordField"),
+                        )
+                    }
+                },
+                confirmButton = {
+                    val linkingLabel = stringResource(Res.string.state_linking_identity)
+                    Button(
+                        onClick = {
+                            viewModel.onEvent(AuthEvent.SubmitLinkIdentity(linkPassword))
+                        },
+                        enabled = !state.isSubmitting && linkPassword.isNotBlank(),
+                        modifier =
+                            Modifier
+                                .testTag("linkIdentitySubmitButton")
+                                .then(
+                                    if (state.isSubmitting) {
+                                        Modifier.semantics { contentDescription = linkingLabel }
+                                    } else {
+                                        Modifier
+                                    },
+                                ),
+                    ) {
+                        if (state.isSubmitting) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.height(20.dp),
+                                strokeWidth = 2.dp,
+                            )
+                        } else {
+                            Text(stringResource(Res.string.action_link_identity))
+                        }
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.onEvent(AuthEvent.DismissLinkIdentityPrompt)
+                        },
+                        enabled = !state.isSubmitting,
+                        modifier = Modifier.testTag("linkIdentityCancelButton"),
+                    ) {
+                        Text(stringResource(Res.string.action_dismiss_link_identity))
+                    }
+                },
+            )
         }
     }
 }

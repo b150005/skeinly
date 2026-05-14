@@ -216,6 +216,14 @@ private class ControlledAuthRepository : AuthRepository {
     override suspend fun signInWithAppleViaWebOAuth() {
         error("not used in bridge tests")
     }
+
+    override suspend fun linkPendingIdentity(
+        provider: io.github.b150005.skeinly.domain.model.OAuthProviderKind,
+        pendingIdToken: String,
+        nonce: String?,
+    ) {
+        error("not used in bridge tests")
+    }
 }
 
 private sealed interface BridgeCall {

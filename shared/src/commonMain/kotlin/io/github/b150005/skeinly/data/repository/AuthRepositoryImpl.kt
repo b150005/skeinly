@@ -172,6 +172,36 @@ class AuthRepositoryImpl(
         nonce: String?,
     ): OAuthSignInOutcome = signInWithOAuthIdToken(idToken, nonce, OAuthProviderKind.Google)
 
+    override suspend fun linkPendingIdentity(
+        provider: OAuthProviderKind,
+        pendingIdToken: String,
+        nonce: String?,
+    ) {
+        val client =
+            supabaseClient
+                ?: throw IllegalStateException("Supabase is not configured")
+        // supabase-kt 3.6 — `linkIdentityWithIdToken` is the IDToken-
+        // flavored counterpart to the browser-OAuth `linkIdentity`.
+        // Requires an active session (Supabase 401s if anonymous) +
+        // verifies the token's `nonce` claim + cross-checks the
+        // token's email against the session's user email. Throws on
+        // any failure (expired token, email mismatch, provider
+        // disabled in Dashboard) — the caller maps to a generic
+        // error and keeps the session intact (the email/password
+        // sign-in step that preceded this call already authenticated
+        // the user; the identity link can be retried from Settings).
+        client.auth.linkIdentityWithIdToken(
+            provider =
+                when (provider) {
+                    OAuthProviderKind.Apple -> Apple
+                    OAuthProviderKind.Google -> Google
+                },
+            idToken = pendingIdToken,
+        ) {
+            this.nonce = nonce
+        }
+    }
+
     override suspend fun signInWithAppleViaWebOAuth() {
         val client =
             supabaseClient
@@ -244,9 +274,16 @@ class AuthRepositoryImpl(
                     msg.contains("already exists") ||
                     msg.contains("already registered")
             if (isUserExists) {
+                // Phase 26.4 (ADR-022 §6.3) — carry the pendingIdToken
+                // + nonce back to the ViewModel so the LinkIdentity
+                // resolution step can re-submit them via
+                // `linkIdentityWithIdToken(provider, ...)` once the
+                // user signs in with their email/password.
                 OAuthSignInOutcome.LinkIdentityRequired(
                     email = extractEmailFromIdToken(idToken).orEmpty(),
                     provider = provider,
+                    pendingIdToken = idToken,
+                    nonce = nonce,
                 )
             } else {
                 throw e

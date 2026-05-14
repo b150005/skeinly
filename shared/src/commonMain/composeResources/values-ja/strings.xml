@@ -230,6 +230,12 @@
     <string name="action_sign_in_with_google">Googleでサインイン</string>
     <string name="label_or_sign_in_with_email">またはメールでサインイン</string>
     <string name="body_email_already_used_oauth_link_prompt">%1$s のアカウントは既に存在します。パスワードでサインインしてから、設定画面で Apple アカウントを連携してください。</string>
+    <!-- Phase 26.4 (ADR-022 §6.3) — OAuth ID と既存アカウントの連携 inline prompt -->
+    <string name="title_link_identity">アカウントを連携</string>
+    <string name="body_email_already_used_link_prompt">%1$s は既存の Skeinly アカウントで使用されています。パスワードを入力してアカウントを連携してください。</string>
+    <string name="action_link_identity">アカウントを連携</string>
+    <string name="action_dismiss_link_identity">キャンセル</string>
+    <string name="state_linking_identity">連携中…</string>
 
     <!-- Profile screen -->
     <string name="title_profile">プロフィール</string>

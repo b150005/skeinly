@@ -475,6 +475,41 @@
         }
       }
     },
+    "title_link_identity" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Link your account" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウントを連携" } }
+      }
+    },
+    "body_email_already_used_link_prompt" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ is already used by an existing Skeinly account. Enter your password to link your account." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ は既存の Skeinly アカウントで使用されています。パスワードを入力してアカウントを連携してください。" } }
+      }
+    },
+    "action_link_identity" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Link account" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウントを連携" } }
+      }
+    },
+    "action_dismiss_link_identity" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "キャンセル" } }
+      }
+    },
+    "state_linking_identity" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Linking…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "連携中…" } }
+      }
+    },
     "action_copy" : {
       "extractionState" : "manual",
       "localizations" : {

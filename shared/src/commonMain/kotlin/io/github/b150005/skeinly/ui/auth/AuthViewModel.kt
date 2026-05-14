@@ -146,6 +146,34 @@ sealed interface AuthEvent {
      * SignInWithAppleButton + IDToken (Phase 26.1).
      */
     data object SignInWithAppleViaWebOAuth : AuthEvent
+
+    /**
+     * Phase 26.4 (ADR-022 §6.3) — user typed their email/password into
+     * the inline link-identity form rendered on top of
+     * [AuthUiState.linkIdentityRequired]. The ViewModel:
+     *   1. Signs in with email/password using the same `signIn`
+     *      use-case path as the regular form submission. The email is
+     *      the one Supabase reported in the [LinkIdentityChallenge]
+     *      (i.e. the existing-user email) — populated automatically;
+     *      the user only types their password.
+     *   2. On success, the auth-state flow emits Authenticated, the
+     *      ViewModel then calls
+     *      `AuthRepository.linkPendingIdentity(provider, pendingIdToken, nonce)`
+     *      to bind the OAuth identity to the now-active session.
+     *   3. On identity-link success, the link-identity prompt clears
+     *      and the user is signed in with both identities attached.
+     *   4. On password-failure, stay on the link-identity prompt with
+     *      a generic error (pendingIdToken / nonce retained — user can
+     *      retry with the right password).
+     *   5. On link-identity-failure (token expired, network), stay on
+     *      Authenticated (sign-in succeeded) and clear the prompt with
+     *      a Settings retry hint — Phase 26.7 surfaces the Settings →
+     *      Linked Accounts panel; for alpha the user re-attempts via
+     *      a fresh OAuth tap.
+     */
+    data class SubmitLinkIdentity(
+        val password: String,
+    ) : AuthEvent
 }
 
 private data class FormState(
@@ -189,6 +217,18 @@ class AuthViewModel(
      * call-counting stub.
      */
     private val signInWithAppleViaWebOAuth: suspend () -> Unit,
+    /**
+     * Phase 26.4 (ADR-022 §6.3) — link-identity resolution hook.
+     * Production binds `authRepository::linkPendingIdentity`. Called
+     * after the email/password sign-in step succeeds in the
+     * `SubmitLinkIdentity` flow.
+     */
+    private val linkPendingIdentity:
+        suspend (
+            provider: io.github.b150005.skeinly.domain.model.OAuthProviderKind,
+            pendingIdToken: String,
+            nonce: String?,
+        ) -> Unit,
 ) : ViewModel() {
     private val form = MutableStateFlow(FormState())
 
@@ -231,6 +271,7 @@ class AuthViewModel(
             AuthEvent.SignInWithGoogle -> handleGoogleSignIn()
             is AuthEvent.SignInWithGoogleIdToken -> handleGoogleIdToken(event.idToken, event.nonce)
             AuthEvent.SignInWithAppleViaWebOAuth -> handleAppleViaWebOAuth()
+            is AuthEvent.SubmitLinkIdentity -> handleSubmitLinkIdentity(event.password)
         }
     }
 
@@ -260,6 +301,8 @@ class AuthViewModel(
                                     LinkIdentityChallenge(
                                         email = outcome.email,
                                         provider = outcome.provider,
+                                        pendingIdToken = outcome.pendingIdToken,
+                                        nonce = outcome.nonce,
                                     ),
                             )
                         }
@@ -423,6 +466,8 @@ class AuthViewModel(
                                 LinkIdentityChallenge(
                                     email = outcome.email,
                                     provider = outcome.provider,
+                                    pendingIdToken = outcome.pendingIdToken,
+                                    nonce = outcome.nonce,
                                 ),
                         )
                     }
@@ -501,6 +546,106 @@ class AuthViewModel(
                 form.update { it.copy(isSubmitting = false) }
             is UseCaseResult.Failure ->
                 form.update { it.copy(isSubmitting = false, error = result.error.toErrorMessage()) }
+        }
+    }
+
+    /**
+     * Phase 26.4 (ADR-022 §6.3) — three-step link-identity resolution
+     * chain. Routes:
+     *
+     *   1. Sign in with email/password using the existing
+     *      [SignInUseCase]. Email is sourced from the pending
+     *      [LinkIdentityChallenge] (the user types only the password
+     *      into the inline form; the email field is pre-filled +
+     *      disabled). Failure here keeps the challenge active — user
+     *      retries with the correct password.
+     *   2. On password-success, call [linkPendingIdentity] with the
+     *      saved (provider, pendingIdToken, nonce). Failure here
+     *      leaves the user in the now-Authenticated state but clears
+     *      the prompt — sign-in succeeded, the identity-link is the
+     *      retry-from-Settings path (alpha scope: re-tap OAuth on a
+     *      fresh LoginScreen entry).
+     *   3. On link-success, clear the prompt; the user is signed in
+     *      with both identities attached + the auth-state flow
+     *      already emitted Authenticated post-step-1.
+     *
+     * Re-entrancy: guarded by `isSubmitting` (the prompt UI binding
+     * also disables the form during submission so a double-tap is
+     * UI-prevented in addition to the guard here).
+     */
+    private fun handleSubmitLinkIdentity(password: String) {
+        val current = form.value
+        if (current.isSubmitting) return
+        val challenge = current.linkIdentityRequired ?: return
+        viewModelScope.launch {
+            form.update { it.copy(isSubmitting = true, error = null) }
+            // Step 1 — password sign-in. Use the same SignInUseCase
+            // path the regular form takes so error-mapping +
+            // observability are identical.
+            when (val result = signIn(challenge.email, password)) {
+                is UseCaseResult.Success -> {
+                    // Step 2 — link the pending OAuth identity.
+                    try {
+                        linkPendingIdentity(
+                            challenge.provider,
+                            challenge.pendingIdToken,
+                            challenge.nonce,
+                        )
+                        // Step 3 — clear the prompt. The auth-state
+                        // flow has already emitted Authenticated as a
+                        // side effect of step 1; the root navigator
+                        // routes off LoginScreen on that transition.
+                        form.update {
+                            it.copy(
+                                isSubmitting = false,
+                                linkIdentityRequired = null,
+                                password = "",
+                            )
+                        }
+                    } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                        throw e
+                    } catch (e: Throwable) {
+                        // Identity link failed (token expired,
+                        // network) — sign-in already succeeded so
+                        // user IS authenticated. Drop the challenge,
+                        // clear submit, no banner (the user observes
+                        // navigation to the post-login surface; the
+                        // missing OAuth identity is a degraded but
+                        // recoverable state surfaced from Settings in
+                        // Phase 26.7).
+                        //
+                        // Structured log so observability (Sentry
+                        // breadcrumb if Phase 39.3 wiring captures
+                        // stdout, otherwise local logcat / Console)
+                        // surfaces the silent-fallback for alpha
+                        // tester diagnostics. Provider + error class
+                        // only — pendingIdToken intentionally NOT
+                        // logged (avoids leaking auth credentials
+                        // into log files).
+                        println(
+                            "[AuthViewModel] linkPendingIdentity failed silently — provider=${challenge.provider} " +
+                                "errorClass=${e::class.simpleName} message=${e.message}",
+                        )
+                        form.update {
+                            it.copy(
+                                isSubmitting = false,
+                                linkIdentityRequired = null,
+                                password = "",
+                            )
+                        }
+                    }
+                }
+                is UseCaseResult.Failure ->
+                    // Password wrong / network failure during
+                    // sign-in. Keep the challenge active so the user
+                    // can retry with the correct password.
+                    form.update {
+                        it.copy(
+                            isSubmitting = false,
+                            error = result.error.toErrorMessage(),
+                        )
+                    }
+            }
         }
     }
 }

@@ -54,6 +54,9 @@ class AuthViewModelTest {
             signInWithGoogle = { idToken, nonce -> authRepo.signInWithGoogle(idToken, nonce) },
             acquireGoogleIdToken = { fakeGoogleAcquisition },
             signInWithAppleViaWebOAuth = { authRepo.signInWithAppleViaWebOAuth() },
+            linkPendingIdentity = { provider, idToken, nonce ->
+                authRepo.linkPendingIdentity(provider, idToken, nonce)
+            },
         )
 
     @Test
@@ -328,6 +331,8 @@ class AuthViewModelTest {
                 OAuthSignInOutcome.LinkIdentityRequired(
                     email = "user@privaterelay.appleid.com",
                     provider = OAuthProviderKind.Apple,
+                    pendingIdToken = "fake.apple.idtoken",
+                    nonce = "apple-nonce-plaintext",
                 )
             val viewModel = createViewModel()
 
@@ -400,6 +405,9 @@ class AuthViewModelTest {
                     signInWithGoogle = { idToken, nonce -> authRepo.signInWithGoogle(idToken, nonce) },
                     acquireGoogleIdToken = { fakeGoogleAcquisition },
                     signInWithAppleViaWebOAuth = { authRepo.signInWithAppleViaWebOAuth() },
+                    linkPendingIdentity = { provider, idToken, nonce ->
+                        authRepo.linkPendingIdentity(provider, idToken, nonce)
+                    },
                 )
 
             viewModel.onEvent(
@@ -476,6 +484,8 @@ class AuthViewModelTest {
                 OAuthSignInOutcome.LinkIdentityRequired(
                     email = "user@gmail.com",
                     provider = OAuthProviderKind.Google,
+                    pendingIdToken = "tok",
+                    nonce = null,
                 )
             val viewModel = createViewModel()
 
@@ -568,6 +578,9 @@ class AuthViewModelTest {
                     signInWithGoogle = { idToken, nonce -> authRepo.signInWithGoogle(idToken, nonce) },
                     acquireGoogleIdToken = { throw RuntimeException("Play Services missing") },
                     signInWithAppleViaWebOAuth = { authRepo.signInWithAppleViaWebOAuth() },
+                    linkPendingIdentity = { provider, idToken, nonce ->
+                        authRepo.linkPendingIdentity(provider, idToken, nonce)
+                    },
                 )
 
             viewModel.onEvent(AuthEvent.SignInWithGoogle)
@@ -600,6 +613,9 @@ class AuthViewModelTest {
                         gate.await()
                     },
                     signInWithAppleViaWebOAuth = { authRepo.signInWithAppleViaWebOAuth() },
+                    linkPendingIdentity = { provider, idToken, nonce ->
+                        authRepo.linkPendingIdentity(provider, idToken, nonce)
+                    },
                 )
 
             viewModel.onEvent(AuthEvent.SignInWithGoogle)
@@ -664,6 +680,8 @@ class AuthViewModelTest {
                 OAuthSignInOutcome.LinkIdentityRequired(
                     email = "ios-user@gmail.com",
                     provider = OAuthProviderKind.Google,
+                    pendingIdToken = "ios-google-tok",
+                    nonce = null,
                 )
             val viewModel = createViewModel()
 
@@ -734,6 +752,9 @@ class AuthViewModelTest {
                     signInWithGoogle = { idToken, nonce -> slowRepo.signInWithGoogle(idToken, nonce) },
                     acquireGoogleIdToken = { fakeGoogleAcquisition },
                     signInWithAppleViaWebOAuth = { authRepo.signInWithAppleViaWebOAuth() },
+                    linkPendingIdentity = { provider, idToken, nonce ->
+                        authRepo.linkPendingIdentity(provider, idToken, nonce)
+                    },
                 )
 
             viewModel.onEvent(
@@ -770,6 +791,9 @@ class AuthViewModelTest {
                             .Failure("should not be called")
                     },
                     signInWithAppleViaWebOAuth = { authRepo.signInWithAppleViaWebOAuth() },
+                    linkPendingIdentity = { provider, idToken, nonce ->
+                        authRepo.linkPendingIdentity(provider, idToken, nonce)
+                    },
                 )
 
             viewModel.onEvent(
@@ -851,6 +875,9 @@ class AuthViewModelTest {
                     signInWithGoogle = { idToken, nonce -> authRepo.signInWithGoogle(idToken, nonce) },
                     acquireGoogleIdToken = { fakeGoogleAcquisition },
                     signInWithAppleViaWebOAuth = { slowRepo.signInWithAppleViaWebOAuth() },
+                    linkPendingIdentity = { provider, idToken, nonce ->
+                        authRepo.linkPendingIdentity(provider, idToken, nonce)
+                    },
                 )
 
             // First tap — kicks off, suspends in the gate. Second tap
@@ -870,6 +897,8 @@ class AuthViewModelTest {
             authRepo.signInWithAppleOutcome =
                 OAuthSignInOutcome.LinkIdentityRequired(
                     email = "u@example.com",
+                    pendingIdToken = "tok",
+                    nonce = "n",
                     provider = OAuthProviderKind.Apple,
                 )
             val viewModel = createViewModel()
@@ -884,6 +913,348 @@ class AuthViewModelTest {
                 viewModel.onEvent(AuthEvent.DismissLinkIdentityPrompt)
                 current = awaitItem()
                 assertNull(current.linkIdentityRequired)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    // ----------------------------------------------------------------
+    // Phase 26.4 (ADR-022 §6.3) — link-identity resolution flow
+    // ----------------------------------------------------------------
+
+    /**
+     * Drives a Phase 26.4 link-identity challenge into the form state
+     * by firing the Apple IDToken path with a `LinkIdentityRequired`
+     * outcome injected on the fake repo. Reused across the resolution
+     * tests so each one can begin from a known challenge state.
+     */
+    private suspend fun seedAppleLinkIdentityChallenge(
+        viewModel: AuthViewModel,
+        email: String = "shared@example.com",
+        idToken: String = "fake.apple.idtoken",
+        nonce: String = "apple-nonce",
+    ) {
+        authRepo.signInWithAppleOutcome =
+            OAuthSignInOutcome.LinkIdentityRequired(
+                email = email,
+                provider = OAuthProviderKind.Apple,
+                pendingIdToken = idToken,
+                nonce = nonce,
+            )
+        viewModel.onEvent(
+            AuthEvent.SignInWithAppleIdToken(idToken = idToken, nonce = nonce),
+        )
+        viewModel.state.test {
+            var s = awaitItem()
+            while (s.linkIdentityRequired == null) s = awaitItem()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `link identity full state-machine apple — password success then identity link success clears prompt`() =
+        runTest {
+            val viewModel = createViewModel()
+            seedAppleLinkIdentityChallenge(
+                viewModel = viewModel,
+                email = "u@example.com",
+                idToken = "apple.tok",
+                nonce = "apple-n",
+            )
+
+            viewModel.onEvent(AuthEvent.SubmitLinkIdentity(password = "correct-password"))
+
+            viewModel.state.test {
+                var s = awaitItem()
+                while (s.linkIdentityRequired != null || s.isSubmitting) {
+                    s = awaitItem()
+                }
+                // Prompt cleared.
+                assertNull(s.linkIdentityRequired)
+                assertFalse(s.isSubmitting)
+                assertNull(s.error)
+                // Authenticated state surfaced from the password
+                // sign-in step (FakeAuthRepository emits Authenticated
+                // when `signInWithEmail` succeeds without error).
+                assertTrue(s.authState is AuthState.Authenticated)
+                // Identity link call routed through with the carried
+                // pendingIdToken + nonce.
+                assertEquals(1, authRepo.linkPendingIdentityCallCount)
+                assertEquals(OAuthProviderKind.Apple, authRepo.lastLinkedProvider)
+                assertEquals("apple.tok", authRepo.lastLinkedIdToken)
+                assertEquals("apple-n", authRepo.lastLinkedNonce)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `link identity full state-machine google — nonce null carried verbatim`() =
+        runTest {
+            // Drive a Google challenge instead of Apple to verify the
+            // null-nonce path carries through cleanly.
+            authRepo.signInWithGoogleOutcome =
+                OAuthSignInOutcome.LinkIdentityRequired(
+                    email = "g@example.com",
+                    provider = OAuthProviderKind.Google,
+                    pendingIdToken = "google.tok",
+                    nonce = null,
+                )
+            val viewModel = createViewModel()
+            viewModel.onEvent(
+                AuthEvent.SignInWithGoogleIdToken(idToken = "google.tok", nonce = null),
+            )
+            viewModel.state.test {
+                var s = awaitItem()
+                while (s.linkIdentityRequired == null) s = awaitItem()
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            viewModel.onEvent(AuthEvent.SubmitLinkIdentity(password = "pw"))
+
+            viewModel.state.test {
+                var s = awaitItem()
+                while (s.isSubmitting || s.linkIdentityRequired != null) {
+                    s = awaitItem()
+                }
+                assertEquals(OAuthProviderKind.Google, authRepo.lastLinkedProvider)
+                assertEquals("google.tok", authRepo.lastLinkedIdToken)
+                assertEquals(null, authRepo.lastLinkedNonce)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `link identity password-fails stays on challenge with error`() =
+        runTest {
+            authRepo.signInError = RuntimeException("Invalid credentials")
+            val viewModel = createViewModel()
+            seedAppleLinkIdentityChallenge(viewModel)
+
+            viewModel.onEvent(AuthEvent.SubmitLinkIdentity(password = "wrong-password"))
+
+            viewModel.state.test {
+                var s = awaitItem()
+                while (s.isSubmitting) s = awaitItem()
+                // Password failed — challenge retained so user can
+                // retry. Error surfaced.
+                assertNotNull(s.linkIdentityRequired)
+                assertNotNull(s.error)
+                // CRITICAL: linkPendingIdentity must NOT have been called
+                // because the password step failed.
+                assertEquals(0, authRepo.linkPendingIdentityCallCount)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `link identity identity-link-fails clears prompt but keeps session intact`() =
+        runTest {
+            // signIn-with-email succeeds; linkPendingIdentity throws.
+            // Expected behavior: clear the prompt + isSubmitting,
+            // leave the user authenticated (sign-in step already
+            // succeeded — identity link is the retry-from-Settings
+            // case for the alpha scope).
+            authRepo.linkPendingIdentityError = RuntimeException("token expired")
+            val viewModel = createViewModel()
+            seedAppleLinkIdentityChallenge(viewModel)
+
+            viewModel.onEvent(AuthEvent.SubmitLinkIdentity(password = "ok-password"))
+
+            viewModel.state.test {
+                var s = awaitItem()
+                while (s.isSubmitting || s.linkIdentityRequired != null) {
+                    s = awaitItem()
+                }
+                // Prompt cleared.
+                assertNull(s.linkIdentityRequired)
+                // Session intact (password sign-in succeeded).
+                assertTrue(s.authState is AuthState.Authenticated)
+                // No banner — the user observes successful navigation
+                // post-login; missing OAuth identity is recoverable
+                // from Settings in Phase 26.7.
+                assertNull(s.error)
+                // CRITICAL: linkPendingIdentity WAS called (and threw).
+                assertEquals(1, authRepo.linkPendingIdentityCallCount)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `link identity uses challenge email — ignores form email`() =
+        runTest {
+            val viewModel = createViewModel()
+            // User typed something else in the main form (e.g. a typo
+            // before they realized they had an existing account).
+            viewModel.onEvent(AuthEvent.UpdateEmail("typo@example.com"))
+            seedAppleLinkIdentityChallenge(viewModel, email = "real@example.com")
+
+            viewModel.onEvent(AuthEvent.SubmitLinkIdentity(password = "pw"))
+
+            viewModel.state.test {
+                var s = awaitItem()
+                while (s.isSubmitting || s.linkIdentityRequired != null) {
+                    s = awaitItem()
+                }
+                // The sign-in call must use the challenge's email,
+                // NOT the form's email. FakeAuthRepository records
+                // the last email passed to signInWithEmail.
+                assertEquals("real@example.com", authRepo.lastSignInEmail)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `link identity submit guards reentry`() =
+        runTest {
+            // Gate the password sign-in step with a CompletableDeferred
+            // so the first submit stays in-flight while a second tap
+            // fires. The re-entrant guard must short-circuit the
+            // second tap.
+            val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+            val slowRepo =
+                object {
+                    var signInCallCount = 0
+
+                    suspend fun signInWithEmail(
+                        email: String,
+                        password: String,
+                    ) {
+                        signInCallCount++
+                        gate.await()
+                    }
+                }
+
+            val gatingAuthRepo =
+                object {
+                    val flow =
+                        kotlinx.coroutines.flow.MutableStateFlow<AuthState>(AuthState.Unauthenticated)
+
+                    fun setState(state: AuthState) {
+                        flow.value = state
+                    }
+                }
+
+            // Build the VM using the regular authRepo for everything
+            // except the signIn use-case, which routes to slowRepo.
+            val gatedSignIn =
+                io.github.b150005.skeinly.domain.usecase
+                    .SignInUseCase(
+                        object : io.github.b150005.skeinly.domain.repository.AuthRepository by authRepo {
+                            override suspend fun signInWithEmail(
+                                email: String,
+                                password: String,
+                            ) {
+                                slowRepo.signInWithEmail(email, password)
+                            }
+                        },
+                    )
+            val viewModel =
+                AuthViewModel(
+                    observeAuthState = ObserveAuthStateUseCase(authRepo),
+                    signIn = gatedSignIn,
+                    signUp = SignUpUseCase(authRepo),
+                    signInWithApple = { idToken, nonce -> authRepo.signInWithApple(idToken, nonce) },
+                    signInWithGoogle = { idToken, nonce -> authRepo.signInWithGoogle(idToken, nonce) },
+                    acquireGoogleIdToken = { fakeGoogleAcquisition },
+                    signInWithAppleViaWebOAuth = { authRepo.signInWithAppleViaWebOAuth() },
+                    linkPendingIdentity = { provider, idToken, nonce ->
+                        authRepo.linkPendingIdentity(provider, idToken, nonce)
+                    },
+                )
+            seedAppleLinkIdentityChallenge(viewModel)
+
+            // First tap — kicks off, suspends in the gate.
+            viewModel.onEvent(AuthEvent.SubmitLinkIdentity(password = "pw"))
+            // Second tap while first is in-flight — guard must drop.
+            viewModel.onEvent(AuthEvent.SubmitLinkIdentity(password = "pw"))
+
+            assertEquals(1, slowRepo.signInCallCount)
+            gate.complete(Unit)
+        }
+
+    @Test
+    fun `link identity submit no-op when no challenge active`() =
+        runTest {
+            val viewModel = createViewModel()
+            // No challenge seeded — challenge is null. Submitting the
+            // event should silently no-op rather than crash or start
+            // a stray sign-in coroutine.
+            viewModel.onEvent(AuthEvent.SubmitLinkIdentity(password = "pw"))
+
+            viewModel.state.test {
+                val s = awaitItem()
+                assertFalse(s.isSubmitting)
+                assertNull(s.error)
+                assertEquals(0, authRepo.linkPendingIdentityCallCount)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `dismiss link identity drops pending token zero retention`() =
+        runTest {
+            val viewModel = createViewModel()
+            seedAppleLinkIdentityChallenge(
+                viewModel = viewModel,
+                idToken = "sensitive-pending-tok",
+                nonce = "sensitive-nonce",
+            )
+
+            viewModel.onEvent(AuthEvent.DismissLinkIdentityPrompt)
+
+            viewModel.state.test {
+                val s = awaitItem()
+                // Challenge cleared.
+                assertNull(s.linkIdentityRequired)
+                // CRITICAL — no link call fired by dismiss.
+                assertEquals(0, authRepo.linkPendingIdentityCallCount)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `apple challenge populates pendingIdToken + nonce in form state`() =
+        runTest {
+            val viewModel = createViewModel()
+            seedAppleLinkIdentityChallenge(
+                viewModel = viewModel,
+                idToken = "carried.tok",
+                nonce = "carried-nonce",
+            )
+
+            viewModel.state.test {
+                val s = awaitItem()
+                val challenge = s.linkIdentityRequired
+                assertNotNull(challenge)
+                assertEquals("carried.tok", challenge.pendingIdToken)
+                assertEquals("carried-nonce", challenge.nonce)
+                assertEquals(OAuthProviderKind.Apple, challenge.provider)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `google challenge populates pendingIdToken with null nonce`() =
+        runTest {
+            authRepo.signInWithGoogleOutcome =
+                OAuthSignInOutcome.LinkIdentityRequired(
+                    email = "g@example.com",
+                    provider = OAuthProviderKind.Google,
+                    pendingIdToken = "google.tok.unique",
+                    nonce = null,
+                )
+            val viewModel = createViewModel()
+            viewModel.onEvent(
+                AuthEvent.SignInWithGoogleIdToken(idToken = "google.tok.unique", nonce = null),
+            )
+
+            viewModel.state.test {
+                var s = awaitItem()
+                while (s.linkIdentityRequired == null) s = awaitItem()
+                val challenge = s.linkIdentityRequired
+                assertNotNull(challenge)
+                assertEquals("google.tok.unique", challenge.pendingIdToken)
+                assertEquals(null, challenge.nonce)
+                assertEquals(OAuthProviderKind.Google, challenge.provider)
                 cancelAndIgnoreRemainingEvents()
             }
         }

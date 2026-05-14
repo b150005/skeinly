@@ -99,6 +99,44 @@ interface AuthRepository {
     ): OAuthSignInOutcome
 
     /**
+     * Phase 26.4 (ADR-022 §6.3) — links a pending OAuth identity to the
+     * currently-authenticated Supabase user via
+     * `auth.linkIdentityWithIdToken(provider, pendingIdToken)`. Called
+     * by the LinkIdentity resolution flow AFTER the user has signed in
+     * with their original credentials (typically email/password).
+     *
+     * Supabase server-side verifies (a) the ID token's `nonce` claim
+     * matches the supplied [nonce] (Apple replay protection), (b) the
+     * ID token's email matches the current session's user email
+     * (forgery protection — prevents an attacker who obtains an OAuth
+     * token for the victim's address from attaching their own provider
+     * identity).
+     *
+     * Throws on failure (expired token, email mismatch, provider
+     * disabled). The caller maps the exception to a generic error
+     * banner and keeps the session intact — password sign-in already
+     * succeeded, so the user IS authenticated; identity link can be
+     * retried from Settings.
+     *
+     * iOS does NOT exercise this path through any special bridge —
+     * the AuthViewModel routes the call after collecting the password.
+     *
+     * @param provider       provider matching the pending OAuth identity
+     *                       (Apple / Google).
+     * @param pendingIdToken raw JWT that the failed `signInWithIdToken`
+     *                       call returned, carried in the
+     *                       [io.github.b150005.skeinly.domain.model.OAuthSignInOutcome.LinkIdentityRequired]
+     *                       outcome.
+     * @param nonce          plaintext nonce paired with the token (Apple
+     *                       only; null for Google).
+     */
+    suspend fun linkPendingIdentity(
+        provider: io.github.b150005.skeinly.domain.model.OAuthProviderKind,
+        pendingIdToken: String,
+        nonce: String?,
+    )
+
+    /**
      * Phase 26.x (ADR-022 §6.1) — Apple Sign-In on Android via web-OAuth
      * + Custom Tabs (supabase-kt's `signInWith(Apple)` non-IDToken path).
      * Mirrors the cross-platform symmetric-coverage decision: Apple-iOS

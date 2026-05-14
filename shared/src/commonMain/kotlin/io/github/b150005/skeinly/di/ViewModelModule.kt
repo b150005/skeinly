@@ -80,6 +80,11 @@ val viewModelModule =
                 // web-OAuth lambda-seam, mirroring the signInWithApple
                 // / signInWithGoogle pattern above.
                 signInWithAppleViaWebOAuth = authRepository::signInWithAppleViaWebOAuth,
+                // Phase 26.4 (ADR-022 §6.3) — link-identity resolution
+                // lambda-seam. Wired to the same authRepository so
+                // production routes through Supabase's
+                // `linkIdentityWithIdToken`; tests inject a stub.
+                linkPendingIdentity = authRepository::linkPendingIdentity,
             )
         }
         viewModelOf(::ForgotPasswordViewModel)

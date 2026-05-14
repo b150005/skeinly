@@ -24,20 +24,40 @@ sealed interface OAuthSignInOutcome {
      * OAuth identity already exists in `auth.users` under a different
      * auth method (typically email/password — or a different OAuth
      * provider). The user must sign in with the original method, then
-     * `auth.linkIdentity(provider)` from a subsequent session to bind
-     * the new OAuth identity.
+     * `auth.linkIdentityWithIdToken(provider, idToken)` from a
+     * subsequent session to bind the new OAuth identity.
      *
      * The UI surfaces a "this email already has an account — sign in
      * with your password first" prompt keyed on [provider]. This path
      * is explicitly NOT auto-resolved (OWASP A07 — silent auto-merge
      * is rejected per ADR-022 §6.1 decision (c)).
      *
-     * @property email    address Supabase reported as already-registered.
-     * @property provider OAuth provider the user attempted; drives the
-     *                    localized prompt copy.
+     * Phase 26.4 (ADR-022 §6.3) — the original [pendingIdToken] +
+     * [nonce] are carried back to the ViewModel via this outcome so
+     * the resolution-step `linkIdentityWithIdToken(provider, ...)`
+     * call can re-submit the same token after the user's password
+     * sign-in succeeds. ID token expiry is short (Apple 10 min,
+     * Google 1 hour); if the user's password sign-in step takes
+     * longer than that, the eventual `linkIdentityWithIdToken` call
+     * fails server-side and the user retries from the LoginScreen
+     * (a fresh OAuth tap regenerates the token).
+     *
+     * @property email           address Supabase reported as
+     *                           already-registered.
+     * @property provider        OAuth provider the user attempted;
+     *                           drives the localized prompt copy.
+     * @property pendingIdToken  Raw JWT the original OAuth call
+     *                           returned, threaded through to the
+     *                           link-identity resolution step.
+     * @property nonce           Plaintext nonce stamped into the
+     *                           token's `nonce` claim (Apple only,
+     *                           null for Google — parity with the
+     *                           `signInWithIdToken` posture).
      */
     data class LinkIdentityRequired(
         val email: String,
         val provider: OAuthProviderKind,
+        val pendingIdToken: String,
+        val nonce: String?,
     ) : OAuthSignInOutcome
 }
