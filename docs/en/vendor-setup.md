@@ -446,7 +446,9 @@ Step 1 of 3 — **カテゴリ** (Category) page:
 - [ ] ☑ **International Age Rating Coalition (IARC) の利用規約に同意します** — tick the agreement checkbox
 - [ ] **次へ** → Step 2 アンケート (the actual IARC questionnaire)
 
-Target: **Everyone** (all ages). Step 2 is a 5-section questionnaire — only the first section is gated; the rest show their sub-questions inline. Answer per the matrices below.
+**Expected outcome**: 12+ across PEGI / USK / IARC / ACB, Teen on ESRB, 14+ on Russia RARS. NOT Everyone, NOT 4+. This is the standard rating for any app with significant UGC + user-to-user interaction (Instagram / Twitter / Reddit / Pinterest land at the same 12+ band). PEGI / USK / ESRB rate UGC-enabled apps 12+ automatically regardless of moderation quality, on the principle that UGC inherently can include rated content. Skeinly's collaboration is core to product vision (Phase 36-38), so this is unavoidable and acceptable. Internal Testing track does not display the rating; A0d-5 Target Audience 18+ ≥ IARC 12+ keeps the declaration consistent; Apple's age rating (separate questionnaire) typically lands at 4+ or 9+ because Apple does NOT auto-12+ for UGC apps.
+
+Step 2 is a 5-section questionnaire — only the first section is gated; the rest show their sub-questions inline. Answer per the matrices below.
 
 | Section | Has top-level gate? | Skeinly approach |
 |---|---|---|
@@ -479,7 +481,7 @@ Target: **Everyone** (all ages). Step 2 is a 5-section questionnaire — only th
 | ウェブブラウザまたは検索エンジン? | **いいえ** | Skeinly is a craft project-management app, not a browser. |
 | 主にニュースまたは教育商品? | **いいえ** | Core is project management + collaboration. Pattern browsing on Discovery can be incidentally educational but the app is not structured as a curriculum / news product. |
 
-After Step 2 submission, IARC computes region-specific ratings automatically. Skeinly's craft + UGC + curated-online-content + IAP mix lands at Everyone because no sub-question reveals rating-relevant content beyond the IAP digital-purchase disclosure.
+After Step 2 submission, IARC computes region-specific ratings automatically. **Verified outcome 2026-05-14**: PEGI 12 / USK 12+ / IARC 12+ / ACB 12+ / ESRB Teen / RARS 14+. Driven by UGC + Users-Interact descriptor + IAP disclosure — not by any rating-relevant Skeinly content (the content itself is craft-safe). This is the standard band for collaboration-enabled apps; accept and proceed.
 
 ### A0d-5: Target audience
 
