@@ -446,15 +446,15 @@ Step 1 of 3 — **カテゴリ** (Category) page:
 - [ ] ☑ **International Age Rating Coalition (IARC) の利用規約に同意します** — tick the agreement checkbox
 - [ ] **次へ** → Step 2 アンケート (the actual IARC questionnaire)
 
-Target: **Everyone** (all ages). Step 2 is a 5-section **gating** questionnaire — each section asks "is THIS source of content rating-relevant?" and sub-questions expand only when you say はい. Pick the gate answer carefully so you do not get dragged into unnecessary sub-branches.
+Target: **Everyone** (all ages). Step 2 is a 5-section questionnaire — only the first section is gated; the rest show their sub-questions inline. Answer per the matrices below.
 
-| Gating section | Skeinly answer | Rationale |
+| Section | Has top-level gate? | Skeinly approach |
 |---|---|---|
-| **ダウンロード済みアプリ** (rating-relevant content bundled in the APK / AAB) | **いいえ** | Bundle = JIS knitting / crochet glyphs (70 symbols) + UI strings + app icon. No violence / sex / language / drugs / gambling / horror / crude humor / regulated substances. Saying はい here expands 10+ sub-questions (暴力 / 血液 / 流血 / 恐怖 / 性的 / ギャンブル / 言葉 / 規制物質 / 下品なユーモア etc.) that all resolve to いいえ anyway — pick いいえ at the gate for the shorter, lower-risk path. |
-| **ユーザー コンテンツの共有** | **はい** | Patterns + comments + suggestions shared via Discovery / project feed. 8 sub-questions expand — answer matrix below. |
-| **オンライン コンテンツ** | **はい** | Skeinly's symbol packs are server-delivered curated content (NOT user-generated, NOT bundled in the APK): Phase 41 dynamic symbol pack infrastructure (`symbol_packs` + `symbol_pack_locales` Supabase tables + RPC delivery) ships free packs (`jis.knit.beginner` / `jis.crochet.beginner`) at runtime, and Pro packs (curated by Skeinly team, gated by Pro entitlement) will land post-alpha. IARC's three-way categorization (bundled / UGC / online-curated) makes this the only fit. Sub-questions about content nature all resolve safely — symbol packs are knitting/crochet glyphs only, no violence / sex / language / drugs / gambling, fully moderated since Skeinly team authors them. (Discovery feed is also server-delivered but classifies under UGC, already covered by the previous gate.) |
-| **年齢制限が適用される製品または活動の宣伝または販売** | **いいえ** | No ads. No sales / promotion of alcohol / tobacco / firearms / lottery / etc. The IAP subscription itself is not an age-restricted product. |
-| **その他** | **いいえ** | Nothing applicable. |
+| **ダウンロード済みアプリ** | Yes (はい / いいえ at top) | Answer **いいえ** — bundled content is JIS knitting / crochet glyphs (70 symbols) + UI strings + app icon, none of which is rating-relevant. Saying はい would expand 10+ sub-questions (暴力 / 血液 / 流血 / 恐怖 / 性的 / ギャンブル / 言葉 / 規制物質 / 下品なユーモア etc.) all resolving to いいえ anyway — pick いいえ for the shorter, lower-risk path. |
+| **ユーザー コンテンツの共有** | No (sub-questions visible inline) | Answer the 8 sub-questions per the matrix below. |
+| **オンライン コンテンツ** | No (sub-questions visible inline) | Sub-questions covered below. Skeinly's symbol packs (Phase 41 dynamic infrastructure: `symbol_packs` + `symbol_pack_locales` Supabase tables + RPC delivery) are server-delivered curated content — not UGC, not bundled — so the section applies. Knitting/crochet glyphs only, no violence / sex / language / drugs / gambling, fully moderated since Skeinly team authors them. |
+| **年齢制限が適用される製品または活動の宣伝または販売** | No (sub-questions visible inline) | No ads, no sales / promotion of alcohol / tobacco / firearms / lottery / etc. The IAP subscription itself is not age-restricted. All sub-questions answer いいえ. |
+| **その他** | No (sub-questions visible inline) | 5 sub-questions visible directly — answer matrix below. |
 
 **ユーザー コンテンツの共有 sub-questions** (expand after the gate answers はい):
 
@@ -469,7 +469,17 @@ Target: **Everyone** (all ages). Step 2 is a 5-section **gating** questionnaire 
 | チャットモデレート? | **いいえ** | No chat in Skeinly. Comments and suggestions are async forum-style posts on patterns, not real-time chat. |
 | 対話を招待友人のみに制限可? | **いいえ** | No friend-only mode / private circles. All interactions in Discovery / comments / suggestions are public. |
 
-After Step 2 submission, IARC computes region-specific ratings automatically. Skeinly's craft + UGC + IAP mix lands at Everyone because every gate either resolves to "no rating-relevant content" or to UGC with proper moderation in place.
+**その他 sub-questions** (5 questions visible inline):
+
+| Sub-question | Answer | Why |
+|---|---|---|
+| ユーザーの詳細な現在地情報を他のユーザーと共有? | **いいえ** | Skeinly collects no location data — declared in A0d-6 Data safety. |
+| ユーザーはアプリを通じてデジタル商品を購入できる? | **はい** | IAP Pro subscription via StoreKit / Play Billing. |
+| 現金報酬 / ギフトカード / play-to-earn / 換金可能暗号通貨 / 譲渡可能デジタル資産 (NFT) の発行? | **いいえ** | None of these mechanisms exist in Skeinly. |
+| ウェブブラウザまたは検索エンジン? | **いいえ** | Skeinly is a craft project-management app, not a browser. |
+| 主にニュースまたは教育商品? | **いいえ** | Core is project management + collaboration. Pattern browsing on Discovery can be incidentally educational but the app is not structured as a curriculum / news product. |
+
+After Step 2 submission, IARC computes region-specific ratings automatically. Skeinly's craft + UGC + curated-online-content + IAP mix lands at Everyone because no sub-question reveals rating-relevant content beyond the IAP digital-purchase disclosure.
 
 ### A0d-5: Target audience
 

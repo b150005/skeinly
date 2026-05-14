@@ -446,15 +446,15 @@ Sign in with the credentials above (Supabase email+password auth, no 2FA). Demo 
 - [ ] ☑ **International Age Rating Coalition (IARC) の利用規約に同意します** にチェック
 - [ ] **次へ** → ステップ 2 アンケート (IARC 質問票本体)
 
-目標: **Everyone (全年齢)**。ステップ 2 は **5 セクションのゲート式質問票** — 各セクションが「このコンテンツソースはレーティング関連か?」を聞き、**はい** と答えるとサブ質問が展開される。ゲート回答を正しく選ばないと不要な分岐に引き込まれる。
+目標: **Everyone (全年齢)**。ステップ 2 は 5 セクションの質問票 — ゲート (はい/いいえ) があるのは最初のセクションのみで、残りはサブ質問がインラインで直接表示される。下表の matrix で回答。
 
-| ゲートセクション | Skeinly 回答 | 根拠 |
+| セクション | トップレベル ゲート? | Skeinly 方針 |
 |---|---|---|
-| **ダウンロード済みアプリ** (APK / AAB バンドル内の静的コンテンツ) | **いいえ** | バンドル = JIS 編み図シンボル 70 個 + UI 文字列 + アプリアイコンのみ。性 / 暴力 / 言葉 / 薬物 / ギャンブル / 恐怖 / 下品なユーモア / 規制物質 のいずれにも該当しない。**はい** にすると 10+ のサブ質問 (暴力 / 血液 / 流血 / 恐怖 / 性的 / ギャンブル / 言葉 / 規制物質 / 下品なユーモア etc.) が展開され、すべて「いいえ」で答えても結果は同じ。ゲートで **いいえ** を選ぶのが短く安全な path。 |
-| **ユーザー コンテンツの共有** | **はい** | パターン / コメント / 提案 (Suggestion) を Discovery / project feed で共有。8 つのサブ質問が展開 — 下表の matrix で回答。 |
-| **オンライン コンテンツ** | **はい** | Skeinly のシンボルパックは server-delivered の curated コンテンツ (UGC でも bundled でもない): Phase 41 dynamic symbol pack インフラ (`symbol_packs` + `symbol_pack_locales` Supabase テーブル + RPC 配信) が無料パック (`jis.knit.beginner` / `jis.crochet.beginner`) を runtime で配信し、Pro パック (Skeinly team 著作、Pro entitlement gated) も post-alpha で順次追加予定。IARC の三分類 (bundled / UGC / online-curated) でこれに該当。サブ質問はすべて安全に解決 — シンボルパックは編み記号のみで暴力 / 性 / 言葉 / 薬物 / ギャンブル等の rating-relevant content なし、Skeinly team が著作するため fully moderated。(Discovery feed も server-delivered だが UGC 分類で前ゲートが既にカバー済。) |
-| **年齢制限が適用される製品または活動の宣伝または販売** | **いいえ** | 広告なし。アルコール / タバコ / 武器 / 宝くじ等の販売・宣伝なし。IAP サブスクリプション自体は年齢制限対象外。 |
-| **その他** | **いいえ** | 該当なし。 |
+| **ダウンロード済みアプリ** | あり (はい / いいえ がトップに) | **いいえ** で回答 — バンドルは JIS 編み図シンボル 70 個 + UI 文字列 + アプリアイコンのみで、いずれも rating-relevant content ではない。**はい** にすると 10+ のサブ質問 (暴力 / 血液 / 流血 / 恐怖 / 性的 / ギャンブル / 言葉 / 規制物質 / 下品なユーモア etc.) が展開され、すべて いいえ で答えても結果は同じ — 短く安全な path として **いいえ** を選択。 |
+| **ユーザー コンテンツの共有** | なし (サブ質問がインライン表示) | 下表の 8 サブ質問の matrix で回答。 |
+| **オンライン コンテンツ** | なし (サブ質問がインライン表示) | サブ質問は下記で網羅。Skeinly のシンボルパック (Phase 41 dynamic インフラ: `symbol_packs` + `symbol_pack_locales` Supabase テーブル + RPC 配信) は server-delivered の curated コンテンツ — UGC でも bundled でもないのでこのセクションに該当。編み記号のみで暴力 / 性 / 言葉 / 薬物 / ギャンブル等の rating-relevant content なし、Skeinly team が著作するため fully moderated。 |
+| **年齢制限が適用される製品または活動の宣伝または販売** | なし (サブ質問がインライン表示) | 広告なし、アルコール / タバコ / 武器 / 宝くじ等の販売・宣伝なし。IAP サブスクリプション自体は年齢制限対象外。サブ質問はすべて いいえ。 |
+| **その他** | なし (サブ質問がインライン表示) | 5 つのサブ質問がインライン表示 — 下表の matrix で回答。 |
 
 **ユーザー コンテンツの共有 サブ質問** (ゲートが「はい」の時に展開):
 
@@ -469,7 +469,17 @@ Sign in with the credentials above (Supabase email+password auth, no 2FA). Demo 
 | チャットモデレート? | **いいえ** | Skeinly にチャット機能なし。コメント / 提案は async forum-style で real-time chat ではない |
 | 対話を招待友人のみに制限可? | **いいえ** | friend-only mode / private circles なし。Discovery / コメント / 提案はすべて公開、private 機能なし |
 
-ステップ 2 送信後、IARC が各地域別レーティング (ESRB / PEGI / USK / CERO / ClassInd / ACB) を自動算出。Skeinly の craft + UGC + IAP の組合せでも、各ゲートが「レーティング関連コンテンツなし」または「適切な moderation 付き UGC」に解決されるので Everyone を維持できる。
+**その他 サブ質問** (5 つがインライン表示):
+
+| サブ質問 | 回答 | 理由 |
+|---|---|---|
+| ユーザーの詳細な現在地情報を他ユーザーと共有? | **いいえ** | Skeinly は位置情報を収集していない (A0d-6 Data safety で宣言済) |
+| ユーザーはアプリを通じてデジタル商品を購入できる? | **はい** | IAP Pro subscription (StoreKit / Play Billing 経由) |
+| 現金報酬 / ギフトカード / play-to-earn / 換金可能暗号通貨 / 譲渡可能デジタル資産 (NFT) の発行? | **いいえ** | いずれも該当機能なし |
+| ウェブブラウザまたは検索エンジン? | **いいえ** | Skeinly は craft プロジェクト管理アプリでブラウザではない |
+| 主にニュースまたは教育商品? | **いいえ** | コアはプロジェクト管理 + collaboration。Discovery でパターンから技法を学べるのは副次的、curriculum 型の教育商品 / ニュース商品ではない |
+
+ステップ 2 送信後、IARC が各地域別レーティング (ESRB / PEGI / USK / CERO / ClassInd / ACB) を自動算出。Skeinly の craft + UGC + curated-online + IAP の組合せでも、IAP のデジタル購入申告以外に rating-relevant なサブ質問は該当しないので Everyone を維持できる。
 
 ### A0d-5: ターゲット ユーザー
 
