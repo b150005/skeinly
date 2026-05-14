@@ -494,7 +494,31 @@ Sign in with the credentials above (Supabase email+password auth, no 2FA). Demo 
 
 ### A0d-6: データ セーフティ
 
-- [ ] アプリのコンテンツ → **データ セーフティ** — 9 種データを申告 ([pre-alpha-checklist.md §35.1 A6](ops/pre-alpha-checklist.md#a6-data-safety-form) 参照):
+アプリのコンテンツ → **データ セーフティ**。フォームは 5 ページの wizard:
+1. **概要** — landing ページ、開始 / 編集 をクリック
+2. **データの収集とセキュリティ** — トップレベルの収集 + セキュリティ + アカウント / 削除関連の設問
+3. **データの種類** — 9 種データの per-type 申告 (下表の matrix)
+4. **データの使用と処理** — per-type の用途 + 共有
+5. **プレビュー** — 確認 + 公開
+
+#### ページ 2: データの収集とセキュリティ
+
+| 設問 | 回答 |
+|---|---|
+| アプリは対象になる種類のユーザーデータを収集または共有しますか? | **はい** |
+| アプリで収集するユーザーデータはすべて、転送時に暗号化されますか? | **はい** (HTTPS / TLS — Supabase / RevenueCat / GitHub / APNs / FCM すべて) |
+| アプリが対応しているアカウントの作成方法 (該当をすべて) | **「ユーザー名とパスワード」のみ** チェック (Skeinly = Supabase Auth の email + password)。OAuth / MFA / その他は持たないので **チェックしない**。 |
+| ユーザーによるアカウントの作成をアプリで許可していない | **チェックしない** (sign-up は可能) |
+| アカウント削除用 URL | `https://b150005.github.io/skeinly/account-deletion/` |
+| アカウントの削除を必要とすることなく、一部またはすべてのデータの削除をリクエストする方法をユーザーに提供していますか? (任意) | **いいえ** — Skeinly は account-level deletion のみ (atomic `delete_own_account` RPC)、部分削除は提供しない。90 日自動削除でもない |
+
+「**その他のバッジ**」セクション (任意):
+- **独自のセキュリティ審査**: チェックしない (3rd-party security audit 未実施)
+- **UPI での支払い確認済み**: チェックしない (Skeinly はインド NPCI 認定対象のファイナンスアプリではない)
+
+#### ページ 3: データの種類 — 9 種申告マトリクス
+
+[pre-alpha-checklist.md §35.1 A6](ops/pre-alpha-checklist.md#a6-data-safety-form) を参照:
 
 | データカテゴリ | 種類 | 必須? | 暗号化 | 削除可? |
 |---|---|---|---|---|
@@ -508,12 +532,10 @@ Sign in with the credentials above (Supabase email+password auth, no 2FA). Demo 
 | デバイス ID | Supabase user UUID | はい | はい | はい |
 | ファイルとドキュメント | UGC (チャート画像 / パターンデータ) | いいえ (Discovery 共有時のみ) | はい | はい |
 
-- [ ] データ共有: **いいえ** (Sentry / PostHog / RevenueCat / GitHub は Play の定義で service provider 扱い、sharing ではない)
-- [ ] セキュリティ プラクティス: 送信時暗号化 **はい**、ユーザー削除要求可能 **はい** (in-app + web)、独立検証 **いいえ**、Families Policy **いいえ**
-- [ ] アカウントとデータの削除:
-  - ウェブ URL: `https://b150005.github.io/skeinly/account-deletion/`
-  - 削除対象: アカウント情報、パターン、プロジェクト、進捗、コメント、提案、デバイストークン、サブスクリプション状態、UGC レポート、フィードバック、avatar 画像。保持: 法的要件の最小ログのみ。
-  - 一部削除可: **いいえ** (アカウント全削除のみ、`delete_own_account` atomic RPC)
+#### ページ 4: データの使用と処理
+
+- データ共有: **いいえ** (Sentry / PostHog / RevenueCat / GitHub は Play の定義で service provider 扱い、sharing ではない)
+- セキュリティ プラクティス: 送信時暗号化 **はい**、ユーザー削除要求可能 **はい** (in-app + web)、独立検証 **いいえ**、Families Policy **いいえ**
 
 ### A0d-7: 行政 / 金融 / 健康
 

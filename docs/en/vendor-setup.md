@@ -494,7 +494,31 @@ If you want the strictest declaration, check **18歳以上 only** instead. Trade
 
 ### A0d-6: Data safety
 
-- [ ] App content → **Data safety** — declare 9 data types per [pre-alpha-checklist.md §35.1 A6](ops/pre-alpha-checklist.md#a6-data-safety-form):
+App content → **データ セーフティ**. The form is a 5-page wizard:
+1. **概要** — landing page, click 開始 / 編集
+2. **データの収集とセキュリティ** — top-level collection + security + account / deletion questions
+3. **データの種類** — per-data-type declaration (the 9-type matrix below)
+4. **データの使用と処理** — per-data-type purpose + sharing
+5. **プレビュー** — review + 公開
+
+#### Page 2: データの収集とセキュリティ
+
+| Question | Answer |
+|---|---|
+| アプリは対象になる種類のユーザーデータを収集または共有しますか? | **はい** |
+| アプリで収集するユーザーデータはすべて、転送時に暗号化されますか? | **はい** (HTTPS / TLS across Supabase / RevenueCat / GitHub / APNs / FCM) |
+| アプリが対応しているアカウントの作成方法 (該当をすべて) | **「ユーザー名とパスワード」のみ** チェック (Skeinly = Supabase Auth の email + password)。OAuth / MFA / その他は持たないので **チェックしない**。 |
+| ユーザーによるアカウントの作成をアプリで許可していない | **チェックしない** (sign-up は可能) |
+| アカウント削除用 URL | `https://b150005.github.io/skeinly/account-deletion/` |
+| アカウントの削除を必要とすることなく、一部またはすべてのデータの削除をリクエストする方法をユーザーに提供していますか? (任意) | **いいえ** — Skeinly は account-level deletion のみ (atomic `delete_own_account` RPC)、partial deletion は提供しない。90 日自動削除でもない |
+
+「**その他のバッジ**」セクション (任意):
+- **独自のセキュリティ審査**: チェックしない (3rd-party security audit 未実施)
+- **UPI での支払い確認済み**: チェックしない (Skeinly はインド NPCI 認定対象のファイナンスアプリではない)
+
+#### Page 3: データの種類 — 9-type declaration matrix
+
+Declare these per [pre-alpha-checklist.md §35.1 A6](ops/pre-alpha-checklist.md#a6-data-safety-form):
 
 | Data category | Type | Required? | Encrypted | Deletable |
 |---|---|---|---|---|
@@ -508,12 +532,10 @@ If you want the strictest declaration, check **18歳以上 only** instead. Trade
 | Device or other IDs | Supabase user UUID | Yes | Yes | Yes |
 | Files and docs | UGC (chart images / pattern data) | No (Discovery share only) | Yes | Yes |
 
-- [ ] Data sharing: **No** for all (Sentry / PostHog / RevenueCat / GitHub are service providers, not "sharing" per Play's definition)
-- [ ] Security practices: encryption in transit **Yes**, users can request deletion **Yes** (in-app + web), independent verification **No**, Families Policy **No**
-- [ ] Account and data deletion:
-  - Web URL: `https://b150005.github.io/skeinly/account-deletion/`
-  - What gets deleted: account info, patterns, projects, progress, comments, suggestions, device tokens, subscription state, UGC reports, feedback, avatars. Retained: minimal logs only when required by law.
-  - Partial deletion: **No** (account-only via atomic `delete_own_account` RPC)
+#### Page 4: データの使用と処理
+
+- Data sharing: **No** for all (Sentry / PostHog / RevenueCat / GitHub are service providers, not "sharing" per Play's definition)
+- Security practices: encryption in transit **Yes**, users can request deletion **Yes** (in-app + web), independent verification **No**, Families Policy **No**
 
 ### A0d-7: Government / Financial / Health
 
