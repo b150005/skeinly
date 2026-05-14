@@ -51,4 +51,4 @@ Expected: HTTP 200 with `{"ok":true,"issue_number":<n>,"html_url":"..."}`. Open 
 - The Issue body is the same payload the user previewed in the in-app reporter — no additional data added server-side.
 - Transit metadata (IP, request timestamp) visible to Supabase but not persisted by the function.
 - The Issue is created by the App, not by the reporter's personal GitHub account.
-- Full disclosure: [docs/en/privacy-policy.md](../../../docs/en/privacy-policy.md).
+- Full disclosure: [docs/public/privacy-policy/index.html](../../../docs/public/privacy-policy/index.html).

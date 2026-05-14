@@ -20,7 +20,7 @@
 
 When implementation drifts from an ADR, update the spec (or `architecture.md`); only update the ADR if the *decision* changed. The ADR's `Revision history` block is the trail for decision-level changes.
 
-## Reference docs (general)
+## Reference docs
 
 | Document | Description |
 |----------|-------------|
@@ -29,17 +29,9 @@ When implementation drifts from an ADR, update the spec (or `architecture.md`); 
 | [i18n-convention.md](i18n-convention.md) | Key-naming rules across the 5 i18n sources. |
 | [tdd-workflow.md](tdd-workflow.md) | Test-driven development methodology. |
 | [chart-coordinates.md](chart-coordinates.md) | Chart coordinate system reference. |
-| [privacy-policy.md](privacy-policy.md) | Privacy policy text source-of-truth. |
 | [store-listing.md](store-listing.md) | App Store / Play Store listing copy source-of-truth. |
-| [symbol-review/](symbol-review/) | Per-phase symbol design review records. |
-
-## Template / ECC reference
-
-| Document | Description |
-|----------|-------------|
-| [ecc-overview.md](ecc-overview.md) | What is Everything Claude Code and how it works. |
 | [ci-cd-pipeline.md](ci-cd-pipeline.md) | GitHub Actions workflows and automation. |
-| [devcontainer.md](devcontainer.md) | Development container setup. |
-| [github-features.md](github-features.md) | CODEOWNERS, Dependabot, templates, branch protection. |
-| [template-usage.md](template-usage.md) | How to create a project from this template. |
+| [symbol-review/](symbol-review/) | Per-phase symbol design review records (source of truth cited by ADR-008). |
 | [adr/000-template.md](adr/000-template.md) | Architecture Decision Record format. |
+
+> Privacy policy source-of-truth: [docs/public/privacy-policy/index.html](../public/privacy-policy/index.html) (EN) + [docs/public/ja/privacy-policy/index.html](../public/ja/privacy-policy/index.html) (JA) — published via GitHub Pages.

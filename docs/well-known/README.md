@@ -93,12 +93,35 @@ acquiring on its own merit.
 
 ### `assetlinks.json`
 
-The file content already lives in this repository (deployed via the
-existing setup that the `release.yml` workflow validates at
-`https://b150005.github.io/.well-known/assetlinks.json`). If migrating
-to a new root host, replicate the file there with the same SHA-256
-fingerprints of the production + debug signing certs. Validate via
-<https://developers.google.com/digital-asset-links/tools/generator>.
+1. Replace `SHA256_PLACEHOLDER_UPLOAD_KEY` with the SHA-256 fingerprint
+   of the **upload signing key** (the one used by `:androidApp:bundleRelease`
+   locally + CI `release.yml`). Extract via:
+   ```bash
+   keytool -list -v -keystore <upload-key>.jks -alias <alias> \
+     -storepass <password> | grep "SHA256:"
+   ```
+   Format: colon-separated hex pairs like `AA:BB:CC:DD:...`.
+2. Replace `SHA256_PLACEHOLDER_PLAY_APP_SIGNING_KEY` with the **Play
+   App Signing key** SHA-256, available from
+   Play Console → App signing → "アプリの署名鍵証明書" (App signing key
+   certificate) → SHA-256. This is the re-signing key Play Store applies
+   to APKs distributed via Internal Testing / Production tracks. Without
+   this fingerprint, App Links verification fails on Play Store-installed
+   builds.
+3. Copy `assetlinks.json` to the deploy target's `/.well-known/` directory.
+4. Serve with `Content-Type: application/json` (Google validates this
+   strictly; defaults like `application/octet-stream` are rejected).
+5. Verify via curl:
+   ```bash
+   curl -I https://<root-host>/.well-known/assetlinks.json
+   # Expected: 200 OK, Content-Type: application/json
+   ```
+6. Validate via Google's [Statement List Generator and Tester](https://developers.google.com/digital-asset-links/tools/generator).
+7. The `AndroidManifest.xml` already declares `<intent-filter android:autoVerify="true">`
+   for `applinks:b150005.github.io`; once `assetlinks.json` is reachable
+   at the matching host, Play's auto-verification kicks in at install
+   time and routes matching URLs directly to the app (skipping the
+   "Open with…" disambiguation dialog).
 
 ## Once deployed — wiring is already done
 
