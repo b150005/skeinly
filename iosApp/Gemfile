@@ -6,3 +6,10 @@ source "https://rubygems.org"
 # Update via `bundle update fastlane` after the new version is released
 # notes are reviewed at https://github.com/fastlane/fastlane/releases.
 gem "fastlane", "~> 2.227"
+
+# Load fastlane plugins from `fastlane/Pluginfile` so `bundle install`
+# picks them up. Currently wires `fastlane-plugin-sentry` for dSYM
+# upload after every TestFlight archive (see `fastlane/Fastfile` `beta`
+# lane).
+plugins_path = File.join(File.dirname(__FILE__), "fastlane", "Pluginfile")
+eval_gemfile(plugins_path) if File.exist?(plugins_path)

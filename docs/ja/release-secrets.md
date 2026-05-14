@@ -663,7 +663,25 @@ gh secret set SENTRY_AUTH_TOKEN
 
 **ROTATE**: Organization Settings → Auth Tokens → revoke + 再作成。GitHub Secret を更新。
 
+**消費先**: `iosApp/fastlane/Fastfile` の `upload_dsym_to_sentry` helper (TestFlight upload 後に `beta` lane から呼ばれる)。このトークンを未登録のままだと Sentry App Hang / Crash frame が `<redacted>` のままになり、bottom syscall より上の triage ができない (CLAUDE.md `### Pre-alpha (RC) bug bash` の retrospective を参照)。
+
 参照: [Sentry Auth Tokens](https://docs.sentry.io/account/auth-tokens/)
+
+### 16.5. `SENTRY_ORG` (GitHub **Variable** であり Secret ではない)
+
+**WHAT**: Sentry の organization slug — `sentry-cli` / `fastlane-plugin-sentry` が dSYM upload を正しい org に scope するために使用。半公開識別子: Sentry incident dashboard URL に登場し、[README.md](../../README.md) + [docs/ja/architecture.md](architecture.md) の vendor table に既に記載済み。秘匿性は不要のため GitHub **Variable** (Repo Settings → Variables、Secrets ではない) に登録 — 運用衛生目的のみ。
+
+**OBTAIN**: Sentry → Settings → Organization Settings → **Organization Slug** フィールド (ページ上部)。
+
+**REGISTER:**
+
+```bash
+gh variable set SENTRY_ORG --body "<slug>"
+```
+
+**消費先**: `iosApp/fastlane/Fastfile` の `upload_dsym_to_sentry` helper (`.github/workflows/release.yml` で `${{ vars.SENTRY_ORG }}` 経由で渡される)。
+
+**ROTATE**: 不要 — org slug は Sentry account rename 時のみ変更。rename 時は GitHub Variable + 旧 slug を参照している docs を更新。
 
 ## 分析 — PostHog（1 シークレット）
 

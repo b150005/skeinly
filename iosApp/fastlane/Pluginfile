@@ -1,0 +1,11 @@
+# Auto-managed by fastlane (`fastlane add_plugin`) — manual edits should
+# also update the parent `Gemfile`'s `eval_gemfile` line if the file
+# path changes.
+#
+# fastlane-plugin-sentry — wires `sentry_upload_dsym` into the release
+# pipeline so Sentry resolves iOS App Hang / Crash frames at issue-view
+# time. Tied to `SENTRY_AUTH_TOKEN` (Org Auth Token, see
+# `docs/en/release-secrets.md` §16) + `SENTRY_ORG` GitHub Variable +
+# the per-platform `skeinly-ios` project slug.
+
+gem "fastlane-plugin-sentry"

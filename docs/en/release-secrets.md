@@ -656,7 +656,25 @@ gh secret set SENTRY_AUTH_TOKEN
 
 **ROTATE**: Organization Settings → Auth Tokens → revoke + recreate. Update the GitHub Secret.
 
+**CONSUMED BY**: `iosApp/fastlane/Fastfile` `upload_dsym_to_sentry` helper (invoked from the `beta` lane after TestFlight upload). Without this token registered, Sentry App Hang / Crash frames stay `<redacted>` and incident triage is blind beyond the bottom syscall (see CLAUDE.md `### Pre-alpha (RC) bug bash` retrospective for the pre-fix cost).
+
 Reference: [Sentry Auth Tokens](https://docs.sentry.io/account/auth-tokens/)
+
+### 16.5. `SENTRY_ORG` (GitHub **Variable**, not a Secret)
+
+**WHAT**: The Sentry organization slug — used by `sentry-cli` / `fastlane-plugin-sentry` to scope the dSYM upload to the right org. Half-public identifier: appears in Sentry incident dashboard URLs and is already documented in [README.md](../../README.md) + [docs/en/architecture.md](architecture.md) vendor table. Stored as a GitHub **Variable** (Repo Settings → Variables, NOT Secrets) since it's not confidential — operational hygiene only.
+
+**OBTAIN**: Sentry → Settings → Organization Settings → **Organization Slug** field (top of the page).
+
+**REGISTER:**
+
+```bash
+gh variable set SENTRY_ORG --body "<slug>"
+```
+
+**CONSUMED BY**: `iosApp/fastlane/Fastfile` `upload_dsym_to_sentry` helper (passed via `${{ vars.SENTRY_ORG }}` in `.github/workflows/release.yml`).
+
+**ROTATE**: Not applicable — org slug changes only on Sentry account rename. If renamed, update the GitHub Variable + any docs that reference the old slug.
 
 ## Analytics — PostHog (1 secret)
 
