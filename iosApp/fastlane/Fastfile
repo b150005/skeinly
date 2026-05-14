@@ -75,6 +75,8 @@ platform :ios do
       skip_waiting_for_build_processing: true,
       skip_submission: true,
     )
+
+    upload_dsym_to_sentry
   end
 
   desc "Build a Release IPA locally with no TestFlight upload (verification only)."
@@ -302,4 +304,60 @@ end
 def output_dir
   base = ENV["RUNNER_TEMP"] || "./build"
   File.join(base, "ipa-output")
+end
+
+# Upload the dSYM bundle produced by `build_app` to the Sentry
+# `skeinly-ios` project so Sentry resolves stack frames for App Hang +
+# Crash issues. Without this step, every iOS Sentry issue has
+# `<redacted>` frames beyond the bottom syscall — see the 2026-05-13
+# RC bug-bash retrospective in `.claude/CLAUDE.md` for the pre-fix
+# triage cost.
+#
+# Required env vars:
+#   SENTRY_AUTH_TOKEN  — Organization Auth Token, see release-secrets §16
+#   SENTRY_ORG         — Sentry org slug (GitHub Variable, NOT a Secret —
+#                         org slugs are half-public + already documented
+#                         in README + architecture.md)
+#
+# Hardcoded:
+#   project_slug: skeinly-ios — per README + architecture.md vendor table.
+#                  Mirrored on Android by a future `skeinly-android` step
+#                  when Android mapping upload lands as a separate slice.
+#
+# Graceful degradation: if `SENTRY_AUTH_TOKEN` or `SENTRY_ORG` is unset
+# (e.g. half-configured release), log a warning and skip — the TestFlight
+# build still succeeds, only frame symbolication is missing for this
+# build. This matches the existing `SUPABASE_URL` / `POSTHOG_HOST`
+# graceful-degradation pattern in `build_xcargs`.
+#
+# `dsym_path` defaults to the dSYM zip produced by `build_app` adjacent
+# to the .ipa, which fastlane sets as `lane_context[SharedValues::DSYM_OUTPUT_PATH]`.
+def upload_dsym_to_sentry
+  auth_token = ENV["SENTRY_AUTH_TOKEN"]
+  org_slug = ENV["SENTRY_ORG"]
+
+  if auth_token.to_s.empty?
+    UI.important "SENTRY_AUTH_TOKEN not set — skipping dSYM upload."
+    UI.important "Sentry App Hang / Crash frames for this build will not symbolicate."
+    return
+  end
+
+  if org_slug.to_s.empty?
+    UI.important "SENTRY_ORG not set — skipping dSYM upload."
+    UI.important "Register the Sentry org slug as a GitHub Variable (Repo Settings → Variables)."
+    return
+  end
+
+  dsym_path = lane_context[SharedValues::DSYM_OUTPUT_PATH]
+  if dsym_path.to_s.empty? || !File.exist?(dsym_path)
+    UI.important "No dSYM artifact found at #{dsym_path.inspect} — skipping upload."
+    return
+  end
+
+  sentry_upload_dsym(
+    auth_token: auth_token,
+    org_slug: org_slug,
+    project_slug: "skeinly-ios",
+    dsym_path: dsym_path,
+  )
 end

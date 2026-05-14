@@ -328,6 +328,14 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
           SENTRY_DSN_IOS: ${{ secrets.SENTRY_DSN_IOS }}
+          # Sentry dSYM upload (post-archive). SENTRY_ORG is a half-public
+          # identifier (Sentry org slug; surfaces in incident dashboard URLs)
+          # registered as a GitHub Variable, not a Secret. SENTRY_AUTH_TOKEN
+          # is the Org Auth Token per release-secrets §16. If either is
+          # missing the Fastfile `upload_dsym_to_sentry` helper logs a
+          # warning and continues — TestFlight upload still succeeds.
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           POSTHOG_PROJECT_API_KEY: ${{ secrets.POSTHOG_PROJECT_API_KEY }}
           POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
         run: bundle exec fastlane beta
