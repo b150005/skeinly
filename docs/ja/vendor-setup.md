@@ -446,19 +446,17 @@ Sign in with the credentials above (Supabase email+password auth, no 2FA). Demo 
 - [ ] ☑ **International Age Rating Coalition (IARC) の利用規約に同意します** にチェック
 - [ ] **次へ** → ステップ 2 アンケート (IARC 質問票本体)
 
-目標: **Everyone (全年齢)**。Skeinly 回答:
+目標: **Everyone (全年齢)**。ステップ 2 は **5 セクションのゲート式質問票** — 各セクションが「このコンテンツソースはレーティング関連か?」を聞き、**はい** と答えるとサブ質問が展開される。ゲート回答を正しく選ばないと不要な分岐に引き込まれる。
 
-| カテゴリ | 回答 |
-|---|---|
-| 暴力、性的コンテンツ、不適切な言葉、恐怖/ホラー、薬物/アルコール/タバコ、ギャンブル | **いいえ** |
-| ユーザー間のやりとり | **はい** (共有 / コメント / 提案 / アクティビティフィード) |
-| ユーザー生成コンテンツ (UGC) | **はい** (パターン + コメント) |
-| 位置情報の共有 | **いいえ** |
-| 個人情報のユーザー間共有 | **いいえ** (display name のみ公開) |
-| デジタル購入 | **はい** (IAP) |
-| 報告 / ブロック機能 | **はい** (ADR-021 Wave E foundation — `submit-ugc-report` + `user_blocks` + 24h オペレータトリアージ) |
+| ゲートセクション | Skeinly 回答 | 根拠 |
+|---|---|---|
+| **ダウンロード済みアプリ** (APK / AAB バンドル内の静的コンテンツ) | **いいえ** | バンドル = JIS 編み図シンボル 70 個 + UI 文字列 + アプリアイコンのみ。性 / 暴力 / 言葉 / 薬物 / ギャンブル / 恐怖 / 下品なユーモア / 規制物質 のいずれにも該当しない。**はい** にすると 10+ のサブ質問 (暴力 / 血液 / 流血 / 恐怖 / 性的 / ギャンブル / 言葉 / 規制物質 / 下品なユーモア etc.) が展開され、すべて「いいえ」で答えても結果は同じ。ゲートで **いいえ** を選ぶのが短く安全な path。 |
+| **ユーザー コンテンツの共有** | **はい** | パターン / コメント / 提案 (Suggestion) を Discovery / project feed で共有。サブ質問で Report/Block 機構の有無を聞かれ → **はい** で回答 (ADR-021 Wave E foundation 完了済: `submit-ugc-report` Edge Function + `user_blocks` テーブル + 24h オペレータトリアージ SLA、[`ugc-moderation-sop.md`](ops/ugc-moderation-sop.md))。ユーザー向け Report/Block UI は Phase 40 GA 前にリリース (ADR-021 §D4) だが、server-side foundation で IARC policy 要件は既に満たしている。 |
+| **オンライン コンテンツ** | **いいえ** | チャット / live メッセージ / ストリーミングなし。Discovery feed は UGC で前ゲートが既にカバー済。 |
+| **年齢制限が適用される製品または活動の宣伝または販売** | **いいえ** | 広告なし。アルコール / タバコ / 武器 / 宝くじ等の販売・宣伝なし。IAP サブスクリプション自体は年齢制限対象外。 |
+| **その他** | **いいえ** | 該当なし。 |
 
-ユーザー向け Report/Block UI は Phase 40 GA 前にリリース (ADR-021 §D4); foundation で policy 要件は既に満たしている。
+質問票送信後、IARC が各地域別レーティング (ESRB / PEGI / USK / CERO / ClassInd / ACB) を自動算出。Skeinly の craft + UGC + IAP の組合せでも、各ゲートが「レーティング関連コンテンツなし」または「適切な moderation 付き UGC」に解決されるので Everyone を維持できる。
 
 ### A0d-5: ターゲット ユーザー
 

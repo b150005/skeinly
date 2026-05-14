@@ -446,19 +446,17 @@ Step 1 of 3 — **カテゴリ** (Category) page:
 - [ ] ☑ **International Age Rating Coalition (IARC) の利用規約に同意します** — tick the agreement checkbox
 - [ ] **次へ** → Step 2 アンケート (the actual IARC questionnaire)
 
-Target: **Everyone** (all ages). Skeinly answers:
+Target: **Everyone** (all ages). Step 2 is a 5-section **gating** questionnaire — each section asks "is THIS source of content rating-relevant?" and sub-questions expand only when you say はい. Pick the gate answer carefully so you do not get dragged into unnecessary sub-branches.
 
-| Category | Answer |
-|---|---|
-| Violence, Sexual content, Profanity, Fear/Horror, Drugs/Alcohol/Tobacco, Gambling | **No** |
-| User interaction | **Yes** (sharing / comments / suggestions / activity feed) |
-| User-generated content (UGC) | **Yes** (patterns + comments) |
-| Location sharing | **No** |
-| Personal information shared between users | **No** (display name only is public) |
-| Digital purchases | **Yes** (IAP) |
-| Report / Block user mechanisms | **Yes** (Wave E foundation per ADR-021 — `submit-ugc-report` + `user_blocks` + 24h operator triage) |
+| Gating section | Skeinly answer | Rationale |
+|---|---|---|
+| **ダウンロード済みアプリ** (rating-relevant content bundled in the APK / AAB) | **いいえ** | Bundle = JIS knitting / crochet glyphs (70 symbols) + UI strings + app icon. No violence / sex / language / drugs / gambling / horror / crude humor / regulated substances. Saying はい here expands 10+ sub-questions (暴力 / 血液 / 流血 / 恐怖 / 性的 / ギャンブル / 言葉 / 規制物質 / 下品なユーモア etc.) that all resolve to いいえ anyway — pick いいえ at the gate for the shorter, lower-risk path. |
+| **ユーザー コンテンツの共有** | **はい** | Patterns + comments + suggestions are shared via Discovery / project feed. Sub-questions then ask about Report/Block mechanisms — answer **はい** (Wave E foundation closed per ADR-021: `submit-ugc-report` Edge Function + `user_blocks` table + 24h operator triage SLA, [`ugc-moderation-sop.md`](ugc-moderation-sop.md)). User-facing Report/Block UI ships pre-Phase-40 GA (ADR-021 §D4); the server-side foundation already satisfies the IARC policy mechanic requirement. |
+| **オンライン コンテンツ** | **いいえ** | No chat / live messaging / streaming. The Discovery feed delivers UGC patterns which the previous gate already covers. |
+| **年齢制限が適用される製品または活動の宣伝または販売** | **いいえ** | No ads. No sales / promotion of alcohol / tobacco / firearms / lottery / etc. The IAP subscription itself is not an age-restricted product. |
+| **その他** | **いいえ** | Nothing applicable. |
 
-User-facing Report/Block UI ships pre-Phase-40 GA (ADR-021 §D4); the foundation already satisfies Play policy.
+After submission, IARC computes region-specific ratings automatically. Skeinly's craft + UGC + IAP mix lands at Everyone because every gate either resolves to "no rating-relevant content" or to UGC with proper moderation in place.
 
 ### A0d-5: Target audience
 
