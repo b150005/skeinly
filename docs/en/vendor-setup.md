@@ -510,7 +510,7 @@ App content → **データ セーフティ**. The form is a 5-page wizard:
 | アプリが対応しているアカウントの作成方法 (該当をすべて) | **Depends on Phase 26 (OAuth Sign-In) implementation state at submission time** — see below. |
 | ユーザーによるアカウントの作成をアプリで許可していない | **チェックしない** (sign-up は可能) |
 | アカウント削除用 URL | `https://b150005.github.io/skeinly/account-deletion/` |
-| アカウントの削除を必要とすることなく、一部またはすべてのデータの削除をリクエストする方法をユーザーに提供していますか? (任意) | **Depends on Phase 27 (Data Wipe) state at submission time**. Pre-Phase-27 = **いいえ** (only account-level deletion via `delete_own_account` RPC + per-item CRUD; no dedicated bulk-deletion request mechanism). Post-Phase-27 = **はい** (Settings → プライバシー → "Delete all my data" via `wipe_own_data` RPC preserves auth but clears UGC). Phase 27 is alpha-launch HARD-GATE per the Planned section. |
+| アカウントの削除を必要とすることなく、一部またはすべてのデータの削除をリクエストする方法をユーザーに提供していますか? (任意) | **Depends on Phase 27 (Data Wipe) state at submission time**. Pre-Phase-27 = **いいえ** (only account-level deletion via `delete_own_account` RPC + per-item CRUD; no dedicated bulk-deletion request mechanism). Post-Phase-27 = **はい** with the data-deletion URL **`https://b150005.github.io/skeinly/data-deletion/`** (web mirror of the in-app Settings → プライバシー → "Delete all my data" flow; calls `wipe_own_data` RPC preserving auth + subscriptions while clearing UGC). Phase 27 is alpha-launch HARD-GATE per the Planned section. URL slug `data-deletion` chosen via agent-team deliberation 2026-05-14 for plain-language parallelism with the existing `account-deletion` page. |
 
 **アカウント作成方法 selections by Phase 26 state**:
 

@@ -510,7 +510,7 @@ Sign in with the credentials above (Supabase email+password auth, no 2FA). Demo 
 | アプリが対応しているアカウントの作成方法 (該当をすべて) | **Phase 26 (OAuth Sign-In) の実装状態に依存** — 下表参照 |
 | ユーザーによるアカウントの作成をアプリで許可していない | **チェックしない** (sign-up は可能) |
 | アカウント削除用 URL | `https://b150005.github.io/skeinly/account-deletion/` |
-| アカウントの削除を必要とすることなく、一部またはすべてのデータの削除をリクエストする方法をユーザーに提供していますか? (任意) | **Phase 27 (Data Wipe) の実装状態に依存**。Pre-Phase-27 = **いいえ** (account-level deletion via `delete_own_account` RPC + 個別 CRUD のみ、bulk-deletion request mechanism なし)。Post-Phase-27 = **はい** (Settings → プライバシー → 「すべてのデータを削除」が `wipe_own_data` RPC で auth は保持しつつ UGC を全消去)。Phase 27 は alpha-launch HARD-GATE (上記 Planned セクション参照) |
+| アカウントの削除を必要とすることなく、一部またはすべてのデータの削除をリクエストする方法をユーザーに提供していますか? (任意) | **Phase 27 (Data Wipe) の実装状態に依存**。Pre-Phase-27 = **いいえ** (account-level deletion via `delete_own_account` RPC + 個別 CRUD のみ、bulk-deletion request mechanism なし)。Post-Phase-27 = **はい** + データ削除 URL **`https://b150005.github.io/skeinly/data-deletion/`** (in-app Settings → プライバシー → 「すべてのデータを削除」の web mirror、`wipe_own_data` RPC で auth + subscriptions は保持しつつ UGC をクリア)。Phase 27 は alpha-launch HARD-GATE (上記 Planned セクション参照)。URL slug `data-deletion` は agent-team deliberation 2026-05-14 で plain-language + 既存 `account-deletion` ページとの並列性を理由に決定 |
 
 **アカウント作成方法の選択 (Phase 26 の状態別)**:
 
