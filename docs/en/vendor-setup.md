@@ -460,7 +460,7 @@ Target: **Everyone** (all ages). Step 2 is a 5-section **gating** questionnaire 
 
 | Sub-question | Answer | Why |
 |---|---|---|
-| 音声通信 / SMS / 画像オーディオ共有で交流・コンテンツ交換? | **いいえ** | No voice / SMS. Image publication via Discovery is messaging-adjacent but the question targets real-time exchange (WhatsApp / Snapchat style). Skeinly's image sharing is publication-style, already covered by the gate. |
+| 音声通信 / SMS / 画像オーディオ共有で交流・コンテンツ交換? | **はい** | [Google's policy guidance (answer/11070862)](https://support.google.com/googleplay/android-developer/answer/11070862) reads broader than the JA UI wording suggests: "Yes" applies when users can freely exchange UGC including **comments, photo sharing, or any other UGC exchange** — not just voice / SMS / messaging-style audio-image. Skeinly's comments on shared patterns + Discovery image sharing + Suggestion proposals all match. |
 | UGC が **主要な** コンテンツソース? | **いいえ** | Core activity is project tracking with the user's own patterns + the curated 70-symbol JIS catalog. Discovery / suggestions / comments are secondary. Not a Twitter / Reddit / TikTok shape where UGC IS the app. |
 | ヌード公開を許可? | **いいえ** | Not a feature; Terms of Service prohibit; UGC moderation removes. |
 | 露骨な暴力表現の公開を許可? | **いいえ** | Same. |
