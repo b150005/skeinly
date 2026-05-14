@@ -331,6 +331,15 @@ dependencies {
     // for the foreground notification builder.
     implementation(libs.firebase.messaging)
     implementation(libs.androidx.core.ktx)
+    // Phase 26.2 (ADR-022 §6.2) — Android Google Sign-In via Credential
+    // Manager. Declared on androidApp because the production wiring
+    // (GoogleSignInActivityResultProvider) needs an Activity Context
+    // owned by `MainActivity`. `androidx.credentials` is the unified API
+    // (Android 14+ idiomatic); `credentials-play-services-auth` provides
+    // the Play-services backing on Android 9–13.
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.google.identity.googleid)
     debugImplementation(compose.uiTooling)
 
     // Android UI Testing

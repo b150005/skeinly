@@ -424,6 +424,23 @@
         }
       }
     },
+    "action_sign_in_with_google" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in with Google"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Googleでサインイン"
+          }
+        }
+      }
+    },
     "label_or_sign_in_with_email" : {
       "extractionState" : "manual",
       "localizations" : {

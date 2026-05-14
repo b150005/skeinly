@@ -84,4 +84,13 @@ val platformModule =
         // instant snaps when the user has Reduce Motion on. Stock
         // Material 3 transitions auto-respect via the UIKit bridge.
         single { ReduceMotionDetector() }
+        // Phase 26.2 (ADR-022 §6.2) — Google Sign-In `expect/actual`
+        // surface. The iOS actual returns a Failure for now (iOS
+        // Google sign-in lands in Phase 26.3); registered here so
+        // the commonMain ViewModel injection seam works on both
+        // platforms.
+        single {
+            io.github.b150005.skeinly.auth
+                .OAuthClient()
+        }
     }

@@ -61,16 +61,21 @@ val viewModelModule =
             )
         }
         viewModel {
-            // Phase 26.1 (ADR-022 §6.1) — bind AuthRepository.signInWithApple
-            // as a lambda-seam so AuthViewModel stays testable without
-            // pulling the full repository surface (mirrors the
+            // Phase 26.1 / 26.2 (ADR-022 §6.1, §6.2) — bind
+            // AuthRepository.signInWithApple + signInWithGoogle +
+            // OAuthClient.acquireGoogleIdToken as lambda-seams so
+            // AuthViewModel stays testable without pulling the full
+            // repository surface (mirrors the
             // BugReportPreviewViewModel.submit precedent from Phase 39.5).
             val authRepository: io.github.b150005.skeinly.domain.repository.AuthRepository = get()
+            val oauthClient: io.github.b150005.skeinly.auth.OAuthClient = get()
             AuthViewModel(
                 observeAuthState = get(),
                 signIn = get(),
                 signUp = get(),
                 signInWithApple = authRepository::signInWithApple,
+                signInWithGoogle = authRepository::signInWithGoogle,
+                acquireGoogleIdToken = oauthClient::acquireGoogleIdToken,
             )
         }
         viewModelOf(::ForgotPasswordViewModel)

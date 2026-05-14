@@ -39,12 +39,20 @@ class AuthViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private var fakeGoogleAcquisition: io.github.b150005.skeinly.auth.OAuthIdTokenResult =
+        io.github.b150005.skeinly.auth.OAuthIdTokenResult.Success(
+            idToken = "fake.google.idtoken",
+            nonce = null,
+        )
+
     private fun createViewModel(): AuthViewModel =
         AuthViewModel(
             observeAuthState = ObserveAuthStateUseCase(authRepo),
             signIn = SignInUseCase(authRepo),
             signUp = SignUpUseCase(authRepo),
             signInWithApple = { idToken, nonce -> authRepo.signInWithApple(idToken, nonce) },
+            signInWithGoogle = { idToken, nonce -> authRepo.signInWithGoogle(idToken, nonce) },
+            acquireGoogleIdToken = { fakeGoogleAcquisition },
         )
 
     @Test
@@ -388,6 +396,8 @@ class AuthViewModelTest {
                     signIn = SignInUseCase(authRepo),
                     signUp = SignUpUseCase(authRepo),
                     signInWithApple = { idToken, nonce -> slowRepo.signInWithApple(idToken, nonce) },
+                    signInWithGoogle = { idToken, nonce -> authRepo.signInWithGoogle(idToken, nonce) },
+                    acquireGoogleIdToken = { fakeGoogleAcquisition },
                 )
 
             viewModel.onEvent(
@@ -403,6 +413,196 @@ class AuthViewModelTest {
             assertEquals(1, slowRepo.callCount)
             assertEquals("first", slowRepo.lastIdToken)
             gate.complete(Unit)
+        }
+
+    // ----------------------------------------------------------------
+    // Phase 26.2 (ADR-022 §6.2) — Google Sign-In flows
+    // ----------------------------------------------------------------
+
+    @Test
+    fun `google sign-in success transitions to authenticated`() =
+        runTest {
+            fakeGoogleAcquisition =
+                io.github.b150005.skeinly.auth.OAuthIdTokenResult.Success(
+                    idToken = "fake.google.idtoken",
+                    nonce = null,
+                )
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(AuthEvent.SignInWithGoogle)
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertFalse(state.isSubmitting)
+                assertNull(state.error)
+                assertNull(state.linkIdentityRequired)
+                assertTrue(state.authState is AuthState.Authenticated)
+                assertEquals("fake.google.idtoken", authRepo.lastGoogleIdToken)
+                assertNull(authRepo.lastGoogleNonce)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `google sign-in with nonce forwards nonce to repo`() =
+        runTest {
+            fakeGoogleAcquisition =
+                io.github.b150005.skeinly.auth.OAuthIdTokenResult.Success(
+                    idToken = "tok",
+                    nonce = "nonce-abc",
+                )
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(AuthEvent.SignInWithGoogle)
+
+            viewModel.state.test {
+                awaitItem()
+                assertEquals("nonce-abc", authRepo.lastGoogleNonce)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `google sign-in link required surfaces challenge`() =
+        runTest {
+            fakeGoogleAcquisition =
+                io.github.b150005.skeinly.auth.OAuthIdTokenResult.Success(
+                    idToken = "tok",
+                    nonce = null,
+                )
+            authRepo.signInWithGoogleOutcome =
+                OAuthSignInOutcome.LinkIdentityRequired(
+                    email = "user@gmail.com",
+                    provider = OAuthProviderKind.Google,
+                )
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(AuthEvent.SignInWithGoogle)
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertFalse(state.isSubmitting)
+                val challenge = state.linkIdentityRequired
+                assertNotNull(challenge)
+                assertEquals("user@gmail.com", challenge.email)
+                assertEquals(OAuthProviderKind.Google, challenge.provider)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `google sign-in user cancelled clears submitting silently`() =
+        runTest {
+            fakeGoogleAcquisition = io.github.b150005.skeinly.auth.OAuthIdTokenResult.UserCancelled
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(AuthEvent.SignInWithGoogle)
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertFalse(state.isSubmitting)
+                // CRITICAL: no banner. User-cancelled cancel is silent
+                // per ADR-022 §6.2 — matches the Apple cancel UX where
+                // SignInWithAppleButton swallows the gesture.
+                assertNull(state.error)
+                assertNull(state.linkIdentityRequired)
+                // CRITICAL: no repo call happened.
+                assertNull(authRepo.lastGoogleIdToken)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `google sign-in acquisition failure surfaces generic error`() =
+        runTest {
+            fakeGoogleAcquisition =
+                io.github.b150005.skeinly.auth.OAuthIdTokenResult.Failure(
+                    message = "No Google account on device",
+                )
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(AuthEvent.SignInWithGoogle)
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertFalse(state.isSubmitting)
+                assertNotNull(state.error)
+                // No repo call.
+                assertNull(authRepo.lastGoogleIdToken)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `google sign-in repo failure surfaces generic error`() =
+        runTest {
+            fakeGoogleAcquisition =
+                io.github.b150005.skeinly.auth.OAuthIdTokenResult.Success(
+                    idToken = "tok",
+                    nonce = null,
+                )
+            authRepo.signInWithGoogleError = RuntimeException("nonce_mismatch")
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(AuthEvent.SignInWithGoogle)
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertFalse(state.isSubmitting)
+                assertNotNull(state.error)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `google sign-in throws acquired by handler maps to generic error`() =
+        runTest {
+            val viewModel =
+                AuthViewModel(
+                    observeAuthState = ObserveAuthStateUseCase(authRepo),
+                    signIn = SignInUseCase(authRepo),
+                    signUp = SignUpUseCase(authRepo),
+                    signInWithApple = { idToken, nonce -> authRepo.signInWithApple(idToken, nonce) },
+                    signInWithGoogle = { idToken, nonce -> authRepo.signInWithGoogle(idToken, nonce) },
+                    acquireGoogleIdToken = { throw RuntimeException("Play Services missing") },
+                )
+
+            viewModel.onEvent(AuthEvent.SignInWithGoogle)
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertFalse(state.isSubmitting)
+                assertNotNull(state.error)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `google sign-in guards reentry`() =
+        runTest {
+            // Same pattern as the Apple re-entrancy test — gate the
+            // acquisition with CompletableDeferred so first call stays
+            // in-flight while the second tap fires.
+            val gate = kotlinx.coroutines.CompletableDeferred<io.github.b150005.skeinly.auth.OAuthIdTokenResult>()
+            var callCount = 0
+            val viewModel =
+                AuthViewModel(
+                    observeAuthState = ObserveAuthStateUseCase(authRepo),
+                    signIn = SignInUseCase(authRepo),
+                    signUp = SignUpUseCase(authRepo),
+                    signInWithApple = { idToken, nonce -> authRepo.signInWithApple(idToken, nonce) },
+                    signInWithGoogle = { idToken, nonce -> authRepo.signInWithGoogle(idToken, nonce) },
+                    acquireGoogleIdToken = {
+                        callCount++
+                        gate.await()
+                    },
+                )
+
+            viewModel.onEvent(AuthEvent.SignInWithGoogle)
+            viewModel.onEvent(AuthEvent.SignInWithGoogle)
+
+            assertEquals(1, callCount)
+            gate.complete(io.github.b150005.skeinly.auth.OAuthIdTokenResult.UserCancelled)
         }
 
     @Test

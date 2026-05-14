@@ -7,6 +7,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class AuthRepositoryImplTest {
     @Test
@@ -66,6 +67,106 @@ class AuthRepositoryImplTest {
                 repo.signInWithApple(idToken = "tok", nonce = "n")
             }
         }
+
+    // ----------------------------------------------------------------
+    // Phase 26.2 (ADR-022 §6.2) — Google Sign-In short-circuit + the
+    // shared `signInWithOAuthIdToken` private path. Full happy-path
+    // integration with Supabase is exercised at the AuthViewModel
+    // layer via FakeAuthRepository.
+    // ----------------------------------------------------------------
+
+    @Test
+    fun `signInWithGoogle throws when client is null`() =
+        runTest {
+            val repo = AuthRepositoryImpl(supabaseClient = null)
+            assertFailsWith<IllegalStateException> {
+                repo.signInWithGoogle(idToken = "tok", nonce = null)
+            }
+        }
+
+    @Test
+    fun `signInWithGoogle nonce defaults to null when omitted`() =
+        runTest {
+            val repo = AuthRepositoryImpl(supabaseClient = null)
+            // Default nonce parameter — the suspend call short-circuits
+            // before consuming nonce because the client is null, but
+            // the call site shape (no `nonce =` argument) is what
+            // matters: Compose / SwiftUI surfaces want a 1-arg call
+            // site for Google.
+            assertFailsWith<IllegalStateException> {
+                repo.signInWithGoogle(idToken = "tok")
+            }
+        }
+
+    @Test
+    fun `extractEmailFromIdToken handles google issued tokens`() {
+        // Google ID tokens carry the same `email` JWT claim shape as
+        // Apple — re-asserting the helper against a Google-shaped
+        // payload locks in cross-provider robustness.
+        val header = base64Url("""{"alg":"RS256","kid":"abc"}""")
+        val payload =
+            base64Url(
+                """{"iss":"https://accounts.google.com","aud":"web-client.apps.googleusercontent.com","email":"user@gmail.com","email_verified":true}""",
+            )
+        val token = "$header.$payload.sig"
+        assertEquals("user@gmail.com", extractEmailFromIdToken(token))
+    }
+
+    @Test
+    fun `extractEmailFromIdToken returns null on google token without email scope`() {
+        // Google can issue ID tokens without the email scope; the
+        // helper returns null and the UI surfaces a generic prompt.
+        val header = base64Url("""{"alg":"RS256","kid":"abc"}""")
+        val payload = base64Url("""{"iss":"https://accounts.google.com","sub":"123","email_verified":true}""")
+        val token = "$header.$payload.sig"
+        assertNull(extractEmailFromIdToken(token))
+    }
+
+    @Test
+    fun `oauth provider kind enum has exactly Apple and Google`() {
+        // Compile-time guard: the enum has exactly two entries. If a
+        // future provider lands (e.g. Microsoft, GitHub), this test
+        // forces a deliberate update + a sweep of consumer sites.
+        assertEquals(
+            setOf(
+                io.github.b150005.skeinly.domain.model.OAuthProviderKind.Apple,
+                io.github.b150005.skeinly.domain.model.OAuthProviderKind.Google,
+            ),
+            io.github.b150005.skeinly.domain.model.OAuthProviderKind.entries
+                .toSet(),
+        )
+    }
+
+    @Test
+    fun `oauth sign in outcome session created identity`() {
+        // SessionCreated is a data object — identity preserved across
+        // references. Locks the type shape so a future refactor
+        // doesn't silently change it to a data class (which would
+        // break the VM's `is OAuthSignInOutcome.SessionCreated`
+        // smart-cast benchmark).
+        val a: io.github.b150005.skeinly.domain.model.OAuthSignInOutcome =
+            io.github.b150005.skeinly.domain.model.OAuthSignInOutcome.SessionCreated
+        val b: io.github.b150005.skeinly.domain.model.OAuthSignInOutcome =
+            io.github.b150005.skeinly.domain.model.OAuthSignInOutcome.SessionCreated
+        assertTrue(a === b)
+    }
+
+    @Test
+    fun `oauth sign in outcome link required carries provider verbatim`() {
+        // Constructor preserves the provider field; the VM uses
+        // outcome.provider to populate LinkIdentityChallenge so the
+        // UI can render provider-specific copy.
+        val outcome =
+            io.github.b150005.skeinly.domain.model.OAuthSignInOutcome.LinkIdentityRequired(
+                email = "user@gmail.com",
+                provider = io.github.b150005.skeinly.domain.model.OAuthProviderKind.Google,
+            )
+        assertEquals("user@gmail.com", outcome.email)
+        assertEquals(
+            io.github.b150005.skeinly.domain.model.OAuthProviderKind.Google,
+            outcome.provider,
+        )
+    }
 
     @Test
     fun `extractEmailFromIdToken returns email claim`() {

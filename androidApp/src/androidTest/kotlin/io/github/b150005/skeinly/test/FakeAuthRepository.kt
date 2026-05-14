@@ -61,6 +61,15 @@ class FakeAuthRepository : AuthRepository {
         return OAuthSignInOutcome.SessionCreated
     }
 
+    override suspend fun signInWithGoogle(
+        idToken: String,
+        nonce: String?,
+    ): OAuthSignInOutcome {
+        authState.value =
+            AuthState.Authenticated(userId = "google-test-user", email = "google@example.com")
+        return OAuthSignInOutcome.SessionCreated
+    }
+
     fun setAuthState(state: AuthState) {
         authState.value = state
     }

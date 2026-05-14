@@ -21,6 +21,7 @@ import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import io.github.b150005.skeinly.auth.OAuthClient
 import io.github.b150005.skeinly.config.BuildFlags
 import io.github.b150005.skeinly.data.analytics.AnalyticsEvent
 import io.github.b150005.skeinly.data.analytics.AnalyticsTracker
@@ -86,6 +87,14 @@ class MainActivity : ComponentActivity() {
             pushTokenRegistrar.onPermissionResult(granted)
         }
 
+    // Phase 26.2 (ADR-022 §6.2) — Activity-scoped Credential Manager
+    // host for Google Sign-In. The shared `OAuthClient` (Koin singleton)
+    // stores a WeakReference to this Activity for the lifetime of the
+    // process; we attach on `onCreate` and detach on `onDestroy` so a
+    // config-change tear-down does not leave the client pointing at a
+    // destroyed Activity. Same lifecycle shape as `PushTokenRegistrar`.
+    private val oauthClient: OAuthClient by lazy { get<OAuthClient>() }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -101,6 +110,10 @@ class MainActivity : ComponentActivity() {
         pushTokenRegistrar.attachLauncher {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+        // Phase 26.2 — attach this Activity to the OAuthClient so its
+        // Credential Manager call inside `acquireGoogleIdToken()` has
+        // an Activity Context for the UI.
+        oauthClient.attachActivity(this)
         // Phase 39.3 (ADR-015 §6) — resolve once at activity creation;
         // tracker is a Koin singleton so a second resolve from inside
         // the Composable would return the same instance, but pulling at
@@ -222,6 +235,12 @@ class MainActivity : ComponentActivity() {
         // user-tapped "Enable" suspended over the tear-down resolves
         // cleanly rather than leaking a coroutine.
         pushTokenRegistrar.detachLauncher()
+        // Phase 26.2 — clear the OAuthClient's Activity ref. Any
+        // in-flight `acquireGoogleIdToken()` call observing an empty
+        // WeakReference falls back to appContext (which Credential
+        // Manager rejects) → returns Failure. Acceptable: in-flight
+        // OAuth attempts straddling a config change are rare.
+        oauthClient.detachActivity()
         super.onDestroy()
     }
 

@@ -196,11 +196,20 @@ fun LoginScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // Social login buttons (coming soon)
+            // Phase 26.2 (ADR-022 §6.2) — Google Sign-In CTA. Enabled
+            // when not currently submitting; on tap fires
+            // `OAuthClient.acquireGoogleIdToken()` → `signInWithGoogle()`.
+            // Apple-on-Android stays disabled — iOS uses the SwiftUI
+            // SignInWithAppleButton primary CTA; Apple-on-Android lands
+            // in a later sub-slice (would parallel the Credential Manager
+            // flow with a SignInWithApple credential type).
             OutlinedButton(
-                onClick = { },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = false,
+                onClick = { viewModel.onEvent(AuthEvent.SignInWithGoogle) },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .testTag("signInWithGoogleButton"),
+                enabled = !state.isSubmitting,
             ) {
                 Text(stringResource(Res.string.action_continue_with_google))
             }

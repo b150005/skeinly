@@ -270,6 +270,18 @@ kotlin {
                 // prior implicit default of unencrypted SharedPreferences
                 // (`PreferenceManager.getDefaultSharedPreferences`).
                 implementation(libs.androidx.security.crypto)
+                // Phase 26.2 (ADR-022 §6.2) — Android Google Sign-In.
+                // `OAuthClient.android.kt` lives in shared:androidMain
+                // (Koin singleton; expect/actual seam from commonMain)
+                // and imports `androidx.credentials.*` +
+                // `com.google.android.libraries.identity.googleid.*`.
+                // Both must live on the shared module's classpath, NOT
+                // only on androidApp's, because the cross-module
+                // resolution at the consumer end requires the type
+                // hierarchy to be visible at compile time.
+                implementation(libs.androidx.credentials)
+                implementation(libs.androidx.credentials.play.services.auth)
+                implementation(libs.google.identity.googleid)
             }
         }
         getByName("androidHostTest") {
@@ -387,6 +399,13 @@ kover {
                     "io.github.b150005.skeinly.ui.paywall.PaywallScreenKt*",
                     "io.github.b150005.skeinly.ui.packmanagement.PackManagementScreenKt*",
                     "io.github.b150005.skeinly.ui.platform.*",
+                    // Phase 26.2 (ADR-022 §6.2) — `OAuthClient`
+                    // platform actuals wrap Android Credential Manager
+                    // / iOS GIDSignIn (Phase 26.3+), both untestable
+                    // on JVM. The shared expect class and the
+                    // AuthViewModel integration are exercised via
+                    // the lambda-seam in `AuthViewModelTest`.
+                    "io.github.b150005.skeinly.auth.OAuthClient",
                 )
             }
         }
