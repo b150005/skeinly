@@ -34,10 +34,12 @@ import io.github.b150005.skeinly.data.remote.RemoteSubscriptionDataSource
 import io.github.b150005.skeinly.data.remote.RemoteSuggestionDataSource
 import io.github.b150005.skeinly.data.remote.RemoteSymbolPackDataSource
 import io.github.b150005.skeinly.data.remote.RemoteUserDataSource
+import io.github.b150005.skeinly.data.remote.RemoteWipeDataDataSource
 import io.github.b150005.skeinly.data.remote.ShareDataSourceOperations
 import io.github.b150005.skeinly.data.remote.SubscriptionRemoteOperations
 import io.github.b150005.skeinly.data.remote.SupabaseConfig
 import io.github.b150005.skeinly.data.remote.SymbolPackRemoteOperations
+import io.github.b150005.skeinly.data.remote.WipeDataRemoteOperations
 import io.github.b150005.skeinly.data.remote.createSymbolPackHttpClient
 import io.github.b150005.skeinly.data.remote.isConfigured
 import io.github.b150005.skeinly.data.repository.ActivityRepositoryImpl
@@ -57,6 +59,7 @@ import io.github.b150005.skeinly.data.repository.ShareRepositoryImpl
 import io.github.b150005.skeinly.data.repository.SubscriptionRepositoryImpl
 import io.github.b150005.skeinly.data.repository.SuggestionRepositoryImpl
 import io.github.b150005.skeinly.data.repository.UserRepositoryImpl
+import io.github.b150005.skeinly.data.repository.WipeDataRepositoryImpl
 import io.github.b150005.skeinly.domain.repository.ActivityRepository
 import io.github.b150005.skeinly.domain.repository.AppConfigRepository
 import io.github.b150005.skeinly.domain.repository.AuthRepository
@@ -74,6 +77,7 @@ import io.github.b150005.skeinly.domain.repository.StorageOperations
 import io.github.b150005.skeinly.domain.repository.SubscriptionRepository
 import io.github.b150005.skeinly.domain.repository.SuggestionRepository
 import io.github.b150005.skeinly.domain.repository.UserRepository
+import io.github.b150005.skeinly.domain.repository.WipeDataRepository
 import io.github.b150005.skeinly.domain.symbol.CompositeSymbolCatalog
 import io.github.b150005.skeinly.domain.symbol.DefaultSymbolPackCatalog
 import io.github.b150005.skeinly.domain.symbol.EntitlementResolver
@@ -100,6 +104,20 @@ val repositoryModule =
         single<DeviceTokenRepository> {
             DeviceTokenRepositoryImpl(
                 remote = getOrNull<DeviceTokenRemoteOperations>(),
+                authRepository = get(),
+            )
+        }
+
+        // Phase 27.1 (ADR-023 §3.1) — account-preserved bulk content
+        // wipe. Registered unconditionally (not gated on
+        // SupabaseConfig.isConfigured) because the impl handles
+        // `remote = null` internally via the RequiresConnectivity
+        // short-circuit. Wiring it here keeps the Phase 27.2 ViewModel's
+        // `koinInject<WipeDataRepository>()` resolution simple — there is
+        // always a binding.
+        single<WipeDataRepository> {
+            WipeDataRepositoryImpl(
+                remote = getOrNull<WipeDataRemoteOperations>(),
                 authRepository = get(),
             )
         }
@@ -153,6 +171,12 @@ val repositoryModule =
             // above.
             single { RemoteDeviceTokenDataSource(get<SupabaseClient>()) }
             single<DeviceTokenRemoteOperations> { get<RemoteDeviceTokenDataSource>() }
+            // Phase 27.1 (ADR-023 §3.1) — wipe_own_data RPC adapter.
+            // Interface alias lets WipeDataRepositoryImpl be tested with
+            // an in-memory fake without standing up Supabase. Same shape
+            // as DeviceTokenRemoteOperations above.
+            single { RemoteWipeDataDataSource(get<SupabaseClient>()) }
+            single<WipeDataRemoteOperations> { get<RemoteWipeDataDataSource>() }
             // Interface alias lets SubscriptionRepositoryImpl be tested
             // with an in-memory fake without standing up Supabase. Same
             // shape as SuggestionApplyOperations above.
