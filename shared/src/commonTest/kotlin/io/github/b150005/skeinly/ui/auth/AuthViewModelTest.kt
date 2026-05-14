@@ -2,6 +2,8 @@ package io.github.b150005.skeinly.ui.auth
 
 import app.cash.turbine.test
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.OAuthProviderKind
+import io.github.b150005.skeinly.domain.model.OAuthSignInOutcome
 import io.github.b150005.skeinly.domain.usecase.FakeAuthRepository
 import io.github.b150005.skeinly.domain.usecase.ObserveAuthStateUseCase
 import io.github.b150005.skeinly.domain.usecase.SignInUseCase
@@ -42,6 +44,7 @@ class AuthViewModelTest {
             observeAuthState = ObserveAuthStateUseCase(authRepo),
             signIn = SignInUseCase(authRepo),
             signUp = SignUpUseCase(authRepo),
+            signInWithApple = { idToken, nonce -> authRepo.signInWithApple(idToken, nonce) },
         )
 
     @Test
@@ -276,6 +279,152 @@ class AuthViewModelTest {
                 assertEquals("existing@example.com", state.emailConfirmationSentTo)
                 // Password cleared (matches EmailConfirmationRequired)
                 assertEquals("", state.password)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    // ----------------------------------------------------------------
+    // Phase 26.1 (ADR-022 §6.1) — Apple Sign-In flows
+    // ----------------------------------------------------------------
+
+    @Test
+    fun `apple id token success transitions to authenticated`() =
+        runTest {
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(
+                AuthEvent.SignInWithAppleIdToken(
+                    idToken = "fake.apple.idtoken",
+                    nonce = "nonce-plaintext-xyz",
+                ),
+            )
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertFalse(state.isSubmitting)
+                assertNull(state.error)
+                assertNull(state.linkIdentityRequired)
+                assertEquals("fake.apple.idtoken", authRepo.lastAppleIdToken)
+                assertEquals("nonce-plaintext-xyz", authRepo.lastAppleNonce)
+                // FakeAuthRepository flips authState to Authenticated.
+                assertTrue(state.authState is AuthState.Authenticated)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `apple id token link required surfaces challenge`() =
+        runTest {
+            authRepo.signInWithAppleOutcome =
+                OAuthSignInOutcome.LinkIdentityRequired(
+                    email = "user@privaterelay.appleid.com",
+                    provider = OAuthProviderKind.Apple,
+                )
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(
+                AuthEvent.SignInWithAppleIdToken(
+                    idToken = "fake.apple.idtoken",
+                    nonce = "n",
+                ),
+            )
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertFalse(state.isSubmitting)
+                assertNull(state.error)
+                val challenge = state.linkIdentityRequired
+                assertNotNull(challenge)
+                assertEquals("user@privaterelay.appleid.com", challenge.email)
+                assertEquals(OAuthProviderKind.Apple, challenge.provider)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `apple id token failure surfaces generic error`() =
+        runTest {
+            authRepo.signInWithAppleError = RuntimeException("nonce_mismatch")
+            val viewModel = createViewModel()
+
+            viewModel.onEvent(
+                AuthEvent.SignInWithAppleIdToken(idToken = "tok", nonce = "n"),
+            )
+
+            viewModel.state.test {
+                val state = awaitItem()
+                assertFalse(state.isSubmitting)
+                assertNotNull(state.error)
+                assertNull(state.linkIdentityRequired)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `apple id token submit guards reentry`() =
+        runTest {
+            // Gate the fake's signInWithApple suspend so the first
+            // submit stays in-flight long enough for the second tap to
+            // fire — exercising the re-entrant guard.
+            val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+            val slowRepo =
+                object {
+                    var callCount = 0
+                    var lastIdToken: String? = null
+
+                    suspend fun signInWithApple(
+                        idToken: String,
+                        @Suppress("UNUSED_PARAMETER") nonce: String,
+                    ): io.github.b150005.skeinly.domain.model.OAuthSignInOutcome {
+                        callCount++
+                        lastIdToken = idToken
+                        gate.await()
+                        return io.github.b150005.skeinly.domain.model.OAuthSignInOutcome.SessionCreated
+                    }
+                }
+            val viewModel =
+                AuthViewModel(
+                    observeAuthState = ObserveAuthStateUseCase(authRepo),
+                    signIn = SignInUseCase(authRepo),
+                    signUp = SignUpUseCase(authRepo),
+                    signInWithApple = { idToken, nonce -> slowRepo.signInWithApple(idToken, nonce) },
+                )
+
+            viewModel.onEvent(
+                AuthEvent.SignInWithAppleIdToken(idToken = "first", nonce = "n"),
+            )
+            // Second tap while still submitting — guard must short-circuit.
+            viewModel.onEvent(
+                AuthEvent.SignInWithAppleIdToken(idToken = "second", nonce = "n"),
+            )
+
+            // Only "first" was forwarded; "second" was dropped by the
+            // re-entrant guard on FormState.isSubmitting.
+            assertEquals(1, slowRepo.callCount)
+            assertEquals("first", slowRepo.lastIdToken)
+            gate.complete(Unit)
+        }
+
+    @Test
+    fun `dismiss link identity prompt clears challenge`() =
+        runTest {
+            authRepo.signInWithAppleOutcome =
+                OAuthSignInOutcome.LinkIdentityRequired(
+                    email = "u@example.com",
+                    provider = OAuthProviderKind.Apple,
+                )
+            val viewModel = createViewModel()
+            viewModel.onEvent(AuthEvent.SignInWithAppleIdToken("tok", "n"))
+
+            // Wait for the challenge to surface before dismissing.
+            viewModel.state.test {
+                var current = awaitItem()
+                while (current.linkIdentityRequired == null) current = awaitItem()
+                assertNotNull(current.linkIdentityRequired)
+
+                viewModel.onEvent(AuthEvent.DismissLinkIdentityPrompt)
+                current = awaitItem()
+                assertNull(current.linkIdentityRequired)
                 cancelAndIgnoreRemainingEvents()
             }
         }

@@ -70,5 +70,34 @@
     <array>
         <string>applinks:b150005.github.io</string>
     </array>
+
+    <!--
+        Phase 26.1 (ADR-022 §6.1) — Sign in with Apple.
+
+        Enables `AuthenticationServices.SignInWithAppleButton` (SwiftUI)
+        to request an Apple ID token from the user's Apple Account. The
+        token (signed JWT) is then forwarded to Supabase Auth via
+        `signInWith(IDToken) { provider = Apple }`, which verifies the
+        nonce against the token claims and issues a Skeinly session.
+
+        Capability prerequisites:
+          - App ID `io.github.b150005.skeinly` MUST have "Sign in with
+            Apple" capability enabled in the Apple Developer Portal
+            (Capabilities tab on the App ID record).
+          - The Distribution Provisioning Profile embedded in the IPA
+            MUST include the capability — re-Generate after toggling.
+          - A Services ID + private key (`.p8`) MUST be registered with
+            Supabase Auth Apple provider in the Dashboard. The Services
+            ID is the Audience field of the issued JWT. Operator-side
+            setup documented in `docs/{en,ja}/release-secrets.md` under
+            the "Apple Sign-In (Phase 26.1)" section.
+
+        Value `Default` requests the primary Apple Account; multi-account
+        flows are not in scope for Phase 26.x.
+    -->
+    <key>com.apple.developer.applesignin</key>
+    <array>
+        <string>Default</string>
+    </array>
 </dict>
 </plist>

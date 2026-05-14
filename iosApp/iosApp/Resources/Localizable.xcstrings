@@ -379,13 +379,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Continue with Apple (Coming soon)"
+            "value" : "Continue with Apple"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Appleで続ける（近日公開）"
+            "value" : "Appleで続ける"
           }
         }
       }
@@ -396,13 +396,64 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Continue with Google (Coming soon)"
+            "value" : "Continue with Google"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Googleで続ける（近日公開）"
+            "value" : "Googleで続ける"
+          }
+        }
+      }
+    },
+    "action_sign_in_with_apple" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in with Apple"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appleでサインイン"
+          }
+        }
+      }
+    },
+    "label_or_sign_in_with_email" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "or sign in with email"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "またはメールでサインイン"
+          }
+        }
+      }
+    },
+    "body_email_already_used_oauth_link_prompt" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An account with %1$@ already exists. Sign in with your password, then link Apple from Settings."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ のアカウントは既に存在します。パスワードでサインインしてから、設定画面で Apple アカウントを連携してください。"
           }
         }
       }

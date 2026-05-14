@@ -202,6 +202,11 @@ private class ControlledAuthRepository : AuthRepository {
     override suspend fun updateEmail(newEmail: String) {
         error("not used in bridge tests")
     }
+
+    override suspend fun signInWithApple(
+        idToken: String,
+        nonce: String,
+    ): io.github.b150005.skeinly.domain.model.OAuthSignInOutcome = error("not used in bridge tests")
 }
 
 private sealed interface BridgeCall {

@@ -1,6 +1,7 @@
 package io.github.b150005.skeinly.domain.repository
 
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.OAuthSignInOutcome
 import io.github.b150005.skeinly.domain.model.SignUpOutcome
 import kotlinx.coroutines.flow.Flow
 
@@ -53,4 +54,26 @@ interface AuthRepository {
      * remains valid throughout.
      */
     suspend fun updateEmail(newEmail: String)
+
+    /**
+     * Phase 26.1 (ADR-022 §6.1) — verifies an Apple ID token with Supabase
+     * via the `signInWith(IDToken) { provider = Apple }` path. The
+     * [idToken] is the raw JWT returned by SignInWithAppleButton on iOS
+     * (`ASAuthorizationAppleIDCredential.identityToken`, UTF-8 decoded);
+     * [nonce] is the plaintext nonce whose `SHA-256(plaintext)` digest
+     * was sent in `ASAuthorizationOpenIDRequest.nonce` and is included
+     * in the ID token claims for replay protection. Supabase server-side
+     * verifies the nonce matches.
+     *
+     * Returns [OAuthSignInOutcome.SessionCreated] on the happy path
+     * (session emerges on the auth-state flow), or
+     * [OAuthSignInOutcome.LinkIdentityRequired] when Supabase reports
+     * the email already corresponds to an existing user that needs
+     * explicit `linkIdentity` after the original credentials sign in.
+     * Other failures bubble as exceptions for the use-case layer to map.
+     */
+    suspend fun signInWithApple(
+        idToken: String,
+        nonce: String,
+    ): OAuthSignInOutcome
 }
