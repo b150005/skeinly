@@ -554,16 +554,17 @@ Play groups data into 14 collapsible categories. Expand each, check only the lis
 
 **音声ファイル** (0/3): no checks. No voice recording / music files / other audio.
 
-**ファイル、ドキュメント** (1/1 checked):
-- ☑ **ファイル、ドキュメント** — chart data / pattern data exports as user content (UGC).
+**ファイル、ドキュメント** (0/1): no checks. Skeinly's chart data is structured UGC, NOT a traditional file (PDF / spreadsheet / document). The category fits Skeinly's chart data only loosely; the more precise fit is アプリのアクティビティ > その他のユーザー作成コンテンツ (see below). Avoiding double-counting.
 
 **カレンダー** (0/1): no checks. No calendar event integration.
 
 **コンタクト** (0/1): no checks. Skeinly does not access the device contact list. Phase 25 friend-only mode adds in-app friend connections but those are not "contacts" in Play's sense (which targets device address-book / social-graph data drawn from contacts).
 
-**アプリのアクティビティ** (1/5 checked):
-- ☑ **アプリのインタラクション数** — PostHog captures page views / taps / scrolls (opt-in via consent screen).
-- Leave unchecked: アプリ内の検索履歴 (search queries are transient, not persisted); インストール済みのアプリ (no other-app probing); その他のユーザー作成コンテンツ (Skeinly UGC is declared under ファイル、ドキュメント for charts and メッセージ for comments — no remainder); その他の操作 (PostHog's captured events are interaction-counts, not "other actions").
+**アプリのアクティビティ** (3/5 checked):
+- ☑ **アプリのインタラクション数** — PostHog captures generic page views / taps / scrolls (opt-in via consent screen).
+- ☑ **その他のユーザー作成コンテンツ** — knitting chart data (`chart_documents` structured records). Per Play's tooltip "この一覧または他のセクションに記載されていない、その他のユーザー作成コンテンツ" — Skeinly's chart data is structured UGC that doesn't fit the photo / video / file / audio categories.
+- ☑ **その他の操作** — PostHog Skeinly-specific custom events (`pattern_created` / `pattern_shared` / `suggestion_opened` etc.), separate from the generic interaction counts. Per Play's tooltip "ここに記載されていないその他のユーザー アクション".
+- Leave unchecked: アプリ内の検索履歴 (search queries are transient, not persisted); インストール済みのアプリ (no other-app probing).
 
 **ウェブ閲覧** (0/1): no checks. No browsing history captured.
 
@@ -575,7 +576,7 @@ Play groups data into 14 collapsible categories. Expand each, check only the lis
 **デバイスまたはその他の ID** (1/1 checked):
 - ☑ **デバイスまたはその他の ID** — FCM/APNs push token + PostHog distinct_id.
 
-Total expected checks: **11 across 14 categories** (post-Phase-28 becomes 12 with 動画 added).
+Total expected checks: **12 across 14 categories** (post-Phase-28 becomes 13 with 動画 added).
 
 #### Page 4: データの使用と処理
 
@@ -590,23 +591,29 @@ Skeinly common answer pattern: **収集 only** for ALL 11 types (no 共有 anywh
 
 | Data type | 必須/オプション | 用途 (purposes — check these only) |
 |---|---|---|
-| 名前 | データ収集は必須である | アプリの機能 + アカウント管理 |
-| メールアドレス | データ収集は必須である | アプリの機能 + アカウント管理 |
-| ユーザー ID | データ収集は必須である | アプリの機能 + アカウント管理 |
-| 購入履歴 | ユーザーは...選択できる (Pro 加入者のみ) | アプリの機能 |
+| 名前 | データ収集は必須である | アプリの機能 + **デベロッパー コミュニケーション** + アカウント管理 |
+| メールアドレス | データ収集は必須である | アプリの機能 + **デベロッパー コミュニケーション** + アカウント管理 |
+| ユーザー ID | データ収集は必須である | アプリの機能 + **デベロッパー コミュニケーション** + アカウント管理 |
+| 購入履歴 | ユーザーは...選択できる (Pro 加入者のみ) | アプリの機能 + **分析** + **デベロッパー コミュニケーション** + **アカウント管理** |
 | その他のアプリ内メッセージ | ユーザーは...選択できる (ユーザー送信時) | アプリの機能 |
 | 写真 | ユーザーは...選択できる | アプリの機能 |
-| ファイル、ドキュメント | ユーザーは...選択できる | アプリの機能 |
+| その他のユーザー作成コンテンツ (編み図) | ユーザーは...選択できる (作成は任意; 閲覧 / fork のみで利用可) | アプリの機能 |
 | アプリのインタラクション数 | ユーザーは...選択できる (opt-in 同意) | **分析** |
-| クラッシュログ | ユーザーは...選択できる (opt-in 同意) | **分析** |
+| その他の操作 (PostHog カスタムイベント) | ユーザーは...選択できる (opt-in 同意) | **分析** |
+| クラッシュログ | ユーザーは...選択できる (opt-in 同意) | **分析** (Sentry の自動 crash 収集; bug report 機能の本文は別 data type の その他のアプリ内メッセージ で扱う) |
 | 診断情報 | ユーザーは...選択できる (opt-in 同意) | **分析** |
 | デバイスまたはその他の ID | ユーザーは...選択できる (push 許可 + PostHog opt-in) | アプリの機能 + **分析** |
 
+**Why デベロッパー コミュニケーション is checked for 名前 / メール / ユーザー ID / 購入履歴**:
+- 名前 / メール / ユーザー ID — used to compose personalized transactional emails (Supabase Auth verification, password reset, future support-reply emails). Including the user's name in the email body increases deliverability (anti-spam-filter heuristics favor personalized content) and is a legitimate developer-to-user communication channel.
+- 購入履歴 — used to segment Pro subscribers for Pro-feature-addition announcements ("New Pro feature available!"). Play's category description explicitly includes "アプリの新機能をユーザーに通知する".
+
 **Never-checked purposes** for any Skeinly data type:
-- ☐ **デベロッパー コミュニケーション** — Skeinly's push is user-to-user collaboration, NOT developer-to-user security / feature announcements
 - ☐ **広告、マーケティング** — Skeinly is ad-free
 - ☐ **不正行為防止、セキュリティ、コンプライアンス** — no fraud-detection-specific data processing
 - ☐ **カスタマイズ** — no personalized recommendation features (Discovery is activity-ranked, not per-user)
+
+**Common confusion**: クラッシュログ data type is for **Sentry's automatic crash captures**, NOT for the user-submitted bug-report feature (Settings → Send Feedback). The bug-report content flows under **メッセージ > その他のアプリ内メッセージ** data type. Do not check アプリの機能 on the クラッシュログ / 診断情報 forms — those Sentry automatic data types fit Play's 分析 category exclusively per its description "バグやクラッシュを診断して修正する、将来的にパフォーマンスの改善を加える". The アプリの機能 declaration for bug-report support lives on the その他のアプリ内メッセージ form instead.
 
 Bottom-of-page security practices section (appears after the 11 per-type forms): encryption in transit **Yes**, users can request deletion **Yes** (in-app + web — Phase 27 `data-deletion/` URL once shipped), independent verification **No**, Families Policy **No**.
 
