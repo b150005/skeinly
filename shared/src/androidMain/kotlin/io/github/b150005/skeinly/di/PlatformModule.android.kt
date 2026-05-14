@@ -15,6 +15,7 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.SharedPreferencesSettings
+import io.github.b150005.skeinly.auth.OAuthClient
 import io.github.b150005.skeinly.data.remote.ConnectivityMonitor
 import io.github.b150005.skeinly.db.DriverFactory
 import io.github.b150005.skeinly.notifications.OsSettingsLauncher
@@ -99,4 +100,32 @@ val platformModule =
         // motion. Stock Material 3 transitions auto-respect; this
         // detector covers the few surfaces that bypass the stock path.
         single { ReduceMotionDetector(get()) }
+        // Phase 26.2 (ADR-022 §6.2) — Google Sign-In via Credential
+        // Manager. The Web Client ID is generated automatically by
+        // the google-services Gradle plugin into the Android
+        // resource `R.string.default_web_client_id`. Resolution
+        // happens lazily inside `acquireGoogleIdToken()` so a
+        // missing google-services.json (local dev) degrades to a
+        // `Failure(...)` rather than a class-load failure here.
+        //
+        // The R.string resource ID is looked up by name at runtime
+        // (rather than referenced via shared/androidApp's R class)
+        // because the shared module does not own a resource
+        // namespace — the resource lives on androidApp's classpath
+        // but is visible to the application Context.
+        single {
+            val context: android.content.Context = get()
+            OAuthClient(
+                appContext = context,
+                webClientIdProvider = {
+                    val resId =
+                        context.resources.getIdentifier(
+                            "default_web_client_id",
+                            "string",
+                            context.packageName,
+                        )
+                    if (resId != 0) context.getString(resId) else ""
+                },
+            )
+        }
     }

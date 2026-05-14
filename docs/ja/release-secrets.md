@@ -1110,6 +1110,57 @@ open "https://supabase.com/docs/guides/auth/social-login/auth-apple#generate-the
 
 期限切れの失敗モード: `signInWithApple` が server-side エラーを返し、Supabase ログには Apple トークン endpoint から `invalid_client` が記録される。ユーザーには LoginScreen に generic エラーバナーが表示される。
 
+## Google Sign-In（Phase 26.2 — Supabase Dashboard プロバイダー設定 + iOS GitHub Secret）
+
+> **スロット種別**: 混在。Google OAuth Client ID は **Supabase Dashboard 設定**（Google プロバイダーに貼り付け） — GitHub Secret ではなく、クライアント側バンドルも持たない。iOS `GoogleService-Info.plist`（Phase 26.3+ で `GIDSignIn` 経由の iOS Google sign-in 用）は `production` 環境の **GitHub Secret**。
+
+### Supabase Dashboard スロット（Google プロバイダー）
+
+Phase 26.2 で Android Google Sign-In を出荷（`androidx.credentials.CredentialManager` + Supabase Auth `signInWith(IDToken) { provider = Google }`）。3 つの Google 側 OAuth Client ID を登録:
+
+| スロット名 | 内容 | 取得元 | 利用箇所 |
+|---|---|---|---|
+| `GOOGLE_OAUTH_WEB_CLIENT_ID` | OAuth 2.0 Web アプリケーション Client ID — Google ID token の `aud` (audience) になる。Supabase はこの値に対してトークンを検証。 | Google Cloud Console → APIs & Services → Credentials → Web application | Supabase Dashboard (Authentication → Providers → Google → Client IDs); `google-services.json` の `oauth_client[type=3]` にも書き込まれ、`R.string.default_web_client_id` として読み出される |
+| `GOOGLE_OAUTH_WEB_CLIENT_SECRET` | Web Client ID とペアの secret。 | 同じ Web app credential の「Client secret」フィールド | Supabase Dashboard（同じ Google provider 設定） |
+| `GOOGLE_OAUTH_IOS_CLIENT_ID` | OAuth 2.0 iOS アプリケーション Client ID — `GoogleService-Info.plist` の `CLIENT_ID` フィールドから参照。`GIDSignIn` SDK が iOS で使う（Phase 26.3+）。 | Google Cloud Console → APIs & Services → Credentials → iOS application | iOS アプリが `GoogleService-Info.plist` 経由で参照 |
+| `GOOGLE_OAUTH_ANDROID_CLIENT_ID` | OAuth 2.0 Android アプリケーション Client ID — パッケージ名 + SHA-1 フィンガープリントの一致で暗黙バインド。Credential Manager は直接消費しない（Android sign-in flow は server_client_id として Web Client ID のみ使う）。Android Client は package + SHA-1 の所有権アサーション用。 | Google Cloud Console → APIs & Services → Credentials → Android application | 暗黙（package + SHA-1 一致） |
+
+**ローテーション頻度**: Client ID は OAuth Client 登録の寿命の間安定。ローテーション = Cloud Console で新 Client 作成 + 新 ID/Secret を Supabase Dashboard に貼り直し + `default_web_client_id` を使う package 向けに `google-services.json` を再ダウンロード。カレンダー時間ローテーションではない — credential 漏洩または運用移行時のみ。
+
+### 初回セットアップ手順
+
+1. **Google Cloud Console** → Firebase 紐付け済みプロジェクト（Skeinly Blaze）を選択。
+2. APIs & Services → Credentials → OAuth 2.0 Client ID を 3 回作成:
+   - **Web application** → `GOOGLE_OAUTH_WEB_CLIENT_ID` + `GOOGLE_OAUTH_WEB_CLIENT_SECRET` を記録。Authorized redirect URI: `https://<supabase-project-ref>.supabase.co/auth/v1/callback`。
+   - **iOS application** → Bundle ID `io.github.b150005.skeinly` → `GOOGLE_OAUTH_IOS_CLIENT_ID` を記録。Reverse Client ID（iOS URL Scheme として使う）は自動派生。
+   - **Android application** → Package name `io.github.b150005.skeinly` → アップロード署名キーストアの SHA-1 + Play App Signing フィンガープリント（Play Console 初回アップロード後に追加 — CLAUDE.md Phase 40 GA prep「Play App Signing SHA-1 登録」参照）。
+3. **`google-services.json` を再ダウンロード** — Firebase Console → Project Settings → General → Skeinly Android app → ギアアイコンクリック → `google-services.json` をダウンロード。新ファイルに OAuth Client エントリが含まれる。Base64 エンコードし直して `FIREBASE_GOOGLE_SERVICES_JSON_BASE64` GitHub Secret（`production` env）を再登録 — CI リリースビルドが OAuth-augmented 設定を取得するため。
+4. **Supabase Dashboard → Authentication → Providers → Google**:
+   - Enable をトグル。
+   - Authorized Client IDs（改行区切り）: `GOOGLE_OAUTH_WEB_CLIENT_ID` + `GOOGLE_OAUTH_IOS_CLIENT_ID`（Phase 26.3+ で iOS Client ID を追加）。
+   - Client ID (for OAuth): `GOOGLE_OAUTH_WEB_CLIENT_ID`。
+   - Client Secret (for OAuth): `GOOGLE_OAUTH_WEB_CLIENT_SECRET`。
+   - Save。
+5. **Android アプリ**: 追加作業なし。`R.string.default_web_client_id` は Gradle build 時に `google-services.json` から自動生成される。shared `OAuthClient.android.kt` は `context.resources.getIdentifier("default_web_client_id", ...)` で読み出す。
+6. **iOS アプリ（Phase 26.3+）**: `GoogleService-Info.plist` を `iosApp/iosApp/GoogleService-Info.plist` に配置（gitignored）。次のサブセクション参照。
+
+### `IOS_GOOGLE_SERVICES_PLIST_BASE64`（GitHub Secret — `production` env）
+
+> **Phase 26.2 ステータス**: Phase 26.3 iOS Google Sign-In の forward-compat スロットとしてここに記載。Phase 26.2 の iOS `OAuthClient` actual は Failure stub のため、iOS アプリは現状この plist を消費しない。GitHub Secret + CI デコードステップを今のうちに配線しておき、26.3（`GIDSignIn` import を追加）が別途 secret 登録ラウンドなしで出荷できるようにする。
+
+`FIREBASE_GOOGLE_SERVICES_JSON_BASE64` の iOS 対応版。plist は iOS OAuth Client ID + reverse Client ID URL scheme + project number を含む。オペレーター側セットアップ:
+
+1. Firebase Console → Project Settings → General → Skeinly iOS app から `GoogleService-Info.plist` をダウンロード。
+2. ローカルに `iosApp/iosApp/GoogleService-Info.plist` として配置（gitignored）。
+3. `production` Environment の GitHub Secret として登録:
+   ```bash
+   base64 -i iosApp/iosApp/GoogleService-Info.plist | pbcopy
+   gh secret set IOS_GOOGLE_SERVICES_PLIST_BASE64 --env production --body "$(pbpaste)"
+   ```
+4. CI リリースワークフローの iOS build step が `xcodebuild` 起動前に secret を plist パスにデコード。デコードステップは secret 存在時のみ条件実行 — half-configured release は gracefully degrade（iOS Google Sign-In は Failure を返す; Apple Sign-In + email/password は影響なし）。
+
+**ローテーション**: Cloud Console iOS Client 再作成時のみ。同じ手順: 再ダウンロード → 再エンコード → secret 再設定。
+
 ## 一括検証
 
 GitHub Secrets を登録した後、`gh` で確認:

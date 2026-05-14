@@ -17,16 +17,21 @@ class FakeAuthRepository : AuthRepository {
     var updatePasswordError: Throwable? = null
     var updateEmailError: Throwable? = null
     var signInWithAppleError: Throwable? = null
+    var signInWithGoogleError: Throwable? = null
 
     /**
-     * Phase 26.1 — when non-null, the next [signInWithApple] call returns
-     * this outcome instead of [OAuthSignInOutcome.SessionCreated]. Tests
-     * override per-case to model the LinkIdentityRequired path.
+     * Phase 26.1 / 26.2 — when non-null, the next [signInWithApple] /
+     * [signInWithGoogle] call returns this outcome instead of
+     * [OAuthSignInOutcome.SessionCreated]. Tests override per-case
+     * to model the LinkIdentityRequired path.
      */
     var signInWithAppleOutcome: OAuthSignInOutcome? = null
+    var signInWithGoogleOutcome: OAuthSignInOutcome? = null
 
     var lastAppleIdToken: String? = null
     var lastAppleNonce: String? = null
+    var lastGoogleIdToken: String? = null
+    var lastGoogleNonce: String? = null
 
     /**
      * Determines whether the next `signUpWithEmail` call returns
@@ -127,6 +132,21 @@ class FakeAuthRepository : AuthRepository {
         currentUserId = "apple-user-id"
         authStateFlow.value =
             AuthState.Authenticated(userId = "apple-user-id", email = "apple@example.com")
+        return OAuthSignInOutcome.SessionCreated
+    }
+
+    override suspend fun signInWithGoogle(
+        idToken: String,
+        nonce: String?,
+    ): OAuthSignInOutcome {
+        lastGoogleIdToken = idToken
+        lastGoogleNonce = nonce
+        signInWithGoogleError?.let { throw it }
+        val override = signInWithGoogleOutcome
+        if (override != null) return override
+        currentUserId = "google-user-id"
+        authStateFlow.value =
+            AuthState.Authenticated(userId = "google-user-id", email = "google@example.com")
         return OAuthSignInOutcome.SessionCreated
     }
 

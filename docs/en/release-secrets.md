@@ -1115,6 +1115,57 @@ Set a calendar reminder for **5 months and 25 days** after the most recent JWT g
 
 Failure mode if missed: `signInWithApple` returns a server-side error visible in Supabase logs as `invalid_client` from Apple's token endpoint. Users see a generic error banner on LoginScreen.
 
+## Google Sign-In (Phase 26.2 — Supabase Dashboard provider config + iOS GitHub Secret)
+
+> **Slot type**: Mixed. Google OAuth Client IDs are **Supabase Dashboard configuration** (paste into the Google provider) — they are NOT GitHub Secrets and have no client-side bundle. iOS `GoogleService-Info.plist` (for Phase 26.3+ iOS Google sign-in via `GIDSignIn`) is a **GitHub Secret** in the `production` environment.
+
+### Supabase Dashboard slots (Google provider)
+
+Phase 26.2 ships Android Google Sign-In via `androidx.credentials.CredentialManager` + Supabase Auth `signInWith(IDToken) { provider = Google }`. Three Google-side OAuth Client IDs are registered:
+
+| Slot name (documentation key) | What it is | Source | Used by |
+|---|---|---|---|
+| `GOOGLE_OAUTH_WEB_CLIENT_ID` | OAuth 2.0 Web application Client ID — becomes the `aud` (audience) of the Google ID token. Supabase verifies the token against this value. | Google Cloud Console → APIs & Services → Credentials → Web application | Supabase Dashboard (Authentication → Providers → Google → Client IDs); also baked into `google-services.json` `oauth_client[type=3]` for `R.string.default_web_client_id` |
+| `GOOGLE_OAUTH_WEB_CLIENT_SECRET` | Paired secret for the Web Client ID. | Same Web app credential's "Client secret" field | Supabase Dashboard (same Google provider config) |
+| `GOOGLE_OAUTH_IOS_CLIENT_ID` | OAuth 2.0 iOS application Client ID — referenced by `GoogleService-Info.plist`'s `CLIENT_ID` field. Used by `GIDSignIn` SDK on iOS (Phase 26.3+). | Google Cloud Console → APIs & Services → Credentials → iOS application | iOS app via `GoogleService-Info.plist` |
+| `GOOGLE_OAUTH_ANDROID_CLIENT_ID` | OAuth 2.0 Android application Client ID — implicit match on package name + SHA-1 fingerprint. NOT used by Credential Manager directly; the Android sign-in flow only uses the Web Client ID as the server_client_id. The Android Client exists to assert ownership of the package + SHA-1. | Google Cloud Console → APIs & Services → Credentials → Android application | Implicit (package + SHA-1 match) |
+
+**Rotation cadence**: Client IDs are stable for the lifetime of the OAuth Client registration. Rotation = create a new Client in Cloud Console + paste the new ID/Secret into Supabase Dashboard + re-download `google-services.json` for any package using `default_web_client_id`. NOT a calendar-time rotation; only on credential leak or operational migration.
+
+### Setup procedure (one-time)
+
+1. **Google Cloud Console** → choose the Firebase-linked project (Skeinly Blaze).
+2. APIs & Services → Credentials → Create OAuth 2.0 Client ID three times:
+   - **Web application** → record `GOOGLE_OAUTH_WEB_CLIENT_ID` + `GOOGLE_OAUTH_WEB_CLIENT_SECRET`. Authorized redirect URI: `https://<supabase-project-ref>.supabase.co/auth/v1/callback`.
+   - **iOS application** → Bundle ID `io.github.b150005.skeinly` → record `GOOGLE_OAUTH_IOS_CLIENT_ID`. Reverse Client ID (used as iOS URL Scheme) auto-derives.
+   - **Android application** → Package name `io.github.b150005.skeinly` → SHA-1 fingerprint of the upload signing keystore + the Play App Signing fingerprint (added after first Play Console upload — see CLAUDE.md Phase 40 GA prep "Play App Signing SHA-1 registration").
+3. **Re-download `google-services.json`** from Firebase Console → Project Settings → General → Skeinly Android app → click the gear icon → Download `google-services.json`. The freshly downloaded file will contain the OAuth Client entries. Re-encode + re-register the `FIREBASE_GOOGLE_SERVICES_JSON_BASE64` GitHub Secret in the `production` env so CI release builds get the OAuth-augmented config.
+4. **Supabase Dashboard → Authentication → Providers → Google**:
+   - Toggle Enable.
+   - Authorized Client IDs (newline-separated): `GOOGLE_OAUTH_WEB_CLIENT_ID` + `GOOGLE_OAUTH_IOS_CLIENT_ID` (Phase 26.3+ iOS adds the iOS Client ID).
+   - Client ID (for OAuth): `GOOGLE_OAUTH_WEB_CLIENT_ID`.
+   - Client Secret (for OAuth): `GOOGLE_OAUTH_WEB_CLIENT_SECRET`.
+   - Save.
+5. **Android app**: nothing further. `R.string.default_web_client_id` auto-generates from `google-services.json` at Gradle build time; the shared `OAuthClient.android.kt` reads it via `context.resources.getIdentifier("default_web_client_id", ...)`.
+6. **iOS app (Phase 26.3+)**: `GoogleService-Info.plist` placed at `iosApp/iosApp/GoogleService-Info.plist` (gitignored). See the next subsection for CI registration.
+
+### `IOS_GOOGLE_SERVICES_PLIST_BASE64` (GitHub Secret — `production` env)
+
+> **Phase 26.2 status**: documented here as a forward-compat slot for Phase 26.3 iOS Google Sign-In. Phase 26.2's iOS `OAuthClient` actual is a Failure stub, so the iOS app does not currently consume this plist. Wire the GitHub Secret + CI decode step now so 26.3 (which adds `GIDSignIn` import) can ship without a separate secret registration round.
+
+This is the iOS counterpart to `FIREBASE_GOOGLE_SERVICES_JSON_BASE64`. The plist contains the iOS OAuth Client ID + reverse Client ID URL scheme + project number. Operator-side setup:
+
+1. Download `GoogleService-Info.plist` from Firebase Console → Project Settings → General → Skeinly iOS app.
+2. Place locally at `iosApp/iosApp/GoogleService-Info.plist` (gitignored).
+3. Encode + register as GitHub Secret in the `production` Environment:
+   ```bash
+   base64 -i iosApp/iosApp/GoogleService-Info.plist | pbcopy
+   gh secret set IOS_GOOGLE_SERVICES_PLIST_BASE64 --env production --body "$(pbpaste)"
+   ```
+4. CI release workflow's iOS build step decodes the secret back to the plist path before invoking `xcodebuild`. The decode step is conditional on the secret being present — half-configured release degrades gracefully (iOS Google Sign-In returns Failure; Apple Sign-In + email/password unaffected).
+
+**Rotation**: only on Cloud Console iOS Client re-creation. Same procedure: re-download → re-encode → re-set secret.
+
 ## Bulk verification
 
 After registering all GitHub Secrets, confirm with `gh`:

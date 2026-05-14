@@ -76,4 +76,25 @@ interface AuthRepository {
         idToken: String,
         nonce: String,
     ): OAuthSignInOutcome
+
+    /**
+     * Phase 26.2 (ADR-022 §6.2) — verifies a Google ID token with
+     * Supabase via the `signInWith(IDToken) { provider = Google }`
+     * path. [idToken] is the JWT returned by Android's
+     * `androidx.credentials.CredentialManager` flow (via
+     * `GoogleIdTokenCredential.idToken`); [nonce] is optional — Google
+     * supports the same `nonce` claim binding as Apple (recommended
+     * for replay protection), but the Credential Manager flow can
+     * issue tokens without a nonce when no `setNonce(...)` is set on
+     * the `GetGoogleIdOption` builder.
+     *
+     * Returns [OAuthSignInOutcome] following the same contract as
+     * [signInWithApple] — `SessionCreated` on the happy path,
+     * `LinkIdentityRequired` when Supabase reports an existing
+     * account under the email.
+     */
+    suspend fun signInWithGoogle(
+        idToken: String,
+        nonce: String? = null,
+    ): OAuthSignInOutcome
 }

@@ -207,6 +207,11 @@ private class ControlledAuthRepository : AuthRepository {
         idToken: String,
         nonce: String,
     ): io.github.b150005.skeinly.domain.model.OAuthSignInOutcome = error("not used in bridge tests")
+
+    override suspend fun signInWithGoogle(
+        idToken: String,
+        nonce: String?,
+    ): io.github.b150005.skeinly.domain.model.OAuthSignInOutcome = error("not used in bridge tests")
 }
 
 private sealed interface BridgeCall {

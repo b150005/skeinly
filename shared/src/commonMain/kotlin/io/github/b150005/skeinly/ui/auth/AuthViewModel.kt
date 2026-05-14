@@ -2,6 +2,7 @@ package io.github.b150005.skeinly.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.b150005.skeinly.auth.OAuthIdTokenResult
 import io.github.b150005.skeinly.domain.model.AuthState
 import io.github.b150005.skeinly.domain.model.LinkIdentityChallenge
 import io.github.b150005.skeinly.domain.model.OAuthSignInOutcome
@@ -91,6 +92,16 @@ sealed interface AuthEvent {
      * OAuth attempt entirely.
      */
     data object DismissLinkIdentityPrompt : AuthEvent
+
+    /**
+     * Phase 26.2 (ADR-022 §6.2) — user tapped the Continue with Google
+     * button on LoginScreen. The ViewModel fires
+     * `OAuthClient.acquireGoogleIdToken()` (platform-specific
+     * Credential Manager flow on Android; Failure stub on iOS until
+     * Phase 26.3), then forwards the resulting ID token to
+     * `AuthRepository.signInWithGoogle(idToken, nonce)`.
+     */
+    data object SignInWithGoogle : AuthEvent
 }
 
 private data class FormState(
@@ -112,10 +123,21 @@ class AuthViewModel(
      * passed as a lambda-seam to keep the VM testable without
      * pulling the full repository surface (mirrors the
      * `BugReportPreviewViewModel.submit` precedent from Phase 39.5).
-     * Production wiring resolves an [AuthRepository] from Koin and
+     * Production wiring resolves an `AuthRepository` from Koin and
      * binds `authRepository::signInWithApple`.
      */
     private val signInWithApple: suspend (idToken: String, nonce: String) -> OAuthSignInOutcome,
+    /**
+     * Phase 26.2 (ADR-022 §6.2) — Google sign-in repository hook
+     * (same lambda-seam pattern as `signInWithApple` above).
+     */
+    private val signInWithGoogle: suspend (idToken: String, nonce: String?) -> OAuthSignInOutcome,
+    /**
+     * Phase 26.2 — platform-specific Google ID-token acquisition
+     * surface. The Android actual fires Credential Manager; the iOS
+     * actual returns Failure (iOS Google sign-in lands in Phase 26.3).
+     */
+    private val acquireGoogleIdToken: suspend () -> OAuthIdTokenResult,
 ) : ViewModel() {
     private val form = MutableStateFlow(FormState())
 
@@ -155,6 +177,7 @@ class AuthViewModel(
             is AuthEvent.SignInWithAppleIdToken -> handleAppleIdToken(event.idToken, event.nonce)
             AuthEvent.DismissLinkIdentityPrompt ->
                 form.update { it.copy(linkIdentityRequired = null) }
+            AuthEvent.SignInWithGoogle -> handleGoogleSignIn()
         }
     }
 
@@ -204,6 +227,76 @@ class AuthViewModel(
                         error = ErrorMessage.Generic,
                     )
                 }
+            }
+        }
+    }
+
+    /**
+     * Phase 26.2 (ADR-022 §6.2) — Google sign-in flow. Two steps:
+     *   1. `acquireGoogleIdToken()` → platform Credential Manager
+     *      (Android) or Failure stub (iOS, until 26.3) →
+     *      [OAuthIdTokenResult].
+     *   2. On Success, forward the ID token + optional nonce to
+     *      `signInWithGoogle(...)`. `UserCancelled` silently clears
+     *      the submitting flag (no banner — matches Apple cancel UX).
+     *      `Failure` surfaces a generic error.
+     */
+    private fun handleGoogleSignIn() {
+        val current = form.value
+        if (current.isSubmitting) return
+        viewModelScope.launch {
+            form.update { it.copy(isSubmitting = true, error = null) }
+            val acquisition =
+                try {
+                    acquireGoogleIdToken()
+                } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    OAuthIdTokenResult.Failure(message = e.message.orEmpty())
+                }
+            when (acquisition) {
+                is OAuthIdTokenResult.Success -> forwardGoogleIdToken(acquisition.idToken, acquisition.nonce)
+                OAuthIdTokenResult.UserCancelled ->
+                    form.update { it.copy(isSubmitting = false) }
+                is OAuthIdTokenResult.Failure ->
+                    form.update {
+                        it.copy(
+                            isSubmitting = false,
+                            error = ErrorMessage.Generic,
+                        )
+                    }
+            }
+        }
+    }
+
+    private suspend fun forwardGoogleIdToken(
+        idToken: String,
+        nonce: String?,
+    ) {
+        try {
+            when (val outcome = signInWithGoogle(idToken, nonce)) {
+                is OAuthSignInOutcome.SessionCreated ->
+                    form.update { it.copy(isSubmitting = false) }
+                is OAuthSignInOutcome.LinkIdentityRequired ->
+                    form.update {
+                        it.copy(
+                            isSubmitting = false,
+                            linkIdentityRequired =
+                                LinkIdentityChallenge(
+                                    email = outcome.email,
+                                    provider = outcome.provider,
+                                ),
+                        )
+                    }
+            }
+        } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+            throw e
+        } catch (_: Throwable) {
+            form.update {
+                it.copy(
+                    isSubmitting = false,
+                    error = ErrorMessage.Generic,
+                )
             }
         }
     }

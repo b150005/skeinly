@@ -11,6 +11,7 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.event.AuthEvent
 import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.auth.providers.Apple
+import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.status.RefreshFailureCause
@@ -164,6 +165,24 @@ class AuthRepositoryImpl(
     override suspend fun signInWithApple(
         idToken: String,
         nonce: String,
+    ): OAuthSignInOutcome = signInWithOAuthIdToken(idToken, nonce, OAuthProviderKind.Apple)
+
+    override suspend fun signInWithGoogle(
+        idToken: String,
+        nonce: String?,
+    ): OAuthSignInOutcome = signInWithOAuthIdToken(idToken, nonce, OAuthProviderKind.Google)
+
+    /**
+     * Phase 26.1 / 26.2 — shared IDToken path. The two OAuth provider
+     * methods diverge only in `IDTokenProvider` (Apple / Google) and
+     * the `LinkIdentityRequired.provider` field; everything else
+     * (error-code matching, email-claim extraction, generic-error
+     * bubbling) is identical.
+     */
+    private suspend fun signInWithOAuthIdToken(
+        idToken: String,
+        nonce: String?,
+        provider: OAuthProviderKind,
     ): OAuthSignInOutcome {
         val client =
             supabaseClient
@@ -172,7 +191,11 @@ class AuthRepositoryImpl(
         return try {
             client.auth.signInWith(IDToken) {
                 this.idToken = idToken
-                this.provider = Apple
+                this.provider =
+                    when (provider) {
+                        OAuthProviderKind.Apple -> Apple
+                        OAuthProviderKind.Google -> Google
+                    }
                 this.nonce = nonce
             }
             // Supabase emits the new session on the auth-state flow; the
@@ -202,7 +225,7 @@ class AuthRepositoryImpl(
             if (isUserExists) {
                 OAuthSignInOutcome.LinkIdentityRequired(
                     email = extractEmailFromIdToken(idToken).orEmpty(),
-                    provider = OAuthProviderKind.Apple,
+                    provider = provider,
                 )
             } else {
                 throw e

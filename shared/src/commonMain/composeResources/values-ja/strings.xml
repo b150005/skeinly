@@ -225,8 +225,9 @@
     <string name="body_email_confirmation_check_existing_account">それでも届かない場合は、すでにアカウントをお持ちの可能性があります。サインインをお試しください。</string>
     <string name="action_return_to_sign_in">ログイン画面に戻る</string>
 
-    <!-- Phase 26.1 (ADR-022 §6.1) — Apple Sign-In UI copy -->
+    <!-- Phase 26.1 / 26.2 (ADR-022 §6.1, §6.2) — OAuth Sign-In UI copy -->
     <string name="action_sign_in_with_apple">Appleでサインイン</string>
+    <string name="action_sign_in_with_google">Googleでサインイン</string>
     <string name="label_or_sign_in_with_email">またはメールでサインイン</string>
     <string name="body_email_already_used_oauth_link_prompt">%1$s のアカウントは既に存在します。パスワードでサインインしてから、設定画面で Apple アカウントを連携してください。</string>
 
