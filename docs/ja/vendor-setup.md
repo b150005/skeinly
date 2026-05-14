@@ -452,7 +452,7 @@ Sign in with the credentials above (Supabase email+password auth, no 2FA). Demo 
 |---|---|---|
 | **ダウンロード済みアプリ** (APK / AAB バンドル内の静的コンテンツ) | **いいえ** | バンドル = JIS 編み図シンボル 70 個 + UI 文字列 + アプリアイコンのみ。性 / 暴力 / 言葉 / 薬物 / ギャンブル / 恐怖 / 下品なユーモア / 規制物質 のいずれにも該当しない。**はい** にすると 10+ のサブ質問 (暴力 / 血液 / 流血 / 恐怖 / 性的 / ギャンブル / 言葉 / 規制物質 / 下品なユーモア etc.) が展開され、すべて「いいえ」で答えても結果は同じ。ゲートで **いいえ** を選ぶのが短く安全な path。 |
 | **ユーザー コンテンツの共有** | **はい** | パターン / コメント / 提案 (Suggestion) を Discovery / project feed で共有。8 つのサブ質問が展開 — 下表の matrix で回答。 |
-| **オンライン コンテンツ** | **いいえ** | チャット / live メッセージ / ストリーミングなし。Discovery feed は UGC で前ゲートが既にカバー済。 |
+| **オンライン コンテンツ** | **はい** | Skeinly のシンボルパックは server-delivered の curated コンテンツ (UGC でも bundled でもない): Phase 41 dynamic symbol pack インフラ (`symbol_packs` + `symbol_pack_locales` Supabase テーブル + RPC 配信) が無料パック (`jis.knit.beginner` / `jis.crochet.beginner`) を runtime で配信し、Pro パック (Skeinly team 著作、Pro entitlement gated) も post-alpha で順次追加予定。IARC の三分類 (bundled / UGC / online-curated) でこれに該当。サブ質問はすべて安全に解決 — シンボルパックは編み記号のみで暴力 / 性 / 言葉 / 薬物 / ギャンブル等の rating-relevant content なし、Skeinly team が著作するため fully moderated。(Discovery feed も server-delivered だが UGC 分類で前ゲートが既にカバー済。) |
 | **年齢制限が適用される製品または活動の宣伝または販売** | **いいえ** | 広告なし。アルコール / タバコ / 武器 / 宝くじ等の販売・宣伝なし。IAP サブスクリプション自体は年齢制限対象外。 |
 | **その他** | **いいえ** | 該当なし。 |
 
