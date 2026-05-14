@@ -507,10 +507,20 @@ Sign in with the credentials above (Supabase email+password auth, no 2FA). Demo 
 |---|---|
 | アプリは対象になる種類のユーザーデータを収集または共有しますか? | **はい** |
 | アプリで収集するユーザーデータはすべて、転送時に暗号化されますか? | **はい** (HTTPS / TLS — Supabase / RevenueCat / GitHub / APNs / FCM すべて) |
-| アプリが対応しているアカウントの作成方法 (該当をすべて) | **「ユーザー名とパスワード」のみ** チェック (Skeinly = Supabase Auth の email + password)。OAuth / MFA / その他は持たないので **チェックしない**。 |
+| アプリが対応しているアカウントの作成方法 (該当をすべて) | **Phase 26 (OAuth Sign-In) の実装状態に依存** — 下表参照 |
 | ユーザーによるアカウントの作成をアプリで許可していない | **チェックしない** (sign-up は可能) |
 | アカウント削除用 URL | `https://b150005.github.io/skeinly/account-deletion/` |
 | アカウントの削除を必要とすることなく、一部またはすべてのデータの削除をリクエストする方法をユーザーに提供していますか? (任意) | **いいえ** — Skeinly は account-level deletion のみ (atomic `delete_own_account` RPC)、部分削除は提供しない。90 日自動削除でもない |
+
+**アカウント作成方法の選択 (Phase 26 の状態別)**:
+
+| Phase 26 の状態 | チェックする項目 |
+|---|---|
+| **Pre-Phase-26** (現状 — email/password のみ) | **「ユーザー名とパスワード」のみ** |
+| **Post-Phase-26** (Apple Sign-In + Google Sign-In shipped — alpha-launch HARD-GATE) | **「ユーザー名とパスワード」** + **「OAuth」** |
+| 任意の Phase 26 サブスライスで MFA / 生体認証も実装した場合 | **「ユーザー名、パスワード、その他の認証」** も追加 |
+
+Phase 26 は alpha-launch HARD-GATE (上記 Planned セクション参照)。提出時、ビルドに実際 shipped されている内容に合わせて本セクションの選択を更新する。
 
 「**その他のバッジ**」セクション (任意):
 - **独自のセキュリティ審査**: チェックしない (3rd-party security audit 未実施)
