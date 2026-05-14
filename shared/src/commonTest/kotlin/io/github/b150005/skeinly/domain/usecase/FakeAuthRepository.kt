@@ -1,6 +1,7 @@
 package io.github.b150005.skeinly.domain.usecase
 
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.OAuthSignInOutcome
 import io.github.b150005.skeinly.domain.model.SignUpOutcome
 import io.github.b150005.skeinly.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
@@ -15,6 +16,17 @@ class FakeAuthRepository : AuthRepository {
     var sendPasswordResetError: Throwable? = null
     var updatePasswordError: Throwable? = null
     var updateEmailError: Throwable? = null
+    var signInWithAppleError: Throwable? = null
+
+    /**
+     * Phase 26.1 — when non-null, the next [signInWithApple] call returns
+     * this outcome instead of [OAuthSignInOutcome.SessionCreated]. Tests
+     * override per-case to model the LinkIdentityRequired path.
+     */
+    var signInWithAppleOutcome: OAuthSignInOutcome? = null
+
+    var lastAppleIdToken: String? = null
+    var lastAppleNonce: String? = null
 
     /**
      * Determines whether the next `signUpWithEmail` call returns
@@ -101,6 +113,21 @@ class FakeAuthRepository : AuthRepository {
     override suspend fun updateEmail(newEmail: String) {
         updateEmailError?.let { throw it }
         lastUpdatedEmail = newEmail
+    }
+
+    override suspend fun signInWithApple(
+        idToken: String,
+        nonce: String,
+    ): OAuthSignInOutcome {
+        lastAppleIdToken = idToken
+        lastAppleNonce = nonce
+        signInWithAppleError?.let { throw it }
+        val override = signInWithAppleOutcome
+        if (override != null) return override
+        currentUserId = "apple-user-id"
+        authStateFlow.value =
+            AuthState.Authenticated(userId = "apple-user-id", email = "apple@example.com")
+        return OAuthSignInOutcome.SessionCreated
     }
 
     fun setAuthState(state: AuthState) {

@@ -1,6 +1,8 @@
 package io.github.b150005.skeinly.test
 
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.OAuthSignInOutcome
+import io.github.b150005.skeinly.domain.model.SignUpOutcome
 import io.github.b150005.skeinly.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,17 +22,43 @@ class FakeAuthRepository : AuthRepository {
     override suspend fun signUpWithEmail(
         email: String,
         password: String,
-    ) {
+    ): SignUpOutcome {
         authState.value = AuthState.Authenticated(userId = "test-user", email = email)
+        return SignUpOutcome.SessionCreated
     }
 
     override suspend fun signOut() {
         authState.value = AuthState.Unauthenticated
     }
 
+    override suspend fun deleteAccount() {
+        authState.value = AuthState.Unauthenticated
+    }
+
     override fun getCurrentUserId(): String? {
         val state = authState.value
         return if (state is AuthState.Authenticated) state.userId else null
+    }
+
+    override suspend fun sendPasswordResetEmail(email: String) {
+        // no-op for instrumentation tests
+    }
+
+    override suspend fun updatePassword(newPassword: String) {
+        // no-op for instrumentation tests
+    }
+
+    override suspend fun updateEmail(newEmail: String) {
+        // no-op for instrumentation tests
+    }
+
+    override suspend fun signInWithApple(
+        idToken: String,
+        nonce: String,
+    ): OAuthSignInOutcome {
+        authState.value =
+            AuthState.Authenticated(userId = "apple-test-user", email = "apple@example.com")
+        return OAuthSignInOutcome.SessionCreated
     }
 
     fun setAuthState(state: AuthState) {

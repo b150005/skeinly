@@ -1,13 +1,18 @@
 package io.github.b150005.skeinly.data.repository
 
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.OAuthProviderKind
+import io.github.b150005.skeinly.domain.model.OAuthSignInOutcome
 import io.github.b150005.skeinly.domain.model.SignUpOutcome
 import io.github.b150005.skeinly.domain.repository.AuthRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.annotations.SupabaseExperimental
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.event.AuthEvent
+import io.github.jan.supabase.auth.exception.AuthRestException
+import io.github.jan.supabase.auth.providers.Apple
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.status.RefreshFailureCause
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.postgrest.postgrest
@@ -155,4 +160,126 @@ class AuthRepositoryImpl(
 
         client.auth.updateUser { email = newEmail }
     }
+
+    override suspend fun signInWithApple(
+        idToken: String,
+        nonce: String,
+    ): OAuthSignInOutcome {
+        val client =
+            supabaseClient
+                ?: throw IllegalStateException("Supabase is not configured")
+
+        return try {
+            client.auth.signInWith(IDToken) {
+                this.idToken = idToken
+                this.provider = Apple
+                this.nonce = nonce
+            }
+            // Supabase emits the new session on the auth-state flow; the
+            // UI clears its submitting flag and the root navigator routes
+            // away from LoginScreen on the Authenticated transition.
+            OAuthSignInOutcome.SessionCreated
+        } catch (e: AuthRestException) {
+            // Supabase rejects when the OAuth identity's email already
+            // exists in auth.users under a different sign-in method.
+            // Error codes vary across supabase-kt versions: 3.x typically
+            // surfaces `user_already_exists`, but `email_exists` and
+            // `identity_already_exists` have been observed across the
+            // 3.x patch line. Match defensively across the family — and
+            // fall back on the human-readable message for forward-compat
+            // when supabase-kt renames a code without a corresponding
+            // SDK release.
+            val code =
+                e.errorCode
+                    ?.value
+                    .orEmpty()
+                    .lowercase()
+            val msg = e.message.orEmpty().lowercase()
+            val isUserExists =
+                code in USER_EXISTS_CODES ||
+                    msg.contains("already exists") ||
+                    msg.contains("already registered")
+            if (isUserExists) {
+                OAuthSignInOutcome.LinkIdentityRequired(
+                    email = extractEmailFromIdToken(idToken).orEmpty(),
+                    provider = OAuthProviderKind.Apple,
+                )
+            } else {
+                throw e
+            }
+        }
+    }
+
+    private companion object {
+        /**
+         * Supabase error-code aliases recognized as the "email already
+         * registered under a different auth method" path. Centralized
+         * so Phase 26.2 (Google sign-in) shares the same set.
+         */
+        val USER_EXISTS_CODES: Set<String> =
+            setOf(
+                "user_already_exists",
+                "email_exists",
+                "identity_already_exists",
+            )
+    }
+}
+
+/**
+ * Phase 26.1 — best-effort `email` claim extraction from an Apple-issued
+ * ID token. Used solely to populate
+ * [OAuthSignInOutcome.LinkIdentityRequired.email] when Supabase rejects
+ * with the "user already exists" path; we want to show the user the
+ * exact address that conflicts so they pick the right sign-in method.
+ *
+ * Apple omits `email` after the first sign-in (privacy by default) AND
+ * may return a `private_relay` address (random-string@privaterelay.appleid.com);
+ * we surface whatever Apple included without further processing. Returns
+ * null on any decoding failure — the UI then shows a generic "this
+ * email" prompt without the address rather than fail the whole flow.
+ *
+ * Defensive: this is NOT a JWT verifier — Supabase already verifies
+ * server-side. The function only parses the payload as Base64URL+JSON
+ * for display purposes.
+ */
+internal fun extractEmailFromIdToken(idToken: String): String? {
+    val parts = idToken.split('.')
+    if (parts.size < 2) return null
+    val payload =
+        try {
+            base64UrlDecodeToString(parts[1])
+        } catch (_: Throwable) {
+            return null
+        }
+    // Defensive substring parse to avoid a kotlinx.serialization
+    // dependency surface here; the JWT body shape is well-known.
+    val key = "\"email\""
+    val keyIdx = payload.indexOf(key)
+    if (keyIdx < 0) return null
+    val colonIdx = payload.indexOf(':', startIndex = keyIdx + key.length)
+    if (colonIdx < 0) return null
+    val firstQuote = payload.indexOf('"', startIndex = colonIdx + 1)
+    if (firstQuote < 0) return null
+    val secondQuote = payload.indexOf('"', startIndex = firstQuote + 1)
+    if (secondQuote < 0) return null
+    return payload.substring(firstQuote + 1, secondQuote).takeIf { it.isNotBlank() }
+}
+
+@OptIn(kotlin.io.encoding.ExperimentalEncodingApi::class)
+private fun base64UrlDecodeToString(b64Url: String): String {
+    // Base64URL → Base64 (standard) + padding restoration
+    val standard =
+        b64Url
+            .replace('-', '+')
+            .replace('_', '/')
+    val padded =
+        when (standard.length % 4) {
+            2 -> "$standard=="
+            3 -> "$standard="
+            else -> standard
+        }
+    val bytes =
+        kotlin.io.encoding.Base64
+            .decode(padded)
+    return bytes.decodeToString()
 }

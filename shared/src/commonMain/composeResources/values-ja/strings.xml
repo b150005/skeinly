@@ -215,8 +215,8 @@
     <string name="action_sign_up">登録</string>
     <string name="action_toggle_to_sign_in">すでにアカウントをお持ちですか？サインイン</string>
     <string name="action_toggle_to_sign_up">アカウントをお持ちでない方？登録</string>
-    <string name="action_continue_with_google">Googleで続ける（近日公開）</string>
-    <string name="action_continue_with_apple">Appleで続ける（近日公開）</string>
+    <string name="action_continue_with_google">Googleで続ける</string>
+    <string name="action_continue_with_apple">Appleで続ける</string>
     <!-- Supabase の Confirm-email が ON のとき、サインアップ成功後に表示する画面 -->
     <string name="title_email_confirmation_sent">メールを確認してください</string>
     <string name="body_email_confirmation_sent">確認リンクを %1$s に送信しました。メール内のリンクをクリックしてサインインを完了してください。</string>
@@ -224,6 +224,11 @@
     <!-- 既にアカウントを持っているメールアドレスでサインアップを試みた user の path-to-resolution を示すヒント。Supabase の security-by-obscurity を維持するため「可能性」表現で条件付き提示 -->
     <string name="body_email_confirmation_check_existing_account">それでも届かない場合は、すでにアカウントをお持ちの可能性があります。サインインをお試しください。</string>
     <string name="action_return_to_sign_in">ログイン画面に戻る</string>
+
+    <!-- Phase 26.1 (ADR-022 §6.1) — Apple Sign-In UI copy -->
+    <string name="action_sign_in_with_apple">Appleでサインイン</string>
+    <string name="label_or_sign_in_with_email">またはメールでサインイン</string>
+    <string name="body_email_already_used_oauth_link_prompt">%1$s のアカウントは既に存在します。パスワードでサインインしてから、設定画面で Apple アカウントを連携してください。</string>
 
     <!-- Profile screen -->
     <string name="title_profile">プロフィール</string>

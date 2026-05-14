@@ -228,8 +228,11 @@
     <string name="action_sign_up">Sign Up</string>
     <string name="action_toggle_to_sign_in">Already have an account? Sign In</string>
     <string name="action_toggle_to_sign_up">Don\'t have an account? Sign Up</string>
-    <string name="action_continue_with_google">Continue with Google (Coming soon)</string>
-    <string name="action_continue_with_apple">Continue with Apple (Coming soon)</string>
+    <string name="action_continue_with_google">Continue with Google</string>
+    <string name="action_continue_with_apple">Continue with Apple</string>
+    <string name="action_sign_in_with_apple">Sign in with Apple</string>
+    <string name="label_or_sign_in_with_email">or sign in with email</string>
+    <string name="body_email_already_used_oauth_link_prompt">An account with %1$s already exists. Sign in with your password, then link Apple from Settings.</string>
     <!-- Email-confirmation state shown after sign-up succeeds while Supabase has Confirm-email enabled. -->
     <string name="title_email_confirmation_sent">Check your email</string>
     <string name="body_email_confirmation_sent">We sent a confirmation link to %1$s. Click the link to complete sign-in.</string>

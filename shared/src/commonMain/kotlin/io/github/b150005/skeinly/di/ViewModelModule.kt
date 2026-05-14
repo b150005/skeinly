@@ -60,7 +60,19 @@ val viewModelModule =
                 includeBetaConsent = BuildFlags.isBeta,
             )
         }
-        viewModelOf(::AuthViewModel)
+        viewModel {
+            // Phase 26.1 (ADR-022 §6.1) — bind AuthRepository.signInWithApple
+            // as a lambda-seam so AuthViewModel stays testable without
+            // pulling the full repository surface (mirrors the
+            // BugReportPreviewViewModel.submit precedent from Phase 39.5).
+            val authRepository: io.github.b150005.skeinly.domain.repository.AuthRepository = get()
+            AuthViewModel(
+                observeAuthState = get(),
+                signIn = get(),
+                signUp = get(),
+                signInWithApple = authRepository::signInWithApple,
+            )
+        }
         viewModelOf(::ForgotPasswordViewModel)
         viewModelOf(::ProfileViewModel)
         // Phase 39.4 — `eventRingBuffer` ctor param threaded so a

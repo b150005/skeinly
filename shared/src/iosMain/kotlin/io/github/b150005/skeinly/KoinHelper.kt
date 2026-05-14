@@ -70,6 +70,49 @@ fun isOnboardingCompleted(): Boolean {
 
 fun getAuthViewModel(): AuthViewModel = KoinPlatform.getKoin().get()
 
+/**
+ * Phase 26.1 (ADR-022 §6.1) — bridges the SwiftUI `SignInWithAppleButton`
+ * completion handler into the shared [AuthViewModel].
+ *
+ * SwiftUI call sites:
+ *
+ * ```swift
+ * SignInWithAppleButton(.signIn,
+ *     onRequest: { request in
+ *         request.requestedScopes = [.fullName, .email]
+ *         request.nonce = AppleSignInBridge.shared.beginRequest().sha256
+ *     },
+ *     onCompletion: { result in
+ *         AppleSignInBridge.shared.handleCompletion(result) { idToken, nonce in
+ *             KoinHelperKt.signInWithAppleIdToken(idToken: idToken, nonce: nonce)
+ *         }
+ *     }
+ * )
+ * ```
+ *
+ * The [nonce] argument MUST be the plaintext value (NOT the SHA-256
+ * digest sent in the request) — Apple includes the SHA-256 of the
+ * plaintext in the ID token's `nonce` claim, and Supabase verifies the
+ * match server-side. Sending the digest here would cause Supabase to
+ * reject with `nonce_mismatch`.
+ *
+ * Idempotent / safe to call from the main thread — the shared
+ * AuthViewModel runs its work on `viewModelScope`, so this just
+ * publishes an event.
+ */
+fun signInWithAppleIdToken(
+    idToken: String,
+    nonce: String,
+) {
+    val viewModel: AuthViewModel = KoinPlatform.getKoin().get()
+    viewModel.onEvent(
+        io.github.b150005.skeinly.ui.auth.AuthEvent.SignInWithAppleIdToken(
+            idToken = idToken,
+            nonce = nonce,
+        ),
+    )
+}
+
 fun getProjectListViewModel(): ProjectListViewModel = KoinPlatform.getKoin().get()
 
 fun getProjectDetailViewModel(projectId: String): ProjectDetailViewModel = KoinPlatform.getKoin().get { parametersOf(projectId) }

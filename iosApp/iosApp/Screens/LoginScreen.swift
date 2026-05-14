@@ -1,3 +1,4 @@
+import AuthenticationServices
 import SwiftUI
 import Shared
 
@@ -5,10 +6,23 @@ struct LoginScreen: View {
     @StateObject private var holder: ScopedViewModel<AuthViewModel, AuthUiState>
     @State private var showError = false
     @State private var showForgotPassword = false
+    /// Phase 26.1 — surfaced via `state.linkIdentityRequired` after the
+    /// repository returns `OAuthSignInOutcome.LinkIdentityRequired`.
+    @State private var showLinkIdentityPrompt = false
 
     init(viewModel: AuthViewModel) {
         let wrapper = KoinHelperKt.wrapAuthState(flow: viewModel.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: viewModel, wrapper: wrapper))
+    }
+
+    // Phase 26.1 — current build's Apple Sign-In button style. `.signIn`
+    // for both sign-in and sign-up modes; Apple's HIG treats this as a
+    // single capability rather than two distinct affordances.
+    private var appleButtonStyle: SignInWithAppleButton.Style {
+        // Default to dark style — sits well on both light and dark
+        // app surfaces and matches Apple HIG guidance "use the style
+        // that contrasts with your sign-in surface".
+        return .black
     }
 
     var body: some View {
@@ -49,6 +63,47 @@ struct LoginScreen: View {
             }
 
             Spacer()
+
+            // Phase 26.1 (ADR-022 §6.1) — Apple Sign-In primary CTA.
+            // Placed ABOVE the email/password form per Apple HIG §"Sign
+            // in with Apple": the OAuth path SHOULD be visually
+            // prominent when both are offered. The email/password
+            // surface stays below as a secondary path.
+            SignInWithAppleButton(
+                .signIn,
+                onRequest: { request in
+                    request.requestedScopes = [.fullName, .email]
+                    let nonces = AppleSignInBridge.shared.beginRequest()
+                    request.nonce = nonces.sha256Digest
+                },
+                onCompletion: { result in
+                    AppleSignInBridge.shared.handleCompletion(result) { idToken, nonce in
+                        KoinHelperKt.signInWithAppleIdToken(idToken: idToken, nonce: nonce)
+                    }
+                }
+            )
+            .signInWithAppleButtonStyle(appleButtonStyle)
+            .frame(height: 48)
+            .padding(.horizontal)
+            .disabled(state.isSubmitting)
+            .accessibilityIdentifier("signInWithAppleButton")
+
+            // "or sign in with email" divider — visually separates the
+            // primary Apple Sign-In path from the email/password
+            // secondary fallback below.
+            HStack(spacing: 8) {
+                Rectangle()
+                    .fill(Color.secondary.opacity(0.3))
+                    .frame(height: 1)
+                Text(LocalizedStringKey("label_or_sign_in_with_email"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .layoutPriority(1)
+                Rectangle()
+                    .fill(Color.secondary.opacity(0.3))
+                    .frame(height: 1)
+            }
+            .padding(.horizontal)
 
             // Form fields
             VStack(spacing: 16) {
@@ -115,12 +170,35 @@ struct LoginScreen: View {
         .onChange(of: state.error != nil) { _, hasError in
             showError = hasError
         }
+        .onChange(of: state.linkIdentityRequired != nil) { _, hasChallenge in
+            showLinkIdentityPrompt = hasChallenge
+        }
         .alert(LocalizedStringKey("title_error"), isPresented: $showError) {
             Button("action_ok") {
                 viewModel.onEvent(event: AuthEventClearError.shared)
             }
         } message: {
             Text(state.error?.localizedString ?? "")
+        }
+        .alert(
+            LocalizedStringKey("title_email_confirmation_sent"),
+            isPresented: $showLinkIdentityPrompt
+        ) {
+            Button("action_ok") {
+                viewModel.onEvent(event: AuthEventDismissLinkIdentityPrompt.shared)
+            }
+        } message: {
+            // The challenge carries the email Supabase reported as
+            // already-registered. Display it in the prompt body so the
+            // user can identify which credentials to retry with.
+            let challenge = state.linkIdentityRequired
+            let email = challenge?.email ?? ""
+            Text(
+                String(
+                    format: NSLocalizedString("body_email_already_used_oauth_link_prompt", comment: ""),
+                    email
+                )
+            )
         }
         .sheet(isPresented: $showForgotPassword) {
             NavigationStack {

@@ -1059,6 +1059,62 @@ Expect HTTP 200 with `{"ok":true,"issue_number":<n>,"html_url":"..."}`. Visit th
 
 Reference: [GitHub Apps documentation](https://docs.github.com/en/apps/creating-github-apps)
 
+## Apple Sign-In (Phase 26.1 — Supabase Dashboard provider config)
+
+> **Slot type**: Supabase Dashboard configuration (NOT GitHub Secret, NOT Supabase Edge Function Secret). The values below are configured in **Supabase Dashboard → Authentication → Providers → Apple**. The app binary contains no Apple-Sign-In credentials — Supabase Auth performs all server-side ID-token verification using these values.
+
+Phase 26.1 ships iOS Apple Sign-In via SwiftUI `SignInWithAppleButton` + Supabase Auth `signInWith(IDToken) { provider = Apple }`. Three Apple-side artifacts are registered with Supabase to enable server-side JWT verification:
+
+| Slot name (documentation key) | What it is | Source | Rotation cadence |
+|---|---|---|---|
+| `APPLE_SIGNIN_KEY_P8` | ECDSA P-256 private key (`.p8` file) used by Supabase to sign the client_secret JWT it sends to Apple's token endpoint. Same `.p8` per project for the lifetime of the Apple Developer "Sign in with Apple" Key registration (typically 1+ year). | Apple Developer Portal → Keys → "Sign in with Apple" Key | Generate new `.p8` only on revocation / loss. Survives across rotations of the JWT below. |
+| `APPLE_SIGNIN_KEY_ID` | 10-character Key ID printed alongside the `.p8` download. Becomes the `kid` JWT header claim. | Apple Developer Portal → Keys → key record | Stable; rotates only when `.p8` rotates. |
+| `APPLE_SIGNIN_SERVICES_ID` | Reverse-DNS Services ID (e.g. `io.github.b150005.skeinly.signin`) configured under the App ID. Becomes the `aud` field of the client_secret JWT. | Apple Developer Portal → Identifiers → Services IDs | Stable. |
+
+**Client_secret JWT — 6-month hard rotation**: Supabase signs a client_secret JWT (NOT the values above — the **JWT itself**) and stores it in the dashboard's "Secret Key" field. Apple's spec caps the JWT lifetime at **6 months**. Operator MUST regenerate and paste a fresh JWT every 6 months or sign-in begins failing with `invalid_client` at the Apple token endpoint. See the [Rotation and revocation](#rotation-and-revocation) section for the exact regeneration procedure.
+
+### Setup procedure (one-time)
+
+1. **Apple Developer Portal — enable Sign in with Apple capability on the App ID**:
+   - Identifiers → App IDs → `io.github.b150005.skeinly` → Capabilities → check "Sign In with Apple" → Save → Re-Generate the Distribution Provisioning Profile.
+2. **Create Services ID** (required for Supabase server-side verification, distinct from the iOS app's Bundle ID):
+   - Identifiers → Services IDs → `+` → Description "Skeinly Sign In with Apple" → Identifier `io.github.b150005.skeinly.signin` (or whatever value will become `APPLE_SIGNIN_SERVICES_ID`).
+   - Check "Sign In with Apple" → Configure → primary App ID = `io.github.b150005.skeinly`, Return URLs = `https://<your-project-ref>.supabase.co/auth/v1/callback` (Supabase project URL + `/auth/v1/callback`).
+3. **Create "Sign in with Apple" Key**:
+   - Keys → `+` → Key Name "Skeinly Sign In with Apple Key" → check "Sign In with Apple" → Configure → primary App ID = `io.github.b150005.skeinly` → Save → **Download the `.p8` file** (downloadable exactly once — save securely).
+   - Note the **Key ID** displayed on the key detail page (10 chars).
+4. **Generate Supabase client_secret JWT** (the 6-month-expiring artifact):
+   - Open the [Supabase docs in-browser JWT generator](https://supabase.com/docs/guides/auth/social-login/auth-apple#generate-the-client_secret) (uses Web Crypto, never leaves the browser).
+   - Paste: Team ID (from `APPLE_TEAM_ID`), Key ID (`APPLE_SIGNIN_KEY_ID`), Services ID (`APPLE_SIGNIN_SERVICES_ID`), and the `.p8` file content.
+   - Copy the generated JWT.
+5. **Supabase Dashboard → Authentication → Providers → Apple**:
+   - Toggle Enable.
+   - Client IDs (comma-separated): `io.github.b150005.skeinly,io.github.b150005.skeinly.signin` (Bundle ID for the iOS app, Services ID for web/Supabase server-side verification).
+   - Secret Key (for OAuth): paste the JWT from step 4.
+   - Save.
+6. **Add iOS entitlement** (already committed in `iosApp/iosApp/iosApp.entitlements`):
+   - `com.apple.developer.applesignin = ["Default"]`.
+
+### Rotation procedure (every 6 months)
+
+```bash
+# 1. Open the Supabase JWT generator
+open "https://supabase.com/docs/guides/auth/social-login/auth-apple#generate-the-client_secret"
+
+# 2. Paste Team ID + Key ID + Services ID + .p8 contents → copy the new JWT
+
+# 3. Supabase Dashboard → Authentication → Providers → Apple → Secret Key (for OAuth) → replace with new JWT → Save
+
+# 4. Smoke test from a TestFlight build:
+#    - Sign out
+#    - Tap "Sign in with Apple"
+#    - Confirm a session lands on the Authenticated branch
+```
+
+Set a calendar reminder for **5 months and 25 days** after the most recent JWT generation so a fresh JWT is ready before expiry. The `.p8` itself does NOT rotate — only the JWT signed from it.
+
+Failure mode if missed: `signInWithApple` returns a server-side error visible in Supabase logs as `invalid_client` from Apple's token endpoint. Users see a generic error banner on LoginScreen.
+
 ## Bulk verification
 
 After registering all GitHub Secrets, confirm with `gh`:

@@ -3,6 +3,8 @@ package io.github.b150005.skeinly.ui.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.LinkIdentityChallenge
+import io.github.b150005.skeinly.domain.model.OAuthSignInOutcome
 import io.github.b150005.skeinly.domain.model.SignUpOutcome
 import io.github.b150005.skeinly.domain.usecase.ErrorMessage
 import io.github.b150005.skeinly.domain.usecase.ObserveAuthStateUseCase
@@ -33,6 +35,17 @@ data class AuthUiState(
      * sign-in form via [AuthEvent.DismissEmailConfirmation].
      */
     val emailConfirmationSentTo: String? = null,
+    /**
+     * Phase 26.1 (ADR-022 §6.1) — non-null while the login screen is in
+     * the "this email already has an account — sign in with your
+     * password first" prompt state, after an OAuth sign-in (Apple in
+     * 26.1, Google in 26.2) returned [OAuthSignInOutcome.LinkIdentityRequired].
+     * Surfaced as a separate transient UI state rather than as an
+     * [AuthState] variant so the underlying session-status semantics
+     * stay clean (Supabase still considers the user Unauthenticated
+     * during the challenge).
+     */
+    val linkIdentityRequired: LinkIdentityChallenge? = null,
 )
 
 sealed interface AuthEvent {
@@ -57,6 +70,27 @@ sealed interface AuthEvent {
      * "ログイン画面に戻る" CTA on the post-sign-up screen.
      */
     data object DismissEmailConfirmation : AuthEvent
+
+    /**
+     * Phase 26.1 (ADR-022 §6.1) — incoming Apple ID token from the
+     * SwiftUI `SignInWithAppleButton` completion handler, surfaced
+     * through the Koin-resolved `KoinHelperKt.handleAppleIdToken(...)`
+     * bridge. The ViewModel forwards to the repository and routes the
+     * outcome (SessionCreated → clear submit; LinkIdentityRequired →
+     * surface the link-identity prompt; exception → form.error).
+     */
+    data class SignInWithAppleIdToken(
+        val idToken: String,
+        val nonce: String,
+    ) : AuthEvent
+
+    /**
+     * Phase 26.1 — user-initiated dismissal of the
+     * [AuthUiState.linkIdentityRequired] prompt. Used when the user
+     * decides to retry with a different provider, or to abandon the
+     * OAuth attempt entirely.
+     */
+    data object DismissLinkIdentityPrompt : AuthEvent
 }
 
 private data class FormState(
@@ -66,12 +100,22 @@ private data class FormState(
     val isSubmitting: Boolean = false,
     val error: ErrorMessage? = null,
     val emailConfirmationSentTo: String? = null,
+    val linkIdentityRequired: LinkIdentityChallenge? = null,
 )
 
 class AuthViewModel(
     private val observeAuthState: ObserveAuthStateUseCase,
     private val signIn: SignInUseCase,
     private val signUp: SignUpUseCase,
+    /**
+     * Phase 26.1 (ADR-022 §6.1) — Apple sign-in repository hook,
+     * passed as a lambda-seam to keep the VM testable without
+     * pulling the full repository surface (mirrors the
+     * `BugReportPreviewViewModel.submit` precedent from Phase 39.5).
+     * Production wiring resolves an [AuthRepository] from Koin and
+     * binds `authRepository::signInWithApple`.
+     */
+    private val signInWithApple: suspend (idToken: String, nonce: String) -> OAuthSignInOutcome,
 ) : ViewModel() {
     private val form = MutableStateFlow(FormState())
 
@@ -85,6 +129,7 @@ class AuthViewModel(
                 isSubmitting = formState.isSubmitting,
                 error = formState.error,
                 emailConfirmationSentTo = formState.emailConfirmationSentTo,
+                linkIdentityRequired = formState.linkIdentityRequired,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -107,6 +152,59 @@ class AuthViewModel(
                         password = "",
                     )
                 }
+            is AuthEvent.SignInWithAppleIdToken -> handleAppleIdToken(event.idToken, event.nonce)
+            AuthEvent.DismissLinkIdentityPrompt ->
+                form.update { it.copy(linkIdentityRequired = null) }
+        }
+    }
+
+    /**
+     * Phase 26.1 (ADR-022 §6.1) — forwards an Apple-issued ID token
+     * through the repository, then maps the outcome onto form state.
+     * Re-entrant guard via [FormState.isSubmitting] mirrors the email
+     * path so a double-tap on SignInWithAppleButton cannot fire twice.
+     */
+    private fun handleAppleIdToken(
+        idToken: String,
+        nonce: String,
+    ) {
+        val current = form.value
+        if (current.isSubmitting) return
+        viewModelScope.launch {
+            form.update { it.copy(isSubmitting = true, error = null) }
+            try {
+                when (val outcome = signInWithApple(idToken, nonce)) {
+                    is OAuthSignInOutcome.SessionCreated ->
+                        form.update { it.copy(isSubmitting = false) }
+                    is OAuthSignInOutcome.LinkIdentityRequired ->
+                        form.update {
+                            it.copy(
+                                isSubmitting = false,
+                                linkIdentityRequired =
+                                    LinkIdentityChallenge(
+                                        email = outcome.email,
+                                        provider = outcome.provider,
+                                    ),
+                            )
+                        }
+                }
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
+            } catch (_: Throwable) {
+                // Map any server-side / network failure to the generic
+                // bucket — the email/password path already maps known
+                // Supabase auth-error codes via `toErrorMessage()`, but
+                // the IDToken path surfaces a narrower set (token
+                // verification + nonce mismatch) that doesn't have
+                // user-facing-distinct copy in 26.1. Phase 26+ can
+                // refine if testers report ambiguous error UX.
+                form.update {
+                    it.copy(
+                        isSubmitting = false,
+                        error = ErrorMessage.Generic,
+                    )
+                }
+            }
         }
     }
 
