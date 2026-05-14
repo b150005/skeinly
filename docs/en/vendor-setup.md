@@ -579,8 +579,36 @@ Total expected checks: **11 across 14 categories** (post-Phase-28 becomes 12 wit
 
 #### Page 4: データの使用と処理
 
-- Data sharing: **No** for all (Sentry / PostHog / RevenueCat / GitHub are service providers, not "sharing" per Play's definition)
-- Security practices: encryption in transit **Yes**, users can request deletion **Yes** (in-app + web), independent verification **No**, Families Policy **No**
+For each of the 11 checked data types from Page 3, Play opens a per-type form asking:
+1. **収集 / 共有** — pick collection-only vs sharing-with-3rd-party (or both)
+2. **一時的処理か** — はい (RAM-only, never persisted) / いいえ (persisted)
+3. **必須 vs オプション** — required at signup or user-opt-out-able
+4. **収集の用途** — up to 7 checkboxes
+5. **共有の用途** — only if 共有 was checked in Q1
+
+Skeinly common answer pattern: **収集 only** for ALL 11 types (no 共有 anywhere — Sentry / PostHog / RevenueCat / GitHub / APNs / FCM are service providers per Play's "service provider exemption", not "sharing" with third parties), **一時的処理 = いいえ** for all (everything persisted in Supabase or service-provider stores). Per-type matrix for the remaining 2 axes:
+
+| Data type | 必須/オプション | 用途 (purposes — check these only) |
+|---|---|---|
+| 名前 | データ収集は必須である | アプリの機能 + アカウント管理 |
+| メールアドレス | データ収集は必須である | アプリの機能 + アカウント管理 |
+| ユーザー ID | データ収集は必須である | アプリの機能 + アカウント管理 |
+| 購入履歴 | ユーザーは...選択できる (Pro 加入者のみ) | アプリの機能 |
+| その他のアプリ内メッセージ | ユーザーは...選択できる (ユーザー送信時) | アプリの機能 |
+| 写真 | ユーザーは...選択できる | アプリの機能 |
+| ファイル、ドキュメント | ユーザーは...選択できる | アプリの機能 |
+| アプリのインタラクション数 | ユーザーは...選択できる (opt-in 同意) | **分析** |
+| クラッシュログ | ユーザーは...選択できる (opt-in 同意) | **分析** |
+| 診断情報 | ユーザーは...選択できる (opt-in 同意) | **分析** |
+| デバイスまたはその他の ID | ユーザーは...選択できる (push 許可 + PostHog opt-in) | アプリの機能 + **分析** |
+
+**Never-checked purposes** for any Skeinly data type:
+- ☐ **デベロッパー コミュニケーション** — Skeinly's push is user-to-user collaboration, NOT developer-to-user security / feature announcements
+- ☐ **広告、マーケティング** — Skeinly is ad-free
+- ☐ **不正行為防止、セキュリティ、コンプライアンス** — no fraud-detection-specific data processing
+- ☐ **カスタマイズ** — no personalized recommendation features (Discovery is activity-ranked, not per-user)
+
+Bottom-of-page security practices section (appears after the 11 per-type forms): encryption in transit **Yes**, users can request deletion **Yes** (in-app + web — Phase 27 `data-deletion/` URL once shipped), independent verification **No**, Families Policy **No**.
 
 ### A0d-7: Government / Financial / Health
 
