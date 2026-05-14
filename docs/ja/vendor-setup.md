@@ -460,7 +460,7 @@ Sign in with the credentials above (Supabase email+password auth, no 2FA). Demo 
 
 | サブ質問 | 回答 | 理由 |
 |---|---|---|
-| 音声通信 / SMS / 画像オーディオ共有で交流・コンテンツ交換? | **いいえ** | 音声通話 / SMS なし。画像共有は Discovery 経由の publication 型で、messaging-style リアルタイム交換 (WhatsApp / Snapchat 等) を意図する設問とは異質。画像 publication は親ゲートで既にカバー済 |
+| 音声通信 / SMS / 画像オーディオ共有で交流・コンテンツ交換? | **はい** | [Google policy guidance (answer/11070862)](https://support.google.com/googleplay/android-developer/answer/11070862) の文言は JA UI より広く、「UGC を交換できるなら はい — **コメント、写真共有、その他あらゆる UGC 交換** を含む」と明示。音声 / SMS / messaging-style に限らない。Skeinly のパターンへのコメント + Discovery 画像共有 + 提案 (Suggestion) はすべて該当 |
 | UGC が **主要な** コンテンツソース? | **いいえ** | コア活動は自作パターン + 同梱 70 シンボル JIS catalog でプロジェクト管理。Discovery / 提案 / コメントは副次的。Twitter / Reddit / TikTok のような UGC primary なアプリ形態ではない |
 | ヌード公開を許可? | **いいえ** | 機能として存在せず、Terms of Service 禁止、UGC moderation で削除 |
 | 露骨な暴力表現の公開を許可? | **いいえ** | 同上 |
