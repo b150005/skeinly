@@ -451,12 +451,25 @@ Target: **Everyone** (all ages). Step 2 is a 5-section **gating** questionnaire 
 | Gating section | Skeinly answer | Rationale |
 |---|---|---|
 | **ダウンロード済みアプリ** (rating-relevant content bundled in the APK / AAB) | **いいえ** | Bundle = JIS knitting / crochet glyphs (70 symbols) + UI strings + app icon. No violence / sex / language / drugs / gambling / horror / crude humor / regulated substances. Saying はい here expands 10+ sub-questions (暴力 / 血液 / 流血 / 恐怖 / 性的 / ギャンブル / 言葉 / 規制物質 / 下品なユーモア etc.) that all resolve to いいえ anyway — pick いいえ at the gate for the shorter, lower-risk path. |
-| **ユーザー コンテンツの共有** | **はい** | Patterns + comments + suggestions are shared via Discovery / project feed. Sub-questions then ask about Report/Block mechanisms — answer **はい** (Wave E foundation closed per ADR-021: `submit-ugc-report` Edge Function + `user_blocks` table + 24h operator triage SLA, [`ugc-moderation-sop.md`](ugc-moderation-sop.md)). User-facing Report/Block UI ships pre-Phase-40 GA (ADR-021 §D4); the server-side foundation already satisfies the IARC policy mechanic requirement. |
+| **ユーザー コンテンツの共有** | **はい** | Patterns + comments + suggestions shared via Discovery / project feed. 8 sub-questions expand — answer matrix below. |
 | **オンライン コンテンツ** | **いいえ** | No chat / live messaging / streaming. The Discovery feed delivers UGC patterns which the previous gate already covers. |
 | **年齢制限が適用される製品または活動の宣伝または販売** | **いいえ** | No ads. No sales / promotion of alcohol / tobacco / firearms / lottery / etc. The IAP subscription itself is not an age-restricted product. |
 | **その他** | **いいえ** | Nothing applicable. |
 
-After submission, IARC computes region-specific ratings automatically. Skeinly's craft + UGC + IAP mix lands at Everyone because every gate either resolves to "no rating-relevant content" or to UGC with proper moderation in place.
+**ユーザー コンテンツの共有 sub-questions** (expand after the gate answers はい):
+
+| Sub-question | Answer | Why |
+|---|---|---|
+| 音声通信 / SMS / 画像オーディオ共有で交流・コンテンツ交換? | **いいえ** | No voice / SMS. Image publication via Discovery is messaging-adjacent but the question targets real-time exchange (WhatsApp / Snapchat style). Skeinly's image sharing is publication-style, already covered by the gate. |
+| UGC が **主要な** コンテンツソース? | **いいえ** | Core activity is project tracking with the user's own patterns + the curated 70-symbol JIS catalog. Discovery / suggestions / comments are secondary. Not a Twitter / Reddit / TikTok shape where UGC IS the app. |
+| ヌード公開を許可? | **いいえ** | Not a feature; Terms of Service prohibit; UGC moderation removes. |
+| 露骨な暴力表現の公開を許可? | **いいえ** | Same. |
+| ユーザー / UGC をブロックする機能? | **はい** | Wave E foundation (ADR-021) — `user_blocks` table + RLS NOT-EXISTS filter is shipped server-side. User-facing UI ships pre-Phase-40 GA (ADR-021 §D4). Forward-looking answer; alternative is いいえ + re-take questionnaire at GA, but the rating outcome (Everyone) is identical either way. |
+| ユーザー / UGC を報告する機能? | **はい** | Same — `submit-ugc-report` Edge Function + GitHub Issue mirror + 24h operator triage SLA ([`ugc-moderation-sop.md`](ops/ugc-moderation-sop.md)). |
+| チャットモデレート? | **いいえ** | No chat in Skeinly. Comments and suggestions are async forum-style posts on patterns, not real-time chat. |
+| 対話を招待友人のみに制限可? | **いいえ** | No friend-only mode / private circles. All interactions in Discovery / comments / suggestions are public. |
+
+After Step 2 submission, IARC computes region-specific ratings automatically. Skeinly's craft + UGC + IAP mix lands at Everyone because every gate either resolves to "no rating-relevant content" or to UGC with proper moderation in place.
 
 ### A0d-5: Target audience
 

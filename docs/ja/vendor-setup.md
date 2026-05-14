@@ -451,12 +451,25 @@ Sign in with the credentials above (Supabase email+password auth, no 2FA). Demo 
 | ゲートセクション | Skeinly 回答 | 根拠 |
 |---|---|---|
 | **ダウンロード済みアプリ** (APK / AAB バンドル内の静的コンテンツ) | **いいえ** | バンドル = JIS 編み図シンボル 70 個 + UI 文字列 + アプリアイコンのみ。性 / 暴力 / 言葉 / 薬物 / ギャンブル / 恐怖 / 下品なユーモア / 規制物質 のいずれにも該当しない。**はい** にすると 10+ のサブ質問 (暴力 / 血液 / 流血 / 恐怖 / 性的 / ギャンブル / 言葉 / 規制物質 / 下品なユーモア etc.) が展開され、すべて「いいえ」で答えても結果は同じ。ゲートで **いいえ** を選ぶのが短く安全な path。 |
-| **ユーザー コンテンツの共有** | **はい** | パターン / コメント / 提案 (Suggestion) を Discovery / project feed で共有。サブ質問で Report/Block 機構の有無を聞かれ → **はい** で回答 (ADR-021 Wave E foundation 完了済: `submit-ugc-report` Edge Function + `user_blocks` テーブル + 24h オペレータトリアージ SLA、[`ugc-moderation-sop.md`](ops/ugc-moderation-sop.md))。ユーザー向け Report/Block UI は Phase 40 GA 前にリリース (ADR-021 §D4) だが、server-side foundation で IARC policy 要件は既に満たしている。 |
+| **ユーザー コンテンツの共有** | **はい** | パターン / コメント / 提案 (Suggestion) を Discovery / project feed で共有。8 つのサブ質問が展開 — 下表の matrix で回答。 |
 | **オンライン コンテンツ** | **いいえ** | チャット / live メッセージ / ストリーミングなし。Discovery feed は UGC で前ゲートが既にカバー済。 |
 | **年齢制限が適用される製品または活動の宣伝または販売** | **いいえ** | 広告なし。アルコール / タバコ / 武器 / 宝くじ等の販売・宣伝なし。IAP サブスクリプション自体は年齢制限対象外。 |
 | **その他** | **いいえ** | 該当なし。 |
 
-質問票送信後、IARC が各地域別レーティング (ESRB / PEGI / USK / CERO / ClassInd / ACB) を自動算出。Skeinly の craft + UGC + IAP の組合せでも、各ゲートが「レーティング関連コンテンツなし」または「適切な moderation 付き UGC」に解決されるので Everyone を維持できる。
+**ユーザー コンテンツの共有 サブ質問** (ゲートが「はい」の時に展開):
+
+| サブ質問 | 回答 | 理由 |
+|---|---|---|
+| 音声通信 / SMS / 画像オーディオ共有で交流・コンテンツ交換? | **いいえ** | 音声通話 / SMS なし。画像共有は Discovery 経由の publication 型で、messaging-style リアルタイム交換 (WhatsApp / Snapchat 等) を意図する設問とは異質。画像 publication は親ゲートで既にカバー済 |
+| UGC が **主要な** コンテンツソース? | **いいえ** | コア活動は自作パターン + 同梱 70 シンボル JIS catalog でプロジェクト管理。Discovery / 提案 / コメントは副次的。Twitter / Reddit / TikTok のような UGC primary なアプリ形態ではない |
+| ヌード公開を許可? | **いいえ** | 機能として存在せず、Terms of Service 禁止、UGC moderation で削除 |
+| 露骨な暴力表現の公開を許可? | **いいえ** | 同上 |
+| ユーザー / UGC をブロックする機能? | **はい** | Wave E foundation (ADR-021) — `user_blocks` テーブル + RLS NOT-EXISTS filter で server-side block 実装済。ユーザー向け UI は Phase 40 GA 前リリース (ADR-021 §D4)。代替は **いいえ** + GA 提出時に質問票 re-take だが、レーティング結果 (Everyone) は両 path 同一なので **はい** を推奨 |
+| ユーザー / UGC を報告する機能? | **はい** | 同 — `submit-ugc-report` Edge Function + GitHub Issue mirror + 24h オペレータトリアージ SLA ([`ugc-moderation-sop.md`](ops/ugc-moderation-sop.md)) |
+| チャットモデレート? | **いいえ** | Skeinly にチャット機能なし。コメント / 提案は async forum-style で real-time chat ではない |
+| 対話を招待友人のみに制限可? | **いいえ** | friend-only mode / private circles なし。Discovery / コメント / 提案はすべて公開、private 機能なし |
+
+ステップ 2 送信後、IARC が各地域別レーティング (ESRB / PEGI / USK / CERO / ClassInd / ACB) を自動算出。Skeinly の craft + UGC + IAP の組合せでも、各ゲートが「レーティング関連コンテンツなし」または「適切な moderation 付き UGC」に解決されるので Everyone を維持できる。
 
 ### A0d-5: ターゲット ユーザー
 
