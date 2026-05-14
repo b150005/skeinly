@@ -22,7 +22,7 @@
 
 実装が ADR から drift したら spec / `architecture.md` を更新する。ADR は *decision* が変わった時だけ更新。
 
-## 一般リファレンス
+## リファレンス
 
 | ドキュメント | 説明 |
 |---|---|
@@ -31,15 +31,8 @@
 | [i18n-convention.md](i18n-convention.md) | 5 個の i18n ソースをまたいだキー命名規則 |
 | [tdd-workflow.md](tdd-workflow.md) | テスト駆動開発の方法論 |
 | [chart-coordinates.md](chart-coordinates.md) | 編図座標系リファレンス |
-| [privacy-policy.md](privacy-policy.md) | プライバシーポリシー原本 |
-| [symbol-review/](symbol-review/) | フェーズ別シンボルデザインレビュー記録 |
-
-## テンプレート / ECC リファレンス
-
-| ドキュメント | 説明 |
-|---|---|
-| [ecc-overview.md](ecc-overview.md) | Everything Claude Code とは何か |
 | [ci-cd-pipeline.md](ci-cd-pipeline.md) | GitHub Actions ワークフローと自動化 |
-| [devcontainer.md](devcontainer.md) | 開発コンテナのセットアップ |
-| [github-features.md](github-features.md) | CODEOWNERS, Dependabot, テンプレート, ブランチ保護 |
-| [template-usage.md](template-usage.md) | このテンプレートからプロジェクトを作る方法 |
+| [symbol-review/](symbol-review/) | フェーズ別シンボルデザインレビュー記録 (ADR-008 が引用する source of truth) |
+| [adr/000-template.md](../en/adr/000-template.md) | ADR フォーマット |
+
+> プライバシーポリシー原本: [docs/public/privacy-policy/index.html](../public/privacy-policy/index.html) (EN) + [docs/public/ja/privacy-policy/index.html](../public/ja/privacy-policy/index.html) (JA) — GitHub Pages 公開版
