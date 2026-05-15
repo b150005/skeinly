@@ -372,7 +372,7 @@ User-facing terminology aside, the items below are the only work scoped against 
 
 | Item | Category | Notes |
 |---|---|---|
-| **Terminology audit (full app, EN + JA)** | UX research / i18n | Comprehensive sweep of every user-facing word for layperson-knitter comprehension; rename code identifiers + retranslate JA where needed. **Scheduled for next session.** |
+| **Terminology audit (full app, EN + JA)** | UX research / i18n | Comprehensive sweep of every user-facing word for layperson-knitter comprehension; rename code identifiers + retranslate JA where needed. **Trigger = audit-target stability, NOT a calendar/beta gate** (operator directive 2026-05-15): start once implementation has progressed to a state where user-facing terminology surfaces no longer change — doing it earlier just re-audits churning copy. It is therefore NOT strictly post-beta; this row stays in the post-beta table only because that is its earliest *plausible* stability window, not a hard gate. A resuming session should assess "have the user-facing-copy surfaces stabilised?" rather than "is beta closed?" before deferring it again. |
 | **StitchBook competitive analysis (D0.1)** | UX research | market-analyst + ui-ux-designer agent協議 + competitor screenshot capture → competitive matrix |
 | **ChartEditor zoom + WCAG 2.5.8 (M5)** | Accessibility | Sprint B audit deferred. ~150 LOC Compose + ~100 LOC SwiftUI. Reopen if real beta-tester feedback signals it. |
 | **`rememberSwipeToDismissBoxState` outer `@OptIn` cleanup** | Deprecated API | Inner partial-cleanup done; outer `TopAppBar`-using screens still need `@OptIn(ExperimentalMaterial3Api::class)` until CMP minor stabilizes TopAppBar. |
