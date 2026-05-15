@@ -25,6 +25,12 @@ struct SuggestionDetailScreen: View {
     @State private var navEventsCloseable: Closeable?
     @State private var pendingClosedToast: Bool = false
     @State private var pendingMergedToast: Bool = false
+    /// Phase 39 (ADR-021 §D4) — UGC overflow target: Report this
+    /// suggestion or Block its author. iOS mirror of the Compose
+    /// `SuggestionDetailScreen.kt` TopAppBar `MoreVert` dropdown. A single
+    /// `.sheet(item:)` keyed on this enum keeps the two mutually-exclusive
+    /// modals from racing a shared boolean.
+    @State private var overflowSheet: SuggestionOverflowSheet?
 
     private var viewModel: SuggestionDetailViewModel { holder.viewModel }
     private var notificationViewModel: NotificationPermissionViewModel { notificationHolder.viewModel }
@@ -63,6 +69,7 @@ struct SuggestionDetailScreen: View {
             .accessibilityIdentifier("pullRequestDetailScreen")
             .navigationTitle(LocalizedStringKey("title_suggestion_detail"))
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar { overflowToolbar }
             .onChange(of: holder.state.error != nil) { _, hasError in
             showError = hasError
         }
@@ -127,6 +134,29 @@ struct SuggestionDetailScreen: View {
             .onDisappear {
                 navEventsCloseable?.close()
                 navEventsCloseable = nil
+            }
+            // Phase 39 (ADR-021 §D4) — UGC report / block modals. Hosted
+            // once at the screen root; the enum gates which sheet shows so
+            // the two overflow actions never race. `ReportContentSheet` /
+            // `BlockUserConfirmView` each wrap their own `NavigationStack`
+            // (same precedent as `WipeDataConfirmPhraseView`).
+            .sheet(item: $overflowSheet) { sheet in
+                switch sheet {
+                case let .report(targetId):
+                    ReportContentSheet(
+                        targetType: .suggestion,
+                        targetId: targetId,
+                        onSubmitted: { overflowSheet = nil },
+                        onDismiss: { overflowSheet = nil }
+                    )
+                case let .block(userId, displayName):
+                    BlockUserConfirmView(
+                        blockedUserId: userId,
+                        onBlocked: { overflowSheet = nil },
+                        onDismiss: { overflowSheet = nil },
+                        blockedDisplayName: displayName
+                    )
+                }
             }
             .confirmationDialog(
                 LocalizedStringKey("dialog_close_suggestion_title"),
@@ -195,6 +225,48 @@ struct SuggestionDetailScreen: View {
             } message: {
                 Text("body_notifications_explainer")
             }
+    }
+
+    /// Phase 39 (ADR-021 §D4) — UGC overflow: Report this suggestion +
+    /// Block the author. Apple Guideline 1.2 requires both reachable on
+    /// any UGC surface; Suggestion threads carry author-written bodies.
+    /// Gated on the loaded suggestion so the Report target id + Block
+    /// author id are non-null — mirrors the Compose `if (loaded != null)`
+    /// gate in `SuggestionDetailScreen.kt`.
+    @ToolbarContentBuilder
+    private var overflowToolbar: some ToolbarContent {
+        if let pr = holder.state.suggestion {
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    Button {
+                        overflowSheet = .report(targetId: pr.id)
+                    } label: {
+                        Label("action_report_content", systemImage: "flag")
+                    }
+                    if let authorId = pr.authorId {
+                        Button(role: .destructive) {
+                            overflowSheet = .block(
+                                userId: authorId,
+                                // Snapshot at tap time (value, not a binding).
+                                // nil when the user map has not resolved yet —
+                                // `BlockUserConfirmView` falls back to the
+                                // generic title, matching the Compose path.
+                                displayName: holder.state.users[authorId]?.displayName
+                            )
+                        } label: {
+                            Label("action_block_user", systemImage: "hand.raised")
+                        }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                // a11y: announce the menu affordance, not the first item
+                // (parallels the Compose `contentDescription =
+                // action_more_options` on the `MoreVert` IconButton).
+                .accessibilityLabel(Text("action_more_options"))
+                .accessibilityIdentifier("suggestionOverflowButton")
+            }
+        }
     }
 
     private var closeDialogBinding: Binding<Bool> {
@@ -446,6 +518,27 @@ struct SuggestionDetailScreen: View {
         // `default` forced by Kotlin enum→ObjC bridging — same idiom as
         // SuggestionListScreen.swift.
         default: return status.name
+        }
+    }
+}
+
+// MARK: - Overflow Sheet
+
+/// Phase 39 (ADR-021 §D4) — the two mutually-exclusive Suggestion
+/// overflow modals. `.sheet(item:)` presents one at a time; modelling
+/// the choice as an enum keeps "report this suggestion" and "block the
+/// author" from racing a shared boolean. `id` is stable per target so
+/// re-tapping the same action does not thrash the presentation.
+private enum SuggestionOverflowSheet: Identifiable {
+    case report(targetId: String)
+    case block(userId: String, displayName: String?)
+
+    var id: String {
+        switch self {
+        case let .report(targetId): "report-\(targetId)"
+        // `displayName` excluded — it can resolve/change without changing
+        // the block target; keying on it would thrash `.sheet(item:)`.
+        case let .block(userId, _): "block-\(userId)"
         }
     }
 }

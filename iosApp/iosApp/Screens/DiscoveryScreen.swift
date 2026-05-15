@@ -22,6 +22,15 @@ struct DiscoveryScreen: View {
     /// mutations even after the view unmounts — latent hazard if the
     /// navigation stack composition ever changes.
     @State private var forkTask: Task<Void, Never>?
+    /// Phase 39 (ADR-021 §D4) — UGC report sheet target. iOS mirror of the
+    /// Compose Discovery overflow `ReportContentDialog`. Apple Guideline 1.2
+    /// requires a Report action reachable in ≤1 gesture on every public UGC
+    /// surface; the Discovery feed is the most-public one. A trailing swipe
+    /// parallels the existing leading "Save copy" swipe in this file rather
+    /// than re-creating Compose's `MoreVert` dropdown (List-row overflow
+    /// menus are not idiomatic in SwiftUI). Hoisted to the screen so the
+    /// `.sheet(item:)` is presented once at the List level, not per row.
+    @State private var reportPatternTarget: ReportPatternTarget?
 
     private var viewModel: DiscoveryViewModel { holder.viewModel }
 
@@ -137,10 +146,36 @@ struct DiscoveryScreen: View {
                         // swipe button was hard-coded to system blue.
                         .tint(.accentColor)
                     }
+                    // Phase 39 (ADR-021 §D4) — UGC report affordance. Trailing
+                    // edge keeps it visually distinct from the leading "Save
+                    // copy" action; `allowsFullSwipe: false` so a Report never
+                    // fires from an accidental full swipe (it is a deliberate
+                    // moderation act).
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button {
+                            reportPatternTarget = ReportPatternTarget(id: pattern.id)
+                        } label: {
+                            Label("action_report_content", systemImage: "flag")
+                        }
+                        .tint(.red)
+                        .accessibilityIdentifier("reportPatternSwipe_\(pattern.id)")
+                    }
             }
         }
         .refreshable {
             viewModel.onEvent(event: DiscoveryEventRefresh.shared)
+        }
+        // Phase 39 (ADR-021 §D4) — single sheet host for the report modal,
+        // keyed on the swiped pattern. Mirrors the Compose `ReportContentDialog`
+        // hosted at the card root; `ReportContentSheet` wraps its own
+        // `NavigationStack` (same precedent as `WipeDataConfirmPhraseView`).
+        .sheet(item: $reportPatternTarget) { target in
+            ReportContentSheet(
+                targetType: .pattern,
+                targetId: target.id,
+                onSubmitted: { reportPatternTarget = nil },
+                onDismiss: { reportPatternTarget = nil }
+            )
         }
     }
 
@@ -423,4 +458,13 @@ private struct DiscoveryDifficultyBadge: View {
         default: .primary
         }
     }
+}
+
+// MARK: - Report Sheet Target
+
+/// Phase 39 (ADR-021 §D4) — `Identifiable` wrapper so `.sheet(item:)`
+/// can key the report modal on the swiped pattern. `id == patternId`
+/// (the report target id passed to `ReportContentSheet`).
+private struct ReportPatternTarget: Identifiable {
+    let id: String
 }
