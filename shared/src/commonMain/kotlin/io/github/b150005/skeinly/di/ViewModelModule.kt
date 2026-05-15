@@ -35,6 +35,7 @@ import io.github.b150005.skeinly.ui.pullrequest.SuggestionDetailViewModel
 import io.github.b150005.skeinly.ui.pullrequest.SuggestionFilter
 import io.github.b150005.skeinly.ui.pullrequest.SuggestionListViewModel
 import io.github.b150005.skeinly.ui.settings.SettingsViewModel
+import io.github.b150005.skeinly.ui.settings.WipeDataViewModel
 import io.github.b150005.skeinly.ui.sharedcontent.SharedContentViewModel
 import io.github.b150005.skeinly.ui.sharedwithme.SharedWithMeViewModel
 import io.github.b150005.skeinly.ui.symbol.SymbolGalleryViewModel
@@ -111,6 +112,19 @@ val viewModelModule =
             )
         }
         viewModelOf(::ProfileViewModel)
+        // Phase 27.1 (ADR-023 §6.2 / §UX) — wipe-data flow ViewModel.
+        // The locale-resolved `requiredPhrase` is captured at modal-open
+        // time by the screen (Phase 27.2 wires the resource lookup) and
+        // passed in via `params.get<String>()`. Lambda-seam DI over
+        // `WipeDataRepository::wipe` mirrors the MfaEnrollment / OAuth
+        // profile setup precedents.
+        viewModel { params ->
+            val repo: io.github.b150005.skeinly.domain.repository.WipeDataRepository = get()
+            WipeDataViewModel(
+                requiredPhrase = params.get(),
+                wipeData = { repo.wipe() },
+            )
+        }
         // Phase 26.6 (ADR-022 §6.6) — post-OAuth profile setup gate.
         // The OnboardingMetadata is a screen-time parameter (the
         // NavGraph queries AuthRepository before mounting the screen)
