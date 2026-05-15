@@ -120,7 +120,7 @@ class PaywallViewModelTest {
             val state = rig.viewModel.state.value
             assertEquals(false, state.isLoading)
             assertNull(state.offering)
-            assertNotNull(state.error)
+            assertEquals(PaywallError.OFFERINGS_UNAVAILABLE, state.error)
         }
 
     @Test
@@ -194,7 +194,7 @@ class PaywallViewModelTest {
             rig.viewModel.onEvent(PaywallEvent.ConfirmPurchase(annual.identifier))
             val state = rig.viewModel.state.value
             assertEquals(false, state.isPurchasing)
-            assertEquals("network error", state.error)
+            assertEquals(PaywallError.PURCHASE_FAILED, state.error)
             val dismissed =
                 tracker.captured.firstOrNull {
                     it is AnalyticsEvent.PaywallDismissed && it.reason == PaywallDismissReason.PurchaseFailed
@@ -208,7 +208,7 @@ class PaywallViewModelTest {
             val service = StubRevenueCatService(offering = offering)
             val rig = makeRigWithService(service = service)
             rig.viewModel.onEvent(PaywallEvent.ConfirmPurchase("not_a_real_package"))
-            assertNotNull(rig.viewModel.state.value.error)
+            assertEquals(PaywallError.PACKAGE_UNAVAILABLE, rig.viewModel.state.value.error)
             assertEquals(0, service.purchaseCallCount)
         }
 
@@ -273,7 +273,7 @@ class PaywallViewModelTest {
             val rig = makeRigWithService(service = service)
             rig.viewModel.onEvent(PaywallEvent.RestorePurchases)
             val state = rig.viewModel.state.value
-            assertEquals("network down", state.error)
+            assertEquals(PaywallError.RESTORE_FAILED, state.error)
             assertEquals(false, state.isRestoring)
         }
 

@@ -64,7 +64,7 @@ struct PackManagementScreen: View {
                 viewModel.onEvent(event: PackManagementEventClearError.shared)
             }
         } message: {
-            Text(state.error ?? "")
+            Text(state.error?.localizedString ?? "")
         }
     }
 

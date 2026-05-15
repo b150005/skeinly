@@ -7,6 +7,7 @@ import io.github.b150005.skeinly.domain.symbol.PackInventory
 import io.github.b150005.skeinly.domain.symbol.PackRow
 import io.github.b150005.skeinly.domain.symbol.PackStatus
 import io.github.b150005.skeinly.domain.symbol.SymbolPackCatalog
+import io.github.b150005.skeinly.domain.usecase.ErrorMessage
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -111,7 +112,7 @@ class PackManagementViewModelTest {
 
             val state = vm.state.value
             assertFalse(state.isLoading)
-            assertEquals("boom", state.error)
+            assertEquals(ErrorMessage.LoadFailed, state.error)
             assertTrue(state.rows.isEmpty())
         }
 
@@ -200,9 +201,9 @@ class PackManagementViewModelTest {
             vm.onEvent(PackManagementEvent.Refresh)
             advanceUntilIdle()
 
-            val error = vm.state.value.error
-            assertNotNull(error)
-            assertTrue(error.contains("network down"))
+            // Raw cause messages must NOT leak to UI state — the typed
+            // ErrorMessage.LoadFailed is what the UI localizes.
+            assertEquals(ErrorMessage.LoadFailed, vm.state.value.error)
             assertFalse(vm.state.value.isRefreshing)
         }
 
@@ -219,9 +220,7 @@ class PackManagementViewModelTest {
             vm.onEvent(PackManagementEvent.Refresh)
             advanceUntilIdle()
 
-            val error = vm.state.value.error
-            assertNotNull(error)
-            assertTrue(error.contains("disk full"))
+            assertEquals(ErrorMessage.LoadFailed, vm.state.value.error)
             assertFalse(vm.state.value.isRefreshing)
         }
 
@@ -275,7 +274,7 @@ class PackManagementViewModelTest {
             vm.onEvent(PackManagementEvent.Refresh)
             advanceUntilIdle()
 
-            assertEquals("boom", vm.state.value.error)
+            assertEquals(ErrorMessage.LoadFailed, vm.state.value.error)
             assertFalse(vm.state.value.isRefreshing)
         }
 
@@ -295,7 +294,7 @@ class PackManagementViewModelTest {
             vm.onEvent(PackManagementEvent.Refresh)
             advanceUntilIdle()
 
-            assertEquals("re-read failed", vm.state.value.error)
+            assertEquals(ErrorMessage.LoadFailed, vm.state.value.error)
             assertFalse(vm.state.value.isRefreshing)
         }
 

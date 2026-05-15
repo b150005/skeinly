@@ -6,6 +6,7 @@ import io.github.b150005.skeinly.data.sync.SyncCycleResult
 import io.github.b150005.skeinly.domain.symbol.PackInventory
 import io.github.b150005.skeinly.domain.symbol.PackRow
 import io.github.b150005.skeinly.domain.symbol.SymbolPackCatalog
+import io.github.b150005.skeinly.domain.usecase.ErrorMessage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -54,7 +55,13 @@ data class PackManagementState(
     val rows: List<PackRow> = emptyList(),
     /** Total bytes of every downloaded payload currently on disk. */
     val totalDownloadedBytes: Long = 0L,
-    val error: String? = null,
+    /**
+     * Typed, localizable error. Resolved to the user's locale by the UI
+     * layer via `ErrorMessage.localized()` (Compose) / `localizedString`
+     * (Swift) — never a raw exception message (which would leak
+     * non-localized internal text to the UI).
+     */
+    val error: ErrorMessage? = null,
 )
 
 sealed interface PackManagementEvent {
@@ -109,7 +116,7 @@ class PackManagementViewModel(
             _state.update {
                 it.copy(
                     isLoading = false,
-                    error = e.message ?: "Could not load symbol packs.",
+                    error = ErrorMessage.LoadFailed,
                 )
             }
         }
@@ -127,16 +134,10 @@ class PackManagementViewModel(
             val dispatch = syncDispatch
             if (dispatch != null) {
                 val result = dispatch()
-                if (result is SyncCycleResult.ManifestFetchFailed) {
-                    val cause = result.cause
-                    _state.update {
-                        it.copy(error = cause.message ?: "Could not refresh symbol packs.")
-                    }
-                } else if (result is SyncCycleResult.ManifestPersistFailed) {
-                    val cause = result.cause
-                    _state.update {
-                        it.copy(error = cause.message ?: "Could not refresh symbol packs.")
-                    }
+                if (result is SyncCycleResult.ManifestFetchFailed ||
+                    result is SyncCycleResult.ManifestPersistFailed
+                ) {
+                    _state.update { it.copy(error = ErrorMessage.LoadFailed) }
                 }
                 // Skipped + Completed (with possible per-pack failures) both
                 // proceed to re-read the catalog — partial successes still
@@ -160,7 +161,7 @@ class PackManagementViewModel(
             _state.update {
                 it.copy(
                     isRefreshing = false,
-                    error = e.message ?: "Could not refresh symbol packs.",
+                    error = ErrorMessage.LoadFailed,
                 )
             }
         }

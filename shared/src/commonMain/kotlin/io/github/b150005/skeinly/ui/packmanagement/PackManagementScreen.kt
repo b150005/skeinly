@@ -62,6 +62,7 @@ import io.github.b150005.skeinly.generated.resources.state_no_packs
 import io.github.b150005.skeinly.generated.resources.state_no_packs_body
 import io.github.b150005.skeinly.generated.resources.title_pack_management
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
+import io.github.b150005.skeinly.ui.components.localized
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -84,7 +85,7 @@ fun PackManagementScreen(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    val errorText = state.error
+    val errorText = state.error?.localized()
     LaunchedEffect(errorText) {
         if (errorText != null) {
             snackbarHostState.showSnackbar(errorText)

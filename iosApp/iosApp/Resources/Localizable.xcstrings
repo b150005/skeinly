@@ -7558,6 +7558,23 @@
         }
       }
     },
+    "state_paywall_package_unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The selected plan is no longer available. Please choose again."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選択したプランは現在利用できません。もう一度お選びください。"
+          }
+        }
+      }
+    },
     "state_paywall_unavailable" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7639,6 +7656,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "購入処理中…"
+          }
+        }
+      }
+    },
+    "state_restore_failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t restore purchases. Please try again."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "購入の復元に失敗しました。もう一度お試しください。"
           }
         }
       }

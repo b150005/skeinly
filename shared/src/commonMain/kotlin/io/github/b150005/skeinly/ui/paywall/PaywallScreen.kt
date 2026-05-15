@@ -47,9 +47,11 @@ import io.github.b150005.skeinly.generated.resources.action_terms_of_service
 import io.github.b150005.skeinly.generated.resources.body_paywall_features
 import io.github.b150005.skeinly.generated.resources.body_paywall_pitch
 import io.github.b150005.skeinly.generated.resources.body_paywall_trial_disclosure
+import io.github.b150005.skeinly.generated.resources.state_paywall_package_unavailable
 import io.github.b150005.skeinly.generated.resources.state_paywall_unavailable
 import io.github.b150005.skeinly.generated.resources.state_purchase_failed
 import io.github.b150005.skeinly.generated.resources.state_purchase_in_progress
+import io.github.b150005.skeinly.generated.resources.state_restore_failed
 import io.github.b150005.skeinly.generated.resources.state_restoring
 import io.github.b150005.skeinly.generated.resources.title_paywall
 import kotlinx.coroutines.launch
@@ -259,22 +261,23 @@ fun PaywallScreen(
             // Inline error label. Surfaces both fetch + purchase + restore
             // errors via the same slot. Has its own Dismiss button so the
             // user can recover without leaving the sheet.
-            state.error?.let { errorText ->
+            state.error?.let { paywallError ->
                 Surface(
                     color = MaterialTheme.colorScheme.errorContainer,
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.fillMaxWidth().testTag("paywallErrorLabel"),
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
+                        val messageKey =
+                            when (paywallError) {
+                                PaywallError.OFFERINGS_UNAVAILABLE -> Res.string.state_paywall_unavailable
+                                PaywallError.PACKAGE_UNAVAILABLE -> Res.string.state_paywall_package_unavailable
+                                PaywallError.PURCHASE_FAILED -> Res.string.state_purchase_failed
+                                PaywallError.RESTORE_FAILED -> Res.string.state_restore_failed
+                            }
                         Text(
-                            text = stringResource(Res.string.state_purchase_failed),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = errorText,
-                            style = MaterialTheme.typography.bodySmall,
+                            text = stringResource(messageKey),
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onErrorContainer,
                         )
                         Spacer(Modifier.height(4.dp))

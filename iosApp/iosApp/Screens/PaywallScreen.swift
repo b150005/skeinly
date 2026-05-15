@@ -153,10 +153,8 @@ struct PaywallScreen: View {
 
                     if let error = state.error {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(LocalizedStringKey("state_purchase_failed"))
-                                .font(.subheadline.weight(.semibold))
-                            Text(error)
-                                .font(.footnote)
+                            Text(paywallErrorKey(for: error))
+                                .font(.subheadline)
                             Button {
                                 viewModel.onEvent(event: PaywallEventClearError.shared)
                             } label: {
@@ -247,6 +245,19 @@ struct PaywallScreen: View {
         .onDisappear {
             navCloseable?.close()
             navCloseable = nil
+        }
+    }
+
+    private func paywallErrorKey(for error: PaywallError) -> LocalizedStringKey {
+        // Default arm guards against future PaywallError additions
+        // bridging through without a Swift case — same defensive
+        // pattern as BugReportPreviewScreen's errorKey(for:).
+        switch error {
+        case .offeringsUnavailable: return LocalizedStringKey("state_paywall_unavailable")
+        case .packageUnavailable: return LocalizedStringKey("state_paywall_package_unavailable")
+        case .purchaseFailed: return LocalizedStringKey("state_purchase_failed")
+        case .restoreFailed: return LocalizedStringKey("state_restore_failed")
+        default: return LocalizedStringKey("state_purchase_failed")
         }
     }
 }

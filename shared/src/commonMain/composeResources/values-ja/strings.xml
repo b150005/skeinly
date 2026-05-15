@@ -578,6 +578,8 @@
     <string name="state_restoring">購入を復元しています…</string>
     <string name="state_paywall_unavailable">サブスクリプションは一時的に利用できません。後でもう一度お試しください。</string>
     <string name="state_purchase_failed">購入に失敗しました</string>
+    <string name="state_paywall_package_unavailable">選択したプランは現在利用できません。もう一度お選びください。</string>
+    <string name="state_restore_failed">購入の復元に失敗しました。もう一度お試しください。</string>
     <string name="message_purchase_succeeded">Skeinly Proへようこそ！</string>
     <string name="message_restore_succeeded">おかえりなさい！</string>
     <string name="message_restore_no_purchases">復元できる購入が見つかりませんでした</string>

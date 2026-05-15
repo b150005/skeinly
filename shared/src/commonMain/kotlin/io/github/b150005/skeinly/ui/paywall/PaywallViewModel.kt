@@ -61,9 +61,40 @@ data class PaywallState(
     val isPurchasing: Boolean = false,
     /** True between `RestorePurchases` dispatch and the SDK callback. */
     val isRestoring: Boolean = false,
-    /** Inline error message shown in the paywall body — null when no error. */
-    val error: String? = null,
+    /**
+     * Typed, localizable paywall error shown inline in the paywall body —
+     * null when no error. The UI layer resolves it to the user's locale
+     * (`PaywallError` → `Res.string.*` in [PaywallScreen] / a Swift
+     * `switch` in `PaywallScreen.swift`); a raw RevenueCat SDK / network
+     * message never reaches the UI (it would be non-localized and could
+     * leak internal text).
+     */
+    val error: PaywallError? = null,
 )
+
+/**
+ * Closed set of user-facing paywall failure categories. Screen-specific
+ * typed error (mirrors [io.github.b150005.skeinly.ui.bugreport.BugReportPreviewViewModel]'s
+ * `ErrorKind` precedent) rather than the app-wide `ErrorMessage` sealed
+ * type, because the paywall has dedicated subscription-domain copy
+ * (`state_paywall_unavailable` etc.) that the generic `ErrorMessage`
+ * variants would flatten. The UI maps each case to a localized string;
+ * the raw RevenueCat/network message is intentionally NOT carried (it
+ * would be non-localized and is not actionable to the user).
+ */
+enum class PaywallError {
+    /** RevenueCat `getOfferings()` failed — offerings could not load. */
+    OFFERINGS_UNAVAILABLE,
+
+    /** The selected package vanished between selection and confirm. */
+    PACKAGE_UNAVAILABLE,
+
+    /** RevenueCat `purchase()` returned `Failed`. */
+    PURCHASE_FAILED,
+
+    /** RevenueCat `restorePurchases()` returned `Failed`. */
+    RESTORE_FAILED,
+}
 
 sealed interface PaywallEvent {
     data object RefreshOfferings : PaywallEvent
@@ -193,12 +224,12 @@ class PaywallViewModel(
                     )
                 }
             },
-            onFailure = { e ->
+            onFailure = { _ ->
                 _state.update {
                     it.copy(
                         isLoading = false,
                         offering = null,
-                        error = e.message ?: "Subscriptions are unavailable right now.",
+                        error = PaywallError.OFFERINGS_UNAVAILABLE,
                     )
                 }
             },
@@ -209,7 +240,7 @@ class PaywallViewModel(
         val current = _state.value
         val pkg = current.offering?.packages?.firstOrNull { it.identifier == packageId }
         if (pkg == null) {
-            _state.update { it.copy(error = "Selected package is no longer available; please retry.") }
+            _state.update { it.copy(error = PaywallError.PACKAGE_UNAVAILABLE) }
             return
         }
         _state.update { it.copy(isPurchasing = true, error = null) }
@@ -229,7 +260,7 @@ class PaywallViewModel(
                 _state.update {
                     it.copy(
                         isPurchasing = false,
-                        error = purchaseResult.message,
+                        error = PaywallError.PURCHASE_FAILED,
                     )
                 }
                 analyticsTracker?.track(
@@ -325,7 +356,7 @@ class PaywallViewModel(
                 _state.update {
                     it.copy(
                         isRestoring = false,
-                        error = restoreResult.message,
+                        error = PaywallError.RESTORE_FAILED,
                     )
                 }
             }

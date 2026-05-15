@@ -793,6 +793,8 @@
     <string name="state_restoring">Restoring purchases…</string>
     <string name="state_paywall_unavailable">Subscriptions are temporarily unavailable. Please try again later.</string>
     <string name="state_purchase_failed">Purchase failed</string>
+    <string name="state_paywall_package_unavailable">The selected plan is no longer available. Please choose again.</string>
+    <string name="state_restore_failed">Couldn\'t restore purchases. Please try again.</string>
     <string name="message_purchase_succeeded">Welcome to Skeinly Pro!</string>
     <string name="message_restore_succeeded">Welcome back!</string>
     <string name="message_restore_no_purchases">No previous purchases found</string>
