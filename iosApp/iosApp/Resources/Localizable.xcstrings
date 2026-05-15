@@ -8994,6 +8994,104 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Linked accounts" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "リンク済みアカウント" } }
       }
+    },
+    "title_wipe_data_settings_row" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete all my data" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "すべてのデータを削除" } }
+      }
+    },
+    "body_wipe_data_settings_row" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reset your patterns, projects, and comments. Keeps your account and Pro membership." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターン・プロジェクト・コメントをリセットします。アカウントと Pro メンバーシップは保持されます。" } }
+      }
+    },
+    "title_wipe_data_explanation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete all your data?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "すべてのデータを削除しますか?" } }
+      }
+    },
+    "subtitle_wipe_data_explanation_preserved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Preserved" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "保持されるもの" } }
+      }
+    },
+    "subtitle_wipe_data_explanation_deleted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Deleted" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "削除されるもの" } }
+      }
+    },
+    "body_wipe_data_preserved_list" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign-in, display name, avatar, Pro membership, push notification preferences (re-registered automatically)" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "サインイン、表示名、アバター、Pro メンバーシップ、プッシュ通知設定(自動的に再登録されます)" } }
+      }
+    },
+    "body_wipe_data_deleted_list" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Patterns, projects, charts, comments, suggestions, shared links, activity history, downloaded symbol packs" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターン、プロジェクト、編み図、コメント、提案、共有リンク、アクティビティ履歴、ダウンロード済みシンボルパック" } }
+      }
+    },
+    "action_wipe_data_continue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "続行" } }
+      }
+    },
+    "action_wipe_data_keep" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep my data" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "データを保持" } }
+      }
+    },
+    "title_wipe_data_confirm_phrase" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirm data deletion" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "データ削除を確認" } }
+      }
+    },
+    "body_wipe_data_confirm_phrase_helper" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Type `delete my data` to confirm." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "確認のため「データを削除」と入力してください。" } }
+      }
+    },
+    "action_wipe_data_submit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete all my data" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "すべてのデータを削除" } }
+      }
+    },
+    "state_wipe_data_completed_banner" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your data has been deleted. Your account is still active." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "データを削除しました。アカウントは引き続きご利用いただけます。" } }
+      }
+    },
+    "phrase_wipe_data_confirm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "delete my data" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "データを削除" } }
+      }
     }
   },
   "version" : "1.1"

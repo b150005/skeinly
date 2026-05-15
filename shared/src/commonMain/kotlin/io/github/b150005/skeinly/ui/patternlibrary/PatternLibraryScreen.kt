@@ -66,6 +66,7 @@ import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_back
 import io.github.b150005.skeinly.generated.resources.action_cancel
 import io.github.b150005.skeinly.generated.resources.action_clear_search
+import io.github.b150005.skeinly.generated.resources.action_close
 import io.github.b150005.skeinly.generated.resources.action_delete
 import io.github.b150005.skeinly.generated.resources.action_new_pattern
 import io.github.b150005.skeinly.generated.resources.action_sort
@@ -83,6 +84,7 @@ import io.github.b150005.skeinly.generated.resources.state_no_matching_patterns
 import io.github.b150005.skeinly.generated.resources.state_no_matching_patterns_body
 import io.github.b150005.skeinly.generated.resources.state_no_patterns
 import io.github.b150005.skeinly.generated.resources.state_no_patterns_body
+import io.github.b150005.skeinly.generated.resources.state_wipe_data_completed_banner
 import io.github.b150005.skeinly.generated.resources.title_pattern_library
 import io.github.b150005.skeinly.ui.components.EmptyStateView
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
@@ -145,6 +147,17 @@ fun PatternLibraryScreen(
                     .fillMaxSize()
                     .padding(padding),
         ) {
+            // Phase 27.2 (ADR-023 §UX) — post-wipe success banner. Auto-
+            // dismisses after WIPE_BANNER_DURATION_MS (8 s) via the VM
+            // timer; user can tap to dismiss earlier.
+            if (state.wipeBannerVisible) {
+                WipeCompletedBanner(
+                    onDismiss = {
+                        viewModel.onEvent(PatternLibraryEvent.DismissWipeBanner)
+                    },
+                )
+            }
+
             SearchField(
                 query = state.searchQuery,
                 onQueryChange = { viewModel.onEvent(PatternLibraryEvent.UpdateSearchQuery(it)) },
@@ -591,4 +604,52 @@ private fun buildPatternDetails(pattern: Pattern): String {
     val yarn = pattern.yarnInfo?.let { stringResource(Res.string.label_yarn_value, it) }
     val needle = pattern.needleSize?.let { stringResource(Res.string.label_needle_value, it) }
     return listOfNotNull(gauge, yarn, needle).joinToString(" \u2022 ")
+}
+
+/**
+ * Phase 27.2 (ADR-023 \u00a7UX) \u2014 post-wipe success banner rendered at the
+ * top of Pattern Library after the user completes the data-wipe flow.
+ * Auto-dismissed by the ViewModel timer after
+ * [WIPE_BANNER_DURATION_MS]; tap dispatches [PatternLibraryEvent.DismissWipeBanner]
+ * for an early clear.
+ *
+ * Visual: primaryContainer card with body text + a trailing close
+ * icon. Material 3 sectioning (not snackbar) because the user just
+ * completed a destructive action \u2014 a persistent affirmation surface is
+ * more reassuring than a transient snackbar.
+ */
+@Composable
+private fun WipeCompletedBanner(onDismiss: () -> Unit) {
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .testTag("wipeCompletedBanner"),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            ),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(Res.string.state_wipe_data_completed_banner),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier.testTag("wipeCompletedBannerDismiss"),
+            ) {
+                Icon(
+                    Icons.Filled.Clear,
+                    contentDescription = stringResource(Res.string.action_close),
+                )
+            }
+        }
+    }
 }

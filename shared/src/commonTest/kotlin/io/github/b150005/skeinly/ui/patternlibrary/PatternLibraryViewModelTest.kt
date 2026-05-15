@@ -1,6 +1,7 @@
 package io.github.b150005.skeinly.ui.patternlibrary
 
 import app.cash.turbine.test
+import io.github.b150005.skeinly.data.wipe.WipeCompletionNotifier
 import io.github.b150005.skeinly.domain.model.Difficulty
 import io.github.b150005.skeinly.domain.model.Pattern
 import io.github.b150005.skeinly.domain.model.Visibility
@@ -32,7 +33,11 @@ class PatternLibraryViewModelTest {
     private fun createViewModel(): PatternLibraryViewModel {
         val getPatterns = GetPatternsUseCase(patternRepository, authRepository)
         val deletePattern = DeletePatternUseCase(patternRepository)
-        return PatternLibraryViewModel(getPatterns, deletePattern)
+        return PatternLibraryViewModel(
+            getPatterns = getPatterns,
+            deletePattern = deletePattern,
+            wipeCompletionNotifier = WipeCompletionNotifier(),
+        )
     }
 
     private fun testPattern(

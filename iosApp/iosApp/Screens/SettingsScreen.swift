@@ -45,6 +45,10 @@ struct SettingsScreen: View {
     /// authentication" in the Security section. AppRouter wires this to
     /// `path.append(.biometricSettings)`.
     let onBiometricSettingsClick: () -> Void
+    /// Phase 27.2 (ADR-023 §UX) — invoked when the user taps "Delete
+    /// all my data" in the Danger Zone section. AppRouter wires this
+    /// to `path.append(.wipeDataConfirmPhrase)`.
+    let onWipeDataClick: () -> Void
 
     private var viewModel: SettingsViewModel { holder.viewModel }
     private var notificationViewModel: NotificationPermissionViewModel { notificationHolder.viewModel }
@@ -85,13 +89,15 @@ struct SettingsScreen: View {
         onSubscribeToProClick: @escaping () -> Void = {},
         onManagePacksClick: @escaping () -> Void = {},
         onEnableMfaClick: @escaping () -> Void = {},
-        onBiometricSettingsClick: @escaping () -> Void = {}
+        onBiometricSettingsClick: @escaping () -> Void = {},
+        onWipeDataClick: @escaping () -> Void = {}
     ) {
         self.onSendFeedback = onSendFeedback
         self.onSubscribeToProClick = onSubscribeToProClick
         self.onManagePacksClick = onManagePacksClick
         self.onEnableMfaClick = onEnableMfaClick
         self.onBiometricSettingsClick = onBiometricSettingsClick
+        self.onWipeDataClick = onWipeDataClick
         let vm = ViewModelFactory.settingsViewModel()
         let wrapper = KoinHelperKt.wrapSettingsState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
@@ -509,6 +515,24 @@ struct SettingsScreen: View {
             // as the Account section above.
             if state.isSignedIn {
                 Section {
+                    // Phase 27.2 (ADR-023 §UX) — "Delete all my data" row.
+                    // Sits ABOVE "Delete Account" — less-destructive first
+                    // per Material + HIG. Routes to the wipe confirmation
+                    // flow which prompts twice (preservation-matrix sheet +
+                    // phrase typing) before firing the RPC.
+                    Button {
+                        onWipeDataClick()
+                    } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("title_wipe_data_settings_row")
+                                .foregroundStyle(.primary)
+                            Text("body_wipe_data_settings_row")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .accessibilityIdentifier("wipeDataRow")
+
                     Button(role: .destructive) {
                         showDeleteConfirmation = true
                     } label: {

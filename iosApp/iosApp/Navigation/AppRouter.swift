@@ -33,6 +33,12 @@ enum Route: Hashable {
     /// Phase 26.6 (ADR-022 §6.5) — biometric authentication settings.
     /// Reached from Settings → Security → "Biometric authentication".
     case biometricSettings
+    /// Phase 27.2 (ADR-023 §UX) — data-wipe confirmation flow.
+    /// Reached from Settings → Danger Zone → "Delete all my data".
+    /// Mounts the WipeData ViewModel with the locale-active required
+    /// phrase resolved via `NSLocalizedString("phrase_wipe_data_confirm", ...)`
+    /// at view-init time; mid-flow locale change is unsupported.
+    case wipeDataConfirmPhrase
     /// Phase 41.3b (ADR-016 §5.1) — paywall route. Uses
     /// `PaywallTrigger.wireValue` for the Hashable representation so the
     /// case stays Codable / Hashable without forcing PaywallTrigger to
@@ -110,6 +116,8 @@ enum Route: Hashable {
             hasher.combine("mfaChallenge")
         case .biometricSettings:
             hasher.combine("biometricSettings")
+        case .wipeDataConfirmPhrase:
+            hasher.combine("wipeDataConfirmPhrase")
         }
     }
 }
@@ -390,6 +398,11 @@ struct AppRootView: View {
                 // settings screen.
                 onBiometricSettingsClick: {
                     path.append(Route.biometricSettings)
+                },
+                // Phase 27.2 (ADR-023 §UX) — Settings → Danger Zone →
+                // "Delete all my data" routes to the confirmation flow.
+                onWipeDataClick: {
+                    path.append(Route.wipeDataConfirmPhrase)
                 }
             )
                 .trackScreen(.settings)
@@ -497,6 +510,27 @@ struct AppRootView: View {
             // picker. Pushed from Settings → Security → "Biometric
             // authentication" entry.
             BiometricSettingsScreen()
+                .skeinlyBackButton(path: $path)
+        case .wipeDataConfirmPhrase:
+            // Phase 27.2 (ADR-023 §UX) — data-wipe confirmation flow.
+            // The screen self-manages its dual phases (preservation
+            // sheet → phrase typing). On Cancel: pop directly to
+            // Settings. On WipeCompleted: pop the wipe route AND any
+            // intermediate route off the stack, landing the user
+            // implicitly on Pattern Library / Project List (root). The
+            // post-wipe banner is signaled inside the view via
+            // `KoinHelperKt.notifyWipeCompleted()` so the
+            // PatternLibrary VM (still alive in the back stack)
+            // surfaces the success banner.
+            WipeDataConfirmPhraseView(
+                onCancel: { path.removeLast() },
+                onWipeCompleted: {
+                    // Pop everything back to the root tab so the user
+                    // lands on Project List / Pattern Library where
+                    // the banner is rendered.
+                    path = NavigationPath()
+                }
+            )
                 .skeinlyBackButton(path: $path)
         }
     }

@@ -2,6 +2,7 @@ package io.github.b150005.skeinly.ui.patternlibrary
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.b150005.skeinly.data.wipe.WipeCompletionNotifier
 import io.github.b150005.skeinly.domain.model.Difficulty
 import io.github.b150005.skeinly.domain.model.Pattern
 import io.github.b150005.skeinly.domain.model.SortOrder
@@ -10,6 +11,8 @@ import io.github.b150005.skeinly.domain.usecase.ErrorMessage
 import io.github.b150005.skeinly.domain.usecase.GetPatternsUseCase
 import io.github.b150005.skeinly.domain.usecase.UseCaseResult
 import io.github.b150005.skeinly.domain.usecase.toErrorMessage
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +30,12 @@ data class PatternLibraryState(
     val searchQuery: String = "",
     val difficultyFilter: Difficulty? = null,
     val sortOrder: SortOrder = SortOrder.RECENT,
+    /**
+     * Phase 27.2 (ADR-023 §UX) — true while the post-wipe success
+     * banner is showing. Flipped on each [WipeCompletionNotifier]
+     * emission; auto-clears after [WIPE_BANNER_DURATION_MS] ms.
+     */
+    val wipeBannerVisible: Boolean = false,
 )
 
 sealed interface PatternLibraryEvent {
@@ -47,10 +56,18 @@ sealed interface PatternLibraryEvent {
     ) : PatternLibraryEvent
 
     data object ClearError : PatternLibraryEvent
+
+    /**
+     * Phase 27.2 (ADR-023 §UX) — dismiss the post-wipe banner. The
+     * banner also self-dismisses after [WIPE_BANNER_DURATION_MS], but
+     * the user can tap to dismiss earlier.
+     */
+    data object DismissWipeBanner : PatternLibraryEvent
 }
 
 private data class UiFlags(
     val error: ErrorMessage? = null,
+    val wipeBannerVisible: Boolean = false,
 )
 
 private data class FilterState(
@@ -59,13 +76,31 @@ private data class FilterState(
     val sortOrder: SortOrder = SortOrder.RECENT,
 )
 
+/**
+ * Phase 27.2 (ADR-023 §UX) — banner stays up for 8 s after a successful
+ * wipe RPC, then auto-clears. Tunable in one place so unit tests can
+ * advance virtual time deterministically.
+ */
+internal const val WIPE_BANNER_DURATION_MS: Long = 8_000L
+
 class PatternLibraryViewModel(
     private val getPatterns: GetPatternsUseCase,
     private val deletePattern: DeletePatternUseCase,
+    // Phase 27.2 (ADR-023 §UX) — singleton event bus that signals
+    // "the wipe RPC just succeeded; show the banner". Default-injected
+    // via Koin; tests can pass a per-test instance to emit at the
+    // right point on the virtual clock.
+    private val wipeCompletionNotifier: WipeCompletionNotifier,
 ) : ViewModel() {
     private val uiFlags = MutableStateFlow(UiFlags())
     private val filterState = MutableStateFlow(FilterState())
     private val isLoading = MutableStateFlow(true)
+
+    /** Tracks the currently-running banner auto-dismiss timer so a
+     *  back-to-back wipe (extreme edge case — VM-layer re-entry guard
+     *  prevents this from the user surface) restarts the 8 s window
+     *  rather than clearing the banner mid-display. */
+    private var wipeBannerTimerJob: Job? = null
 
     private val patternsFlow =
         getPatterns()
@@ -92,12 +127,21 @@ class PatternLibraryViewModel(
                 searchQuery = filters.searchQuery,
                 difficultyFilter = filters.difficultyFilter,
                 sortOrder = filters.sortOrder,
+                wipeBannerVisible = flags.wipeBannerVisible,
             )
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = PatternLibraryState(),
         )
+
+    init {
+        viewModelScope.launch {
+            wipeCompletionNotifier.events.collect {
+                onWipeCompleted()
+            }
+        }
+    }
 
     fun onEvent(event: PatternLibraryEvent) {
         when (event) {
@@ -123,7 +167,22 @@ class PatternLibraryViewModel(
             PatternLibraryEvent.ClearError -> {
                 uiFlags.update { it.copy(error = null) }
             }
+            PatternLibraryEvent.DismissWipeBanner -> {
+                wipeBannerTimerJob?.cancel()
+                wipeBannerTimerJob = null
+                uiFlags.update { it.copy(wipeBannerVisible = false) }
+            }
         }
+    }
+
+    private fun onWipeCompleted() {
+        wipeBannerTimerJob?.cancel()
+        uiFlags.update { it.copy(wipeBannerVisible = true) }
+        wipeBannerTimerJob =
+            viewModelScope.launch {
+                delay(WIPE_BANNER_DURATION_MS)
+                uiFlags.update { it.copy(wipeBannerVisible = false) }
+            }
     }
 
     private fun List<Pattern>.filterBySearch(query: String): List<Pattern> =

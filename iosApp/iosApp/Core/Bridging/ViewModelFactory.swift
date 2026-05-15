@@ -171,4 +171,13 @@ enum ViewModelFactory {
             pictureUrl: pictureUrl
         )
     }
+
+    /// Phase 27.2 (ADR-023 §UX) — data-wipe ViewModel. The
+    /// `requiredPhrase` is the locale-active confirmation phrase
+    /// (`delete my data` on EN, `データを削除` on JA), captured ONCE at
+    /// view init via `NSLocalizedString("phrase_wipe_data_confirm", ...)`.
+    /// Mid-flow locale change is not supported (ADR §UX).
+    static func wipeDataViewModel(requiredPhrase: String) -> WipeDataViewModel {
+        KoinHelperKt.getWipeDataViewModel(requiredPhrase: requiredPhrase)
+    }
 }

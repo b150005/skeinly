@@ -82,6 +82,7 @@ import io.github.b150005.skeinly.generated.resources.body_mfa_disable_warning
 import io.github.b150005.skeinly.generated.resources.body_notifications_disabled_hint
 import io.github.b150005.skeinly.generated.resources.body_notifications_setting_explanation
 import io.github.b150005.skeinly.generated.resources.body_send_feedback_explanation
+import io.github.b150005.skeinly.generated.resources.body_wipe_data_settings_row
 import io.github.b150005.skeinly.generated.resources.dialog_change_email_title
 import io.github.b150005.skeinly.generated.resources.dialog_change_password_title
 import io.github.b150005.skeinly.generated.resources.dialog_delete_account_body
@@ -117,6 +118,7 @@ import io.github.b150005.skeinly.generated.resources.state_signed_in_via_google
 import io.github.b150005.skeinly.generated.resources.title_biometric_settings
 import io.github.b150005.skeinly.generated.resources.title_mfa_disable_confirm
 import io.github.b150005.skeinly.generated.resources.title_settings
+import io.github.b150005.skeinly.generated.resources.title_wipe_data_settings_row
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.localized
 import org.jetbrains.compose.resources.stringResource
@@ -168,6 +170,11 @@ fun SettingsScreen(
     // "Biometric authentication" in the Security section. NavGraph
     // wires this to the `BiometricSettings` route.
     onBiometricSettingsClick: () -> Unit = {},
+    // Phase 27.2 (ADR-023 §UX) — invoked when the user taps "Delete
+    // all my data" in the Danger Zone section. NavGraph wires this to
+    // the `WipeDataConfirmPhrase` route which mounts the WipeData VM
+    // with the locale-active required phrase.
+    onWipeDataClick: () -> Unit = {},
     viewModel: SettingsViewModel = koinViewModel(),
     // Phase 24.2c (ADR-017 §3.6) — push notification consent VM. Drives
     // the Settings → Notifications row + the in-app pre-permission
@@ -726,6 +733,29 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(bottom = 8.dp),
                     )
+
+                    // Phase 27.2 (ADR-023 §UX) — "Delete all my data" row.
+                    // Sits ABOVE "Delete Account" — less-destructive option
+                    // listed first per Material + HIG sectioning. Routes to
+                    // the WipeData confirmation flow which prompts twice
+                    // (preservation-matrix modal + phrase typing) before
+                    // firing the RPC.
+                    ListItem(
+                        headlineContent = {
+                            Text(stringResource(Res.string.title_wipe_data_settings_row))
+                        },
+                        supportingContent = {
+                            Text(stringResource(Res.string.body_wipe_data_settings_row))
+                        },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable(role = Role.Button) { onWipeDataClick() }
+                                .testTag("wipeDataRow"),
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
                     Text(
                         text = stringResource(Res.string.body_delete_account_warning),
                         style = MaterialTheme.typography.bodyMedium,

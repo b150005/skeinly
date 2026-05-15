@@ -469,6 +469,14 @@ kover {
                     // dedicated unit coverage is low-signal.
                     "io.github.b150005.skeinly.ui.onboarding.OAuthProfileSetupScreenKt*",
                     "io.github.b150005.skeinly.data.preferences.OAuthProfileSetupPreferencesImpl",
+                    // Phase 27.2 (ADR-023 §UX) — data-wipe Compose
+                    // screens. Same JVM-untestable rationale as other
+                    // *ScreenKt excludes; the driving WipeDataViewModel
+                    // + the PatternLibrary banner state collector +
+                    // WipeCompletionNotifier are exercised via
+                    // commonTest.
+                    "io.github.b150005.skeinly.ui.settings.WipeDataConfirmPhraseScreenKt*",
+                    "io.github.b150005.skeinly.ui.settings.WipeDataExplanationDialogKt*",
                 )
             }
         }

@@ -916,4 +916,24 @@
     <string name="state_signed_in_via_google">Google</string>
     <string name="state_signed_in_via_email">Email and password</string>
     <string name="label_linked_identities">Linked accounts</string>
+
+    <!-- Phase 27.2 (ADR-023 §6.2 / §UX) — data-wipe flow (account-preserved deletion). -->
+    <string name="title_wipe_data_settings_row">Delete all my data</string>
+    <string name="body_wipe_data_settings_row">Reset your patterns, projects, and comments. Keeps your account and Pro membership.</string>
+    <string name="title_wipe_data_explanation">Delete all your data?</string>
+    <string name="subtitle_wipe_data_explanation_preserved">Preserved</string>
+    <string name="subtitle_wipe_data_explanation_deleted">Deleted</string>
+    <string name="body_wipe_data_preserved_list">Sign-in, display name, avatar, Pro membership, push notification preferences (re-registered automatically)</string>
+    <string name="body_wipe_data_deleted_list">Patterns, projects, charts, comments, suggestions, shared links, activity history, downloaded symbol packs</string>
+    <string name="action_wipe_data_continue">Continue</string>
+    <string name="action_wipe_data_keep">Keep my data</string>
+    <string name="title_wipe_data_confirm_phrase">Confirm data deletion</string>
+    <string name="body_wipe_data_confirm_phrase_helper">Type `delete my data` to confirm.</string>
+    <string name="action_wipe_data_submit">Delete all my data</string>
+    <string name="state_wipe_data_completed_banner">Your data has been deleted. Your account is still active.</string>
+    <!-- Phase 27.2 — dedicated phrase key (NOT embedded in
+         body_wipe_data_confirm_phrase_helper) so the VM can resolve the
+         locale-active required phrase at screen mount time via a single
+         lookup, independent of the helper-text wording. -->
+    <string name="phrase_wipe_data_confirm">delete my data</string>
 </resources>

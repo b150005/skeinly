@@ -44,6 +44,7 @@ import io.github.b150005.skeinly.ui.pullrequest.SuggestionDetailScreen
 import io.github.b150005.skeinly.ui.pullrequest.SuggestionFilter
 import io.github.b150005.skeinly.ui.pullrequest.SuggestionListScreen
 import io.github.b150005.skeinly.ui.settings.SettingsScreen
+import io.github.b150005.skeinly.ui.settings.WipeDataConfirmPhraseScreen
 import io.github.b150005.skeinly.ui.sharedcontent.SharedContentScreen
 import io.github.b150005.skeinly.ui.sharedwithme.SharedWithMeScreen
 import io.github.b150005.skeinly.ui.symbol.SymbolGalleryScreen
@@ -237,6 +238,22 @@ data object MfaChallenge
  */
 @Serializable
 data object BiometricSettings
+
+/**
+ * Phase 27.2 (ADR-023 §UX) — data-wipe confirmation flow.
+ * Reached from Settings → Danger Zone → "Delete all my data".
+ *
+ * The screen mounts a [io.github.b150005.skeinly.ui.settings.WipeDataViewModel]
+ * with the locale-active required phrase (resolved at first composition
+ * via `stringResource(Res.string.phrase_wipe_data_confirm)`). Two
+ * phases inside this single route per ADR §UX:
+ * 1. Preservation-matrix modal (`AlertDialog`)
+ * 2. Phrase-typing screen — submit fires `wipe_own_data()` RPC,
+ *    then pops back + emits via `WipeCompletionNotifier` so
+ *    Pattern Library surfaces the success banner for 8 s.
+ */
+@Serializable
+data object WipeDataConfirmPhrase
 
 /**
  * Phase 26.6 (ADR-022 §6.6) — post-OAuth profile setup gate. Routed
@@ -584,6 +601,29 @@ private fun SkeinlyNavHostContent(
                 onEnableMfaClick = { navController.navigate(MfaEnrollment) },
                 // Phase 26.6 (ADR-022 §6.5) — Security → biometric entry.
                 onBiometricSettingsClick = { navController.navigate(BiometricSettings) },
+                // Phase 27.2 (ADR-023 §UX) — Danger Zone → Delete all
+                // my data entry.
+                onWipeDataClick = { navController.navigate(WipeDataConfirmPhrase) },
+            )
+        }
+        composable<WipeDataConfirmPhrase> {
+            WipeDataConfirmPhraseScreen(
+                // "Keep my data" / system-back on Modal / Settings
+                // back button → pop directly to Settings.
+                onCancel = { navController.popBackStack() },
+                // On successful wipe: pop back to Pattern Library. The
+                // WipeCompletionNotifier emission inside the screen
+                // already flipped the banner; we just need to navigate
+                // there. `popUpTo(PatternLibrary)` lands the user on
+                // Pattern Library; if Pattern Library wasn't on the
+                // stack, `navigate(PatternLibrary)` (saveState=true)
+                // recreates it.
+                onWipeCompleted = {
+                    navController.navigate(PatternLibrary) {
+                        popUpTo(WipeDataConfirmPhrase) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
             )
         }
         composable<BiometricSettings> {

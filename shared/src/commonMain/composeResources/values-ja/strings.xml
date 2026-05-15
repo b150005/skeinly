@@ -691,4 +691,23 @@
     <string name="state_signed_in_via_google">Google</string>
     <string name="state_signed_in_via_email">メールアドレスとパスワード</string>
     <string name="label_linked_identities">リンク済みアカウント</string>
+
+    <!-- Phase 27.2 (ADR-023 §6.2 / §UX) — データ削除フロー(アカウントは保持)。 -->
+    <string name="title_wipe_data_settings_row">すべてのデータを削除</string>
+    <string name="body_wipe_data_settings_row">パターン・プロジェクト・コメントをリセットします。アカウントと Pro メンバーシップは保持されます。</string>
+    <string name="title_wipe_data_explanation">すべてのデータを削除しますか?</string>
+    <string name="subtitle_wipe_data_explanation_preserved">保持されるもの</string>
+    <string name="subtitle_wipe_data_explanation_deleted">削除されるもの</string>
+    <string name="body_wipe_data_preserved_list">サインイン、表示名、アバター、Pro メンバーシップ、プッシュ通知設定(自動的に再登録されます)</string>
+    <string name="body_wipe_data_deleted_list">パターン、プロジェクト、編み図、コメント、提案、共有リンク、アクティビティ履歴、ダウンロード済みシンボルパック</string>
+    <string name="action_wipe_data_continue">続行</string>
+    <string name="action_wipe_data_keep">データを保持</string>
+    <string name="title_wipe_data_confirm_phrase">データ削除を確認</string>
+    <string name="body_wipe_data_confirm_phrase_helper">確認のため「データを削除」と入力してください。</string>
+    <string name="action_wipe_data_submit">すべてのデータを削除</string>
+    <string name="state_wipe_data_completed_banner">データを削除しました。アカウントは引き続きご利用いただけます。</string>
+    <!-- Phase 27.2 — 専用のフレーズキー(body_wipe_data_confirm_phrase_helper 内に
+         埋め込まず別キー)。VM が画面マウント時に現在のロケールから必要な
+         入力フレーズを一発で解決できるよう、ヘルパー文言とは独立して管理。 -->
+    <string name="phrase_wipe_data_confirm">データを削除</string>
 </resources>

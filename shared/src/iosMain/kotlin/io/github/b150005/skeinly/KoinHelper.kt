@@ -40,6 +40,9 @@ import io.github.b150005.skeinly.ui.pullrequest.SuggestionDetailViewModel
 import io.github.b150005.skeinly.ui.pullrequest.SuggestionFilter
 import io.github.b150005.skeinly.ui.pullrequest.SuggestionListViewModel
 import io.github.b150005.skeinly.ui.settings.SettingsViewModel
+import io.github.b150005.skeinly.ui.settings.WipeDataNavEvent
+import io.github.b150005.skeinly.ui.settings.WipeDataState
+import io.github.b150005.skeinly.ui.settings.WipeDataViewModel
 import io.github.b150005.skeinly.ui.sharedcontent.SharedContentViewModel
 import io.github.b150005.skeinly.ui.sharedwithme.SharedWithMeViewModel
 import io.github.b150005.skeinly.ui.symbol.SymbolGalleryViewModel
@@ -496,6 +499,33 @@ fun getOAuthProfileSetupViewModel(
             org.koin.core.parameter
                 .parametersOf(metadata)
         }
+}
+
+// Phase 27.2 (ADR-023 §UX) — data-wipe ViewModel accessor + state /
+// nav-event wrappers. Mirrors the OAuthProfileSetup pattern: the
+// `requiredPhrase` parameter threads through to Koin's parametric
+// resolution. SwiftUI's WipeDataConfirmPhraseView resolves the
+// locale-active phrase via `NSLocalizedString(...)` at view init time
+// (matching the Compose `stringResource(Res.string.phrase_wipe_data_confirm)`
+// snapshot semantics).
+fun getWipeDataViewModel(requiredPhrase: String): WipeDataViewModel =
+    KoinPlatform
+        .getKoin()
+        .get { parametersOf(requiredPhrase) }
+
+fun wrapWipeDataState(flow: kotlinx.coroutines.flow.StateFlow<WipeDataState>): FlowWrapper<WipeDataState> = FlowWrapper(flow)
+
+fun wrapWipeDataNavEvents(flow: kotlinx.coroutines.flow.Flow<WipeDataNavEvent>): EventFlowWrapper<WipeDataNavEvent> = EventFlowWrapper(flow)
+
+// Phase 27.2 (ADR-023 §UX) — singleton notifier accessor for the iOS
+// post-wipe nav handler. SwiftUI's WipeDataConfirmPhraseView calls
+// `KoinHelperKt.notifyWipeCompleted()` after a successful submit so the
+// PatternLibrary banner state flips. This mirrors the Compose-side
+// `notifier.notify()` call in `WipeDataConfirmPhraseScreen`.
+suspend fun notifyWipeCompleted() {
+    val notifier: io.github.b150005.skeinly.data.wipe.WipeCompletionNotifier =
+        KoinPlatform.getKoin().get()
+    notifier.notify()
 }
 
 fun wrapOAuthProfileSetupState(

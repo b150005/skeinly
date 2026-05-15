@@ -122,6 +122,15 @@ val repositoryModule =
             )
         }
 
+        // Phase 27.2 (ADR-023 §UX) — singleton event bus that carries
+        // a single `Unit` from the wipe-flow submit handler to the
+        // PatternLibrary banner. Singleton scope so both VMs resolve
+        // the same MutableSharedFlow instance.
+        single {
+            io.github.b150005.skeinly.data.wipe
+                .WipeCompletionNotifier()
+        }
+
         // Phase 39 (W4 / 2026-05-11) — force-update gate. Registered
         // unconditionally so [ForceUpdateGate]'s `koinInject<AppConfigRepository>()`
         // always resolves. Local-only mode (Supabase not configured)
