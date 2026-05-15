@@ -252,12 +252,29 @@ class WipeDataRepositoryImplTest {
         }
 
     @Test
-    fun wipe_rpc_name_matches_migration_033() {
-        // Migration 033 line creating `public.wipe_own_data()`. The
-        // Postgrest `rpc(...)` call MUST use this exact name; a typo
-        // here would surface as a runtime "function not found" 404,
-        // caught only by an end-to-end test. Locking the constant
-        // catches the regression at unit-test time.
+    fun wipe_rpc_name_matches_migration_033_and_unchanged_by_037() {
+        // Migration 033 created `public.wipe_own_data()`. Migration 037
+        // (`037_phase_25_1_wipe_friend_graph.sql`, prod-applied
+        // `phase_25_1_wipe_friend_graph`) CREATE OR REPLACEs the SAME
+        // function to additionally wipe the caller's friend graph per
+        // ADR-024 §(g.1), closing the Tech Debt deferred at Phase 25.1
+        // (migration 035 §note).
+        //
+        // 037's friend-graph wipe is pure server-side PL/pgSQL — there
+        // is NO Kotlin behaviour change, so it is verified by prod-apply
+        // + pg_get_functiondef introspection (the established pattern
+        // for SQL-only migrations here), NOT a commonTest behavioural
+        // assertion (commonTest cannot reach a real Postgres; the §25.1
+        // sub-slice plan's `FriendConnectionsWipeTest` "via direct SQL
+        // EXECUTE" is superseded by that introspection check).
+        //
+        // The one Kotlin-side regression surface is the RPC name: 037
+        // does NOT add a new RPC. The Postgrest `rpc(...)` call MUST
+        // keep using this exact name — a rename would (a) surface as a
+        // runtime "function not found" 404, and (b) silently route
+        // around the friend-graph amendment, leaving friend data after
+        // a wipe. Locking the constant catches both at unit-test time
+        // and keeps the 033/037 migration trail greppable from tests.
         assertEquals("wipe_own_data", RemoteWipeDataDataSource.RPC_NAME)
     }
 }

@@ -134,6 +134,8 @@ Web フォールバック Edge Function `wipe-my-data-web` は `delete-my-accoun
 | `public.feedback` | **匿名化（FK SET NULL）** | `user_id`（SET NULL FK） | Phase F3 フィードバックログは append-only で運用者向け。`user_id` は設計上 `ON DELETE SET NULL`（migration 018、ADR-021 §D1 前例）。消去せず匿名化: 運用者の履歴は保持、ユーザー identity は切断。RPC は feedback への DELETE を発行しない、代わりに `UPDATE feedback SET user_id = NULL WHERE user_id = auth.uid()` を発行。 |
 | `public.ugc_reports` | **FK 経由で匿名化** | `reporter_id`（CASCADE FK！） | Migration 031 では `reporter_id` を `ON DELETE CASCADE` として配線（アカウント削除セマンティクスを前提とした reporter テーブルだから）。消去では運用者の audit トレイルを保持しつつ reporter を匿名化したい — feedback と同じ理由。`UPDATE ugc_reports SET reporter_id = ...` は NOT NULL 制約に違反する。**決定**: Phase 27.1 の migration 033 で `ugc_reports.reporter_id` を nullable + `ON DELETE SET NULL` に変更、運用者の調査スレッドを消去で保持。同じ migration が wipe-RPC パスに明示 UPDATE を担う。 |
 | `public.user_blocks` | **消去（両方の脚）** | `blocker_id` AND `blocked_id` | Blocker 側: ユーザーが自分のコンテンツ + 関係状態を purge している、ブロックリストも消える。Blocked 側: 他ユーザーがこの消去中ユーザーをブロックしていた行は除去されない（他人の選択は保持）。RPC は `DELETE FROM user_blocks WHERE blocker_id = auth.uid()` のみ発行。 |
+| `public.friend_connections` | **消去（非対称、ADR-024 §(g.1)）** | `requester_id` / `user_a` / `user_b` | Phase 25.1 で追加。消去挙動は migration 037（Phase 25.1 フォローアップ）に先送りされていた。ADR-024 §(g.1)「outbound 消去・inbound 保持」に従う: **outbound**（`requester_id = auth.uid()`、state 不問）→ `DELETE`; **inbound accepted**（参加者かつ requester でない、`state='accepted'`）→ `UPDATE state='blocked', accepted_at=NULL`（元の requester に「接続が切断された」シグナルが clean に伝わる）; **inbound pending**（参加者かつ requester でない、`state='pending'`）→ `DELETE`; **inbound blocked** → 不介入（既に terminal）。意図的な非対称性: 消去中ユーザー自身が開始した接続はシグナルなしで消える、他者が開始した接続には「切断」マーカーが残る。 |
+| `public.friend_invites` | **消去（outbound のみ）** | `inviter_id` | Phase 25.1 で追加、migration 037。`DELETE FROM friend_invites WHERE inviter_id = auth.uid()` — ユーザー自身が作成した招待は outbound アーティファクト（`user_blocks` / `shares` の outbound posture をミラー）。`consumed_by = auth.uid()` の行（消去中ユーザーが redeem した、他者が作成した招待）は**不介入**: `friend_invites_consumed_pair` CHECK が `consumed_at`/`consumed_by` を結合するため `consumed_by` 単独 NULL 化は不正、両方 NULL 化は単回使用招待を再 redeem 可能に復活させる（セキュリティ後退）。招待は inviter の private アーティファクト（RLS で読み取りは inviter にスコープ）なので、`user_blocks` の inbound 保持の論拠と一致。 |
 | `public.symbol_packs` | **保持** | （所有者列なし） | グローバルカタログ。ユーザー所有ではない。 |
 | `public.symbol_pack_locales` | **保持** | （所有者列なし） | グローバルカタログ。ユーザー所有ではない。 |
 | `public.user_symbol_pack_state` | **消去** | `user_id` | per-user「pack X の version V を DL 済み」ミラー。フレッシュスタート: 次回 paywall 操作時に再 DL。ローカルキャッシュポインタの Pro 無料テスター pack は消えるが、グローバル `symbol_packs` 行自体は残る（上で保持）。 |
@@ -381,6 +383,7 @@ Koin: `RepositoryModule` に `WipeDataRepository`、`ViewModelModule` に `WipeD
 | 日付 | 変更 | 著者 |
 |---|---|---|
 | 2026-05-14 | 初期切り出し。データセーフティ A0d-6 サブ質問により Phase 27 を alpha ローンチ HARD-GATE に昇格。 | architect（agent team） |
+| 2026-05-15 | 保持マトリクスに `friend_connections` + `friend_invites` 行を追記（Phase 25.1 フレンドグラフ）。消去セマンティクスは ADR-024 §(g.1) に従い migration 037（`wipe_own_data()` `CREATE OR REPLACE`）で適用。migration 035 からインラインで繰り越されていた Tech Debt をクローズ。 | architect（agent team） |
 
 ## 相互参照
 
@@ -388,5 +391,6 @@ Koin: `RepositoryModule` に `WipeDataRepository`、`ViewModelModule` に `WipeD
 - ADR-016 — Pro subscription（`subscriptions` 保持理由）。
 - ADR-017 — Push notifications（`device_tokens` 消去 + 再登録理由）。
 - ADR-021 — UGC moderation（`ugc_reports`、`user_blocks` 保持マトリクスエントリ）。
+- ADR-024 §(g.1) — フレンドグラフ消去セマンティクス（`friend_connections` / `friend_invites`）; migration 037 で適用。
 - CLAUDE.md `### Planned — Phase 27 Data Wipe` — サブスライスインデックス + HARD-GATE 位置づけ。
 - `docs/en/ops/data-export-sop.md` — 運用者向け export SOP（A20 Option A）; Phase 27 は削除側の対応するユーザー向けプライバシープリミティブ。

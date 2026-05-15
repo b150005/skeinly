@@ -162,6 +162,8 @@ Voices:
 
 **Decision**: **Wipe outbound, preserve inbound**. `friend_connections` rows where the WIPING user is `requester_id` (they initiated) get DELETEd. Rows where the user is the recipient (state `accepted`) get state-transitioned to `blocked` so the other side sees "this connection was severed" cleanly. Inbound `pending` requests get DELETEd (no notification needed since they were never accepted). This treats wipe as "I'm starting over socially" not "everyone forgets about me". Documented in ADR-023 §preservation matrix amendment.
 
+**Implementation status (2026-05-15)**: ✅ **Applied** via migration 037 (`037_phase_25_1_wipe_friend_graph.sql`, prod-applied `phase_25_1_wipe_friend_graph`). The behaviour was deferred at Phase 25.1 (migration 035 §note: `wipe_own_data()` left `friend_connections` / `friend_invites` rows intact for the wiping user) and is now closed. Migration 037 `CREATE OR REPLACE`s `public.wipe_own_data()` adding: outbound `DELETE FROM friend_connections WHERE requester_id = v_uid`; inbound-pending `DELETE`; inbound-accepted `UPDATE state='blocked', accepted_at=NULL` (the `friend_connections_accepted_at_matches_state` CHECK forces `accepted_at = NULL` on the transition); inbound-blocked left untouched (terminal). `friend_invites` extension: `DELETE FROM friend_invites WHERE inviter_id = v_uid` (outbound only) — `consumed_by = v_uid` rows are preserved because the `friend_invites_consumed_pair` CHECK couples `consumed_at`/`consumed_by` (single NULL invalid; double NULL would resurrect a single-use invite). RPC name unchanged (`wipe_own_data`) so no Kotlin client edit; the Postgrest binding constant is pinned by `WipeDataRepositoryImplTest`.
+
 #### (g.2) Friend-of-friend visibility
 
 Does a friend-of-friend get to see friends-only patterns?
@@ -237,7 +239,7 @@ Estimated scope: ~80 LOC NavGraph + AppRouter Universal Link parsing + ~150 LOC 
 
 Discovery query gains visibility filter (default `public` only; opt-in toggle "Show friends-only patterns"). DiscoveryScreen TopAppBar adds the toggle as a `FilterChip` or `Switch` (UX decision deferred to implementation — both Material 3 components fit; pick whichever Discovery currently uses for its existing filters). Toggle state persists per-user via local `Settings`-backed preferences (no server roundtrip).
 
-Privacy policy `<h3>` subsection added for `friend_connections` data + visibility semantics. EN + JA mirror. Content: what data is collected (just `(user_a, user_b, state, requester_id, timestamps)` — no profile data), retention semantics (preserved across data wipe per (g.1) decision), GDPR right enumeration extension ("Manage your friend connections from Settings → Privacy → Connections").
+Privacy policy `<h3>` subsection added for `friend_connections` data + visibility semantics. EN + JA mirror. Content: what data is collected (just `(user_a, user_b, state, requester_id, timestamps)` — no profile data), data-wipe semantics (per (g.1): outbound connections + the user's own invites are deleted; inbound accepted connections are severed to a blocked marker; inbound pending requests deleted — NOT blanket-preserved), account-deletion cascade (all participant rows removed via `ON DELETE CASCADE`), GDPR right enumeration extension ("Manage your friend connections from Settings → Privacy → Connections").
 
 End-to-end smoke test (closed-beta, against staging Supabase project):
 
@@ -289,3 +291,4 @@ When an inviter cancels an outbound pending request, do we DELETE the row or tra
 ## Revision history
 
 - 2026-05-15: Initial draft (this document). Accepted via agent-team deliberation; supersedes the design-questions list in CLAUDE.md Phase 25 planning entry.
+- 2026-05-15: §(g.1) friend-graph wipe semantics implemented via migration 037 (`phase_25_1_wipe_friend_graph`, prod-applied). Closes the Tech Debt deferred at Phase 25.1 (migration 035 §note). §(g.1) "Implementation status" block added. The §25.1 sub-slice plan's `FriendConnectionsWipeTest` (4 cases "verified via direct SQL EXECUTE") is superseded by migration-037 prod-apply + `pg_get_functiondef` introspection verification — the established verification pattern for SQL-only migrations in this project (same posture as `is_friend`, which shipped as Fake-based commonTest rather than the plan's direct-SQL form). RPC name unchanged, so the Kotlin surface is pinned by a new `WipeDataRepositoryImplTest` migration-037 anchor.
