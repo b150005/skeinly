@@ -131,6 +131,19 @@ val repositoryModule =
                 .WipeCompletionNotifier()
         }
 
+        // Phase 25.1 (ADR-024 §Phase 25.1) — friend graph repository.
+        // Same registration shape as WipeDataRepository: unconditional
+        // single, getOrNull on the remote ops so local-only mode
+        // surfaces RequiresConnectivity rather than crashing on Koin
+        // resolution. Phase 25.3 ConnectionsViewModel binds through
+        // this interface.
+        single<io.github.b150005.skeinly.domain.repository.FriendRepository> {
+            io.github.b150005.skeinly.data.repository.FriendRepositoryImpl(
+                remote = getOrNull<io.github.b150005.skeinly.data.remote.FriendRemoteOperations>(),
+                authRepository = get(),
+            )
+        }
+
         // Phase 39 (W4 / 2026-05-11) — force-update gate. Registered
         // unconditionally so [ForceUpdateGate]'s `koinInject<AppConfigRepository>()`
         // always resolves. Local-only mode (Supabase not configured)
@@ -186,6 +199,16 @@ val repositoryModule =
             // as DeviceTokenRemoteOperations above.
             single { RemoteWipeDataDataSource(get<SupabaseClient>()) }
             single<WipeDataRemoteOperations> { get<RemoteWipeDataDataSource>() }
+            // Phase 25.1 (ADR-024 §Phase 25.1) — friend graph remote
+            // adapter. Interface alias lets FriendRepositoryImpl be
+            // tested with an in-memory fake.
+            single {
+                io.github.b150005.skeinly.data.remote
+                    .RemoteFriendDataSource(get<SupabaseClient>())
+            }
+            single<io.github.b150005.skeinly.data.remote.FriendRemoteOperations> {
+                get<io.github.b150005.skeinly.data.remote.RemoteFriendDataSource>()
+            }
             // Interface alias lets SubscriptionRepositoryImpl be tested
             // with an in-memory fake without standing up Supabase. Same
             // shape as SuggestionApplyOperations above.

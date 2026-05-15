@@ -371,6 +371,13 @@ kover {
                     // Remote data sources — thin Supabase SDK wrappers, untestable without MockEngine.
                     // Security validation (auth, input sanitization, size limits) is covered at the UseCase layer.
                     "io.github.b150005.skeinly.data.remote.Remote*DataSource",
+                    // Inner private rows + payload classes inside the
+                    // Remote*DataSource classes (Kotlin generates each
+                    // private @Serializable data class as a separate
+                    // bytecode class with $InnerName suffix). The
+                    // outer-class wildcard above doesn't reach the
+                    // inner classes; this second pattern covers them.
+                    "io.github.b150005.skeinly.data.remote.Remote*DataSource\$*",
                     "io.github.b150005.skeinly.data.remote.SupabaseConfig",
                     "io.github.b150005.skeinly.data.remote.SupabaseConfigKt",
                     "io.github.b150005.skeinly.data.remote.ConnectivityMonitor",
