@@ -39,6 +39,10 @@ enum Route: Hashable {
     /// phrase resolved via `NSLocalizedString("phrase_wipe_data_confirm", ...)`
     /// at view-init time; mid-flow locale change is unsupported.
     case wipeDataConfirmPhrase
+    /// Phase 25.3 (ADR-024 §(e)) — Settings → Privacy → Connections.
+    /// Three-tab Friends / Pending / Invite surface for managing the
+    /// mutual-friendship graph + invite generation.
+    case connections
     /// Phase 41.3b (ADR-016 §5.1) — paywall route. Uses
     /// `PaywallTrigger.wireValue` for the Hashable representation so the
     /// case stays Codable / Hashable without forcing PaywallTrigger to
@@ -118,6 +122,8 @@ enum Route: Hashable {
             hasher.combine("biometricSettings")
         case .wipeDataConfirmPhrase:
             hasher.combine("wipeDataConfirmPhrase")
+        case .connections:
+            hasher.combine("connections")
         }
     }
 }
@@ -403,6 +409,11 @@ struct AppRootView: View {
                 // "Delete all my data" routes to the confirmation flow.
                 onWipeDataClick: {
                     path.append(Route.wipeDataConfirmPhrase)
+                },
+                // Phase 25.3 (ADR-024 §(e)) — Settings → Privacy →
+                // "Connections" routes to the 3-tab management screen.
+                onConnectionsClick: {
+                    path.append(Route.connections)
                 }
             )
                 .trackScreen(.settings)
@@ -531,6 +542,15 @@ struct AppRootView: View {
                     path = NavigationPath()
                 }
             )
+                .skeinlyBackButton(path: $path)
+        case .connections:
+            // Phase 25.3 (ADR-024 §(e)) — Settings → Privacy →
+            // Connections. The view's `init` resolves the Koin
+            // ConnectionsViewModel which kicks off the initial
+            // refresh against listFriends / listPending / listInvites
+            // + caller-id resolution. Standard back-button pop
+            // routes back to Settings.
+            ConnectionsView()
                 .skeinlyBackButton(path: $path)
         }
     }

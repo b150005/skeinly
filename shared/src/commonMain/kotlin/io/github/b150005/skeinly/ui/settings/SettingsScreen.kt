@@ -74,6 +74,7 @@ import io.github.b150005.skeinly.generated.resources.action_save
 import io.github.b150005.skeinly.generated.resources.action_send_feedback
 import io.github.b150005.skeinly.generated.resources.action_sign_out
 import io.github.b150005.skeinly.generated.resources.action_terms_of_service
+import io.github.b150005.skeinly.generated.resources.body_connections_settings_row
 import io.github.b150005.skeinly.generated.resources.body_contact_support_helper
 import io.github.b150005.skeinly.generated.resources.body_delete_account_warning
 import io.github.b150005.skeinly.generated.resources.body_diagnostic_data_explanation
@@ -98,6 +99,7 @@ import io.github.b150005.skeinly.generated.resources.label_new_password
 import io.github.b150005.skeinly.generated.resources.label_notifications_settings_row
 import io.github.b150005.skeinly.generated.resources.label_pack_management
 import io.github.b150005.skeinly.generated.resources.label_paywall_section
+import io.github.b150005.skeinly.generated.resources.label_privacy_section
 import io.github.b150005.skeinly.generated.resources.label_security_section
 import io.github.b150005.skeinly.generated.resources.label_signed_in_via
 import io.github.b150005.skeinly.generated.resources.label_subscribe_to_pro
@@ -116,6 +118,7 @@ import io.github.b150005.skeinly.generated.resources.state_signed_in_via_apple_r
 import io.github.b150005.skeinly.generated.resources.state_signed_in_via_email
 import io.github.b150005.skeinly.generated.resources.state_signed_in_via_google
 import io.github.b150005.skeinly.generated.resources.title_biometric_settings
+import io.github.b150005.skeinly.generated.resources.title_connections
 import io.github.b150005.skeinly.generated.resources.title_mfa_disable_confirm
 import io.github.b150005.skeinly.generated.resources.title_settings
 import io.github.b150005.skeinly.generated.resources.title_wipe_data_settings_row
@@ -175,6 +178,11 @@ fun SettingsScreen(
     // the `WipeDataConfirmPhrase` route which mounts the WipeData VM
     // with the locale-active required phrase.
     onWipeDataClick: () -> Unit = {},
+    // Phase 25.3 (ADR-024 §(e)) — invoked when the user taps
+    // "Connections" in the new Privacy section. NavGraph wires this to
+    // the `Connections` route which renders the 3-tab Friends /
+    // Pending / Invite screen.
+    onConnectionsClick: () -> Unit = {},
     viewModel: SettingsViewModel = koinViewModel(),
     // Phase 24.2c (ADR-017 §3.6) — push notification consent VM. Drives
     // the Settings → Notifications row + the in-app pre-permission
@@ -716,6 +724,39 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+
+                // Phase 25.3 (ADR-024 §(e)) — Privacy section. Sits
+                // ABOVE Danger Zone so the destructiveness gradient
+                // reads top-to-bottom: Connections (non-destructive) →
+                // Wipe (content-destructive) → Delete Account
+                // (identity-destructive). Auth-only because friend graph
+                // is auth-scoped — there's nothing to manage when
+                // signed out.
+                if (state.isSignedIn) {
+                    Spacer(Modifier.height(24.dp))
+                    HorizontalDivider()
+                    Spacer(Modifier.height(24.dp))
+
+                    Text(
+                        text = stringResource(Res.string.label_privacy_section),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+
+                    ListItem(
+                        headlineContent = {
+                            Text(stringResource(Res.string.title_connections))
+                        },
+                        supportingContent = {
+                            Text(stringResource(Res.string.body_connections_settings_row))
+                        },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable(role = Role.Button) { onConnectionsClick() }
+                                .testTag("connectionsSettingsRow"),
                     )
                 }
 

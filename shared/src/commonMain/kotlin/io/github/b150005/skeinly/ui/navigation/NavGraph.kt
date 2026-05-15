@@ -27,6 +27,7 @@ import io.github.b150005.skeinly.ui.chart.ChartComparisonScreen
 import io.github.b150005.skeinly.ui.chart.ChartEditorScreen
 import io.github.b150005.skeinly.ui.chart.ChartHistoryScreen
 import io.github.b150005.skeinly.ui.chart.ChartViewerScreen
+import io.github.b150005.skeinly.ui.connections.ConnectionsScreen
 import io.github.b150005.skeinly.ui.discovery.DiscoveryScreen
 import io.github.b150005.skeinly.ui.forceupdate.ForceUpdateGate
 import io.github.b150005.skeinly.ui.onboarding.OAuthProfileSetupScreen
@@ -238,6 +239,15 @@ data object MfaChallenge
  */
 @Serializable
 data object BiometricSettings
+
+/**
+ * Phase 25.3 (ADR-024 §(e)) — Settings → Privacy → Connections screen.
+ * Three-tab layout (Friends / Pending / Invite) for managing the
+ * mutual-friendship graph + invite generation. Reached from
+ * Settings → Privacy section.
+ */
+@Serializable
+data object Connections
 
 /**
  * Phase 27.2 (ADR-023 §UX) — data-wipe confirmation flow.
@@ -604,6 +614,13 @@ private fun SkeinlyNavHostContent(
                 // Phase 27.2 (ADR-023 §UX) — Danger Zone → Delete all
                 // my data entry.
                 onWipeDataClick = { navController.navigate(WipeDataConfirmPhrase) },
+                // Phase 25.3 (ADR-024 §(e)) — Privacy → Connections.
+                onConnectionsClick = { navController.navigate(Connections) },
+            )
+        }
+        composable<Connections> {
+            ConnectionsScreen(
+                onBack = { navController.popBackStack() },
             )
         }
         composable<WipeDataConfirmPhrase> {

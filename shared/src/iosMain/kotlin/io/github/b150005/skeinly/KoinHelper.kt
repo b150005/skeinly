@@ -528,6 +528,18 @@ suspend fun notifyWipeCompleted() {
     notifier.notify()
 }
 
+// Phase 25.3 (ADR-024 §(e)) — Connections (friends / pending / invite)
+// ViewModel + state wrapper. SwiftUI's ConnectionsView mirrors the
+// Compose ConnectionsScreen surface and routes events through this VM.
+fun getConnectionsViewModel(): io.github.b150005.skeinly.ui.connections.ConnectionsViewModel =
+    KoinPlatform
+        .getKoin()
+        .get()
+
+fun wrapConnectionsState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.connections.ConnectionsState>,
+): FlowWrapper<io.github.b150005.skeinly.ui.connections.ConnectionsState> = FlowWrapper(flow)
+
 fun wrapOAuthProfileSetupState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.onboarding.OAuthProfileSetupState>,
 ): FlowWrapper<io.github.b150005.skeinly.ui.onboarding.OAuthProfileSetupState> = FlowWrapper(flow)

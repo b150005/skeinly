@@ -49,6 +49,10 @@ struct SettingsScreen: View {
     /// all my data" in the Danger Zone section. AppRouter wires this
     /// to `path.append(.wipeDataConfirmPhrase)`.
     let onWipeDataClick: () -> Void
+    /// Phase 25.3 (ADR-024 §(e)) — invoked when the user taps
+    /// "Connections" in the new Privacy section. AppRouter wires this
+    /// to `path.append(.connections)`.
+    let onConnectionsClick: () -> Void
 
     private var viewModel: SettingsViewModel { holder.viewModel }
     private var notificationViewModel: NotificationPermissionViewModel { notificationHolder.viewModel }
@@ -90,7 +94,8 @@ struct SettingsScreen: View {
         onManagePacksClick: @escaping () -> Void = {},
         onEnableMfaClick: @escaping () -> Void = {},
         onBiometricSettingsClick: @escaping () -> Void = {},
-        onWipeDataClick: @escaping () -> Void = {}
+        onWipeDataClick: @escaping () -> Void = {},
+        onConnectionsClick: @escaping () -> Void = {}
     ) {
         self.onSendFeedback = onSendFeedback
         self.onSubscribeToProClick = onSubscribeToProClick
@@ -98,6 +103,7 @@ struct SettingsScreen: View {
         self.onEnableMfaClick = onEnableMfaClick
         self.onBiometricSettingsClick = onBiometricSettingsClick
         self.onWipeDataClick = onWipeDataClick
+        self.onConnectionsClick = onConnectionsClick
         let vm = ViewModelFactory.settingsViewModel()
         let wrapper = KoinHelperKt.wrapSettingsState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
@@ -508,6 +514,31 @@ struct SettingsScreen: View {
                         Text("body_notifications_setting_explanation")
                         Text("body_send_feedback_explanation")
                     }
+                }
+            }
+
+            // Phase 25.3 (ADR-024 §(e)) — Privacy section. Sits ABOVE
+            // Danger Zone so the destructiveness gradient reads
+            // top-to-bottom: Connections (non-destructive) → Wipe
+            // (content-destructive) → Delete Account (identity-
+            // destructive). Auth-only because the friend graph is
+            // auth-scoped.
+            if state.isSignedIn {
+                Section {
+                    Button {
+                        onConnectionsClick()
+                    } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("title_connections")
+                                .foregroundStyle(.primary)
+                            Text("body_connections_settings_row")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .accessibilityIdentifier("connectionsSettingsRow")
+                } header: {
+                    Text("label_privacy_section")
                 }
             }
 

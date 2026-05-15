@@ -938,4 +938,31 @@
          locale-active required phrase at screen mount time via a single
          lookup, independent of the helper-text wording. -->
     <string name="phrase_wipe_data_confirm">delete my data</string>
+
+    <!-- Phase 25.3 (ADR-024 §(e)) — Settings → Privacy → Connections.
+         New "Privacy" section header sits ABOVE "Danger Zone" so the
+         destructiveness gradient reads cleanly from top to bottom:
+         Connections (non-destructive) → Wipe (content-destructive) →
+         Delete Account (identity-destructive). The Danger Zone label is
+         retained because Wipe + Delete still warrant the warning idiom. -->
+    <string name="label_privacy_section">Privacy</string>
+    <string name="title_connections">Connections</string>
+    <string name="body_connections_settings_row">Manage friends and friend-only access.</string>
+    <string name="tab_connections_friends">Friends</string>
+    <string name="tab_connections_pending">Pending</string>
+    <string name="tab_connections_invite">Invite</string>
+    <string name="state_connections_no_friends">No friends yet. Invite someone to get started.</string>
+    <string name="state_connections_no_pending">No pending requests.</string>
+    <string name="state_connections_no_invite">Tap below to create an invite.</string>
+    <string name="state_connections_request_from">Request from %1$s</string>
+    <string name="state_connections_request_to">Sent to %1$s</string>
+    <string name="state_connections_unknown_user">Unknown user</string>
+    <string name="state_connections_invite_expires_in_days">Expires in %1$d days</string>
+    <string name="action_connections_accept">Accept</string>
+    <string name="action_connections_reject">Reject</string>
+    <string name="action_connections_disconnect">Disconnect</string>
+    <string name="action_connections_create_invite">Create invite</string>
+    <string name="body_connections_invite_explanation">Share this code or link with your knitting friends. Codes expire in 14 days.</string>
+    <string name="dialog_connections_disconnect_title">Disconnect?</string>
+    <string name="dialog_connections_disconnect_body">%1$s won\'t see your friends-only patterns anymore.</string>
 </resources>

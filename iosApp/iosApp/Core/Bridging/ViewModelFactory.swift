@@ -180,4 +180,11 @@ enum ViewModelFactory {
     static func wipeDataViewModel(requiredPhrase: String) -> WipeDataViewModel {
         KoinHelperKt.getWipeDataViewModel(requiredPhrase: requiredPhrase)
     }
+
+    /// Phase 25.3 (ADR-024 §(e)) — Connections (friends / pending /
+    /// invite) ViewModel. Stateless factory; the VM resolves the
+    /// caller id + initial three-list refresh in its `init` block.
+    static func connectionsViewModel() -> ConnectionsViewModel {
+        KoinHelperKt.getConnectionsViewModel()
+    }
 }

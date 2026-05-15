@@ -20,6 +20,7 @@ import io.github.b150005.skeinly.ui.chart.ChartHistoryViewModel
 import io.github.b150005.skeinly.ui.chart.ChartVariationPickerViewModel
 import io.github.b150005.skeinly.ui.chart.ChartViewerViewModel
 import io.github.b150005.skeinly.ui.comments.CommentSectionViewModel
+import io.github.b150005.skeinly.ui.connections.ConnectionsViewModel
 import io.github.b150005.skeinly.ui.discovery.DiscoveryViewModel
 import io.github.b150005.skeinly.ui.notifications.NotificationPermissionViewModel
 import io.github.b150005.skeinly.ui.onboarding.OAuthProfileSetupViewModel
@@ -189,6 +190,38 @@ val viewModelModule =
                 // row. Same lambda-seam DI pattern; production binds
                 // through the repo, tests inject a constant.
                 loadLinkedIdentities = { authRepository.getLinkedIdentities() },
+            )
+        }
+        // Phase 25.3 (ADR-024 §(e)) — connections (friends / pending /
+        // invite) management. Lambda-seam DI mirrors WipeData / MFA
+        // precedents — keeps commonTest free of supabase-kt + Ktor.
+        // Display-name resolution wraps `UserRepository.getByIds` into
+        // a UUID → display-name map; missing entries fall back to a
+        // localized "Unknown user" at the screen layer.
+        viewModel {
+            val friendRepository: io.github.b150005.skeinly.domain.repository.FriendRepository = get()
+            val authRepository: io.github.b150005.skeinly.domain.repository.AuthRepository = get()
+            val userRepository: io.github.b150005.skeinly.domain.repository.UserRepository = get()
+            ConnectionsViewModel(
+                getCallerId = { authRepository.getCurrentUserId() },
+                listFriends = { friendRepository.listFriends() },
+                listPending = { friendRepository.listPending() },
+                listInvites = { friendRepository.listInvites() },
+                resolveDisplayNames = { ids ->
+                    userRepository
+                        .getByIds(ids)
+                        .associate { it.id to it.displayName }
+                },
+                acceptRequest = { otherUserId ->
+                    friendRepository.acceptRequest(otherUserId)
+                },
+                rejectRequest = { otherUserId ->
+                    friendRepository.rejectRequest(otherUserId)
+                },
+                disconnect = { otherUserId ->
+                    friendRepository.disconnect(otherUserId)
+                },
+                createInvite = { friendRepository.createInvite() },
             )
         }
         // Phase 26.6 (ADR-022 §6.5) — biometric settings screen.

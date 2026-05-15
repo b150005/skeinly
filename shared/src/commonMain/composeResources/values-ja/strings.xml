@@ -712,4 +712,30 @@
          埋め込まず別キー)。VM が画面マウント時に現在のロケールから必要な
          入力フレーズを一発で解決できるよう、ヘルパー文言とは独立して管理。 -->
     <string name="phrase_wipe_data_confirm">データを削除</string>
+
+    <!-- Phase 25.3 (ADR-024 §(e)) — 設定 → プライバシー → フレンド画面。
+         「プライバシー」セクションを「危険な操作」の上に新設し、破壊性が
+         弱い順に並べる: フレンド管理(非破壊) → データ削除(コンテンツ破壊)
+         → アカウント削除(アイデンティティ破壊)。「危険な操作」は引き続き
+         データ削除とアカウント削除の警告として使用。 -->
+    <string name="label_privacy_section">プライバシー</string>
+    <string name="title_connections">フレンド</string>
+    <string name="body_connections_settings_row">フレンドと共有範囲を管理します。</string>
+    <string name="tab_connections_friends">フレンド</string>
+    <string name="tab_connections_pending">保留中</string>
+    <string name="tab_connections_invite">招待</string>
+    <string name="state_connections_no_friends">まだフレンドがいません。誰かを招待してみましょう。</string>
+    <string name="state_connections_no_pending">保留中のリクエストはありません。</string>
+    <string name="state_connections_no_invite">下のボタンから招待を作成しましょう。</string>
+    <string name="state_connections_request_from">%1$s からのリクエスト</string>
+    <string name="state_connections_request_to">%1$s に送信済み</string>
+    <string name="state_connections_unknown_user">不明なユーザー</string>
+    <string name="state_connections_invite_expires_in_days">あと %1$d 日で期限切れ</string>
+    <string name="action_connections_accept">承認</string>
+    <string name="action_connections_reject">拒否</string>
+    <string name="action_connections_disconnect">フレンド解除</string>
+    <string name="action_connections_create_invite">招待を作成</string>
+    <string name="body_connections_invite_explanation">このコードまたはリンクを編み物仲間と共有しましょう。14日後に期限切れになります。</string>
+    <string name="dialog_connections_disconnect_title">フレンド解除しますか?</string>
+    <string name="dialog_connections_disconnect_body">%1$s はあなたのフレンド限定パターンを見られなくなります。</string>
 </resources>

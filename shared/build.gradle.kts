@@ -484,6 +484,13 @@ kover {
                     // commonTest.
                     "io.github.b150005.skeinly.ui.settings.WipeDataConfirmPhraseScreenKt*",
                     "io.github.b150005.skeinly.ui.settings.WipeDataExplanationDialogKt*",
+                    // Phase 25.3 (ADR-024 §(e)) — Connections Compose
+                    // screen. Same JVM-untestable rationale as other
+                    // *ScreenKt excludes; the driving ConnectionsViewModel
+                    // is exercised via commonTest (19 cases covering the
+                    // 3-tab state machine + per-target in-flight guards
+                    // + display-name batch resolution).
+                    "io.github.b150005.skeinly.ui.connections.ConnectionsScreenKt*",
                 )
             }
         }

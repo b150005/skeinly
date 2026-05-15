@@ -9099,6 +9099,146 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "delete my data" } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "データを削除" } }
       }
+    },
+    "label_privacy_section" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Privacy" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プライバシー" } }
+      }
+    },
+    "title_connections" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Connections" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンド" } }
+      }
+    },
+    "body_connections_settings_row" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Manage friends and friend-only access." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンドと共有範囲を管理します。" } }
+      }
+    },
+    "tab_connections_friends" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Friends" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンド" } }
+      }
+    },
+    "tab_connections_pending" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pending" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "保留中" } }
+      }
+    },
+    "tab_connections_invite" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Invite" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "招待" } }
+      }
+    },
+    "state_connections_no_friends" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No friends yet. Invite someone to get started." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "まだフレンドがいません。誰かを招待してみましょう。" } }
+      }
+    },
+    "state_connections_no_pending" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No pending requests." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "保留中のリクエストはありません。" } }
+      }
+    },
+    "state_connections_no_invite" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tap below to create an invite." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "下のボタンから招待を作成しましょう。" } }
+      }
+    },
+    "state_connections_request_from" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Request from %1$@" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ からのリクエスト" } }
+      }
+    },
+    "state_connections_request_to" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sent to %1$@" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ に送信済み" } }
+      }
+    },
+    "state_connections_unknown_user" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unknown user" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "不明なユーザー" } }
+      }
+    },
+    "state_connections_invite_expires_in_days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Expires in %1$d days" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "あと %1$d 日で期限切れ" } }
+      }
+    },
+    "action_connections_accept" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Accept" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "承認" } }
+      }
+    },
+    "action_connections_reject" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reject" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "拒否" } }
+      }
+    },
+    "action_connections_disconnect" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Disconnect" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンド解除" } }
+      }
+    },
+    "action_connections_create_invite" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Create invite" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "招待を作成" } }
+      }
+    },
+    "body_connections_invite_explanation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share this code or link with your knitting friends. Codes expire in 14 days." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このコードまたはリンクを編み物仲間と共有しましょう。14日後に期限切れになります。" } }
+      }
+    },
+    "dialog_connections_disconnect_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Disconnect?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンド解除しますか?" } }
+      }
+    },
+    "dialog_connections_disconnect_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ won’t see your friends-only patterns anymore." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ はあなたのフレンド限定パターンを見られなくなります。" } }
+      }
     }
   },
   "version" : "1.1"
