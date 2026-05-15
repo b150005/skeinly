@@ -144,6 +144,19 @@ val repositoryModule =
             )
         }
 
+        // Phase 39 (ADR-021 §D4) — UGC moderation repository (report +
+        // block + blocked-users list). Same unconditional registration
+        // shape as FriendRepository / WipeDataRepository: getOrNull on
+        // the remote ops so local-only mode surfaces
+        // RequiresConnectivity rather than crashing Koin resolution.
+        // The three moderation ViewModels bind through this interface.
+        single<io.github.b150005.skeinly.domain.repository.UgcModerationRepository> {
+            io.github.b150005.skeinly.data.repository.UgcModerationRepositoryImpl(
+                remote = getOrNull<io.github.b150005.skeinly.data.remote.UgcModerationRemoteOperations>(),
+                authRepository = get(),
+            )
+        }
+
         // Phase 39 (W4 / 2026-05-11) — force-update gate. Registered
         // unconditionally so [ForceUpdateGate]'s `koinInject<AppConfigRepository>()`
         // always resolves. Local-only mode (Supabase not configured)
@@ -208,6 +221,21 @@ val repositoryModule =
             }
             single<io.github.b150005.skeinly.data.remote.FriendRemoteOperations> {
                 get<io.github.b150005.skeinly.data.remote.RemoteFriendDataSource>()
+            }
+            // Phase 39 (ADR-021 §D4) — UGC moderation remote adapter.
+            // submit-ugc-report Edge Function (verify_jwt = true; the
+            // Functions plugin auto-attaches the session JWT) + the
+            // user_blocks / profiles Postgrest CRUD. Interface alias
+            // lets UgcModerationRepositoryImpl be tested with an
+            // in-memory fake. `json = get()` reuses the shared
+            // kotlinx-serialization Json single (same as
+            // BugReportProxyClient).
+            single {
+                io.github.b150005.skeinly.data.remote
+                    .RemoteUgcModerationDataSource(get<SupabaseClient>(), get())
+            }
+            single<io.github.b150005.skeinly.data.remote.UgcModerationRemoteOperations> {
+                get<io.github.b150005.skeinly.data.remote.RemoteUgcModerationDataSource>()
             }
             // Interface alias lets SubscriptionRepositoryImpl be tested
             // with an in-memory fake without standing up Supabase. Same

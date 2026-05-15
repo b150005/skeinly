@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -54,9 +55,12 @@ import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.domain.model.Difficulty
 import io.github.b150005.skeinly.domain.model.Pattern
 import io.github.b150005.skeinly.domain.model.SortOrder
+import io.github.b150005.skeinly.domain.model.UgcTargetType
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_back
 import io.github.b150005.skeinly.generated.resources.action_clear_search
+import io.github.b150005.skeinly.generated.resources.action_more_options
+import io.github.b150005.skeinly.generated.resources.action_report_content
 import io.github.b150005.skeinly.generated.resources.action_save_pattern_copy
 import io.github.b150005.skeinly.generated.resources.action_sort
 import io.github.b150005.skeinly.generated.resources.hint_search_public_patterns
@@ -81,6 +85,7 @@ import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.labelKey
 import io.github.b150005.skeinly.ui.components.localized
 import io.github.b150005.skeinly.ui.components.selectedCheckmarkIcon
+import io.github.b150005.skeinly.ui.moderation.ReportContentDialog
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -510,10 +515,47 @@ private fun DiscoveryPatternCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // Phase 39 (ADR-021 §D4) — UGC report affordance. Apple
+                // Guideline 1.2 requires a Report action reachable in
+                // ≤1 tap on every public UGC surface; the Discovery
+                // feed is the most-public one. Overflow keeps the
+                // primary Save-copy CTA visually dominant.
+                var menuExpanded by remember(pattern.id) { mutableStateOf(false) }
+                var reportOpen by remember(pattern.id) { mutableStateOf(false) }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    Box {
+                        IconButton(
+                            onClick = { menuExpanded = true },
+                            modifier = Modifier.testTag("patternOverflowButton_${pattern.id}"),
+                        ) {
+                            Icon(
+                                Icons.Default.MoreVert,
+                                // a11y: the button opens a menu — announce
+                                // the affordance ("More options"), not the
+                                // single menu item, so screen-reader users
+                                // know it expands.
+                                contentDescription = stringResource(Res.string.action_more_options),
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(Res.string.action_report_content)) },
+                                onClick = {
+                                    menuExpanded = false
+                                    reportOpen = true
+                                },
+                                modifier = Modifier.testTag("reportPatternMenuItem_${pattern.id}"),
+                            )
+                        }
+                    }
                     if (isForkInProgress) {
                         CircularProgressIndicator(
                             modifier = Modifier.height(20.dp).width(20.dp),
@@ -531,6 +573,15 @@ private fun DiscoveryPatternCard(
                             )
                         }
                     }
+                }
+
+                if (reportOpen) {
+                    ReportContentDialog(
+                        targetType = UgcTargetType.Pattern,
+                        targetId = pattern.id,
+                        onSubmitted = { reportOpen = false },
+                        onDismiss = { reportOpen = false },
+                    )
                 }
             }
         }

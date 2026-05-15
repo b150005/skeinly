@@ -478,36 +478,86 @@
     "title_link_identity" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Link your account" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウントを連携" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link your account"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アカウントを連携"
+          }
+        }
       }
     },
     "body_email_already_used_link_prompt" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ is already used by an existing Skeinly account. Enter your password to link your account." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ は既存の Skeinly アカウントで使用されています。パスワードを入力してアカウントを連携してください。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ is already used by an existing Skeinly account. Enter your password to link your account."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ は既存の Skeinly アカウントで使用されています。パスワードを入力してアカウントを連携してください。"
+          }
+        }
       }
     },
     "action_link_identity" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Link account" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウントを連携" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link account"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アカウントを連携"
+          }
+        }
       }
     },
     "action_dismiss_link_identity" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "キャンセル" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キャンセル"
+          }
+        }
       }
     },
     "state_linking_identity" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Linking…" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "連携中…" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linking…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "連携中…"
+          }
+        }
       }
     },
     "action_copy" : {
@@ -2176,9 +2226,7 @@
         }
       }
     },
-    "Back" : {
-
-    },
+    "Back" : {},
     "banner_pick_reflection_axis" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6448,8 +6496,18 @@
     "label_visibility_friends" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Friends" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンドのみ" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Friends"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フレンドのみ"
+          }
+        }
       }
     },
     "label_visibility_public" : {
@@ -8834,512 +8892,1718 @@
     "title_biometric_settings" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Biometric authentication" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "生体認証" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Biometric authentication"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生体認証"
+          }
+        }
       }
     },
     "state_biometric_enabled" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enabled" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オン" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enabled"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オン"
+          }
+        }
       }
     },
     "state_biometric_disabled" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Disabled" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オフ" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disabled"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オフ"
+          }
+        }
       }
     },
     "label_biometric_threshold_picker" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Re-authenticate after" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "再認証までの時間" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Re-authenticate after"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再認証までの時間"
+          }
+        }
       }
     },
     "value_biometric_threshold_1m" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "1 minute" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "1分" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 minute"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1分"
+          }
+        }
       }
     },
     "value_biometric_threshold_5m" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "5 minutes" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "5分" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5 minutes"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5分"
+          }
+        }
       }
     },
     "value_biometric_threshold_15m" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "15 minutes" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "15分" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "15 minutes"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "15分"
+          }
+        }
       }
     },
     "value_biometric_threshold_1h" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "1 hour" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "1時間" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 hour"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1時間"
+          }
+        }
       }
     },
     "body_biometric_reauth_reason" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirm it's you to re-enter Skeinly" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Skeinly に戻るには本人確認が必要です" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm it's you to re-enter Skeinly"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skeinly に戻るには本人確認が必要です"
+          }
+        }
       }
     },
     "body_biometric_account_deletion_reason" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirm it's you to delete your account" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウントを削除するため本人確認が必要です" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm it's you to delete your account"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アカウントを削除するため本人確認が必要です"
+          }
+        }
       }
     },
     "body_biometric_mfa_disable_reason" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirm it's you to disable two-factor authentication" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "2要素認証をオフにするため本人確認が必要です" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm it's you to disable two-factor authentication"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2要素認証をオフにするため本人確認が必要です"
+          }
+        }
       }
     },
     "state_biometric_unavailable_no_hw" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Not available on this device" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このデバイスでは利用できません" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not available on this device"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このデバイスでは利用できません"
+          }
+        }
       }
     },
     "state_biometric_unavailable_not_enrolled" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No biometric or PIN enrolled in OS settings" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "OS設定で生体認証または PIN を登録してください" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No biometric or PIN enrolled in OS settings"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OS設定で生体認証または PIN を登録してください"
+          }
+        }
       }
     },
     "body_biometric_settings_explanation" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "When enabled, Skeinly asks for biometric (or device PIN) after you've been away for the selected time. Sensitive actions like deleting your account always ask, even when this is off." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オンにすると、設定した時間操作がないと再び Skeinly を開く際に生体認証 (またはデバイスPIN) を求められます。アカウント削除などの重要操作は、この設定がオフでも常に確認します。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When enabled, Skeinly asks for biometric (or device PIN) after you've been away for the selected time. Sensitive actions like deleting your account always ask, even when this is off."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オンにすると、設定した時間操作がないと再び Skeinly を開く際に生体認証 (またはデバイスPIN) を求められます。アカウント削除などの重要操作は、この設定がオフでも常に確認します。"
+          }
+        }
       }
     },
     "title_oauth_profile_setup" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "What should we call you?" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "あなたの名前を教えてください" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What should we call you?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "あなたの名前を教えてください"
+          }
+        }
       }
     },
     "body_oauth_profile_setup" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Welcome! We pre-filled your name from your sign-in. Edit it or use it as-is." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ようこそ! サインイン情報からお名前を取り込みました。そのまま使うか、お好みで編集してください。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcome! We pre-filled your name from your sign-in. Edit it or use it as-is."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ようこそ! サインイン情報からお名前を取り込みました。そのまま使うか、お好みで編集してください。"
+          }
+        }
       }
     },
     "label_oauth_profile_display_name" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your name" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "お名前" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your name"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "お名前"
+          }
+        }
       }
     },
     "title_oauth_profile_avatar" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Use this picture as your avatar?" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "この画像をアバターとして使いますか?" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use this picture as your avatar?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この画像をアバターとして使いますか?"
+          }
+        }
       }
     },
     "action_use_oauth_avatar" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Use this picture" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "この画像を使う" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use this picture"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この画像を使う"
+          }
+        }
       }
     },
     "action_choose_different_avatar" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Choose different" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "別の画像を選ぶ" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose different"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "別の画像を選ぶ"
+          }
+        }
       }
     },
     "action_skip_profile_setup" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Skip for now" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "あとで" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip for now"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "あとで"
+          }
+        }
       }
     },
     "action_save_profile_setup" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "保存" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存"
+          }
+        }
       }
     },
     "state_oauth_avatar_imported" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Picture imported" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "画像を取り込みました" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Picture imported"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像を取り込みました"
+          }
+        }
       }
     },
     "state_oauth_avatar_importing" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Importing…" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "取り込み中…" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importing…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取り込み中…"
+          }
+        }
       }
     },
     "body_change_avatar_in_profile_hint" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "You can change your picture anytime in Settings → Profile." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "画像はあとで 設定 → プロフィール からいつでも変更できます。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can change your picture anytime in Settings → Profile."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像はあとで 設定 → プロフィール からいつでも変更できます。"
+          }
+        }
       }
     },
     "label_signed_in_via" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Signed in via" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "サインイン方法" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signed in via"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サインイン方法"
+          }
+        }
       }
     },
     "state_signed_in_via_apple_relay" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Apple (using a private email relay)" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Apple (プライベートリレーメールを使用)" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple (using a private email relay)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple (プライベートリレーメールを使用)"
+          }
+        }
       }
     },
     "state_signed_in_via_apple" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Apple" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Apple" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple"
+          }
+        }
       }
     },
     "state_signed_in_via_google" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Google" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Google" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google"
+          }
+        }
       }
     },
     "state_signed_in_via_email" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Email and password" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メールアドレスとパスワード" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email and password"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メールアドレスとパスワード"
+          }
+        }
       }
     },
     "label_linked_identities" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Linked accounts" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "リンク済みアカウント" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linked accounts"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リンク済みアカウント"
+          }
+        }
       }
     },
     "title_wipe_data_settings_row" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete all my data" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "すべてのデータを削除" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete all my data"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてのデータを削除"
+          }
+        }
       }
     },
     "body_wipe_data_settings_row" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reset your patterns, projects, and comments. Keeps your account and Pro membership." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターン・プロジェクト・コメントをリセットします。アカウントと Pro メンバーシップは保持されます。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset your patterns, projects, and comments. Keeps your account and Pro membership."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パターン・プロジェクト・コメントをリセットします。アカウントと Pro メンバーシップは保持されます。"
+          }
+        }
       }
     },
     "title_wipe_data_explanation" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete all your data?" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "すべてのデータを削除しますか?" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete all your data?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてのデータを削除しますか?"
+          }
+        }
       }
     },
     "subtitle_wipe_data_explanation_preserved" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Preserved" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "保持されるもの" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preserved"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保持されるもの"
+          }
+        }
       }
     },
     "subtitle_wipe_data_explanation_deleted" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Deleted" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "削除されるもの" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deleted"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "削除されるもの"
+          }
+        }
       }
     },
     "body_wipe_data_preserved_list" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign-in, display name, avatar, Pro membership, push notification preferences (re-registered automatically)" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "サインイン、表示名、アバター、Pro メンバーシップ、プッシュ通知設定(自動的に再登録されます)" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign-in, display name, avatar, Pro membership, push notification preferences (re-registered automatically)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サインイン、表示名、アバター、Pro メンバーシップ、プッシュ通知設定(自動的に再登録されます)"
+          }
+        }
       }
     },
     "body_wipe_data_deleted_list" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Patterns, projects, charts, comments, suggestions, shared links, activity history, downloaded symbol packs" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パターン、プロジェクト、編み図、コメント、提案、共有リンク、アクティビティ履歴、ダウンロード済みシンボルパック" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Patterns, projects, charts, comments, suggestions, shared links, activity history, downloaded symbol packs"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パターン、プロジェクト、編み図、コメント、提案、共有リンク、アクティビティ履歴、ダウンロード済みシンボルパック"
+          }
+        }
       }
     },
     "action_wipe_data_continue" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "続行" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "続行"
+          }
+        }
       }
     },
     "action_wipe_data_keep" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep my data" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "データを保持" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep my data"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "データを保持"
+          }
+        }
       }
     },
     "title_wipe_data_confirm_phrase" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirm data deletion" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "データ削除を確認" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm data deletion"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "データ削除を確認"
+          }
+        }
       }
     },
     "body_wipe_data_confirm_phrase_helper" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Type `delete my data` to confirm." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "確認のため「データを削除」と入力してください。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type `delete my data` to confirm."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "確認のため「データを削除」と入力してください。"
+          }
+        }
       }
     },
     "action_wipe_data_submit" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete all my data" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "すべてのデータを削除" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete all my data"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてのデータを削除"
+          }
+        }
       }
     },
     "state_wipe_data_completed_banner" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your data has been deleted. Your account is still active." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "データを削除しました。アカウントは引き続きご利用いただけます。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your data has been deleted. Your account is still active."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "データを削除しました。アカウントは引き続きご利用いただけます。"
+          }
+        }
       }
     },
     "phrase_wipe_data_confirm" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "delete my data" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "データを削除" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "delete my data"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "データを削除"
+          }
+        }
       }
     },
     "label_privacy_section" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Privacy" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プライバシー" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacy"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プライバシー"
+          }
+        }
       }
     },
     "title_connections" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Connections" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンド" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connections"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フレンド"
+          }
+        }
       }
     },
     "body_connections_settings_row" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Manage friends and friend-only access." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンドと共有範囲を管理します。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage friends and friend-only access."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フレンドと共有範囲を管理します。"
+          }
+        }
       }
     },
     "tab_connections_friends" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Friends" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンド" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Friends"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フレンド"
+          }
+        }
       }
     },
     "tab_connections_pending" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pending" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "保留中" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pending"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保留中"
+          }
+        }
       }
     },
     "tab_connections_invite" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Invite" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "招待" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invite"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "招待"
+          }
+        }
       }
     },
     "state_connections_no_friends" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No friends yet. Invite someone to get started." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "まだフレンドがいません。誰かを招待してみましょう。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No friends yet. Invite someone to get started."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "まだフレンドがいません。誰かを招待してみましょう。"
+          }
+        }
       }
     },
     "state_connections_no_pending" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No pending requests." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "保留中のリクエストはありません。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No pending requests."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保留中のリクエストはありません。"
+          }
+        }
       }
     },
     "state_connections_no_invite" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tap below to create an invite." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "下のボタンから招待を作成しましょう。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap below to create an invite."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下のボタンから招待を作成しましょう。"
+          }
+        }
       }
     },
     "state_connections_request_from" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Request from %1$@" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ からのリクエスト" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Request from %1$@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ からのリクエスト"
+          }
+        }
       }
     },
     "state_connections_request_to" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sent to %1$@" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ に送信済み" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sent to %1$@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ に送信済み"
+          }
+        }
       }
     },
     "state_connections_unknown_user" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unknown user" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "不明なユーザー" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown user"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不明なユーザー"
+          }
+        }
       }
     },
     "state_connections_invite_expires_in_days" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Expires in %1$d days" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "あと %1$d 日で期限切れ" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expires in %1$d days"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "あと %1$d 日で期限切れ"
+          }
+        }
       }
     },
     "action_connections_accept" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Accept" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "承認" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accept"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "承認"
+          }
+        }
       }
     },
     "action_connections_reject" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reject" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "拒否" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reject"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拒否"
+          }
+        }
       }
     },
     "action_connections_disconnect" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Disconnect" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンド解除" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnect"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フレンド解除"
+          }
+        }
       }
     },
     "action_connections_create_invite" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Create invite" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "招待を作成" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create invite"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "招待を作成"
+          }
+        }
       }
     },
     "body_connections_invite_explanation" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share this code or link with your knitting friends. Codes expire in 14 days." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "このコードまたはリンクを編み物仲間と共有しましょう。14日後に期限切れになります。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share this code or link with your knitting friends. Codes expire in 14 days."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このコードまたはリンクを編み物仲間と共有しましょう。14日後に期限切れになります。"
+          }
+        }
       }
     },
     "dialog_connections_disconnect_title" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Disconnect?" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンド解除しますか?" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnect?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フレンド解除しますか?"
+          }
+        }
       }
     },
     "dialog_connections_disconnect_body" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ won’t see your friends-only patterns anymore." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ はあなたのフレンド限定パターンを見られなくなります。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ won’t see your friends-only patterns anymore."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ はあなたのフレンド限定パターンを見られなくなります。"
+          }
+        }
       }
     },
     "title_friend_invite_confirm" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add friend" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンドを追加" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add friend"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フレンドを追加"
+          }
+        }
       }
     },
     "action_friend_invite_add_by_code" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add by code" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コードで追加" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add by code"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コードで追加"
+          }
+        }
       }
     },
     "label_friend_invite_code_field" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Invite code" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "招待コード" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invite code"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "招待コード"
+          }
+        }
       }
     },
     "body_friend_invite_code_helper" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter the 8-character code a friend shared with you." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンドから共有された8文字のコードを入力してください。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the 8-character code a friend shared with you."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フレンドから共有された8文字のコードを入力してください。"
+          }
+        }
       }
     },
     "action_friend_invite_redeem" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add friend" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンドを追加" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add friend"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フレンドを追加"
+          }
+        }
       }
     },
     "action_friend_invite_done" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Done" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "完了" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完了"
+          }
+        }
       }
     },
     "state_friend_invite_success" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "You and %1$@ are now friends." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ とフレンドになりました。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You and %1$@ are now friends."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ とフレンドになりました。"
+          }
+        }
       }
     },
     "state_friend_invite_token_failed" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Couldn’t add this friend. The invite may have expired or already been used." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンドを追加できませんでした。招待の有効期限が切れているか、すでに使用済みの可能性があります。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t add this friend. The invite may have expired or already been used."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フレンドを追加できませんでした。招待の有効期限が切れているか、すでに使用済みの可能性があります。"
+          }
+        }
+      }
+    },
+    "action_report_content" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "報告"
+          }
+        }
+      }
+    },
+    "title_report_content" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report content"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コンテンツを報告"
+          }
+        }
+      }
+    },
+    "body_report_content_explanation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tell us what's wrong. Our team reviews every report and acts within 24 hours."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "何が問題かを教えてください。すべての報告をチームが確認し、24 時間以内に対応します。"
+          }
+        }
+      }
+    },
+    "label_report_category" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reason"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "理由"
+          }
+        }
+      }
+    },
+    "report_category_spam" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spam"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "スパム"
+          }
+        }
+      }
+    },
+    "report_category_harassment" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Harassment"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "嫌がらせ"
+          }
+        }
+      }
+    },
+    "report_category_sexual" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sexual content"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "性的なコンテンツ"
+          }
+        }
+      }
+    },
+    "report_category_violence" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Violence"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暴力的なコンテンツ"
+          }
+        }
+      }
+    },
+    "report_category_hate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hate speech"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ヘイト表現"
+          }
+        }
+      }
+    },
+    "report_category_ip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copyright or trademark"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "著作権・商標の侵害"
+          }
+        }
+      }
+    },
+    "report_category_other" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something else"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "その他"
+          }
+        }
+      }
+    },
+    "label_report_detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "詳細"
+          }
+        }
+      }
+    },
+    "hint_report_detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe the problem"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "問題の内容を記入してください"
+          }
+        }
+      }
+    },
+    "action_report_submit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Submit report"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "報告を送信"
+          }
+        }
+      }
+    },
+    "state_report_submitting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Submitting…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "送信中…"
+          }
+        }
+      }
+    },
+    "state_report_submitted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report submitted. Thank you — our team will review it."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "報告を送信しました。ご協力ありがとうございます。チームが確認します。"
+          }
+        }
+      }
+    },
+    "action_block_user" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Block user"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ユーザーをブロック"
+          }
+        }
+      }
+    },
+    "title_block_user_confirm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Block this user?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このユーザーをブロックしますか?"
+          }
+        }
+      }
+    },
+    "body_block_user_confirm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You won't see their patterns, suggestions, or comments. They won't be able to send you new suggestions or comments."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "そのユーザーのパターン・提案・コメントは表示されなくなります。相手から新しい提案やコメントを受け取ることもなくなります。"
+          }
+        }
+      }
+    },
+    "action_block_confirm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Block"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブロック"
+          }
+        }
+      }
+    },
+    "state_user_blocked" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "User blocked"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ユーザーをブロックしました"
+          }
+        }
+      }
+    },
+    "title_blocked_users" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocked users"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブロックしたユーザー"
+          }
+        }
+      }
+    },
+    "body_blocked_users_settings_row" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage the users you've blocked"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブロックしたユーザーを管理します"
+          }
+        }
+      }
+    },
+    "body_blocked_users_empty" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You haven't blocked anyone."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブロックしているユーザーはいません。"
+          }
+        }
+      }
+    },
+    "action_unblock" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unblock"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブロック解除"
+          }
+        }
+      }
+    },
+    "state_user_unblocked" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unblocked"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブロックを解除しました"
+          }
+        }
+      }
+    },
+    "title_block_user_confirm_named" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Block %@?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ をブロックしますか?"
+          }
+        }
+      }
+    },
+    "state_blocked_user_unknown" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown user"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不明なユーザー"
+          }
+        }
       }
     }
   },

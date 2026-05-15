@@ -43,6 +43,9 @@ enum Route: Hashable {
     /// Three-tab Friends / Pending / Invite surface for managing the
     /// mutual-friendship graph + invite generation.
     case connections
+    /// Phase 39 (ADR-021 §D4) — Settings → Privacy → Blocked Users.
+    /// Lists the caller's blocked users with a per-row Unblock action.
+    case blockedUsers
     /// Phase 25.4 (ADR-024 §Phase 25.4) — friend-invite redemption.
     /// `token` non-nil ⇒ Token mode (Universal Link tap, auto-redeem);
     /// nil ⇒ Code mode (reached from Connections → "Add by code").
@@ -128,6 +131,8 @@ enum Route: Hashable {
             hasher.combine("wipeDataConfirmPhrase")
         case .connections:
             hasher.combine("connections")
+        case .blockedUsers:
+            hasher.combine("blockedUsers")
         case .friendInviteConfirm(let token):
             hasher.combine("friendInviteConfirm")
             hasher.combine(token)
@@ -421,6 +426,11 @@ struct AppRootView: View {
                 // "Connections" routes to the 3-tab management screen.
                 onConnectionsClick: {
                     path.append(Route.connections)
+                },
+                // Phase 39 (ADR-021 §D4) — Settings → Privacy →
+                // "Blocked users" routes to the blocked-users list.
+                onBlockedUsersClick: {
+                    path.append(Route.blockedUsers)
                 }
             )
                 .trackScreen(.settings)
@@ -564,6 +574,13 @@ struct AppRootView: View {
                     path.append(Route.friendInviteConfirm(token: nil))
                 }
             )
+                .skeinlyBackButton(path: $path)
+        case .blockedUsers:
+            // Phase 39 (ADR-021 §D4) — Settings → Privacy → Blocked
+            // Users. The view's `init` resolves the Koin
+            // BlockedUsersViewModel which auto-loads the caller's
+            // block list. Standard back-button pop routes to Settings.
+            BlockedUsersListView()
                 .skeinlyBackButton(path: $path)
         case .friendInviteConfirm(let token):
             // Phase 25.4 (ADR-024 §Phase 25.4) — friend-invite

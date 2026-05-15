@@ -983,4 +983,33 @@
     <string name="action_friend_invite_done">Done</string>
     <string name="state_friend_invite_success">You and %1$s are now friends.</string>
     <string name="state_friend_invite_token_failed">Couldn\'t add this friend. The invite may have expired or already been used.</string>
+    <!-- Phase 39 (ADR-021 §D4) — UGC moderation: report + block + blocked-users list -->
+    <string name="action_report_content">Report</string>
+    <string name="title_report_content">Report content</string>
+    <string name="body_report_content_explanation">Tell us what\'s wrong. Our team reviews every report and acts within 24 hours.</string>
+    <string name="label_report_category">Reason</string>
+    <string name="report_category_spam">Spam</string>
+    <string name="report_category_harassment">Harassment</string>
+    <string name="report_category_sexual">Sexual content</string>
+    <string name="report_category_violence">Violence</string>
+    <string name="report_category_hate">Hate speech</string>
+    <string name="report_category_ip">Copyright or trademark</string>
+    <string name="report_category_other">Something else</string>
+    <string name="label_report_detail">Details</string>
+    <string name="hint_report_detail">Describe the problem</string>
+    <string name="action_report_submit">Submit report</string>
+    <string name="state_report_submitting">Submitting…</string>
+    <string name="state_report_submitted">Report submitted. Thank you — our team will review it.</string>
+    <string name="action_block_user">Block user</string>
+    <string name="title_block_user_confirm">Block this user?</string>
+    <string name="title_block_user_confirm_named">Block %1$s?</string>
+    <string name="body_block_user_confirm">You won\'t see their patterns, suggestions, or comments. They won\'t be able to send you new suggestions or comments.</string>
+    <string name="action_block_confirm">Block</string>
+    <string name="state_user_blocked">User blocked</string>
+    <string name="title_blocked_users">Blocked users</string>
+    <string name="body_blocked_users_settings_row">Manage the users you\'ve blocked</string>
+    <string name="body_blocked_users_empty">You haven\'t blocked anyone.</string>
+    <string name="state_blocked_user_unknown">Unknown user</string>
+    <string name="action_unblock">Unblock</string>
+    <string name="state_user_unblocked">Unblocked</string>
 </resources>

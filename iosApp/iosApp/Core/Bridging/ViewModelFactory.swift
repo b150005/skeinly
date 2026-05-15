@@ -196,4 +196,26 @@ enum ViewModelFactory {
     ) -> FriendInviteConfirmViewModel {
         KoinHelperKt.getFriendInviteConfirmViewModel(token: token)
     }
+
+    /// Phase 39 (ADR-021 §D4) — UGC report modal ViewModel. `targetType`
+    /// + `targetId` thread through to Koin parametric resolution (same
+    /// precedent as `commentSectionViewModel`).
+    static func ugcReportViewModel(
+        targetType: UgcTargetType,
+        targetId: String
+    ) -> UgcReportViewModel {
+        KoinHelperKt.getUgcReportViewModel(targetType: targetType, targetId: targetId)
+    }
+
+    /// Phase 39 (ADR-021 §D4) — block-user confirmation ViewModel.
+    static func blockUserViewModel(blockedUserId: String) -> BlockUserViewModel {
+        KoinHelperKt.getBlockUserViewModel(blockedUserId: blockedUserId)
+    }
+
+    /// Phase 39 (ADR-021 §D4) — Settings → Privacy → Blocked Users
+    /// list ViewModel. Stateless factory; the VM auto-loads the
+    /// caller's block list in its `init`.
+    static func blockedUsersViewModel() -> BlockedUsersViewModel {
+        KoinHelperKt.getBlockedUsersViewModel()
+    }
 }

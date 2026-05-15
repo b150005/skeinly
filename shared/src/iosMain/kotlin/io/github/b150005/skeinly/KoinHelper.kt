@@ -11,6 +11,7 @@ import io.github.b150005.skeinly.di.applicationScopeQualifier
 import io.github.b150005.skeinly.di.platformModule
 import io.github.b150005.skeinly.di.sharedModules
 import io.github.b150005.skeinly.domain.model.CommentTargetType
+import io.github.b150005.skeinly.domain.model.UgcTargetType
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
 import io.github.b150005.skeinly.domain.usecase.GetOnboardingCompletedUseCase
 import io.github.b150005.skeinly.notifications.PushTokenRegistrar
@@ -23,6 +24,14 @@ import io.github.b150005.skeinly.ui.chart.ChartHistoryViewModel
 import io.github.b150005.skeinly.ui.chart.ChartVariationPickerViewModel
 import io.github.b150005.skeinly.ui.chart.ChartViewerViewModel
 import io.github.b150005.skeinly.ui.comments.CommentSectionViewModel
+import io.github.b150005.skeinly.ui.moderation.BlockUserNavEvent
+import io.github.b150005.skeinly.ui.moderation.BlockUserState
+import io.github.b150005.skeinly.ui.moderation.BlockUserViewModel
+import io.github.b150005.skeinly.ui.moderation.BlockedUsersState
+import io.github.b150005.skeinly.ui.moderation.BlockedUsersViewModel
+import io.github.b150005.skeinly.ui.moderation.UgcReportNavEvent
+import io.github.b150005.skeinly.ui.moderation.UgcReportState
+import io.github.b150005.skeinly.ui.moderation.UgcReportViewModel
 import io.github.b150005.skeinly.ui.notifications.NotificationPermissionState
 import io.github.b150005.skeinly.ui.notifications.NotificationPermissionViewModel
 import io.github.b150005.skeinly.ui.onboarding.OnboardingViewModel
@@ -516,6 +525,46 @@ fun getWipeDataViewModel(requiredPhrase: String): WipeDataViewModel =
 fun wrapWipeDataState(flow: kotlinx.coroutines.flow.StateFlow<WipeDataState>): FlowWrapper<WipeDataState> = FlowWrapper(flow)
 
 fun wrapWipeDataNavEvents(flow: kotlinx.coroutines.flow.Flow<WipeDataNavEvent>): EventFlowWrapper<WipeDataNavEvent> = EventFlowWrapper(flow)
+
+// Phase 39 (ADR-021 §D4) — UGC moderation VM bridges. Mirrors the
+// WipeData/OAuthProfileSetup parametric-resolution pattern: screen-time
+// params (targetType+targetId / blockedUserId) thread through Koin's
+// `parametersOf`. SwiftUI presents the report sheet / block dialog
+// keyed on the same ids the Compose side passes.
+fun getUgcReportViewModel(
+    targetType: UgcTargetType,
+    targetId: String,
+): UgcReportViewModel =
+    KoinPlatform
+        .getKoin()
+        .get { parametersOf(targetType, targetId) }
+
+fun wrapUgcReportState(flow: kotlinx.coroutines.flow.StateFlow<UgcReportState>): FlowWrapper<UgcReportState> = FlowWrapper(flow)
+
+fun wrapUgcReportNavEvents(flow: kotlinx.coroutines.flow.Flow<UgcReportNavEvent>): EventFlowWrapper<UgcReportNavEvent> =
+    EventFlowWrapper(flow)
+
+fun getBlockUserViewModel(blockedUserId: String): BlockUserViewModel =
+    KoinPlatform
+        .getKoin()
+        .get { parametersOf(blockedUserId) }
+
+fun wrapBlockUserState(flow: kotlinx.coroutines.flow.StateFlow<BlockUserState>): FlowWrapper<BlockUserState> = FlowWrapper(flow)
+
+fun wrapBlockUserNavEvents(flow: kotlinx.coroutines.flow.Flow<BlockUserNavEvent>): EventFlowWrapper<BlockUserNavEvent> =
+    EventFlowWrapper(flow)
+
+fun getBlockedUsersViewModel(): BlockedUsersViewModel = KoinPlatform.getKoin().get()
+
+fun wrapBlockedUsersState(flow: kotlinx.coroutines.flow.StateFlow<BlockedUsersState>): FlowWrapper<BlockedUsersState> = FlowWrapper(flow)
+
+// Phase 39 (ADR-021 §D4) — expose the report-category enum cases to
+// Swift in a stable order for the picker (Kotlin enum `entries`
+// ordinal == migration-031 CHECK list order). Swift iterates this
+// instead of hardcoding the 7 cases so a future category addition is
+// a single-source change.
+fun ugcReportCategories(): List<io.github.b150005.skeinly.domain.model.UgcReportCategory> =
+    io.github.b150005.skeinly.domain.model.UgcReportCategory.entries
 
 // Phase 27.2 (ADR-023 §UX) — singleton notifier accessor for the iOS
 // post-wipe nav handler. SwiftUI's WipeDataConfirmPhraseView calls

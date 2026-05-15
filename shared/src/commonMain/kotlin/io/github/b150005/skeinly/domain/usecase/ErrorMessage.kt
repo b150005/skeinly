@@ -80,6 +80,7 @@ fun UseCaseError.toErrorMessage(): ErrorMessage =
         UseCaseError.ResourceNotFound -> ErrorMessage.ResourceNotFound
         UseCaseError.SignInRequired -> ErrorMessage.SignInRequired
         UseCaseError.RequiresConnectivity -> ErrorMessage.RequiresConnectivity
+        UseCaseError.RateLimited -> ErrorMessage.RateLimitExceeded
         UseCaseError.FieldRequired -> ErrorMessage.FieldRequired
         UseCaseError.FieldTooLong -> ErrorMessage.FieldTooLong
         UseCaseError.EmailInvalid -> ErrorMessage.EmailInvalid

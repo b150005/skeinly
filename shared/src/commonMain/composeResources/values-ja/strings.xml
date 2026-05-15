@@ -756,4 +756,33 @@
     <string name="action_friend_invite_done">完了</string>
     <string name="state_friend_invite_success">%1$s とフレンドになりました。</string>
     <string name="state_friend_invite_token_failed">フレンドを追加できませんでした。招待の有効期限が切れているか、すでに使用済みの可能性があります。</string>
+    <!-- Phase 39 (ADR-021 §D4) — UGC モデレーション: 報告 + ブロック + ブロック一覧 -->
+    <string name="action_report_content">報告</string>
+    <string name="title_report_content">コンテンツを報告</string>
+    <string name="body_report_content_explanation">何が問題かを教えてください。すべての報告をチームが確認し、24 時間以内に対応します。</string>
+    <string name="label_report_category">理由</string>
+    <string name="report_category_spam">スパム</string>
+    <string name="report_category_harassment">嫌がらせ</string>
+    <string name="report_category_sexual">性的なコンテンツ</string>
+    <string name="report_category_violence">暴力的なコンテンツ</string>
+    <string name="report_category_hate">ヘイト表現</string>
+    <string name="report_category_ip">著作権・商標の侵害</string>
+    <string name="report_category_other">その他</string>
+    <string name="label_report_detail">詳細</string>
+    <string name="hint_report_detail">問題の内容を記入してください</string>
+    <string name="action_report_submit">報告を送信</string>
+    <string name="state_report_submitting">送信中…</string>
+    <string name="state_report_submitted">報告を送信しました。ご協力ありがとうございます。チームが確認します。</string>
+    <string name="action_block_user">ユーザーをブロック</string>
+    <string name="title_block_user_confirm">このユーザーをブロックしますか?</string>
+    <string name="title_block_user_confirm_named">%1$s をブロックしますか?</string>
+    <string name="body_block_user_confirm">そのユーザーのパターン・提案・コメントは表示されなくなります。相手から新しい提案やコメントを受け取ることもなくなります。</string>
+    <string name="action_block_confirm">ブロック</string>
+    <string name="state_user_blocked">ユーザーをブロックしました</string>
+    <string name="title_blocked_users">ブロックしたユーザー</string>
+    <string name="body_blocked_users_settings_row">ブロックしたユーザーを管理します</string>
+    <string name="body_blocked_users_empty">ブロックしているユーザーはいません。</string>
+    <string name="state_blocked_user_unknown">不明なユーザー</string>
+    <string name="action_unblock">ブロック解除</string>
+    <string name="state_user_unblocked">ブロックを解除しました</string>
 </resources>

@@ -416,6 +416,16 @@ kover {
                     "io.github.b150005.skeinly.ui.pullrequest.ChartConflictResolutionScreenKt*",
                     "io.github.b150005.skeinly.ui.paywall.PaywallScreenKt*",
                     "io.github.b150005.skeinly.ui.packmanagement.PackManagementScreenKt*",
+                    // Phase 39 (ADR-021 §D4) — UGC moderation Compose
+                    // surfaces. Untestable on JVM (same rationale as the
+                    // other *ScreenKt / *DialogKt excludes). The three
+                    // driving ViewModels (UgcReport / BlockUser /
+                    // BlockedUsers) + UgcModerationRepositoryImpl are
+                    // fully exercised via commonTest (50 cases).
+                    "io.github.b150005.skeinly.ui.moderation.ReportContentDialogKt*",
+                    "io.github.b150005.skeinly.ui.moderation.BlockUserConfirmDialogKt*",
+                    "io.github.b150005.skeinly.ui.moderation.BlockedUsersScreenKt*",
+                    "io.github.b150005.skeinly.ui.moderation.UgcModerationRenderingKt*",
                     // Phase 26.5 (ADR-022 §6.4) — MFA Compose screens.
                     // Untestable on JVM (same rationale as other
                     // *ScreenKt excludes). The driving ViewModels +

@@ -27,6 +27,15 @@ sealed interface UseCaseError {
     /** Action requires a connected Supabase / cloud service (offline-only mode). */
     data object RequiresConnectivity : UseCaseError
 
+    /**
+     * A server-side per-user rate limit was hit. Phase 39 (ADR-021 §D4):
+     * the `submit-ugc-report` Edge Function caps reports at 10/hr per
+     * `auth.uid()` and returns a `RATE_LIMITED` envelope code, which
+     * `UgcModerationRepositoryImpl` maps here so the report modal can
+     * tell the user to try again later (vs. a generic failure).
+     */
+    data object RateLimited : UseCaseError
+
     /** Required form field is blank or empty. */
     data object FieldRequired : UseCaseError
 

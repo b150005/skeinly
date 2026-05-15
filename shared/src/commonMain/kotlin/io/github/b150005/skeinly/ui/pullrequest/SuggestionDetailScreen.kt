@@ -15,11 +15,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,7 +38,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -43,12 +48,16 @@ import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.domain.model.Suggestion
 import io.github.b150005.skeinly.domain.model.SuggestionComment
 import io.github.b150005.skeinly.domain.model.SuggestionStatus
+import io.github.b150005.skeinly.domain.model.UgcTargetType
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_apply_suggestion
 import io.github.b150005.skeinly.generated.resources.action_back
+import io.github.b150005.skeinly.generated.resources.action_block_user
 import io.github.b150005.skeinly.generated.resources.action_cancel
 import io.github.b150005.skeinly.generated.resources.action_close_suggestion
+import io.github.b150005.skeinly.generated.resources.action_more_options
 import io.github.b150005.skeinly.generated.resources.action_post_comment
+import io.github.b150005.skeinly.generated.resources.action_report_content
 import io.github.b150005.skeinly.generated.resources.dialog_apply_suggestion_body
 import io.github.b150005.skeinly.generated.resources.dialog_apply_suggestion_title
 import io.github.b150005.skeinly.generated.resources.dialog_close_suggestion_body
@@ -69,6 +78,8 @@ import io.github.b150005.skeinly.generated.resources.title_suggestion_detail
 import io.github.b150005.skeinly.notifications.NotificationPromptTrigger
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.localized
+import io.github.b150005.skeinly.ui.moderation.BlockUserConfirmDialog
+import io.github.b150005.skeinly.ui.moderation.ReportContentDialog
 import io.github.b150005.skeinly.ui.notifications.NotificationPermissionEvent
 import io.github.b150005.skeinly.ui.notifications.NotificationPermissionExplainerDialog
 import io.github.b150005.skeinly.ui.notifications.NotificationPermissionViewModel
@@ -110,6 +121,13 @@ fun SuggestionDetailScreen(
     val state by viewModel.state.collectAsState()
     val notificationState by notificationViewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Phase 39 (ADR-021 §D4) — UGC overflow: Report this suggestion +
+    // Block the author. Apple Guideline 1.2 requires both reachable on
+    // any UGC surface; Suggestion threads carry author-written bodies.
+    var overflowExpanded by remember { mutableStateOf(false) }
+    var reportOpen by remember { mutableStateOf(false) }
+    var blockOpen by remember { mutableStateOf(false) }
     val closedMessage = stringResource(Res.string.message_suggestion_closed_successfully)
     val mergedMessage = stringResource(Res.string.message_suggestion_applied_successfully)
 
@@ -169,6 +187,48 @@ fun SuggestionDetailScreen(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(Res.string.action_back),
                         )
+                    }
+                },
+                actions = {
+                    // Phase 39 (ADR-021 §D4) — only meaningful once the
+                    // suggestion has loaded (need its id for Report +
+                    // author id for Block).
+                    val loaded = state.suggestion
+                    if (loaded != null) {
+                        IconButton(
+                            onClick = { overflowExpanded = true },
+                            modifier = Modifier.testTag("suggestionOverflowButton"),
+                        ) {
+                            Icon(
+                                Icons.Default.MoreVert,
+                                // a11y: announce the menu affordance, not
+                                // the first item (parallels DiscoveryScreen).
+                                contentDescription = stringResource(Res.string.action_more_options),
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = overflowExpanded,
+                            onDismissRequest = { overflowExpanded = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(Res.string.action_report_content)) },
+                                onClick = {
+                                    overflowExpanded = false
+                                    reportOpen = true
+                                },
+                                modifier = Modifier.testTag("reportSuggestionMenuItem"),
+                            )
+                            if (loaded.authorId != null) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.action_block_user)) },
+                                    onClick = {
+                                        overflowExpanded = false
+                                        blockOpen = true
+                                    },
+                                    modifier = Modifier.testTag("blockAuthorMenuItem"),
+                                )
+                            }
+                        }
                     }
                 },
             )
@@ -275,6 +335,32 @@ fun SuggestionDetailScreen(
             notificationViewModel.onEvent(NotificationPermissionEvent.UserDismissedExplainer)
         },
     )
+
+    // Phase 39 (ADR-021 §D4) — UGC report / block dialogs. Hosted at
+    // the composable root (AlertDialog overlays regardless of tree
+    // position); gated on the loaded suggestion so target ids are
+    // non-null.
+    val loadedSuggestion = state.suggestion
+    if (reportOpen && loadedSuggestion != null) {
+        ReportContentDialog(
+            targetType = UgcTargetType.Suggestion,
+            targetId = loadedSuggestion.id,
+            onSubmitted = { reportOpen = false },
+            onDismiss = { reportOpen = false },
+        )
+    }
+    val authorId = loadedSuggestion?.authorId
+    if (blockOpen && authorId != null) {
+        BlockUserConfirmDialog(
+            blockedUserId = authorId,
+            onBlocked = { blockOpen = false },
+            onDismiss = { blockOpen = false },
+            // Resolve the author's display name for the "Block <name>?"
+            // title; null (unresolved / deleted account) falls back to
+            // the generic title inside the dialog.
+            blockedDisplayName = state.users[authorId]?.displayName,
+        )
+    }
 }
 
 @Composable

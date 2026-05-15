@@ -251,6 +251,14 @@ data object BiometricSettings
 data object Connections
 
 /**
+ * Phase 39 (ADR-021 §D4) — Settings → Privacy → Blocked Users screen.
+ * Lists the caller's blocked users with a per-row Unblock action.
+ * Reached from Settings → Privacy section (below Connections).
+ */
+@Serializable
+data object BlockedUsers
+
+/**
  * Phase 25.4 (ADR-024 §Phase 25.4) — friend-invite redemption confirm
  * screen. Two entry paths, one screen (the [token] nullability picks
  * the mode in [io.github.b150005.skeinly.ui.connections.FriendInviteConfirmViewModel]):
@@ -635,7 +643,15 @@ private fun SkeinlyNavHostContent(
                 onWipeDataClick = { navController.navigate(WipeDataConfirmPhrase) },
                 // Phase 25.3 (ADR-024 §(e)) — Privacy → Connections.
                 onConnectionsClick = { navController.navigate(Connections) },
+                // Phase 39 (ADR-021 §D4) — Privacy → Blocked Users.
+                onBlockedUsersClick = { navController.navigate(BlockedUsers) },
             )
+        }
+        composable<BlockedUsers> {
+            io.github.b150005.skeinly.ui.moderation
+                .BlockedUsersScreen(
+                    onBack = { navController.popBackStack() },
+                )
         }
         composable<Connections> {
             ConnectionsScreen(

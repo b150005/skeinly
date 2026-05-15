@@ -74,6 +74,7 @@ import io.github.b150005.skeinly.generated.resources.action_save
 import io.github.b150005.skeinly.generated.resources.action_send_feedback
 import io.github.b150005.skeinly.generated.resources.action_sign_out
 import io.github.b150005.skeinly.generated.resources.action_terms_of_service
+import io.github.b150005.skeinly.generated.resources.body_blocked_users_settings_row
 import io.github.b150005.skeinly.generated.resources.body_connections_settings_row
 import io.github.b150005.skeinly.generated.resources.body_contact_support_helper
 import io.github.b150005.skeinly.generated.resources.body_delete_account_warning
@@ -118,6 +119,7 @@ import io.github.b150005.skeinly.generated.resources.state_signed_in_via_apple_r
 import io.github.b150005.skeinly.generated.resources.state_signed_in_via_email
 import io.github.b150005.skeinly.generated.resources.state_signed_in_via_google
 import io.github.b150005.skeinly.generated.resources.title_biometric_settings
+import io.github.b150005.skeinly.generated.resources.title_blocked_users
 import io.github.b150005.skeinly.generated.resources.title_connections
 import io.github.b150005.skeinly.generated.resources.title_mfa_disable_confirm
 import io.github.b150005.skeinly.generated.resources.title_settings
@@ -183,6 +185,11 @@ fun SettingsScreen(
     // the `Connections` route which renders the 3-tab Friends /
     // Pending / Invite screen.
     onConnectionsClick: () -> Unit = {},
+    // Phase 39 (ADR-021 §D4) — invoked when the user taps "Blocked
+    // users" in the Privacy section. NavGraph wires this to the
+    // `BlockedUsers` route. Default no-op keeps test mounts / older
+    // NavGraph wiring valid.
+    onBlockedUsersClick: () -> Unit = {},
     viewModel: SettingsViewModel = koinViewModel(),
     // Phase 24.2c (ADR-017 §3.6) — push notification consent VM. Drives
     // the Settings → Notifications row + the in-app pre-permission
@@ -757,6 +764,24 @@ fun SettingsScreen(
                                 .fillMaxWidth()
                                 .clickable(role = Role.Button) { onConnectionsClick() }
                                 .testTag("connectionsSettingsRow"),
+                    )
+
+                    // Phase 39 (ADR-021 §D4) — Blocked Users row. Sits
+                    // directly below Connections (both are privacy
+                    // graph-management entries; non-destructive, so
+                    // above the Danger Zone gradient).
+                    ListItem(
+                        headlineContent = {
+                            Text(stringResource(Res.string.title_blocked_users))
+                        },
+                        supportingContent = {
+                            Text(stringResource(Res.string.body_blocked_users_settings_row))
+                        },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable(role = Role.Button) { onBlockedUsersClick() }
+                                .testTag("blockedUsersSettingsRow"),
                     )
                 }
 

@@ -23,6 +23,9 @@ import io.github.b150005.skeinly.ui.comments.CommentSectionViewModel
 import io.github.b150005.skeinly.ui.connections.ConnectionsViewModel
 import io.github.b150005.skeinly.ui.connections.FriendInviteConfirmViewModel
 import io.github.b150005.skeinly.ui.discovery.DiscoveryViewModel
+import io.github.b150005.skeinly.ui.moderation.BlockUserViewModel
+import io.github.b150005.skeinly.ui.moderation.BlockedUsersViewModel
+import io.github.b150005.skeinly.ui.moderation.UgcReportViewModel
 import io.github.b150005.skeinly.ui.notifications.NotificationPermissionViewModel
 import io.github.b150005.skeinly.ui.onboarding.OAuthProfileSetupViewModel
 import io.github.b150005.skeinly.ui.onboarding.OnboardingViewModel
@@ -241,6 +244,44 @@ val viewModelModule =
                 resolveDisplayName = { id ->
                     userRepository.getById(id)?.displayName
                 },
+            )
+        }
+        // Phase 39 (ADR-021 §D4) — UGC moderation ViewModels. All three
+        // bind through UgcModerationRepository via lambda-seams (same
+        // precedent as WipeData / Connections) so commonTest never
+        // touches the supabase-kt Functions / Postgrest surface.
+        //
+        // UgcReportViewModel: targetType + targetId are screen-time
+        // params (the Discovery card / Suggestion thread resolves them
+        // before mounting the modal). Koin resolves the two params
+        // positionally by type via parametersOf(targetType, targetId).
+        viewModel { params ->
+            val repo: io.github.b150005.skeinly.domain.repository.UgcModerationRepository = get()
+            UgcReportViewModel(
+                targetType = params.get(),
+                targetId = params.get(),
+                submitReport = { type, id, category, reason ->
+                    repo.submitReport(type, id, category, reason)
+                },
+            )
+        }
+        // BlockUserViewModel: blockedUserId is a screen-time param
+        // (the author chip / profile resolves the UUID before mounting
+        // the confirmation dialog).
+        viewModel { params ->
+            val repo: io.github.b150005.skeinly.domain.repository.UgcModerationRepository = get()
+            BlockUserViewModel(
+                blockedUserId = params.get(),
+                blockUser = { id -> repo.blockUser(id) },
+            )
+        }
+        // BlockedUsersViewModel: no params — auto-loads the caller's
+        // block list on init. Settings → Privacy → Blocked Users.
+        viewModel {
+            val repo: io.github.b150005.skeinly.domain.repository.UgcModerationRepository = get()
+            BlockedUsersViewModel(
+                loadBlocked = { repo.listBlockedUsers() },
+                unblock = { id -> repo.unblockUser(id) },
             )
         }
         // Phase 26.6 (ADR-022 §6.5) — biometric settings screen.

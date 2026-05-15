@@ -53,6 +53,10 @@ struct SettingsScreen: View {
     /// "Connections" in the new Privacy section. AppRouter wires this
     /// to `path.append(.connections)`.
     let onConnectionsClick: () -> Void
+    /// Phase 39 (ADR-021 §D4) — invoked when the user taps "Blocked
+    /// users" in the Privacy section. AppRouter wires this to
+    /// `path.append(.blockedUsers)`.
+    let onBlockedUsersClick: () -> Void
 
     private var viewModel: SettingsViewModel { holder.viewModel }
     private var notificationViewModel: NotificationPermissionViewModel { notificationHolder.viewModel }
@@ -95,7 +99,8 @@ struct SettingsScreen: View {
         onEnableMfaClick: @escaping () -> Void = {},
         onBiometricSettingsClick: @escaping () -> Void = {},
         onWipeDataClick: @escaping () -> Void = {},
-        onConnectionsClick: @escaping () -> Void = {}
+        onConnectionsClick: @escaping () -> Void = {},
+        onBlockedUsersClick: @escaping () -> Void = {}
     ) {
         self.onSendFeedback = onSendFeedback
         self.onSubscribeToProClick = onSubscribeToProClick
@@ -104,6 +109,7 @@ struct SettingsScreen: View {
         self.onBiometricSettingsClick = onBiometricSettingsClick
         self.onWipeDataClick = onWipeDataClick
         self.onConnectionsClick = onConnectionsClick
+        self.onBlockedUsersClick = onBlockedUsersClick
         let vm = ViewModelFactory.settingsViewModel()
         let wrapper = KoinHelperKt.wrapSettingsState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
@@ -537,6 +543,22 @@ struct SettingsScreen: View {
                         }
                     }
                     .accessibilityIdentifier("connectionsSettingsRow")
+
+                    // Phase 39 (ADR-021 §D4) — Blocked Users row. Sits
+                    // directly below Connections (both privacy
+                    // graph-management entries; non-destructive).
+                    Button {
+                        onBlockedUsersClick()
+                    } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("title_blocked_users")
+                                .foregroundStyle(.primary)
+                            Text("body_blocked_users_settings_row")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .accessibilityIdentifier("blockedUsersSettingsRow")
                 } header: {
                     Text("label_privacy_section")
                 }
