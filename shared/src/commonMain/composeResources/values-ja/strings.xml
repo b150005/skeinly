@@ -738,4 +738,16 @@
     <string name="body_connections_invite_explanation">このコードまたはリンクを編み物仲間と共有しましょう。14日後に期限切れになります。</string>
     <string name="dialog_connections_disconnect_title">フレンド解除しますか?</string>
     <string name="dialog_connections_disconnect_body">%1$s はあなたのフレンド限定パターンを見られなくなります。</string>
+
+    <!-- Phase 25.4 (ADR-024 §Phase 25.4) — フレンド招待の受領。
+         1画面2モード: Universal Link タップ(トークン自動承認)または
+         「コードで追加」(手入力)。 -->
+    <string name="title_friend_invite_confirm">フレンドを追加</string>
+    <string name="action_friend_invite_add_by_code">コードで追加</string>
+    <string name="label_friend_invite_code_field">招待コード</string>
+    <string name="body_friend_invite_code_helper">フレンドから共有された8文字のコードを入力してください。</string>
+    <string name="action_friend_invite_redeem">フレンドを追加</string>
+    <string name="action_friend_invite_done">完了</string>
+    <string name="state_friend_invite_success">%1$s とフレンドになりました。</string>
+    <string name="state_friend_invite_token_failed">フレンドを追加できませんでした。招待の有効期限が切れているか、すでに使用済みの可能性があります。</string>
 </resources>

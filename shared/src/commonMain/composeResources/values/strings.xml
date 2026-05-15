@@ -965,4 +965,16 @@
     <string name="body_connections_invite_explanation">Share this code or link with your knitting friends. Codes expire in 14 days.</string>
     <string name="dialog_connections_disconnect_title">Disconnect?</string>
     <string name="dialog_connections_disconnect_body">%1$s won\'t see your friends-only patterns anymore.</string>
+
+    <!-- Phase 25.4 (ADR-024 §Phase 25.4) — friend-invite redemption.
+         One screen, two modes: Universal Link tap (token, auto-redeem)
+         or "Add by code" (manual code entry). -->
+    <string name="title_friend_invite_confirm">Add friend</string>
+    <string name="action_friend_invite_add_by_code">Add by code</string>
+    <string name="label_friend_invite_code_field">Invite code</string>
+    <string name="body_friend_invite_code_helper">Enter the 8-character code a friend shared with you.</string>
+    <string name="action_friend_invite_redeem">Add friend</string>
+    <string name="action_friend_invite_done">Done</string>
+    <string name="state_friend_invite_success">You and %1$s are now friends.</string>
+    <string name="state_friend_invite_token_failed">Couldn\'t add this friend. The invite may have expired or already been used.</string>
 </resources>

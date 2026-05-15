@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -53,6 +54,7 @@ import io.github.b150005.skeinly.generated.resources.action_connections_accept
 import io.github.b150005.skeinly.generated.resources.action_connections_create_invite
 import io.github.b150005.skeinly.generated.resources.action_connections_disconnect
 import io.github.b150005.skeinly.generated.resources.action_connections_reject
+import io.github.b150005.skeinly.generated.resources.action_friend_invite_add_by_code
 import io.github.b150005.skeinly.generated.resources.body_connections_invite_explanation
 import io.github.b150005.skeinly.generated.resources.dialog_connections_disconnect_body
 import io.github.b150005.skeinly.generated.resources.dialog_connections_disconnect_title
@@ -108,6 +110,10 @@ import kotlin.time.Clock
 @Composable
 fun ConnectionsScreen(
     onBack: () -> Unit,
+    // Phase 25.4 (ADR-024 §Phase 25.4) — "Add by code" TopAppBar
+    // action routes to FriendInviteConfirm in code mode. Default no-op
+    // so test mounts / older NavGraph wiring stay valid.
+    onAddByCode: () -> Unit = {},
     viewModel: ConnectionsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -133,6 +139,22 @@ fun ConnectionsScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(Res.string.action_back),
+                        )
+                    }
+                },
+                actions = {
+                    // Phase 25.4 — "Add by code" entry. Routes to the
+                    // FriendInviteConfirm screen in code mode (the
+                    // receiving side of an invite; distinct from the
+                    // Invite tab which GENERATES codes).
+                    IconButton(
+                        onClick = onAddByCode,
+                        modifier = Modifier.testTag("connectionsAddByCodeButton"),
+                    ) {
+                        Icon(
+                            Icons.Filled.PersonAdd,
+                            contentDescription =
+                                stringResource(Res.string.action_friend_invite_add_by_code),
                         )
                     }
                 },

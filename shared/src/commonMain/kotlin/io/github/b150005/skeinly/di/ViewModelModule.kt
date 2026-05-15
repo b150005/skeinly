@@ -21,6 +21,7 @@ import io.github.b150005.skeinly.ui.chart.ChartVariationPickerViewModel
 import io.github.b150005.skeinly.ui.chart.ChartViewerViewModel
 import io.github.b150005.skeinly.ui.comments.CommentSectionViewModel
 import io.github.b150005.skeinly.ui.connections.ConnectionsViewModel
+import io.github.b150005.skeinly.ui.connections.FriendInviteConfirmViewModel
 import io.github.b150005.skeinly.ui.discovery.DiscoveryViewModel
 import io.github.b150005.skeinly.ui.notifications.NotificationPermissionViewModel
 import io.github.b150005.skeinly.ui.onboarding.OAuthProfileSetupViewModel
@@ -222,6 +223,24 @@ val viewModelModule =
                     friendRepository.disconnect(otherUserId)
                 },
                 createInvite = { friendRepository.createInvite() },
+            )
+        }
+        // Phase 25.4 (ADR-024 §Phase 25.4) — friend-invite redemption.
+        // `token` is a screen-time param (null ⇒ code mode, non-null ⇒
+        // token mode from a Universal Link tap). Lambda-seam DI over
+        // FriendRepository.redeemToken / redeemCode + UserRepository
+        // for the inviter-name resolution; same precedent as
+        // ConnectionsViewModel.
+        viewModel { params ->
+            val friendRepository: io.github.b150005.skeinly.domain.repository.FriendRepository = get()
+            val userRepository: io.github.b150005.skeinly.domain.repository.UserRepository = get()
+            FriendInviteConfirmViewModel(
+                token = params.getOrNull(),
+                redeemToken = { t -> friendRepository.redeemToken(t) },
+                redeemCode = { c -> friendRepository.redeemCode(c) },
+                resolveDisplayName = { id ->
+                    userRepository.getById(id)?.displayName
+                },
             )
         }
         // Phase 26.6 (ADR-022 §6.5) — biometric settings screen.

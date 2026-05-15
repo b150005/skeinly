@@ -136,4 +136,75 @@ class ParseExternalRouteTest {
         assertTrue(target is SharedContent)
         assertEquals(validToken, target.token)
     }
+
+    // Phase 25.4 (ADR-024 §Phase 25.4) — friend-invite token path. The
+    // token is a 32-byte URL-safe random string, NOT a UUID, so the
+    // friend arm intentionally does no shape validation beyond non-empty
+    // + length cap (≤512). Existence / expiry / consumed / self-redeem
+    // are server-side RPC concerns.
+    @Test
+    fun `friend invite URL resolves to FriendInviteConfirm with token`() {
+        val token = "abc_DEF-123xyz456"
+        val target =
+            parseExternalRoute("https://b150005.github.io/skeinly/friend/$token")
+        assertTrue(target is FriendInviteConfirm)
+        assertEquals(token, target.token)
+    }
+
+    @Test
+    fun `friend invite URL with empty token returns null`() {
+        assertNull(parseExternalRoute("https://b150005.github.io/skeinly/friend/"))
+    }
+
+    @Test
+    fun `friend invite URL with oversized token returns null`() {
+        // 513 chars — one over the MAX_FRIEND_TOKEN_LENGTH (512) cap.
+        val oversized = "a".repeat(513)
+        assertNull(
+            parseExternalRoute("https://b150005.github.io/skeinly/friend/$oversized"),
+        )
+    }
+
+    @Test
+    fun `friend invite URL at exactly the length cap is accepted`() {
+        // 512 chars — exactly at the cap, must still parse.
+        val maxLen = "a".repeat(512)
+        val target =
+            parseExternalRoute("https://b150005.github.io/skeinly/friend/$maxLen")
+        assertTrue(target is FriendInviteConfirm)
+        assertEquals(maxLen, target.token)
+    }
+
+    @Test
+    fun `friend invite URL strips query string before token extraction`() {
+        val token = "tok_QY9z"
+        val target =
+            parseExternalRoute(
+                "https://b150005.github.io/skeinly/friend/$token?utm_source=imessage",
+            )
+        assertTrue(target is FriendInviteConfirm)
+        assertEquals(token, target.token)
+    }
+
+    @Test
+    fun `friend invite URL strips fragment before token extraction`() {
+        val token = "tok_QY9z"
+        val target =
+            parseExternalRoute(
+                "https://b150005.github.io/skeinly/friend/$token#section",
+            )
+        assertTrue(target is FriendInviteConfirm)
+        assertEquals(token, target.token)
+    }
+
+    @Test
+    fun `friend invite URL with trailing slash keeps token intact`() {
+        val token = "tok_QY9z"
+        val target =
+            parseExternalRoute(
+                "https://b150005.github.io/skeinly/friend/$token/",
+            )
+        assertTrue(target is FriendInviteConfirm)
+        assertEquals(token, target.token)
+    }
 }

@@ -540,6 +540,20 @@ fun wrapConnectionsState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.connections.ConnectionsState>,
 ): FlowWrapper<io.github.b150005.skeinly.ui.connections.ConnectionsState> = FlowWrapper(flow)
 
+// Phase 25.4 (ADR-024 §Phase 25.4) — friend-invite redemption
+// ViewModel + state wrapper. The `token` param threads through Koin's
+// parametric resolution (null ⇒ code mode, non-null ⇒ token mode from
+// a Universal Link tap). Mirrors the WipeData/OAuthProfileSetup
+// parametric-accessor precedent.
+fun getFriendInviteConfirmViewModel(token: String?): io.github.b150005.skeinly.ui.connections.FriendInviteConfirmViewModel =
+    KoinPlatform
+        .getKoin()
+        .get { parametersOf(token) }
+
+fun wrapFriendInviteConfirmState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.connections.FriendInviteConfirmState>,
+): FlowWrapper<io.github.b150005.skeinly.ui.connections.FriendInviteConfirmState> = FlowWrapper(flow)
+
 fun wrapOAuthProfileSetupState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.onboarding.OAuthProfileSetupState>,
 ): FlowWrapper<io.github.b150005.skeinly.ui.onboarding.OAuthProfileSetupState> = FlowWrapper(flow)

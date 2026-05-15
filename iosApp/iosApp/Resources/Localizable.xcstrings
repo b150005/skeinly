@@ -9239,6 +9239,62 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ won’t see your friends-only patterns anymore." } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ はあなたのフレンド限定パターンを見られなくなります。" } }
       }
+    },
+    "title_friend_invite_confirm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add friend" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンドを追加" } }
+      }
+    },
+    "action_friend_invite_add_by_code" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add by code" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コードで追加" } }
+      }
+    },
+    "label_friend_invite_code_field" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Invite code" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "招待コード" } }
+      }
+    },
+    "body_friend_invite_code_helper" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter the 8-character code a friend shared with you." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンドから共有された8文字のコードを入力してください。" } }
+      }
+    },
+    "action_friend_invite_redeem" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add friend" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンドを追加" } }
+      }
+    },
+    "action_friend_invite_done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Done" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "完了" } }
+      }
+    },
+    "state_friend_invite_success" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "You and %1$@ are now friends." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ とフレンドになりました。" } }
+      }
+    },
+    "state_friend_invite_token_failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Couldn’t add this friend. The invite may have expired or already been used." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンドを追加できませんでした。招待の有効期限が切れているか、すでに使用済みの可能性があります。" } }
+      }
     }
   },
   "version" : "1.1"

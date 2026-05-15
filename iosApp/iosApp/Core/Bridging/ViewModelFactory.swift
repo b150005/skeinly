@@ -187,4 +187,13 @@ enum ViewModelFactory {
     static func connectionsViewModel() -> ConnectionsViewModel {
         KoinHelperKt.getConnectionsViewModel()
     }
+
+    /// Phase 25.4 (ADR-024 §Phase 25.4) — friend-invite redemption
+    /// ViewModel. `token` picks the mode: non-nil ⇒ Token mode (deep
+    /// link, auto-redeem on init); nil ⇒ Code mode (manual entry).
+    static func friendInviteConfirmViewModel(
+        token: String?
+    ) -> FriendInviteConfirmViewModel {
+        KoinHelperKt.getFriendInviteConfirmViewModel(token: token)
+    }
 }

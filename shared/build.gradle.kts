@@ -491,6 +491,12 @@ kover {
                     // 3-tab state machine + per-target in-flight guards
                     // + display-name batch resolution).
                     "io.github.b150005.skeinly.ui.connections.ConnectionsScreenKt*",
+                    // Phase 25.4 (ADR-024 §Phase 25.4) — friend-invite
+                    // redemption Compose screen. JVM-untestable Compose;
+                    // FriendInviteConfirmViewModel is exercised via
+                    // commonTest (13 cases: token/code modes, re-entry
+                    // guard, name-resolution-failure no-downgrade).
+                    "io.github.b150005.skeinly.ui.connections.FriendInviteConfirmScreenKt*",
                 )
             }
         }

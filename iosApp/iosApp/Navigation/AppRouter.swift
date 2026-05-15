@@ -43,6 +43,10 @@ enum Route: Hashable {
     /// Three-tab Friends / Pending / Invite surface for managing the
     /// mutual-friendship graph + invite generation.
     case connections
+    /// Phase 25.4 (ADR-024 §Phase 25.4) — friend-invite redemption.
+    /// `token` non-nil ⇒ Token mode (Universal Link tap, auto-redeem);
+    /// nil ⇒ Code mode (reached from Connections → "Add by code").
+    case friendInviteConfirm(token: String?)
     /// Phase 41.3b (ADR-016 §5.1) — paywall route. Uses
     /// `PaywallTrigger.wireValue` for the Hashable representation so the
     /// case stays Codable / Hashable without forcing PaywallTrigger to
@@ -124,6 +128,9 @@ enum Route: Hashable {
             hasher.combine("wipeDataConfirmPhrase")
         case .connections:
             hasher.combine("connections")
+        case .friendInviteConfirm(let token):
+            hasher.combine("friendInviteConfirm")
+            hasher.combine(token)
         }
     }
 }
@@ -550,7 +557,28 @@ struct AppRootView: View {
             // refresh against listFriends / listPending / listInvites
             // + caller-id resolution. Standard back-button pop
             // routes back to Settings.
-            ConnectionsView()
+            ConnectionsView(
+                // Phase 25.4 — "Add by code" routes to the redemption
+                // screen in code mode (nil token).
+                onAddByCode: {
+                    path.append(Route.friendInviteConfirm(token: nil))
+                }
+            )
+                .skeinlyBackButton(path: $path)
+        case .friendInviteConfirm(let token):
+            // Phase 25.4 (ADR-024 §Phase 25.4) — friend-invite
+            // redemption. Token mode auto-redeems on init; code mode
+            // renders the entry form. On "Done" pop back to Connections
+            // (Friends tab shows the new friend); a cold deep-link
+            // launch resets the path so the user lands coherently.
+            FriendInviteConfirmView(
+                token: token,
+                onDone: {
+                    path = NavigationPath()
+                    path.append(Route.connections)
+                },
+                onBack: { path.removeLast() }
+            )
                 .skeinlyBackButton(path: $path)
         }
     }
@@ -623,6 +651,20 @@ struct AppRootView: View {
             let prId = rest[1]
             guard !prId.isEmpty else { return nil }
             return .pullRequestDetail(prId: prId)
+        }
+
+        // /skeinly/friend/<token> — Phase 25.4 (ADR-024 §Phase 25.4).
+        // Token is a 32-byte URL-safe random (migration 035), NOT a
+        // UUID, so no shape regex applies. Validation is minimal here
+        // (non-empty + length cap ≤512 cheap DoS guard); real
+        // existence / expiry / consumed / self-redeem checks are
+        // delegated to the redeem_friend_invite_token RPC. Mirrors the
+        // Kotlin commonMain parseExternalRoute friend arm + its
+        // MAX_FRIEND_TOKEN_LENGTH constant.
+        if rest.count == 2, rest[0] == "friend" {
+            let token = rest[1]
+            guard !token.isEmpty, token.count <= 512 else { return nil }
+            return .friendInviteConfirm(token: token)
         }
 
         return nil

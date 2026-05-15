@@ -26,12 +26,17 @@ import Shared
 /// redemption + system share-sheet land in Phase 25.4. Testers can
 /// manually relay codes for end-to-end smoke testing.
 struct ConnectionsView: View {
+    /// Phase 25.4 — "Add by code" TopAppBar action. Routes to the
+    /// friend-invite redemption screen in code mode. Default no-op so
+    /// preview / test mounts stay valid.
+    let onAddByCode: () -> Void
     @StateObject private var holder: ScopedViewModel<ConnectionsViewModel, ConnectionsState>
     @State private var pendingDisconnect: PendingDisconnect?
 
     private var viewModel: ConnectionsViewModel { holder.viewModel }
 
-    init() {
+    init(onAddByCode: @escaping () -> Void = {}) {
+        self.onAddByCode = onAddByCode
         let vm = ViewModelFactory.connectionsViewModel()
         let wrapper = KoinHelperKt.wrapConnectionsState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
@@ -87,6 +92,22 @@ struct ConnectionsView: View {
         .navigationTitle(LocalizedStringKey("title_connections"))
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("connectionsScreen")
+        .toolbar {
+            // Phase 25.4 — "Add by code" entry (receiving side of an
+            // invite; distinct from the Invite tab which GENERATES
+            // codes). Mirrors the Compose TopAppBar action.
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    onAddByCode()
+                } label: {
+                    Label(
+                        LocalizedStringKey("action_friend_invite_add_by_code"),
+                        systemImage: "person.badge.plus"
+                    )
+                }
+                .accessibilityIdentifier("connectionsAddByCodeButton")
+            }
+        }
         .alert(
             LocalizedStringKey("title_error"),
             isPresented: errorPresented(state: state),

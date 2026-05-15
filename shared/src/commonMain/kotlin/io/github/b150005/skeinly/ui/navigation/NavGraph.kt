@@ -28,6 +28,7 @@ import io.github.b150005.skeinly.ui.chart.ChartEditorScreen
 import io.github.b150005.skeinly.ui.chart.ChartHistoryScreen
 import io.github.b150005.skeinly.ui.chart.ChartViewerScreen
 import io.github.b150005.skeinly.ui.connections.ConnectionsScreen
+import io.github.b150005.skeinly.ui.connections.FriendInviteConfirmScreen
 import io.github.b150005.skeinly.ui.discovery.DiscoveryScreen
 import io.github.b150005.skeinly.ui.forceupdate.ForceUpdateGate
 import io.github.b150005.skeinly.ui.onboarding.OAuthProfileSetupScreen
@@ -248,6 +249,24 @@ data object BiometricSettings
  */
 @Serializable
 data object Connections
+
+/**
+ * Phase 25.4 (ADR-024 §Phase 25.4) — friend-invite redemption confirm
+ * screen. Two entry paths, one screen (the [token] nullability picks
+ * the mode in [io.github.b150005.skeinly.ui.connections.FriendInviteConfirmViewModel]):
+ *
+ * - **Token mode**: reached when the OS dispatches a
+ *   `https://b150005.github.io/skeinly/friend/<token>` Universal Link /
+ *   App Link. [parseExternalRoute] maps the URL to this route with the
+ *   token populated; the VM auto-redeems on init (implicit mutual
+ *   acceptance — both parties participated in the link exchange).
+ * - **Code mode**: reached from Connections → "Add by code" with
+ *   [token] = null; the user types the 8-char code and submits.
+ */
+@Serializable
+data class FriendInviteConfirm(
+    val token: String? = null,
+)
 
 /**
  * Phase 27.2 (ADR-023 §UX) — data-wipe confirmation flow.
@@ -621,6 +640,33 @@ private fun SkeinlyNavHostContent(
         composable<Connections> {
             ConnectionsScreen(
                 onBack = { navController.popBackStack() },
+                // Phase 25.4 (ADR-024 §Phase 25.4) — "Add by code"
+                // routes to the redemption screen in code mode (null
+                // token ⇒ FriendInviteConfirmViewModel renders the
+                // code-entry form).
+                onAddByCode = {
+                    navController.navigate(FriendInviteConfirm(token = null))
+                },
+            )
+        }
+        composable<FriendInviteConfirm> { backStackEntry ->
+            val route = backStackEntry.toRoute<FriendInviteConfirm>()
+            FriendInviteConfirmScreen(
+                token = route.token,
+                // On success "Done": pop back to Connections (Friends
+                // tab shows the new friend). If Connections wasn't on
+                // the stack (cold deep-link launch), navigate to it so
+                // the user lands somewhere coherent rather than on a
+                // popped-empty back stack.
+                onDone = {
+                    navController.navigate(Connections) {
+                        popUpTo(FriendInviteConfirm(token = route.token)) {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
+                    }
+                },
+                onBack = { navController.popBackStack() },
             )
         }
         composable<WipeDataConfirmPhrase> {
@@ -992,8 +1038,32 @@ internal fun parseExternalRoute(url: String): Any? {
         return SuggestionDetail(prId = prId)
     }
 
+    // Phase 25.4 (ADR-024 §Phase 25.4) — friend invite token tap.
+    // The token is a 32-byte URL-safe random string (migration 035),
+    // NOT a UUID, so no UUID-shape check applies (cf. the share-token
+    // arm above). Validation is intentionally minimal here — non-empty
+    // + length cap (≤512, cheap DoS guard against a hand-crafted
+    // mega-URL) — and the real existence / expiry / consumed / self-
+    // redeem checks are delegated to the `redeem_friend_invite_token`
+    // RPC server-side (per the Phase 25.4 agent-team decision).
+    val friendInvitePrefix = "friend/"
+    if (pathPart.startsWith(friendInvitePrefix)) {
+        val token = pathPart.substring(friendInvitePrefix.length).substringBefore('/')
+        if (token.isEmpty() || token.length > MAX_FRIEND_TOKEN_LENGTH) return null
+        return FriendInviteConfirm(token = token)
+    }
+
     return null
 }
+
+/**
+ * Phase 25.4 — upper bound on the friend-invite token segment length.
+ * The real token is a 32-byte URL-safe base64 string (~43 chars); 512
+ * is a generous cap that rejects only a hand-crafted abuse URL while
+ * never clipping a legitimate token. Mirrored in
+ * `iosApp/iosApp/Navigation/AppRouter.swift`'s `parseExternalRoute`.
+ */
+private const val MAX_FRIEND_TOKEN_LENGTH = 512
 
 /**
  * UUID v4 lowercase-hex shape check, mirroring the regex used in
