@@ -33,10 +33,19 @@ interface PublicPatternDataSource {
      *  same set of ids in that case. When false the result list is unfiltered
      *  but the companion set still names which of the returned ids have
      *  charts. See ADR-012 §4 / §5.
+     * @param includeFriendsOnly Phase 25.5 (ADR-024 §(f)): when false the
+     *  query filters `visibility = 'public'` (the default Discovery feed).
+     *  When true it widens to `visibility IN ('public', 'friends')`. The
+     *  `friends` rows are still gated server-side by the Phase 25.1
+     *  patterns-SELECT RLS policy (`is_friend(auth.uid(), owner_id)` arm),
+     *  so this flag only controls whether the client asks for friends
+     *  rows — RLS decides which it may actually return. Default false
+     *  keeps the public-only behavior unchanged for non-Phase-25.5 callers.
      */
     suspend fun getPublic(
         searchQuery: String = "",
         limit: Int = 100,
         chartsOnly: Boolean = false,
+        includeFriendsOnly: Boolean = false,
     ): PublicPatternsResult
 }

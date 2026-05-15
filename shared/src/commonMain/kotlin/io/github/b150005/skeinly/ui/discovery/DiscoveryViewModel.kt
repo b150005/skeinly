@@ -39,6 +39,14 @@ data class DiscoveryState(
     /** Phase 36.4 (ADR-012 §4): when true the list is filtered server-side. */
     val chartsOnlyFilter: Boolean = false,
     /**
+     * Phase 25.5 (ADR-024 §(f)): when true the Discovery query widens
+     * from `visibility = 'public'` to `visibility IN ('public',
+     * 'friends')`. Server-side filter (re-fetch on toggle, like
+     * [chartsOnlyFilter]) — RLS gates which friends rows actually come
+     * back. Persisted via [DiscoveryPreferences]; default OFF.
+     */
+    val showFriendsOnly: Boolean = false,
+    /**
      * Phase 36.4 (ADR-012 §5): companion set of pattern ids that have a
      * `chart_documents` row. Always populated regardless of [chartsOnlyFilter];
      * the PatternCard checks membership to decide whether to render the
@@ -89,6 +97,11 @@ sealed interface DiscoveryEvent {
 
     data object ToggleChartsOnly : DiscoveryEvent
 
+    /** Phase 25.5 (ADR-024 §(f)) — flip the "show friends-only
+     *  patterns" opt-in. Persists the new value + re-fetches (server-
+     *  side filter, same shape as [ToggleChartsOnly]). */
+    data object ToggleFriendsOnly : DiscoveryEvent
+
     data object Refresh : DiscoveryEvent
 
     data object ClearError : DiscoveryEvent
@@ -104,18 +117,32 @@ private data class FilterState(
     val difficultyFilter: Difficulty? = null,
     val sortOrder: SortOrder = SortOrder.RECENT,
     val chartsOnlyFilter: Boolean = false,
+    val showFriendsOnly: Boolean = false,
 )
 
 class DiscoveryViewModel(
     private val getPublicPatterns: GetPublicPatternsUseCase,
     private val savePublicPatternToLibrary: SavePublicPatternToLibraryUseCase,
+    // Phase 25.5 (ADR-024 §(f)) — friends-only opt-in persistence.
+    // Nullable + default null preserves existing test compat (the
+    // pre-25.5 DiscoveryViewModelTest constructs without it; the
+    // server-side filter simply stays OFF when null).
+    private val discoveryPreferences: io.github.b150005.skeinly.data.preferences.DiscoveryPreferences? = null,
     // Phase F.4 — nullable + default null preserves existing test compat.
     private val analyticsTracker: AnalyticsTracker? = null,
 ) : ViewModel() {
     private val rawPatterns = MutableStateFlow<List<Pattern>>(emptyList())
     private val patternsWithCharts = MutableStateFlow<Set<String>>(emptySet())
     private val uiFlags = MutableStateFlow(UiFlags())
-    private val filterState = MutableStateFlow(FilterState())
+    private val filterState =
+        MutableStateFlow(
+            // Phase 25.5: seed the friends-only filter from the
+            // persisted preference so a returning user keeps their
+            // opt-in across app restarts.
+            FilterState(
+                showFriendsOnly = discoveryPreferences?.showFriendsOnly?.value ?: false,
+            ),
+        )
     private val isLoading = MutableStateFlow(true)
 
     private val _forkedProjectChannel = Channel<DiscoveryForkResult>(Channel.BUFFERED)
@@ -146,6 +173,7 @@ class DiscoveryViewModel(
                 sortOrder = filters.sortOrder,
                 forkingPatternId = flags.forkingPatternId,
                 chartsOnlyFilter = filters.chartsOnlyFilter,
+                showFriendsOnly = filters.showFriendsOnly,
                 patternsWithCharts = withCharts,
             )
         }.stateIn(
@@ -155,7 +183,10 @@ class DiscoveryViewModel(
         )
 
     init {
-        load("", chartsOnly = false)
+        // Initial load honors the persisted friends-only opt-in. No
+        // TOCTOU concern here — nothing else dispatches before init
+        // returns, so filterState.value is stable.
+        load("", chartsOnly = false, includeFriendsOnly = filterState.value.showFriendsOnly)
     }
 
     fun onEvent(event: DiscoveryEvent) {
@@ -188,11 +219,39 @@ class DiscoveryViewModel(
                 // could flip the chartsOnly value that the launched load
                 // coroutine ultimately reads.
                 val newFilter = filterState.updateAndGet { it.copy(chartsOnlyFilter = !it.chartsOnlyFilter) }
-                load(newFilter.searchQuery, newFilter.chartsOnlyFilter)
+                load(newFilter.searchQuery, newFilter.chartsOnlyFilter, newFilter.showFriendsOnly)
+            }
+            DiscoveryEvent.ToggleFriendsOnly -> {
+                // Phase 25.5 (ADR-024 §(f)): server-side filter, same
+                // shape as ToggleChartsOnly. The desired new value is
+                // computed once (`!current`), the persist is ISSUED
+                // first, THEN the in-memory filter is set to that exact
+                // value via updateAndGet (set, not flip-relative — so
+                // the persisted value and the in-memory value can never
+                // disagree even if the two were somehow reordered).
+                // onEvent runs on the Main dispatcher with no suspension
+                // between these lines, so no second toggle can
+                // interleave (same single-thread rationale the
+                // ToggleChartsOnly TOCTOU comment relies on).
+                //
+                // Durability is best-effort, NOT a hard guarantee:
+                // multiplatform-settings `SharedPreferencesSettings`
+                // defaults to `apply()` (async) on Android and
+                // `NSUserDefaults` batches writes on iOS. A clean
+                // process restart restores the choice; a process kill
+                // in the sub-millisecond async-write window can still
+                // lose it. That residual gap is acceptable for a UI
+                // preference (worst case: the toggle reverts to OFF,
+                // the privacy-safe default — never the reverse).
+                val newValue = !filterState.value.showFriendsOnly
+                discoveryPreferences?.setShowFriendsOnly(newValue)
+                val newFilter =
+                    filterState.updateAndGet { it.copy(showFriendsOnly = newValue) }
+                load(newFilter.searchQuery, newFilter.chartsOnlyFilter, newFilter.showFriendsOnly)
             }
             DiscoveryEvent.Refresh -> {
                 val current = filterState.value
-                load(current.searchQuery, current.chartsOnlyFilter)
+                load(current.searchQuery, current.chartsOnlyFilter, current.showFriendsOnly)
             }
             DiscoveryEvent.ClearError -> {
                 uiFlags.update { it.copy(error = null) }
@@ -205,17 +264,22 @@ class DiscoveryViewModel(
         searchJob =
             viewModelScope.launch {
                 delay(SEARCH_DEBOUNCE_MS)
-                load(query, filterState.value.chartsOnlyFilter)
+                val current = filterState.value
+                load(query, current.chartsOnlyFilter, current.showFriendsOnly)
             }
     }
 
     private fun load(
         searchQuery: String,
         chartsOnly: Boolean,
+        includeFriendsOnly: Boolean,
     ) {
         viewModelScope.launch {
             isLoading.value = true
-            when (val result = getPublicPatterns(searchQuery, chartsOnly)) {
+            when (
+                val result =
+                    getPublicPatterns(searchQuery, chartsOnly, includeFriendsOnly)
+            ) {
                 is UseCaseResult.Success -> {
                     rawPatterns.value = result.value.patterns
                     patternsWithCharts.value = result.value.patternsWithCharts

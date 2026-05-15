@@ -46,6 +46,7 @@ class RemotePatternDataSource(
         searchQuery: String,
         limit: Int,
         chartsOnly: Boolean,
+        includeFriendsOnly: Boolean,
     ): PublicPatternsResult {
         val columns =
             if (chartsOnly) {
@@ -57,7 +58,20 @@ class RemotePatternDataSource(
             table
                 .select(columns) {
                     filter {
-                        eq("visibility", "public")
+                        // Phase 25.5 (ADR-024 §(f)): default is the
+                        // public-only feed; the opt-in toggle widens to
+                        // also request `friends`-visibility rows. The
+                        // Phase 25.1 patterns-SELECT RLS policy still
+                        // gates the `friends` arm on
+                        // is_friend(auth.uid(), owner_id), so a widened
+                        // `IN` filter cannot leak a non-friend's
+                        // friends-only pattern — RLS is the security
+                        // boundary, this is just the request shape.
+                        if (includeFriendsOnly) {
+                            isIn("visibility", listOf("public", "friends"))
+                        } else {
+                            eq("visibility", "public")
+                        }
                         if (searchQuery.isNotBlank()) {
                             ilike("title", "%$searchQuery%")
                         }

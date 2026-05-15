@@ -91,11 +91,21 @@ class DiscoveryViewModelTest {
         projectRepo: FakeProjectRepository = FakeProjectRepository(),
         chartRepo: FakeChartRepository = FakeChartRepository(),
         authRepo: FakeAuthRepository = FakeAuthRepository(),
+        // Phase 25.5 (ADR-024 §(f)) — nullable; pre-25.5 tests pass
+        // null (friends-only filter stays OFF). Named args below so
+        // the ctor's discoveryPreferences/analyticsTracker order is
+        // explicit (both are nullable-with-default).
+        discoveryPreferences: io.github.b150005.skeinly.data.preferences.DiscoveryPreferences? = null,
         analyticsTracker: AnalyticsTracker? = null,
     ): DiscoveryViewModel {
         val getPublicPatterns = GetPublicPatternsUseCase(dataSource)
         val savePublicPatternToLibrary = SavePublicPatternToLibraryUseCase(patternRepo, projectRepo, chartRepo, authRepo)
-        return DiscoveryViewModel(getPublicPatterns, savePublicPatternToLibrary, analyticsTracker)
+        return DiscoveryViewModel(
+            getPublicPatterns = getPublicPatterns,
+            savePublicPatternToLibrary = savePublicPatternToLibrary,
+            discoveryPreferences = discoveryPreferences,
+            analyticsTracker = analyticsTracker,
+        )
     }
 
     @Test
@@ -472,4 +482,136 @@ class DiscoveryViewModelTest {
             stateJob.cancel()
             forkJob.cancel()
         }
+
+    // ── Phase 25.5 (ADR-024 §(f)) — friends-only Discovery filter ──
+
+    private val friendsOnlyPattern =
+        Pattern(
+            id = "friend-c",
+            ownerId = "a-friend",
+            title = "Knit-along WIP",
+            description = "shared with my circle",
+            difficulty = Difficulty.INTERMEDIATE,
+            gauge = null,
+            yarnInfo = null,
+            needleSize = null,
+            chartImageUrls = emptyList(),
+            visibility = Visibility.FRIENDS,
+            createdAt = Instant.fromEpochMilliseconds(3000),
+            updatedAt = Instant.fromEpochMilliseconds(3000),
+        )
+
+    @Test
+    fun `friends-only pattern is hidden by default and shown after toggle`() =
+        runTest {
+            val dataSource = FakePublicPatternDataSource()
+            dataSource.addPattern(patternA)
+            dataSource.addPattern(friendsOnlyPattern)
+            dataSource.markFriendsOnly("friend-c")
+            val prefs = FakeDiscoveryPreferences()
+            val viewModel = createViewModel(dataSource = dataSource, discoveryPreferences = prefs)
+
+            viewModel.state.test {
+                skipItems(1) // initial
+                val defaultLoad = awaitItem()
+                // Default OFF → public-only feed; friends-only row absent.
+                assertFalse(defaultLoad.showFriendsOnly)
+                assertEquals(listOf("pub-a"), defaultLoad.patterns.map { it.id })
+
+                viewModel.onEvent(DiscoveryEvent.ToggleFriendsOnly)
+                // Filter-state flip emits, then the re-fetch emits the
+                // widened result set. Drain until both patterns appear.
+                advanceUntilIdle()
+                val widened = expectMostRecentItem()
+                assertTrue(widened.showFriendsOnly)
+                assertEquals(
+                    setOf("pub-a", "friend-c"),
+                    widened.patterns.map { it.id }.toSet(),
+                )
+            }
+        }
+
+    @Test
+    fun `toggle persists the opt-in via DiscoveryPreferences`() =
+        runTest {
+            val dataSource = FakePublicPatternDataSource()
+            dataSource.addPattern(patternA)
+            val prefs = FakeDiscoveryPreferences()
+            val viewModel = createViewModel(dataSource = dataSource, discoveryPreferences = prefs)
+            val stateJob = backgroundScope.launch { viewModel.state.collect { } }
+            advanceUntilIdle()
+
+            assertFalse(prefs.showFriendsOnly.value)
+            viewModel.onEvent(DiscoveryEvent.ToggleFriendsOnly)
+            advanceUntilIdle()
+            assertTrue(prefs.showFriendsOnly.value, "toggle ON must persist")
+            assertTrue(dataSource.lastIncludeFriendsOnly, "re-fetch must request friends rows")
+
+            viewModel.onEvent(DiscoveryEvent.ToggleFriendsOnly)
+            advanceUntilIdle()
+            assertFalse(prefs.showFriendsOnly.value, "toggle OFF must persist")
+            assertFalse(dataSource.lastIncludeFriendsOnly)
+            stateJob.cancel()
+        }
+
+    @Test
+    fun `persisted opt-in seeds the initial load`() =
+        runTest {
+            val dataSource = FakePublicPatternDataSource()
+            dataSource.addPattern(patternA)
+            dataSource.addPattern(friendsOnlyPattern)
+            dataSource.markFriendsOnly("friend-c")
+            // Pref already ON from a prior session.
+            val prefs = FakeDiscoveryPreferences(initial = true)
+            val viewModel = createViewModel(dataSource = dataSource, discoveryPreferences = prefs)
+
+            viewModel.state.test {
+                skipItems(1)
+                val loaded = awaitItem()
+                // No toggle dispatched — the persisted ON value must
+                // have widened the very first query.
+                assertTrue(loaded.showFriendsOnly)
+                assertTrue(dataSource.lastIncludeFriendsOnly)
+                assertEquals(
+                    setOf("pub-a", "friend-c"),
+                    loaded.patterns.map { it.id }.toSet(),
+                )
+            }
+        }
+
+    @Test
+    fun `null DiscoveryPreferences keeps friends-only OFF and unpersisted`() =
+        runTest {
+            // Pre-25.5 construction path (no preferences wired). Toggle
+            // still flips the in-memory state + re-fetches, but there's
+            // no persistence sink — must not NPE on the null pref.
+            val dataSource = FakePublicPatternDataSource()
+            dataSource.addPattern(patternA)
+            val viewModel = createViewModel(dataSource = dataSource, discoveryPreferences = null)
+
+            viewModel.state.test {
+                skipItems(1)
+                val loaded = awaitItem()
+                assertFalse(loaded.showFriendsOnly)
+
+                viewModel.onEvent(DiscoveryEvent.ToggleFriendsOnly)
+                advanceUntilIdle()
+                val toggled = expectMostRecentItem()
+                assertTrue(toggled.showFriendsOnly)
+                assertTrue(dataSource.lastIncludeFriendsOnly)
+            }
+        }
+
+    private class FakeDiscoveryPreferences(
+        initial: Boolean = false,
+    ) : io.github.b150005.skeinly.data.preferences.DiscoveryPreferences {
+        private val _showFriendsOnly =
+            kotlinx.coroutines.flow.MutableStateFlow(initial)
+        override val showFriendsOnly: kotlinx.coroutines.flow.StateFlow<Boolean> =
+            _showFriendsOnly
+
+        override fun setShowFriendsOnly(value: Boolean) {
+            _showFriendsOnly.value = value
+        }
+    }
 }

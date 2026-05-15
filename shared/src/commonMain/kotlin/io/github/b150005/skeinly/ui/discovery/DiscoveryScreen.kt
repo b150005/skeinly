@@ -62,6 +62,7 @@ import io.github.b150005.skeinly.generated.resources.action_sort
 import io.github.b150005.skeinly.generated.resources.hint_search_public_patterns
 import io.github.b150005.skeinly.generated.resources.label_difficulty_all
 import io.github.b150005.skeinly.generated.resources.label_filter_charts_only
+import io.github.b150005.skeinly.generated.resources.label_filter_friends_only
 import io.github.b150005.skeinly.generated.resources.label_gauge_value
 import io.github.b150005.skeinly.generated.resources.label_needle_value
 import io.github.b150005.skeinly.generated.resources.label_sort_alphabetical_detail
@@ -180,11 +181,15 @@ fun DiscoveryScreen(
                 DiscoveryFilterRow(
                     difficultyFilter = state.difficultyFilter,
                     chartsOnlyFilter = state.chartsOnlyFilter,
+                    showFriendsOnly = state.showFriendsOnly,
                     onDifficultyFilterChange = {
                         viewModel.onEvent(DiscoveryEvent.UpdateDifficultyFilter(it))
                     },
                     onToggleChartsOnly = {
                         viewModel.onEvent(DiscoveryEvent.ToggleChartsOnly)
+                    },
+                    onToggleFriendsOnly = {
+                        viewModel.onEvent(DiscoveryEvent.ToggleFriendsOnly)
                     },
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
@@ -295,8 +300,10 @@ private fun DiscoverySearchField(
 private fun DiscoveryFilterRow(
     difficultyFilter: Difficulty?,
     chartsOnlyFilter: Boolean,
+    showFriendsOnly: Boolean,
     onDifficultyFilterChange: (Difficulty?) -> Unit,
     onToggleChartsOnly: () -> Unit,
+    onToggleFriendsOnly: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyRow(
@@ -314,6 +321,18 @@ private fun DiscoveryFilterRow(
                 label = { Text(stringResource(Res.string.label_filter_charts_only)) },
                 leadingIcon = selectedCheckmarkIcon(chartsOnlyFilter),
                 modifier = Modifier.testTag("chartsOnlyChip"),
+            )
+        }
+        // Phase 25.5 (ADR-024 §(f)): opt-in to also surface
+        // friends-only patterns. Default OFF (public-only feed). Same
+        // FilterChip idiom + WCAG-1.4.1 checkmark as "Charts only".
+        item {
+            FilterChip(
+                selected = showFriendsOnly,
+                onClick = onToggleFriendsOnly,
+                label = { Text(stringResource(Res.string.label_filter_friends_only)) },
+                leadingIcon = selectedCheckmarkIcon(showFriendsOnly),
+                modifier = Modifier.testTag("friendsOnlyChip"),
             )
         }
         item {

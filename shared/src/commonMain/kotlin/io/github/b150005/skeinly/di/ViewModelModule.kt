@@ -259,7 +259,9 @@ val viewModelModule =
         viewModelOf(::PatternLibraryViewModel)
         // Phase F.4 — explicit form for analyticsTracker visibility. See
         // the Phase F.3 comment block above for rationale.
-        viewModel { DiscoveryViewModel(get(), get(), get()) }
+        // Phase 25.5 (ADR-024 §(f)) — DiscoveryPreferences threaded for
+        // the friends-only opt-in (server-side filter + persistence).
+        viewModel { DiscoveryViewModel(get(), get(), get(), get()) }
         viewModel { params ->
             PatternEditViewModel(
                 patternId = params.getOrNull(),

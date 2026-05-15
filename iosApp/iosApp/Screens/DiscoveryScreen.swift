@@ -106,11 +106,15 @@ struct DiscoveryScreen: View {
             DiscoveryFilterSection(
                 difficultyFilter: state.difficultyFilter,
                 chartsOnlyFilter: state.chartsOnlyFilter,
+                showFriendsOnly: state.showFriendsOnly,
                 onDifficultyFilterChange: { difficulty in
                     viewModel.onEvent(event: DiscoveryEventUpdateDifficultyFilter(difficulty: difficulty))
                 },
                 onToggleChartsOnly: {
                     viewModel.onEvent(event: DiscoveryEventToggleChartsOnly.shared)
+                },
+                onToggleFriendsOnly: {
+                    viewModel.onEvent(event: DiscoveryEventToggleFriendsOnly.shared)
                 }
             )
 
@@ -243,8 +247,10 @@ struct DiscoveryScreen: View {
 private struct DiscoveryFilterSection: View {
     let difficultyFilter: Difficulty?
     let chartsOnlyFilter: Bool
+    let showFriendsOnly: Bool
     let onDifficultyFilterChange: (Difficulty?) -> Void
     let onToggleChartsOnly: () -> Void
+    let onToggleFriendsOnly: () -> Void
 
     var body: some View {
         Section {
@@ -257,6 +263,14 @@ private struct DiscoveryFilterSection: View {
                         identifier: "chartsOnlyChip",
                         isSelected: chartsOnlyFilter,
                         action: onToggleChartsOnly
+                    )
+                    // Phase 25.5 (ADR-024 §(f)): opt-in to also surface
+                    // friends-only patterns. Mirrors the Compose chip.
+                    DiscoveryFilterChip(
+                        labelKey: "label_filter_friends_only",
+                        identifier: "friendsOnlyChip",
+                        isSelected: showFriendsOnly,
+                        action: onToggleFriendsOnly
                     )
                     DiscoveryFilterChip(
                         labelKey: "label_difficulty_all",

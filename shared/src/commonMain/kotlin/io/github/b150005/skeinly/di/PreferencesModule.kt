@@ -21,6 +21,13 @@ val preferencesModule =
     module {
         single<OnboardingPreferences> { OnboardingPreferencesImpl(get()) }
         single<AnalyticsPreferences> { AnalyticsPreferencesImpl(get()) }
+        // Phase 25.5 (ADR-024 §(f)) — Discovery "show friends-only
+        // patterns" opt-in. Settings-backed UI preference (not a
+        // secret); default OFF (filter-only-public).
+        single<io.github.b150005.skeinly.data.preferences.DiscoveryPreferences> {
+            io.github.b150005.skeinly.data.preferences
+                .DiscoveryPreferencesImpl(get())
+        }
         // Phase 39 (W4 / 2026-05-11) — force-update gate cache. Persists
         // the last successfully fetched `app_config` row so the gate has
         // a value to evaluate against on offline launches. Settings-backed

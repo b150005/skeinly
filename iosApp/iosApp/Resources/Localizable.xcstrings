@@ -4665,6 +4665,23 @@
         }
       }
     },
+    "label_filter_friends_only" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Friends only"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フレンドのみ"
+          }
+        }
+      }
+    },
     "label_filter_received" : {
       "extractionState" : "manual",
       "localizations" : {

@@ -135,6 +135,12 @@
       <li>Activity feed entries</li>
     </ul>
 
+    <h3>Friend Connections</h3>
+    <p>If you use the Connections feature (Settings &rarr; Privacy &rarr; Connections), the App stores a friend-graph record for each connection. Each record contains <strong>only</strong> the two participant account identifiers, a state value (<code>pending</code>, <code>accepted</code>, or <code>blocked</code>), the identifier of whoever sent the request, and timestamps. <strong>No</strong> profile data, message content, or activity is stored in the friend-graph record itself &mdash; display names are resolved on demand from your existing profile information.</p>
+    <p>Friend connections are mutual: a connection only becomes active when both people accept. Either person can sever a connection at any time from Settings &rarr; Privacy &rarr; Connections. Connections are first-degree only &mdash; a friend of your friend is not granted any access to your content.</p>
+    <p>Patterns you create carry a visibility setting: <em>private</em> (only you), <em>friends</em> (you and your accepted friend connections), <em>shared</em> (anyone with a share link), or <em>public</em> (visible in Discovery to everyone). The <em>friends</em> visibility is enforced server-side: a pattern set to <em>friends</em> is only ever returned to accounts that have an accepted friend connection with you at query time. The Discovery feed shows public patterns by default; surfacing friends-only patterns there is an explicit opt-in toggle and never exposes a pattern to someone who is not your accepted friend.</p>
+    <p>Friend connections are preserved when you use "Delete all my data" (they are identity-adjacent, not content); connections you initiated are removed and connections others initiated with you are severed cleanly. They are fully deleted when you delete your account (foreign-key cascade).</p>
+
     <h3>Automatically Collected Information</h3>
     <p><strong>Production releases</strong> of the App do not activate any analytics, crash reporting, or tracking functionality. We do not actively collect device or usage telemetry. Some third-party SDKs (e.g. PostHog, Sentry) are linked into the binary, but they are never initialized in production builds &mdash; no network connections are opened and no data is collected.</p>
     <p>We do <strong>not</strong> collect:</p>
@@ -356,6 +362,7 @@
       <li><strong>Delete</strong> your account and all associated data from the Settings screen (Settings &gt; Delete Account), or via the <a href="../account-deletion/">web-based account deletion page</a> if you cannot access the app</li>
       <li><strong>Clear your content while keeping your account</strong> (Settings &gt; Delete all my data), or via the <a href="../data-deletion/">web-based data deletion page</a>. This deletes your patterns, projects, charts, comments, and activity history while preserving your sign-in, display name, avatar, and Pro membership &mdash; useful for a "fresh start" without losing the account itself.</li>
       <li><strong>Export</strong> your data by contacting us at the email below (we respond within 7 calendar days; see the <a href="https://github.com/b150005/skeinly/blob/main/docs/en/ops/data-export-sop.md">data export SOP</a> for what's included)</li>
+      <li><strong>Manage your friend connections</strong> from Settings &gt; Privacy &gt; Connections &mdash; review pending requests, accept or reject them, and disconnect existing connections at any time. Disconnecting is immediate and revokes the other person's access to your friends-only patterns.</li>
     </ul>
     <p>Account deletion is permanent and removes all your projects, patterns, progress, comments, and uploaded images from our servers. The "Delete all my data" action is also permanent for the deleted content, but is intentionally distinct from account deletion: the account record, Pro membership, and identity (display name / avatar) survive so the user can keep using Skeinly with a clean slate.</p>
 
