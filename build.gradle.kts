@@ -65,31 +65,30 @@ val verifyI18nKeys by tasks.registering {
     // literals at build time. These intentionally have no shared composeResources
     // counterpart and would otherwise drift the parity check on every clean build.
     //
-    // Two sub-categories:
-    //   (a) System / format / glyph literals — no translation needed (placeholder
-    //       templates, SwiftUI runtime-supplied NavigationBar back button, etc.).
-    //   (b) SwiftUI Text(...) literals that DO have semantic equivalents in shared
-    //       composeResources (e.g. "Crochet" should be Res.string.mode_crochet) —
-    //       tracked as Tech Debt for migration in CLAUDE.md "Phase 40 GA release prep".
+    // Only (a) System / format / glyph literals remain — no translation needed
+    // (printf-style placeholder templates, the SwiftUI runtime-supplied
+    // NavigationBar back button, a lone "?" glyph). These have no semantic
+    // shared-composeResources counterpart by design and are a permanent skip.
+    //
+    // The former (b) sub-category — SwiftUI `Text("…")` literals that DID have
+    // shared semantic equivalents — was fully migrated to `Res.string.*` /
+    // `state_image_load_failed` (commit closing the CLAUDE.md "SwiftUI Text(…)
+    // literal → shared Res.string semantic key migration" Tech Debt), so the
+    // allow list no longer needs those entries. Re-adding a (b)-style entry
+    // here is a regression: it would re-permit an un-localized iOS literal to
+    // drift past `verifyI18nKeys`. New user-visible iOS text must use a shared
+    // key (parity-checked), not a `Text("literal")`.
     //
     // Allow list is applied to the xcstrings key set BEFORE drift comparison so a
     // freshly Xcode-canonicalized .xcstrings does not block CI on every iOS rebuild.
     val xcstringsAllowedOrphanKeys =
         setOf(
-            // (a) System / format / glyph
+            // (a) System / format / glyph — permanent skip, no translation needed
             "%@",
             "%@ / %@",
             "%@ · %@ · %@",
             "?",
             "Back",
-            // (b) SwiftUI Text(...) literal — Tech Debt: migrate to Res.string semantic keys
-            "Crochet",
-            "Crochet flat (L→R)",
-            "Failed to load image",
-            "Knit",
-            "Knit flat (RS →, WS ←)",
-            "Round (center out)",
-            "You have unsaved changes. Discard them?",
         )
 
     doLast {

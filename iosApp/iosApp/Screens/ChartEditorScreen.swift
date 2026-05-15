@@ -131,8 +131,8 @@ struct ChartEditorScreen: View {
                             get: { state.draftCraftType },
                             set: { viewModel.onEvent(event: ChartEditorEventSelectCraft(craftType: $0)) }
                         )) {
-                            Text("Knit").tag(CraftType.knit)
-                            Text("Crochet").tag(CraftType.crochet)
+                            Text(LocalizedStringKey("label_craft_knit")).tag(CraftType.knit)
+                            Text(LocalizedStringKey("label_craft_crochet")).tag(CraftType.crochet)
                         }
                     }
                     Section("Reading") {
@@ -140,9 +140,9 @@ struct ChartEditorScreen: View {
                             get: { state.draftReadingConvention },
                             set: { viewModel.onEvent(event: ChartEditorEventSelectReading(readingConvention: $0)) }
                         )) {
-                            Text("Knit flat (RS →, WS ←)").tag(ReadingConvention.knitFlat)
-                            Text("Crochet flat (L→R)").tag(ReadingConvention.crochetFlat)
-                            Text("Round (center out)").tag(ReadingConvention.round)
+                            Text(LocalizedStringKey("label_reading_knit_flat")).tag(ReadingConvention.knitFlat)
+                            Text(LocalizedStringKey("label_reading_crochet_flat")).tag(ReadingConvention.crochetFlat)
+                            Text(LocalizedStringKey("label_reading_round")).tag(ReadingConvention.round)
                         }
                     }
                     // Phase 35.3 (ADR-011 §6): the Grid section is always
@@ -266,7 +266,7 @@ struct ChartEditorScreen: View {
                 showDiscardConfirm = false
             }
         } message: {
-            Text("You have unsaved changes. Discard them?")
+            Text(LocalizedStringKey("dialog_unsaved_changes_body"))
         }
         .onChange(of: state.pendingParameterInput) { _, newPending in
             if let pending = newPending {

@@ -31,6 +31,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
+import io.github.b150005.skeinly.generated.resources.Res
+import io.github.b150005.skeinly.generated.resources.state_image_load_failed
+import org.jetbrains.compose.resources.stringResource
 
 private const val MIN_SCALE = 1f
 private const val MAX_SCALE = 5f
@@ -105,7 +108,7 @@ fun ChartImageViewer(
 
         if (isError) {
             Text(
-                text = "Failed to load image",
+                text = stringResource(Res.string.state_image_load_failed),
                 color = Color.White,
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.align(Alignment.Center),

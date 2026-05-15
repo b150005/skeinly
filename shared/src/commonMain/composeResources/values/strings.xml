@@ -253,6 +253,7 @@
     <string name="label_avatar">Avatar</string>
     <string name="label_display_name">Display Name</string>
     <string name="label_bio">Bio</string>
+    <string name="state_image_load_failed">Could not load image</string>
     <string name="state_profile_load_failed">Could not load profile</string>
     <string name="message_profile_updated">Profile updated</string>
 

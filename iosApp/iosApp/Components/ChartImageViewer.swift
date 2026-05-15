@@ -43,7 +43,7 @@ struct ChartImageViewer: View {
                         Image(systemName: "exclamationmark.triangle")
                             .font(.largeTitle)
                             .foregroundColor(.white)
-                        Text("Failed to load image")
+                        Text(LocalizedStringKey("state_image_load_failed"))
                             .foregroundColor(.white)
                     }
                 @unknown default:
