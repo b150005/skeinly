@@ -141,7 +141,7 @@ class OAuthProfileSetupViewModelTest {
         }
 
     @Test
-    fun `ChooseDifferentAvatar resets avatarImported flag`() =
+    fun `ChooseDifferentAvatar resets avatarImported flag and surfaces hint`() =
         runTest {
             val vm =
                 OAuthProfileSetupViewModel(
@@ -152,8 +152,31 @@ class OAuthProfileSetupViewModelTest {
                 )
             vm.onEvent(OAuthProfileSetupEvent.UseOAuthAvatar)
             assertTrue(vm.state.value.avatarImported)
+            assertFalse(vm.state.value.chooseDifferentHintVisible)
             vm.onEvent(OAuthProfileSetupEvent.ChooseDifferentAvatar)
             assertFalse(vm.state.value.avatarImported)
+            assertTrue(
+                vm.state.value.chooseDifferentHintVisible,
+                "Choose different hint should surface after the user declines",
+            )
+        }
+
+    @Test
+    fun `Re-import after ChooseDifferentAvatar hides the hint again`() =
+        runTest {
+            val vm =
+                OAuthProfileSetupViewModel(
+                    metadata = metadataWithPicture(),
+                    importAvatar = { UseCaseResult.Success("anything") },
+                    saveDisplayName = { _, _ -> UseCaseResult.Success(sampleUser) },
+                    markGateCompleted = {},
+                )
+            vm.onEvent(OAuthProfileSetupEvent.UseOAuthAvatar)
+            vm.onEvent(OAuthProfileSetupEvent.ChooseDifferentAvatar)
+            assertTrue(vm.state.value.chooseDifferentHintVisible)
+            vm.onEvent(OAuthProfileSetupEvent.UseOAuthAvatar)
+            assertFalse(vm.state.value.chooseDifferentHintVisible)
+            assertTrue(vm.state.value.avatarImported)
         }
 
     @Test

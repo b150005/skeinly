@@ -24,6 +24,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -74,6 +75,15 @@ fun BiometricSettingsScreen(
     viewModel: BiometricSettingsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+
+    // Phase 26.7 (Tech Debt carryover from Phase 26.6) — re-query OS
+    // availability on every screen mount so a user who walked through
+    // OS Settings to enroll biometric / PIN sees the updated state
+    // when they return. Keyed on Unit so it fires once per
+    // composition lifecycle (which corresponds to a fresh nav arrival).
+    LaunchedEffect(Unit) {
+        viewModel.onEvent(BiometricSettingsEvent.RefreshAvailability)
+    }
 
     Scaffold(
         modifier = Modifier.testTag("biometricSettingsScreen"),

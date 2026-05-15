@@ -43,6 +43,16 @@ data class OAuthProfileSetupState(
      *  "Use this picture" tile selected-state UI. False also covers the
      *  "no picture surface" path — the screen renders with avatar absent. */
     val avatarImported: Boolean = false,
+    /**
+     * Phase 26.7 (Tech Debt resolution) — flipped true once the user
+     * taps "Choose different" so the UI can surface a hint pointing
+     * them at Settings → Profile for arbitrary avatar uploads. The
+     * setup screen deliberately does NOT bundle a full photo picker
+     * (existing `ProfileViewModel.UploadAvatar` already covers that
+     * flow). Resets when the user re-imports the OAuth avatar via
+     * [UseOAuthAvatar].
+     */
+    val chooseDifferentHintVisible: Boolean = false,
     /** Surfaces user-visible errors from save / import paths. */
     val error: ErrorMessage? = null,
 )
@@ -119,7 +129,13 @@ class OAuthProfileSetupViewModel(
             OAuthProfileSetupEvent.UseOAuthAvatar -> performImportAvatar()
             OAuthProfileSetupEvent.ChooseDifferentAvatar -> {
                 importedAvatarUrl = null
-                _state.update { it.copy(avatarImported = false, error = null) }
+                _state.update {
+                    it.copy(
+                        avatarImported = false,
+                        chooseDifferentHintVisible = true,
+                        error = null,
+                    )
+                }
             }
             OAuthProfileSetupEvent.Submit -> performSubmit()
             OAuthProfileSetupEvent.Skip -> performSkip()
@@ -137,7 +153,11 @@ class OAuthProfileSetupViewModel(
                 is UseCaseResult.Success -> {
                     importedAvatarUrl = result.value
                     _state.update {
-                        it.copy(isImportingAvatar = false, avatarImported = true)
+                        it.copy(
+                            isImportingAvatar = false,
+                            avatarImported = true,
+                            chooseDifferentHintVisible = false,
+                        )
                     }
                 }
                 is UseCaseResult.Failure ->

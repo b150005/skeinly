@@ -146,6 +146,19 @@ struct OAuthProfileSetupScreen: View {
                 .disabled(state.isSubmitting)
                 .accessibilityIdentifier("oauthAvatarUseButton")
             }
+
+            // Phase 26.7 (Tech Debt resolution) — surface a hint
+            // pointing the user at Settings → Profile after they've
+            // declined the OAuth picture. Photo picker integration on
+            // the setup screen itself is deferred — Settings → Profile
+            // already covers arbitrary uploads via the existing
+            // ProfileScreen flow.
+            if state.chooseDifferentHintVisible {
+                Text(LocalizedStringKey("body_change_avatar_in_profile_hint"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("oauthAvatarChangeProfileHint")
+            }
         }
     }
 }

@@ -684,6 +684,7 @@
     <string name="action_save_profile_setup">保存</string>
     <string name="state_oauth_avatar_imported">画像を取り込みました</string>
     <string name="state_oauth_avatar_importing">取り込み中…</string>
+    <string name="body_change_avatar_in_profile_hint">画像はあとで 設定 → プロフィール からいつでも変更できます。</string>
     <string name="label_signed_in_via">サインイン方法</string>
     <string name="state_signed_in_via_apple_relay">Apple (プライベートリレーメールを使用)</string>
     <string name="state_signed_in_via_apple">Apple</string>

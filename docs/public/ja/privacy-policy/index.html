@@ -181,6 +181,28 @@
     <p>プッシュ通知の許可は、デバイスの「設定 &rarr; 通知 &rarr; Skeinly」でいつでも撤回できます。撤回は OS レベルで行われ、即座に反映されます。Skeinly アカウントを削除（「設定 &rarr; アカウント &rarr; アカウントを削除」）された場合、外部キー制約により <code>device_tokens</code> 行はカスケード削除され、以降の通知送信は即座に停止します。</p>
     <p>プッシュ通知の配信には、iOS では Apple Push Notification service（Apple のサーバー、<a href="https://www.apple.com/jp/legal/privacy/">Apple のプライバシーポリシー</a>を参照）、Android では Firebase Cloud Messaging（Google のサーバー、<a href="https://policies.google.com/privacy?hl=ja">Google のプライバシーポリシー</a>を参照）を使用しています。Apple および Google が運営するルーティングインフラの管理権限・アクセス権限は当方にはありません &mdash; 当方は不透明なデバイストークンと通知ペイロードを Apple / Google に渡し、それらの会社がお客様のデバイスに配信します。</p>
 
+    <h3>Apple または Google でサインイン（OAuth）</h3>
+    <p>Skeinly はメールアドレス + パスワードに加え、Apple ID および Google アカウントでのサインインに対応しています。OAuth プロバイダーを選択した場合、プロバイダーから短命の ID トークンが Skeinly に返されます。トークンは Supabase Auth がサーバーサイドで検証し、初回サインイン時には以下のプロバイダー提供プロフィール情報を保存します：</p>
+    <ul>
+      <li><strong>Apple</strong>: お名前（<em>初回サインイン時のみ</em> &mdash; Apple は仕様上、以降のサインインで名前を再送しません）と、実際のメールアドレスまたは Apple 管理のプライベートリレーアドレス（<code>@privaterelay.appleid.com</code> 形式のアドレス。<a href="https://appleid.apple.com">appleid.apple.com</a> からいつでも撤回可能）。Skeinly は Apple が返した側のアドレスのみを保存し、リレーを使用された場合は基となる実アドレスを受け取ることはありません。</li>
+      <li><strong>Google</strong>: お名前、メールアドレス、Google CDN（<code>lh3.googleusercontent.com</code> 等の Google ホスト）でホストされる公開プロフィール画像 URL。Skeinly はサインイン後のプロフィール設定画面で「この画像を使う」をタップされた場合に限り、画像をダウンロードし JPEG として検証、サイズを 1&nbsp;MB 上限まで制限したうえで Skeinly Storage 内のお客様自身の行にアップロードします。元の Google CDN URL はアップロード後に保持しません。</li>
+    </ul>
+    <p>Apple および Google での 2 回目以降のサインインでは ID トークンのみが交換され、追加のプロフィール情報の収集は行いません。Skeinly の Apple ID へのアクセス権限は <a href="https://appleid.apple.com">appleid.apple.com</a> &rarr;「Apple でサインイン」から、Google アカウントへのアクセス権限は <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a> から撤回できます。撤回によって Skeinly セッションは無効化されますが、Skeinly アカウント自体は削除されません &mdash; アカウント削除は引き続き「設定」内の明示的な操作として別途行う必要があります。</p>
+
+    <h3>多要素認証（MFA）</h3>
+    <p>Skeinly は既存の認証アプリ（Google Authenticator、1Password、Authy 等）を使用する TOTP ベースの多要素認証に任意で対応しています。「設定 &rarr; セキュリティ」から MFA を有効化されると：</p>
+    <ul>
+      <li>Supabase Auth が TOTP シークレットを生成し、お客様のアカウントにサーバーサイドで紐付けます。シークレットは認証アプリへの一度限りの入力用に QR コード + base32 文字列として 1 度だけ表示され、登録完了後はクライアント側に保持されません。</li>
+      <li>16 文字の復旧コードがデバイス上で生成され 1 度だけ表示され、その後 Supabase の RPC によりサーバーサイドで bcrypt ハッシュ化されます。当方が保存するのはハッシュのみで、平文は一切保持しません。平文を紛失された場合の復旧手段はありません。認証アプリへのアクセスを失った場合は、復旧コードを 1 度だけ使用して TOTP をバイパスし、設定から TOTP を再登録してください。</li>
+      <li>サインイン時、Supabase は AAL1 セッションを発行し、いずれかのデータアクセスを許可する前に TOTP 検証による AAL2 への昇格を要求します。TOTP コード自体は HTTPS 経由で Supabase に送信され、アプリ内には保持されません。</li>
+    </ul>
+    <p>MFA は「設定 &rarr; セキュリティ」からいつでも無効化できます。無効化時には（生体認証が有効な場合）生体認証による再認証が発火し、サーバーサイドで TOTP ファクターのバインドが解除されます。同画面の「復旧コードを再生成」をタップすると、復旧コードのみを独立して再生成できます。</p>
+
+    <h3>生体認証</h3>
+    <p>Skeinly はバックグラウンド継続時間がお客様が選択した閾値（1 分 / 5 分 / 15 分 / 1 時間、デフォルト 5 分）を超えてアプリに復帰した際、生体認証（iOS では Face ID / Touch ID、Android では指紋 / 顔 / 虹彩 など、デバイスがサポートする方式）またはデバイスの PIN / パスコードによる再認証を任意で要求します。重要な操作 &mdash; アカウント削除および MFA 無効化 &mdash; については、フォアグラウンドゲートがオフの場合でも、閾値設定に関係なく常に生体認証による再認証を発火します。</p>
+    <p>生体情報がデバイスから出ることはありません。Skeinly は iOS では Apple の <a href="https://developer.apple.com/documentation/localauthentication">LocalAuthentication</a> フレームワークを、Android では <a href="https://developer.android.com/training/sign-in/biometric-auth">BiometricPrompt</a> API を使用しており、どちらの API もアプリには成功 / 失敗 / キャンセルの結果のみを返します。生体テンプレート（指紋パターン、顔の幾何情報等）は OS 管理のセキュアエンクレーブ（iOS では Secure Enclave、Android では Trusted Execution Environment）に保存され、Skeinly および第三者がアクセスすることはできません。</p>
+    <p>生体認証による再認証は「設定 &rarr; セキュリティ &rarr; 生体認証」からオプトアウトできます。トグルをオフにするとフォアグラウンド再認証ゲートは解除されますが、重要操作ゲートはセッション保護とは別の認可目的（破壊的操作の意思確認）を担うため、引き続き有効です。</p>
+
     <h2>情報の使用目的</h2>
     <ul>
       <li><strong>サービスの提供</strong>: プロジェクト、パターン、進捗をデバイス間でアクセスできるよう保存</li>

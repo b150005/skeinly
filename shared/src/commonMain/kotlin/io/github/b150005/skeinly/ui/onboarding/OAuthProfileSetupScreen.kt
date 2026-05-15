@@ -37,6 +37,7 @@ import io.github.b150005.skeinly.generated.resources.action_choose_different_ava
 import io.github.b150005.skeinly.generated.resources.action_save_profile_setup
 import io.github.b150005.skeinly.generated.resources.action_skip_profile_setup
 import io.github.b150005.skeinly.generated.resources.action_use_oauth_avatar
+import io.github.b150005.skeinly.generated.resources.body_change_avatar_in_profile_hint
 import io.github.b150005.skeinly.generated.resources.body_oauth_profile_setup
 import io.github.b150005.skeinly.generated.resources.label_oauth_profile_display_name
 import io.github.b150005.skeinly.generated.resources.state_oauth_avatar_imported
@@ -190,6 +191,20 @@ fun OAuthProfileSetupScreen(
                                 Text(stringResource(Res.string.action_use_oauth_avatar))
                             }
                         }
+                    }
+                    // Phase 26.7 (Tech Debt resolution) — after "Choose
+                    // different", point the user at the canonical photo-
+                    // picker path (Settings → Profile). Photo picker
+                    // integration in the setup screen itself is deferred
+                    // because the existing UploadAvatar pipeline already
+                    // covers arbitrary uploads.
+                    if (state.chooseDifferentHintVisible) {
+                        Text(
+                            text = stringResource(Res.string.body_change_avatar_in_profile_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.testTag("oauthAvatarChangeProfileHint"),
+                        )
                     }
                 }
             }

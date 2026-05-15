@@ -909,6 +909,7 @@
     <string name="action_save_profile_setup">Save</string>
     <string name="state_oauth_avatar_imported">Picture imported</string>
     <string name="state_oauth_avatar_importing">Importing…</string>
+    <string name="body_change_avatar_in_profile_hint">You can change your picture anytime in Settings → Profile.</string>
     <string name="label_signed_in_via">Signed in via</string>
     <string name="state_signed_in_via_apple_relay">Apple (using a private email relay)</string>
     <string name="state_signed_in_via_apple">Apple</string>

@@ -8946,6 +8946,13 @@
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "取り込み中…" } }
       }
     },
+    "body_change_avatar_in_profile_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "You can change your picture anytime in Settings → Profile." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "画像はあとで 設定 → プロフィール からいつでも変更できます。" } }
+      }
+    },
     "label_signed_in_via" : {
       "extractionState" : "manual",
       "localizations" : {

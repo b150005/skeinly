@@ -59,6 +59,14 @@ struct BiometricSettingsScreen: View {
         .navigationTitle(LocalizedStringKey("title_biometric_settings"))
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("biometricSettingsScreen")
+        // Phase 26.7 (Tech Debt carryover from Phase 26.6) — re-query OS
+        // availability on every screen appearance so a user who walked
+        // through OS Settings to enroll biometric / PIN sees the
+        // updated state when they return. Mirrors the Compose
+        // `LaunchedEffect(Unit)` on the same surface.
+        .onAppear {
+            viewModel.onEvent(event: BiometricSettingsEventRefreshAvailability.shared)
+        }
     }
 
     private var thresholdChoices: [ThresholdChoice] {

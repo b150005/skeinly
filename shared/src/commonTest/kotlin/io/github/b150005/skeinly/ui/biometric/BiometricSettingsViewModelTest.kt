@@ -157,4 +157,48 @@ class BiometricSettingsViewModelTest {
             assertTrue(prefs.biometricEnabled.value)
             assertTrue(vm.state.value.canToggle)
         }
+
+    @Test
+    fun `RefreshAvailability picks up newly-enrolled biometric after OS Settings round-trip`() =
+        runTest {
+            // Phase 26.7 (Tech Debt carryover): the user mounts the
+            // screen with NotEnrolled state, taps the OS Settings deep
+            // link, enrolls biometric, returns to Skeinly. The
+            // `LaunchedEffect(Unit)` (Compose) / `.onAppear` (SwiftUI)
+            // fires RefreshAvailability which re-queries the OS and
+            // updates state.availability to Available — without
+            // requiring a process restart.
+            val prefs = FakeBiometricPreferences(initialEnabled = false)
+            var availability: BiometricAvailability = BiometricAvailability.NotEnrolled
+            val vm =
+                BiometricSettingsViewModel(
+                    preferences = prefs,
+                    queryAvailability = { availability },
+                )
+            assertEquals(BiometricAvailability.NotEnrolled, vm.state.value.availability)
+            assertFalse(vm.state.value.canToggle)
+            // Simulate the OS Settings round-trip: user enrolled
+            // biometric and returned to the screen.
+            availability = BiometricAvailability.Available
+            vm.onEvent(BiometricSettingsEvent.RefreshAvailability)
+            assertEquals(BiometricAvailability.Available, vm.state.value.availability)
+            assertTrue(vm.state.value.canToggle)
+        }
+
+    @Test
+    fun `RefreshAvailability is idempotent when OS state is unchanged`() =
+        runTest {
+            val prefs = FakeBiometricPreferences(initialEnabled = true)
+            val vm =
+                BiometricSettingsViewModel(
+                    preferences = prefs,
+                    queryAvailability = { BiometricAvailability.Available },
+                )
+            val before = vm.state.value
+            vm.onEvent(BiometricSettingsEvent.RefreshAvailability)
+            // State is structurally equal — `copy()` produces the same
+            // value when no field flips.
+            assertEquals(before.availability, vm.state.value.availability)
+            assertEquals(before.canToggle, vm.state.value.canToggle)
+        }
 }

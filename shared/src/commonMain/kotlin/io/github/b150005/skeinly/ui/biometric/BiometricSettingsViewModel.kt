@@ -50,6 +50,20 @@ sealed interface BiometricSettingsEvent {
     data class SelectThreshold(
         val choice: ThresholdChoice,
     ) : BiometricSettingsEvent
+
+    /**
+     * Phase 26.7 (Tech Debt carryover from Phase 26.6) — re-query OS
+     * availability when the screen re-appears. Required because the
+     * user can deep-link to OS Settings via the "Open settings" affordance
+     * (or simply background the app, enroll a biometric / PIN, and come
+     * back), and the screen needs to reflect the new availability state
+     * without requiring a process restart.
+     *
+     * Compose collects `LaunchedEffect(Unit)` to fire this on every
+     * screen mount; iOS routes through `.onAppear`. Idempotent — calling
+     * it on an unchanged availability emits the same state copy.
+     */
+    data object RefreshAvailability : BiometricSettingsEvent
 }
 
 class BiometricSettingsViewModel(
@@ -99,6 +113,10 @@ class BiometricSettingsViewModel(
             }
             is BiometricSettingsEvent.SelectThreshold ->
                 preferences.setReauthThresholdSeconds(event.choice.seconds)
+            BiometricSettingsEvent.RefreshAvailability -> {
+                val current = queryAvailability()
+                _state.update { it.copy(availability = current) }
+            }
         }
     }
 }
