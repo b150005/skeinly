@@ -672,4 +672,22 @@
     <string name="state_biometric_unavailable_no_hw">このデバイスでは利用できません</string>
     <string name="state_biometric_unavailable_not_enrolled">OS設定で生体認証または PIN を登録してください</string>
     <string name="body_biometric_settings_explanation">オンにすると、設定した時間操作がないと再び Skeinly を開く際に生体認証 (またはデバイスPIN) を求められます。アカウント削除などの重要操作は、この設定がオフでも常に確認します。</string>
+
+    <!-- Phase 26.6 (ADR-022 §6.6) — OAuth サインイン後のプロフィール設定ゲート + Settings 識別表示 -->
+    <string name="title_oauth_profile_setup">あなたの名前を教えてください</string>
+    <string name="body_oauth_profile_setup">ようこそ! サインイン情報からお名前を取り込みました。そのまま使うか、お好みで編集してください。</string>
+    <string name="label_oauth_profile_display_name">お名前</string>
+    <string name="title_oauth_profile_avatar">この画像をアバターとして使いますか?</string>
+    <string name="action_use_oauth_avatar">この画像を使う</string>
+    <string name="action_choose_different_avatar">別の画像を選ぶ</string>
+    <string name="action_skip_profile_setup">あとで</string>
+    <string name="action_save_profile_setup">保存</string>
+    <string name="state_oauth_avatar_imported">画像を取り込みました</string>
+    <string name="state_oauth_avatar_importing">取り込み中…</string>
+    <string name="label_signed_in_via">サインイン方法</string>
+    <string name="state_signed_in_via_apple_relay">Apple (プライベートリレーメールを使用)</string>
+    <string name="state_signed_in_via_apple">Apple</string>
+    <string name="state_signed_in_via_google">Google</string>
+    <string name="state_signed_in_via_email">メールアドレスとパスワード</string>
+    <string name="label_linked_identities">リンク済みアカウント</string>
 </resources>

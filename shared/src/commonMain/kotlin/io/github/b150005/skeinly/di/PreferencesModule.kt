@@ -9,6 +9,8 @@ import io.github.b150005.skeinly.data.preferences.AppConfigPreferences
 import io.github.b150005.skeinly.data.preferences.AppConfigPreferencesImpl
 import io.github.b150005.skeinly.data.preferences.BiometricPreferences
 import io.github.b150005.skeinly.data.preferences.BiometricPreferencesImpl
+import io.github.b150005.skeinly.data.preferences.OAuthProfileSetupPreferences
+import io.github.b150005.skeinly.data.preferences.OAuthProfileSetupPreferencesImpl
 import io.github.b150005.skeinly.data.preferences.OnboardingPreferences
 import io.github.b150005.skeinly.data.preferences.OnboardingPreferencesImpl
 import io.github.b150005.skeinly.notifications.NotificationPermissionPrompter
@@ -30,6 +32,10 @@ val preferencesModule =
         // than credentials. The biometric template itself never enters
         // the app — see BiometricAuthenticator KDoc.
         single<BiometricPreferences> { BiometricPreferencesImpl(get()) }
+        // Phase 26.6 (ADR-022 §6.6) — one-time gate flag for the
+        // post-OAuth profile setup screen. Non-encrypted (UX state, not
+        // a credential).
+        single<OAuthProfileSetupPreferences> { OAuthProfileSetupPreferencesImpl(get()) }
         // Phase 24.2 (ADR-017 §3.6) — gates the in-app pre-permission
         // explainer. State is one bit (Settings-backed); the Trigger enum
         // reaches across screens (PR list / detail / comment-post).

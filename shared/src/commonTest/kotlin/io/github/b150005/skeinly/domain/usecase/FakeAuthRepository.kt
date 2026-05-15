@@ -1,8 +1,10 @@
 package io.github.b150005.skeinly.domain.usecase
 
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.LinkedIdentity
 import io.github.b150005.skeinly.domain.model.MfaEnrollment
 import io.github.b150005.skeinly.domain.model.MfaEnrollmentStatus
+import io.github.b150005.skeinly.domain.model.OAuthOnboardingMetadata
 import io.github.b150005.skeinly.domain.model.OAuthProviderKind
 import io.github.b150005.skeinly.domain.model.OAuthSignInOutcome
 import io.github.b150005.skeinly.domain.model.SignUpOutcome
@@ -298,5 +300,34 @@ class FakeAuthRepository : AuthRepository {
         regenerateRecoveryCodeCallCount++
         regenerateRecoveryCodeError?.let { throw it }
         return regenerateRecoveryCodeResult
+    }
+
+    // ========================================================
+    // Phase 26.6 (ADR-022 §6.6) — OAuth onboarding metadata + identity list
+    // ========================================================
+
+    /**
+     * Phase 26.6 test seam: the next [getOAuthOnboardingMetadata]
+     * call returns this value. Null models the "no session / not
+     * configured / no OAuth metadata" branch. Tests override per-case.
+     */
+    var oAuthOnboardingMetadata: OAuthOnboardingMetadata? = null
+    var oAuthOnboardingMetadataError: Throwable? = null
+    var getOAuthOnboardingMetadataCallCount: Int = 0
+
+    var linkedIdentitiesResult: List<LinkedIdentity> = emptyList()
+    var linkedIdentitiesError: Throwable? = null
+    var getLinkedIdentitiesCallCount: Int = 0
+
+    override suspend fun getOAuthOnboardingMetadata(): OAuthOnboardingMetadata? {
+        getOAuthOnboardingMetadataCallCount++
+        oAuthOnboardingMetadataError?.let { throw it }
+        return oAuthOnboardingMetadata
+    }
+
+    override suspend fun getLinkedIdentities(): List<LinkedIdentity> {
+        getLinkedIdentitiesCallCount++
+        linkedIdentitiesError?.let { throw it }
+        return linkedIdentitiesResult
     }
 }

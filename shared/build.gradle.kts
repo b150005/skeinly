@@ -458,6 +458,17 @@ kover {
                     // Guardian methods). The Guardian's methods are
                     // exhaustively tested elsewhere.
                     "io.github.b150005.skeinly.biometric.BiometricLifecycleBridgeKt*",
+                    // Phase 26.6 (ADR-022 §6.6) — post-OAuth profile setup
+                    // gate. The Compose + SwiftUI screens are untestable on
+                    // JVM (same rationale as other *ScreenKt excludes); the
+                    // backing OAuthProfileSetupViewModel + OAuthOnboarding-
+                    // Metadata invariants are exercised via commonTest.
+                    // OAuthProfileSetupPreferencesImpl wraps multiplatform-
+                    // settings under a Settings-backed bool — trivial pass-
+                    // through covered by integration when the gate fires;
+                    // dedicated unit coverage is low-signal.
+                    "io.github.b150005.skeinly.ui.onboarding.OAuthProfileSetupScreenKt*",
+                    "io.github.b150005.skeinly.data.preferences.OAuthProfileSetupPreferencesImpl",
                 )
             }
         }

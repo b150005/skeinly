@@ -40,6 +40,7 @@ import io.github.b150005.skeinly.domain.usecase.GetPublicPatternsUseCase
 import io.github.b150005.skeinly.domain.usecase.GetReceivedSharesUseCase
 import io.github.b150005.skeinly.domain.usecase.GetSuggestionCommentsUseCase
 import io.github.b150005.skeinly.domain.usecase.GetSuggestionUseCase
+import io.github.b150005.skeinly.domain.usecase.ImportOAuthAvatarUseCase
 import io.github.b150005.skeinly.domain.usecase.IncrementRowUseCase
 import io.github.b150005.skeinly.domain.usecase.MarkRowSegmentsDoneUseCase
 import io.github.b150005.skeinly.domain.usecase.MarkSegmentDoneUseCase
@@ -122,6 +123,21 @@ val useCaseModule =
 
         // Avatar use case (Phase C)
         factory { UploadAvatarUseCase(getOrNull(avatarsStorageQualifier), get()) }
+
+        // Phase 26.6 (ADR-022 §6.6) — OAuth avatar import from Google
+        // `picture` URL. Re-uses the existing `symbolPackHttpClient`
+        // Ktor instance (plain HttpClient without ContentNegotiation
+        // mid-pipeline) because the Supabase httpClient prefixes its
+        // configured base URL — incompatible with an absolute Google
+        // CDN URL. See RemoteSymbolPackDataSource KDoc for the same
+        // rationale. Storage is nullable for local-only dev builds.
+        factory {
+            ImportOAuthAvatarUseCase(
+                httpClient = get<io.ktor.client.HttpClient>(symbolPackHttpClientQualifier),
+                remoteStorage = getOrNull(avatarsStorageQualifier),
+                authRepository = get(),
+            )
+        }
 
         // Profile use cases (UserRepository with offline fallback)
         factory { GetCurrentUserUseCase(get(), get()) }

@@ -22,6 +22,7 @@ import io.github.b150005.skeinly.ui.chart.ChartViewerViewModel
 import io.github.b150005.skeinly.ui.comments.CommentSectionViewModel
 import io.github.b150005.skeinly.ui.discovery.DiscoveryViewModel
 import io.github.b150005.skeinly.ui.notifications.NotificationPermissionViewModel
+import io.github.b150005.skeinly.ui.onboarding.OAuthProfileSetupViewModel
 import io.github.b150005.skeinly.ui.onboarding.OnboardingViewModel
 import io.github.b150005.skeinly.ui.packmanagement.PackManagementViewModel
 import io.github.b150005.skeinly.ui.patternedit.PatternEditViewModel
@@ -110,6 +111,25 @@ val viewModelModule =
             )
         }
         viewModelOf(::ProfileViewModel)
+        // Phase 26.6 (ADR-022 §6.6) — post-OAuth profile setup gate.
+        // The OnboardingMetadata is a screen-time parameter (the
+        // NavGraph queries AuthRepository before mounting the screen)
+        // so we bind via `params.get<OAuthOnboardingMetadata>()`.
+        // Lambda-seam DI mirrors MfaEnrollmentViewModel — keeps
+        // commonTest free of supabase / Ktor surfaces.
+        viewModel { params ->
+            val importUseCase: io.github.b150005.skeinly.domain.usecase.ImportOAuthAvatarUseCase = get()
+            val updateProfile: io.github.b150005.skeinly.domain.usecase.UpdateProfileUseCase = get()
+            val prefs: io.github.b150005.skeinly.data.preferences.OAuthProfileSetupPreferences = get()
+            OAuthProfileSetupViewModel(
+                metadata = params.get(),
+                importAvatar = { url -> importUseCase(url) },
+                saveDisplayName = { name, avatarUrl ->
+                    updateProfile(displayName = name, bio = null, avatarUrl = avatarUrl)
+                },
+                markGateCompleted = { prefs.markCompleted() },
+            )
+        }
         // Phase 39.4 — `eventRingBuffer` ctor param threaded so a
         // toggle-OFF on diagnostic-data sharing clears the in-memory
         // event trail before any subsequent bug-report submission can
@@ -151,6 +171,10 @@ val viewModelModule =
                         io.github.b150005.skeinly.biometric.SensitiveAction.AccountDeletion,
                     )
                 },
+                // Phase 26.6 (ADR-022 §6.6) — Settings → Account identity
+                // row. Same lambda-seam DI pattern; production binds
+                // through the repo, tests inject a constant.
+                loadLinkedIdentities = { authRepository.getLinkedIdentities() },
             )
         }
         // Phase 26.6 (ADR-022 §6.5) — biometric settings screen.

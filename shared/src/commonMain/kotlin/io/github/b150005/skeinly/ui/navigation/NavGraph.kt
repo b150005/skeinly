@@ -29,6 +29,7 @@ import io.github.b150005.skeinly.ui.chart.ChartHistoryScreen
 import io.github.b150005.skeinly.ui.chart.ChartViewerScreen
 import io.github.b150005.skeinly.ui.discovery.DiscoveryScreen
 import io.github.b150005.skeinly.ui.forceupdate.ForceUpdateGate
+import io.github.b150005.skeinly.ui.onboarding.OAuthProfileSetupScreen
 import io.github.b150005.skeinly.ui.onboarding.OnboardingScreen
 import io.github.b150005.skeinly.ui.packmanagement.PackManagementScreen
 import io.github.b150005.skeinly.ui.patternedit.PatternEditScreen
@@ -237,6 +238,26 @@ data object MfaChallenge
 @Serializable
 data object BiometricSettings
 
+/**
+ * Phase 26.6 (ADR-022 §6.6) — post-OAuth profile setup gate. Routed
+ * to once per install on the FIRST Authenticated transition when the
+ * AuthRepository surfaces a non-empty
+ * [io.github.b150005.skeinly.domain.model.OAuthOnboardingMetadata.displayName]
+ * AND the
+ * [io.github.b150005.skeinly.data.preferences.OAuthProfileSetupPreferences.isCompleted]
+ * flag is false. Two payload fields (display name + nullable picture
+ * URL) are passed through the route so the screen does NOT have to
+ * re-query AuthRepository at mount time — keeps the gate
+ * deterministic on a single Authenticated emission.
+ *
+ * The route gets popped on Save / Skip via `popUpTo(OAuthProfileSetup) { inclusive = true }`.
+ */
+@Serializable
+data class OAuthProfileSetup(
+    val displayName: String?,
+    val pictureUrl: String?,
+)
+
 @Composable
 fun SkeinlyNavHost(
     navController: NavHostController,
@@ -342,10 +363,47 @@ private fun SkeinlyNavHostContent(
         val authViewModel: AuthViewModel = koinViewModel()
         val authUiState by authViewModel.state.collectAsState()
 
+        // Phase 26.6 (ADR-022 §6.6) — post-OAuth onboarding gate
+        // dependencies. Resolved at composition time so the
+        // LaunchedEffect can suspend on getOAuthOnboardingMetadata
+        // (network-light: reads cached `auth.currentUserOrNull()` +
+        // its `userMetadata`).
+        val authRepositoryForOAuthGate: io.github.b150005.skeinly.domain.repository.AuthRepository =
+            koinInject()
+        val oauthGatePreferences: io.github.b150005.skeinly.data.preferences.OAuthProfileSetupPreferences =
+            koinInject()
+
         LaunchedEffect(authUiState.authState) {
             when (authUiState.authState) {
                 is AuthState.Authenticated -> {
-                    navController.navigate(ProjectList) {
+                    // Phase 26.6 — short-circuit through the OAuth
+                    // profile setup screen on the first Authenticated
+                    // transition where the user has not yet completed
+                    // the gate AND the OAuth provider supplied a
+                    // displayName seed. Email / password sign-ups pass
+                    // through silently (metadata null OR displayName null).
+                    val gateTarget: OAuthProfileSetup? =
+                        if (oauthGatePreferences.isCompleted) {
+                            null
+                        } else {
+                            val metadata =
+                                try {
+                                    authRepositoryForOAuthGate.getOAuthOnboardingMetadata()
+                                } catch (_: Throwable) {
+                                    null
+                                }
+                            if (metadata?.displayName?.isNotBlank() == true) {
+                                OAuthProfileSetup(
+                                    displayName = metadata.displayName,
+                                    pictureUrl = metadata.pictureUrl,
+                                )
+                            } else {
+                                null
+                            }
+                        }
+
+                    val firstTarget: Any = gateTarget ?: ProjectList
+                    navController.navigate(firstTarget) {
                         popUpTo(Login) { inclusive = true }
                         // Phase 26.5: also clear MfaChallenge from the stack
                         // so verify-success pops the gate screen cleanly.
@@ -355,9 +413,14 @@ private fun SkeinlyNavHostContent(
                     // pendingDeepLinkRoute is already parsed (URL → typed Route)
                     // so this branch is route-shape-agnostic — extends to any
                     // future URL family without modifying the auth flow.
-                    pendingDeepLinkRoute?.let { route ->
-                        navController.navigate(route)
-                        pendingDeepLinkRoute = null
+                    // Phase 26.6: defer deep-link replay until AFTER the
+                    // OAuth setup gate completes (otherwise the gate
+                    // would be obscured by the deep-link destination).
+                    if (gateTarget == null) {
+                        pendingDeepLinkRoute?.let { route ->
+                            navController.navigate(route)
+                            pendingDeepLinkRoute = null
+                        }
                     }
                 }
                 is AuthState.MfaChallengeRequired -> {
@@ -526,6 +589,33 @@ private fun SkeinlyNavHostContent(
         composable<BiometricSettings> {
             io.github.b150005.skeinly.ui.biometric.BiometricSettingsScreen(
                 onBack = { navController.popBackStack() },
+            )
+        }
+        composable<OAuthProfileSetup> { entry ->
+            val route: OAuthProfileSetup = entry.toRoute()
+            val metadata =
+                io.github.b150005.skeinly.domain.model.OAuthOnboardingMetadata(
+                    displayName = route.displayName,
+                    pictureUrl = route.pictureUrl,
+                    // The gate doesn't need the provider discriminator
+                    // post-mount (the discriminator was only used by
+                    // NavGraph to detect "OAuth, not email/password");
+                    // default to Email so the data class invariant is
+                    // satisfied. The screen never reads this field.
+                    primaryProvider = io.github.b150005.skeinly.domain.model.AuthProviderKind.Email,
+                )
+            OAuthProfileSetupScreen(
+                metadata = metadata,
+                onCompleted = {
+                    navController.navigate(ProjectList) {
+                        popUpTo(route) { inclusive = true }
+                    }
+                    // Replay deferred deep link on gate completion.
+                    pendingDeepLinkRoute?.let { dl ->
+                        navController.navigate(dl)
+                        pendingDeepLinkRoute = null
+                    }
+                },
             )
         }
         composable<MfaEnrollment> {

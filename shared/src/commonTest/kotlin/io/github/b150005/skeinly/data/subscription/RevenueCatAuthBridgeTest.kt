@@ -250,6 +250,15 @@ private class ControlledAuthRepository : AuthRepository {
     }
 
     override suspend fun regenerateRecoveryCode(): String = error("not used in bridge tests")
+
+    // Phase 26.6 — also not exercised by the bridge; identity/metadata
+    // calls are scoped to the post-OAuth onboarding gate, not to
+    // RevenueCat lifecycle routing.
+    override suspend fun getOAuthOnboardingMetadata(): io.github.b150005.skeinly.domain.model.OAuthOnboardingMetadata? =
+        error("not used in bridge tests")
+
+    override suspend fun getLinkedIdentities(): List<io.github.b150005.skeinly.domain.model.LinkedIdentity> =
+        error("not used in bridge tests")
 }
 
 private sealed interface BridgeCall {

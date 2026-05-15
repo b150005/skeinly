@@ -54,6 +54,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.config.BuildFlags
+import io.github.b150005.skeinly.domain.model.AuthProviderKind
+import io.github.b150005.skeinly.domain.model.LinkedIdentity
 import io.github.b150005.skeinly.domain.model.MfaEnrollmentStatus
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_back
@@ -89,12 +91,14 @@ import io.github.b150005.skeinly.generated.resources.label_account_section
 import io.github.b150005.skeinly.generated.resources.label_beta_section
 import io.github.b150005.skeinly.generated.resources.label_danger_zone
 import io.github.b150005.skeinly.generated.resources.label_diagnostic_data_sharing
+import io.github.b150005.skeinly.generated.resources.label_linked_identities
 import io.github.b150005.skeinly.generated.resources.label_new_email
 import io.github.b150005.skeinly.generated.resources.label_new_password
 import io.github.b150005.skeinly.generated.resources.label_notifications_settings_row
 import io.github.b150005.skeinly.generated.resources.label_pack_management
 import io.github.b150005.skeinly.generated.resources.label_paywall_section
 import io.github.b150005.skeinly.generated.resources.label_security_section
+import io.github.b150005.skeinly.generated.resources.label_signed_in_via
 import io.github.b150005.skeinly.generated.resources.label_subscribe_to_pro
 import io.github.b150005.skeinly.generated.resources.label_two_factor_auth
 import io.github.b150005.skeinly.generated.resources.message_email_change_pending
@@ -106,6 +110,10 @@ import io.github.b150005.skeinly.generated.resources.state_mfa_disabled
 import io.github.b150005.skeinly.generated.resources.state_mfa_enabled
 import io.github.b150005.skeinly.generated.resources.state_notifications_disabled
 import io.github.b150005.skeinly.generated.resources.state_notifications_enabled
+import io.github.b150005.skeinly.generated.resources.state_signed_in_via_apple
+import io.github.b150005.skeinly.generated.resources.state_signed_in_via_apple_relay
+import io.github.b150005.skeinly.generated.resources.state_signed_in_via_email
+import io.github.b150005.skeinly.generated.resources.state_signed_in_via_google
 import io.github.b150005.skeinly.generated.resources.title_biometric_settings
 import io.github.b150005.skeinly.generated.resources.title_mfa_disable_confirm
 import io.github.b150005.skeinly.generated.resources.title_settings
@@ -271,8 +279,43 @@ fun SettingsScreen(
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        Spacer(Modifier.height(16.dp))
                     }
+
+                    // Phase 26.6 (ADR-022 §6.6) — primary identity
+                    // discriminator + linked-accounts list. Shown only
+                    // when the AuthRepository surfaced at least one
+                    // identity (the empty default keeps signed-out and
+                    // unconfigured states clean).
+                    if (state.linkedIdentities.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        val primary = state.linkedIdentities.first()
+                        Text(
+                            text =
+                                stringResource(Res.string.label_signed_in_via) +
+                                    ": " +
+                                    stringResource(providerLabelKey(primary)),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.testTag("settingsSignedInVia"),
+                        )
+                        if (state.linkedIdentities.size > 1) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = stringResource(Res.string.label_linked_identities),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            state.linkedIdentities.drop(1).forEach { extra ->
+                                Text(
+                                    text = "• " + stringResource(providerLabelKey(extra)),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.testTag("settingsLinkedIdentity"),
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(16.dp))
 
                     Button(
                         onClick = { viewModel.onEvent(SettingsEvent.SignOut) },
@@ -914,3 +957,22 @@ private fun ChangeEmailDialog(
         },
     )
 }
+
+/**
+ * Phase 26.6 (ADR-022 §6.6) — closed-set mapping from [LinkedIdentity]
+ * to the user-facing copy key. Apple relay split (the
+ * `@privaterelay.appleid.com` email surface) routes to a distinct
+ * key so privacy-aware users see the relay disclosure verbatim
+ * rather than the bare "Apple" label.
+ */
+private fun providerLabelKey(identity: LinkedIdentity): org.jetbrains.compose.resources.StringResource =
+    when (identity.provider) {
+        AuthProviderKind.Apple ->
+            if (identity.isAppleRelay) {
+                Res.string.state_signed_in_via_apple_relay
+            } else {
+                Res.string.state_signed_in_via_apple
+            }
+        AuthProviderKind.Google -> Res.string.state_signed_in_via_google
+        AuthProviderKind.Email -> Res.string.state_signed_in_via_email
+    }

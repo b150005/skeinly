@@ -10,6 +10,7 @@ import io.github.b150005.skeinly.data.analytics.EventRingBuffer
 import io.github.b150005.skeinly.data.analytics.Screen
 import io.github.b150005.skeinly.data.preferences.AnalyticsPreferences
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.LinkedIdentity
 import io.github.b150005.skeinly.domain.model.MfaEnrollmentStatus
 import io.github.b150005.skeinly.domain.usecase.DeleteAccountUseCase
 import io.github.b150005.skeinly.domain.usecase.ErrorMessage
@@ -57,6 +58,14 @@ data class SettingsState(
      */
     val mfaStatus: MfaEnrollmentStatus = MfaEnrollmentStatus.NotEnrolled,
     val isDisablingMfa: Boolean = false,
+    /**
+     * Phase 26.6 (ADR-022 §6.6) — list of identities attached to the
+     * current Supabase user, surfacing the "Signed in via X" row
+     * + (when multiple) the linked-accounts list. Empty list maps to
+     * "hide both rows" — defensive default for the unconfigured /
+     * signed-out paths.
+     */
+    val linkedIdentities: List<LinkedIdentity> = emptyList(),
 )
 
 sealed interface SettingsEvent {
@@ -165,6 +174,12 @@ class SettingsViewModel(
     private val requireBiometricForAccountDelete: suspend () -> BiometricResult = {
         BiometricResult.Success
     },
+    // Phase 26.6 (ADR-022 §6.6) — populates the Settings → Account
+    // identity row. Default returns an empty list so tests that don't
+    // wire this still pass (row simply doesn't render). Production
+    // wiring binds to `authRepository::getLinkedIdentities` — fires
+    // once per Authenticated transition (see [loadSettings]).
+    private val loadLinkedIdentities: suspend () -> List<LinkedIdentity> = { emptyList() },
 ) : ViewModel() {
     private val _state = MutableStateFlow(SettingsState())
     val state: StateFlow<SettingsState> = _state.asStateFlow()
@@ -295,7 +310,7 @@ class SettingsViewModel(
             observeAuthState()
                 .collect { authState ->
                     when (authState) {
-                        is AuthState.Authenticated ->
+                        is AuthState.Authenticated -> {
                             _state.update {
                                 it.copy(
                                     email = authState.email,
@@ -303,12 +318,30 @@ class SettingsViewModel(
                                     isLoading = false,
                                 )
                             }
+                            // Phase 26.6 — refresh linked-identities on
+                            // every Authenticated transition (covers both
+                            // first sign-in + linkIdentity merge success).
+                            // Defensive try-catch: a failure here MUST
+                            // NOT block the signed-in surface from
+                            // rendering — the Account identity row just
+                            // stays empty until the next refresh.
+                            val identities =
+                                try {
+                                    loadLinkedIdentities()
+                                } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                                    throw e
+                                } catch (_: Throwable) {
+                                    emptyList()
+                                }
+                            _state.update { it.copy(linkedIdentities = identities) }
+                        }
                         else ->
                             _state.update {
                                 it.copy(
                                     email = null,
                                     isSignedIn = false,
                                     isLoading = false,
+                                    linkedIdentities = emptyList(),
                                 )
                             }
                     }

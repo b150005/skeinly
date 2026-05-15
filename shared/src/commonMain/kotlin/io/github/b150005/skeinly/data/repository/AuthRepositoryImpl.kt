@@ -1,8 +1,11 @@
 package io.github.b150005.skeinly.data.repository
 
+import io.github.b150005.skeinly.domain.model.AuthProviderKind
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.LinkedIdentity
 import io.github.b150005.skeinly.domain.model.MfaEnrollment
 import io.github.b150005.skeinly.domain.model.MfaEnrollmentStatus
+import io.github.b150005.skeinly.domain.model.OAuthOnboardingMetadata
 import io.github.b150005.skeinly.domain.model.OAuthProviderKind
 import io.github.b150005.skeinly.domain.model.OAuthSignInOutcome
 import io.github.b150005.skeinly.domain.model.SignUpOutcome
@@ -27,8 +30,10 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -483,6 +488,72 @@ class AuthRepositoryImpl(
         client.auth.mfa.unenroll(factorId)
     }
 
+    // =============================================================
+    // Phase 26.6 (ADR-022 §6.6) — OAuth onboarding metadata + identity list
+    // =============================================================
+
+    override suspend fun getOAuthOnboardingMetadata(): OAuthOnboardingMetadata? {
+        val client = supabaseClient ?: return null
+        val user = client.auth.currentUserOrNull() ?: return null
+        val metadata = user.userMetadata ?: return null
+
+        // OAuth providers diverge on the metadata field name:
+        //   - Apple   → `full_name` (only on first sign-in)
+        //   - Google  → `name` (every sign-in)
+        // Read both and prefer `full_name` because the SQL trigger
+        // `handle_new_user` already prioritizes it on profile bootstrap.
+        // After a `trim()` an empty payload collapses to null so the
+        // gate consumer treats null + "" interchangeably.
+        val rawName =
+            jsonStringValue(metadata["full_name"])
+                ?: jsonStringValue(metadata["name"])
+                ?: ""
+        val displayName = rawName.trim().takeIf { it.isNotEmpty() }
+
+        val rawPicture =
+            jsonStringValue(metadata["picture"])
+                ?: jsonStringValue(metadata["avatar_url"])
+                ?: ""
+        val pictureUrl =
+            rawPicture
+                .trim()
+                .takeIf { it.isNotEmpty() && (it.startsWith("https://") || it.startsWith("http://")) }
+
+        // Phase 26.6 — the primary provider is the FIRST entry in
+        // `UserInfo.identities` because Supabase orders them by
+        // creation time (oldest first), so the original sign-up
+        // identity sits at index 0. Subsequent `linkIdentity` calls
+        // append. Defensive: an empty identities list falls back to
+        // Email — production never sees this state because Supabase
+        // emits at least one identity per session.
+        val first = user.identities?.firstOrNull()
+        val primary = mapProviderName(first?.provider) ?: AuthProviderKind.Email
+
+        return OAuthOnboardingMetadata(
+            displayName = displayName,
+            pictureUrl = pictureUrl,
+            primaryProvider = primary,
+        )
+    }
+
+    override suspend fun getLinkedIdentities(): List<LinkedIdentity> {
+        val client = supabaseClient ?: return emptyList()
+        val user = client.auth.currentUserOrNull() ?: return emptyList()
+        val identities = user.identities ?: return emptyList()
+        return identities.mapNotNull { identity ->
+            val provider = mapProviderName(identity.provider) ?: return@mapNotNull null
+            // Supabase exposes the identity-scoped email via
+            // `identityData["email"]`. Apple's relay address is
+            // already routed here intact; the [LinkedIdentity.isAppleRelay]
+            // computed flag picks it up at the UI layer.
+            val identityEmail =
+                jsonStringValue(identity.identityData["email"])
+                    ?.takeIf { it.isNotBlank() }
+                    ?: user.email
+            LinkedIdentity(provider = provider, email = identityEmail)
+        }
+    }
+
     override suspend fun regenerateRecoveryCode(): String {
         val client =
             supabaseClient
@@ -499,6 +570,34 @@ class AuthRepositoryImpl(
             parameters = buildJsonObject { put("p_code_hash", JsonPrimitive(hash)) },
         )
         return plain
+    }
+
+    /**
+     * Phase 26.6 — closed-set mapping from Supabase's free-form
+     * `identity.provider` string to our internal closed enum. Any
+     * unknown provider value (defensive — Supabase could surface a
+     * new one before we recognize it) silently drops out of the
+     * linked-identities list rather than masquerading as a known
+     * provider. Settings then displays the recognized subset.
+     */
+    private fun mapProviderName(raw: String?): AuthProviderKind? =
+        when (raw?.lowercase()) {
+            "email" -> AuthProviderKind.Email
+            "apple" -> AuthProviderKind.Apple
+            "google" -> AuthProviderKind.Google
+            else -> null
+        }
+
+    /**
+     * Phase 26.6 — read a string-shaped JsonElement defensively. Returns
+     * null when the element is null, a non-primitive (object / array), or
+     * a non-string primitive (number / boolean). Avoids the throw-prone
+     * `.jsonPrimitive` extension at the call site.
+     */
+    private fun jsonStringValue(element: JsonElement?): String? {
+        val primitive = element as? JsonPrimitive ?: return null
+        if (!primitive.isString) return null
+        return primitive.contentOrNull
     }
 
     private companion object {

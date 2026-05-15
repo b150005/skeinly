@@ -157,4 +157,18 @@ enum ViewModelFactory {
     static func biometricSettingsViewModel() -> BiometricSettingsViewModel {
         KoinHelperKt.getBiometricSettingsViewModel()
     }
+
+    /// Phase 26.6 (ADR-022 §6.6) — post-OAuth profile setup ViewModel.
+    /// The seed metadata is captured from the gate decision performed
+    /// in `AppRouter` before this screen is mounted; passed through to
+    /// the Koin parametric resolver.
+    static func oauthProfileSetupViewModel(
+        displayName: String?,
+        pictureUrl: String?
+    ) -> OAuthProfileSetupViewModel {
+        KoinHelperKt.getOAuthProfileSetupViewModel(
+            displayName: displayName,
+            pictureUrl: pictureUrl
+        )
+    }
 }

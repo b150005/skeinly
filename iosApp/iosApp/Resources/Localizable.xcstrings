@@ -8875,6 +8875,118 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "When enabled, Skeinly asks for biometric (or device PIN) after you've been away for the selected time. Sensitive actions like deleting your account always ask, even when this is off." } },
         "ja" : { "stringUnit" : { "state" : "translated", "value" : "オンにすると、設定した時間操作がないと再び Skeinly を開く際に生体認証 (またはデバイスPIN) を求められます。アカウント削除などの重要操作は、この設定がオフでも常に確認します。" } }
       }
+    },
+    "title_oauth_profile_setup" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "What should we call you?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "あなたの名前を教えてください" } }
+      }
+    },
+    "body_oauth_profile_setup" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Welcome! We pre-filled your name from your sign-in. Edit it or use it as-is." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ようこそ! サインイン情報からお名前を取り込みました。そのまま使うか、お好みで編集してください。" } }
+      }
+    },
+    "label_oauth_profile_display_name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your name" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "お名前" } }
+      }
+    },
+    "title_oauth_profile_avatar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Use this picture as your avatar?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "この画像をアバターとして使いますか?" } }
+      }
+    },
+    "action_use_oauth_avatar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Use this picture" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "この画像を使う" } }
+      }
+    },
+    "action_choose_different_avatar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Choose different" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "別の画像を選ぶ" } }
+      }
+    },
+    "action_skip_profile_setup" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Skip for now" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "あとで" } }
+      }
+    },
+    "action_save_profile_setup" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "保存" } }
+      }
+    },
+    "state_oauth_avatar_imported" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Picture imported" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "画像を取り込みました" } }
+      }
+    },
+    "state_oauth_avatar_importing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Importing…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "取り込み中…" } }
+      }
+    },
+    "label_signed_in_via" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Signed in via" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "サインイン方法" } }
+      }
+    },
+    "state_signed_in_via_apple_relay" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Apple (using a private email relay)" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Apple (プライベートリレーメールを使用)" } }
+      }
+    },
+    "state_signed_in_via_apple" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Apple" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Apple" } }
+      }
+    },
+    "state_signed_in_via_google" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Google" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Google" } }
+      }
+    },
+    "state_signed_in_via_email" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Email and password" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "メールアドレスとパスワード" } }
+      }
+    },
+    "label_linked_identities" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Linked accounts" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "リンク済みアカウント" } }
+      }
     }
   },
   "version" : "1.1"

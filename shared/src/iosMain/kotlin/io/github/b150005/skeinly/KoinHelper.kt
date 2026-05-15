@@ -471,6 +471,62 @@ fun wrapBiometricSettingsState(
     flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.biometric.BiometricSettingsState>,
 ): FlowWrapper<io.github.b150005.skeinly.ui.biometric.BiometricSettingsState> = FlowWrapper(flow)
 
+// Phase 26.6 (ADR-022 §6.6) — post-OAuth profile setup ViewModel +
+// state wrapper. SwiftUI mounts this screen after the first
+// Authenticated transition for a user who has not yet completed the
+// gate. The factory needs the [OAuthOnboardingMetadata] parameter, so
+// the getter signature carries the seed values forward to Koin's
+// parametric resolution.
+fun getOAuthProfileSetupViewModel(
+    displayName: String?,
+    pictureUrl: String?,
+): io.github.b150005.skeinly.ui.onboarding.OAuthProfileSetupViewModel {
+    val metadata =
+        io.github.b150005.skeinly.domain.model.OAuthOnboardingMetadata(
+            displayName = displayName,
+            pictureUrl = pictureUrl,
+            // SwiftUI does not surface this discriminator; default to
+            // Email so the data-class invariant is satisfied. The
+            // screen never reads it.
+            primaryProvider = io.github.b150005.skeinly.domain.model.AuthProviderKind.Email,
+        )
+    return KoinPlatform
+        .getKoin()
+        .get {
+            org.koin.core.parameter
+                .parametersOf(metadata)
+        }
+}
+
+fun wrapOAuthProfileSetupState(
+    flow: kotlinx.coroutines.flow.StateFlow<io.github.b150005.skeinly.ui.onboarding.OAuthProfileSetupState>,
+): FlowWrapper<io.github.b150005.skeinly.ui.onboarding.OAuthProfileSetupState> = FlowWrapper(flow)
+
+fun wrapOAuthProfileSetupNavEvents(
+    flow: kotlinx.coroutines.flow.Flow<io.github.b150005.skeinly.ui.onboarding.OAuthProfileSetupNavEvent>,
+): EventFlowWrapper<io.github.b150005.skeinly.ui.onboarding.OAuthProfileSetupNavEvent> = EventFlowWrapper(flow)
+
+// Phase 26.6 (ADR-022 §6.6) — AuthRepository surface for the iOS
+// AppRouter gate-decision logic. Returns null when no session is
+// present OR the supabase client is unconfigured (local-only dev).
+suspend fun fetchOAuthOnboardingMetadata(): io.github.b150005.skeinly.domain.model.OAuthOnboardingMetadata? {
+    val repo: io.github.b150005.skeinly.domain.repository.AuthRepository =
+        KoinPlatform.getKoin().get()
+    return try {
+        repo.getOAuthOnboardingMetadata()
+    } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+        throw e
+    } catch (_: Throwable) {
+        null
+    }
+}
+
+fun isOAuthProfileSetupGateCompleted(): Boolean {
+    val prefs: io.github.b150005.skeinly.data.preferences.OAuthProfileSetupPreferences =
+        KoinPlatform.getKoin().get()
+    return prefs.isCompleted
+}
+
 fun wrapSettingsAccountDeletedFlow(flow: kotlinx.coroutines.flow.Flow<kotlin.Unit>): EventFlowWrapper<kotlin.Unit> = EventFlowWrapper(flow)
 
 fun wrapProfileState(

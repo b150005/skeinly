@@ -259,6 +259,29 @@ struct SettingsScreen: View {
                         }
                     }
 
+                    // Phase 26.6 (ADR-022 §6.6) — primary identity
+                    // discriminator + linked-accounts list (when the
+                    // user has merged multiple providers via Phase 26.4
+                    // linkIdentity).
+                    if let primary = state.linkedIdentities.first as? LinkedIdentity {
+                        HStack {
+                            Text("label_signed_in_via")
+                            Spacer()
+                            Text(providerLabelKey(for: primary))
+                                .foregroundStyle(.secondary)
+                        }
+                        .accessibilityIdentifier("settingsSignedInVia")
+                        let extras = state.linkedIdentities.compactMap { $0 as? LinkedIdentity }.dropFirst()
+                        if !extras.isEmpty {
+                            DisclosureGroup(LocalizedStringKey("label_linked_identities")) {
+                                ForEach(Array(extras.enumerated()), id: \.offset) { _, extra in
+                                    Text(providerLabelKey(for: extra))
+                                        .accessibilityIdentifier("settingsLinkedIdentity")
+                                }
+                            }
+                        }
+                    }
+
                     Button {
                         viewModel.onEvent(event: SettingsEventSignOut.shared)
                     } label: {
@@ -579,6 +602,25 @@ struct SettingsScreen: View {
                     .accessibilityIdentifier("confirmChangeEmailButton")
                 }
             }
+        }
+    }
+
+    /// Phase 26.6 (ADR-022 §6.6) — closed-set mapping from Kotlin's
+    /// [LinkedIdentity] to the localized copy key. Apple relay
+    /// surfaces a distinct disclosure copy so users with Hide-My-Email
+    /// understand the address shown elsewhere is a private relay.
+    private func providerLabelKey(for identity: LinkedIdentity) -> LocalizedStringKey {
+        switch identity.provider {
+        case .apple:
+            return identity.isAppleRelay
+                ? LocalizedStringKey("state_signed_in_via_apple_relay")
+                : LocalizedStringKey("state_signed_in_via_apple")
+        case .google:
+            return LocalizedStringKey("state_signed_in_via_google")
+        case .email:
+            return LocalizedStringKey("state_signed_in_via_email")
+        default:
+            return LocalizedStringKey("state_signed_in_via_email")
         }
     }
 }

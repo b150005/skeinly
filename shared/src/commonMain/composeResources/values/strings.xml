@@ -897,4 +897,22 @@
     <string name="state_biometric_unavailable_no_hw">Not available on this device</string>
     <string name="state_biometric_unavailable_not_enrolled">No biometric or PIN enrolled in OS settings</string>
     <string name="body_biometric_settings_explanation">When enabled, Skeinly asks for biometric (or device PIN) after you\'ve been away for the selected time. Sensitive actions like deleting your account always ask, even when this is off.</string>
+
+    <!-- Phase 26.6 (ADR-022 §6.6) — post-OAuth profile setup gate + Settings identity surface. -->
+    <string name="title_oauth_profile_setup">What should we call you?</string>
+    <string name="body_oauth_profile_setup">Welcome! We pre-filled your name from your sign-in. Edit it or use it as-is.</string>
+    <string name="label_oauth_profile_display_name">Your name</string>
+    <string name="title_oauth_profile_avatar">Use this picture as your avatar?</string>
+    <string name="action_use_oauth_avatar">Use this picture</string>
+    <string name="action_choose_different_avatar">Choose different</string>
+    <string name="action_skip_profile_setup">Skip for now</string>
+    <string name="action_save_profile_setup">Save</string>
+    <string name="state_oauth_avatar_imported">Picture imported</string>
+    <string name="state_oauth_avatar_importing">Importing…</string>
+    <string name="label_signed_in_via">Signed in via</string>
+    <string name="state_signed_in_via_apple_relay">Apple (using a private email relay)</string>
+    <string name="state_signed_in_via_apple">Apple</string>
+    <string name="state_signed_in_via_google">Google</string>
+    <string name="state_signed_in_via_email">Email and password</string>
+    <string name="label_linked_identities">Linked accounts</string>
 </resources>

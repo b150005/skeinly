@@ -472,6 +472,145 @@ class SettingsViewModelTest {
             requireBiometricForMfaDisable = requireBiometricForMfaDisable,
             requireBiometricForAccountDelete = requireBiometricForAccountDelete,
         )
+
+    // ========================================================
+    // Phase 26.6 (ADR-022 §6.6) — Settings → Account identity list
+    // ========================================================
+
+    @Test
+    fun `Authenticated emission populates linkedIdentities from AuthRepository`() =
+        runTest {
+            authRepo.linkedIdentitiesResult =
+                listOf(
+                    io.github.b150005.skeinly.domain.model.LinkedIdentity(
+                        provider = io.github.b150005.skeinly.domain.model.AuthProviderKind.Google,
+                        email = "alice@example.com",
+                    ),
+                )
+            authRepo.setAuthState(AuthState.Authenticated("user-1", "alice@example.com"))
+            val viewModel = createIdentityAwareViewModel()
+            // UnconfinedTestDispatcher runs the init flow eagerly so the
+            // post-Authenticated state.value already reflects identities.
+            val current = viewModel.state.value
+            assertTrue(current.isSignedIn)
+            assertEquals(1, current.linkedIdentities.size)
+            assertEquals(
+                io.github.b150005.skeinly.domain.model.AuthProviderKind.Google,
+                current.linkedIdentities[0].provider,
+            )
+            assertEquals(1, authRepo.getLinkedIdentitiesCallCount)
+        }
+
+    @Test
+    fun `Unauthenticated emission clears linkedIdentities`() =
+        runTest {
+            authRepo.linkedIdentitiesResult =
+                listOf(
+                    io.github.b150005.skeinly.domain.model.LinkedIdentity(
+                        provider = io.github.b150005.skeinly.domain.model.AuthProviderKind.Apple,
+                        email = "abc123@privaterelay.appleid.com",
+                    ),
+                )
+            authRepo.setAuthState(AuthState.Authenticated("user-1", "abc123@privaterelay.appleid.com"))
+            val viewModel = createIdentityAwareViewModel()
+            assertEquals(1, viewModel.state.value.linkedIdentities.size)
+            authRepo.setAuthState(AuthState.Unauthenticated)
+            assertFalse(viewModel.state.value.isSignedIn)
+            assertEquals(emptyList(), viewModel.state.value.linkedIdentities)
+        }
+
+    @Test
+    fun `getLinkedIdentities throw is swallowed and state stays signed-in`() =
+        runTest {
+            authRepo.linkedIdentitiesError = RuntimeException("network down")
+            authRepo.setAuthState(AuthState.Authenticated("user-1", "user@example.com"))
+            val viewModel = createIdentityAwareViewModel()
+            // The throw was caught — isSignedIn still flips, identity list
+            // stays empty until a future refresh succeeds.
+            assertTrue(viewModel.state.value.isSignedIn)
+            assertEquals(emptyList(), viewModel.state.value.linkedIdentities)
+        }
+
+    @Test
+    fun `Apple relay identity exposes isAppleRelay = true via the model invariant`() =
+        runTest {
+            val relay =
+                io.github.b150005.skeinly.domain.model.LinkedIdentity(
+                    provider = io.github.b150005.skeinly.domain.model.AuthProviderKind.Apple,
+                    email = "abc123@privaterelay.appleid.com",
+                )
+            assertTrue(relay.isAppleRelay)
+            val regular =
+                io.github.b150005.skeinly.domain.model.LinkedIdentity(
+                    provider = io.github.b150005.skeinly.domain.model.AuthProviderKind.Apple,
+                    email = "alice@example.com",
+                )
+            assertFalse(regular.isAppleRelay)
+            val google =
+                io.github.b150005.skeinly.domain.model.LinkedIdentity(
+                    provider = io.github.b150005.skeinly.domain.model.AuthProviderKind.Google,
+                    email = "alice@privaterelay.appleid.com",
+                )
+            // Non-Apple providers never report isAppleRelay even if the email
+            // host happens to match — the discriminator is provider-bound.
+            assertFalse(google.isAppleRelay)
+        }
+
+    @Test
+    fun `Multiple linked identities preserve insertion order from the repository`() =
+        runTest {
+            authRepo.linkedIdentitiesResult =
+                listOf(
+                    io.github.b150005.skeinly.domain.model.LinkedIdentity(
+                        provider = io.github.b150005.skeinly.domain.model.AuthProviderKind.Email,
+                        email = "alice@example.com",
+                    ),
+                    io.github.b150005.skeinly.domain.model.LinkedIdentity(
+                        provider = io.github.b150005.skeinly.domain.model.AuthProviderKind.Google,
+                        email = "alice@example.com",
+                    ),
+                )
+            authRepo.setAuthState(AuthState.Authenticated("user-1", "alice@example.com"))
+            val viewModel = createIdentityAwareViewModel()
+            val current = viewModel.state.value
+            assertEquals(2, current.linkedIdentities.size)
+            assertEquals(
+                io.github.b150005.skeinly.domain.model.AuthProviderKind.Email,
+                current.linkedIdentities[0].provider,
+            )
+            assertEquals(
+                io.github.b150005.skeinly.domain.model.AuthProviderKind.Google,
+                current.linkedIdentities[1].provider,
+            )
+        }
+
+    @Test
+    fun `Loading state surfaces empty linkedIdentities until first Authenticated`() =
+        runTest {
+            authRepo.linkedIdentitiesResult =
+                listOf(
+                    io.github.b150005.skeinly.domain.model.LinkedIdentity(
+                        provider = io.github.b150005.skeinly.domain.model.AuthProviderKind.Email,
+                        email = "alice@example.com",
+                    ),
+                )
+            val viewModel = createIdentityAwareViewModel()
+            // Default state without flipping authState is Loading/Unauthenticated.
+            val firstState = viewModel.state.value
+            assertEquals(emptyList(), firstState.linkedIdentities)
+            assertFalse(firstState.isSignedIn)
+        }
+
+    private fun createIdentityAwareViewModel(): SettingsViewModel =
+        SettingsViewModel(
+            observeAuthState = ObserveAuthStateUseCase(authRepo),
+            signOut = SignOutUseCase(authRepo, CloseRealtimeChannelsUseCase(null, null, null)),
+            deleteAccount = DeleteAccountUseCase(authRepo, CloseRealtimeChannelsUseCase(null, null, null)),
+            updatePassword = UpdatePasswordUseCase(authRepo),
+            updateEmail = UpdateEmailUseCase(authRepo),
+            analyticsPreferences = analyticsPrefs,
+            loadLinkedIdentities = { authRepo.getLinkedIdentities() },
+        )
 }
 
 private class FakeAnalyticsPreferences : AnalyticsPreferences {

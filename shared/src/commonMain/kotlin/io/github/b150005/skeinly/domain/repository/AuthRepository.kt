@@ -1,8 +1,10 @@
 package io.github.b150005.skeinly.domain.repository
 
 import io.github.b150005.skeinly.domain.model.AuthState
+import io.github.b150005.skeinly.domain.model.LinkedIdentity
 import io.github.b150005.skeinly.domain.model.MfaEnrollment
 import io.github.b150005.skeinly.domain.model.MfaEnrollmentStatus
+import io.github.b150005.skeinly.domain.model.OAuthOnboardingMetadata
 import io.github.b150005.skeinly.domain.model.OAuthSignInOutcome
 import io.github.b150005.skeinly.domain.model.SignUpOutcome
 import kotlinx.coroutines.flow.Flow
@@ -260,4 +262,43 @@ interface AuthRepository {
      * compromise regardless of which mutation they perform.
      */
     suspend fun regenerateRecoveryCode(): String
+
+    /**
+     * Phase 26.6 (ADR-022 §6.6) — extract OAuth-provider metadata from
+     * the currently-authenticated session. Returns null when no
+     * session is present OR when the supabase client is unconfigured
+     * (local-only dev builds).
+     *
+     * The post-OAuth onboarding gate calls this once per sign-in to
+     * decide whether to surface the "What should we call you?" prompt:
+     * - `metadata.displayName != null` AND profile `display_name == ""`
+     *   → surface the prompt with [OAuthOnboardingMetadata.displayName]
+     *     as the pre-fill seed.
+     * - `metadata.pictureUrl != null` → surface the "Use this picture?"
+     *   tile alongside the name prompt.
+     *
+     * Implementation reads supabase-kt 3.6's `auth.currentUserOrNull()`
+     * + `userMetadata` JSON object. Apple emits `full_name` only on
+     * the FIRST ASAuthorizationAppleIDCredential — subsequent sign-ins
+     * have empty user_metadata, so the gate naturally short-circuits
+     * to the no-prompt path when the user has already completed setup
+     * once. Google emits `name` + `picture` on every IDToken.
+     */
+    suspend fun getOAuthOnboardingMetadata(): OAuthOnboardingMetadata?
+
+    /**
+     * Phase 26.6 (ADR-022 §6.6) — list the auth identities attached to
+     * the currently-authenticated user. Used by Settings → Account to
+     * surface a discriminator ("via Apple / Google / email") + the
+     * full identity list when multiple providers are linked (Phase
+     * 26.4 linkIdentity merge outcome).
+     *
+     * Returns an empty list when no session is present OR when the
+     * supabase client is unconfigured. The order matches
+     * `UserInfo.identities[*]`, which Supabase yields ordered by
+     * identity creation time (oldest first). Settings consumers treat
+     * the first identity as the "primary" sign-in path for display
+     * purposes.
+     */
+    suspend fun getLinkedIdentities(): List<LinkedIdentity>
 }

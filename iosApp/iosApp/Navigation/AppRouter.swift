@@ -141,6 +141,40 @@ struct AppRootView: View {
     // SwiftUI's state-tracking either way.
     @State private var localOnlyMode: Bool
 
+    /// Phase 26.6 (ADR-022 §6.6) — captured at the first Authenticated
+    /// transition (in the `.onChange(authState)` below). Non-nil ⇒ the
+    /// router replaces the ProjectList stack with `OAuthProfileSetupScreen`
+    /// until the gate fires `onCompleted`, which sets this back to nil
+    /// and falls through to the normal stack.
+    @State private var pendingOAuthSetupMetadata: PendingOAuthSetup?
+
+    @ViewBuilder
+    private var authenticatedContent: some View {
+        if let gateMetadata = pendingOAuthSetupMetadata {
+            OAuthProfileSetupScreen(
+                displayName: gateMetadata.displayName,
+                pictureUrl: gateMetadata.pictureUrl,
+                onCompleted: {
+                    pendingOAuthSetupMetadata = nil
+                }
+            )
+        } else {
+            NavigationStack(path: $path) {
+                ProjectListScreen(path: $path)
+                    .trackScreen(.projectlist)
+                    .navigationDestination(for: Route.self) { route in
+                        destinationView(for: route)
+                    }
+            }
+            .onAppear {
+                if let route = pendingDeepLinkRoute {
+                    pendingDeepLinkRoute = nil
+                    path.append(route)
+                }
+            }
+        }
+    }
+
     init() {
         let vm = ViewModelFactory.authViewModel()
         let wrapper = KoinHelperKt.wrapAuthState(flow: vm.state)
@@ -174,19 +208,15 @@ struct AppRootView: View {
                         }
                 }
             } else if authState is AuthStateAuthenticated {
-                NavigationStack(path: $path) {
-                    ProjectListScreen(path: $path)
-                        .trackScreen(.projectlist)
-                        .navigationDestination(for: Route.self) { route in
-                            destinationView(for: route)
-                        }
-                }
-                .onAppear {
-                    if let route = pendingDeepLinkRoute {
-                        pendingDeepLinkRoute = nil
-                        path.append(route)
-                    }
-                }
+                // Phase 26.6 (ADR-022 §6.6) — post-OAuth profile setup
+                // gate. Shown ONCE per install on the first Authenticated
+                // transition when (a) the gate preference hasn't been
+                // marked complete AND (b) the OAuth provider supplied a
+                // displayName seed (Apple `full_name` on first sign-in
+                // or Google `name`). Email/password sign-ups have no
+                // user_metadata seed → metadata.displayName is null →
+                // the gate falls through to ProjectList silently.
+                authenticatedContent
             } else if authState is AuthStateMfaChallengeRequired {
                 // Phase 26.5 (ADR-022 §6.4) — AAL1 session pending TOTP.
                 // Full-screen gate; no NavigationStack push because the
@@ -240,6 +270,45 @@ struct AppRootView: View {
                 let target = parsePushRoute(route)
             else { return }
             path.append(target)
+        }
+        // Phase 26.6 (ADR-022 §6.6) — re-evaluate the OAuth profile
+        // setup gate every time the AuthState transitions. The gate
+        // fires asynchronously because it queries AuthRepository for
+        // user_metadata; we capture the result into
+        // `pendingOAuthSetupMetadata` which the body branch above
+        // reads to decide whether to surface the setup screen.
+        .onChange(of: authHolder.state.authState is AuthStateAuthenticated) { _, isAuthed in
+            // Phase 26.6 (ADR-022 §6.6) — re-evaluate the OAuth profile
+            // setup gate when the AuthState transitions to/from
+            // Authenticated. We pivot on the Bool discriminator (rather
+            // than the Kotlin sealed-class instance) because
+            // `AuthState` does not bridge as `Equatable` from
+            // Kotlin/Native + .onChange requires Equatable.
+            guard isAuthed else {
+                pendingOAuthSetupMetadata = nil
+                return
+            }
+            // Already completed on a prior install / sign-in → never
+            // re-prompt. Synchronous read of the SharedPreferences-
+            // backed gate flag.
+            if KoinHelperKt.isOAuthProfileSetupGateCompleted() {
+                pendingOAuthSetupMetadata = nil
+                return
+            }
+            Task { @MainActor in
+                let metadata = try? await KoinHelperKt.fetchOAuthOnboardingMetadata()
+                guard
+                    let displayName = metadata?.displayName,
+                    !displayName.trimmingCharacters(in: .whitespaces).isEmpty
+                else {
+                    pendingOAuthSetupMetadata = nil
+                    return
+                }
+                pendingOAuthSetupMetadata = PendingOAuthSetup(
+                    displayName: displayName,
+                    pictureUrl: metadata?.pictureUrl
+                )
+            }
         }
     }
 
@@ -505,4 +574,14 @@ struct AppRootView: View {
         return nil
     }
 
+}
+
+/// Phase 26.6 (ADR-022 §6.6) — captured payload for the OAuth profile
+/// setup gate decision. The display name is non-empty by gate
+/// invariant (the surfacing rule already filtered the empty/null case
+/// before constructing this); pictureUrl is optional because Apple
+/// does not expose an avatar URL.
+struct PendingOAuthSetup: Equatable {
+    let displayName: String
+    let pictureUrl: String?
 }
