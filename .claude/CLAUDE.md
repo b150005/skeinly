@@ -379,7 +379,7 @@ User-facing terminology aside, the items below are the only work scoped against 
 | **`jis.crochet.reverse-sc` chevron form** | Cosmetic polish | Awaiting real beta-tester feedback before redesign. |
 | **CLAUDE.md slimming (≤300-line target)** | Doc hygiene | Wave-close promotion cadence; Phase 40 GA major-release commit. |
 | **iOS NavigationStack edge-swipe abuse** | UX limitation | Requires UIKit drop; out of shared-Compose scope. |
-| **ViewModel error i18n complete sweep** | Tech Debt | Hardcoded EN error strings → localized strings. |
+| **ViewModel error i18n complete sweep** | Tech Debt | ✅ **CLOSED 2026-05-15** (commit `b8604f9`). Post-Phase-G.1, only PackManagementViewModel + PaywallViewModel still emitted hardcoded EN error strings to UI state (iOS rendered them verbatim). Pack → `ErrorMessage.LoadFailed` (reuses `error_load`); Paywall → new screen-specific `PaywallError` enum (BugReport `ErrorKind` precedent) + 2 new i18n keys (`state_paywall_package_unavailable`, `state_restore_failed`) × en/ja CMP + iOS xcstrings. Compose `.localized()` / SwiftUI `.localizedString` / `paywallErrorKey(for:)`. Tests retargeted from raw-string-leak to typed-contract assertions (all 8 sites). Verified: gradle invariant block + ios-build + e2e-android 9/9 green; ios-test/e2e-ios CI-gated (Xcode 26.x local limitation). |
 
 #### post-release (= Phase 40 GA shipped, v1.0 public)
 
