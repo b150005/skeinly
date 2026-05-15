@@ -6,10 +6,27 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.time.Instant
 
+/**
+ * Phase 25.1 (ADR-024 §(b)) — 4-value visibility enum. Migration 035
+ * extended the SQL CHECK constraint to enforce this exact set.
+ *
+ * - [PRIVATE]: owner-only. The default for new patterns at the DB
+ *   level; the PatternEditScreen picker's UI-level initial state
+ *   for NEW patterns is [PUBLIC] per ADR-024 §(c).
+ * - [FRIENDS]: owner + accepted-friend-graph members (Phase 25.1
+ *   `is_friend()` SQL function). NEW in Phase 25.1.
+ * - [SHARED]: anyone with a valid share token URL (link-share, via
+ *   the existing `shares` table). Orthogonal to [FRIENDS] — both
+ *   are distinct trust models, not chained.
+ * - [PUBLIC]: visible in the Discovery feed.
+ */
 @Serializable
 enum class Visibility {
     @SerialName("private")
     PRIVATE,
+
+    @SerialName("friends")
+    FRIENDS,
 
     @SerialName("shared")
     SHARED,

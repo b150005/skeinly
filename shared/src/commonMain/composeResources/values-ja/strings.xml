@@ -303,6 +303,8 @@
     <string name="hint_needle_size_example">7号 / 4.5mm</string>
     <string name="label_visibility">公開範囲</string>
     <string name="label_visibility_private">非公開</string>
+    <!-- Phase 25.1 (ADR-024 §(b)) — フレンドのみ可視性レベル。 -->
+    <string name="label_visibility_friends">フレンドのみ</string>
     <string name="label_visibility_shared">共有</string>
     <string name="label_visibility_public">公開</string>
 

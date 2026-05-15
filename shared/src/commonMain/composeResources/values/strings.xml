@@ -327,6 +327,8 @@
     <string name="hint_needle_size_example">US 7 / 4.5mm</string>
     <string name="label_visibility">Visibility</string>
     <string name="label_visibility_private">Private</string>
+    <!-- Phase 25.1 (ADR-024 §(b)) — friends-only visibility tier. -->
+    <string name="label_visibility_friends">Friends</string>
     <string name="label_visibility_shared">Shared</string>
     <string name="label_visibility_public">Public</string>
 

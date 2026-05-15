@@ -51,6 +51,7 @@ private fun String.toDifficulty(): Difficulty =
 private fun String.toVisibility(): Visibility =
     when (this) {
         "private" -> Visibility.PRIVATE
+        "friends" -> Visibility.FRIENDS
         "shared" -> Visibility.SHARED
         "public" -> Visibility.PUBLIC
         else -> throw IllegalStateException("Unknown Visibility in database: '$this'")
@@ -66,6 +67,7 @@ fun Difficulty.toDbString(): String =
 fun Visibility.toDbString(): String =
     when (this) {
         Visibility.PRIVATE -> "private"
+        Visibility.FRIENDS -> "friends"
         Visibility.SHARED -> "shared"
         Visibility.PUBLIC -> "public"
     }

@@ -48,6 +48,7 @@ import io.github.b150005.skeinly.generated.resources.label_gauge
 import io.github.b150005.skeinly.generated.resources.label_needle_size
 import io.github.b150005.skeinly.generated.resources.label_pattern_title
 import io.github.b150005.skeinly.generated.resources.label_visibility
+import io.github.b150005.skeinly.generated.resources.label_visibility_friends
 import io.github.b150005.skeinly.generated.resources.label_visibility_private
 import io.github.b150005.skeinly.generated.resources.label_visibility_public
 import io.github.b150005.skeinly.generated.resources.label_visibility_shared
@@ -253,6 +254,10 @@ private val Visibility.labelKey: StringResource
     get() =
         when (this) {
             Visibility.PRIVATE -> Res.string.label_visibility_private
+            // Phase 25.1 (ADR-024 §(b)) — visible to owner + accepted-
+            // friend-graph members. Distinct from SHARED (link-token)
+            // which is a separate trust model.
+            Visibility.FRIENDS -> Res.string.label_visibility_friends
             Visibility.SHARED -> Res.string.label_visibility_shared
             Visibility.PUBLIC -> Res.string.label_visibility_public
         }

@@ -90,6 +90,8 @@ class PatternMapperTest {
     @Test
     fun `toDomain maps all visibility values`() {
         assertEquals(Visibility.PRIVATE, entity(visibility = "private").toDomain().visibility)
+        // Phase 25.1 (ADR-024) — `friends` value extends the enum.
+        assertEquals(Visibility.FRIENDS, entity(visibility = "friends").toDomain().visibility)
         assertEquals(Visibility.SHARED, entity(visibility = "shared").toDomain().visibility)
         assertEquals(Visibility.PUBLIC, entity(visibility = "public").toDomain().visibility)
     }
@@ -178,6 +180,7 @@ class PatternMapperTest {
             val parsed =
                 when (dbString) {
                     "private" -> Visibility.PRIVATE
+                    "friends" -> Visibility.FRIENDS
                     "shared" -> Visibility.SHARED
                     "public" -> Visibility.PUBLIC
                     else -> error("Unknown")

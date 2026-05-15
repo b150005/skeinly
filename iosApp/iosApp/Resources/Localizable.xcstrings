@@ -6444,6 +6444,13 @@
         }
       }
     },
+    "label_visibility_friends" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Friends" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フレンドのみ" } }
+      }
+    },
     "label_visibility_public" : {
       "extractionState" : "manual",
       "localizations" : {

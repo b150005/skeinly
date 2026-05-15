@@ -180,12 +180,17 @@ private enum DifficultyOption: CaseIterable {
 
 private enum VisibilityOption: CaseIterable {
     case privateVisibility
+    // Phase 25.1 (ADR-024 §(b)) — friends-only tier (owner + accepted
+    // friend-graph members). Ordered between Private and Shared in
+    // ascending trust scope.
+    case friendsVisibility
     case sharedVisibility
     case publicVisibility
 
     var labelKey: LocalizedStringKey {
         switch self {
         case .privateVisibility: return LocalizedStringKey("label_visibility_private")
+        case .friendsVisibility: return LocalizedStringKey("label_visibility_friends")
         case .sharedVisibility: return LocalizedStringKey("label_visibility_shared")
         case .publicVisibility: return LocalizedStringKey("label_visibility_public")
         }
@@ -194,6 +199,7 @@ private enum VisibilityOption: CaseIterable {
     func toVisibility() -> Shared.Visibility {
         switch self {
         case .privateVisibility: return .private_
+        case .friendsVisibility: return .friends
         case .sharedVisibility: return .shared
         case .publicVisibility: return .public_
         }
@@ -202,6 +208,7 @@ private enum VisibilityOption: CaseIterable {
     static func from(_ visibility: Shared.Visibility) -> VisibilityOption {
         switch visibility {
         case .private_: return .privateVisibility
+        case .friends: return .friendsVisibility
         case .shared: return .sharedVisibility
         case .public_: return .publicVisibility
         default: return .privateVisibility
