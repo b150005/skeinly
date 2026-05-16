@@ -24,6 +24,19 @@ struct SettingsScreen: View {
     @State private var newEmail = ""
     @State private var toastMessage: String?
     @State private var toastCloseable: Closeable?
+    /// Pre-alpha A25 — Reduce Motion. The toast assignment is currently
+    /// un-animated (no `withAnimation`/`.animation` transaction → the
+    /// declared transition is inert), so there is no motion to gate
+    /// today. The transition is still made RM-aware defensively so a
+    /// future `withAnimation` wrap cannot reintroduce an un-gated slide.
+    ///
+    /// COUPLED-EDIT: the `.transition` ternary gates the transition
+    /// *shape*, not the animation *transaction*. If you later animate the
+    /// toast, wrap the `toastMessage` assignment in
+    /// `withMotion(reduceMotion, …)` — NOT a bare `withAnimation` — or
+    /// the opacity fade still animates under Reduce Motion. The ternary
+    /// alone is insufficient.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Phase 26.5 (ADR-022 §6.4) — disable-2FA confirmation alert.
     @State private var showDisableMfaConfirmation = false
 
@@ -224,7 +237,14 @@ struct SettingsScreen: View {
                     .padding()
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
                     .padding(.bottom, 24)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    // A25: cross-dissolve is Apple's recommended Reduce-
+                    // Motion substitution for a slide; full slide only when
+                    // the user has not requested reduced motion.
+                    .transition(
+                        reduceMotion
+                            ? .opacity
+                            : .move(edge: .bottom).combined(with: .opacity)
+                    )
             }
         }
         .task {
@@ -241,6 +261,10 @@ struct SettingsScreen: View {
                             ""
                         }
                     let resolved = NSLocalizedString(key, comment: "")
+                    // A25: assignment is intentionally un-animated. To
+                    // animate, use `withMotion(reduceMotion) { … }` — NOT
+                    // a bare `withAnimation` (see the `reduceMotion`
+                    // property's COUPLED-EDIT note).
                     toastMessage = resolved
                     announceToVoiceOver(message: resolved)
                     try? await Task.sleep(nanoseconds: 2_500_000_000)

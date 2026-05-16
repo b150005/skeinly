@@ -31,6 +31,11 @@ struct SuggestionDetailScreen: View {
     /// `.sheet(item:)` keyed on this enum keeps the two mutually-exclusive
     /// modals from racing a shared boolean.
     @State private var overflowSheet: SuggestionOverflowSheet?
+    /// Pre-alpha A25 — Reduce Motion. SwiftUI-native, reactive binding to
+    /// `UIAccessibility.isReduceMotionEnabled`; passed to `withMotion` so
+    /// the success-toast fade is applied instantly (not animated) when the
+    /// user has asked for reduced motion.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var viewModel: SuggestionDetailViewModel { holder.viewModel }
     private var notificationViewModel: NotificationPermissionViewModel { notificationHolder.viewModel }
@@ -106,15 +111,15 @@ struct SuggestionDetailScreen: View {
                     Task { @MainActor in
                         switch event {
                         case is SuggestionDetailNavEventPrClosed:
-                            withAnimation { pendingClosedToast = true }
+                            withMotion(reduceMotion) { pendingClosedToast = true }
                             announceToVoiceOver(messageKey: "message_suggestion_closed_successfully")
                             try? await Task.sleep(nanoseconds: 2_000_000_000)
-                            withAnimation { pendingClosedToast = false }
+                            withMotion(reduceMotion) { pendingClosedToast = false }
                         case is SuggestionDetailNavEventPrMerged:
-                            withAnimation { pendingMergedToast = true }
+                            withMotion(reduceMotion) { pendingMergedToast = true }
                             announceToVoiceOver(messageKey: "message_suggestion_applied_successfully")
                             try? await Task.sleep(nanoseconds: 2_000_000_000)
-                            withAnimation { pendingMergedToast = false }
+                            withMotion(reduceMotion) { pendingMergedToast = false }
                         case let nav as SuggestionDetailNavEventNavigateToConflictResolution:
                             path.append(Route.chartConflictResolution(prId: nav.prId))
                         case is SuggestionDetailNavEventCommentPosted:

@@ -16,6 +16,10 @@ struct ChartConflictResolutionScreen: View {
     @State private var showError = false
     @State private var navEventsCloseable: Closeable?
     @State private var pendingMergedToast: Bool = false
+    /// Pre-alpha A25 — Reduce Motion. SwiftUI-native binding to
+    /// `UIAccessibility.isReduceMotionEnabled`; gates the merge-success
+    /// toast fade via `withMotion`.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var viewModel: ChartConflictResolutionViewModel { holder.viewModel }
 
@@ -81,10 +85,10 @@ struct ChartConflictResolutionScreen: View {
                 navEventsCloseable = wrapper.collect { event in
                     Task { @MainActor in
                         if event is ChartConflictResolutionNavEventMergeApplied {
-                            withAnimation { pendingMergedToast = true }
+                            withMotion(reduceMotion) { pendingMergedToast = true }
                             announceToVoiceOver(messageKey: "message_suggestion_applied_successfully")
                             try? await Task.sleep(nanoseconds: 1_500_000_000)
-                            withAnimation { pendingMergedToast = false }
+                            withMotion(reduceMotion) { pendingMergedToast = false }
                             // Pop back to the PR detail screen — Realtime
                             // echo will reflect the now-merged status there.
                             path.removeLast()

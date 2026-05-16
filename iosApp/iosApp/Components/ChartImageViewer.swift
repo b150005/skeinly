@@ -8,6 +8,11 @@ struct ChartImageViewer: View {
     @State private var lastScale: CGFloat = 1.0
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
+    /// Pre-alpha A25 — Reduce Motion. The double-tap zoom + pinch-recenter
+    /// remain functional under Reduce Motion (the user explicitly asked to
+    /// zoom — essential motion); only the decorative spring bounce is
+    /// dropped so the scale/offset change is applied instantly.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
@@ -27,7 +32,7 @@ struct ChartImageViewer: View {
                         .gesture(magnificationGesture)
                         .gesture(dragGesture)
                         .onTapGesture(count: 2) {
-                            withAnimation(.spring()) {
+                            withMotion(reduceMotion, .spring()) {
                                 if scale > 1.0 {
                                     scale = 1.0
                                     offset = .zero
@@ -74,7 +79,7 @@ struct ChartImageViewer: View {
             .onEnded { _ in
                 lastScale = scale
                 if scale <= 1.0 {
-                    withAnimation(.spring()) {
+                    withMotion(reduceMotion, .spring()) {
                         offset = .zero
                         lastOffset = .zero
                     }
