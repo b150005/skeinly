@@ -284,6 +284,20 @@ val viewModelModule =
                 unblock = { id -> repo.unblockUser(id) },
             )
         }
+        // Pre-Phase-40 A20 Option B (docs/en/ops/data-export-sop.md
+        // §Scope deferrals) — in-app "Export My Data". Lambda-seam DI
+        // (same precedent as WipeData / UGC) so commonTest never
+        // touches supabase-kt Functions nor the platform file/share
+        // API: `exportData` over DataExportRepository::export,
+        // `saveBundle` over the expect/actual DataExportSaver::save.
+        viewModel {
+            val repo: io.github.b150005.skeinly.domain.repository.DataExportRepository = get()
+            val saver: io.github.b150005.skeinly.platform.DataExportSaver = get()
+            io.github.b150005.skeinly.ui.settings.DataExportViewModel(
+                exportData = { repo.export() },
+                saveBundle = { jsonContent, fileName -> saver.save(jsonContent, fileName) },
+            )
+        }
         // Phase 26.6 (ADR-022 §6.5) — biometric settings screen.
         // Lambda-seam DI mirrors NotificationPermissionViewModel: the
         // `expect class` BiometricAuthenticator surfaces as a `final`

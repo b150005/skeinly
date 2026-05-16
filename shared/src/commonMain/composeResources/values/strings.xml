@@ -1012,4 +1012,19 @@
     <string name="state_blocked_user_unknown">Unknown user</string>
     <string name="action_unblock">Unblock</string>
     <string name="state_user_unblocked">Unblocked</string>
+
+    <!-- Pre-Phase-40 A20 Option B (docs/en/ops/data-export-sop.md §Scope
+         deferrals) — in-app GDPR Art. 20 / CCPA data export. Settings →
+         Privacy → Export My Data (non-destructive, sits below Blocked
+         Users). -->
+    <string name="title_export_data_screen">Export My Data</string>
+    <string name="title_export_data_settings_row">Export My Data</string>
+    <string name="body_export_data_settings_row">Download a copy of your patterns, projects, and account data</string>
+    <string name="body_export_data_explanation">Export a machine-readable copy of the data Skeinly stores for you: your account, patterns, projects, progress, charts, comments, suggestions, and activity. You choose where to save the file.</string>
+    <string name="body_export_data_not_included">Not included (request from the source if you need them): App Store / Google Play purchase history, RevenueCat records, GitHub bug-report issues, and opt-in analytics. The exported file explains how to reach each.</string>
+    <string name="action_export_data">Export my data</string>
+    <string name="state_export_data_in_progress">Preparing your export…</string>
+    <string name="state_export_data_ready">Your export is ready</string>
+    <string name="body_export_data_ready_detail">The share sheet opened — choose where to save the file.</string>
+    <string name="label_export_data_record_count">%d records exported</string>
 </resources>

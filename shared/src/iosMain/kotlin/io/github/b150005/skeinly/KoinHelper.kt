@@ -48,6 +48,8 @@ import io.github.b150005.skeinly.ui.pullrequest.ChartConflictResolutionViewModel
 import io.github.b150005.skeinly.ui.pullrequest.SuggestionDetailViewModel
 import io.github.b150005.skeinly.ui.pullrequest.SuggestionFilter
 import io.github.b150005.skeinly.ui.pullrequest.SuggestionListViewModel
+import io.github.b150005.skeinly.ui.settings.DataExportState
+import io.github.b150005.skeinly.ui.settings.DataExportViewModel
 import io.github.b150005.skeinly.ui.settings.SettingsViewModel
 import io.github.b150005.skeinly.ui.settings.WipeDataNavEvent
 import io.github.b150005.skeinly.ui.settings.WipeDataState
@@ -525,6 +527,16 @@ fun getWipeDataViewModel(requiredPhrase: String): WipeDataViewModel =
 fun wrapWipeDataState(flow: kotlinx.coroutines.flow.StateFlow<WipeDataState>): FlowWrapper<WipeDataState> = FlowWrapper(flow)
 
 fun wrapWipeDataNavEvents(flow: kotlinx.coroutines.flow.Flow<WipeDataNavEvent>): EventFlowWrapper<WipeDataNavEvent> = EventFlowWrapper(flow)
+
+// Pre-Phase-40 A20 Option B — in-app data-export VM bridge. No
+// screen-time params (unlike WipeData's requiredPhrase) and no
+// nav-event flow: the result (success summary / error) lives in
+// DataExportState, and the share sheet is fired by the platform
+// DataExportSaver from inside the VM, so the SwiftUI view only needs
+// the state wrapper. Mirrors the BlockedUsers no-param bridge shape.
+fun getDataExportViewModel(): DataExportViewModel = KoinPlatform.getKoin().get()
+
+fun wrapDataExportState(flow: kotlinx.coroutines.flow.StateFlow<DataExportState>): FlowWrapper<DataExportState> = FlowWrapper(flow)
 
 // Phase 39 (ADR-021 §D4) — UGC moderation VM bridges. Mirrors the
 // WipeData/OAuthProfileSetup parametric-resolution pattern: screen-time

@@ -224,9 +224,14 @@ EN テンプレ:
 
 ## Scope deferrals
 
-この SOP は **alpha-scope** A20 closure。Phase 40 GA 前に A20 は **Option B** にアップグレード予定 — Settings 内 in-app 「データをエクスポート」ボタン、新規 Edge Function `export-my-data` (`verify_jwt = true`) を呼ぶ、caller UID で scope した同等の server-side query を実行、ダウンロード可能 JSON bundle を返す。Edge Function の query body は上記 step 4 の table 列挙を再利用。SOP は in-app フローが完了できないユーザー向け fallback として残る。
+この SOP は **alpha-scope** の A20 closure (Option A — オペレーター駆動) でした。**Option B は 2026-05-16 に着手完了**: Settings → Privacy → 「データをエクスポート」ボタンが `export-my-data` Edge Function (`verify_jwt = true`) を呼び、JWT 由来の caller id で scope した同等の server-side query (step 4 の table 列挙が query body) を実行、bundle を OS 共有シートに返す。**この SOP は引き続き fallback として残す** — in-app フローを完了できないユーザー (アプリ未利用 / アクセシビリティ要件 / アカウント削除前の請求 等) 向け。撤去しないこと。
 
-Option B アップグレードは `pre-alpha-checklist.md` の「Pre-Phase-40 polish」+ CLAUDE.md `### Planned — pre-Phase-40 polish` で追跡。
+in-app と SOP の差分 (オペレーターが把握すべき点):
+- in-app エクスポートはアバターのオブジェクト **メタデータ** のみ (名前 / タイムスタンプ / サイズ) を含み、画像バイト列は含まない。バイナリが必要なユーザーは本 SOP step 4 の Storage ダウンロード、またはプロフィールから再取得。
+- in-app の `notes` セクションは step 6–8 の「Skeinly 非保有」ソース (GitHub Issues / RevenueCat-Apple-Google / Sentry-PostHog) を静的に案内し、エクスポートが暗黙に不完全にならないようにしている。
+- Edge Function は **GA かそれ以前にオペレーターがデプロイ** — [`supabase/functions/export-my-data/README.md`](../../../supabase/functions/export-my-data/README.md) §Deploy 参照 (`supabase functions deploy export-my-data`、新規 secret なし)。デプロイ前は本 SOP 経路のみ機能。
+
+追跡: CLAUDE.md `### Pre-Phase-40 polish` (A20 Option B エントリ、2026-05-16 CLOSED)。
 
 ## クロスリファレンス
 
@@ -239,3 +244,4 @@ Option B アップグレードは `pre-alpha-checklist.md` の「Pre-Phase-40 po
 | 日付 | 変更 | 実施者 |
 |---|---|---|
 | 2026-05-12 | 初版 SOP — pre-alpha audit 項目 A20 (Option A alpha-scope closure; Option B は Phase 40 GA 前) | b150005 |
+| 2026-05-16 | Option B 着手完了 (in-app `export-my-data` Edge Function + Settings → Privacy → データをエクスポート、Compose + SwiftUI)。SOP は fallback として保持。 | b150005 |

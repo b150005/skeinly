@@ -463,3 +463,20 @@ verify_jwt = false
 # rejection in §A1.
 [functions.submit-ugc-report]
 verify_jwt = true
+
+# Pre-Phase-40 A20 Option B (docs/en/ops/data-export-sop.md §Scope
+# deferrals) — in-app GDPR Art. 20 / CCPA data export. Authenticated
+# client-invoked function: identity comes EXCLUSIVELY from the JWT
+# `sub` (decoded post-platform-validation, same as submit-ugc-report;
+# the request body is ignored — no caller-supplied id, so an IDOR is
+# structurally impossible). The handler composes the caller's full
+# data bundle via a service-role client (required to reach auth.users
+# + storage.objects; every query is code-scoped by the JWT-derived
+# id — the explicit predicate IS the access control) and returns it
+# inline for the OS share sheet. NO new secret surface: only the
+# auto-injected SUPABASE_URL / SERVICE_ROLE_KEY (unlike
+# submit-bug-report/submit-ugc-report's GitHub App trio). Rate limit:
+# 5/hr per `auth.uid()` (lower than UGC's 10/hr — a full export is
+# heavier). The operator SOP remains the documented fallback.
+[functions.export-my-data]
+verify_jwt = true

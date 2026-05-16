@@ -218,4 +218,13 @@ enum ViewModelFactory {
     static func blockedUsersViewModel() -> BlockedUsersViewModel {
         KoinHelperKt.getBlockedUsersViewModel()
     }
+
+    /// Pre-Phase-40 A20 Option B — Settings → Privacy → Export My
+    /// Data ViewModel. Stateless factory; no init-time work (the
+    /// export runs only when the user taps Export). The OS share
+    /// sheet is fired by the platform DataExportSaver from inside
+    /// the VM on success.
+    static func dataExportViewModel() -> DataExportViewModel {
+        KoinHelperKt.getDataExportViewModel()
+    }
 }

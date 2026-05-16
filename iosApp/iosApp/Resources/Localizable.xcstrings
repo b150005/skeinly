@@ -10605,6 +10605,176 @@
           }
         }
       }
+    },
+    "title_export_data_screen" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export My Data"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "データをエクスポート"
+          }
+        }
+      }
+    },
+    "title_export_data_settings_row" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export My Data"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "データをエクスポート"
+          }
+        }
+      }
+    },
+    "body_export_data_settings_row" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download a copy of your patterns, projects, and account data"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パターン・プロジェクト・アカウントデータのコピーをダウンロード"
+          }
+        }
+      }
+    },
+    "body_export_data_explanation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export a machine-readable copy of the data Skeinly stores for you: your account, patterns, projects, progress, charts, comments, suggestions, and activity. You choose where to save the file."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skeinly が保存しているデータ（アカウント・パターン・プロジェクト・進捗・編み図・コメント・提案・アクティビティ）を機械可読な形式でエクスポートします。保存先はあなたが選択します。"
+          }
+        }
+      }
+    },
+    "body_export_data_not_included" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not included (request from the source if you need them): App Store / Google Play purchase history, RevenueCat records, GitHub bug-report issues, and opt-in analytics. The exported file explains how to reach each."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "含まれないもの（必要な場合は各サービスにご請求ください）: App Store / Google Play の購入履歴、RevenueCat の記録、GitHub のバグレポート、オプトインの分析データ。エクスポートファイル内に各取得方法を記載しています。"
+          }
+        }
+      }
+    },
+    "action_export_data" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export my data"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "データをエクスポート"
+          }
+        }
+      }
+    },
+    "state_export_data_in_progress" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing your export…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "エクスポートを準備中…"
+          }
+        }
+      }
+    },
+    "state_export_data_ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your export is ready"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "エクスポートの準備ができました"
+          }
+        }
+      }
+    },
+    "body_export_data_ready_detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The share sheet opened — choose where to save the file."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共有シートが開きました。保存先を選択してください。"
+          }
+        }
+      }
+    },
+    "label_export_data_record_count" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d records exported"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d 件のデータをエクスポートしました"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

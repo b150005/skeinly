@@ -293,6 +293,18 @@ data class FriendInviteConfirm(
 data object WipeDataConfirmPhrase
 
 /**
+ * Pre-Phase-40 A20 Option B (docs/en/ops/data-export-sop.md §Scope
+ * deferrals) — in-app GDPR Art. 20 / CCPA data export. Reached from
+ * Settings → Privacy → "Export My Data" (non-destructive, sits below
+ * Blocked Users — NOT in the Danger Zone). The screen mounts a
+ * [io.github.b150005.skeinly.ui.settings.DataExportViewModel]; a
+ * successful export fires the OS share sheet via the platform
+ * `DataExportSaver` and the screen stays put showing a summary.
+ */
+@Serializable
+data object DataExport
+
+/**
  * Phase 26.6 (ADR-022 §6.6) — post-OAuth profile setup gate. Routed
  * to once per install on the FIRST Authenticated transition when the
  * AuthRepository surfaces a non-empty
@@ -645,11 +657,19 @@ private fun SkeinlyNavHostContent(
                 onConnectionsClick = { navController.navigate(Connections) },
                 // Phase 39 (ADR-021 §D4) — Privacy → Blocked Users.
                 onBlockedUsersClick = { navController.navigate(BlockedUsers) },
+                // Pre-Phase-40 A20 Option B — Privacy → Export My Data.
+                onExportDataClick = { navController.navigate(DataExport) },
             )
         }
         composable<BlockedUsers> {
             io.github.b150005.skeinly.ui.moderation
                 .BlockedUsersScreen(
+                    onBack = { navController.popBackStack() },
+                )
+        }
+        composable<DataExport> {
+            io.github.b150005.skeinly.ui.settings
+                .DataExportScreen(
                     onBack = { navController.popBackStack() },
                 )
         }

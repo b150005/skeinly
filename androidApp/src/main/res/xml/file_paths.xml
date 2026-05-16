@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Pre-Phase-40 A20 Option B — FileProvider path map for the in-app
+    "Export My Data" share sheet (DataExportSaver.android.kt). Only the
+    `export/` subdirectory of the app's internal cacheDir is exposed —
+    the narrowest scope that covers the export bundle and nothing else
+    (no external storage, no app files dir, no root cache).
+-->
+<paths>
+    <cache-path
+        name="data_export"
+        path="export/" />
+</paths>

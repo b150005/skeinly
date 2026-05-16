@@ -79,6 +79,7 @@ import io.github.b150005.skeinly.generated.resources.body_connections_settings_r
 import io.github.b150005.skeinly.generated.resources.body_contact_support_helper
 import io.github.b150005.skeinly.generated.resources.body_delete_account_warning
 import io.github.b150005.skeinly.generated.resources.body_diagnostic_data_explanation
+import io.github.b150005.skeinly.generated.resources.body_export_data_settings_row
 import io.github.b150005.skeinly.generated.resources.body_manage_subscription_helper
 import io.github.b150005.skeinly.generated.resources.body_mfa_disable_warning
 import io.github.b150005.skeinly.generated.resources.body_notifications_disabled_hint
@@ -121,6 +122,7 @@ import io.github.b150005.skeinly.generated.resources.state_signed_in_via_google
 import io.github.b150005.skeinly.generated.resources.title_biometric_settings
 import io.github.b150005.skeinly.generated.resources.title_blocked_users
 import io.github.b150005.skeinly.generated.resources.title_connections
+import io.github.b150005.skeinly.generated.resources.title_export_data_settings_row
 import io.github.b150005.skeinly.generated.resources.title_mfa_disable_confirm
 import io.github.b150005.skeinly.generated.resources.title_settings
 import io.github.b150005.skeinly.generated.resources.title_wipe_data_settings_row
@@ -190,6 +192,11 @@ fun SettingsScreen(
     // `BlockedUsers` route. Default no-op keeps test mounts / older
     // NavGraph wiring valid.
     onBlockedUsersClick: () -> Unit = {},
+    // Pre-Phase-40 A20 Option B — invoked when the user taps "Export
+    // My Data" in the Privacy section. NavGraph wires this to the
+    // `DataExport` route. Default no-op keeps test mounts / older
+    // NavGraph wiring valid.
+    onExportDataClick: () -> Unit = {},
     viewModel: SettingsViewModel = koinViewModel(),
     // Phase 24.2c (ADR-017 §3.6) — push notification consent VM. Drives
     // the Settings → Notifications row + the in-app pre-permission
@@ -782,6 +789,25 @@ fun SettingsScreen(
                                 .fillMaxWidth()
                                 .clickable(role = Role.Button) { onBlockedUsersClick() }
                                 .testTag("blockedUsersSettingsRow"),
+                    )
+
+                    // Pre-Phase-40 A20 Option B — "Export My Data" row.
+                    // Sits below Blocked Users in the Privacy section:
+                    // it only READS the user's data (GDPR Art. 20 /
+                    // CCPA), so it is non-destructive and must NOT be in
+                    // the Danger Zone with Wipe / Delete Account.
+                    ListItem(
+                        headlineContent = {
+                            Text(stringResource(Res.string.title_export_data_settings_row))
+                        },
+                        supportingContent = {
+                            Text(stringResource(Res.string.body_export_data_settings_row))
+                        },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable(role = Role.Button) { onExportDataClick() }
+                                .testTag("exportDataSettingsRow"),
                     )
                 }
 

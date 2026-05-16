@@ -70,6 +70,10 @@ struct SettingsScreen: View {
     /// users" in the Privacy section. AppRouter wires this to
     /// `path.append(.blockedUsers)`.
     let onBlockedUsersClick: () -> Void
+    /// Pre-Phase-40 A20 Option B — invoked when the user taps "Export
+    /// My Data" in the Privacy section. AppRouter wires this to
+    /// `path.append(.dataExport)`.
+    let onExportDataClick: () -> Void
 
     private var viewModel: SettingsViewModel { holder.viewModel }
     private var notificationViewModel: NotificationPermissionViewModel { notificationHolder.viewModel }
@@ -113,7 +117,8 @@ struct SettingsScreen: View {
         onBiometricSettingsClick: @escaping () -> Void = {},
         onWipeDataClick: @escaping () -> Void = {},
         onConnectionsClick: @escaping () -> Void = {},
-        onBlockedUsersClick: @escaping () -> Void = {}
+        onBlockedUsersClick: @escaping () -> Void = {},
+        onExportDataClick: @escaping () -> Void = {}
     ) {
         self.onSendFeedback = onSendFeedback
         self.onSubscribeToProClick = onSubscribeToProClick
@@ -123,6 +128,7 @@ struct SettingsScreen: View {
         self.onWipeDataClick = onWipeDataClick
         self.onConnectionsClick = onConnectionsClick
         self.onBlockedUsersClick = onBlockedUsersClick
+        self.onExportDataClick = onExportDataClick
         let vm = ViewModelFactory.settingsViewModel()
         let wrapper = KoinHelperKt.wrapSettingsState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
@@ -583,6 +589,24 @@ struct SettingsScreen: View {
                         }
                     }
                     .accessibilityIdentifier("blockedUsersSettingsRow")
+
+                    // Pre-Phase-40 A20 Option B — "Export My Data" row.
+                    // Below Blocked Users in Privacy: it only READS the
+                    // user's data (GDPR Art. 20 / CCPA), so it is
+                    // non-destructive and must NOT be in the Danger
+                    // Zone with Wipe / Delete Account.
+                    Button {
+                        onExportDataClick()
+                    } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("title_export_data_settings_row")
+                                .foregroundStyle(.primary)
+                            Text("body_export_data_settings_row")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .accessibilityIdentifier("exportDataSettingsRow")
                 } header: {
                     Text("label_privacy_section")
                 }

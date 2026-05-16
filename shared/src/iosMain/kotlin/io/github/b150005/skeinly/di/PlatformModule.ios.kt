@@ -9,6 +9,7 @@ import io.github.b150005.skeinly.data.remote.ConnectivityMonitor
 import io.github.b150005.skeinly.db.DriverFactory
 import io.github.b150005.skeinly.notifications.OsSettingsLauncher
 import io.github.b150005.skeinly.notifications.PushTokenRegistrar
+import io.github.b150005.skeinly.platform.DataExportSaver
 import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.platform.StoreUrlLauncher
 import io.github.b150005.skeinly.platform.SubscriptionManagementLauncher
@@ -79,6 +80,11 @@ val platformModule =
         // with support email + diagnostic context (app version, OS,
         // device, locale). Settings → Help & Support → Contact Support.
         single { SupportContactLauncher() }
+        // Pre-Phase-40 A20 Option B — writes the data-export bundle to
+        // NSTemporaryDirectory and presents the UIActivityViewController
+        // share sheet from the top-most VC. Parameterless like the
+        // other iOS platform launchers.
+        single { DataExportSaver() }
         // Pre-alpha A25 — reads UIAccessibilityIsReduceMotionEnabled()
         // so custom animations (HorizontalPager page-scroll,
         // animateColorAsState splash transitions, etc.) degrade to

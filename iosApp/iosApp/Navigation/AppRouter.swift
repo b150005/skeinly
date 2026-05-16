@@ -46,6 +46,11 @@ enum Route: Hashable {
     /// Phase 39 (ADR-021 §D4) — Settings → Privacy → Blocked Users.
     /// Lists the caller's blocked users with a per-row Unblock action.
     case blockedUsers
+    /// Pre-Phase-40 A20 Option B — Settings → Privacy → Export My
+    /// Data. In-app GDPR Art. 20 / CCPA export; non-destructive, so it
+    /// sits in Privacy (not the Danger Zone). A successful export fires
+    /// the OS share sheet from the shared VM.
+    case dataExport
     /// Phase 25.4 (ADR-024 §Phase 25.4) — friend-invite redemption.
     /// `token` non-nil ⇒ Token mode (Universal Link tap, auto-redeem);
     /// nil ⇒ Code mode (reached from Connections → "Add by code").
@@ -133,6 +138,8 @@ enum Route: Hashable {
             hasher.combine("connections")
         case .blockedUsers:
             hasher.combine("blockedUsers")
+        case .dataExport:
+            hasher.combine("dataExport")
         case .friendInviteConfirm(let token):
             hasher.combine("friendInviteConfirm")
             hasher.combine(token)
@@ -431,6 +438,11 @@ struct AppRootView: View {
                 // "Blocked users" routes to the blocked-users list.
                 onBlockedUsersClick: {
                     path.append(Route.blockedUsers)
+                },
+                // Pre-Phase-40 A20 Option B — Settings → Privacy →
+                // "Export My Data" routes to the in-app export screen.
+                onExportDataClick: {
+                    path.append(Route.dataExport)
                 }
             )
                 .trackScreen(.settings)
@@ -581,6 +593,16 @@ struct AppRootView: View {
             // BlockedUsersViewModel which auto-loads the caller's
             // block list. Standard back-button pop routes to Settings.
             BlockedUsersListView()
+                .skeinlyBackButton(path: $path)
+        case .dataExport:
+            // Pre-Phase-40 A20 Option B — Settings → Privacy → Export
+            // My Data. The view's `init` resolves the Koin
+            // DataExportViewModel (no init-time work). On a successful
+            // export the shared VM fires the OS share sheet via the
+            // platform DataExportSaver; the screen stays put showing a
+            // record-count summary. Standard back-button pop routes to
+            // Settings.
+            DataExportView()
                 .skeinlyBackButton(path: $path)
         case .friendInviteConfirm(let token):
             // Phase 25.4 (ADR-024 §Phase 25.4) — friend-invite

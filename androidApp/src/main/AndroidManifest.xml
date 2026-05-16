@@ -119,6 +119,27 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <!-- Pre-Phase-40 A20 Option B — FileProvider for the in-app
+             "Export My Data" share sheet. DataExportSaver writes the
+             GDPR/CCPA export JSON to cacheDir/export/ and shares it via
+             a content:// URI (raw file:// URIs are blocked since API
+             24). `grantUriPermissions` + the runtime
+             FLAG_GRANT_READ_URI_PERMISSION let the chosen receiving app
+             (Drive / Files / Gmail) read it. Authority is
+             ${applicationId}.fileprovider so the debug `.dev`
+             applicationIdSuffix gets its own non-colliding authority
+             automatically. exported=false + grantUriPermissions=true is
+             the standard secure FileProvider shape. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

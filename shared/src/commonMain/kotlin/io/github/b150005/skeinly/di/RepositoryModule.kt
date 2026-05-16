@@ -157,6 +157,20 @@ val repositoryModule =
             )
         }
 
+        // Pre-Phase-40 A20 Option B (docs/en/ops/data-export-sop.md
+        // §Scope deferrals) — in-app GDPR Art. 20 / CCPA data export
+        // repository. Same unconditional registration shape as
+        // WipeDataRepository / UgcModerationRepository: getOrNull on the
+        // remote ops so local-only mode surfaces RequiresConnectivity
+        // rather than crashing Koin resolution. DataExportViewModel
+        // binds through this interface via a lambda-seam.
+        single<io.github.b150005.skeinly.domain.repository.DataExportRepository> {
+            io.github.b150005.skeinly.data.repository.DataExportRepositoryImpl(
+                remote = getOrNull<io.github.b150005.skeinly.data.remote.DataExportRemoteOperations>(),
+                authRepository = get(),
+            )
+        }
+
         // Phase 39 (W4 / 2026-05-11) — force-update gate. Registered
         // unconditionally so [ForceUpdateGate]'s `koinInject<AppConfigRepository>()`
         // always resolves. Local-only mode (Supabase not configured)
@@ -236,6 +250,21 @@ val repositoryModule =
             }
             single<io.github.b150005.skeinly.data.remote.UgcModerationRemoteOperations> {
                 get<io.github.b150005.skeinly.data.remote.RemoteUgcModerationDataSource>()
+            }
+            // Pre-Phase-40 A20 Option B — export-my-data Edge Function
+            // (verify_jwt = true; the Functions plugin auto-attaches
+            // the session JWT). Interface alias lets
+            // DataExportRepositoryImpl be tested with an in-memory
+            // fake. `json = get()` reuses the shared
+            // kotlinx-serialization Json single (RemoteDataExportDataSource
+            // derives a pretty-print copy internally for the downloaded
+            // file).
+            single {
+                io.github.b150005.skeinly.data.remote
+                    .RemoteDataExportDataSource(get<SupabaseClient>(), get())
+            }
+            single<io.github.b150005.skeinly.data.remote.DataExportRemoteOperations> {
+                get<io.github.b150005.skeinly.data.remote.RemoteDataExportDataSource>()
             }
             // Interface alias lets SubscriptionRepositoryImpl be tested
             // with an in-memory fake without standing up Supabase. Same

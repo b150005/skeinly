@@ -785,4 +785,16 @@
     <string name="state_blocked_user_unknown">不明なユーザー</string>
     <string name="action_unblock">ブロック解除</string>
     <string name="state_user_unblocked">ブロックを解除しました</string>
+
+    <!-- Pre-Phase-40 A20 Option B — アプリ内データエクスポート（GDPR 第20条 / CCPA）。 -->
+    <string name="title_export_data_screen">データをエクスポート</string>
+    <string name="title_export_data_settings_row">データをエクスポート</string>
+    <string name="body_export_data_settings_row">パターン・プロジェクト・アカウントデータのコピーをダウンロード</string>
+    <string name="body_export_data_explanation">Skeinly が保存しているデータ（アカウント・パターン・プロジェクト・進捗・編み図・コメント・提案・アクティビティ）を機械可読な形式でエクスポートします。保存先はあなたが選択します。</string>
+    <string name="body_export_data_not_included">含まれないもの（必要な場合は各サービスにご請求ください）: App Store / Google Play の購入履歴、RevenueCat の記録、GitHub のバグレポート、オプトインの分析データ。エクスポートファイル内に各取得方法を記載しています。</string>
+    <string name="action_export_data">データをエクスポート</string>
+    <string name="state_export_data_in_progress">エクスポートを準備中…</string>
+    <string name="state_export_data_ready">エクスポートの準備ができました</string>
+    <string name="body_export_data_ready_detail">共有シートが開きました。保存先を選択してください。</string>
+    <string name="label_export_data_record_count">%d 件のデータをエクスポートしました</string>
 </resources>

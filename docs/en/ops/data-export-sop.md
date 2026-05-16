@@ -224,9 +224,14 @@ Update the operator's notebook entry with:
 
 ## Scope deferrals
 
-This SOP is the **alpha-scope** A20 closure. Pre-Phase-40 GA, A20 will be upgraded to **Option B** — an in-app "Export My Data" button in Settings that calls a new Edge Function `export-my-data` (with `verify_jwt = true`) running the equivalent server-side queries scoped to the caller's UID and returning a downloadable JSON bundle. The Edge Function will reuse the table enumeration in step 4 above as its query body. The operational SOP will remain as a fallback for users who cannot complete the in-app flow.
+This SOP was the **alpha-scope** A20 closure (Option A — operator-driven). **Option B shipped 2026-05-16**: an in-app Settings → Privacy → "Export My Data" button calls the `export-my-data` Edge Function (`verify_jwt = true`) which composes the equivalent server-side queries scoped to the JWT-derived caller id (the step-4 table enumeration is its query body) and returns the bundle for the OS share sheet. **This SOP remains the documented fallback** for users who cannot complete the in-app flow (no app access, accessibility need, pre-account-deletion request, etc.) — do not retire it.
 
-The Option B upgrade is tracked in `pre-alpha-checklist.md` under "Pre-Phase-40 polish" + CLAUDE.md `### Planned — pre-Phase-40 polish`.
+In-app vs. SOP differences the operator should know:
+- The in-app export bundles avatar object **metadata** only (name / timestamps / size), not the image bytes. A user wanting the avatar binaries still uses this SOP's step-4 Storage download, or re-downloads from their profile.
+- The in-app `notes` section statically points the user at the step 6–8 "not held here" sources (GitHub Issues / RevenueCat-Apple-Google / Sentry-PostHog) so the export is not silently incomplete.
+- The Edge Function is **operator-deployed at GA or earlier** — see [`supabase/functions/export-my-data/README.md`](../../../supabase/functions/export-my-data/README.md) §Deploy (`supabase functions deploy export-my-data`, no new secrets). Until deployed, only this SOP path works.
+
+Tracking: CLAUDE.md `### Pre-Phase-40 polish` (A20 Option B entry, CLOSED 2026-05-16).
 
 ## Cross-reference
 
@@ -239,3 +244,4 @@ The Option B upgrade is tracked in `pre-alpha-checklist.md` under "Pre-Phase-40 
 | Date | Change | By |
 |---|---|---|
 | 2026-05-12 | Initial SOP — pre-alpha audit item A20 (Option A alpha-scope closure; Option B scheduled pre-Phase-40) | b150005 |
+| 2026-05-16 | Option B shipped (in-app `export-my-data` Edge Function + Settings → Privacy → Export My Data on Compose + SwiftUI). SOP retained as the documented fallback. | b150005 |
