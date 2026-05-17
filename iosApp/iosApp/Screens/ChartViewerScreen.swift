@@ -235,7 +235,8 @@ struct ChartViewerScreen: View {
                     let generator = UIImpactFeedbackGenerator(style: .medium)
                     generator.impactOccurred()
                     viewModel.onEvent(event: ChartViewerEventMarkRowDone(row: Int32(row)))
-                }
+                },
+                hasProgressContext: projectId != nil
             )
             .accessibilityIdentifier("segmentOverlay")
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -330,6 +331,10 @@ private struct ChartCanvasView: View {
     let onTap: (String, Int, Int) -> Void
     let onLongPress: (String, Int, Int) -> Void
     let onMarkRowDone: (Int) -> Void
+    /// ADR-025 R1a: a row's spoken progress + the mark-row-done
+    /// accessibility action only apply in a project context
+    /// (`projectId != nil`). Mirrors the Compose `hasProgressContext`.
+    let hasProgressContext: Bool
 
     /// Reserved left-gutter width for rect row-number labels. Mirrors Kotlin
     /// `RECT_ROW_LABEL_GUTTER_PX` in ChartViewerScreen.kt — update in lock-step.
@@ -415,6 +420,26 @@ private struct ChartCanvasView: View {
             .onTapGesture { location in
                 guard !longPressActive else { return }
                 handleTap(at: location)
+            }
+            // ADR-025 R1a — the drawn raster + gesture surface carries no
+            // VoiceOver semantics; the invisible per-row overlay below is the
+            // sole accessibility representation, so there is no double
+            // announce. `.accessibilityHidden(true)` is applied to the inner
+            // Canvas only — the `segmentOverlay` accessibilityIdentifier lives
+            // on the ChartCanvasView composite at the call-site, so the
+            // `P1_per_segment_progress` Maestro landmark is preserved.
+            .accessibilityHidden(true)
+            .overlay(alignment: .topLeading) {
+                ChartRowAccessibilityOverlay(
+                    chart: chart,
+                    catalog: catalog,
+                    hiddenLayerIds: hiddenLayerIds,
+                    segmentLookup: segmentLookup,
+                    hasProgressContext: hasProgressContext,
+                    rectRowLabelGutter: rectRowLabelGutter,
+                    size: proxy.size,
+                    onMarkRowDone: onMarkRowDone
+                )
             }
         }
     }

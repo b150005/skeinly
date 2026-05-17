@@ -63,6 +63,13 @@
 
 **決定 (d)**: 既存 M5 コンテンツ座標空間に整合した不可視セマンティックオーバーレイ。視覚キャンバスは hidden/`clearAndSetSemantics` とし、セマンティクスはオーバーレイのみから出す。
 
+**実装時の精緻化（R1a, 2026-05-18 — 機構のみ、決定は不変）**: R1a で、チャート `Canvas` が `testTag("segmentOverlay")`（Compose）/ `.accessibilityIdentifier("segmentOverlay")`（iOS）という、`e2e/flows/{android,ios}/P1_per_segment_progress.yaml` がアサートする load-bearing ランドマークを持つことが判明。Compose Canvas へ一律 `clearAndSetSemantics {}` を適用すると testTag が剥がれ Maestro フローが壊れる。決定（セマンティクスは行単位オーバーレイのみ／キャンバスはアナウンス要素を出さない）は維持しつつ、機構を次のとおりとする:
+
+- **Compose**: Canvas は testTag を保持し `clearAndSetSemantics` しない。`contentDescription`／`role`／`onClick` を持たない testTag のみのノード（Canvas は生の `detectTapGestures` ポインタ入力＝クリック*セマンティクス*ではない）は TalkBack フォーカス対象外であり、構造上すでに二重アナウンスされない。ビューアの座標空間は `computeViewerLayout`（ビューアは M5 のエディタ `centeredLayout`/`effectiveCell` に移行していない＝M5 はエディタ専用）。オーバーレイはその前方レイアウト計算でベーススケールに配置し、ビューアの `graphicsLayer`/`transformable` レンダー変換の内側には置かない（Invariant 8 の「逆変換なし・単一座標空間」の精神に整合。スクリーンリーダー利用者はピンチしないためベースレイアウトが SR 関連空間）。
+- **iOS**: `.accessibilityHidden(true)` は**内側 Canvas のみ**に適用し、`segmentOverlay` accessibilityIdentifier を持つ `ChartCanvasView` 合成体には適用しない。これにより Maestro ランドマークを保持しつつ描画ラスタは VoiceOver 要素を出さない。
+
+`requires-supabase` タグにより `P1_per_segment_progress` は CI と `make e2e-android`/`-ios` から除外される。ランドマーク保持は CI ゲート対象ではなく、文書化フローの正当性義務である。
+
 ### (e) 極座標 — 同一モデル、リングインデックス; Phase 35.2+ ゲート（決定）
 
 極座標の作図/閲覧自体が Phase 35.2+（M5 も極座標ズームを同様にゲート）。`ChartAccessibility` は `ChartExtents.Polar`（リング = 行、`stitchesPerRing[r]` = 行長、`PolarCellLayout` でジオメトリ）を受けるよう定義し極座標オープン時に再設計不要だが、**R1 の規範的出荷スコープは rect**。極座標オーバーレイ経路は `extents is Polar` でゲートし未実装のまま残す（M5 の極座標延期と並行）— 極座標 UX に先行して未テストの極座標 a11y サーフェスを出荷しない。
@@ -114,3 +121,4 @@
 ## 改訂履歴
 
 - 2026-05-17 — 承認。a11y ラベルカバレッジ監査 R1 から起草。エージェントチーム検討（knitter / ui-ux-designer / architect / implementer）をインラインで記録。コードはまだなし; 本 ADR が R1a/R1b/R1c をゲートする。
+- 2026-05-18 — **R1a 出荷**（ビューア＋共有モデル）。新規 pure `shared/.../domain/chart/ChartAccessibility.kt`（`rowDescriptors` ＋ `RowAccessibilityDescriptor`/`SymbolRun`/`RowProgress` ＋ `A11yStrings` ＋ `spokenLabel`）＋ 21 件の網羅 `commonTest`; Compose `RectRowAccessibilityOverlay` ＋ SwiftUI `RowAccessibilityCell` 不可視行単位オーバーレイ; 9 件の `a11y_chart_*` i18n キー（en/ja CMP ＋ xcstrings、`verifyI18nKeys` パリティ）。実装時の精緻化（決定は不変）: progress は `progressAt` ラムダで受け渡し（`Map<SegmentKey,…>` ではない＝Kotlin/Native の Swift-`Hashable` 落とし穴回避）; キャンバス抑制機構は §(d) 実装時の精緻化のとおり（`segmentOverlay` Maestro ランドマーク保持）。監査 B1/B2 → CLOSED (R1a)。B3（エディタ）→ R1b、B4（比較）→ R1c は未了。

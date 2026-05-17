@@ -6,12 +6,15 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -54,15 +57,24 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.b150005.skeinly.domain.chart.CellBounds
+import io.github.b150005.skeinly.domain.chart.ChartAccessibility
 import io.github.b150005.skeinly.domain.chart.GridHitTest
 import io.github.b150005.skeinly.domain.chart.SymbolRenderTransform
 import io.github.b150005.skeinly.domain.model.Chart
@@ -73,6 +85,15 @@ import io.github.b150005.skeinly.domain.model.SegmentState
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
 import io.github.b150005.skeinly.domain.usecase.ErrorMessage
 import io.github.b150005.skeinly.generated.resources.Res
+import io.github.b150005.skeinly.generated.resources.a11y_chart_action_mark_row_done
+import io.github.b150005.skeinly.generated.resources.a11y_chart_blank_cells
+import io.github.b150005.skeinly.generated.resources.a11y_chart_progress_done
+import io.github.b150005.skeinly.generated.resources.a11y_chart_progress_in_progress
+import io.github.b150005.skeinly.generated.resources.a11y_chart_progress_not_started
+import io.github.b150005.skeinly.generated.resources.a11y_chart_row_position
+import io.github.b150005.skeinly.generated.resources.a11y_chart_run_separator
+import io.github.b150005.skeinly.generated.resources.a11y_chart_section_separator
+import io.github.b150005.skeinly.generated.resources.a11y_chart_symbol_run
 import io.github.b150005.skeinly.generated.resources.action_back
 import io.github.b150005.skeinly.generated.resources.action_cancel
 import io.github.b150005.skeinly.generated.resources.action_more_options
@@ -90,6 +111,7 @@ import io.github.b150005.skeinly.generated.resources.state_no_chart
 import io.github.b150005.skeinly.generated.resources.title_chart_history
 import io.github.b150005.skeinly.generated.resources.title_chart_viewer
 import io.github.b150005.skeinly.generated.resources.title_variations
+import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.localized
 import org.jetbrains.compose.resources.stringResource
@@ -98,6 +120,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 private const val MIN_SCALE = 0.5f
 private const val MAX_SCALE = 8f
@@ -277,6 +300,13 @@ fun ChartViewerScreen(
                             catalog = catalog,
                             hiddenLayerIds = state.hiddenLayerIds,
                             segments = state.segments,
+                            // ADR-025 R1a: a row's spoken progress + the
+                            // mark-row-done accessibility action only make
+                            // sense in a project context. `projectId == null`
+                            // (bare pattern inspection) ⇒ no progress clause /
+                            // no action — matches the existing MarkRowDone VM
+                            // no-op + empty `segments` semantics.
+                            hasProgressContext = projectId != null,
                             onTapCell = { layerId, x, y ->
                                 viewModel.onEvent(ChartViewerEvent.TapCell(layerId, x, y))
                             },
@@ -432,6 +462,7 @@ private fun ChartCanvas(
     catalog: SymbolCatalog,
     hiddenLayerIds: Set<String>,
     segments: Map<SegmentKey, SegmentState>,
+    hasProgressContext: Boolean,
     onTapCell: (layerId: String, x: Int, y: Int) -> Unit,
     onLongPressCell: (layerId: String, x: Int, y: Int) -> Unit,
     onMarkRowDone: (row: Int) -> Unit,
@@ -492,122 +523,258 @@ private fun ChartCanvas(
         chart.layers.filter { it.visible && it.id !in hiddenLayerIds }
     val tapTargetLayers = visibleLayers.filter { !it.locked }
 
-    Canvas(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .testTag("segmentOverlay")
-                .graphicsLayer(
-                    scaleX = scale,
-                    scaleY = scale,
-                    translationX = offsetX,
-                    translationY = offsetY,
-                ).transformable(state = transformableState)
-                // Rekey only on extents + layer visibility — deps that actually
-                // change hit-test geometry. PRD Q-3: co-composing detectTapGestures
-                // with transformable() is the established pattern.
-                .pointerInput(extents, tapTargetLayers.map { it.id }) {
-                    detectTapGestures(
-                        onTap = { offset ->
-                            val hit =
-                                when (extents) {
-                                    is ChartExtents.Rect ->
-                                        resolveHit(offset, size, extents, tapTargetLayers)
-                                    is ChartExtents.Polar ->
-                                        resolvePolarHit(offset, size, extents, tapTargetLayers)
+    // ADR-025 R1a: the visual Canvas stays the performant renderer; an
+    // invisible per-row semantic overlay (RectRowAccessibilityOverlay) is
+    // layered on top in the SAME forward `computeViewerLayout` coordinate
+    // space — no inverse transform, no second coordinate space (M5 /
+    // chart-editor Invariant 8 spirit). `isTraversalGroup` scopes the
+    // row `traversalIndex` ordering so screen-reader traversal is
+    // row-1-first regardless of the bottom-anchored visual placement.
+    //
+    // The Canvas keeps `.testTag("segmentOverlay")` (load-bearing
+    // `P1_per_segment_progress` Maestro landmark). ADR-025 §(d) specifies
+    // `clearAndSetSemantics` to prevent double-announce; here that would
+    // strip the testTag. It is unnecessary: a testTag-only Canvas node
+    // (no contentDescription / role / onClick — `detectTapGestures` is raw
+    // pointer input, not a click semantic) is not TalkBack-focusable, so
+    // semantics already come solely from the overlay by construction.
+    BoxWithConstraints(modifier = modifier.semantics { isTraversalGroup = true }) {
+        Canvas(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .testTag("segmentOverlay")
+                    .graphicsLayer(
+                        scaleX = scale,
+                        scaleY = scale,
+                        translationX = offsetX,
+                        translationY = offsetY,
+                    ).transformable(state = transformableState)
+                    // Rekey only on extents + layer visibility — deps that actually
+                    // change hit-test geometry. PRD Q-3: co-composing detectTapGestures
+                    // with transformable() is the established pattern.
+                    .pointerInput(extents, tapTargetLayers.map { it.id }) {
+                        detectTapGestures(
+                            onTap = { offset ->
+                                val hit =
+                                    when (extents) {
+                                        is ChartExtents.Rect ->
+                                            resolveHit(offset, size, extents, tapTargetLayers)
+                                        is ChartExtents.Polar ->
+                                            resolvePolarHit(offset, size, extents, tapTargetLayers)
+                                    }
+                                if (hit != null) {
+                                    // Top-most visible AND unlocked layer wins. Locked layers
+                                    // were filtered out of [tapTargetLayers] above so no
+                                    // segment-progress event can dispatch against them.
+                                    onTapCell(hit.layerId, hit.x, hit.y)
                                 }
-                            if (hit != null) {
-                                // Top-most visible AND unlocked layer wins. Locked layers
-                                // were filtered out of [tapTargetLayers] above so no
-                                // segment-progress event can dispatch against them.
-                                onTapCell(hit.layerId, hit.x, hit.y)
-                            }
-                        },
-                        onLongPress = { offset ->
-                            // Phase 35.2d: label hits take priority over cell hits so
-                            // long-press on the row/ring number dispatches MarkRowDone.
-                            val labelRow =
-                                when (extents) {
-                                    is ChartExtents.Rect ->
-                                        resolveRowLabelHit(offset, size, extents)
-                                    is ChartExtents.Polar ->
-                                        resolvePolarRingLabelHit(offset, size, extents)
+                            },
+                            onLongPress = { offset ->
+                                // Phase 35.2d: label hits take priority over cell hits so
+                                // long-press on the row/ring number dispatches MarkRowDone.
+                                val labelRow =
+                                    when (extents) {
+                                        is ChartExtents.Rect ->
+                                            resolveRowLabelHit(offset, size, extents)
+                                        is ChartExtents.Polar ->
+                                            resolvePolarRingLabelHit(offset, size, extents)
+                                    }
+                                if (labelRow != null) {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onMarkRowDone(labelRow)
+                                    return@detectTapGestures
                                 }
-                            if (labelRow != null) {
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onMarkRowDone(labelRow)
-                                return@detectTapGestures
-                            }
-                            val hit =
-                                when (extents) {
-                                    is ChartExtents.Rect ->
-                                        resolveHit(offset, size, extents, tapTargetLayers)
-                                    is ChartExtents.Polar ->
-                                        resolvePolarHit(offset, size, extents, tapTargetLayers)
+                                val hit =
+                                    when (extents) {
+                                        is ChartExtents.Rect ->
+                                            resolveHit(offset, size, extents, tapTargetLayers)
+                                        is ChartExtents.Polar ->
+                                            resolvePolarHit(offset, size, extents, tapTargetLayers)
+                                    }
+                                if (hit != null) {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onLongPressCell(hit.layerId, hit.x, hit.y)
                                 }
-                            if (hit != null) {
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onLongPressCell(hit.layerId, hit.x, hit.y)
-                            }
-                        },
+                            },
+                        )
+                    },
+        ) {
+            when (extents) {
+                is ChartExtents.Rect ->
+                    drawRectChart(
+                        rect = extents,
+                        chart = chart,
+                        catalog = catalog,
+                        hiddenLayerIds = hiddenLayerIds,
+                        segments = segments,
+                        textMeasurer = textMeasurer,
+                        parsedPathCache = parsedPathCache,
+                        gridColor = gridColor,
+                        symbolColor = symbolColor,
+                        unknownBg = unknownBg,
+                        unknownFg = unknownFg,
+                        parameterColor = parameterColor,
+                        segmentDoneColor = segmentDoneColor,
+                        segmentWipColor = segmentWipColor,
+                        rowLabelColor = rowLabelColor,
                     )
-                },
-    ) {
-        when (extents) {
-            is ChartExtents.Rect ->
-                drawRectChart(
-                    rect = extents,
-                    chart = chart,
-                    catalog = catalog,
-                    hiddenLayerIds = hiddenLayerIds,
-                    segments = segments,
-                    textMeasurer = textMeasurer,
-                    parsedPathCache = parsedPathCache,
-                    gridColor = gridColor,
-                    symbolColor = symbolColor,
-                    unknownBg = unknownBg,
-                    unknownFg = unknownFg,
-                    parameterColor = parameterColor,
-                    segmentDoneColor = segmentDoneColor,
-                    segmentWipColor = segmentWipColor,
-                    rowLabelColor = rowLabelColor,
-                )
-            is ChartExtents.Polar -> {
-                val layout = polarLayoutFor(size.width, size.height, extents)
-                drawPolarGrid(extents, layout, gridColor)
-                drawPolarSegmentOverlay(
-                    polar = extents,
-                    chart = chart,
-                    hiddenLayerIds = hiddenLayerIds,
-                    segments = segments,
-                    layout = layout,
-                    doneColor = segmentDoneColor,
-                    wipColor = segmentWipColor,
-                    wipStrokeWidthPx = 2.dp.toPx(),
-                )
-                // Glyphs paint on top of the overlay per ADR-011 §2 (matches rect
-                // AC-1.2 "overlay under glyph"). Parametric slot text is deferred
-                // to Phase 35.2+ along with the polar editor.
-                drawPolarCells(
-                    polar = extents,
-                    chart = chart,
-                    hiddenLayerIds = hiddenLayerIds,
-                    catalog = catalog,
-                    layout = layout,
-                    textMeasurer = textMeasurer,
-                    parsedPathCache = parsedPathCache,
-                    symbolColor = symbolColor,
-                    unknownBg = unknownBg,
-                    unknownFg = unknownFg,
-                )
-                drawPolarRingLabels(
-                    polar = extents,
-                    layout = layout,
-                    textMeasurer = textMeasurer,
-                    color = rowLabelColor,
-                )
+                is ChartExtents.Polar -> {
+                    val layout = polarLayoutFor(size.width, size.height, extents)
+                    drawPolarGrid(extents, layout, gridColor)
+                    drawPolarSegmentOverlay(
+                        polar = extents,
+                        chart = chart,
+                        hiddenLayerIds = hiddenLayerIds,
+                        segments = segments,
+                        layout = layout,
+                        doneColor = segmentDoneColor,
+                        wipColor = segmentWipColor,
+                        wipStrokeWidthPx = 2.dp.toPx(),
+                    )
+                    // Glyphs paint on top of the overlay per ADR-011 §2 (matches rect
+                    // AC-1.2 "overlay under glyph"). Parametric slot text is deferred
+                    // to Phase 35.2+ along with the polar editor.
+                    drawPolarCells(
+                        polar = extents,
+                        chart = chart,
+                        hiddenLayerIds = hiddenLayerIds,
+                        catalog = catalog,
+                        layout = layout,
+                        textMeasurer = textMeasurer,
+                        parsedPathCache = parsedPathCache,
+                        symbolColor = symbolColor,
+                        unknownBg = unknownBg,
+                        unknownFg = unknownFg,
+                    )
+                    drawPolarRingLabels(
+                        polar = extents,
+                        layout = layout,
+                        textMeasurer = textMeasurer,
+                        color = rowLabelColor,
+                    )
+                }
             }
         }
+
+        // Rect only — the polar overlay is gated and deferred to Phase 35.2+
+        // in lockstep with the M5 polar-zoom deferral (ADR-025 §e).
+        if (extents is ChartExtents.Rect) {
+            RectRowAccessibilityOverlay(
+                rect = extents,
+                layers = chart.layers,
+                hiddenLayerIds = hiddenLayerIds,
+                segments = segments,
+                hasProgressContext = hasProgressContext,
+                catalog = catalog,
+                widthPx = constraints.maxWidth,
+                heightPx = constraints.maxHeight,
+                onMarkRowDone = onMarkRowDone,
+            )
+        }
+    }
+}
+
+/**
+ * ADR-025 R1a — invisible per-row accessibility overlay for the rect chart
+ * viewer. Each grid row is one focusable element whose spoken text carries
+ * position + run-length symbol summary + progress state (no color), built by
+ * the shared pure [ChartAccessibility] model so Compose and SwiftUI produce
+ * identical speech by construction. A named custom action maps to the
+ * existing row-level mark-row-done op; it is attached only when there is a
+ * project/progress context (`progress != null`).
+ *
+ * Positioned with the SAME forward `computeViewerLayout` math the Canvas
+ * draws with — no inverse transform (M5 / chart-editor Invariant 8 spirit).
+ * The rows are placed at the un-zoomed base layout: screen-reader users do
+ * not pinch, and the focus highlight is derived from these semantic bounds.
+ * The overlay Boxes carry no pointer-input modifier, so touch/pinch still
+ * pass through to the Canvas underneath for sighted users.
+ */
+@Composable
+private fun RectRowAccessibilityOverlay(
+    rect: ChartExtents.Rect,
+    layers: List<ChartLayer>,
+    hiddenLayerIds: Set<String>,
+    segments: Map<SegmentKey, SegmentState>,
+    hasProgressContext: Boolean,
+    catalog: SymbolCatalog,
+    widthPx: Int,
+    heightPx: Int,
+    onMarkRowDone: (row: Int) -> Unit,
+) {
+    // All @Composable / remember-backed reads happen FIRST and
+    // unconditionally — Compose's composition contract forbids them after a
+    // conditional early return (the `widthPx <= 0` guard below). The pure
+    // descriptor list is `remember`-keyed so it is not recomputed
+    // (O(rows×layers×cells)) on every recomposition.
+    val deviceContext: DeviceContextProvider = koinInject()
+    val isJa = deviceContext.locale.startsWith("ja", ignoreCase = true)
+    val density = LocalDensity.current
+    val a11yStrings =
+        ChartAccessibility.A11yStrings(
+            rowPositionFormat = stringResource(Res.string.a11y_chart_row_position),
+            symbolRunFormat = stringResource(Res.string.a11y_chart_symbol_run),
+            blankCellsName = stringResource(Res.string.a11y_chart_blank_cells),
+            runSeparator = stringResource(Res.string.a11y_chart_run_separator),
+            sectionSeparator = stringResource(Res.string.a11y_chart_section_separator),
+            progressNotStarted = stringResource(Res.string.a11y_chart_progress_not_started),
+            progressDone = stringResource(Res.string.a11y_chart_progress_done),
+            progressInProgressFormat = stringResource(Res.string.a11y_chart_progress_in_progress),
+        )
+    val markRowDoneLabel = stringResource(Res.string.a11y_chart_action_mark_row_done)
+    val descriptors =
+        remember(rect, layers, hiddenLayerIds, hasProgressContext, segments) {
+            val progressAt: ((String, Int, Int) -> SegmentState?)? =
+                if (hasProgressContext) {
+                    { layerId, x, y -> segments[SegmentKey(layerId, x, y)] }
+                } else {
+                    null
+                }
+            ChartAccessibility.rowDescriptors(rect, layers, hiddenLayerIds, progressAt)
+        }
+
+    if (widthPx <= 0 || heightPx <= 0) return
+
+    val layout = computeViewerLayout(Size(widthPx.toFloat(), heightPx.toFloat()), rect)
+    val gridHeight = rect.maxY - rect.minY + 1
+    val rowHeightDp = with(density) { layout.cellSize.toDp() }
+    val rowWidthDp = with(density) { widthPx.toDp() }
+    descriptors.forEach { descriptor ->
+        val topPx = layout.originY + (gridHeight - descriptor.rowNumber) * layout.cellSize
+        val spoken =
+            ChartAccessibility.spokenLabel(descriptor, a11yStrings) { id ->
+                catalog.get(id)?.let { if (isJa) it.jaLabel else it.enLabel } ?: id
+            }
+        Box(
+            modifier =
+                Modifier
+                    .offset { IntOffset(0, topPx.roundToInt()) }
+                    .size(width = rowWidthDp, height = rowHeightDp)
+                    .semantics {
+                        contentDescription = spoken
+                        // Row 1 (bottom) is visually last but the first
+                        // worked; lower traversalIndex = earlier, so
+                        // index = rowNumber makes SR traversal row-1-first
+                        // (work order), matching the spoken numbers.
+                        traversalIndex = descriptor.rowNumber.toFloat()
+                        // The mark-row-done action is exposed uniformly on
+                        // every row in a project context (progress != null),
+                        // including already-`Done` rows — intentional: it
+                        // mirrors the touch long-press-label affordance
+                        // (which has no done-row gate) and the underlying op
+                        // is idempotent (re-marking a done row is a no-op).
+                        if (descriptor.progress != null) {
+                            customActions =
+                                listOf(
+                                    CustomAccessibilityAction(markRowDoneLabel) {
+                                        onMarkRowDone(descriptor.chartY)
+                                        true
+                                    },
+                                )
+                        }
+                    },
+        )
     }
 }
 

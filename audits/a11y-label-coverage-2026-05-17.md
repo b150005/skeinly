@@ -61,6 +61,15 @@ all.** That is the highest-leverage remediation: one architectural pattern
 `accessibilityElement` + `accessibilityValue` text for symbol & progress &
 diff state) unblocks two declarations across three screens × two platforms.
 
+> **R1a progress update (2026-05-18, ADR-025)**: the **Chart Viewer** third
+> of R1 is shipped — B1/B2 CLOSED on both platforms via the shared
+> `ChartAccessibility` per-row model + invisible overlay. The two
+> declarations still **cannot** be made end-to-end: VoiceOver additionally
+> needs B3 (Editor, R1b), B4 (Comparison, R1c), R2 (icon labels) and R3
+> (headings); Differentiate-Without-Color additionally needs B4 (Comparison
+> diff still traffic-light color, R1c). §5 progression table unchanged —
+> R1a is necessary progress toward "After R1", not the full gate.
+
 ---
 
 ## 2. Cross-platform parity observations
@@ -70,7 +79,7 @@ one platform without the other re-opens the declaration gap):
 
 | Gap | Compose | SwiftUI | Parity |
 |---|---|---|---|
-| Chart **viewer** progress canvas — no semantics, progress = color only | `chart/ChartViewerScreen.kt:495-612, 457-465` | `Screens/ChartViewerScreen.swift:319-420, 644-645` | **Identical BLOCKER both** |
+| Chart **viewer** progress canvas — no semantics, progress = color only | `chart/ChartViewerScreen.kt:495-612, 457-465` | `Screens/ChartViewerScreen.swift:319-420, 644-645` | ✅ **CLOSED (R1a) both** — shared `ChartAccessibility` model ⇒ identical per-row spoken text by construction (B1/B2) |
 | Chart **editor** authoring canvas — no semantics | `chart/ChartEditorScreen.kt` `RectEditorCanvas`/`PolarEditorCanvas` | `Screens/ChartEditorScreen.swift:476-579 EditorCanvasView` | **Identical BLOCKER both** |
 | Chart **comparison** diff canvas — no semantics, diff = color only | `chart/ChartComparisonScreen.kt:502-557, 335-337` | `Screens/ChartComparisonScreen.swift:321-468, 380-382` | **Identical BLOCKER both** |
 | Symbol **palette** cells unlabeled | `chart/SymbolPaletteStrip.kt:159-173` (+ hardcoded-EN "Eraser" L133) | `Screens/ChartEditorScreen.swift:1114 PaletteSymbolCell` | **Identical HIGH both** |
@@ -92,8 +101,8 @@ on **both** platforms in the same slice or the ASC declaration stays blocked.
 
 | # | Surface | Platform | `file:line` | Gap |
 |---|---|---|---|---|
-| B1 | **ChartViewer progress canvas** | Both | KT `ChartViewerScreen.kt:495-612` · SW `ChartViewerScreen.swift:319-420` | Entire chart is one tappable/transformable `Canvas` with **no `Modifier.semantics` / `.accessibilityElement`** — no per-cell, per-row, or whole-grid representation. The core read/track task is an opaque rectangle to a screen reader. |
-| B2 | **ChartViewer segment progress = color only** | Both | KT `:457-465` · SW `:644-645` | done = fill @20% onSurface/primary; wip = 2dp/accent stroke. No `stateDescription` / `.accessibilityValue` / text. Compounds B1. |
+| B1 | **ChartViewer progress canvas** | Both | KT `ChartViewerScreen.kt:495-612` · SW `ChartViewerScreen.swift:319-420` | ✅ **CLOSED (R1a, 2026-05-18, ADR-025)** — invisible per-row semantic overlay (`RectRowAccessibilityOverlay` Compose / `RowAccessibilityCell` SwiftUI) over the rect Canvas; shared pure `ChartAccessibility.rowDescriptors` + `spokenLabel`. Each grid row is one VoiceOver/TalkBack element (position + run-length symbol summary + progress), traversal row-1-first. ~~Entire chart is one opaque `Canvas` with no semantics.~~ Polar overlay gated → Phase 35.2+. |
+| B2 | **ChartViewer segment progress = color only** | Both | KT `:457-465` · SW `:644-645` | ✅ **CLOSED (R1a, 2026-05-18, ADR-025)** — row progress is now spoken text (`not started` / `%1$d of %2$d done` / `done`, localized en+ja), derived from the same cell set `MarkRowSegmentsDoneUseCase` touches. No longer color-only. ~~done = fill @20%; wip = 2dp stroke, no text equivalent.~~ |
 | B3 | **ChartEditor authoring canvas** | Both | KT `ChartEditorScreen.kt` `RectEditorCanvas`/`PolarEditorCanvas` (`editorCanvas` testTag only) · SW `ChartEditorScreen.swift:476-579` | Tappable place/erase `Canvas` with zero a11y — authoring is impossible by VoiceOver/TalkBack. (Touch-target is M5-resolved; this is the orthogonal *perceive/operate* gap.) |
 | B4 | **ChartComparison diff canvas** | Both | KT `ChartComparisonScreen.kt:502-557` (+ color map `:335-337`) · SW `ChartComparisonScreen.swift:321-468` (`:380-382,440-442`) | Per-cell diff identity is **100% traffic-light fill** (green/red/yellow) in a `Canvas` with no a11y element. `DiffSummaryRow` (aggregate counts) is partial mitigation — KT `:227-242` correctly exposes it via `semantics{contentDescription}` — but per-cell change is invisible to SR + color-blind. |
 
@@ -183,3 +192,13 @@ Phase-40 entry). **Today's safe declarations: ダークインターフェイス 
   Phase-40 ASC prerequisite (c) status.
 - Re-run the two static passes before the Phase-40 GA ASC submission to
   catch drift introduced by intervening feature work.
+
+### Remediation log
+
+- **2026-05-18 — R1a (ADR-025)**: B1 + B2 CLOSED on both platforms. Shared
+  pure `ChartAccessibility` per-row model + `spokenLabel` (21 commonTest) +
+  Compose `RectRowAccessibilityOverlay` + SwiftUI `RowAccessibilityCell`
+  invisible overlays + 9 `a11y_chart_*` i18n keys (`verifyI18nKeys` parity).
+  §1 verdicts unchanged (VoiceOver still needs B3/B4/R2/R3;
+  Differentiate-Without-Color still needs B4) — see the §1 R1a progress
+  note. B3 (Editor) → R1b, B4 (Comparison) → R1c remain open.

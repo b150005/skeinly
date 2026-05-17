@@ -1028,4 +1028,23 @@
     <string name="state_export_data_ready">Your export is ready</string>
     <string name="body_export_data_ready_detail">The share sheet opened — choose where to save the file.</string>
     <string name="label_export_data_record_count">%d records exported</string>
+
+    <!--
+      Accessibility: chart-canvas per-row semantic overlay (ADR-025 R1a).
+      Speech-only — these are TalkBack/VoiceOver contentDescription /
+      accessibilityLabel fragments, never rendered visually. The separator
+      values are intentionally punctuation-anchored so screen-reader pause
+      semantics survive even if the resource pipeline trims edge whitespace.
+      %1$s/%1$d placeholders are substituted by the shared
+      ChartAccessibility.spokenLabel formatter (parity-by-construction).
+    -->
+    <string name="a11y_chart_row_position">Row %1$d of %2$d</string>
+    <string name="a11y_chart_symbol_run">%1$s ×%2$d</string>
+    <string name="a11y_chart_blank_cells">blank</string>
+    <string name="a11y_chart_run_separator">, </string>
+    <string name="a11y_chart_section_separator"> — </string>
+    <string name="a11y_chart_progress_not_started">not started</string>
+    <string name="a11y_chart_progress_done">done</string>
+    <string name="a11y_chart_progress_in_progress">%1$d of %2$d done</string>
+    <string name="a11y_chart_action_mark_row_done">Mark row done</string>
 </resources>

@@ -158,6 +158,37 @@ preserved).
 content coordinate space; the visual canvas is marked
 hidden/`clearAndSetSemantics` so semantics come solely from the overlay.
 
+**Implementation refinement (R1a, 2026-05-18 — mechanism only, decision
+unchanged):** R1a discovered that the chart `Canvas` carries
+`testTag("segmentOverlay")` (Compose) / `.accessibilityIdentifier("segmentOverlay")`
+(iOS), a load-bearing landmark asserted by `e2e/flows/{android,ios}/P1_per_segment_progress.yaml`.
+A blanket `clearAndSetSemantics {}` on the Compose Canvas would strip that
+testTag and break the Maestro flow. The decision (semantics come solely
+from the per-row overlay; the canvas contributes no announced element) is
+preserved, but the *mechanism* is:
+
+- **Compose**: the Canvas keeps its `testTag` and is **not**
+  `clearAndSetSemantics`-ed. A testTag-only node with no
+  `contentDescription` / `role` / `onClick` (the canvas uses raw
+  `detectTapGestures` pointer input, which is not a click *semantic*) is
+  not TalkBack-focusable, so it is already not double-announced — the
+  decision holds *by construction* without the call. The viewer's
+  coordinate space is `computeViewerLayout` (the viewer was never migrated
+  to M5's editor `centeredLayout`/`effectiveCell`; M5 was editor-only). The
+  overlay is positioned with that forward layout math at base scale, **not**
+  inside the viewer's `graphicsLayer`/`transformable` render transform —
+  honoring Invariant 8's "no inverse transform, one coordinate space"
+  spirit (screen-reader users do not pinch; the base layout is the
+  SR-relevant space).
+- **iOS**: `.accessibilityHidden(true)` is applied to the **inner Canvas
+  only**, never to the `ChartCanvasView` composite that carries the
+  `segmentOverlay` accessibilityIdentifier — so the Maestro landmark is
+  preserved while the drawn raster contributes no VoiceOver element.
+
+The `requires-supabase` tag means `P1_per_segment_progress` is excluded
+from CI and `make e2e-android`/`-ios`; the landmark preservation is a
+documented-flow correctness obligation, not a CI-gated one.
+
 ### (e) Polar — same model, ring-indexed; gated Phase 35.2+ (DECIDED)
 
 Polar authoring/viewing is itself Phase 35.2+ (M5 gated polar zoom the same
@@ -271,3 +302,15 @@ descriptors ⇒ identical spoken text by construction.
 - 2026-05-17 — Accepted. Authored from the a11y label-coverage audit R1.
   Agent-team deliberation (knitter / ui-ux-designer / architect /
   implementer) recorded inline. No code yet; this ADR gates R1a/R1b/R1c.
+- 2026-05-18 — **R1a shipped** (Viewer + shared model). New pure
+  `shared/.../domain/chart/ChartAccessibility.kt` (`rowDescriptors` +
+  `RowAccessibilityDescriptor`/`SymbolRun`/`RowProgress` + `A11yStrings` +
+  `spokenLabel`) with 21 exhaustive `commonTest`; Compose
+  `RectRowAccessibilityOverlay` + SwiftUI `RowAccessibilityCell` invisible
+  per-row overlays; 9 `a11y_chart_*` i18n keys (en/ja CMP + xcstrings,
+  `verifyI18nKeys` parity). Implementation-time refinements (decisions
+  unchanged): progress passed as a `progressAt` lambda (not a
+  `Map<SegmentKey,…>` — avoids the Kotlin/Native Swift-`Hashable` footgun);
+  canvas-suppression mechanism per §(d) Implementation refinement (preserve
+  the `segmentOverlay` Maestro landmark). Audit B1/B2 → CLOSED (R1a). B3
+  (Editor) → R1b, B4 (Comparison) → R1c remain open.

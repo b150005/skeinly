@@ -798,4 +798,15 @@
     <string name="state_export_data_ready">エクスポートの準備ができました</string>
     <string name="body_export_data_ready_detail">共有シートが開きました。保存先を選択してください。</string>
     <string name="label_export_data_record_count">%d 件のデータをエクスポートしました</string>
+
+    <!-- Accessibility: chart-canvas per-row semantic overlay (ADR-025 R1a). See values/strings.xml. -->
+    <string name="a11y_chart_row_position">%2$d 段中 %1$d 段目</string>
+    <string name="a11y_chart_symbol_run">%1$s ×%2$d</string>
+    <string name="a11y_chart_blank_cells">空白</string>
+    <string name="a11y_chart_run_separator">、</string>
+    <string name="a11y_chart_section_separator">、</string>
+    <string name="a11y_chart_progress_not_started">未着手</string>
+    <string name="a11y_chart_progress_done">完了</string>
+    <string name="a11y_chart_progress_in_progress">%2$d 目中 %1$d 目完了</string>
+    <string name="a11y_chart_action_mark_row_done">この段を完了にする</string>
 </resources>
