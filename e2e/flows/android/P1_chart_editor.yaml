@@ -102,9 +102,10 @@ tags:
 
 # Tap the canvas — Maestro's tap-by-id targets the element bounds
 # center, which corresponds to the center of the default 8x8 grid
-# (cell ~(4, 4) under the current `computeLayout` math). Any cell
-# placement is sufficient to flip `hasUnsavedChanges` and produce a
-# saveable chart row.
+# (cell ~(4, 4) under the current `centeredLayout` math; M5 zoom is a
+# no-op here — 8x8 fits, WcagTargetSize.minimumScale returns 1.0, the
+# Canvas stays viewport-sized, no scroll). Any cell placement is
+# sufficient to flip `hasUnsavedChanges` and produce a saveable chart row.
 - tapOn:
     id: "editorCanvas"
 

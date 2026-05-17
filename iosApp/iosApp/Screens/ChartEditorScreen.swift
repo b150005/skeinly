@@ -480,28 +480,68 @@ private struct EditorCanvasView: View {
     let isPickingReflectionAxis: Bool
     let onCellTap: (Int, Int) -> Void
 
-    @State private var canvasSize: CGSize = .zero
-
     var body: some View {
         GeometryReader { proxy in
-            Canvas { context, size in
-                switch extents {
-                case let rect as ChartExtentsRect:
-                    if rect.maxX < rect.minX || rect.maxY < rect.minY { return }
-                    draw(into: &context, size: size, rect: rect)
-                case let polar as ChartExtentsPolar:
-                    if polar.rings <= 0 || polar.stitchesPerRing.isEmpty { return }
-                    drawPolar(into: &context, size: size, polar: polar)
-                default:
-                    break
-                }
+            // WCAG 2.5.8 (Target Size Minimum): on large rect grids the
+            // fitted cell shrinks below the 24pt touch-target floor. The rect
+            // canvas is laid out at the (possibly enlarged) content size
+            // inside a 2-axis ScrollView, so the renderer AND GridHitTest
+            // share ONE coordinate space — `.onTapGesture` location is
+            // already content-space, no inverse transform. Small / default
+            // grids collapse to the pre-M5 centred fit (content <= viewport
+            // ⇒ ScrollView shows it fully ⇒ pixel-identical). Polar keeps the
+            // pre-M5 fitting path verbatim — zoom is deferred to Phase 35.2+.
+            switch extents {
+            case let rect as ChartExtentsRect:
+                scrollableRectCanvas(rect: rect, viewport: proxy.size)
+            case let polar as ChartExtentsPolar:
+                fittingPolarCanvas(polar: polar, viewport: proxy.size)
+            default:
+                Color(.systemBackground)
             }
-            .background(Color(.systemBackground))
-            .contentShape(Rectangle())
-            .onTapGesture { location in
-                switch extents {
-                case let rect as ChartExtentsRect:
-                    let layout = Self.layout(for: proxy.size, rect: rect)
+        }
+    }
+
+    @ViewBuilder
+    private func scrollableRectCanvas(rect: ChartExtentsRect, viewport: CGSize) -> some View {
+        if rect.maxX < rect.minX || rect.maxY < rect.minY {
+            Color(.systemBackground)
+        } else {
+            let gridWidth = Int(rect.maxX - rect.minX + 1)
+            let gridHeight = Int(rect.maxY - rect.minY + 1)
+            let fitCell = Self.fittedCell(viewport: viewport, rect: rect)
+            // minimumScale is unit-agnostic: it returns minTargetPx / baseCell,
+            // so the result is invariant to the unit as long as the target and
+            // the viewport use the SAME unit. On iOS that unit is points
+            // (logical), not physical pixels — `viewport` is point-space and
+            // `MIN_TARGET_DP` is 24 pt. Do NOT multiply by `UIScreen.scale`;
+            // the "Px" parameter names are the shared Kotlin contract, the
+            // values here are pts (consistent with each other) by design.
+            let scale = WcagTargetSize.shared.minimumScale(
+                gridWidth: Int32(gridWidth),
+                gridHeight: Int32(gridHeight),
+                canvasWidthPx: Double(viewport.width),
+                canvasHeightPx: Double(viewport.height),
+                minTargetPx: WcagTargetSize.shared.MIN_TARGET_DP,
+                maxScale: Self.maxEditorZoomScale
+            )
+            let effectiveCell = max(1, fitCell * CGFloat(scale))
+            let contentW = max(viewport.width, effectiveCell * CGFloat(gridWidth))
+            let contentH = max(viewport.height, effectiveCell * CGFloat(gridHeight))
+
+            ScrollView([.horizontal, .vertical]) {
+                Canvas { context, size in
+                    draw(into: &context, size: size, rect: rect, cellSize: effectiveCell)
+                }
+                .frame(width: contentW, height: contentH)
+                .background(Color(.systemBackground))
+                .contentShape(Rectangle())
+                .onTapGesture { location in
+                    let layout = Self.centeredLayout(
+                        canvas: CGSize(width: contentW, height: contentH),
+                        rect: rect,
+                        cellSize: effectiveCell
+                    )
                     if let cell = GridHitTest.shared.hitTest(
                         screenX: Double(location.x),
                         screenY: Double(location.y),
@@ -512,15 +552,28 @@ private struct EditorCanvasView: View {
                     ) {
                         onCellTap(Int(cell.x), Int(cell.y))
                     }
-                case let polar as ChartExtentsPolar:
-                    let layout = Self.polarLayout(for: proxy.size, polar: polar)
-                    if let hit = Self.hitTestPolar(location: location, polar: polar, layout: layout) {
-                        // Polar convention (ADR-011): cell.x = stitch, cell.y = ring.
-                        onCellTap(hit.stitch, hit.ring)
-                    }
-                default:
-                    break
                 }
+            }
+            // Default / small grids (content == viewport) must feel static —
+            // no rubber-band — so they stay pixel-identical to the pre-M5
+            // fitting canvas. iOS 17+ honours this for both axes.
+            .scrollBounceBehavior(.basedOnSize)
+        }
+    }
+
+    @ViewBuilder
+    private func fittingPolarCanvas(polar: ChartExtentsPolar, viewport: CGSize) -> some View {
+        Canvas { context, size in
+            if polar.rings <= 0 || polar.stitchesPerRing.isEmpty { return }
+            drawPolar(into: &context, size: size, polar: polar)
+        }
+        .background(Color(.systemBackground))
+        .contentShape(Rectangle())
+        .onTapGesture { location in
+            let layout = Self.polarLayout(for: viewport, polar: polar)
+            if let hit = Self.hitTestPolar(location: location, polar: polar, layout: layout) {
+                // Polar convention (ADR-011): cell.x = stitch, cell.y = ring.
+                onCellTap(hit.stitch, hit.ring)
             }
         }
     }
@@ -683,19 +736,58 @@ private struct EditorCanvasView: View {
         let originY: CGFloat
     }
 
-    private static func layout(for size: CGSize, rect: ChartExtentsRect) -> Layout {
+    /// Upper bound on the WCAG 2.5.8 auto-zoom scale. NOT a user pinch
+    /// ceiling — the editor has no pinch zoom; the cell size is purely
+    /// structural (minimum cell + scroll). Caps `WcagTargetSize.minimumScale`
+    /// so a pathological grid cannot demand an unbounded Canvas.
+    ///
+    /// The scale `minimumScale` needs is density-invariant in the non-floored
+    /// regime: `24 × gridDimension / viewportPt` on the tighter axis. For the
+    /// editor's hard 256-cell `MAX_GRID_DIMENSION` the worst realistic editor
+    /// viewport (tighter axis ≳ 160pt on any shipping phone, incl. a
+    /// 1/3-width split) needs ≤ `24 × 256 / 160 ≈ 38.4`, so 40 keeps the
+    /// ≥24pt guarantee structurally intact for every buildable grid on a real
+    /// device; only a sub-realistic < ~153pt viewport with a 256-cell grid
+    /// clips, degrading gracefully to a Canvas-size bound (still scroll-
+    /// pannable). Mirrors `MAX_EDITOR_ZOOM_SCALE` in the Compose editor.
+    private static let maxEditorZoomScale: Double = 40.0
+
+    /// Largest cell size that fits the whole grid in the viewport — the
+    /// pre-M5 "fit" cell, the WCAG base the auto-zoom scales up from.
+    /// Floored at 1pt like the renderers; mirrors the Kotlin `fittedCell`.
+    private static func fittedCell(viewport: CGSize, rect: ChartExtentsRect) -> CGFloat {
         let gridWidth = Int(rect.maxX - rect.minX + 1)
         let gridHeight = Int(rect.maxY - rect.minY + 1)
-        let cell = max(1, min(size.width / CGFloat(gridWidth), size.height / CGFloat(gridHeight)))
-        let drawW = cell * CGFloat(gridWidth)
-        let drawH = cell * CGFloat(gridHeight)
-        let originX = (size.width - drawW) / 2
-        let originY = (size.height - drawH) / 2
-        return Layout(cellSize: cell, originX: originX, originY: originY)
+        return max(1, min(viewport.width / CGFloat(gridWidth), viewport.height / CGFloat(gridHeight)))
     }
 
-    private func draw(into context: inout GraphicsContext, size: CGSize, rect: ChartExtentsRect) {
-        let layout = Self.layout(for: size, rect: rect)
+    /// Centres a `cellSize` grid inside the Canvas content box. When the box
+    /// is larger than the grid (small grid, big viewport) the grid is centred
+    /// — identical to the pre-M5 layout. When the grid fills the content
+    /// (large grid, auto-zoomed) the origin collapses to ~0 and the
+    /// surrounding ScrollView pans it. One coordinate space; no inverse
+    /// transform. Mirrors the Kotlin `centeredLayout`.
+    private static func centeredLayout(
+        canvas: CGSize,
+        rect: ChartExtentsRect,
+        cellSize: CGFloat
+    ) -> Layout {
+        let gridWidth = Int(rect.maxX - rect.minX + 1)
+        let gridHeight = Int(rect.maxY - rect.minY + 1)
+        let drawW = cellSize * CGFloat(gridWidth)
+        let drawH = cellSize * CGFloat(gridHeight)
+        let originX = (canvas.width - drawW) / 2
+        let originY = (canvas.height - drawH) / 2
+        return Layout(cellSize: cellSize, originX: originX, originY: originY)
+    }
+
+    private func draw(
+        into context: inout GraphicsContext,
+        size: CGSize,
+        rect: ChartExtentsRect,
+        cellSize: CGFloat
+    ) {
+        let layout = Self.centeredLayout(canvas: size, rect: rect, cellSize: cellSize)
         let gridWidth = Int(rect.maxX - rect.minX + 1)
         let gridHeight = Int(rect.maxY - rect.minY + 1)
 

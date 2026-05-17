@@ -4,7 +4,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +19,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Redo
@@ -74,6 +78,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.domain.chart.GridHitTest
+import io.github.b150005.skeinly.domain.chart.WcagTargetSize
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
 import io.github.b150005.skeinly.domain.model.CraftType
@@ -957,75 +962,126 @@ private fun RectEditorCanvas(
         remember {
             mutableMapOf<String, List<io.github.b150005.skeinly.domain.symbol.PathCommand>>()
         }
+    val density = LocalDensity.current
+    val gridWidth = extents.maxX - extents.minX + 1
+    val gridHeight = extents.maxY - extents.minY + 1
 
-    Canvas(
-        modifier =
-            modifier
-                .testTag("editorCanvas")
-                // Rekey only on extents — layers changing on every edit would
-                // needlessly re-register the gesture detector. The hit-test uses
-                // extents, cellSize, and origin — all derived from extents + Canvas
-                // size, not from layers.
-                .pointerInput(extents) {
-                    detectTapGestures { offset ->
-                        val layout = computeLayout(size.width.toFloat(), size.height.toFloat(), extents)
-                        val hit =
-                            GridHitTest.hitTest(
-                                screenX = offset.x.toDouble(),
-                                screenY = offset.y.toDouble(),
-                                extents = extents,
-                                cellSize = layout.cellSize.toDouble(),
-                                originX = layout.originX.toDouble(),
-                                originY = layout.originY.toDouble(),
-                            )
-                        hit?.let { onCellTap(it.x, it.y) }
-                    }
-                },
-    ) {
-        val layout = computeLayout(size.width, size.height, extents)
-        val gridWidth = extents.maxX - extents.minX + 1
-        val gridHeight = extents.maxY - extents.minY + 1
+    // WCAG 2.5.8 (Target Size Minimum): the editor fits the whole grid into
+    // the viewport, so on large grids the per-cell touch target shrinks below
+    // the 24dp floor. Instead of a render-only transform (which would leave
+    // the real hit target tiny and force an inverse-transform on taps), the
+    // Canvas is laid out at the (possibly enlarged) content size inside a
+    // 2-axis scroll container. Renderer AND GridHitTest then share ONE
+    // coordinate space — the scroll modifiers are layout modifiers, so the
+    // tap offset reaching detectTapGestures is already content-space; no
+    // inverse transform anywhere. Small / default grids collapse to the
+    // pre-M5 centred fit (content <= viewport ⇒ no scroll ⇒ pixel-identical).
+    // Rect only — polar zoom stays Phase 35.2+.
+    BoxWithConstraints(modifier.fillMaxSize()) {
+        val viewportWpx = with(density) { maxWidth.toPx() }
+        val viewportHpx = with(density) { maxHeight.toPx() }
+        val minTargetPx = with(density) { WcagTargetSize.MIN_TARGET_DP.dp.toPx() }
 
-        for (gx in 0..gridWidth) {
-            val x = layout.originX + gx * layout.cellSize
-            drawLine(
-                color = gridColor,
-                start = Offset(x, layout.originY),
-                end = Offset(x, layout.originY + gridHeight * layout.cellSize),
-                strokeWidth = 1f,
-            )
-        }
-        for (gy in 0..gridHeight) {
-            val y = layout.originY + gy * layout.cellSize
-            drawLine(
-                color = gridColor,
-                start = Offset(layout.originX, y),
-                end = Offset(layout.originX + gridWidth * layout.cellSize, y),
-                strokeWidth = 1f,
-            )
-        }
+        val fitCell = fittedCell(viewportWpx, viewportHpx, extents)
+        val scale =
+            WcagTargetSize
+                .minimumScale(
+                    gridWidth = gridWidth,
+                    gridHeight = gridHeight,
+                    canvasWidthPx = viewportWpx.toDouble(),
+                    canvasHeightPx = viewportHpx.toDouble(),
+                    minTargetPx = minTargetPx.toDouble(),
+                    maxScale = MAX_EDITOR_ZOOM_SCALE,
+                ).toFloat()
+        val effectiveCell = (fitCell * scale).coerceAtLeast(1f)
+        val contentWpx = max(viewportWpx, effectiveCell * gridWidth)
+        val contentHpx = max(viewportHpx, effectiveCell * gridHeight)
+        val contentWidthDp = with(density) { contentWpx.toDp() }
+        val contentHeightDp = with(density) { contentHpx.toDp() }
 
-        layers.forEach { layer ->
-            if (!layer.visible) return@forEach
-            layer.cells.forEach { cell ->
-                val bounds =
-                    cellScreenRect(
-                        cell = cell,
-                        rect = extents,
-                        gridHeight = gridHeight,
-                        cellSize = layout.cellSize,
-                        originX = layout.originX,
-                        originY = layout.originY,
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .horizontalScroll(rememberScrollState())
+                    .verticalScroll(rememberScrollState()),
+        ) {
+            Canvas(
+                modifier =
+                    Modifier
+                        .size(contentWidthDp, contentHeightDp)
+                        .testTag("editorCanvas")
+                        // Rekey on extents + effectiveCell only. effectiveCell
+                        // changes on resize / viewport change, never per cell
+                        // edit, so the gesture detector is not re-registered on
+                        // every stamp. Origin is derived from the Canvas
+                        // content size + effectiveCell inside the closure.
+                        .pointerInput(extents, effectiveCell) {
+                            detectTapGestures { offset ->
+                                val layout =
+                                    centeredLayout(
+                                        size.width.toFloat(),
+                                        size.height.toFloat(),
+                                        extents,
+                                        effectiveCell,
+                                    )
+                                val hit =
+                                    GridHitTest.hitTest(
+                                        screenX = offset.x.toDouble(),
+                                        screenY = offset.y.toDouble(),
+                                        extents = extents,
+                                        cellSize = layout.cellSize.toDouble(),
+                                        originX = layout.originX.toDouble(),
+                                        originY = layout.originY.toDouble(),
+                                    )
+                                hit?.let { onCellTap(it.x, it.y) }
+                            }
+                        },
+            ) {
+                val layout = centeredLayout(size.width, size.height, extents, effectiveCell)
+
+                for (gx in 0..gridWidth) {
+                    val x = layout.originX + gx * layout.cellSize
+                    drawLine(
+                        color = gridColor,
+                        start = Offset(x, layout.originY),
+                        end = Offset(x, layout.originY + gridHeight * layout.cellSize),
+                        strokeWidth = 1f,
                     )
-                val def = catalog.get(cell.symbolId) ?: return@forEach
-                drawSymbolPath(
-                    def = def,
-                    bounds = bounds,
-                    rotation = cell.rotation,
-                    color = symbolColor,
-                    strokeWidthPx = max(1f, layout.cellSize * 0.06f),
-                    parsedPathCache = parsedPathCache,
-                )
+                }
+                for (gy in 0..gridHeight) {
+                    val y = layout.originY + gy * layout.cellSize
+                    drawLine(
+                        color = gridColor,
+                        start = Offset(layout.originX, y),
+                        end = Offset(layout.originX + gridWidth * layout.cellSize, y),
+                        strokeWidth = 1f,
+                    )
+                }
+
+                layers.forEach { layer ->
+                    if (!layer.visible) return@forEach
+                    layer.cells.forEach { cell ->
+                        val bounds =
+                            cellScreenRect(
+                                cell = cell,
+                                rect = extents,
+                                gridHeight = gridHeight,
+                                cellSize = layout.cellSize,
+                                originX = layout.originX,
+                                originY = layout.originY,
+                            )
+                        val def = catalog.get(cell.symbolId) ?: return@forEach
+                        drawSymbolPath(
+                            def = def,
+                            bounds = bounds,
+                            rotation = cell.rotation,
+                            color = symbolColor,
+                            strokeWidthPx = max(1f, layout.cellSize * 0.06f),
+                            parsedPathCache = parsedPathCache,
+                        )
+                    }
+                }
             }
         }
     }
@@ -1037,19 +1093,62 @@ private data class CanvasLayout(
     val originY: Float,
 )
 
-private fun computeLayout(
-    widthPx: Float,
-    heightPx: Float,
+/**
+ * Upper bound on the WCAG 2.5.8 auto-zoom scale. This is NOT a user pinch
+ * ceiling — the editor has no pinch zoom; the cell size is purely structural
+ * (minimum cell + scroll). It caps [WcagTargetSize.minimumScale] only so a
+ * pathological grid cannot demand an unbounded Canvas.
+ *
+ * Sizing rationale: in the non-floored regime the scale
+ * [WcagTargetSize.minimumScale] needs is **density-invariant** — it is
+ * `MIN_TARGET_DP / fittedCellDp = 24 × gridDimension / viewportDp` on the
+ * tighter axis (both the 24dp target and the fitted cell scale with screen
+ * density, so density cancels in the ratio). For the editor's hard
+ * `MAX_GRID_DIMENSION` (256, per [ResizeChartDialog]) the worst realistic
+ * editor viewport (tighter axis ≳ 160dp on any shipping phone, even a
+ * 1/3-width split) needs ≤ `24 × 256 / 160 ≈ 38.4`, so a cap of 40 keeps the
+ * ≥24dp guarantee structurally intact for every grid a user can actually
+ * build on a real device. Only a sub-realistic editor viewport (tighter axis
+ * < ~153dp with a 256-cell grid) clips against this cap — there the cap
+ * degrades gracefully to a Canvas-size bound (cells < 24dp but still pannable
+ * via scroll), never to an unbounded Canvas.
+ */
+private const val MAX_EDITOR_ZOOM_SCALE: Double = 40.0
+
+/**
+ * Largest cell size that fits the whole grid in the viewport — the pre-M5
+ * "fit" cell, retained as the WCAG base the auto-zoom scales up from.
+ * Mirrors the per-platform fit math; floored at 1px like the renderers.
+ */
+private fun fittedCell(
+    viewportWidthPx: Float,
+    viewportHeightPx: Float,
     extents: ChartExtents.Rect,
+): Float {
+    val gridWidth = (extents.maxX - extents.minX + 1)
+    val gridHeight = (extents.maxY - extents.minY + 1)
+    return min(viewportWidthPx / gridWidth.toFloat(), viewportHeightPx / gridHeight.toFloat())
+        .coerceAtLeast(1f)
+}
+
+/**
+ * Centres a [cellSize] grid inside the Canvas content box. When the content
+ * box is larger than the grid (small grid, big viewport) the grid is centred
+ * — identical to the pre-M5 layout. When the grid fills the content (large
+ * grid, auto-zoomed) the origin collapses to ~0 and the surrounding scroll
+ * container pans it. One coordinate space; no inverse transform.
+ */
+private fun centeredLayout(
+    canvasWidthPx: Float,
+    canvasHeightPx: Float,
+    extents: ChartExtents.Rect,
+    cellSize: Float,
 ): CanvasLayout {
     val gridWidth = (extents.maxX - extents.minX + 1)
     val gridHeight = (extents.maxY - extents.minY + 1)
-    val cellSize = min(widthPx / gridWidth.toFloat(), heightPx / gridHeight.toFloat()).coerceAtLeast(1f)
     val drawW = cellSize * gridWidth
     val drawH = cellSize * gridHeight
-    val originX = (widthPx - drawW) / 2f
-    val originY = (heightPx - drawH) / 2f
-    return CanvasLayout(cellSize, originX, originY)
+    return CanvasLayout(cellSize, (canvasWidthPx - drawW) / 2f, (canvasHeightPx - drawH) / 2f)
 }
 
 @Composable
