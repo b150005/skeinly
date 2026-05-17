@@ -141,16 +141,20 @@ is a follow-up slice.
 
 | Rank | Slice | Unblocks | Scope (both platforms unless noted) |
 |---|---|---|---|
-| **R1** | **Accessible chart-grid representation** — give the Viewer/Editor/Comparison `Canvas` a semantic model: per-row (or per-cell) `accessibilityElement` exposing symbol name + position + progress/diff **as text/`accessibilityValue`** (not color); `accessibilityAction` for tap/mark-done/place. | **VoiceOver** (B1,B3,B4) **+ Differentiate-Without-Color** (B2,B4) — 2 declarations, 3 screens, core feature | Largest. Needs an ADR (semantic granularity: per-cell vs per-row vs summary+drill) — chart is 2-D & potentially huge; per-cell may be unusable, a row-summary + on-demand cell drill is likely right. KMP: a shared `ChartA11yModel` mirrors `GridHitTest` so both platforms render identical semantics. |
+| **R1** | **Accessible chart-grid representation** — per-row (rect grid row / polar ring) semantic model: shared `ChartAccessibility` model → invisible per-row overlay on the M5 coordinate space; row text = symbol-run summary + position + progress/diff state (no color); `accessibilityAction` mark-row-done (Viewer) / in-row adjustable cell cursor + place/erase (Editor); per-row change list (Comparison). **ADR DECIDED → [ADR-025](../docs/en/adr/025-chart-canvas-accessibility.md)** (semantic granularity: per-row, not per-cell/summary; agent-team deliberated). Sub-slices R1a Viewer → R1b Editor → R1c Comparison, rect-first (polar gated Phase 35.2+ like M5). | **VoiceOver** (B1,B3,B4) **+ Differentiate-Without-Color** (B2,B4) — 2 declarations, 3 screens, core feature | Largest. ADR-025 now gates it (no longer "needs an ADR"). KMP shared model mirrors `GridHitTest` ⇒ structural parity. |
 | **R2** | **Icon-label + i18n sweep** — add `.accessibilityLabel`/localized `contentDescription` to every icon-only control; route `ChartImageGrid`/`ChartImageViewer` hardcoded English through `Res.string.*` (+ JA + iOS xcstrings); fix empty-string MFA / WipeData `TextField` labels. | **VoiceOver** (H1–H5,H8) | Medium, mechanical, low-risk. Mostly reuses existing strings (`action_more_options`/`action_sort`/`action_undo`/`action_redo`); ~3–4 new i18n keys for ChartImage + MFA field. |
 | **R3** | **Heading semantics** — `Modifier.semantics{heading()}` on every section header / screen title (Compose, systemic); add `.accessibilityAddTraits(.isHeader)` to the ad-hoc iOS `.font(.title2)` headers. | **VoiceOver** (H9) — rotor navigation on long screens | Medium, broad but mechanical (Compose-heavy; iOS mostly framework-OK). |
 | **R4** | **ProjectDetail Dynamic Type** — replace fixed `fontSize=96/28/36 sp` (KT) and `DesignTokens` 72/48/64 pt (SW) with type-style + `@ScaledMetric`/`.minimumScaleFactor`; let the counter/+− containers grow; relax `maxLines=1`/`.lineLimit(1)` on pattern/discovery descriptions (or add `.minimumScaleFactor`). | **Larger Text** (H7,M2) — flips it from "with reservations" to declarable | Small/medium, isolated to ProjectDetail + DesignTokens + 2 list screens. |
 | **R5** | **State-not-color polish** — onboarding page-indicator dots (semantics + non-color current marker), recovery-code copy affordance role/hint, ChartConflictResolution `.isSelected` trait, decorative-icon `.accessibilityHidden(true)` (iOS Login/Onboarding/ActivityFeed), `LinearProgressIndicator` value. | **Differentiate-Without-Color** residual + VoiceOver polish (M1,M3,M5,M6,M7) | Small, broad; close out after R1 removes the chart blockers. |
 
-**Sequencing note**: R1 is the gate for two declarations and needs an ADR
-first (semantic granularity is a real design decision, not a mechanical
-fix) — it is the natural next a11y slice. R2/R3/R4 are independent and can
-proceed in parallel/any order. R5 is the closeout.
+**Sequencing note**: R1 is the gate for two declarations. Its design
+decision (semantic granularity) is now **resolved by
+[ADR-025](../docs/en/adr/025-chart-canvas-accessibility.md)** (per-row
+unit + shared model + invisible overlay on the M5 coordinate space);
+implementation is sub-slices R1a (Viewer) → R1b (Editor) → R1c
+(Comparison), rect-first — **R1a is the natural next a11y *implementation*
+slice**. R2/R3/R4 are independent and can proceed in parallel/any order.
+R5 is the closeout.
 
 ## 5. What the operator can declare *today* vs after each slice
 
