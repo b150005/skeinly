@@ -51,6 +51,12 @@ enum Route: Hashable {
     /// sits in Privacy (not the Danger Zone). A successful export fires
     /// the OS share sheet from the shared VM.
     case dataExport
+    /// Pre-Phase-40 A33 — Settings → About → Open Source Licenses.
+    /// In-app attribution screen rendering the generated
+    /// `aboutlibraries.json`; replaces the prior external-browser link
+    /// to the static `docs/public/licenses/` page (which is retained
+    /// as the reviewer-facing, no-install surface).
+    case ossLicenses
     /// Phase 25.4 (ADR-024 §Phase 25.4) — friend-invite redemption.
     /// `token` non-nil ⇒ Token mode (Universal Link tap, auto-redeem);
     /// nil ⇒ Code mode (reached from Connections → "Add by code").
@@ -140,6 +146,8 @@ enum Route: Hashable {
             hasher.combine("blockedUsers")
         case .dataExport:
             hasher.combine("dataExport")
+        case .ossLicenses:
+            hasher.combine("ossLicenses")
         case .friendInviteConfirm(let token):
             hasher.combine("friendInviteConfirm")
             hasher.combine(token)
@@ -443,6 +451,11 @@ struct AppRootView: View {
                 // "Export My Data" routes to the in-app export screen.
                 onExportDataClick: {
                     path.append(Route.dataExport)
+                },
+                // Pre-Phase-40 A33 — Settings → About → "Open Source
+                // Licenses" routes to the in-app attribution screen.
+                onOssLicensesClick: {
+                    path.append(Route.ossLicenses)
                 }
             )
                 .trackScreen(.settings)
@@ -603,6 +616,14 @@ struct AppRootView: View {
             // record-count summary. Standard back-button pop routes to
             // Settings.
             DataExportView()
+                .skeinlyBackButton(path: $path)
+        case .ossLicenses:
+            // Pre-Phase-40 A33 — Settings → About → Open Source
+            // Licenses. The view's `init` resolves the Koin
+            // OssLicensesViewModel, which auto-loads + parses the
+            // bundled `aboutlibraries.json` on init. Read-only; standard
+            // back-button pop routes to Settings.
+            OssLicensesView()
                 .skeinlyBackButton(path: $path)
         case .friendInviteConfirm(let token):
             // Phase 25.4 (ADR-024 §Phase 25.4) — friend-invite

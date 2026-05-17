@@ -50,6 +50,8 @@ import io.github.b150005.skeinly.ui.pullrequest.SuggestionFilter
 import io.github.b150005.skeinly.ui.pullrequest.SuggestionListViewModel
 import io.github.b150005.skeinly.ui.settings.DataExportState
 import io.github.b150005.skeinly.ui.settings.DataExportViewModel
+import io.github.b150005.skeinly.ui.settings.OssLicensesState
+import io.github.b150005.skeinly.ui.settings.OssLicensesViewModel
 import io.github.b150005.skeinly.ui.settings.SettingsViewModel
 import io.github.b150005.skeinly.ui.settings.WipeDataNavEvent
 import io.github.b150005.skeinly.ui.settings.WipeDataState
@@ -537,6 +539,15 @@ fun wrapWipeDataNavEvents(flow: kotlinx.coroutines.flow.Flow<WipeDataNavEvent>):
 fun getDataExportViewModel(): DataExportViewModel = KoinPlatform.getKoin().get()
 
 fun wrapDataExportState(flow: kotlinx.coroutines.flow.StateFlow<DataExportState>): FlowWrapper<DataExportState> = FlowWrapper(flow)
+
+// Pre-Phase-40 A33 — in-app "Open Source Licenses" VM bridge. No
+// screen-time params and no nav-event flow: the VM auto-loads the
+// bundled aboutlibraries.json on init and the parsed list / loading /
+// error lives entirely in OssLicensesState, so the SwiftUI view only
+// needs the state wrapper. Mirrors the DataExport no-param bridge shape.
+fun getOssLicensesViewModel(): OssLicensesViewModel = KoinPlatform.getKoin().get()
+
+fun wrapOssLicensesState(flow: kotlinx.coroutines.flow.StateFlow<OssLicensesState>): FlowWrapper<OssLicensesState> = FlowWrapper(flow)
 
 // Phase 39 (ADR-021 §D4) — UGC moderation VM bridges. Mirrors the
 // WipeData/OAuthProfileSetup parametric-resolution pattern: screen-time

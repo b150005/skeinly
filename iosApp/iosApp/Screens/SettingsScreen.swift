@@ -74,6 +74,11 @@ struct SettingsScreen: View {
     /// My Data" in the Privacy section. AppRouter wires this to
     /// `path.append(.dataExport)`.
     let onExportDataClick: () -> Void
+    /// Pre-Phase-40 A33 — invoked when the user taps "Open Source
+    /// Licenses" in the About section. AppRouter wires this to
+    /// `path.append(.ossLicenses)`. Replaces the prior external-browser
+    /// `Link` to the static `docs/public/licenses/` page.
+    let onOssLicensesClick: () -> Void
 
     private var viewModel: SettingsViewModel { holder.viewModel }
     private var notificationViewModel: NotificationPermissionViewModel { notificationHolder.viewModel }
@@ -118,7 +123,8 @@ struct SettingsScreen: View {
         onWipeDataClick: @escaping () -> Void = {},
         onConnectionsClick: @escaping () -> Void = {},
         onBlockedUsersClick: @escaping () -> Void = {},
-        onExportDataClick: @escaping () -> Void = {}
+        onExportDataClick: @escaping () -> Void = {},
+        onOssLicensesClick: @escaping () -> Void = {}
     ) {
         self.onSendFeedback = onSendFeedback
         self.onSubscribeToProClick = onSubscribeToProClick
@@ -129,6 +135,7 @@ struct SettingsScreen: View {
         self.onConnectionsClick = onConnectionsClick
         self.onBlockedUsersClick = onBlockedUsersClick
         self.onExportDataClick = onExportDataClick
+        self.onOssLicensesClick = onOssLicensesClick
         let vm = ViewModelFactory.settingsViewModel()
         let wrapper = KoinHelperKt.wrapSettingsState(flow: vm.state)
         _holder = StateObject(wrappedValue: ScopedViewModel(viewModel: vm, wrapper: wrapper))
@@ -447,12 +454,15 @@ struct SettingsScreen: View {
                 }
                 .accessibilityIdentifier("helpFaqButton")
 
-                // Pre-alpha A33 — Open Source Licenses page link.
-                // Required attribution for Apache-2.0 / MIT licensed
-                // dependencies (Kotlin, Compose Multiplatform, Ktor,
-                // Coil, etc.). Manual list for alpha; pre-Phase-40 GA
-                // upgrade to AboutLibraries Gradle plugin scheduled.
-                Link(destination: URL(string: "https://b150005.github.io/skeinly/licenses/")!) {
+                // Pre-Phase-40 A33 — Open Source Licenses. Now an in-app
+                // screen (AppRouter `.ossLicenses`) rendering the
+                // build-time-generated AboutLibraries attribution list
+                // instead of opening the static HTML page in the
+                // browser. The static `docs/public/licenses/` page is
+                // retained as the reviewer-facing (no-install) surface.
+                Button {
+                    onOssLicensesClick()
+                } label: {
                     Label("action_open_source_licenses", systemImage: "doc.append")
                 }
                 .accessibilityIdentifier("openSourceLicensesButton")

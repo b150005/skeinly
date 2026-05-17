@@ -227,4 +227,12 @@ enum ViewModelFactory {
     static func dataExportViewModel() -> DataExportViewModel {
         KoinHelperKt.getDataExportViewModel()
     }
+
+    /// Pre-Phase-40 A33 — Settings → About → Open Source Licenses
+    /// ViewModel. Auto-loads the bundled `aboutlibraries.json` on init
+    /// (parsed by the shared `OssLibraryParser`); the SwiftUI view
+    /// renders the resulting `OssLibrary` list natively.
+    static func ossLicensesViewModel() -> OssLicensesViewModel {
+        KoinHelperKt.getOssLicensesViewModel()
+    }
 }

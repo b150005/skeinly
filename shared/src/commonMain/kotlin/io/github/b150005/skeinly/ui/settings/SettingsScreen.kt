@@ -142,13 +142,6 @@ private const val URL_TERMS_OF_SERVICE = "https://b150005.github.io/skeinly/term
 // Privacy Policy + ToS pages.
 private const val URL_HELP = "https://b150005.github.io/skeinly/help/"
 
-// Pre-alpha A33 — Open Source Licenses page. Static attribution list
-// served from `docs/public/licenses/` (EN) + `docs/public/ja/licenses/`
-// (JA). Manual maintenance for alpha; pre-Phase-40 GA we switch to the
-// AboutLibraries Gradle plugin for automated generation (see
-// CLAUDE.md `### Pre-Phase-40 polish` for the upgrade plan).
-private const val URL_OPEN_SOURCE_LICENSES = "https://b150005.github.io/skeinly/licenses/"
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -197,6 +190,13 @@ fun SettingsScreen(
     // `DataExport` route. Default no-op keeps test mounts / older
     // NavGraph wiring valid.
     onExportDataClick: () -> Unit = {},
+    // Pre-Phase-40 A33 — invoked when the user taps "Open Source
+    // Licenses" in the About section. NavGraph wires this to the
+    // `OssLicenses` route (an in-app screen rendering the generated
+    // attribution list); previously this row opened the static web
+    // page in the system browser. Default no-op keeps test mounts /
+    // older NavGraph wiring valid.
+    onOssLicensesClick: () -> Unit = {},
     viewModel: SettingsViewModel = koinViewModel(),
     // Phase 24.2c (ADR-017 §3.6) — push notification consent VM. Drives
     // the Settings → Notifications row + the in-app pre-permission
@@ -533,23 +533,21 @@ fun SettingsScreen(
                             }.testTag("helpFaqButton"),
                 )
 
-                // Pre-alpha A33 — Open Source Licenses page. Required
-                // attribution for Apache-2.0 / MIT licensed dependencies
-                // (e.g. Kotlin, Compose Multiplatform, Ktor, Coil).
-                // Opens the static HTML page in the system browser; the
-                // page is maintained manually until pre-Phase-40 GA
-                // when AboutLibraries Gradle plugin takes over.
+                // Pre-Phase-40 A33 — Open Source Licenses. Now an in-app
+                // screen (NavGraph `OssLicenses` route) rendering the
+                // build-time-generated AboutLibraries attribution list
+                // instead of opening the static HTML page in the browser.
+                // No `OpenInNew` trailing icon — this no longer leaves
+                // the app. The static `docs/public/licenses/` page is
+                // retained as the reviewer-facing (no-install) surface.
                 ListItem(
                     headlineContent = { Text(stringResource(Res.string.action_open_source_licenses)) },
                     leadingContent = { Icon(Icons.AutoMirrored.Filled.Help, contentDescription = null) },
-                    trailingContent = {
-                        Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null)
-                    },
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .clickable(role = Role.Button) {
-                                uriHandler.openUri(URL_OPEN_SOURCE_LICENSES)
+                                onOssLicensesClick()
                             }.testTag("openSourceLicensesButton"),
                 )
 

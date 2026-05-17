@@ -305,6 +305,17 @@ data object WipeDataConfirmPhrase
 data object DataExport
 
 /**
+ * Pre-Phase-40 A33 — in-app "Open Source Licenses" attribution screen.
+ * Reached from Settings → About → "Open Source Licenses" (previously an
+ * external-browser link to the static `docs/public/licenses/` page,
+ * which is retained as the reviewer-facing surface). The screen renders
+ * the build-time-generated `aboutlibraries.json` via the shared
+ * `OssLicensesViewModel`; no payload — pure read of a bundled resource.
+ */
+@Serializable
+data object OssLicenses
+
+/**
  * Phase 26.6 (ADR-022 §6.6) — post-OAuth profile setup gate. Routed
  * to once per install on the FIRST Authenticated transition when the
  * AuthRepository surfaces a non-empty
@@ -659,6 +670,8 @@ private fun SkeinlyNavHostContent(
                 onBlockedUsersClick = { navController.navigate(BlockedUsers) },
                 // Pre-Phase-40 A20 Option B — Privacy → Export My Data.
                 onExportDataClick = { navController.navigate(DataExport) },
+                // Pre-Phase-40 A33 — About → Open Source Licenses.
+                onOssLicensesClick = { navController.navigate(OssLicenses) },
             )
         }
         composable<BlockedUsers> {
@@ -670,6 +683,12 @@ private fun SkeinlyNavHostContent(
         composable<DataExport> {
             io.github.b150005.skeinly.ui.settings
                 .DataExportScreen(
+                    onBack = { navController.popBackStack() },
+                )
+        }
+        composable<OssLicenses> {
+            io.github.b150005.skeinly.ui.settings
+                .OssLicensesScreen(
                     onBack = { navController.popBackStack() },
                 )
         }

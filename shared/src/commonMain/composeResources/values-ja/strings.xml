@@ -243,6 +243,7 @@
     <string name="label_display_name">表示名</string>
     <string name="label_bio">自己紹介</string>
     <string name="state_image_load_failed">画像を読み込めませんでした</string>
+    <string name="state_oss_licenses_load_failed">ライセンス情報を読み込めませんでした</string>
     <string name="state_profile_load_failed">プロフィールを読み込めませんでした</string>
     <string name="message_profile_updated">プロフィールを更新しました</string>
 

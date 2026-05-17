@@ -3,6 +3,7 @@ package io.github.b150005.skeinly.di
 import io.github.b150005.skeinly.biometric.BiometricAuthenticator
 import io.github.b150005.skeinly.config.BuildFlags
 import io.github.b150005.skeinly.data.bug.BugReportProxyClient
+import io.github.b150005.skeinly.data.oss.loadBundledOssLibraries
 import io.github.b150005.skeinly.notifications.OsSettingsLauncher
 import io.github.b150005.skeinly.notifications.PushTokenRegistrar
 import io.github.b150005.skeinly.platform.DeviceContextProvider
@@ -39,6 +40,7 @@ import io.github.b150005.skeinly.ui.pullrequest.ChartConflictResolutionViewModel
 import io.github.b150005.skeinly.ui.pullrequest.SuggestionDetailViewModel
 import io.github.b150005.skeinly.ui.pullrequest.SuggestionFilter
 import io.github.b150005.skeinly.ui.pullrequest.SuggestionListViewModel
+import io.github.b150005.skeinly.ui.settings.OssLicensesViewModel
 import io.github.b150005.skeinly.ui.settings.SettingsViewModel
 import io.github.b150005.skeinly.ui.settings.WipeDataViewModel
 import io.github.b150005.skeinly.ui.sharedcontent.SharedContentViewModel
@@ -296,6 +298,17 @@ val viewModelModule =
             io.github.b150005.skeinly.ui.settings.DataExportViewModel(
                 exportData = { repo.export() },
                 saveBundle = { jsonContent, fileName -> saver.save(jsonContent, fileName) },
+            )
+        }
+        // Pre-Phase-40 A33 — in-app "Open Source Licenses". Lambda-seam
+        // DI (same precedent as DataExport): `loadLibraries` binds to the
+        // resource-reading + aboutlibraries-core parsing loader, which
+        // touches the Compose-resources runtime; the seam keeps
+        // commonTest off that runtime (OssLicensesViewModelTest injects a
+        // fake list instead).
+        viewModel {
+            OssLicensesViewModel(
+                loadLibraries = { loadBundledOssLibraries() },
             )
         }
         // Phase 26.6 (ADR-022 §6.5) — biometric settings screen.

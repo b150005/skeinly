@@ -23,6 +23,21 @@ sentry = "8.41.0"
 posthog = "3.44.1"
 purchasesKmp = "2.10.2+17.55.1"
 
+# Pre-Phase-40 A33 — automated OSS attribution. The
+# `com.mikepenz.aboutlibraries.plugin` Gradle plugin scans the applied
+# module's dependency graph at build time and emits a license inventory
+# JSON; `aboutlibraries-core` is the multiplatform parser (`Libs.Builder`)
+# the shared `OssLibraryParser` uses to turn that JSON into the
+# `OssLibrary` UI model (rendered by Compose on Android + SwiftUI on iOS
+# via the Kotlin/iOS bridge — no Compose-on-iOS). 14.2.0 specifically
+# fixes Android task registration for the `com.android.kotlin.multiplatform.library`
+# AGP plugin `:shared` uses (upstream PR mikepenz/AboutLibraries#1368).
+# Only `-core` is consumed — the `-compose-m3` UI artifact is deliberately
+# NOT used so Android + iOS render the same shared model for parity.
+# (The version string coincidentally equals `ktlint` below — they are
+# independent, unrelated artifacts; bump each on its own cadence.)
+aboutlibraries = "14.2.0"
+
 # Build Plugins
 ktlint = "14.2.0"
 kover = "0.9.8"
@@ -184,6 +199,13 @@ androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", 
 purchases-kmp-core = { module = "com.revenuecat.purchases:purchases-kmp-core", version.ref = "purchasesKmp" }
 purchases-kmp-result = { module = "com.revenuecat.purchases:purchases-kmp-result", version.ref = "purchasesKmp" }
 
+# Pre-Phase-40 A33 — multiplatform parser for the generated
+# aboutlibraries.json. `Libs.Builder().withJson(json).build()` yields
+# `libraries: List<Library>` which `data/oss/OssLibraryParser` maps to
+# the `OssLibrary` UI model. Pure (no Compose / no resource runtime) so
+# the mapping is unit-tested directly in commonTest.
+aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutlibraries" }
+
 # Testing
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
@@ -206,3 +228,8 @@ ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 playPublisher = { id = "com.github.triplet.play", version.ref = "playPublisher" }
 googleServices = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+# Pre-Phase-40 A33 — applied to :shared (its KMP+Android dependency graph
+# is the bulk of the shipped OSS; androidApp-only sentry/posthog are added
+# via the aboutLibraries { } config dir). Plugin id verified against the
+# Gradle Plugin Portal marker artifact (com.mikepenz.aboutlibraries.plugin).
+aboutlibraries = { id = "com.mikepenz.aboutlibraries.plugin", version.ref = "aboutlibraries" }

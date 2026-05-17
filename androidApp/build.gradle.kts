@@ -9,6 +9,22 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.playPublisher)
+    // Pre-Phase-40 A33 — OSS attribution. Applied HERE (not :shared)
+    // deliberately: `com.android.application`'s runtime classpath is the
+    // complete shipped-OSS superset — :shared's full transitive graph
+    // (Ktor / Supabase / Koin / SQLDelight / Coil / coroutines / …)
+    // PLUS androidApp-direct deps (Sentry / PostHog / Firebase /
+    // Credentials) that a :shared-applied scan would miss. Using the
+    // mature `com.android.application` collector path also avoids
+    // depending on the brand-new v14.2.0 `com.android.kotlin.multiplatform.library`
+    // task-registration fix. The generated JSON is written into :shared's
+    // composeResources (see the `aboutLibraries { }` block below) and
+    // committed — it flows through the SAME static-composeResources
+    // pipeline as `values/strings.xml` on both Android + iOS, so there is
+    // no build-time task-ordering hazard with the AGP-9-KMP CMP-resource
+    // workaround. Regenerate after dependency bumps via:
+    //   ./gradlew :androidApp:exportLibraryDefinitions
+    alias(libs.plugins.aboutlibraries)
     // Phase 24.2e (ADR-017 §3.5) — Firebase Gradle plugin declared but
     // NOT applied here. Auto-applied below when a `google-services.json`
     // exists in any variant slot. This guards against:
@@ -297,6 +313,35 @@ androidComponents {
             copyComposeResourcesForAndroid,
             CopyComposeResourcesForAndroid::outputDir,
         )
+    }
+}
+
+// Pre-Phase-40 A33 — OSS attribution generation config. The
+// `exportLibraryDefinitions` task (run manually after dependency bumps)
+// scans this module's resolved runtime classpath and writes the license
+// inventory into :shared's composeResources as a committed artifact. The
+// shared `OssLibraryParser` (aboutlibraries-core) turns it into the
+// `OssLibrary` UI model rendered by Compose on Android + SwiftUI on iOS.
+aboutLibraries {
+    export {
+        // Single source of truth: written into :shared's composeResources
+        // so the EXACT SAME committed JSON is read by Compose (Android)
+        // and SwiftUI (iOS, via the shared parser) — platform parity, no
+        // cross-platform divergence, no `aboutlibraries-compose-m3`.
+        outputFile =
+            rootProject.file(
+                "shared/src/commonMain/composeResources/files/aboutlibraries.json",
+            )
+        // Readable git diffs when a dependency bumps — the whole point of
+        // A33 is that drift becomes a reviewable diff instead of silent
+        // hand-edit rot in the static HTML page.
+        prettyPrint = true
+        // The full SPDX license text blobs (the Android SDK EULA alone is
+        // ~10 KB) are never rendered — the screen shows name + SPDX id +
+        // a tappable license URL only. Funding metadata is likewise
+        // unused by the attribution surface. Excluding both keeps the
+        // committed JSON compact and review-friendly.
+        excludeFields.addAll("License.licenseContent", "funding")
     }
 }
 

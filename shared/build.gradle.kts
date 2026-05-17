@@ -206,6 +206,15 @@ kotlin {
             // actual binding to resolve native StoreKit symbols.
             implementation(libs.purchases.kmp.core)
             implementation(libs.purchases.kmp.result)
+            // Pre-Phase-40 A33 — multiplatform parser for the
+            // build-time-generated aboutlibraries.json (OSS attribution).
+            // Only the `-core` parser is consumed; the `-compose-m3` UI
+            // artifact is intentionally NOT used so Android (Compose
+            // LazyColumn) and iOS (SwiftUI List) render the same shared
+            // `OssLibrary` model for platform parity. The
+            // `com.mikepenz.aboutlibraries.plugin` (applied below) emits
+            // the JSON into `commonMain/composeResources/files/`.
+            implementation(libs.aboutlibraries.core)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -400,6 +409,15 @@ kover {
                     "io.github.b150005.skeinly.ui.patternlibrary.PatternLibraryScreenKt*",
                     "io.github.b150005.skeinly.ui.patternedit.PatternEditScreenKt*",
                     "io.github.b150005.skeinly.ui.settings.SettingsScreenKt*",
+                    // Pre-Phase-40 A33 — OSS-licenses Compose screen
+                    // (JVM-untestable, same rationale as other *ScreenKt
+                    // excludes). The OssLicensesViewModel + the pure
+                    // OssLibraryParser mapping ARE covered by commonTest
+                    // (OssLicensesViewModelTest + OssLibraryParserTest);
+                    // OssLicensesLoaderKt is thin Res.readBytes plumbing
+                    // (same rationale as the Remote*DataSource excludes).
+                    "io.github.b150005.skeinly.ui.settings.OssLicensesScreenKt*",
+                    "io.github.b150005.skeinly.data.oss.OssLicensesLoaderKt*",
                     "io.github.b150005.skeinly.ui.onboarding.OnboardingScreenKt*",
                     "io.github.b150005.skeinly.ui.components.EmptyStateViewKt*",
                     "io.github.b150005.skeinly.ui.symbol.SymbolGalleryScreenKt*",
