@@ -6,11 +6,14 @@ import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,15 +40,20 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.b150005.skeinly.domain.chart.ChartAccessibility
 import io.github.b150005.skeinly.domain.chart.PolarCellLayout
 import io.github.b150005.skeinly.domain.model.CellChange
 import io.github.b150005.skeinly.domain.model.Chart
@@ -54,6 +62,9 @@ import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.LayerChange
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
 import io.github.b150005.skeinly.generated.resources.Res
+import io.github.b150005.skeinly.generated.resources.a11y_chart_blank_cells
+import io.github.b150005.skeinly.generated.resources.a11y_chart_row_position
+import io.github.b150005.skeinly.generated.resources.a11y_chart_section_separator
 import io.github.b150005.skeinly.generated.resources.action_back
 import io.github.b150005.skeinly.generated.resources.label_comparison_added
 import io.github.b150005.skeinly.generated.resources.label_comparison_modified
@@ -68,6 +79,7 @@ import io.github.b150005.skeinly.generated.resources.label_layer_shown
 import io.github.b150005.skeinly.generated.resources.label_layer_unlocked
 import io.github.b150005.skeinly.generated.resources.state_no_changes
 import io.github.b150005.skeinly.generated.resources.title_chart_comparison
+import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.localized
 import org.jetbrains.compose.resources.pluralStringResource
@@ -77,6 +89,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 private const val MIN_SCALE = 0.5f
 private const val MAX_SCALE = 8f
@@ -375,14 +388,23 @@ private fun DualCanvasPanel(
                 )
             }
         }
-        // Target pane (right).
-        Box(
+        // Target pane (right). BoxWithConstraints exposes the pane's pixel
+        // size to the R1c accessibility overlay so per-row a11y Boxes can be
+        // placed at the SAME forward `computeDiffLayout` math the visual
+        // Canvas draws with (ADR-025 §d — single coordinate space, no inverse
+        // transform; the overlay sits OUTSIDE the Canvas's `graphicsLayer`
+        // scale/translate transform, matching the R1a viewer precedent).
+        // `isTraversalGroup` scopes the row `traversalIndex` ordering so
+        // screen-reader traversal is row-1-first regardless of the bottom-
+        // anchored visual placement.
+        BoxWithConstraints(
             modifier =
                 Modifier
                     .weight(1f)
                     .fillMaxSize()
                     .padding(4.dp)
-                    .testTag("targetChartCanvas"),
+                    .testTag("targetChartCanvas")
+                    .semantics { isTraversalGroup = true },
         ) {
             ChartComparisonCanvas(
                 chart = targetChart,
@@ -400,6 +422,23 @@ private fun DualCanvasPanel(
                 modifiedColor = modifiedColor,
                 removedColor = removedColor,
             )
+            // R1c (ADR-025 §c Comparison row): invisible per-row a11y overlay
+            // that announces each changed row as a spoken change list — closes
+            // audit §3.1 B4 (per-cell diff was 100% traffic-light fill, no a11y
+            // element). Read-only: no actions (the Comparison surface itself is
+            // read-only); aggregate `DiffSummaryRow` and `LayerChangesBanner`
+            // continue to provide the at-a-glance summary.
+            val targetExtents = targetChart.extents
+            if (targetExtents is ChartExtents.Rect) {
+                RectComparisonAccessibilityOverlay(
+                    rect = targetExtents,
+                    cellChanges = diff.cellChanges,
+                    layerChanges = diff.layerChanges,
+                    catalog = catalog,
+                    widthPx = constraints.maxWidth,
+                    heightPx = constraints.maxHeight,
+                )
+            }
         }
     }
 }
@@ -704,6 +743,137 @@ private fun DrawScope.drawPolarDiffOverlay(
                 }
             val wedge = PolarCellLayout.wedgeFor(stitch, ring, polar, layout)
             drawPath(path = polarWedgePath(wedge, layout), color = color)
+        }
+    }
+}
+
+/**
+ * R1c (ADR-025 §c Comparison row + §d single coordinate space) — invisible
+ * per-row accessibility overlay for the rect Chart Comparison surface. Each
+ * row that has ≥1 change is one focusable element whose spoken text reads
+ * "Row R of N — col C added <sym>, col C2 removed <sym>, …", built by the
+ * shared pure [ChartAccessibility.spokenDiffLabel] so Compose and SwiftUI
+ * produce identical speech by construction (§g). Read-only — no actions
+ * (the Comparison surface itself is read-only); the aggregate
+ * `DiffSummaryRow` continues to surface the at-a-glance counts.
+ *
+ * Positioned with the SAME forward `computeDiffLayout` math the visual
+ * Canvas draws with at base scale — no inverse transform, no second
+ * coordinate space (M5 / chart-editor Invariant 8 spirit). SR users do not
+ * pinch; the base layout is the SR-relevant space. The overlay Boxes carry
+ * no pointer-input modifier, so touch + pinch still pass through to the
+ * Canvas underneath for sighted users.
+ *
+ * Aligned with the TARGET pane only (not duplicated on the base pane).
+ * Rationale: target is always non-null (base can be `null` on initial
+ * commit) and represents "what's at this position now" — the spoken
+ * change list narrates a unified diff anchored in the post-change state.
+ * Removed cells whose chartY falls outside the shrunken target's row
+ * range are surfaced visually on the base pane only and silently dropped
+ * from the spoken description (see [ChartAccessibility.rowDiffDescriptors]
+ * docs); polar charts are gated to Phase 35.2+ per ADR-025 §e.
+ */
+@Composable
+private fun RectComparisonAccessibilityOverlay(
+    rect: ChartExtents.Rect,
+    cellChanges: List<CellChange>,
+    layerChanges: List<LayerChange>,
+    catalog: SymbolCatalog,
+    widthPx: Int,
+    heightPx: Int,
+) {
+    // All @Composable / remember reads happen FIRST and unconditionally —
+    // Compose's composition contract forbids them after a conditional early
+    // return (the `widthPx <= 0` guard below). The descriptor list is
+    // `remember`-keyed so the projection is not recomputed on every
+    // recomposition (pan / zoom of the underlying Canvas, which the overlay
+    // does NOT inherit).
+    val deviceContext: DeviceContextProvider = koinInject()
+    val isJa = deviceContext.locale.startsWith("ja", ignoreCase = true)
+    val density = LocalDensity.current
+    val diffStrings = rememberDiffA11yStrings(isJa)
+    val descriptors =
+        remember(rect, cellChanges, layerChanges) {
+            ChartAccessibility.rowDiffDescriptors(rect, cellChanges, layerChanges)
+        }
+
+    if (widthPx <= 0 || heightPx <= 0 || descriptors.isEmpty()) return
+
+    val gridWidth = rect.maxX - rect.minX + 1
+    val gridHeight = rect.maxY - rect.minY + 1
+    // Mirror of `computeDiffLayout` in this file — kept inline (rather than
+    // calling the existing helper) because R1c only needs the cellSize +
+    // originY scalars and is in the same coordinate space; importing the
+    // private `DiffCanvasLayout` would require widening its visibility.
+    val cellSize =
+        min(widthPx.toFloat() / gridWidth, heightPx.toFloat() / gridHeight).coerceAtLeast(1f)
+    val drawHeightPx = cellSize * gridHeight
+    val originYPx = (heightPx - drawHeightPx) / 2f
+
+    val rowHeightDp = with(density) { cellSize.toDp() }
+    val rowWidthDp = with(density) { widthPx.toDp() }
+    val symbolNameResolver: (String) -> String = { id ->
+        catalog.get(id)?.let { if (isJa) it.jaLabel else it.enLabel } ?: id
+    }
+
+    descriptors.forEach { descriptor ->
+        val topPx = originYPx + (gridHeight - descriptor.rowNumber) * cellSize
+        val spoken = ChartAccessibility.spokenDiffLabel(descriptor, diffStrings, symbolNameResolver)
+        Box(
+            modifier =
+                Modifier
+                    .offset { IntOffset(0, topPx.roundToInt()) }
+                    .size(width = rowWidthDp, height = rowHeightDp)
+                    .testTag("chartComparisonAccessibilityRow_${descriptor.rowNumber}")
+                    .semantics {
+                        contentDescription = spoken
+                        // Row 1 (bottom) is visually last but the first
+                        // worked; lower traversalIndex = earlier, so
+                        // traversalIndex = rowNumber makes SR traversal
+                        // row-1-first (knitting work order). Matches R1a/R1b.
+                        traversalIndex = descriptor.rowNumber.toFloat()
+                    },
+        )
+    }
+}
+
+/**
+ * R1c — bilingual fallback strings for the per-row Comparison spoken text.
+ * `rowPositionFormat` / `sectionSeparator` / `blankCellsName` reuse the R1a
+ * keys already shipped in the 3 shared i18n files (`a11y_chart_*`); the
+ * change-format trio + change-separator are R1c-new keys carried in
+ * `R1c.i18n.tsv` for the orchestrator to splice into the shared files at
+ * consolidation (parallel-worktree i18n-fragment protocol — see
+ * `## Parallel-Worktree Workflow Protocol` in CLAUDE.md). Pattern mirrors
+ * R1b's `rememberEditorCellA11yStrings` — a deliberate temporary en/ja
+ * literal until the i18n splice lands.
+ */
+@Composable
+private fun rememberDiffA11yStrings(isJa: Boolean): ChartAccessibility.DiffA11yStrings {
+    val rowPositionFormat = stringResource(Res.string.a11y_chart_row_position)
+    val sectionSeparator = stringResource(Res.string.a11y_chart_section_separator)
+    val blankCellsName = stringResource(Res.string.a11y_chart_blank_cells)
+    return remember(isJa, rowPositionFormat, sectionSeparator, blankCellsName) {
+        if (isJa) {
+            ChartAccessibility.DiffA11yStrings(
+                rowPositionFormat = rowPositionFormat,
+                changeSeparator = "、",
+                changeAddedFormat = "%1\$d列目に%2\$sを追加",
+                changeRemovedFormat = "%1\$d列目の%2\$sを削除",
+                changeModifiedFormat = "%1\$d列目を%2\$sに変更",
+                sectionSeparator = sectionSeparator,
+                blankCellsName = blankCellsName,
+            )
+        } else {
+            ChartAccessibility.DiffA11yStrings(
+                rowPositionFormat = rowPositionFormat,
+                changeSeparator = ", ",
+                changeAddedFormat = "col %1\$d added %2\$s",
+                changeRemovedFormat = "col %1\$d removed %2\$s",
+                changeModifiedFormat = "col %1\$d modified to %2\$s",
+                sectionSeparator = sectionSeparator,
+                blankCellsName = blankCellsName,
+            )
         }
     }
 }

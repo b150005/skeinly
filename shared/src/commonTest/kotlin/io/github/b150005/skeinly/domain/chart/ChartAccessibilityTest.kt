@@ -2,11 +2,16 @@ package io.github.b150005.skeinly.domain.chart
 
 import io.github.b150005.skeinly.domain.chart.ChartAccessibility.A11yStrings
 import io.github.b150005.skeinly.domain.chart.ChartAccessibility.CellA11yStrings
+import io.github.b150005.skeinly.domain.chart.ChartAccessibility.DiffA11yStrings
+import io.github.b150005.skeinly.domain.chart.ChartAccessibility.DiffChangeKind
+import io.github.b150005.skeinly.domain.chart.ChartAccessibility.RowDiffChange
 import io.github.b150005.skeinly.domain.chart.ChartAccessibility.RowProgress
 import io.github.b150005.skeinly.domain.chart.ChartAccessibility.SymbolRun
+import io.github.b150005.skeinly.domain.model.CellChange
 import io.github.b150005.skeinly.domain.model.ChartCell
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
+import io.github.b150005.skeinly.domain.model.LayerChange
 import io.github.b150005.skeinly.domain.model.SegmentState
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -632,5 +637,325 @@ class ChartAccessibilityTest {
                 selectedSymbolId = "knit",
             ) { id -> if (id == "knit") "knit" else id }
         assertEquals("Place knit", label)
+    }
+
+    // ---------------------------------------------------------------------
+    // R1c — Comparison row diff descriptor (ADR-025 §c Comparison row +
+    // §d single coordinate space; §e rect-only — polar gated Phase 35.2+).
+    // ---------------------------------------------------------------------
+
+    private val diffStrings =
+        DiffA11yStrings(
+            rowPositionFormat = "Row %1\$d of %2\$d",
+            changeSeparator = ", ",
+            changeAddedFormat = "col %1\$d added %2\$s",
+            changeRemovedFormat = "col %1\$d removed %2\$s",
+            changeModifiedFormat = "col %1\$d modified to %2\$s",
+            sectionSeparator = " - ",
+            blankCellsName = "blank",
+        )
+
+    @Test
+    fun `rowDiffDescriptors maps CellChange Added Removed Modified by chartY`() {
+        // Same-position diff at y=1 (Modified) + Added at y=2 + Removed at y=0
+        // — every kind must land in its own row.
+        val extents = ChartExtents.Rect(minX = 0, maxX = 2, minY = 0, maxY = 2)
+        val cellChanges =
+            listOf(
+                CellChange.Removed("L1", ChartCell(symbolId = "old", x = 1, y = 0)),
+                CellChange.Modified(
+                    "L1",
+                    before = ChartCell(symbolId = "a", x = 0, y = 1),
+                    after = ChartCell(symbolId = "b", x = 0, y = 1),
+                ),
+                CellChange.Added("L1", ChartCell(symbolId = "new", x = 2, y = 2)),
+            )
+
+        val descriptors = ChartAccessibility.rowDiffDescriptors(extents, cellChanges, emptyList())
+
+        assertEquals(3, descriptors.size)
+        // Row 1 (chartY=0, the bottom) -> Removed.
+        assertEquals(1, descriptors[0].rowNumber)
+        assertEquals(3, descriptors[0].rowCount)
+        assertEquals(0, descriptors[0].chartY)
+        assertEquals(
+            listOf(RowDiffChange(colNumber = 2, kind = DiffChangeKind.REMOVED, symbolId = "old")),
+            descriptors[0].changes,
+        )
+        // Row 2 (chartY=1) -> Modified using AFTER symbol.
+        assertEquals(2, descriptors[1].rowNumber)
+        assertEquals(1, descriptors[1].chartY)
+        assertEquals(
+            listOf(RowDiffChange(colNumber = 1, kind = DiffChangeKind.MODIFIED, symbolId = "b")),
+            descriptors[1].changes,
+        )
+        // Row 3 (chartY=2) -> Added.
+        assertEquals(3, descriptors[2].rowNumber)
+        assertEquals(2, descriptors[2].chartY)
+        assertEquals(
+            listOf(RowDiffChange(colNumber = 3, kind = DiffChangeKind.ADDED, symbolId = "new")),
+            descriptors[2].changes,
+        )
+    }
+
+    @Test
+    fun `rowDiffDescriptors uses the AFTER symbol for Modified cells`() {
+        // Per ChartComparison docs: "knitters care about what's at this position
+        // now" — Modified must announce the symbol the cell holds *now*, not the
+        // prior one. Position-keyed diff guarantees before.x/y == after.x/y, so
+        // the rowNumber + colNumber are unambiguous.
+        val extents = ChartExtents.Rect(minX = 0, maxX = 0, minY = 0, maxY = 0)
+        val cellChanges =
+            listOf(
+                CellChange.Modified(
+                    "L",
+                    before = ChartCell(symbolId = "wrong-old", x = 0, y = 0),
+                    after = ChartCell(symbolId = "right-now", x = 0, y = 0),
+                ),
+            )
+
+        val d = ChartAccessibility.rowDiffDescriptors(extents, cellChanges, emptyList()).single()
+
+        assertEquals("right-now", d.changes.single().symbolId)
+        assertEquals(DiffChangeKind.MODIFIED, d.changes.single().kind)
+    }
+
+    @Test
+    fun `rowDiffDescriptors expands LayerChange Added into per-row ADDED entries`() {
+        // Initial-commit case: base == null collapses to LayerChange.Added per
+        // ChartComparison docs. The accessibility model must still announce
+        // every added cell row-by-row from the layer's cell list.
+        val extents = ChartExtents.Rect(minX = 0, maxX = 1, minY = 0, maxY = 1)
+        val layerChanges =
+            listOf(
+                LayerChange.Added(
+                    ChartLayer(
+                        id = "new-layer",
+                        name = "new-layer",
+                        cells =
+                            listOf(
+                                ChartCell(symbolId = "k", x = 0, y = 0),
+                                ChartCell(symbolId = "p", x = 1, y = 0),
+                                ChartCell(symbolId = "k", x = 0, y = 1),
+                            ),
+                    ),
+                ),
+            )
+
+        val descriptors = ChartAccessibility.rowDiffDescriptors(extents, emptyList(), layerChanges)
+
+        assertEquals(2, descriptors.size)
+        // Row 1 (y=0) -> 2 ADDED entries sorted by col asc.
+        assertEquals(
+            listOf(
+                RowDiffChange(colNumber = 1, kind = DiffChangeKind.ADDED, symbolId = "k"),
+                RowDiffChange(colNumber = 2, kind = DiffChangeKind.ADDED, symbolId = "p"),
+            ),
+            descriptors[0].changes,
+        )
+        // Row 2 (y=1) -> 1 ADDED entry.
+        assertEquals(
+            listOf(RowDiffChange(colNumber = 1, kind = DiffChangeKind.ADDED, symbolId = "k")),
+            descriptors[1].changes,
+        )
+    }
+
+    @Test
+    fun `rowDiffDescriptors expands LayerChange Removed into per-row REMOVED entries`() {
+        val extents = ChartExtents.Rect(minX = 0, maxX = 1, minY = 0, maxY = 0)
+        val layerChanges =
+            listOf(
+                LayerChange.Removed(
+                    ChartLayer(
+                        id = "gone",
+                        name = "gone",
+                        cells =
+                            listOf(
+                                ChartCell(symbolId = "x", x = 0, y = 0),
+                                ChartCell(symbolId = "y", x = 1, y = 0),
+                            ),
+                    ),
+                ),
+            )
+
+        val d = ChartAccessibility.rowDiffDescriptors(extents, emptyList(), layerChanges).single()
+
+        assertEquals(
+            listOf(
+                RowDiffChange(colNumber = 1, kind = DiffChangeKind.REMOVED, symbolId = "x"),
+                RowDiffChange(colNumber = 2, kind = DiffChangeKind.REMOVED, symbolId = "y"),
+            ),
+            d.changes,
+        )
+    }
+
+    @Test
+    fun `rowDiffDescriptors ignores LayerChange PropertyChanged at the cell level`() {
+        // PropertyChanged (rename / visibility / locked flip) does NOT enumerate
+        // cells per the existing renderer rule (ChartComparisonScreen.kt:455).
+        // It is surfaced separately via the LayerChangesBanner; the per-row
+        // overlay must NOT double-announce it.
+        val extents = ChartExtents.Rect(minX = 0, maxX = 0, minY = 0, maxY = 0)
+        val layerChanges =
+            listOf(
+                LayerChange.PropertyChanged(
+                    layerId = "L",
+                    before = ChartLayer(id = "L", name = "old"),
+                    after = ChartLayer(id = "L", name = "new"),
+                ),
+            )
+
+        val descriptors = ChartAccessibility.rowDiffDescriptors(extents, emptyList(), layerChanges)
+
+        assertTrue(descriptors.isEmpty())
+    }
+
+    @Test
+    fun `rowDiffDescriptors sorts changes within a row by colNumber ascending`() {
+        // Insertion order intentionally out-of-order to lock the sort.
+        val extents = ChartExtents.Rect(minX = 0, maxX = 4, minY = 0, maxY = 0)
+        val cellChanges =
+            listOf(
+                CellChange.Added("L", ChartCell(symbolId = "c", x = 3, y = 0)),
+                CellChange.Added("L", ChartCell(symbolId = "a", x = 0, y = 0)),
+                CellChange.Removed("L", ChartCell(symbolId = "b", x = 1, y = 0)),
+            )
+
+        val d = ChartAccessibility.rowDiffDescriptors(extents, cellChanges, emptyList()).single()
+
+        assertEquals(listOf(1, 2, 4), d.changes.map { it.colNumber })
+    }
+
+    @Test
+    fun `rowDiffDescriptors omits rows with zero changes from the output`() {
+        // 5-tall grid, changes only on y=2 -> single descriptor for that row,
+        // not 5 descriptors. SR users do not swipe through unchanged rows.
+        val extents = ChartExtents.Rect(minX = 0, maxX = 0, minY = 0, maxY = 4)
+        val cellChanges =
+            listOf(
+                CellChange.Added("L", ChartCell(symbolId = "k", x = 0, y = 2)),
+            )
+
+        val descriptors = ChartAccessibility.rowDiffDescriptors(extents, cellChanges, emptyList())
+
+        assertEquals(1, descriptors.size)
+        assertEquals(3, descriptors.single().rowNumber) // chartY=2 -> row 3 (bottom=1)
+        assertEquals(5, descriptors.single().rowCount)
+    }
+
+    @Test
+    fun `rowDiffDescriptors uses 1-based row and col numbers with minX minY offsets`() {
+        // Offset grid: minX=10, minY=20 — exercises that the colNumber math is
+        // (cell.x - minX + 1), not (cell.x + 1), and the rowNumber math is
+        // (cell.y - minY + 1).
+        val extents = ChartExtents.Rect(minX = 10, maxX = 12, minY = 20, maxY = 22)
+        val cellChanges =
+            listOf(
+                CellChange.Added("L", ChartCell(symbolId = "s", x = 11, y = 21)),
+            )
+
+        val d = ChartAccessibility.rowDiffDescriptors(extents, cellChanges, emptyList()).single()
+
+        assertEquals(2, d.rowNumber) // y=21 -> row 2 of 3 (bottom = y=20 = row 1)
+        assertEquals(3, d.rowCount)
+        assertEquals(21, d.chartY)
+        assertEquals(2, d.changes.single().colNumber) // x=11 -> col 2 of 3
+    }
+
+    @Test
+    fun `rowDiffDescriptors drops changes whose y or x is outside target extents`() {
+        // Shrunken-target case: base had y=0..3, target shrank to y=0..1. The
+        // y=3 Removed cell falls outside target's row range — it is shown only
+        // on the base pane visually and is silently dropped from the unified
+        // spoken description. Same for x outside [minX..maxX].
+        val extents = ChartExtents.Rect(minX = 0, maxX = 1, minY = 0, maxY = 1)
+        val cellChanges =
+            listOf(
+                CellChange.Removed("L", ChartCell(symbolId = "out-row", x = 0, y = 3)),
+                CellChange.Removed("L", ChartCell(symbolId = "out-col", x = 5, y = 0)),
+                CellChange.Added("L", ChartCell(symbolId = "in-bounds", x = 1, y = 1)),
+            )
+
+        val descriptors = ChartAccessibility.rowDiffDescriptors(extents, cellChanges, emptyList())
+
+        assertEquals(1, descriptors.size)
+        assertEquals(2, descriptors.single().rowNumber)
+        assertEquals(
+            "in-bounds",
+            descriptors
+                .single()
+                .changes
+                .single()
+                .symbolId,
+        )
+    }
+
+    @Test
+    fun `rowDiffDescriptors returns empty for degenerate target extents`() {
+        val degenerate = ChartExtents.Rect(minX = 0, maxX = -1, minY = 0, maxY = -1)
+        val cellChanges = listOf(CellChange.Added("L", ChartCell(symbolId = "k", x = 0, y = 0)))
+
+        assertTrue(
+            ChartAccessibility.rowDiffDescriptors(degenerate, cellChanges, emptyList()).isEmpty(),
+        )
+    }
+
+    @Test
+    fun `spokenDiffLabel composes position and change list with separators`() {
+        val descriptor =
+            ChartAccessibility.RowDiffDescriptor(
+                rowNumber = 2,
+                rowCount = 3,
+                chartY = 1,
+                changes =
+                    listOf(
+                        RowDiffChange(colNumber = 1, kind = DiffChangeKind.ADDED, symbolId = "knit"),
+                        RowDiffChange(colNumber = 3, kind = DiffChangeKind.MODIFIED, symbolId = "purl"),
+                        RowDiffChange(colNumber = 5, kind = DiffChangeKind.REMOVED, symbolId = "yo"),
+                    ),
+            )
+
+        val spoken =
+            ChartAccessibility.spokenDiffLabel(descriptor, diffStrings) { id ->
+                when (id) {
+                    "knit" -> "knit"
+                    "purl" -> "purl"
+                    "yo" -> "yo"
+                    else -> id
+                }
+            }
+
+        assertEquals(
+            "Row 2 of 3 - col 1 added knit, col 3 modified to purl, col 5 removed yo",
+            spoken,
+        )
+    }
+
+    @Test
+    fun `spokenDiffLabel uses blankCellsName for null symbol and honors resolver fallback`() {
+        val descriptor =
+            ChartAccessibility.RowDiffDescriptor(
+                rowNumber = 1,
+                rowCount = 1,
+                chartY = 0,
+                changes =
+                    listOf(
+                        RowDiffChange(colNumber = 1, kind = DiffChangeKind.REMOVED, symbolId = null),
+                        RowDiffChange(
+                            colNumber = 2,
+                            kind = DiffChangeKind.ADDED,
+                            symbolId = "jis.knit.unknown",
+                        ),
+                    ),
+            )
+
+        // Resolver returns the id unchanged (R2-not-landed fallback path).
+        val spoken = ChartAccessibility.spokenDiffLabel(descriptor, diffStrings) { it }
+
+        // null symbol -> blankCellsName; unresolved id -> fallback verbatim.
+        assertEquals(
+            "Row 1 of 1 - col 1 removed blank, col 2 added jis.knit.unknown",
+            spoken,
+        )
     }
 }

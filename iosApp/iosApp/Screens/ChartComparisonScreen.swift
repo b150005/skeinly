@@ -248,15 +248,38 @@ private struct DualCanvasPanel: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .accessibilityIdentifier("baseChartCanvas")
 
-            DiffCanvas(
-                chart: diff.target,
-                catalog: catalog,
-                side: .target,
-                classification: classification,
-                pathCache: targetPathCache
-            )
-            .scaleEffect(scale)
-            .offset(offset)
+            // Target pane (right) — `GeometryReader` exposes the pane's
+            // pixel size to the R1c accessibility overlay so per-row
+            // VoiceOver elements can be placed at the SAME forward
+            // `computeDiffLayout` math the visual Canvas draws with
+            // (ADR-025 §d — single coordinate space, no inverse transform;
+            // the overlay sits OUTSIDE the canvas's `.scaleEffect` /
+            // `.offset` transform, matching the R1a viewer + R1b editor
+            // precedent). `.accessibilityHidden(true)` is applied to the
+            // **inner** Canvas only, never to the wrapper carrying the
+            // `targetChartCanvas` accessibilityIdentifier — the Maestro
+            // landmark is preserved while the drawn raster contributes no
+            // VoiceOver element (per ADR-025 §d Implementation refinement).
+            GeometryReader { geometry in
+                ZStack {
+                    DiffCanvas(
+                        chart: diff.target,
+                        catalog: catalog,
+                        side: .target,
+                        classification: classification,
+                        pathCache: targetPathCache
+                    )
+                    .scaleEffect(scale)
+                    .offset(offset)
+                    .accessibilityHidden(true)
+                    ChartComparisonAccessibilityOverlay(
+                        diff: diff,
+                        catalog: catalog,
+                        size: geometry.size
+                    )
+                }
+                .frame(width: geometry.size.width, height: geometry.size.height)
+            }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .accessibilityIdentifier("targetChartCanvas")
         }

@@ -351,3 +351,59 @@ descriptors ⇒ identical spoken text by construction.
   platforms use an in-source en/ja bilingual fallback selecting by
   device locale — identical pattern to R1a's `enLabel`/`jaLabel` symbol
   fallback. Audit B3 → CLOSED (R1b). B4 (Comparison) → R1c remains open.
+- 2026-05-18 — **R1c shipped** (Chart Comparison + per-row change list).
+  Extended `ChartAccessibility` with `DiffChangeKind` (`ADDED` /
+  `REMOVED` / `MODIFIED`), `RowDiffChange` (1-based `colNumber`, kind,
+  symbolId), `RowDiffDescriptor` (1-based `rowNumber` / `rowCount` /
+  `chartY` / non-empty `changes` list), `DiffA11yStrings` (7 localized
+  templates — 3 reused from R1a `a11y_chart_*`, 4 R1c-new), pure
+  `rowDiffDescriptors(targetExtents, cellChanges, layerChanges)` (groups
+  `CellChange.Added`/`Removed`/`Modified` + `LayerChange.Added`/`Removed`
+  cells by chartY into per-row change lists; skips
+  `LayerChange.PropertyChanged` at the cell level matching the renderer's
+  existing rule; sorts changes by `colNumber` asc; emits ONLY rows with
+  ≥1 change so SR users never swipe through unchanged rows), and
+  `spokenDiffLabel(...)` byte-identical formatter for both platforms +
+  12 new `commonTest` (cell-change → row mapping per kind, layer-add /
+  layer-remove expansion, PropertyChanged ignore, sort-by-col asc, omit
+  empty rows, 1-based off-by-one at row 1 / col 1 with offset extents,
+  drop changes outside target extents — the shrunken-target case,
+  degenerate extents → empty, AFTER-symbol use for Modified, formatter
+  composition + null/unresolved-id fallback) — **47 ChartAccessibilityTest
+  green** total. Compose `RectComparisonAccessibilityOverlay` (private
+  composable in `ChartComparisonScreen.kt` — per-row invisible `Box`
+  positioned with the SAME forward `computeDiffLayout` math the visual
+  Canvas draws with at base scale, inside a `BoxWithConstraints` exposing
+  the target-pane pixel size; `isTraversalGroup` on the parent +
+  `traversalIndex = rowNumber` for row-1-first SR traversal) and SwiftUI
+  `ChartComparisonAccessibilityOverlay` (new
+  `iosApp/iosApp/Screens/ChartComparisonAccessibility.swift`, mirrors
+  R1b's `ChartEditorAccessibility.swift`; per-row `Color.clear`
+  `.accessibilityElement()` + `.accessibilityLabel` +
+  `.accessibilitySortPriority`) wired into `ChartComparisonScreen.swift`
+  `DualCanvasPanel` — target pane wrapped in `GeometryReader` + `ZStack`;
+  `.accessibilityHidden(true)` applied to the inner `DiffCanvas` only,
+  never to the `GeometryReader` carrying the `targetChartCanvas`
+  accessibilityIdentifier (§(d) Implementation refinement — Maestro
+  landmark preserved). Implementation-time refinements (decisions
+  unchanged): (i) the overlay is aligned with the TARGET pane only
+  (`diff.base` can be `nil` on initial commit; target is always non-null
+  and represents the post-change state — `spokenDiffLabel` narrates a
+  unified diff anchored there); (ii) `LayerChange.PropertyChanged` is
+  surfaced exclusively by the existing `LayerChangesBanner` and is
+  intentionally NOT enumerated at the cell level by the overlay,
+  matching the renderer's `classifyCells` rule; (iii) Removed cells
+  whose `chartY` falls outside `target.extents` (shrunken-target rare
+  case) are silently dropped from the spoken description — they remain
+  visible on the base pane only, and tracking them in unified row index
+  would force a phantom out-of-bounds row number on the SR user (logged
+  as a Follow-up if the audit revisits); (iv) the 4 new R1c i18n keys
+  (`a11y_diff_change_added` / `_removed` / `_modified` / `_separator`)
+  are shipped via `docs/en/phase/tasks/R1c.i18n.tsv` for orchestrator
+  splice at consolidation (parallel-worktree i18n-fragment protocol);
+  Compose + SwiftUI both use in-source en/ja bilingual fallback
+  selecting by device locale, identical pattern to R1b's
+  `makeCellA11yStrings(isJa:)`. Audit B4 → CLOSED (R1c).
+  カラー以外で区別 (Differentiate-Without-Color) is now declarable;
+  VoiceOver still needs R2 (icon labels) + R3 (headings) per audit §5
+  progression table — R1 is necessary, not sufficient, for VoiceOver.

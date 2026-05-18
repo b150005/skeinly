@@ -1,7 +1,9 @@
 package io.github.b150005.skeinly.domain.chart
 
+import io.github.b150005.skeinly.domain.model.CellChange
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
+import io.github.b150005.skeinly.domain.model.LayerChange
 import io.github.b150005.skeinly.domain.model.SegmentState
 
 /**
@@ -344,6 +346,203 @@ object ChartAccessibility {
     ): String {
         if (selectedSymbolId == null) return strings.actionErase
         return strings.actionPlaceFormat.replace("%1\$s", symbolName(selectedSymbolId))
+    }
+
+    // ---------------------------------------------------------------------
+    // R1c — Chart Comparison per-row change list (ADR-025 §c Comparison row).
+    // Closes audit §3.1 B4: per-cell diff is 100% traffic-light fill with no
+    // a11y element; the per-row overlay reads each changed row as a spoken
+    // change list so VoiceOver/TalkBack + color-blind users can perceive the
+    // diff. Read-only: no actions (the Comparison surface is itself read-
+    // only); aggregate `DiffSummaryRow` is preserved as-is.
+    // ---------------------------------------------------------------------
+
+    /** Kind of per-cell diff change, mirroring [CellChange] / [LayerChange.Added] / [LayerChange.Removed]. */
+    enum class DiffChangeKind { ADDED, REMOVED, MODIFIED }
+
+    /**
+     * One change on a row, used by the per-row spoken description. [colNumber]
+     * is the 1-based display column (left = 1, matching the row-overlay
+     * numbering). [symbolId] is the symbol the *current* state has at the
+     * position — [DiffChangeKind.MODIFIED] uses the AFTER cell's symbol per
+     * `ChartComparison` "knitters care about what's at this position now"
+     * docs; [DiffChangeKind.ADDED] / [DiffChangeKind.REMOVED] use the added /
+     * removed cell's own symbol. `null` denotes a blank cell which the formatter
+     * substitutes via [DiffA11yStrings.blankCellsName].
+     */
+    data class RowDiffChange(
+        val colNumber: Int,
+        val kind: DiffChangeKind,
+        val symbolId: String?,
+    )
+
+    /**
+     * Per-row diff descriptor for an accessibility row element on the
+     * Comparison surface. Only rows that have ≥1 change are emitted — SR
+     * users do not swipe through unchanged rows. [rowNumber] is the 1-based
+     * display number (1 = bottom, matching R1a/R1b's row numbering and the
+     * knitting work order); [chartY] is the chart y-coordinate.
+     */
+    data class RowDiffDescriptor(
+        val rowNumber: Int,
+        val rowCount: Int,
+        val chartY: Int,
+        val changes: List<RowDiffChange>,
+    )
+
+    /**
+     * Localized templates for the Comparison spoken text. Placeholders follow
+     * the same `%1$d` / `%2$s` manual-replace convention as [A11yStrings] and
+     * [CellA11yStrings] so substitution is identical across Compose + SwiftUI
+     * by construction (ADR-025 §g) — `String.format` is JVM-only in common.
+     *
+     * [rowPositionFormat] / [sectionSeparator] / [blankCellsName] are reused
+     * verbatim from [A11yStrings] (R1a `a11y_chart_row_position` /
+     * `a11y_chart_section_separator` / `a11y_chart_blank_cells`); only the
+     * change-format trio + change-separator are R1c-new keys.
+     *
+     * [changeAddedFormat] / [changeRemovedFormat] / [changeModifiedFormat]
+     * take two placeholders each: column number then localized symbol name
+     * (`%1$d` `%2$s`). The Modified template ends in "to" / "を…に変更" — the
+     * AFTER symbol is the one substituted.
+     */
+    data class DiffA11yStrings(
+        val rowPositionFormat: String,
+        val changeSeparator: String,
+        val changeAddedFormat: String,
+        val changeRemovedFormat: String,
+        val changeModifiedFormat: String,
+        val sectionSeparator: String,
+        val blankCellsName: String,
+    )
+
+    /**
+     * Build per-row diff descriptors for a rect Comparison surface. The
+     * [targetExtents] anchors row indexing (target is always non-null per
+     * [io.github.b150005.skeinly.domain.model.ChartComparison]; base may be
+     * `null` on initial commit). Changes whose `x` / `y` falls outside
+     * [targetExtents] (the shrunken-target case where base had rows the new
+     * target lost) are silently dropped — those cells are already highlighted
+     * on the base pane visually; surfacing them in the unified spoken row
+     * description would force a phantom out-of-bounds row number on the SR
+     * user. (Tracked as a Follow-up if the audit revisits.) Rows with zero
+     * changes are NOT emitted.
+     *
+     * Polar is intentionally NOT handled here: per ADR-025 §e the polar
+     * a11y path is gated to Phase 35.2+ in lockstep with M5; the caller is
+     * responsible for not invoking this on a polar chart (Compose/SwiftUI
+     * already gate on `is Rect`).
+     */
+    fun rowDiffDescriptors(
+        targetExtents: ChartExtents.Rect,
+        cellChanges: List<CellChange>,
+        layerChanges: List<LayerChange>,
+    ): List<RowDiffDescriptor> {
+        if (targetExtents.maxX < targetExtents.minX || targetExtents.maxY < targetExtents.minY) {
+            return emptyList()
+        }
+        val gridHeight = targetExtents.maxY - targetExtents.minY + 1
+
+        // Buckets keyed by chartY -> list of RowDiffChange. LinkedHashMap to
+        // keep insertion order stable across cellChanges then layerChanges,
+        // then sort each bucket by colNumber asc at the end.
+        val buckets = linkedMapOf<Int, MutableList<RowDiffChange>>()
+
+        fun emit(
+            x: Int,
+            y: Int,
+            kind: DiffChangeKind,
+            symbolId: String?,
+        ) {
+            if (x < targetExtents.minX || x > targetExtents.maxX) return
+            if (y < targetExtents.minY || y > targetExtents.maxY) return
+            val col = x - targetExtents.minX + 1
+            buckets.getOrPut(y) { mutableListOf() }.add(RowDiffChange(col, kind, symbolId))
+        }
+
+        cellChanges.forEach { change ->
+            when (change) {
+                is CellChange.Added -> emit(change.cell.x, change.cell.y, DiffChangeKind.ADDED, change.cell.symbolId)
+                is CellChange.Removed ->
+                    emit(change.cell.x, change.cell.y, DiffChangeKind.REMOVED, change.cell.symbolId)
+                is CellChange.Modified ->
+                    // Position-keyed: before.x/y == after.x/y by construction.
+                    // Announce the AFTER symbol — "what's at this position now"
+                    // per ChartComparison docs.
+                    emit(change.after.x, change.after.y, DiffChangeKind.MODIFIED, change.after.symbolId)
+            }
+        }
+        layerChanges.forEach { change ->
+            when (change) {
+                is LayerChange.Added ->
+                    change.layer.cells.forEach { cell ->
+                        emit(cell.x, cell.y, DiffChangeKind.ADDED, cell.symbolId)
+                    }
+                is LayerChange.Removed ->
+                    change.layer.cells.forEach { cell ->
+                        emit(cell.x, cell.y, DiffChangeKind.REMOVED, cell.symbolId)
+                    }
+                is LayerChange.PropertyChanged -> {
+                    // No per-cell enumeration — mirrors the existing renderer
+                    // rule in ChartComparisonScreen.classifyCells. The banner
+                    // already surfaces the layer-property change separately.
+                }
+            }
+        }
+
+        // Sort each row's changes by colNumber asc, then build descriptors in
+        // chartY-ascending order (bottom=row 1 traversal — matches R1a/R1b).
+        // `toSortedMap()` is JVM-only; in commonMain (Kotlin/Native + JVM) we
+        // sort the keys explicitly. Explicit `bucket[chartY]` access instead of
+        // entry destructuring — destructuring a `Map<Int, MutableList<…>>`
+        // entry trips an ambiguous `component2()` error on Kotlin/Native.
+        val sortedYs = buckets.keys.sorted()
+        return sortedYs.map { chartY ->
+            val raw = buckets.getValue(chartY)
+            RowDiffDescriptor(
+                rowNumber = chartY - targetExtents.minY + 1,
+                rowCount = gridHeight,
+                chartY = chartY,
+                changes = raw.sortedBy { it.colNumber },
+            )
+        }
+    }
+
+    /**
+     * Compose the spoken accessibility label for a Comparison row from its
+     * descriptor + platform-supplied localized templates + a symbol-name
+     * resolver. Pure and shared so Compose and SwiftUI produce byte-identical
+     * text by construction (ADR-025 §g). `null` symbol substitutes
+     * [DiffA11yStrings.blankCellsName].
+     *
+     * @param symbolName `symbolId → localized name` (platform resolves
+     *   `catalog.jaLabel` / `enLabel` by locale; falls back to the id until
+     *   R2 localizes the catalog — same fallback as [spokenLabel] / [spokenCellLabel]).
+     */
+    fun spokenDiffLabel(
+        descriptor: RowDiffDescriptor,
+        strings: DiffA11yStrings,
+        symbolName: (symbolId: String) -> String,
+    ): String {
+        val position =
+            strings.rowPositionFormat
+                .replace("%1\$d", descriptor.rowNumber.toString())
+                .replace("%2\$d", descriptor.rowCount.toString())
+
+        val changesText =
+            descriptor.changes.joinToString(strings.changeSeparator) { change ->
+                val name = change.symbolId?.let(symbolName) ?: strings.blankCellsName
+                val template =
+                    when (change.kind) {
+                        DiffChangeKind.ADDED -> strings.changeAddedFormat
+                        DiffChangeKind.REMOVED -> strings.changeRemovedFormat
+                        DiffChangeKind.MODIFIED -> strings.changeModifiedFormat
+                    }
+                template
+                    .replace("%1\$d", change.colNumber.toString())
+                    .replace("%2\$s", name)
+            }
+        return listOf(position, changesText).joinToString(strings.sectionSeparator)
     }
 
     /**
