@@ -28,9 +28,12 @@ struct MfaChallengeScreen: View {
                     .padding(.top, 32)
 
                 TextField(
+                    // R2 (audit §3.2 H8) — TOTP branch had `LocalizedStringKey("")`,
+                    // SR announced only "text field". Localized key for the
+                    // verification-code input.
                     isRecoveryPhase
                         ? LocalizedStringKey("label_mfa_recovery_code_input")
-                        : LocalizedStringKey(""),
+                        : LocalizedStringKey("label_mfa_code_input"),
                     text: Binding(
                         get: { state.codeInput },
                         set: { viewModel.onEvent(event: MfaChallengeEventUpdateCode(code: $0)) }

@@ -168,6 +168,7 @@ struct ProjectListScreen: View {
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
+                .accessibilityLabel(LocalizedStringKey("action_more_options"))
                 .accessibilityIdentifier("moreMenu")
             }
         }

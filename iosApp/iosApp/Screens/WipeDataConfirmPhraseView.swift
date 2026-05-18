@@ -132,7 +132,10 @@ struct WipeDataConfirmPhraseView: View {
     private func phraseEntryContent(state: WipeDataState) -> some View {
         Form {
             Section {
-                TextField("", text: phraseBinding(state: state))
+                // R2 (audit §3.3 M4) — destructive-action gate announced
+                // bare "text field"; the Section header is not a field
+                // label for VoiceOver. Localized confirm-phrase label.
+                TextField(LocalizedStringKey("label_wipe_confirm_phrase"), text: phraseBinding(state: state))
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled(true)
                     .disabled(state.isSubmitting)

@@ -1,0 +1,11 @@
+key	en	ja	xcstrings_value
+a11y_label_palette_cell	Symbol: %1$s	記号: %1$s	Symbol: %1$@
+a11y_action_eraser_tool	Eraser tool	消しゴムツール	Eraser tool
+title_chart_images	Chart Images	編み図	Chart Images
+a11y_chart_image_thumbnail	Chart image thumbnail	編み図のサムネイル	Chart image thumbnail
+a11y_action_remove_image	Remove image	画像を削除	Remove image
+a11y_action_add_chart_image	Add chart image	編み図を追加	Add chart image
+a11y_chart_image_fullscreen	Chart image fullscreen	編み図全画面	Chart image fullscreen
+a11y_action_close_viewer	Close image viewer	画像ビューアを閉じる	Close image viewer
+label_mfa_code_input	Verification code	確認コード	Verification code
+label_wipe_confirm_phrase	Confirmation phrase	確認フレーズ	Confirmation phrase

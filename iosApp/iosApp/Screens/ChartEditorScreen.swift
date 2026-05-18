@@ -106,12 +106,14 @@ struct ChartEditorScreen: View {
                 Button {
                     viewModel.onEvent(event: ChartEditorEventUndo.shared)
                 } label: { Image(systemName: "arrow.uturn.backward") }
+                .accessibilityLabel(LocalizedStringKey("action_undo"))
                 .accessibilityIdentifier("editorUndoButton")
                 .disabled(!state.canUndo)
 
                 Button {
                     viewModel.onEvent(event: ChartEditorEventRedo.shared)
                 } label: { Image(systemName: "arrow.uturn.forward") }
+                .accessibilityLabel(LocalizedStringKey("action_redo"))
                 .accessibilityIdentifier("editorRedoButton")
                 .disabled(!state.canRedo)
 
@@ -224,6 +226,7 @@ struct ChartEditorScreen: View {
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
+                .accessibilityLabel(LocalizedStringKey("action_more_options"))
                 .accessibilityIdentifier("editorOverflowButton")
             }
         }
@@ -1146,8 +1149,36 @@ private struct PaletteSymbolCell: View {
                             lineWidth: selected ? 2 : 1)
             )
         }
+        // R2 (audit §3.2 H1) — was unlabeled; def.{en,ja}Label was unused.
+        // Speaks "Symbol: <name>" / "記号: <name>" via the same locale-
+        // resolution pattern as ChartViewerAccessibility.swift:70.
+        .accessibilityLabel(Text(paletteSymbolAccessibilityLabel(for: def)))
+        .accessibilityAddTraits(selected ? [.isSelected] : [])
         .accessibilityIdentifier("paletteSymbol_\(def.id)")
     }
+}
+
+/// R2 (audit §3.2 H1) — shared helper that resolves the locale-appropriate
+/// symbol name and threads it through the `a11y_label_palette_cell`
+/// formatter ("Symbol: %1$@" / "記号: %1$@"). Used by both
+/// `PaletteSymbolCell` and `LockedPaletteSymbolCell` so the SR-spoken
+/// shape stays consistent for entitled vs locked cells.
+private func paletteSymbolAccessibilityLabel(for def: SymbolDefinition) -> String {
+    let isJa = Locale.current.language.languageCode?.identifier == "ja"
+    let symbolName = isJa ? def.jaLabel : def.enLabel
+    return String(
+        format: NSLocalizedString("a11y_label_palette_cell", comment: ""),
+        symbolName
+    )
+}
+
+/// R2 (audit §3.2 H1) — locked-cell variant. Composes the entitled-cell
+/// label with the localized `title_locked_symbol` ("Pro symbol" / "Pro
+/// シンボル") so SR speaks "Pro symbol · Symbol: <name>".
+private func lockedPaletteSymbolAccessibilityLabel(for def: SymbolDefinition) -> String {
+    let lockedPrefix = NSLocalizedString("title_locked_symbol", comment: "")
+    let symbolLabel = paletteSymbolAccessibilityLabel(for: def)
+    return "\(lockedPrefix) · \(symbolLabel)"
 }
 
 /// Phase 41.4 (ADR-016 §5.2) — locked-Pro palette cell. Visually distinct
@@ -1230,7 +1261,10 @@ private struct LockedPaletteSymbolCell: View {
             }
         }
         .accessibilityIdentifier("paletteSymbolLocked_\(def.id)")
-        .accessibilityLabel(LocalizedStringKey("title_locked_symbol"))
+        // R2 (audit §3.2 H1) — was "Pro symbol" only, never said which
+        // symbol. Composes "<Pro symbol> · <Symbol: name>" so SR speaks
+        // both the locked state and which symbol is locked.
+        .accessibilityLabel(Text(lockedPaletteSymbolAccessibilityLabel(for: def)))
     }
 }
 

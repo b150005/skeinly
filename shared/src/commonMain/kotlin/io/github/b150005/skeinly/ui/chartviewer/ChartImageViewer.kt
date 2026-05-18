@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import io.github.b150005.skeinly.generated.resources.Res
+import io.github.b150005.skeinly.generated.resources.a11y_action_close_viewer
+import io.github.b150005.skeinly.generated.resources.a11y_chart_image_fullscreen
 import io.github.b150005.skeinly.generated.resources.state_image_load_failed
 import org.jetbrains.compose.resources.stringResource
 
@@ -82,7 +84,7 @@ fun ChartImageViewer(
     ) {
         AsyncImage(
             model = imageUrl,
-            contentDescription = "Chart image",
+            contentDescription = stringResource(Res.string.a11y_chart_image_fullscreen),
             contentScale = ContentScale.Fit,
             onState = { state ->
                 isLoading = state is AsyncImagePainter.State.Loading
@@ -127,7 +129,7 @@ fun ChartImageViewer(
         ) {
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = "Close",
+                contentDescription = stringResource(Res.string.a11y_action_close_viewer),
                 tint = Color.White,
             )
         }

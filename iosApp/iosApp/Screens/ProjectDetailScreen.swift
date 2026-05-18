@@ -536,6 +536,10 @@ struct ProjectDetailScreen: View {
             PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
                 Image(systemName: "plus.circle")
             }
+            // R2 (audit §3.2 H5) — sole affordance to add a chart image was
+            // unlabeled; SR read the SF Symbol name. Shared key with the
+            // Compose ChartImageGrid.kt AddImageButton.
+            .accessibilityLabel(LocalizedStringKey("a11y_action_add_chart_image"))
         }
 
         if state.isUploadingImage {
@@ -583,6 +587,22 @@ struct ProjectDetailScreen: View {
                                 } label: {
                                     Label(LocalizedStringKey("action_remove"), systemImage: "trash")
                                 }
+                            }
+                        }
+                        // R2 (audit §3.2 H5) — tappable + deletable
+                        // thumbnails had no SR semantics. Consolidate via
+                        // `.accessibilityElement(children: .ignore)` (the
+                        // inner AsyncImage default label "Image" is noise),
+                        // expose the open-fullscreen tap as the primary
+                        // action, and surface the contextMenu's destructive
+                        // delete as a named SR action (rotor-discoverable).
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(LocalizedStringKey("a11y_chart_image_thumbnail"))
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityAction(named: LocalizedStringKey("action_remove")) {
+                            if index < storagePaths.count {
+                                chartImageToDelete = storagePaths[index]
+                                showDeleteChartImageConfirmation = true
                             }
                         }
                     }

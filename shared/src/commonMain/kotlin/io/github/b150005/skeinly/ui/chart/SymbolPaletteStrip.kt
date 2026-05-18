@@ -29,13 +29,22 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.b150005.skeinly.domain.symbol.SymbolCategory
 import io.github.b150005.skeinly.domain.symbol.SymbolDefinition
 import io.github.b150005.skeinly.generated.resources.Res
+import io.github.b150005.skeinly.generated.resources.a11y_action_eraser_tool
+import io.github.b150005.skeinly.generated.resources.a11y_label_palette_cell
 import io.github.b150005.skeinly.generated.resources.title_locked_symbol
+import io.github.b150005.skeinly.platform.DeviceContextProvider
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 
 /**
  * Horizontal palette strip for the chart editor. Shows an "Eraser" cell followed
@@ -58,6 +67,12 @@ fun SymbolPaletteStrip(
     lockedProSymbols: List<SymbolDefinition> = emptyList(),
     onLockedSymbolTap: () -> Unit = {},
 ) {
+    // R2 (audit §3.2 H1) — palette cells speak locale-appropriate symbol
+    // names. Resolves once at the strip level (same pattern as
+    // ChartViewerScreen line 712) and threads down via the cell composables
+    // so the inner cells stay pure of Koin lookups.
+    val deviceContext: DeviceContextProvider = koinInject()
+    val isJa = deviceContext.locale.startsWith("ja", ignoreCase = true)
     Column(modifier = modifier.fillMaxWidth()) {
         LazyRow(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -89,6 +104,7 @@ fun SymbolPaletteStrip(
                 PaletteSymbolCell(
                     def = def,
                     selected = def.id == selectedSymbolId,
+                    isJa = isJa,
                     onClick = { onSymbolSelected(def.id) },
                 )
             }
@@ -101,6 +117,7 @@ fun SymbolPaletteStrip(
             items(lockedProSymbols, key = { "locked_${it.id}" }) { def ->
                 LockedPaletteSymbolCell(
                     def = def,
+                    isJa = isJa,
                     onClick = onLockedSymbolTap,
                 )
             }
@@ -115,6 +132,10 @@ private fun EraserCell(
 ) {
     val borderColor =
         if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+    // R2 (audit §3.2 H1) — was hardcoded "Eraser"; routed through the
+    // localized key + cell-level semantics announce role=Button + selected.
+    val eraserLabel = stringResource(Res.string.a11y_action_eraser_tool)
+    val isSelected = selected
     Box(
         modifier =
             Modifier
@@ -124,12 +145,18 @@ private fun EraserCell(
                 .background(MaterialTheme.colorScheme.surfaceVariant)
                 .border(width = if (selected) 2.dp else 1.dp, color = borderColor, shape = RoundedCornerShape(8.dp))
                 .clickable(onClick = onClick)
-                .testTag("paletteEraser"),
+                .semantics {
+                    contentDescription = eraserLabel
+                    role = Role.Button
+                    this.selected = isSelected
+                }.testTag("paletteEraser"),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = Icons.Filled.Clear,
-            contentDescription = "Eraser",
+            // Cell-level semantics already speaks the eraser label; null on
+            // the inner Icon avoids SR double-announcement.
+            contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
@@ -139,11 +166,18 @@ private fun EraserCell(
 private fun PaletteSymbolCell(
     def: SymbolDefinition,
     selected: Boolean,
+    isJa: Boolean,
     onClick: () -> Unit,
 ) {
     val borderColor =
         if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
     val surface = MaterialTheme.colorScheme.onSurface
+    // R2 (audit §3.2 H1) — was unlabeled; def.{en,ja}Label was unused.
+    // Formats via the `a11y_label_palette_cell` placeholder so SR speaks
+    // "Symbol: <name>" / "記号: <name>" with role=Button + selected state.
+    val symbolName = if (isJa) def.jaLabel else def.enLabel
+    val cellDescription = stringResource(Res.string.a11y_label_palette_cell, symbolName)
+    val isSelected = selected
     Box(
         modifier =
             Modifier
@@ -153,7 +187,11 @@ private fun PaletteSymbolCell(
                 .background(MaterialTheme.colorScheme.surface)
                 .border(width = if (selected) 2.dp else 1.dp, color = borderColor, shape = RoundedCornerShape(8.dp))
                 .clickable(onClick = onClick)
-                .testTag("paletteSymbol_${def.id}"),
+                .semantics {
+                    contentDescription = cellDescription
+                    role = Role.Button
+                    this.selected = isSelected
+                }.testTag("paletteSymbol_${def.id}"),
         contentAlignment = Alignment.Center,
     ) {
         Canvas(
@@ -176,11 +214,20 @@ private fun PaletteSymbolCell(
 @Composable
 private fun LockedPaletteSymbolCell(
     def: SymbolDefinition,
+    isJa: Boolean,
     onClick: () -> Unit,
 ) {
     val outlineColor = MaterialTheme.colorScheme.outlineVariant
     val surface = MaterialTheme.colorScheme.onSurface
     val lockedDescription = stringResource(Res.string.title_locked_symbol)
+    // R2 (audit §3.2 H1) — was unlabeled; the lock-icon contentDescription
+    // alone said "Pro symbol" but never the symbol name. The cell-level
+    // semantic now composes "<Pro symbol> · <Symbol: name>" so SR speaks
+    // both the locked state and which symbol is locked.
+    val symbolName = if (isJa) def.jaLabel else def.enLabel
+    val cellDescription =
+        lockedDescription + " · " +
+            stringResource(Res.string.a11y_label_palette_cell, symbolName)
     Box(
         modifier =
             Modifier
@@ -190,7 +237,10 @@ private fun LockedPaletteSymbolCell(
                 .background(MaterialTheme.colorScheme.surfaceVariant)
                 .border(width = 1.dp, color = outlineColor, shape = RoundedCornerShape(8.dp))
                 .clickable(onClick = onClick)
-                .testTag("paletteSymbolLocked_${def.id}"),
+                .semantics {
+                    contentDescription = cellDescription
+                    role = Role.Button
+                }.testTag("paletteSymbolLocked_${def.id}"),
         contentAlignment = Alignment.Center,
     ) {
         Canvas(
@@ -224,7 +274,9 @@ private fun LockedPaletteSymbolCell(
         ) {
             Icon(
                 imageVector = Icons.Filled.Lock,
-                contentDescription = lockedDescription,
+                // Cell-level semantics already announces locked + symbol;
+                // null on the inner Lock icon avoids SR double-announcement.
+                contentDescription = null,
                 tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(12.dp),
             )

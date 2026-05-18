@@ -27,6 +27,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import io.github.b150005.skeinly.generated.resources.Res
+import io.github.b150005.skeinly.generated.resources.a11y_action_add_chart_image
+import io.github.b150005.skeinly.generated.resources.a11y_action_remove_image
+import io.github.b150005.skeinly.generated.resources.a11y_chart_image_thumbnail
+import io.github.b150005.skeinly.generated.resources.title_chart_images
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ChartImageGrid(
@@ -40,7 +46,7 @@ fun ChartImageGrid(
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
-            text = "Chart Images",
+            text = stringResource(Res.string.title_chart_images),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
@@ -83,7 +89,7 @@ private fun ChartImageThumbnail(
     ) {
         AsyncImage(
             model = imageUrl,
-            contentDescription = "Chart thumbnail",
+            contentDescription = stringResource(Res.string.a11y_chart_image_thumbnail),
             contentScale = ContentScale.Crop,
             modifier = Modifier.matchParentSize(),
         )
@@ -99,7 +105,7 @@ private fun ChartImageThumbnail(
         ) {
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = "Remove image",
+                contentDescription = stringResource(Res.string.a11y_action_remove_image),
                 tint = MaterialTheme.colorScheme.onError,
                 modifier =
                     Modifier
@@ -132,7 +138,7 @@ private fun AddImageButton(
         } else {
             Icon(
                 imageVector = Icons.Default.Add,
-                contentDescription = "Add chart image",
+                contentDescription = stringResource(Res.string.a11y_action_add_chart_image),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(32.dp),
             )

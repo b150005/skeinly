@@ -119,7 +119,10 @@ struct MfaEnrollmentScreen: View {
             Text(LocalizedStringKey("body_mfa_confirm_code"))
                 .multilineTextAlignment(.center)
 
-            TextField("", text: Binding(
+            // R2 (audit §3.2 H8) — bare empty-string label announced as
+            // "text field". Shares the `label_mfa_code_input` key with
+            // MfaChallengeScreen's TOTP branch.
+            TextField(LocalizedStringKey("label_mfa_code_input"), text: Binding(
                 get: { state.codeInput },
                 set: { viewModel.onEvent(event: MfaEnrollmentEventUpdateCode(code: $0)) }
             ))

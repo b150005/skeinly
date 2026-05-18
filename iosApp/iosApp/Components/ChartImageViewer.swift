@@ -64,6 +64,10 @@ struct ChartImageViewer: View {
                             .foregroundColor(.white)
                             .padding()
                     }
+                    // R2 (audit §3.2 H3) — was unlabeled; SR read the raw
+                    // SF Symbol name. Localized close-viewer key shared
+                    // with the Compose ChartImageViewer.kt:130 site.
+                    .accessibilityLabel(LocalizedStringKey("a11y_action_close_viewer"))
                     Spacer()
                 }
                 Spacer()

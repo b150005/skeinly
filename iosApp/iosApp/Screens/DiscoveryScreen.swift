@@ -195,6 +195,7 @@ struct DiscoveryScreen: View {
             } label: {
                 Image(systemName: "arrow.up.arrow.down")
             }
+            .accessibilityLabel(LocalizedStringKey("action_sort"))
         }
     }
 
