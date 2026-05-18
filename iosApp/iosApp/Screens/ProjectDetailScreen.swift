@@ -23,6 +23,14 @@ struct ProjectDetailScreen: View {
     @State private var editTotalRows = ""
     @State private var newNote = ""
 
+    // R4 (a11y audit §4): scale the counter + increment/decrement glyphs with
+    // the system Dynamic Type setting. `DesignTokens.*` values stay the base;
+    // `@ScaledMetric` routes them through `UIFontMetrics` so the same constants
+    // grow at larger Dynamic Type levels without editing DesignTokens.swift.
+    @ScaledMetric(relativeTo: .largeTitle) private var scaledCounterFontSize: CGFloat = DesignTokens.counterFontSize
+    @ScaledMetric(relativeTo: .title) private var scaledDecrementButtonSize: CGFloat = DesignTokens.decrementButtonSize
+    @ScaledMetric(relativeTo: .title) private var scaledIncrementButtonSize: CGFloat = DesignTokens.incrementButtonSize
+
     init(projectId: String, path: Binding<NavigationPath>) {
         self.projectId = projectId
         self._path = path
@@ -305,7 +313,7 @@ struct ProjectDetailScreen: View {
             StatusBadge(status: project.status)
 
             Text("\(project.currentRow)")
-                .font(.system(size: DesignTokens.counterFontSize, weight: .bold, design: .rounded))
+                .font(.system(size: scaledCounterFontSize, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .accessibilityIdentifier("rowCounter")
 
@@ -330,7 +338,7 @@ struct ProjectDetailScreen: View {
                     viewModel.onEvent(event: ProjectDetailEventDecrementRow.shared)
                 } label: {
                     Image(systemName: "minus.circle.fill")
-                        .font(.system(size: DesignTokens.decrementButtonSize))
+                        .font(.system(size: scaledDecrementButtonSize))
                 }
                 .disabled(project.currentRow <= 0 || project.status == .completed)
                 .accessibilityIdentifier("decrementButton")
@@ -340,7 +348,7 @@ struct ProjectDetailScreen: View {
                     viewModel.onEvent(event: ProjectDetailEventIncrementRow.shared)
                 } label: {
                     Image(systemName: "plus.circle.fill")
-                        .font(.system(size: DesignTokens.incrementButtonSize))
+                        .font(.system(size: scaledIncrementButtonSize))
                 }
                 .disabled(project.status == .completed)
                 .accessibilityIdentifier("incrementButton")

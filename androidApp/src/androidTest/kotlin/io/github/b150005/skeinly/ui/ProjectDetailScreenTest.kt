@@ -1,6 +1,9 @@
 package io.github.b150005.skeinly.ui
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -8,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.unit.Density
 import io.github.b150005.skeinly.SkeinlyTheme
 import io.github.b150005.skeinly.domain.LocalUser
 import io.github.b150005.skeinly.domain.model.Project
@@ -188,5 +192,59 @@ class ProjectDetailScreenTest {
 
             waitForIdle()
             onNodeWithText("Project not found").assertIsDisplayed()
+        }
+
+    // R4 (a11y audit §4): regression tests for ProjectDetail Dynamic Type fix.
+    // CompositionLocalProvider overrides LocalDensity to simulate the user's
+    // system fontScale = 2 setting; the counter + +/- buttons must remain
+    // visible and reachable instead of being clipped by the previously fixed
+    // sp/dp sizes (96.sp counter, 72.dp / 96.dp button containers).
+    @Test
+    fun rowCounter_rendersAtFontScale2_withoutClipping() =
+        runComposeUiTest {
+            seedProject(currentRow = 10, totalRows = 50)
+
+            setContent {
+                val baseDensity = LocalDensity.current
+                CompositionLocalProvider(
+                    LocalDensity provides
+                        Density(
+                            density = baseDensity.density,
+                            fontScale = 2f,
+                        ),
+                ) {
+                    SkeinlyTheme {
+                        ProjectDetailScreen(projectId = "p1", onBack = {})
+                    }
+                }
+            }
+
+            waitForIdle()
+            onNodeWithTag("rowCounter").assertIsDisplayed().assertTextEquals("10")
+        }
+
+    @Test
+    fun incrementAndDecrementButtons_remainReachableAtFontScale2() =
+        runComposeUiTest {
+            seedProject(currentRow = 5, totalRows = 20)
+
+            setContent {
+                val baseDensity = LocalDensity.current
+                CompositionLocalProvider(
+                    LocalDensity provides
+                        Density(
+                            density = baseDensity.density,
+                            fontScale = 2f,
+                        ),
+                ) {
+                    SkeinlyTheme {
+                        ProjectDetailScreen(projectId = "p1", onBack = {})
+                    }
+                }
+            }
+
+            waitForIdle()
+            onNodeWithTag("incrementButton").assertIsDisplayed().assertHasClickAction()
+            onNodeWithTag("decrementButton").assertIsDisplayed().assertHasClickAction()
         }
 }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -66,7 +67,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import io.github.b150005.skeinly.domain.model.CommentTargetType
 import io.github.b150005.skeinly.domain.model.Pattern
@@ -628,9 +628,12 @@ private fun CounterSection(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // R4 (a11y audit §4): use Material 3 typography token (displayLarge ≈ 57sp
+        // base) instead of fixed 96.sp so the counter follows the system fontScale.
+        // Container is allowed to grow with text — no fixed-height parent.
         Text(
             text = "$currentRow",
-            fontSize = 96.sp,
+            style = MaterialTheme.typography.displayLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.testTag("rowCounter"),
@@ -676,25 +679,34 @@ private fun CounterSection(
             horizontalArrangement = Arrangement.spacedBy(24.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // R4 (a11y audit §4): defaultMinSize replaces fixed size so the buttons
+            // keep WCAG 2.5.5 touch-target minimums but grow with fontScale when
+            // the inner glyph (headlineMedium / displaySmall) scales up.
             FilledTonalButton(
                 onClick = onDecrement,
-                modifier = Modifier.size(72.dp).testTag("decrementButton"),
+                modifier =
+                    Modifier
+                        .defaultMinSize(minWidth = 72.dp, minHeight = 72.dp)
+                        .testTag("decrementButton"),
                 enabled = currentRow > 0,
             ) {
                 Text(
                     text = "-",
-                    fontSize = 28.sp,
+                    style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                 )
             }
 
             FilledTonalButton(
                 onClick = onIncrement,
-                modifier = Modifier.size(96.dp).testTag("incrementButton"),
+                modifier =
+                    Modifier
+                        .defaultMinSize(minWidth = 96.dp, minHeight = 96.dp)
+                        .testTag("incrementButton"),
             ) {
                 Text(
                     text = "+",
-                    fontSize = 36.sp,
+                    style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Bold,
                 )
             }
