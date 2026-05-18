@@ -20,10 +20,11 @@
 
 The orchestrator schedules the next parallel batch from this file by
 running the write-set disjointness analysis (CLAUDE.md protocol §3) over
-the open items below. R1c / R2 / R3 / R5 (the accessibility R-series
-residual after R1a + R1b + R4 shipped 2026-05-18, see
-`### Accessibility deferrals`) plus the open Phase 28 / Pre-Phase-40 /
-post-beta items are the current parallel candidate pool. The ASC `(c)`
+the open items below. R3 / R5 (the accessibility R-series residual after
+R1a + R1b + R1c + R2 + R4 shipped 2026-05-18, see `### Accessibility
+deferrals` — serialize R3 → R5 since both touch `OnboardingScreen.kt`)
+plus the open Phase 28 / Pre-Phase-40 / post-beta items are the current
+parallel candidate pool. The ASC `(c)`
 declaration governance + the authoritative R-series progression table
 live in [`tech-debt.md`](tech-debt.md) `### Phase 40 GA release prep`
 (the ASC accessibility 申告 bullet) — that bullet is the timing source of

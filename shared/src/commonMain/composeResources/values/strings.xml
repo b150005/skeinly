@@ -1051,4 +1051,18 @@
     <string name="a11y_editor_cell_blank">blank</string>
     <string name="a11y_editor_action_place">Place %1$s</string>
     <string name="a11y_editor_action_erase">Erase</string>
+    <string name="a11y_diff_change_added">col %1$d added %2$s</string>
+    <string name="a11y_diff_change_removed">col %1$d removed %2$s</string>
+    <string name="a11y_diff_change_modified">col %1$d modified to %2$s</string>
+    <string name="a11y_diff_change_separator">, </string>
+    <string name="a11y_label_palette_cell">Symbol: %1$s</string>
+    <string name="a11y_action_eraser_tool">Eraser tool</string>
+    <string name="a11y_action_add_chart_image">Add chart image</string>
+    <string name="a11y_action_remove_image">Remove image</string>
+    <string name="a11y_action_close_viewer">Close image viewer</string>
+    <string name="a11y_chart_image_thumbnail">Chart image thumbnail</string>
+    <string name="a11y_chart_image_fullscreen">Chart image fullscreen</string>
+    <string name="title_chart_images">Chart Images</string>
+    <string name="label_mfa_code_input">Verification code</string>
+    <string name="label_wipe_confirm_phrase">Confirmation phrase</string>
 </resources>

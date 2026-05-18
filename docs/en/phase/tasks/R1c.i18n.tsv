@@ -1,5 +1,0 @@
-key	en	ja	xcstrings_value
-a11y_diff_change_added	col %1$d added %2$s	%1$d列目に%2$sを追加	col %1$d added %2$s
-a11y_diff_change_removed	col %1$d removed %2$s	%1$d列目の%2$sを削除	col %1$d removed %2$s
-a11y_diff_change_modified	col %1$d modified to %2$s	%1$d列目を%2$sに変更	col %1$d modified to %2$s
-a11y_diff_change_separator	, 	、	,

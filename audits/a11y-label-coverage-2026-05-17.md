@@ -88,6 +88,32 @@ diff state) unblocks two declarations across three screens × two platforms.
 > reads full string ⇒ does not block the declaration; deferred to its own
 > slice per R4 worker scope cut). §5 progression table unchanged — `After R1`
 > remains gating on R1c.
+>
+> **R1c + R2 progress update (2026-05-18, ADR-025 + audit §4 R2)**: the
+> **Chart Comparison** final third of R1 + the icon-label + i18n sweep are
+> shipped. **B4 CLOSED** on both platforms (commit `8ca758d`) via the same
+> `ChartAccessibility` per-row model (extended with `DiffChangeKind` /
+> `RowDiffChange` / `RowDiffDescriptor` / `DiffA11yStrings` +
+> `spokenDiffLabel`) + Compose `RectComparisonAccessibilityOverlay` + new
+> SwiftUI `ChartComparisonAccessibility.swift`; 4 `a11y_diff_*` i18n keys;
+> 47 ChartAccessibilityTest green (+12 new). Rect only — polar gated Phase
+> 35.2+ identical to R1a/R1b. **H1, H2, H3, H4, H5, H8 + M4 CLOSED**
+> (commit `5be0034`) — mechanical icon-label / hardcoded-EN-to-i18n /
+> empty-TextField-label sweep across 3 Compose files (`SymbolPaletteStrip.kt`,
+> `ChartImageGrid.kt`, `ChartImageViewer.kt`) + 8 SwiftUI screens
+> (ProjectList / Discovery / ChartEditor / ProjectDetail chartImagesSection /
+> ChartImageViewer / MfaChallenge / MfaEnrollment / WipeDataConfirmPhrase);
+> 10 new i18n keys + 7 reused keys; +1 XCUITest file
+> (`IconButtonAccessibilityTests`). After R1c + R2, declaration state:
+> **Differentiate-Without-Color (カラー以外で区別) declarable today** (B2 +
+> B4 both closed end-to-end on both platforms via shared
+> `ChartAccessibility` text); VoiceOver still gated on R3 (H9 heading
+> semantics); さらに大きな文字 already declarable post-R4. **Today's safe
+> declarations after this consolidation: ダークインターフェイス +
+> 視差効果を減らす + さらに大きな文字 + カラー以外で区別** (4/6 — only
+> VoiceOver remains gating; キャプション / バリアフリー音声ガイド N/A for
+> a knitting app). §5 progression table: R3 is the sole remaining gate for
+> VoiceOver. R5 is closeout polish only.
 
 ---
 
@@ -123,20 +149,20 @@ on **both** platforms in the same slice or the ASC declaration stays blocked.
 | B1 | **ChartViewer progress canvas** | Both | KT `ChartViewerScreen.kt:495-612` · SW `ChartViewerScreen.swift:319-420` | ✅ **CLOSED (R1a, 2026-05-18, ADR-025)** — invisible per-row semantic overlay (`RectRowAccessibilityOverlay` Compose / `RowAccessibilityCell` SwiftUI) over the rect Canvas; shared pure `ChartAccessibility.rowDescriptors` + `spokenLabel`. Each grid row is one VoiceOver/TalkBack element (position + run-length symbol summary + progress), traversal row-1-first. ~~Entire chart is one opaque `Canvas` with no semantics.~~ Polar overlay gated → Phase 35.2+. |
 | B2 | **ChartViewer segment progress = color only** | Both | KT `:457-465` · SW `:644-645` | ✅ **CLOSED (R1a, 2026-05-18, ADR-025)** — row progress is now spoken text (`not started` / `%1$d of %2$d done` / `done`, localized en+ja), derived from the same cell set `MarkRowSegmentsDoneUseCase` touches. No longer color-only. ~~done = fill @20%; wip = 2dp stroke, no text equivalent.~~ |
 | B3 | **ChartEditor authoring canvas** | Both | KT `ChartEditorScreen.kt:RectEditorCanvas/PolarEditorCanvas` · SW `ChartEditorScreen.swift` + new `ChartEditorAccessibility.swift` | ✅ **CLOSED (R1b, 2026-05-18, ADR-025)** — invisible per-row semantic overlay over the rect Canvas + in-row adjustable cell cursor (TalkBack swipe-up/down / SwiftUI `.accessibilityAdjustableAction`) + named place/erase custom action routing `ChartEditorEvent.PlaceCell(cursorX, cursorY)`; 4 `a11y_editor_*` i18n keys. Shared `ChartAccessibility` extended (+`CellAccessibilityDescriptor` / +`spokenCellLabel` / +`placeOrEraseActionLabel`, 14 new commonTest). ~~Tappable place/erase Canvas with zero a11y.~~ Polar gated → Phase 35.2+. |
-| B4 | **ChartComparison diff canvas** | Both | KT `ChartComparisonScreen.kt:502-557` (+ color map `:335-337`) · SW `ChartComparisonScreen.swift:321-468` (`:380-382,440-442`) | Per-cell diff identity is **100% traffic-light fill** (green/red/yellow) in a `Canvas` with no a11y element. `DiffSummaryRow` (aggregate counts) is partial mitigation — KT `:227-242` correctly exposes it via `semantics{contentDescription}` — but per-cell change is invisible to SR + color-blind. |
+| B4 | **ChartComparison diff canvas** | Both | KT `ChartComparisonScreen.kt:RectComparisonAccessibilityOverlay` · SW `ChartComparisonAccessibility.swift` | ✅ **CLOSED (R1c, 2026-05-18, ADR-025, commit `8ca758d`)** — per-row invisible semantic overlay over the rect Canvas (target pane only — `diff.base` may be null at first-commit; `diff.target` is "current state"); `LayerChange.PropertyChanged` deliberately not enumerated per-cell (existing `LayerChangesBanner` surfaces it); cells outside target.extents silent-drop on rare shrunken-target case (Tech Debt — LOW). Shared `ChartAccessibility` extended (+`DiffChangeKind` / +`RowDiffChange` / +`RowDiffDescriptor` / +`DiffA11yStrings` / +`spokenDiffLabel`, 47 commonTest total = R1a 21 + R1b 14 + R1c 12). 4 `a11y_diff_*` i18n keys. ~~Per-cell diff identity is 100% traffic-light fill … no a11y element.~~ Polar gated → Phase 35.2+. |
 
 ### 3.2 HIGH (fix before declaring the related feature)
 
 | # | Surface | Platform | `file:line` | Gap |
 |---|---|---|---|---|
-| H1 | Symbol palette cells unlabeled | Both | KT `SymbolPaletteStrip.kt:159-173`; eraser hardcoded EN `:133` · SW `ChartEditorScreen.swift:1114 PaletteSymbolCell` | Each stitch symbol cell announces nothing meaningful (`def.enLabel`/`jaLabel` available but unused). Authoring/selection unusable by SR. |
-| H2 | ChartImageGrid hardcoded English | Compose | `chartviewer/ChartImageGrid.kt:42,84,100,133` | 1 title (`"Chart Images"`) + 3 `contentDescription` (`"Chart thumbnail"`, `"Remove image"`, `"Add chart image"`) all literal English, no `stringResource` — VoiceOver/TalkBack announces English on ja-JP. |
-| H3 | ChartImageViewer hardcoded English | Both | KT `ChartImageViewer.kt:85,129` (`"Chart image"`,`"Close"`) · SW `Components/ChartImageViewer.swift:61-66` (close `xmark.circle.fill` no label) | Sole dismiss affordance of the full-screen viewer is unlabeled / English. (KT error text already fixed per A33-adjacent trail; the 2 contentDescriptions were missed.) |
-| H4 | Icon-only nav controls unlabeled | iOS | `ProjectListScreen.swift:168-171` (`ellipsis.circle` overflow — core nav), `ChartEditorScreen.swift:99-114` (undo/redo), `:128-220` (overflow), `DiscoveryScreen.swift:182-198` (sort `arrow.up.arrow.down`) | `.accessibilityIdentifier` present but **no `.accessibilityLabel`** → VoiceOver reads the English SF Symbol name. Strings (`action_more_options`/`action_sort`/`action_undo`/`action_redo`) already exist & are used elsewhere. |
-| H5 | ProjectDetail add-image / thumbnails unlabeled | iOS | `ProjectDetailScreen.swift:528-530` (PhotosPicker `plus.circle`), `:549-569` (tappable thumbnails + contextMenu) | Only affordance to add a reference image, and the tappable/deletable thumbnails, have no `.accessibilityLabel`/`.accessibilityElement`/`.accessibilityAction`. |
+| H1 | Symbol palette cells unlabeled | Both | KT `SymbolPaletteStrip.kt` (cell-level `Modifier.semantics`) · SW `ChartEditorScreen.swift PaletteSymbolCell` | ✅ **CLOSED (R2, 2026-05-18, commit `5be0034`)** — Compose `PaletteSymbolCell` + `LockedPaletteSymbolCell` wire `Modifier.semantics { contentDescription = "Symbol: <name>" + role + selected }` resolving locale via `koinInject<DeviceContextProvider>()` (matches `ChartViewerScreen.kt:712`); `EraserCell` routes through `Res.string.a11y_action_eraser_tool`. SwiftUI `paletteSymbolAccessibilityLabel(for:)` helper (locale via `Locale.current.language.languageCode == "ja"`) + `.accessibilityAddTraits(.isSelected)` on the entitled cell. New `a11y_label_palette_cell` / `a11y_action_eraser_tool` keys. ~~Each stitch symbol cell announces nothing meaningful.~~ |
+| H2 | ChartImageGrid hardcoded English | Compose | `chartviewer/ChartImageGrid.kt` (`stringResource(Res.string.*)`) | ✅ **CLOSED (R2, 2026-05-18, commit `5be0034`)** — 4 hardcoded EN strings (title + 3 `contentDescription`) routed through `Res.string.{title_chart_images, a11y_chart_image_thumbnail, a11y_action_remove_image, a11y_action_add_chart_image}`. ~~All literal English, no `stringResource`.~~ |
+| H3 | ChartImageViewer hardcoded English | Both | KT `ChartImageViewer.kt` (`stringResource`) · SW `Components/ChartImageViewer.swift` (`.accessibilityLabel`) | ✅ **CLOSED (R2, 2026-05-18, commit `5be0034`)** — Compose 2 hardcoded EN `contentDescription` routed through `Res.string.{a11y_chart_image_fullscreen, a11y_action_close_viewer}`. SwiftUI close `xmark.circle.fill` gets `.accessibilityLabel("a11y_action_close_viewer")`. ~~Sole dismiss affordance unlabeled / English.~~ |
+| H4 | Icon-only nav controls unlabeled | iOS | `ProjectListScreen.swift` (overflow) · `ChartEditorScreen.swift` (undo/redo/overflow) · `DiscoveryScreen.swift` (sort) | ✅ **CLOSED (R2, 2026-05-18, commit `5be0034`)** — `.accessibilityLabel("action_more_options" / "action_sort" / "action_undo" / "action_redo")` added (reused existing keys, no new strings). ~~`.accessibilityIdentifier` present but no `.accessibilityLabel`.~~ +1 XCUITest file `IconButtonAccessibilityTests` locks in `.label` non-empty + non-SF-Symbol-name. |
+| H5 | ProjectDetail add-image / thumbnails unlabeled | iOS | `ProjectDetailScreen.swift` `chartImagesSection` | ✅ **CLOSED (R2, 2026-05-18, commit `5be0034`)** — `chartImagesSection` ONLY (R4's `counterSection` untouched). PhotosPicker gets `.accessibilityLabel("a11y_action_add_chart_image")`; each thumbnail consolidated to `.accessibilityElement(children: .ignore)` + `.accessibilityLabel("a11y_chart_image_thumbnail")` + `.accessibilityAddTraits(.isButton)` + `.accessibilityAction(named: "action_remove")` — destructive `contextMenu` now surfaces as a named SR action (rotor-discoverable). ~~No `.accessibilityLabel`/`.accessibilityElement`/`.accessibilityAction`.~~ Compose-side `ChartImageThumbnail` opt-in polish remains optional (Tech Debt). |
 | H6 | SegmentProgressSummary not a button | Compose | `projectdetail/ProjectDetailScreen.kt:822-856` | Tappable `Text` via `Modifier.clickable` with **no `role = Role.Button`** — the deep-link into chart segment progress is announced as static text, not actionable. |
 | H7 | ProjectDetail row counter / +− fixed font | Both | KT `ProjectDetailScreen.kt:CounterSection` · SW `ProjectDetailScreen.swift:counterSection` | ✅ **CLOSED (R4, 2026-05-18)** — Compose: `displayLarge` (rowCounter) + `headlineMedium`/`displaySmall` (-/+) Material 3 typography + `Modifier.defaultMinSize(…)` containers (was `96.sp` / `28.sp` / `36.sp` fixed inside `Modifier.size`); SwiftUI: 3× `@ScaledMetric` reading `DesignTokens.*` through `UIFontMetrics` (relative to `.largeTitle`/`.title`). +2 androidInstrumentedTest at fontScale=2f confirm no clipping + reachable buttons. ~~Single most-used screen does not honor Larger Text.~~ No app-wide Dynamic Type cap applied — Follow-up: candidate ADR slot for cap policy decision pre-Phase-40 GA (R4 worker surfaced via Tech Debt). |
-| H8 | MFA code fields empty label | iOS | `MfaChallengeScreen.swift:33` (`LocalizedStringKey("")`), `MfaEnrollmentScreen.swift:122-125` (`TextField("",…)`) | Auth-critical 6-digit code fields announce only "text field" — no hint. |
+| H8 | MFA code fields empty label | iOS | `MfaChallengeScreen.swift`, `MfaEnrollmentScreen.swift` (`TextField("label_mfa_code_input",…)`) | ✅ **CLOSED (R2, 2026-05-18, commit `5be0034`)** — empty-string `TextField` labels replaced with `"label_mfa_code_input"` (one new shared key, two call sites). ~~Auth-critical 6-digit code fields announce only "text field" — no hint.~~ |
 | H9 | No heading semantics (systemic) | Compose | every screen — **no** `Modifier.semantics{heading()}` | Section headers (Settings, ProjectDetail, ChartEditor, onboarding titles, TopAppBar titles) announce as body text; no rotor/heading navigation on long screens. One systemic HIGH, not per-screen. (iOS uses `Section` → framework-traited; mostly OK.) |
 
 ### 3.3 MEDIUM (declarable with reservations / same-wave fix)
@@ -146,7 +172,7 @@ on **both** platforms in the same slice or the ASC declaration stays blocked.
 | M1 | Onboarding page-indicator dots color-only | Compose | `onboarding/OnboardingScreen.kt:320-347` | Bare `Box`+`background(color)` dots, no semantics; current page = primary-vs-outlineVariant color only. First-run surface. |
 | M2 | Pattern/Discovery description ellipsis at large type | Both | KT `PatternLibraryScreen.kt:538,550` (`maxLines=1`), `DiscoveryScreen.kt:499,511` · SW `PatternLibraryScreen.swift:251`, `DiscoveryScreen.swift:409,417` (`.lineLimit(1/2)`) | Essential metadata hard-truncates at large Dynamic Type; no `.minimumScaleFactor`. (VoiceOver still reads full string — visual only.) |
 | M3 | Recovery-code copy-tap affordance hidden | Both | KT `MfaEnrollmentScreen.kt:276-302` · SW `MfaEnrollmentScreen.swift:163-172` | Code is readable but the tap-to-copy interaction has no role/hint/action — undiscoverable by SR. |
-| M4 | WipeData confirm-phrase field empty label | iOS | `WipeDataConfirmPhraseView.swift:135` (`TextField("",…)`) | Destructive-action gate announces bare "text field"; Section header is not a field label for VoiceOver. |
+| M4 | WipeData confirm-phrase field empty label | iOS | `WipeDataConfirmPhraseView.swift` (`TextField("label_wipe_confirm_phrase",…)`) | ✅ **CLOSED (R2, 2026-05-18, commit `5be0034`)** — empty-string `TextField` replaced with `"label_wipe_confirm_phrase"`. ~~Destructive-action gate announces bare "text field".~~ |
 | M5 | ChartConflictResolution picked = style weight only | iOS | `ChartConflictResolutionScreen.swift:259` | Selected resolution signaled only by `.borderedProminent` vs `.bordered`; no `.accessibilityAddTraits(.isSelected)`/value. (Row text carries conflict identity — not a color-alone blocker, but selection state is weak for SR.) |
 | M6 | Decorative icons not hidden (VoiceOver noise) | iOS | `LoginScreen.swift:126-128` (Google `g.circle.fill`), `OnboardingScreen.swift:128-130,174` (hero), `ActivityFeedScreen.swift:52-89` (type icon) | Decorative `Image`s lack `.accessibilityHidden(true)` → VoiceOver reads junk SF Symbol names before the real text. Login is the canonical sign-in surface (declaration-sensitive). |
 | M7 | LinearProgressIndicator no value | Compose | `projectlist/ProjectListScreen.kt:660`, `projectdetail/ProjectDetailScreen.kt:660` | Announces a generic progress bar with no percent/value (adjacent "X of Y rows" text mitigates — borderline MEDIUM/LOW). |
@@ -240,3 +266,44 @@ Phase-40 entry). **Today's safe declarations: ダークインターフェイス 
   Dynamic Type cap policy ADR slot, DesignTokens.swift re-definition,
   PatternList/Discovery `.lineLimit(1)` (M2) clamp, ProjectDetail
   18dp status-badge icons (R5 candidate).
+- **2026-05-18 — R1c (ADR-025) + R2** (audit §4 R2): **B4 + H1/H2/H3/H4/H5/H8 +
+  M4 CLOSED** on both platforms.
+  - **R1c** (commit `8ca758d`): shared `ChartAccessibility` extended
+    (+`DiffChangeKind` / +`RowDiffChange` / +`RowDiffDescriptor` /
+    +`DiffA11yStrings` / +`spokenDiffLabel`, 47 commonTest total =
+    R1a 21 + R1b 14 + R1c 12) + Compose `RectComparisonAccessibilityOverlay`
+    + new SwiftUI `ChartComparisonAccessibility.swift` + 4 `a11y_diff_*`
+    i18n keys (`verifyI18nKeys` 633 → 637 parity). Rect-only (polar
+    Phase 35.2+).
+  - **R2** (commit `5be0034`): Compose `SymbolPaletteStrip.kt` cell-level
+    `Modifier.semantics` + locale-resolved `a11y_label_palette_cell` /
+    `a11y_action_eraser_tool`; `ChartImageGrid.kt` 4 strings via
+    `stringResource`; `ChartImageViewer.kt` 2 strings via `stringResource`.
+    SwiftUI 8 screens amended with `.accessibilityLabel()` (reused
+    `action_more_options` / `action_sort` / `action_undo` / `action_redo`;
+    new `a11y_action_close_viewer` / `a11y_action_add_chart_image` /
+    `a11y_chart_image_thumbnail`); MFA + WipeData TextFields wired to
+    `label_mfa_code_input` + `label_wipe_confirm_phrase`. 10 new i18n keys
+    (`verifyI18nKeys` 637 → 647 parity). +1 XCUITest file
+    (`IconButtonAccessibilityTests`).
+  - §1 verdicts: **Differentiate-Without-Color (カラー以外で区別)
+    declarable today** (B2 + B4 closed end-to-end); VoiceOver still needs
+    R3 (H9). さらに大きな文字 already declarable post-R4. **Today's safe
+    declarations after this consolidation: ダークインターフェイス +
+    視差効果を減らす + さらに大きな文字 + カラー以外で区別** (4/6).
+    §5 progression table: R3 remains sole gate for VoiceOver.
+  - R1c surfaced Tech Debt: (i) target extents silent-drop on shrink edges
+    (LOW; cells outside target.extents drop from SR readout while
+    remaining visible on base pane — union-extents model is a future
+    consideration). R2 surfaced Tech Debt: (ii) iOS XCUITest transient-
+    flake cluster names (`testCreateSheet_cancelDismisses`,
+    `testProjectWithProgress_displaysCorrectly` + R1c observation names —
+    added to `ci-known-limitations.md` transient bucket inventory);
+    (iii) Compose `ChartImageThumbnail` opt-in `Role.Button` + selected
+    polish (H5 was iOS-only; Compose precedent now uses identical
+    `a11y_chart_image_thumbnail` key — small polish, not gating);
+    (iv) i18n-fragment worker-protocol gap — R2 referenced
+    `Res.string.<not-yet-canonical>` without an in-source fallback
+    (unlike R1b's `Locale.current.language` bilingual fallback), causing
+    the splice to be a mechanical compile-fix prerequisite. Recorded as a
+    tech-debt process item.

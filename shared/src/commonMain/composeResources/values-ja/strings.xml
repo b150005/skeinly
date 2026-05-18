@@ -813,4 +813,18 @@
     <string name="a11y_editor_cell_blank">空白</string>
     <string name="a11y_editor_action_place">%1$sを配置</string>
     <string name="a11y_editor_action_erase">消去</string>
+    <string name="a11y_diff_change_added">%1$d列目に%2$sを追加</string>
+    <string name="a11y_diff_change_removed">%1$d列目の%2$sを削除</string>
+    <string name="a11y_diff_change_modified">%1$d列目を%2$sに変更</string>
+    <string name="a11y_diff_change_separator">、</string>
+    <string name="a11y_label_palette_cell">記号: %1$s</string>
+    <string name="a11y_action_eraser_tool">消しゴムツール</string>
+    <string name="a11y_action_add_chart_image">編み図を追加</string>
+    <string name="a11y_action_remove_image">画像を削除</string>
+    <string name="a11y_action_close_viewer">画像ビューアを閉じる</string>
+    <string name="a11y_chart_image_thumbnail">編み図のサムネイル</string>
+    <string name="a11y_chart_image_fullscreen">編み図全画面</string>
+    <string name="title_chart_images">編み図</string>
+    <string name="label_mfa_code_input">確認コード</string>
+    <string name="label_wipe_confirm_phrase">確認フレーズ</string>
 </resources>
