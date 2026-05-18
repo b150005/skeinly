@@ -809,4 +809,8 @@
     <string name="a11y_chart_progress_done">完了</string>
     <string name="a11y_chart_progress_in_progress">%2$d 目中 %1$d 目完了</string>
     <string name="a11y_chart_action_mark_row_done">この段を完了にする</string>
+    <string name="a11y_editor_cell_with_symbol">%2$d行中%1$d行目、%4$d列中%3$d列目、%5$s</string>
+    <string name="a11y_editor_cell_blank">空白</string>
+    <string name="a11y_editor_action_place">%1$sを配置</string>
+    <string name="a11y_editor_action_erase">消去</string>
 </resources>

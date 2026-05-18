@@ -1,5 +1,0 @@
-key	en	ja	xcstrings_value
-a11y_editor_cell_with_symbol	Row %1$d of %2$d, col %3$d of %4$d, %5$s	%2$d行中%1$d行目、%4$d列中%3$d列目、%5$s	Row %1$lld of %2$lld, col %3$lld of %4$lld, %5$@
-a11y_editor_cell_blank	blank	空白	blank
-a11y_editor_action_place	Place %1$s	%1$sを配置	Place %1$@
-a11y_editor_action_erase	Erase	消去	Erase

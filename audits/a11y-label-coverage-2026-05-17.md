@@ -69,6 +69,25 @@ diff state) unblocks two declarations across three screens × two platforms.
 > (headings); Differentiate-Without-Color additionally needs B4 (Comparison
 > diff still traffic-light color, R1c). §5 progression table unchanged —
 > R1a is necessary progress toward "After R1", not the full gate.
+>
+> **R1b + R4 progress update (2026-05-18, ADR-025 / audit §4 R4)**: the
+> **Chart Editor** second-third of R1 + the ProjectDetail Dynamic Type slice
+> are shipped. **B3 CLOSED** on both platforms via the same `ChartAccessibility`
+> per-row model (extended with `CellAccessibilityDescriptor` + `spokenCellLabel`
+> + `placeOrEraseActionLabel`) + invisible per-row overlay on the Editor rect
+> Canvas + in-row adjustable cell cursor (TalkBack swipe-up/down /
+> `.accessibilityAdjustableAction` SwiftUI) + named place/erase custom action
+> routing `ChartEditorEvent.PlaceCell(cursorX, cursorY)` — closes audit §3.1
+> B3. **H7 CLOSED** via `displayLarge`/`headlineMedium`/`displaySmall` Compose
+> typography + `@ScaledMetric` SwiftUI (`DesignTokens.*` read through
+> `UIFontMetrics`) — closes audit §3.3 H7. After R1b + R4, declaration state:
+> VoiceOver still needs B4 (R1c) + R2 + R3; Differentiate-Without-Color still
+> needs B4 (R1c); **さらに大きな文字 (Dynamic Type) declarable today** —
+> the only Dynamic Type override site is closed (M2 PatternList/Discovery
+> `.lineLimit(1)` ellipsis is visual-only at large sizes, VoiceOver still
+> reads full string ⇒ does not block the declaration; deferred to its own
+> slice per R4 worker scope cut). §5 progression table unchanged — `After R1`
+> remains gating on R1c.
 
 ---
 
@@ -103,7 +122,7 @@ on **both** platforms in the same slice or the ASC declaration stays blocked.
 |---|---|---|---|---|
 | B1 | **ChartViewer progress canvas** | Both | KT `ChartViewerScreen.kt:495-612` · SW `ChartViewerScreen.swift:319-420` | ✅ **CLOSED (R1a, 2026-05-18, ADR-025)** — invisible per-row semantic overlay (`RectRowAccessibilityOverlay` Compose / `RowAccessibilityCell` SwiftUI) over the rect Canvas; shared pure `ChartAccessibility.rowDescriptors` + `spokenLabel`. Each grid row is one VoiceOver/TalkBack element (position + run-length symbol summary + progress), traversal row-1-first. ~~Entire chart is one opaque `Canvas` with no semantics.~~ Polar overlay gated → Phase 35.2+. |
 | B2 | **ChartViewer segment progress = color only** | Both | KT `:457-465` · SW `:644-645` | ✅ **CLOSED (R1a, 2026-05-18, ADR-025)** — row progress is now spoken text (`not started` / `%1$d of %2$d done` / `done`, localized en+ja), derived from the same cell set `MarkRowSegmentsDoneUseCase` touches. No longer color-only. ~~done = fill @20%; wip = 2dp stroke, no text equivalent.~~ |
-| B3 | **ChartEditor authoring canvas** | Both | KT `ChartEditorScreen.kt` `RectEditorCanvas`/`PolarEditorCanvas` (`editorCanvas` testTag only) · SW `ChartEditorScreen.swift:476-579` | Tappable place/erase `Canvas` with zero a11y — authoring is impossible by VoiceOver/TalkBack. (Touch-target is M5-resolved; this is the orthogonal *perceive/operate* gap.) |
+| B3 | **ChartEditor authoring canvas** | Both | KT `ChartEditorScreen.kt:RectEditorCanvas/PolarEditorCanvas` · SW `ChartEditorScreen.swift` + new `ChartEditorAccessibility.swift` | ✅ **CLOSED (R1b, 2026-05-18, ADR-025)** — invisible per-row semantic overlay over the rect Canvas + in-row adjustable cell cursor (TalkBack swipe-up/down / SwiftUI `.accessibilityAdjustableAction`) + named place/erase custom action routing `ChartEditorEvent.PlaceCell(cursorX, cursorY)`; 4 `a11y_editor_*` i18n keys. Shared `ChartAccessibility` extended (+`CellAccessibilityDescriptor` / +`spokenCellLabel` / +`placeOrEraseActionLabel`, 14 new commonTest). ~~Tappable place/erase Canvas with zero a11y.~~ Polar gated → Phase 35.2+. |
 | B4 | **ChartComparison diff canvas** | Both | KT `ChartComparisonScreen.kt:502-557` (+ color map `:335-337`) · SW `ChartComparisonScreen.swift:321-468` (`:380-382,440-442`) | Per-cell diff identity is **100% traffic-light fill** (green/red/yellow) in a `Canvas` with no a11y element. `DiffSummaryRow` (aggregate counts) is partial mitigation — KT `:227-242` correctly exposes it via `semantics{contentDescription}` — but per-cell change is invisible to SR + color-blind. |
 
 ### 3.2 HIGH (fix before declaring the related feature)
@@ -116,7 +135,7 @@ on **both** platforms in the same slice or the ASC declaration stays blocked.
 | H4 | Icon-only nav controls unlabeled | iOS | `ProjectListScreen.swift:168-171` (`ellipsis.circle` overflow — core nav), `ChartEditorScreen.swift:99-114` (undo/redo), `:128-220` (overflow), `DiscoveryScreen.swift:182-198` (sort `arrow.up.arrow.down`) | `.accessibilityIdentifier` present but **no `.accessibilityLabel`** → VoiceOver reads the English SF Symbol name. Strings (`action_more_options`/`action_sort`/`action_undo`/`action_redo`) already exist & are used elsewhere. |
 | H5 | ProjectDetail add-image / thumbnails unlabeled | iOS | `ProjectDetailScreen.swift:528-530` (PhotosPicker `plus.circle`), `:549-569` (tappable thumbnails + contextMenu) | Only affordance to add a reference image, and the tappable/deletable thumbnails, have no `.accessibilityLabel`/`.accessibilityElement`/`.accessibilityAction`. |
 | H6 | SegmentProgressSummary not a button | Compose | `projectdetail/ProjectDetailScreen.kt:822-856` | Tappable `Text` via `Modifier.clickable` with **no `role = Role.Button`** — the deep-link into chart segment progress is announced as static text, not actionable. |
-| H7 | ProjectDetail row counter / +− fixed font | Both | KT `:633 (96.sp), 686 (28.sp), 696 (36.sp)` in fixed `Modifier.size()` · SW `DesignTokens.swift:14-16` → `ProjectDetailScreen.swift:307,333,343` (72/48/64 pt) | The single most-used screen (row counter loop) does not honor Larger Text and clips inside fixed-size buttons at accessibility sizes → blocks "Larger Text". |
+| H7 | ProjectDetail row counter / +− fixed font | Both | KT `ProjectDetailScreen.kt:CounterSection` · SW `ProjectDetailScreen.swift:counterSection` | ✅ **CLOSED (R4, 2026-05-18)** — Compose: `displayLarge` (rowCounter) + `headlineMedium`/`displaySmall` (-/+) Material 3 typography + `Modifier.defaultMinSize(…)` containers (was `96.sp` / `28.sp` / `36.sp` fixed inside `Modifier.size`); SwiftUI: 3× `@ScaledMetric` reading `DesignTokens.*` through `UIFontMetrics` (relative to `.largeTitle`/`.title`). +2 androidInstrumentedTest at fontScale=2f confirm no clipping + reachable buttons. ~~Single most-used screen does not honor Larger Text.~~ No app-wide Dynamic Type cap applied — Follow-up: candidate ADR slot for cap policy decision pre-Phase-40 GA (R4 worker surfaced via Tech Debt). |
 | H8 | MFA code fields empty label | iOS | `MfaChallengeScreen.swift:33` (`LocalizedStringKey("")`), `MfaEnrollmentScreen.swift:122-125` (`TextField("",…)`) | Auth-critical 6-digit code fields announce only "text field" — no hint. |
 | H9 | No heading semantics (systemic) | Compose | every screen — **no** `Modifier.semantics{heading()}` | Section headers (Settings, ProjectDetail, ChartEditor, onboarding titles, TopAppBar titles) announce as body text; no rotor/heading navigation on long screens. One systemic HIGH, not per-screen. (iOS uses `Section` → framework-traited; mostly OK.) |
 
@@ -202,3 +221,22 @@ Phase-40 entry). **Today's safe declarations: ダークインターフェイス 
   §1 verdicts unchanged (VoiceOver still needs B3/B4/R2/R3;
   Differentiate-Without-Color still needs B4) — see the §1 R1a progress
   note. B3 (Editor) → R1b, B4 (Comparison) → R1c remain open.
+- **2026-05-18 — R1b (ADR-025) + R4** (audit §4 R4): B3 + H7 CLOSED on both
+  platforms. **R1b** (commit `b119558`): shared `ChartAccessibility`
+  extended (+`CellAccessibilityDescriptor` / +`spokenCellLabel` /
+  +`placeOrEraseActionLabel`, 35 commonTest total = R1a 21 + R1b 14) +
+  Compose `ChartEditorScreen.kt` in-row adjustable cell cursor overlay +
+  new SwiftUI `ChartEditorAccessibility.swift` + 4 `a11y_editor_*` i18n
+  keys (`verifyI18nKeys` 629 → 633 parity). Single named custom action
+  flips between `Place <symbol>` / `Erase`. Rect-only (polar Phase 35.2+).
+  **R4** (commit `5e22baa`): Compose `displayLarge`/`headlineMedium`/
+  `displaySmall` typography (was `96.sp` / `28.sp` / `36.sp`) + SwiftUI
+  `@ScaledMetric` (relative to `.largeTitle`/`.title`), containers grow
+  via `Modifier.defaultMinSize(…)` (Compose) / @ScaledMetric (SwiftUI);
+  +2 androidInstrumentedTest at fontScale=2f. §1 verdicts: **さらに大きな
+  文字 (Dynamic Type) declarable today** (M2 visual-only residual); VoiceOver
+  still needs B4 (R1c)+R2+R3; Differentiate-Without-Color still needs B4
+  (R1c). B4 (Comparison) → R1c remains open. R4 surfaced Tech Debt:
+  Dynamic Type cap policy ADR slot, DesignTokens.swift re-definition,
+  PatternList/Discovery `.lineLimit(1)` (M2) clamp, ProjectDetail
+  18dp status-badge icons (R5 candidate).

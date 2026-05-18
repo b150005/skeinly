@@ -1047,4 +1047,8 @@
     <string name="a11y_chart_progress_done">done</string>
     <string name="a11y_chart_progress_in_progress">%1$d of %2$d done</string>
     <string name="a11y_chart_action_mark_row_done">Mark row done</string>
+    <string name="a11y_editor_cell_with_symbol">Row %1$d of %2$d, col %3$d of %4$d, %5$s</string>
+    <string name="a11y_editor_cell_blank">blank</string>
+    <string name="a11y_editor_action_place">Place %1$s</string>
+    <string name="a11y_editor_action_erase">Erase</string>
 </resources>
