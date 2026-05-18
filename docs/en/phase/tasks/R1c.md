@@ -96,7 +96,7 @@ Final: **+12 `commonTest`** in `ChartAccessibilityTest.kt` (R1c block at file en
 8. ✓ `make e2e-android` — **9/9 Maestro flows passed** (P0/P1/P2 全件、P1 Chart Editor 含む)
 9. ✓ `make e2e-ios` — **5/5 Maestro flows passed**
 
-**Pushed**: TBD (commit + push 後に SHA を記入)
+**Pushed**: `8ca758d0d044acc2cd8203cab97d127bd45ad616` on origin/main (rebased onto `5be0034`、直前 HEAD は orchestrator の R1b+R4 consolidation commit)
 
 **Audit B4 → CLOSED (R1c)**。Differentiate-Without-Color (カラー以外で区別) は本サブスライスで申告可能化; VoiceOver は引き続き R2 (icon labels) + R3 (headings) も必要 (audit §5 progression table — R1 は VoiceOver に必要だが十分でない)。
 
