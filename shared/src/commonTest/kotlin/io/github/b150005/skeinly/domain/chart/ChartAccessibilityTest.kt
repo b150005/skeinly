@@ -1,6 +1,7 @@
 package io.github.b150005.skeinly.domain.chart
 
 import io.github.b150005.skeinly.domain.chart.ChartAccessibility.A11yStrings
+import io.github.b150005.skeinly.domain.chart.ChartAccessibility.CellA11yStrings
 import io.github.b150005.skeinly.domain.chart.ChartAccessibility.RowProgress
 import io.github.b150005.skeinly.domain.chart.ChartAccessibility.SymbolRun
 import io.github.b150005.skeinly.domain.model.ChartCell
@@ -9,6 +10,7 @@ import io.github.b150005.skeinly.domain.model.ChartLayer
 import io.github.b150005.skeinly.domain.model.SegmentState
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -433,5 +435,202 @@ class ChartAccessibilityTest {
             "Row 1 of 1 — k ×3",
             ChartAccessibility.spokenLabel(d, prodStrings) { it },
         )
+    }
+
+    // ---------------------------------------------------------------------
+    // R1b — Editor cell-cursor descriptor (ADR-025 §c Editor row +
+    // in-row adjustable cursor; §d M5 forward layout, no inverse transform).
+    // ---------------------------------------------------------------------
+
+    private val cellStrings =
+        CellA11yStrings(
+            cellSymbolFormat = "Row %1\$d of %2\$d, col %3\$d of %4\$d, %5\$s",
+            cellBlank = "blank",
+            actionPlaceFormat = "Place %1\$s",
+            actionErase = "Erase",
+        )
+
+    @Test
+    fun `cellDescriptor maps exact cursor coordinates to 1-based col and row numbers`() {
+        // 5-wide × 3-tall grid offset to (minX=10, minY=20) to catch any
+        // accidental `cursorX - 0` shortcut. Cursor at (chartX=12, chartY=21)
+        // ⇒ col = 12 - 10 + 1 = 3; row = 21 - 20 + 1 = 2.
+        val extents = ChartExtents.Rect(minX = 10, maxX = 14, minY = 20, maxY = 22)
+        val layers = listOf(layer("L", listOf(cell("k", 12, 21))))
+
+        val d = ChartAccessibility.cellDescriptor(extents, layers, cursorX = 12, cursorY = 21)
+
+        assertNotNull(d)
+        assertEquals(12, d.chartX)
+        assertEquals(21, d.chartY)
+        assertEquals(3, d.colNumber)
+        assertEquals(5, d.colCount)
+        assertEquals(2, d.rowNumber)
+        assertEquals(3, d.rowCount)
+        assertEquals("k", d.symbolIdAt)
+    }
+
+    @Test
+    fun `cellDescriptor clamps cursorX below minX to col 1 at the left edge`() {
+        val extents = ChartExtents.Rect(minX = 0, maxX = 4, minY = 0, maxY = 0)
+
+        val d = ChartAccessibility.cellDescriptor(extents, emptyList(), cursorX = -3, cursorY = 0)
+
+        assertNotNull(d)
+        assertEquals(0, d.chartX)
+        assertEquals(1, d.colNumber)
+    }
+
+    @Test
+    fun `cellDescriptor clamps cursorX above maxX to col N at the right edge`() {
+        val extents = ChartExtents.Rect(minX = 0, maxX = 4, minY = 0, maxY = 0)
+
+        val d = ChartAccessibility.cellDescriptor(extents, emptyList(), cursorX = 99, cursorY = 0)
+
+        assertNotNull(d)
+        assertEquals(4, d.chartX)
+        assertEquals(5, d.colNumber)
+        assertEquals(5, d.colCount)
+    }
+
+    @Test
+    fun `cellDescriptor clamps cursorY below minY to row 1 and above maxY to row N`() {
+        // minY=5 to confirm the clamp is to minY, not to 0.
+        val extents = ChartExtents.Rect(minX = 0, maxX = 0, minY = 5, maxY = 9)
+
+        val low = ChartAccessibility.cellDescriptor(extents, emptyList(), cursorX = 0, cursorY = -100)
+        val high = ChartAccessibility.cellDescriptor(extents, emptyList(), cursorX = 0, cursorY = 100)
+
+        assertNotNull(low)
+        assertEquals(5, low.chartY)
+        assertEquals(1, low.rowNumber)
+
+        assertNotNull(high)
+        assertEquals(9, high.chartY)
+        assertEquals(5, high.rowNumber)
+        assertEquals(5, high.rowCount)
+    }
+
+    @Test
+    fun `cellDescriptor symbolIdAt picks topmost visible layer at cursor mirroring topmostLayerAt`() {
+        // Two visible layers stacked at (0, 0); the second declared wins.
+        val extents = ChartExtents.Rect(minX = 0, maxX = 0, minY = 0, maxY = 0)
+        val layers =
+            listOf(
+                layer("base", listOf(cell("under", 0, 0))),
+                layer("top", listOf(cell("over", 0, 0))),
+            )
+
+        val d = ChartAccessibility.cellDescriptor(extents, layers, cursorX = 0, cursorY = 0)
+
+        assertNotNull(d)
+        assertEquals("over", d.symbolIdAt)
+    }
+
+    @Test
+    fun `cellDescriptor excludes invisible and UI-hidden layers at cursor`() {
+        val extents = ChartExtents.Rect(minX = 0, maxX = 0, minY = 0, maxY = 0)
+        val layers =
+            listOf(
+                layer("base", listOf(cell("base-sym", 0, 0))),
+                layer("invisible", listOf(cell("inv", 0, 0)), visible = false),
+                layer("hidden", listOf(cell("hid", 0, 0))),
+            )
+
+        val d =
+            ChartAccessibility.cellDescriptor(
+                extents,
+                layers,
+                hiddenLayerIds = setOf("hidden"),
+                cursorX = 0,
+                cursorY = 0,
+            )
+
+        assertNotNull(d)
+        assertEquals("base-sym", d.symbolIdAt)
+    }
+
+    @Test
+    fun `cellDescriptor blank cursor cell yields null symbolIdAt`() {
+        // 2x2 grid with a cell only at (0, 0); cursor lands on the empty (1, 1).
+        val extents = ChartExtents.Rect(minX = 0, maxX = 1, minY = 0, maxY = 1)
+        val layers = listOf(layer("L", listOf(cell("k", 0, 0))))
+
+        val d = ChartAccessibility.cellDescriptor(extents, layers, cursorX = 1, cursorY = 1)
+
+        assertNotNull(d)
+        assertNull(d.symbolIdAt)
+        assertEquals(2, d.colNumber)
+        assertEquals(2, d.rowNumber)
+    }
+
+    @Test
+    fun `cellDescriptor returns null on degenerate extents`() {
+        val degenerate = ChartExtents.Rect(minX = 0, maxX = -1, minY = 0, maxY = -1)
+        assertNull(ChartAccessibility.cellDescriptor(degenerate, emptyList(), cursorX = 0, cursorY = 0))
+
+        val invertedY = ChartExtents.Rect(minX = 0, maxX = 2, minY = 5, maxY = 3)
+        assertNull(ChartAccessibility.cellDescriptor(invertedY, emptyList(), cursorX = 0, cursorY = 0))
+    }
+
+    @Test
+    fun `spokenCellLabel formats symbol cells using the resolver`() {
+        val extents = ChartExtents.Rect(minX = 0, maxX = 3, minY = 0, maxY = 2)
+        val layers = listOf(layer("L", listOf(cell("knit", 1, 1))))
+        val d = ChartAccessibility.cellDescriptor(extents, layers, cursorX = 1, cursorY = 1)
+
+        val spoken =
+            ChartAccessibility.spokenCellLabel(
+                requireNotNull(d),
+                cellStrings,
+            ) { id -> if (id == "knit") "knit" else id }
+
+        assertEquals("Row 2 of 3, col 2 of 4, knit", spoken)
+    }
+
+    @Test
+    fun `spokenCellLabel uses cellBlank when symbolIdAt is null`() {
+        val extents = ChartExtents.Rect(minX = 0, maxX = 0, minY = 0, maxY = 0)
+        val d = ChartAccessibility.cellDescriptor(extents, emptyList(), cursorX = 0, cursorY = 0)
+
+        val spoken =
+            ChartAccessibility.spokenCellLabel(requireNotNull(d), cellStrings) { id -> id }
+
+        // Resolver is never consulted for a blank cell — the format string
+        // gets `cellBlank` substituted into the symbol slot.
+        assertEquals("Row 1 of 1, col 1 of 1, blank", spoken)
+    }
+
+    @Test
+    fun `spokenCellLabel honors the symbolName resolver fallback to id`() {
+        val extents = ChartExtents.Rect(minX = 0, maxX = 0, minY = 0, maxY = 0)
+        val layers = listOf(layer("L", listOf(cell("jis.knit.unknown", 0, 0))))
+        val d = ChartAccessibility.cellDescriptor(extents, layers, cursorX = 0, cursorY = 0)
+
+        // Resolver returns id verbatim (R2-not-landed fallback per ADR-025 §f).
+        val spoken =
+            ChartAccessibility.spokenCellLabel(requireNotNull(d), cellStrings) { it }
+
+        assertEquals("Row 1 of 1, col 1 of 1, jis.knit.unknown", spoken)
+    }
+
+    @Test
+    fun `placeOrEraseActionLabel returns actionErase verbatim when selectedSymbolId is null`() {
+        val label =
+            ChartAccessibility.placeOrEraseActionLabel(
+                cellStrings,
+                selectedSymbolId = null,
+            ) { id -> id }
+        assertEquals("Erase", label)
+    }
+
+    @Test
+    fun `placeOrEraseActionLabel substitutes the resolved symbol name into actionPlaceFormat`() {
+        val label =
+            ChartAccessibility.placeOrEraseActionLabel(
+                cellStrings,
+                selectedSymbolId = "knit",
+            ) { id -> if (id == "knit") "knit" else id }
+        assertEquals("Place knit", label)
     }
 }

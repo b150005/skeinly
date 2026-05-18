@@ -61,6 +61,13 @@ struct ChartEditorScreen: View {
                     layers: state.draftLayers,
                     catalog: catalog,
                     isPickingReflectionAxis: state.isPickingReflectionAxis,
+                    // R1b (ADR-025 §c): the editor a11y overlay's place /
+                    // erase custom action labels itself from the current
+                    // palette selection — nil ⇒ "Erase", non-nil ⇒
+                    // "Place <localized symbol name>". The VM already routes
+                    // both through PlaceCell; the overlay only needs the id
+                    // to phrase the action.
+                    selectedSymbolId: state.selectedSymbolId,
                     onCellTap: { x, y in
                         viewModel.onEvent(
                             event: ChartEditorEventPlaceCell(x: Int32(x), y: Int32(y))
@@ -478,6 +485,11 @@ private struct EditorCanvasView: View {
     let layers: [ChartLayer]
     let catalog: SymbolCatalog
     let isPickingReflectionAxis: Bool
+    /// R1b (ADR-025 §c): currently-selected palette symbol id. `nil` means
+    /// the eraser is selected; routed to the editor a11y overlay's
+    /// place/erase custom-action label resolver (placeOrEraseActionLabel
+    /// in the shared model).
+    let selectedSymbolId: String?
     let onCellTap: (Int, Int) -> Void
 
     var body: some View {
@@ -552,6 +564,29 @@ private struct EditorCanvasView: View {
                     ) {
                         onCellTap(Int(cell.x), Int(cell.y))
                     }
+                }
+                // ADR-025 R1b — the drawn raster + gesture surface carries
+                // no VoiceOver semantics; the invisible per-row overlay
+                // below is the sole accessibility representation, so there
+                // is no double announce. Same R1a precedent as the viewer:
+                // `.accessibilityHidden(true)` is applied to the inner
+                // Canvas only.
+                .accessibilityHidden(true)
+                .overlay(alignment: .topLeading) {
+                    // `.id(rect)` resets `@State cursorByRow` on a resize
+                    // so a stale cursor cannot survive a coordinate-system
+                    // change — mirrors the Kotlin `remember(rect)` cursor
+                    // map (no equivalent of Compose `remember` keying in
+                    // SwiftUI; .id rebuilds the view + its @State).
+                    ChartEditorAccessibilityOverlay(
+                        extents: rect,
+                        layers: layers,
+                        catalog: catalog,
+                        selectedSymbolId: selectedSymbolId,
+                        size: CGSize(width: contentW, height: contentH),
+                        onPlaceCell: onCellTap
+                    )
+                    .id(rect)
                 }
             }
             // Default / small grids (content == viewport) must feel static —

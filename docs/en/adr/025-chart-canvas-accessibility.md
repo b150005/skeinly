@@ -314,3 +314,40 @@ descriptors ⇒ identical spoken text by construction.
   canvas-suppression mechanism per §(d) Implementation refinement (preserve
   the `segmentOverlay` Maestro landmark). Audit B1/B2 → CLOSED (R1a). B3
   (Editor) → R1b, B4 (Comparison) → R1c remain open.
+- 2026-05-18 — **R1b shipped** (Editor + in-row adjustable cell cursor).
+  Extended `ChartAccessibility` with `CellAccessibilityDescriptor`,
+  `CellA11yStrings`, `cellDescriptor(...)` (clamps the cursor to
+  `[minX..maxX] × [minY..maxY]`; topmost-visible symbol mirroring
+  `rowRuns`/`topmostLayerAt`; `hiddenLayerIds` + `visible` lockstep with
+  the row overlay), `spokenCellLabel(...)`, `placeOrEraseActionLabel(...)`
+  + 14 new `commonTest` (clamp at col 1 / col N / row 1 / row N,
+  topmost-visible at cursor, invisible + hidden layer exclusion, blank
+  cell, degenerate extents, format with/without resolver, action label
+  both paths) — **35 ChartAccessibilityTest green** total. Compose
+  `RectEditorAccessibilityOverlay` (per-row `Box` with
+  `progressBarRangeInfo` + `setProgress` for the cursor + `stateDescription`
+  for the cell readout + `customActions` for place/erase, all keyed by
+  `mutableStateMapOf<Int,Int>` cursor state remember-scoped to extents)
+  and SwiftUI `ChartEditorAccessibilityOverlay` (`.accessibilityAdjustableAction`
+  + `.accessibilityValue` for the cursor + `.accessibilityAction(named:)`
+  for place/erase, `@State [Int32:Int32]` cursor reset via `.id(rect)`).
+  The visual Canvas keeps `testTag("editorCanvas")` (Compose) +
+  `.accessibilityHidden(true)` (iOS — applied to the inner Canvas only,
+  per §(d) Implementation refinement); the overlay carries no pointer
+  modifier so touch + scroll still pass to the Canvas for sighted users.
+  Implementation-time refinements (decisions unchanged): (i) the
+  place/erase action is **one** action whose label flips between
+  "Place &lt;symbol&gt;" / "Erase" — both intentionally route to the
+  same `PlaceCell(x, y)` VM event because the VM already maps
+  `selectedSymbolId == null` to erase, so the spoken action faithfully
+  mirrors the touch affordance; (ii) the editor has no project / progress
+  context ⇒ R1b reuses `rowDescriptors(... progressAt = null)` so the row
+  spoken label omits the trailing state section by construction (matching
+  §c "no progress" Editor row); (iii) the 4 new R1b i18n keys
+  (`a11y_editor_cell_with_symbol`, `a11y_editor_cell_blank`,
+  `a11y_editor_action_place`, `a11y_editor_action_erase`) are shipped via
+  `docs/en/phase/tasks/R1b.i18n.tsv` for orchestrator splice at
+  consolidation (parallel-worktree i18n-fragment protocol); both
+  platforms use an in-source en/ja bilingual fallback selecting by
+  device locale — identical pattern to R1a's `enLabel`/`jaLabel` symbol
+  fallback. Audit B3 → CLOSED (R1b). B4 (Comparison) → R1c remains open.

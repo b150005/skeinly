@@ -220,6 +220,133 @@ object ChartAccessibility {
     }
 
     /**
+     * R1b: one in-row adjustable cursor cell — what the Editor's TalkBack
+     * swipe-up/down / VoiceOver-adjustable action announces (ADR-025 §c).
+     * [chartX]/[chartY] are the clamped chart-space coordinates (already
+     * offset by `minX`/`minY`); [colNumber]/[rowNumber] are the 1-based
+     * display indices (left/bottom = 1, matching the row-overlay numbering
+     * and knitting work order). [symbolIdAt] is the topmost-visible layer's
+     * symbol at the cursor cell, or `null` for a blank cell — identical
+     * "last wins" resolution to [SymbolRun] (i.e. `topmostLayerAt`).
+     */
+    data class CellAccessibilityDescriptor(
+        val chartX: Int,
+        val chartY: Int,
+        val colNumber: Int,
+        val colCount: Int,
+        val rowNumber: Int,
+        val rowCount: Int,
+        val symbolIdAt: String?,
+    )
+
+    /**
+     * R1b localized templates for the in-row cell cursor + place/erase
+     * action. Placeholders follow the same `%1$d`/`%1$s` convention as
+     * [A11yStrings] so the substitution is identical to the row-overlay
+     * formatter — manual replace (`String.format` is JVM-only in common).
+     *
+     * [cellSymbolFormat] takes five placeholders in order: row number, row
+     * total, col number, col total, symbol-or-blank. Blank cells substitute
+     * [cellBlank] into the symbol slot so the format itself is a single
+     * template per locale. [actionPlaceFormat] takes one placeholder (the
+     * resolved palette symbol name); [actionErase] is the bare verb used
+     * when no palette symbol is selected.
+     */
+    data class CellA11yStrings(
+        val cellSymbolFormat: String,
+        val cellBlank: String,
+        val actionPlaceFormat: String,
+        val actionErase: String,
+    )
+
+    /**
+     * R1b: build the cursor cell descriptor at chart coordinates
+     * ([cursorX], [cursorY]). The cursor is clamped to
+     * `extents.minX..maxX × extents.minY..maxY` so the platform
+     * adjustable-action state machine never escapes the grid — pure clamp,
+     * no off-by-one at col 1 / col N. Returns `null` on degenerate extents
+     * (no descriptor surface to expose).
+     *
+     * [hiddenLayerIds] + `layer.visible` follow the same predicate as
+     * [rowDescriptors] so the cell cursor stays in lockstep with the row
+     * overlay's run-length summary — never announce a symbol on a row
+     * whose runs do not include it.
+     */
+    fun cellDescriptor(
+        extents: ChartExtents.Rect,
+        layers: List<ChartLayer>,
+        hiddenLayerIds: Set<String> = emptySet(),
+        cursorX: Int,
+        cursorY: Int,
+    ): CellAccessibilityDescriptor? {
+        if (extents.maxX < extents.minX || extents.maxY < extents.minY) return null
+        val gridWidth = extents.maxX - extents.minX + 1
+        val gridHeight = extents.maxY - extents.minY + 1
+        val clampedX = cursorX.coerceIn(extents.minX, extents.maxX)
+        val clampedY = cursorY.coerceIn(extents.minY, extents.maxY)
+        val visibleLayers = layers.filter { it.visible && it.id !in hiddenLayerIds }
+        // Topmost wins: iterate first→last (paint order) and keep the last
+        // match. Mirrors `rowRuns` (cols[col] = cell.symbolId in declared
+        // order) and the viewer's `topmostLayerAt` so the cursor announcement
+        // matches what the user visually sees on top.
+        val symbolIdAt =
+            visibleLayers
+                .asSequence()
+                .flatMap { it.cells.asSequence() }
+                .filter { it.x == clampedX && it.y == clampedY }
+                .lastOrNull()
+                ?.symbolId
+        return CellAccessibilityDescriptor(
+            chartX = clampedX,
+            chartY = clampedY,
+            colNumber = clampedX - extents.minX + 1,
+            colCount = gridWidth,
+            rowNumber = clampedY - extents.minY + 1,
+            rowCount = gridHeight,
+            symbolIdAt = symbolIdAt,
+        )
+    }
+
+    /**
+     * Pure formatter for the cursor cell announcement — Compose and SwiftUI
+     * produce byte-identical text by construction (ADR-025 §g). A blank
+     * cursor cell substitutes [CellA11yStrings.cellBlank] into the symbol
+     * slot; the [symbolName] resolver is consulted only when
+     * [CellAccessibilityDescriptor.symbolIdAt] is non-null.
+     */
+    fun spokenCellLabel(
+        descriptor: CellAccessibilityDescriptor,
+        strings: CellA11yStrings,
+        symbolName: (symbolId: String) -> String,
+    ): String {
+        val name = descriptor.symbolIdAt?.let(symbolName) ?: strings.cellBlank
+        return strings.cellSymbolFormat
+            .replace("%1\$d", descriptor.rowNumber.toString())
+            .replace("%2\$d", descriptor.rowCount.toString())
+            .replace("%3\$d", descriptor.colNumber.toString())
+            .replace("%4\$d", descriptor.colCount.toString())
+            .replace("%5\$s", name)
+    }
+
+    /**
+     * Resolve the editor's place/erase custom-action label from the
+     * currently-selected palette symbol. The action wires to the existing
+     * `ChartEditorEvent.PlaceCell(cursorX, cursorY)` — the ViewModel already
+     * routes `selectedSymbolId == null` to an immediate erase and any
+     * non-null id to place/overwrite, so a single custom action with a
+     * label that flips between "Place &lt;sym&gt;" and "Erase" faithfully
+     * mirrors the touch affordance (ADR-025 §c).
+     */
+    fun placeOrEraseActionLabel(
+        strings: CellA11yStrings,
+        selectedSymbolId: String?,
+        symbolName: (symbolId: String) -> String,
+    ): String {
+        if (selectedSymbolId == null) return strings.actionErase
+        return strings.actionPlaceFormat.replace("%1\$s", symbolName(selectedSymbolId))
+    }
+
+    /**
      * Compose the spoken accessibility label for a row from its descriptor +
      * platform-supplied localized templates + a symbol-name resolver. Pure
      * and shared so Compose and SwiftUI produce byte-identical text by

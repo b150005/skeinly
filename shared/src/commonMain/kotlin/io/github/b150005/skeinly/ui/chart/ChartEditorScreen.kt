@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -75,8 +76,20 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.setProgress
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.traversalIndex
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import io.github.b150005.skeinly.domain.chart.ChartAccessibility
 import io.github.b150005.skeinly.domain.chart.GridHitTest
 import io.github.b150005.skeinly.domain.chart.WcagTargetSize
 import io.github.b150005.skeinly.domain.model.ChartExtents
@@ -86,6 +99,14 @@ import io.github.b150005.skeinly.domain.model.ReadingConvention
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
 import io.github.b150005.skeinly.domain.symbol.SymbolCategory
 import io.github.b150005.skeinly.generated.resources.Res
+import io.github.b150005.skeinly.generated.resources.a11y_chart_blank_cells
+import io.github.b150005.skeinly.generated.resources.a11y_chart_progress_done
+import io.github.b150005.skeinly.generated.resources.a11y_chart_progress_in_progress
+import io.github.b150005.skeinly.generated.resources.a11y_chart_progress_not_started
+import io.github.b150005.skeinly.generated.resources.a11y_chart_row_position
+import io.github.b150005.skeinly.generated.resources.a11y_chart_run_separator
+import io.github.b150005.skeinly.generated.resources.a11y_chart_section_separator
+import io.github.b150005.skeinly.generated.resources.a11y_chart_symbol_run
 import io.github.b150005.skeinly.generated.resources.action_add_layer
 import io.github.b150005.skeinly.generated.resources.action_back
 import io.github.b150005.skeinly.generated.resources.action_cancel
@@ -137,6 +158,7 @@ import io.github.b150005.skeinly.generated.resources.label_symmetry_section
 import io.github.b150005.skeinly.generated.resources.state_empty_chart
 import io.github.b150005.skeinly.generated.resources.state_no_layers
 import io.github.b150005.skeinly.generated.resources.title_edit_chart
+import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.ui.components.localized
 import io.github.b150005.skeinly.ui.platform.SystemBackHandler
 import kotlinx.coroutines.launch
@@ -575,6 +597,13 @@ private fun EditorBody(
                             layers = state.draftLayers,
                             catalog = catalog,
                             isPickingReflectionAxis = state.isPickingReflectionAxis,
+                            // R1b (ADR-025 §c): the rect-editor a11y overlay's
+                            // place/erase custom action labels itself from the
+                            // current palette selection — null ⇒ "Erase",
+                            // non-null ⇒ "Place <localized symbol name>". The
+                            // VM already routes both through PlaceCell; the
+                            // overlay only needs the id to phrase the action.
+                            selectedSymbolId = state.selectedSymbolId,
                             onCellTap = onPlaceCell,
                             modifier = Modifier.weight(1f).fillMaxWidth(),
                         )
@@ -921,12 +950,19 @@ private fun EditorCanvas(
     layers: List<io.github.b150005.skeinly.domain.model.ChartLayer>,
     catalog: SymbolCatalog,
     isPickingReflectionAxis: Boolean,
+    selectedSymbolId: String?,
     onCellTap: (Int, Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when (extents) {
-        is ChartExtents.Rect -> RectEditorCanvas(extents, layers, catalog, onCellTap, modifier)
+        is ChartExtents.Rect ->
+            RectEditorCanvas(extents, layers, catalog, selectedSymbolId, onCellTap, modifier)
         is ChartExtents.Polar ->
+            // R1b: polar editor a11y is gated to Phase 35.2+ in lockstep with
+            // the polar editor UX itself (ADR-025 §e + M5 polar-zoom deferral).
+            // The polar canvas continues to draw without an overlay until the
+            // polar UX matures — shipping an untested polar a11y surface ahead
+            // of polar UX is the anti-pattern §e explicitly rejected.
             PolarEditorCanvas(
                 extents = extents,
                 layers = layers,
@@ -943,6 +979,7 @@ private fun RectEditorCanvas(
     extents: ChartExtents.Rect,
     layers: List<io.github.b150005.skeinly.domain.model.ChartLayer>,
     catalog: SymbolCatalog,
+    selectedSymbolId: String?,
     onCellTap: (Int, Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -1006,86 +1043,299 @@ private fun RectEditorCanvas(
                     .horizontalScroll(rememberScrollState())
                     .verticalScroll(rememberScrollState()),
         ) {
-            Canvas(
+            // R1b (ADR-025 §d): the visual Canvas + the invisible per-row
+            // a11y overlay live in the SAME content-sized Box so they share
+            // the M5 forward `centeredLayout` + `effectiveCell` coordinate
+            // space — no inverse transform, no second coordinate space
+            // (chart-editor Invariant 8 preserved). `isTraversalGroup` on
+            // this content Box scopes the row `traversalIndex` ordering so
+            // TalkBack traversal is row-1-first (knitting work order),
+            // matching the R1a viewer overlay precedent.
+            Box(
                 modifier =
                     Modifier
                         .size(contentWidthDp, contentHeightDp)
-                        .testTag("editorCanvas")
-                        // Rekey on extents + effectiveCell only. effectiveCell
-                        // changes on resize / viewport change, never per cell
-                        // edit, so the gesture detector is not re-registered on
-                        // every stamp. Origin is derived from the Canvas
-                        // content size + effectiveCell inside the closure.
-                        .pointerInput(extents, effectiveCell) {
-                            detectTapGestures { offset ->
-                                val layout =
-                                    centeredLayout(
-                                        size.width.toFloat(),
-                                        size.height.toFloat(),
-                                        extents,
-                                        effectiveCell,
-                                    )
-                                val hit =
-                                    GridHitTest.hitTest(
-                                        screenX = offset.x.toDouble(),
-                                        screenY = offset.y.toDouble(),
-                                        extents = extents,
-                                        cellSize = layout.cellSize.toDouble(),
-                                        originX = layout.originX.toDouble(),
-                                        originY = layout.originY.toDouble(),
-                                    )
-                                hit?.let { onCellTap(it.x, it.y) }
-                            }
-                        },
+                        .semantics { isTraversalGroup = true },
             ) {
-                val layout = centeredLayout(size.width, size.height, extents, effectiveCell)
+                Canvas(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .testTag("editorCanvas")
+                            // Rekey on extents + effectiveCell only. effectiveCell
+                            // changes on resize / viewport change, never per cell
+                            // edit, so the gesture detector is not re-registered on
+                            // every stamp. Origin is derived from the Canvas
+                            // content size + effectiveCell inside the closure.
+                            .pointerInput(extents, effectiveCell) {
+                                detectTapGestures { offset ->
+                                    val layout =
+                                        centeredLayout(
+                                            size.width.toFloat(),
+                                            size.height.toFloat(),
+                                            extents,
+                                            effectiveCell,
+                                        )
+                                    val hit =
+                                        GridHitTest.hitTest(
+                                            screenX = offset.x.toDouble(),
+                                            screenY = offset.y.toDouble(),
+                                            extents = extents,
+                                            cellSize = layout.cellSize.toDouble(),
+                                            originX = layout.originX.toDouble(),
+                                            originY = layout.originY.toDouble(),
+                                        )
+                                    hit?.let { onCellTap(it.x, it.y) }
+                                }
+                            },
+                ) {
+                    val layout = centeredLayout(size.width, size.height, extents, effectiveCell)
 
-                for (gx in 0..gridWidth) {
-                    val x = layout.originX + gx * layout.cellSize
-                    drawLine(
-                        color = gridColor,
-                        start = Offset(x, layout.originY),
-                        end = Offset(x, layout.originY + gridHeight * layout.cellSize),
-                        strokeWidth = 1f,
-                    )
-                }
-                for (gy in 0..gridHeight) {
-                    val y = layout.originY + gy * layout.cellSize
-                    drawLine(
-                        color = gridColor,
-                        start = Offset(layout.originX, y),
-                        end = Offset(layout.originX + gridWidth * layout.cellSize, y),
-                        strokeWidth = 1f,
-                    )
-                }
-
-                layers.forEach { layer ->
-                    if (!layer.visible) return@forEach
-                    layer.cells.forEach { cell ->
-                        val bounds =
-                            cellScreenRect(
-                                cell = cell,
-                                rect = extents,
-                                gridHeight = gridHeight,
-                                cellSize = layout.cellSize,
-                                originX = layout.originX,
-                                originY = layout.originY,
-                            )
-                        val def = catalog.get(cell.symbolId) ?: return@forEach
-                        drawSymbolPath(
-                            def = def,
-                            bounds = bounds,
-                            rotation = cell.rotation,
-                            color = symbolColor,
-                            strokeWidthPx = max(1f, layout.cellSize * 0.06f),
-                            parsedPathCache = parsedPathCache,
+                    for (gx in 0..gridWidth) {
+                        val x = layout.originX + gx * layout.cellSize
+                        drawLine(
+                            color = gridColor,
+                            start = Offset(x, layout.originY),
+                            end = Offset(x, layout.originY + gridHeight * layout.cellSize),
+                            strokeWidth = 1f,
                         )
                     }
+                    for (gy in 0..gridHeight) {
+                        val y = layout.originY + gy * layout.cellSize
+                        drawLine(
+                            color = gridColor,
+                            start = Offset(layout.originX, y),
+                            end = Offset(layout.originX + gridWidth * layout.cellSize, y),
+                            strokeWidth = 1f,
+                        )
+                    }
+
+                    layers.forEach { layer ->
+                        if (!layer.visible) return@forEach
+                        layer.cells.forEach { cell ->
+                            val bounds =
+                                cellScreenRect(
+                                    cell = cell,
+                                    rect = extents,
+                                    gridHeight = gridHeight,
+                                    cellSize = layout.cellSize,
+                                    originX = layout.originX,
+                                    originY = layout.originY,
+                                )
+                            val def = catalog.get(cell.symbolId) ?: return@forEach
+                            drawSymbolPath(
+                                def = def,
+                                bounds = bounds,
+                                rotation = cell.rotation,
+                                color = symbolColor,
+                                strokeWidthPx = max(1f, layout.cellSize * 0.06f),
+                                parsedPathCache = parsedPathCache,
+                            )
+                        }
+                    }
                 }
+
+                // R1b (ADR-025 §c): per-row a11y overlay + in-row adjustable
+                // cursor + place/erase custom action. Lives in the SAME
+                // content-sized parent Box as the Canvas, so the overlay
+                // scrolls with the canvas automatically and the row regions
+                // stay 1:1 aligned to the rendered grid — no inverse
+                // transform, no second coordinate space.
+                RectEditorAccessibilityOverlay(
+                    rect = extents,
+                    layers = layers,
+                    catalog = catalog,
+                    contentWidthPx = contentWpx,
+                    contentHeightPx = contentHpx,
+                    effectiveCell = effectiveCell,
+                    selectedSymbolId = selectedSymbolId,
+                    onPlaceCell = onCellTap,
+                )
             }
         }
     }
 }
+
+/**
+ * R1b (ADR-025 §c–§d) — invisible per-row accessibility overlay for the
+ * rect chart editor. Each grid row is one focusable element whose spoken
+ * text carries position + run-length symbol summary (no progress — the
+ * editor has no project context). The element is **adjustable**: a
+ * `progressBarRangeInfo` + `setProgress` semantics pair lets TalkBack
+ * swipe-up/down (or the rotor / volume keys) move an in-row cell cursor
+ * across columns, with the spoken state describing the cell at the cursor.
+ * A single named custom action routes through the existing
+ * `ChartEditorEvent.PlaceCell(cursorX, chartY)` — its label flips between
+ * "Place &lt;symbol&gt;" (palette selected) and "Erase" (no palette
+ * selection), exactly mirroring the touch affordance because the VM
+ * already routes a `null` `selectedSymbolId` to erase.
+ *
+ * Positioned with the SAME forward `centeredLayout` math the visual
+ * Canvas draws with — single coordinate space, no inverse transform
+ * (M5 / chart-editor Invariant 8 preserved). The overlay Boxes carry no
+ * pointer-input modifier, so touch + scroll still pass through to the
+ * Canvas underneath for sighted users; the existing `editorCanvas`
+ * `testTag` is preserved on the visual Canvas (Maestro
+ * `P1_chart_editor.yaml` landmark — additive, non-visual overlay).
+ *
+ * Per-row cursor state lives in a `mutableStateMapOf<Int, Int>()` keyed
+ * by chart-y, default value = `extents.minX` (col 1). The map is
+ * `remember(extents)`-keyed so a resize wipes stale cursors.
+ */
+@Composable
+private fun RectEditorAccessibilityOverlay(
+    rect: ChartExtents.Rect,
+    layers: List<io.github.b150005.skeinly.domain.model.ChartLayer>,
+    catalog: SymbolCatalog,
+    contentWidthPx: Float,
+    contentHeightPx: Float,
+    effectiveCell: Float,
+    selectedSymbolId: String?,
+    onPlaceCell: (x: Int, y: Int) -> Unit,
+) {
+    // All @Composable / remember reads happen FIRST and unconditionally —
+    // Compose's composition contract forbids them after a conditional
+    // early return (the `contentWidthPx <= 0` guard below). The descriptor
+    // list is `remember`-keyed so the O(rows × layers × cells) projection
+    // is not recomputed on every recomposition (e.g. cursor moves).
+    val deviceContext: DeviceContextProvider = koinInject()
+    val isJa = deviceContext.locale.startsWith("ja", ignoreCase = true)
+    val density = LocalDensity.current
+    val rowStrings = rememberEditorRowA11yStrings()
+    val cellStrings = rememberEditorCellA11yStrings(isJa)
+    // Per-row cursor (chartY → chartX). Reset when extents change so a
+    // resize doesn't leave a cursor pointing outside the new grid.
+    val cursorByRow = remember(rect) { mutableStateMapOf<Int, Int>() }
+    val descriptors =
+        remember(rect, layers) {
+            // No project / progress context in the editor → null progressAt;
+            // every row descriptor's `progress` is null and the row spoken
+            // label omits the trailing state section by construction.
+            ChartAccessibility.rowDescriptors(rect, layers, progressAt = null)
+        }
+
+    if (contentWidthPx <= 0f || contentHeightPx <= 0f) return
+
+    val layout = centeredLayout(contentWidthPx, contentHeightPx, rect, effectiveCell)
+    val gridHeight = rect.maxY - rect.minY + 1
+    val rowHeightDp = with(density) { layout.cellSize.toDp() }
+    val rowWidthDp = with(density) { contentWidthPx.toDp() }
+    val symbolNameResolver: (String) -> String = { id ->
+        catalog.get(id)?.let { if (isJa) it.jaLabel else it.enLabel } ?: id
+    }
+    val placeOrEraseLabel =
+        ChartAccessibility.placeOrEraseActionLabel(cellStrings, selectedSymbolId, symbolNameResolver)
+
+    descriptors.forEach { descriptor ->
+        val topPx = layout.originY + (gridHeight - descriptor.rowNumber) * layout.cellSize
+        val cursorX = cursorByRow[descriptor.chartY] ?: rect.minX
+        val cellDescriptor =
+            ChartAccessibility.cellDescriptor(
+                extents = rect,
+                layers = layers,
+                cursorX = cursorX,
+                cursorY = descriptor.chartY,
+            )
+        val rowSpoken =
+            ChartAccessibility.spokenLabel(descriptor, rowStrings, symbolNameResolver)
+        val cellSpoken =
+            cellDescriptor?.let {
+                ChartAccessibility.spokenCellLabel(it, cellStrings, symbolNameResolver)
+            } ?: ""
+        // `steps` is the count of intermediate stops between the endpoints
+        // of `progressBarRangeInfo` — for an N-column row that is N-2, but
+        // clamped at 0 so a 1×1 grid (range = minX..minX, no intermediates)
+        // is well-formed.
+        val steps = (rect.maxX - rect.minX - 1).coerceAtLeast(0)
+        Box(
+            modifier =
+                Modifier
+                    .offset { IntOffset(0, topPx.roundToInt()) }
+                    .size(width = rowWidthDp, height = rowHeightDp)
+                    .semantics {
+                        contentDescription = rowSpoken
+                        stateDescription = cellSpoken
+                        // Row 1 (bottom) is visually last but the first
+                        // worked; lower traversalIndex = earlier, so
+                        // traversalIndex = rowNumber makes SR traversal
+                        // row-1-first (work order). Mirrors R1a viewer.
+                        traversalIndex = descriptor.rowNumber.toFloat()
+                        progressBarRangeInfo =
+                            ProgressBarRangeInfo(
+                                current = cursorX.toFloat(),
+                                range = rect.minX.toFloat()..rect.maxX.toFloat(),
+                                steps = steps,
+                            )
+                        setProgress { newValue ->
+                            cursorByRow[descriptor.chartY] =
+                                newValue
+                                    .roundToInt()
+                                    .coerceIn(rect.minX, rect.maxX)
+                            true
+                        }
+                        customActions =
+                            listOf(
+                                CustomAccessibilityAction(placeOrEraseLabel) {
+                                    onPlaceCell(cursorX, descriptor.chartY)
+                                    true
+                                },
+                            )
+                    },
+        )
+    }
+}
+
+/**
+ * R1b — bilingual fallback strings for the editor cell-cursor + place /
+ * erase action. These keys do NOT yet exist in the 3 shared i18n files
+ * (parallel-worktree i18n-fragment protocol — see
+ * `## Parallel-Worktree Workflow Protocol` in CLAUDE.md): R1b ships them
+ * as `R1b.i18n.tsv` for the orchestrator to splice into the shared files
+ * at consolidation, and a subsequent commit can replace this helper with
+ * `stringResource(Res.string.a11y_editor_*)`. Pattern mirrors R1a's
+ * `catalog.{jaLabel,enLabel}` symbol fallback — a deliberate temporary
+ * en/ja literal until the i18n splice lands.
+ */
+@Composable
+private fun rememberEditorCellA11yStrings(isJa: Boolean): ChartAccessibility.CellA11yStrings =
+    remember(isJa) {
+        if (isJa) {
+            ChartAccessibility.CellA11yStrings(
+                cellSymbolFormat = "%2\$d行中%1\$d行目、%4\$d列中%3\$d列目、%5\$s",
+                cellBlank = "空白",
+                actionPlaceFormat = "%1\$sを配置",
+                actionErase = "消去",
+            )
+        } else {
+            ChartAccessibility.CellA11yStrings(
+                cellSymbolFormat = "Row %1\$d of %2\$d, col %3\$d of %4\$d, %5\$s",
+                cellBlank = "blank",
+                actionPlaceFormat = "Place %1\$s",
+                actionErase = "Erase",
+            )
+        }
+    }
+
+/**
+ * R1b — reuses the R1a `a11y_chart_*` keys (already present in the 3
+ * shared i18n files) for the row-overlay framing. Kept inline rather than
+ * importing the existing viewer overlay's resolver because: (a) the
+ * editor overlay does not need the action-label resource
+ * (`a11y_chart_action_mark_row_done` is viewer-only), and (b) inlining
+ * keeps the symbol surface that R1b's commit changes minimal.
+ */
+@Composable
+private fun rememberEditorRowA11yStrings(): ChartAccessibility.A11yStrings =
+    ChartAccessibility.A11yStrings(
+        rowPositionFormat = stringResource(Res.string.a11y_chart_row_position),
+        symbolRunFormat = stringResource(Res.string.a11y_chart_symbol_run),
+        blankCellsName = stringResource(Res.string.a11y_chart_blank_cells),
+        runSeparator = stringResource(Res.string.a11y_chart_run_separator),
+        sectionSeparator = stringResource(Res.string.a11y_chart_section_separator),
+        progressNotStarted = stringResource(Res.string.a11y_chart_progress_not_started),
+        progressDone = stringResource(Res.string.a11y_chart_progress_done),
+        progressInProgressFormat = stringResource(Res.string.a11y_chart_progress_in_progress),
+    )
 
 private data class CanvasLayout(
     val cellSize: Float,
