@@ -17,6 +17,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.generated.resources.Res
@@ -83,6 +85,7 @@ private fun ForceUpdateContent(
             text = stringResource(Res.string.title_force_update),
             style = MaterialTheme.typography.headlineMedium,
             textAlign = TextAlign.Center,
+            modifier = Modifier.semantics { heading() },
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(

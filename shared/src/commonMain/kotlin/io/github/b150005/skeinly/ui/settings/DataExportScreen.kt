@@ -28,6 +28,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_back
@@ -71,7 +73,12 @@ fun DataExportScreen(
         modifier = Modifier.testTag("dataExportScreen"),
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.title_export_data_screen)) },
+                title = {
+                    Text(
+                        text = stringResource(Res.string.title_export_data_screen),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag("backButton")) {
                         Icon(

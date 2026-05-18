@@ -41,6 +41,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.github.b150005.skeinly.domain.model.User
@@ -91,7 +93,12 @@ fun ProfileScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.title_profile)) },
+                title = {
+                    Text(
+                        text = stringResource(Res.string.title_profile),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag("backButton")) {
                         Icon(
@@ -247,6 +254,7 @@ private fun ViewProfileContent(
         Text(
             text = user.displayName,
             style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.semantics { heading() },
         )
 
         if (user.bio != null) {

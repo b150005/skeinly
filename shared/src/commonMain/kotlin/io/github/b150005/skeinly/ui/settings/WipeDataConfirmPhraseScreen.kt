@@ -29,6 +29,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -126,7 +128,10 @@ fun WipeDataConfirmPhraseScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(stringResource(Res.string.title_wipe_data_confirm_phrase))
+                    Text(
+                        text = stringResource(Res.string.title_wipe_data_confirm_phrase),
+                        modifier = Modifier.semantics { heading() },
+                    )
                 },
                 navigationIcon = {
                     IconButton(

@@ -38,6 +38,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.domain.model.SymbolPackTier
 import io.github.b150005.skeinly.domain.symbol.PackRow
@@ -97,7 +99,12 @@ fun PackManagementScreen(
         modifier = Modifier.testTag("packManagementScreen"),
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.title_pack_management)) },
+                title = {
+                    Text(
+                        text = stringResource(Res.string.title_pack_management),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag("backButton")) {
                         Icon(

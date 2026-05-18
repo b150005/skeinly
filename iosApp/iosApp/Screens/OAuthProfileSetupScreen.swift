@@ -40,6 +40,7 @@ struct OAuthProfileSetupScreen: View {
                     Text(LocalizedStringKey("title_oauth_profile_setup"))
                         .font(.title2)
                         .fontWeight(.semibold)
+                        .accessibilityAddTraits(.isHeader)
                     Text(LocalizedStringKey("body_oauth_profile_setup"))
                         .font(.body)
                         .foregroundStyle(.secondary)

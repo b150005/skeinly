@@ -33,6 +33,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.domain.model.Suggestion
 import io.github.b150005.skeinly.domain.model.SuggestionStatus
@@ -116,7 +118,12 @@ fun SuggestionListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.title_suggestions)) },
+                title = {
+                    Text(
+                        text = stringResource(Res.string.title_suggestions),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag("backButton")) {
                         Icon(

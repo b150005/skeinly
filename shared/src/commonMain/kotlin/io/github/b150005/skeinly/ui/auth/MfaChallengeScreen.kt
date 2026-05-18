@@ -23,6 +23,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -63,7 +65,14 @@ fun MfaChallengeScreen(
     Scaffold(
         modifier = Modifier.testTag("mfaChallengeScreen"),
         topBar = {
-            TopAppBar(title = { Text(stringResource(Res.string.title_mfa_challenge)) })
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(Res.string.title_mfa_challenge),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
+            )
         },
     ) { padding ->
         Column(

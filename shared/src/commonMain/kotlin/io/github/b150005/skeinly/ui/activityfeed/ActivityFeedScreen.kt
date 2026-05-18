@@ -34,6 +34,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import io.github.b150005.skeinly.domain.model.Activity
 import io.github.b150005.skeinly.domain.model.ActivityType
 import io.github.b150005.skeinly.domain.model.User
@@ -77,7 +79,12 @@ fun ActivityFeedScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.title_activity_feed)) },
+                title = {
+                    Text(
+                        text = stringResource(Res.string.title_activity_feed),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag("backButton")) {
                         Icon(

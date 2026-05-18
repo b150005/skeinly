@@ -29,6 +29,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.data.analytics.PaywallTrigger
@@ -135,6 +137,7 @@ fun PaywallScreen(
             Text(
                 text = stringResource(Res.string.title_paywall),
                 style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.semantics { heading() },
             )
             Text(
                 text = stringResource(Res.string.body_paywall_pitch),

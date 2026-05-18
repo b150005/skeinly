@@ -30,6 +30,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.domain.model.Pattern
 import io.github.b150005.skeinly.domain.model.SharePermission
@@ -84,7 +86,12 @@ fun SharedContentScreen(
         modifier = Modifier.testTag("sharedContentScreen"),
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.title_shared_pattern)) },
+                title = {
+                    Text(
+                        text = stringResource(Res.string.title_shared_pattern),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag("backButton")) {
                         Icon(
@@ -145,6 +152,7 @@ private fun PatternContent(
         Text(
             text = pattern.title,
             style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.semantics { heading() },
         )
 
         pattern.description?.let { description ->

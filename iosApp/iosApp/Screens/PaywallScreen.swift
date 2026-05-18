@@ -46,6 +46,7 @@ struct PaywallScreen: View {
                 VStack(alignment: .leading, spacing: 16) {
                     Text(LocalizedStringKey("title_paywall"))
                         .font(.title2.weight(.semibold))
+                        .accessibilityAddTraits(.isHeader)
 
                     Text(LocalizedStringKey("body_paywall_pitch"))
                         .font(.body)

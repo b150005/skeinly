@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -109,6 +110,7 @@ fun LoginScreen(
             Text(
                 text = stringResource(Res.string.app_name),
                 style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.semantics { heading() },
             )
 
             Spacer(Modifier.height(8.dp))
@@ -375,6 +377,7 @@ private fun EmailConfirmationSentView(
         Text(
             text = stringResource(Res.string.title_email_confirmation_sent),
             style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.semantics { heading() },
         )
 
         Spacer(Modifier.height(24.dp))

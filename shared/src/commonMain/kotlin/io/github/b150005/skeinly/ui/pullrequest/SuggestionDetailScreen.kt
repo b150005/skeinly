@@ -44,6 +44,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.domain.model.Suggestion
 import io.github.b150005.skeinly.domain.model.SuggestionComment
@@ -178,7 +180,10 @@ fun SuggestionDetailScreen(
                 title = {
                     Text(
                         text = stringResource(Res.string.title_suggestion_detail),
-                        modifier = Modifier.testTag("prDetailTitle"),
+                        modifier =
+                            Modifier
+                                .testTag("prDetailTitle")
+                                .semantics { heading() },
                     )
                 },
                 navigationIcon = {
@@ -447,7 +452,8 @@ private fun TitleAndStatus(
                 modifier =
                     Modifier
                         .weight(1f, fill = true)
-                        .testTag("prTitleLabel"),
+                        .testTag("prTitleLabel")
+                        .semantics { heading() },
             )
             AssistChip(
                 onClick = {},

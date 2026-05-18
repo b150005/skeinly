@@ -36,6 +36,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.domain.chart.CellConflict
 import io.github.b150005.skeinly.domain.chart.CellCoordinate
@@ -121,7 +123,10 @@ fun ChartConflictResolutionScreen(
                 title = {
                     Text(
                         text = stringResource(Res.string.title_resolve_conflicts),
-                        modifier = Modifier.testTag("conflictResolutionTitle"),
+                        modifier =
+                            Modifier
+                                .testTag("conflictResolutionTitle")
+                                .semantics { heading() },
                     )
                 },
                 navigationIcon = {

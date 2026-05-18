@@ -29,6 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.domain.model.OssLibrary
 import io.github.b150005.skeinly.generated.resources.Res
@@ -70,7 +72,12 @@ fun OssLicensesScreen(
         modifier = Modifier.testTag("ossLicensesScreen"),
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.action_open_source_licenses)) },
+                title = {
+                    Text(
+                        text = stringResource(Res.string.action_open_source_licenses),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag("backButton")) {
                         Icon(

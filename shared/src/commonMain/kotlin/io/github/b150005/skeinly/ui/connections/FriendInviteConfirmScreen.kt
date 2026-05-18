@@ -31,6 +31,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -107,7 +109,12 @@ fun FriendInviteConfirmScreen(
         modifier = Modifier.testTag("friendInviteConfirmScreen"),
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.title_friend_invite_confirm)) },
+                title = {
+                    Text(
+                        text = stringResource(Res.string.title_friend_invite_confirm),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
@@ -281,7 +288,10 @@ private fun SuccessContent(
             text = stringResource(Res.string.state_friend_invite_success, name),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.testTag("friendInviteSuccessText"),
+            modifier =
+                Modifier
+                    .testTag("friendInviteSuccessText")
+                    .semantics { heading() },
         )
         Spacer(Modifier.height(24.dp))
         Button(

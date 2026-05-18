@@ -28,6 +28,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -104,6 +106,7 @@ fun OAuthProfileSetupScreen(
             Text(
                 text = stringResource(Res.string.title_oauth_profile_setup),
                 style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.semantics { heading() },
             )
             Text(
                 text = stringResource(Res.string.body_oauth_profile_setup),

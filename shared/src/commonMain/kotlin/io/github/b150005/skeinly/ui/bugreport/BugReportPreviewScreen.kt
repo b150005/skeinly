@@ -35,6 +35,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.action_back
@@ -95,7 +97,12 @@ fun BugReportPreviewScreen(
         modifier = Modifier.testTag("bugReportPreviewScreen"),
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.title_bug_report_preview)) },
+                title = {
+                    Text(
+                        text = stringResource(Res.string.title_bug_report_preview),
+                        modifier = Modifier.semantics { heading() },
+                    )
+                },
                 navigationIcon = {
                     IconButton(
                         onClick = onCancel,

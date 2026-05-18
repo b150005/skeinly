@@ -31,6 +31,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
@@ -104,6 +106,7 @@ fun MfaEnrollmentScreen(
                                 MfaEnrollmentPhase.RecoveryCodeDisplay ->
                                     stringResource(Res.string.title_mfa_recovery_code)
                             },
+                        modifier = Modifier.semantics { heading() },
                     )
                 },
                 navigationIcon = {
