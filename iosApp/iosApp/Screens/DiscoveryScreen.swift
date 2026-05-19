@@ -404,18 +404,26 @@ private struct DiscoveryPatternRow: View {
                 }
 
                 if let description = pattern.description_, !description.isEmpty {
+                    // X1 (audit §3.3 M2 / R4 Follow-up #3): AX5 で cell 高さ内に
+                    // 収めるため minimumScaleFactor 追加 — visual-only。自然言語
+                    // のため allowsTightening は不適用。
                     Text(description)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .lineLimit(1...2)
+                        .minimumScaleFactor(0.7)
                 }
 
                 let details = buildDetails()
                 if !details.isEmpty {
+                    // X1 (audit §3.3 M2 / R4 Follow-up #3): gauge/yarn/needle を
+                    // `•` 連結した記号列 → 字間詰め (allowsTightening) が有効。
                     Text(details)
                         .font(.caption)
                         .foregroundStyle(.tertiary)
-                        .lineLimit(1)
+                        .lineLimit(1...2)
+                        .minimumScaleFactor(0.7)
+                        .allowsTightening(true)
                 }
             }
         }

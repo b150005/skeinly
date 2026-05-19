@@ -538,11 +538,14 @@ private fun PatternCard(
 
             if (!pattern.description.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
+                // X1 (audit §3.3 M2 / R4 Follow-up #3): fontScale 大時の
+                // hard-truncate 緩和。VoiceOver は full string を読むため
+                // visual-only 改善。
                 Text(
                     text = pattern.description,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
@@ -554,7 +557,7 @@ private fun PatternCard(
                     text = details,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }

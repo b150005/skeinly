@@ -245,10 +245,14 @@ private struct PatternRow: View {
             }
 
             if let description = pattern.description_, !description.isEmpty {
+                // X1 (audit §3.3 M2 / R4 Follow-up #3): Dynamic Type AX5 等の
+                // hard-truncate 緩和 — visual-only。自然言語のため
+                // allowsTightening は不適用（字間詰めで読みづらくなる）。
                 Text(description)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(1...2)
+                    .minimumScaleFactor(0.7)
             }
         }
         .padding(.vertical, DesignTokens.listRowPaddingV)

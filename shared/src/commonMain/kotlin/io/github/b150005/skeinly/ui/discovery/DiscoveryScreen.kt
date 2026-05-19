@@ -499,6 +499,9 @@ private fun DiscoveryPatternCard(
 
                 if (!pattern.description.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(4.dp))
+                    // X1 (audit §3.3 M2 / R4 Follow-up #3): description は既に
+                    // maxLines=2。Discovery は thumbnail と並ぶ 2 列レイアウト上、
+                    // 3 行緩和は不揃いを増やすため据え置き。
                     Text(
                         text = pattern.description,
                         style = MaterialTheme.typography.bodyMedium,
@@ -511,11 +514,13 @@ private fun DiscoveryPatternCard(
                 val details = buildDiscoveryPatternDetails(pattern)
                 if (details.isNotBlank()) {
                     Spacer(modifier = Modifier.height(4.dp))
+                    // X1 (audit §3.3 M2 / R4 Follow-up #3): fontScale 大時の
+                    // hard-truncate 緩和 — visual-only。
                     Text(
                         text = details,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
