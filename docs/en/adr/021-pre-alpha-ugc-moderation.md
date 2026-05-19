@@ -168,6 +168,8 @@ When a UGC report Issue lands on `b150005/skeinly` with label `ugc-report`:
 
 If volume grows past ~10 reports per week, revisit: build a dedicated Supabase Studio-style moderator UI, or onboard a contracted moderator.
 
+> **Evolution note (2026-05-19)**: post-Phase-39 closed-beta operations consideration will be addressed by ADR-027. Once ADR-027 is accepted, the manual dual-sync described above becomes the fallback path, and the default triage workflow becomes GitHub-Issue-close-webhook driven. The 24-hour SLA commitment is unchanged; the volume-threshold judgment in the paragraph above (moderator-pool scale-out) is orthogonal to the automation introduced in ADR-027. See [ADR-027](./027-ugc-triage-automation.md).
+
 ### D6 — Runbook
 
 Pre-alpha foundation slice ships:
@@ -263,3 +265,4 @@ Recommended text:
 | Date | Change | Author |
 |---|---|---|
 | 2026-05-12 | Initial ADR — pre-alpha A1+A5 design closure; implementation phased in Wave E + pre-Phase-40 | b150005 |
+| 2026-05-19 | §D5 evolution-note cross-link added; ADR-027 (Proposed) introduces GitHub-Issue-close-webhook triage automation evolving §D5 into the fallback path. No design change to §D5 itself. | b150005 |

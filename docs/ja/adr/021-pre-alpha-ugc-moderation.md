@@ -104,6 +104,8 @@ UGC 報告 Issue が `b150005/skeinly` に `ugc-report` ラベル付きで着地
 
 週 ~10 報告超過したら専用モデレーター UI 構築または契約モデレーター onboarding を再検討。
 
+> **Evolution note (2026-05-19)**: Phase 39 closed-beta 運用知見の反映は ADR-027 で行う。ADR-027 採択後は本セクションの手動 dual-sync は fallback path に降格し、デフォルトのトリアージワークフローは GitHub Issue close → webhook 駆動になる。24 時間 SLA コミットメントは変更なし; 上記段落の volume 閾値 (モデレータープール scale-out) は ADR-027 の自動化と直交する判断。詳細は [ADR-027](./027-ugc-triage-automation.md) 参照。
+
 ### D6 — Runbook
 
 Pre-alpha 基盤スライス出荷物:
@@ -199,3 +201,4 @@ public web pages.
 | 日付 | 変更 | 著者 |
 |---|---|---|
 | 2026-05-12 | 初版 ADR — pre-alpha A1+A5 設計 closure; 実装は Wave E + Phase 40 GA 前に段階分け | b150005 |
+| 2026-05-19 | §D5 に evolution-note cross-link 追加。ADR-027 (Proposed) が §D5 を fallback path に降格する GitHub Issue close webhook トリアージ自動化を導入。§D5 自体の設計は無変更。 | b150005 |
