@@ -98,7 +98,7 @@ dark = dict(
     surfaceVariant='#49454F', onSurfaceVariant='#CAC4D0',
     outline='#938F99', outlineVariant='#49454F',
 )
-accent_light = '#7B61FF'
+accent_light = '#6B50EB'
 accent_dark = '#9B82FF'
 chart_added, chart_modified, chart_removed = '#33B333', '#F2C71A', '#D93333'
 
@@ -154,7 +154,7 @@ Verified: script output reproduces §3 / §4 tables verbatim (2026-05-19, `pytho
 
 ## 3. Light theme contrast matrix
 
-Light theme = Material 3 `lightColorScheme()` baseline + `AccentColor` `#7B61FF` (iOS only, both `MaterialTheme.colorScheme.surface` `#FEF7FF` and pure `#FFFFFF` system bg variants measured).
+Light theme = Material 3 `lightColorScheme()` baseline + `AccentColor` `#6B50EB` (iOS only, both `MaterialTheme.colorScheme.surface` `#FEF7FF` and pure `#FFFFFF` system bg variants measured). **Updated 2026-05-19 (Y4 / R6 closure)** — light variant darkened from `#7B61FF` to clear WCAG 1.4.3 normal-text 4.5:1 threshold against both backgrounds; dark variant `#9B82FF` unchanged.
 
 | # | Pair | FG → BG | Ratio | Threshold | Verdict | WCAG criterion | Notes |
 |---|---|---|---|---|---|---|---|
@@ -167,10 +167,10 @@ Light theme = Material 3 `lightColorScheme()` baseline + `AccentColor` `#7B61FF`
 | L7 | `onErrorContainer` / `errorContainer` | `#410E0B` → `#F9DEDC` | **12.77:1** | 4.5 | ✅ OK | 1.4.3 normal | Inline error / warning text. |
 | L8 | `outline` / `surface` | `#79747E` → `#FEF7FF` | **4.33:1** | 3.0 | ✅ OK | 1.4.11 UI | TextField stroke, button outline (`ProjectListScreen.kt:734`, `ProjectDetailScreen.kt:423`). |
 | L9 | `outlineVariant` / `surface` | `#CAC4D0` → `#FEF7FF` | 1.62:1 | 3.0 | ◯ MEDIUM | 1.4.11 (exempt) | Used as chart grid lines (`ChartComparisonScreen.kt:349`, `ChartThumbnail.kt:85`, `ChartViewerScreen.kt:494`, `ChartEditorScreen.kt:1002,1429`) and unselected chip border (`SymbolPaletteStrip.kt:131,170`). **EXEMPT** under 1.4.11 — see §5 ◯ MEDIUM block for cross-reference. |
-| L10 | `AccentColor` / M3 `surface` (UI border / icon tint) | `#7B61FF` → `#FEF7FF` | **4.00:1** | 3.0 | ✅ OK | 1.4.11 UI | iOS button outline / icon tint passes UI threshold with 1.0 margin. Light theme M3 `surface` is the rendered backdrop on iOS only when an iOS view inherits the Compose theme (rare); the dominant iOS case is L11. |
-| L10b | `AccentColor` / M3 `surface` (used as TEXT) | `#7B61FF` → `#FEF7FF` | 4.00:1 | 4.5 | ❌ BLOCKER | 1.4.3 normal text | See §5 ❌ BLOCKER for the iOS text-usage sites. |
-| L11 | `AccentColor` / `#FFFFFF` (iOS system bg, light) | `#7B61FF` → `#FFFFFF` | **4.20:1** | 3.0 | ✅ OK | 1.4.11 UI | iOS button outline / icon tint passes UI threshold with 1.2 margin. |
-| L11b | `AccentColor` / `#FFFFFF` (used as TEXT) | `#7B61FF` → `#FFFFFF` | 4.20:1 | 4.5 | ❌ BLOCKER | 1.4.3 normal text | **Real fail**. AccentColor used as `.foregroundStyle(Color.accentColor)` on Text views — see §5 ❌ BLOCKER. |
+| L10 | `AccentColor` / M3 `surface` (UI border / icon tint) | `#6B50EB` → `#FEF7FF` | **5.03:1** | 3.0 | ✅ OK | 1.4.11 UI | iOS button outline / icon tint passes UI threshold with 2.03 margin. **Y4 / 2026-05-19** — was 4.00:1 under `#7B61FF`; remediated via R6 Option 1 (light variant darken). |
+| L10b | `AccentColor` / M3 `surface` (used as TEXT) | `#6B50EB` → `#FEF7FF` | **5.03:1** | 4.5 | ✅ OK · LOW margin | 1.4.3 normal text | **Y4 / 2026-05-19** — remediated. Was 4.00:1 ❌ BLOCKER under `#7B61FF`; now 5.03:1 ✅ with +0.53 margin (see §5.4 LOW for drift watch). |
+| L11 | `AccentColor` / `#FFFFFF` (iOS system bg, light) | `#6B50EB` → `#FFFFFF` | **5.29:1** | 3.0 | ✅ OK | 1.4.11 UI | iOS button outline / icon tint passes UI threshold with 2.29 margin. **Y4 / 2026-05-19** — was 4.20:1 under `#7B61FF`; remediated via R6 Option 1. |
+| L11b | `AccentColor` / `#FFFFFF` (used as TEXT) | `#6B50EB` → `#FFFFFF` | **5.29:1** | 4.5 | ✅ OK · LOW margin | 1.4.3 normal text | **Y4 / 2026-05-19** — remediated. Was 4.20:1 ❌ BLOCKER under `#7B61FF`; now 5.29:1 ✅ with +0.79 margin (see §5.4 LOW for drift watch). |
 | L12 | Chart overlay `added` @ 40% on `#FFFFFF` | `#ADE1AD` → `#FFFFFF` | 1.48:1 | 3.0 | ◯ MEDIUM | 1.4.11 (exempt) | Pure decoration — state already conveyed via `ChartComparisonAccessibility.swift:144` ("col %1$d added %2$s"). See §5 ◯ MEDIUM. |
 | L13 | Chart overlay `modified` @ 40% on `#FFFFFF` | `#FAE9A3` → `#FFFFFF` | 1.22:1 | 3.0 | ◯ MEDIUM | 1.4.11 (exempt) | Same exemption as L12. `accessibilityLabel` names the state. |
 | L14 | Chart overlay `removed` @ 40% on `#FFFFFF` | `#F0ADAD` → `#FFFFFF` | 1.86:1 | 3.0 | ◯ MEDIUM | 1.4.11 (exempt) | Same exemption as L12. |
@@ -199,9 +199,11 @@ Dark theme = Material 3 `darkColorScheme()` baseline + `AccentColor` `#9B82FF` (
 
 ### 5.1 ❌ BLOCKER
 
+**✅ ALL CLEARED — Y4 / 2026-05-19** (light variant `#7B61FF` → `#6B50EB`; see §6 R6 closure).
+
 | # | Surface | Platform | `file:line` | Gap / Status |
 |---|---|---|---|---|
-| 1 | **AccentColor as `.foregroundStyle(Color.accentColor)` on Text views — light theme** | iOS | `iosApp/iosApp/Screens/ProjectDetailScreen.swift:382,506`; `iosApp/iosApp/Screens/ChartViewerScreen.swift:210,764`; `iosApp/iosApp/Screens/PatternLibraryScreen.swift:224`; `iosApp/iosApp/Screens/ReportContentSheet.swift:66`; `iosApp/iosApp/Screens/SymbolGalleryScreen.swift:84` | **Light theme AccentColor `#7B61FF` on `#FFFFFF` = 4.20:1 < 4.5:1 (WCAG 1.4.3 normal text AA)**. Dark theme passes (D9b = 7.03:1). The Text usage sites above all render normal-weight body text in the brand purple. Six call sites across five screens; same root cause (the brand color's L11.b luminance). Open. Remediation deferred to R6 (see §6). |
+| 1 | **AccentColor as `.foregroundStyle(Color.accentColor)` on Text views — light theme** | iOS | `iosApp/iosApp/Screens/ProjectDetailScreen.swift:382,506`; `iosApp/iosApp/Screens/ChartViewerScreen.swift:210,764`; `iosApp/iosApp/Screens/PatternLibraryScreen.swift:224`; `iosApp/iosApp/Screens/ReportContentSheet.swift:66`; `iosApp/iosApp/Screens/SymbolGalleryScreen.swift:84` | ✅ **REMEDIATED 2026-05-19 (Y4)** — Light variant darkened to `#6B50EB`; ratio is now 5.29:1 on `#FFFFFF` and 5.03:1 on `#FEF7FF` (both ≥ 4.5:1 WCAG 1.4.3 normal text). All 6 call sites remediated transparently via the xcassets-only change (Asset Catalog Color reference propagates to every `Color.accentColor` usage; no per-site code change). Historical context: original `#7B61FF` was 4.20:1 / 4.00:1 < 4.5; dark theme `#9B82FF` D9b = 7.03:1 was always safe. |
 
 ### 5.2 ⚠ HIGH
 
@@ -223,33 +225,41 @@ These pairs fail the 1.4.11 ≥ 3.0 threshold numerically but are exempt because
 
 | # | Pair | Margin | Notes |
 |---|---|---|---|
-| 1 | L10 (`AccentColor` / `#FEF7FF`) | +1.00 above 3.0 | Borderline for UI usage. If Material 3 baseline `surface` darkens in a future SDK update, re-run §2 script. |
-| 2 | L11 (`AccentColor` / `#FFFFFF`) | +1.20 above 3.0 | Same monitor concern as L10 but with more headroom. |
-| 3 | L8 (`outline` / `surface`) | +1.33 above 3.0 | Material 3 spec recommends `outline` for state-conveying borders ≥ 3:1; verified. |
+| 1 | L10 (`AccentColor` / `#FEF7FF`) UI | +2.03 above 3.0 | **Updated Y4 / 2026-05-19** — was +1.00 under `#7B61FF`; now +2.03 under `#6B50EB`. Comfortably above 1.4.11 UI threshold. Re-run §2 script if Material 3 baseline `surface` darkens in future SDK. |
+| 2 | L11 (`AccentColor` / `#FFFFFF`) UI | +2.29 above 3.0 | **Updated Y4 / 2026-05-19** — was +1.20 under `#7B61FF`; now +2.29 under `#6B50EB`. |
+| 3 | L10b (`AccentColor` / `#FEF7FF`) TEXT | +0.53 above 4.5 | **New entry Y4 / 2026-05-19** — passes 1.4.3 but with thinnest margin in the whole matrix. If brand-team revisits the violet hue (lightening for accessibility-of-brand-perception reasons) re-run §2 to confirm still ≥ 4.5. Currently 5.03:1. |
+| 4 | L11b (`AccentColor` / `#FFFFFF`) TEXT | +0.79 above 4.5 | **New entry Y4 / 2026-05-19** — passes 1.4.3 with the second-thinnest margin. Currently 5.29:1. Same drift-watch as L10b. |
+| 5 | L8 (`outline` / `surface`) | +1.33 above 3.0 | Material 3 spec recommends `outline` for state-conveying borders ≥ 3:1; verified. |
 
 ### 5.5 ✅ OK highlights
 
-All 1.4.3 normal-text pairs in both themes pass with a minimum margin of **1.94** above 4.5:1 (worst: D3 onPrimary/primary at 7.71:1). The Material 3 baseline palette is intentionally engineered for AA compliance, and Skeinly inherits that compliance unmodified (`SkeinlyTheme.kt:13-14` uses `lightColorScheme()` / `darkColorScheme()` with no overrides). The only Skeinly-defined color that fails any threshold is `AccentColor` in its single light-theme text-usage scenario (§5.1).
+All 1.4.3 normal-text pairs in both themes pass with a minimum margin of **+0.53** above 4.5:1 (L10b `AccentColor` / `#FEF7FF` post-Y4 remediation; see §5.4 LOW for the drift-watch table). Material 3 baseline pairs maintain large margins (L4 `onPrimary` / `primary` is the worst M3 pair at +1.94, all others ≥ +2.04). The Material 3 baseline palette is intentionally engineered for AA compliance, and Skeinly inherits that compliance unmodified (`SkeinlyTheme.kt:13-14` uses `lightColorScheme()` / `darkColorScheme()` with no overrides). **Y4 / 2026-05-19**: with R6 closed, every Skeinly-defined color now passes its applicable WCAG threshold; no open contrast failures.
 
 ## 6. Remediation backlog (R6 candidate slice)
 
-One real failure remains. Documented as **R6 candidate** per the X4 task brief; ADR + implementation deferred to a future worker session.
+**STATUS — 2026-05-19**: ✅ **CLOSED — Y4 / 2026-05-19**. R6 was the sole remediation backlog item; closing it completes the audit. Option 1 (Darken light-theme AccentColor) was selected and shipped. No further remediation backlog.
 
-### R6 — AccentColor light variant text-contrast remediation
+### R6 — AccentColor light variant text-contrast remediation (✅ CLOSED 2026-05-19, Y4)
+
+**Resolution summary (Y4)**: Option 1 selected. Light variant `AccentColor` darkened from `#7B61FF` → `#6B50EB` in `iosApp/iosApp/Assets.xcassets/AccentColor.colorset/Contents.json` (light entry only; dark variant `#9B82FF` unchanged). Re-measured (§3 L10/L10b/L11/L11b updated): **5.29:1 on `#FFFFFF` / 5.03:1 on `#FEF7FF`** (both ≥ 4.5:1 WCAG 1.4.3 normal text AA, margins +0.79 / +0.53 — see §5.4 LOW for drift watch). All 11 `Color.accentColor` call sites across 5 iOS screens (`ProjectDetailScreen.swift:382,506`; `ChartViewerScreen.swift:208,210,670,764,781`; `PatternLibraryScreen.swift:223-224`; `SymbolGalleryScreen.swift:80,84`; `ReportContentSheet.swift:66`) remediated transparently — zero per-site code change. Inline `#7B61FF` brand comments updated in `iosApp/iosApp/Core/DesignTokens.swift:29` + `iosApp/iosApp/Screens/DiscoveryScreen.swift:144`. Visual brand-shift: hue family preserved (still violet/purple), luminance shift 0.200 → 0.149 (~25% perceptual darken). Knitter-agent perspective: **shifted but on-brand** — slightly cooler/deeper violet, still recognizable as the Skeinly brand color.
+
+---
+
+**Historical pre-Y4 analysis (X4-shipped 2026-05-19, preserved for record):**
 
 **Scope**: address §5.1 BLOCKER 1 — `AccentColor` `#7B61FF` fails 1.4.3 normal-text (≥ 4.5:1) against light-theme backgrounds (`#FFFFFF` and `#FEF7FF`) by 0.30 / 0.50 ratio.
 
-**Three viable approaches** (decision deferred to R6 ADR):
+**Three viable approaches** (decision deferred to R6 ADR at X4 time; Option 1 selected at Y4):
 
-1. **Darken the light-theme AccentColor** to reach ≥ 4.5:1 on white. The minimum darkening needed: `#7B61FF` (L = 0.151) needs L ≤ 0.131 to reach 4.5:1 — approximately `#6F55F0` or `#6B50EB` (luminosity-decreased variant preserving the violet hue). Maintains brand identity; affects only `iosApp/iosApp/Assets.xcassets/AccentColor.colorset/Contents.json` light branch (single file). Dark variant unchanged.
+1. **[SELECTED — Y4 / 2026-05-19]** **Darken the light-theme AccentColor** to reach ≥ 4.5:1 on white. The minimum darkening needed: `#7B61FF` (L = 0.151) needs L ≤ 0.131 to reach 4.5:1 — approximately `#6F55F0` or `#6B50EB` (luminosity-decreased variant preserving the violet hue). Maintains brand identity; affects only `iosApp/iosApp/Assets.xcassets/AccentColor.colorset/Contents.json` light branch (single file). Dark variant unchanged. **Y4 chose `#6B50EB` over `#6F55F0`** because `#6F55F0` gave only +0.21 margin on `#FEF7FF` (creating a new §5.4 LOW finding at threshold edge), whereas `#6B50EB` clears with +0.53 / +0.79 (acceptable drift-watch margin).
 
-2. **Restrict text usage** to dark theme + UI components only; replace `.foregroundStyle(Color.accentColor)` on light-theme Text views with `Color.primary` or a darker brand-safe text color. Affects ~6 call sites across 5 iOS screens; preserves brand color for icon tinting / button-fill usage (where 1.4.11's 3:1 still passes).
+2. **Restrict text usage** to dark theme + UI components only; replace `.foregroundStyle(Color.accentColor)` on light-theme Text views with `Color.primary` or a darker brand-safe text color. Affects ~6 call sites across 5 iOS screens; preserves brand color for icon tinting / button-fill usage (where 1.4.11's 3:1 still passes). **Not selected** — required per-site code changes across 5 screens vs Option 1's single-file token change.
 
-3. **Use as large text only** (≥ 18pt or ≥ 14pt bold) where it falls under the 1.4.3 large-text 3:1 threshold (which 4.20:1 / 4.00:1 both pass). Affects per-site typography review; least visual change.
+3. **Use as large text only** (≥ 18pt or ≥ 14pt bold) where it falls under the 1.4.3 large-text 3:1 threshold (which 4.20:1 / 4.00:1 both pass). Affects per-site typography review; least visual change. **Not selected** — would require typography refactor + per-site SR-cue review.
 
-**Unblock leverage**: closes the last open ASC declaration for "十分なコントラスト". With R6 landed, all 6/6 ASC accessibility declarations become safely declarable (vs. 5/6 today).
+**Unblock leverage**: closed the last open ASC declaration for "十分なコントラスト". With R6 landed (Y4), all 6/6 ASC accessibility declarations are now safely declarable.
 
-**Out of scope for X4**: ADR drafting, code edits, Asset Catalog mutation, screen-level Text-styling refactor.
+**~~Out of scope for X4~~ (resolved at Y4)**: ADR drafting (none needed — structural token-only change), code edits (xcassets + 2 inline comments), Asset Catalog mutation (1 line of JSON), screen-level Text-styling refactor (not needed — Asset Catalog reference propagates transparently).
 
 ## 7. Verdict — what the operator can declare today
 
@@ -260,17 +270,17 @@ One real failure remains. Documented as **R6 candidate** per the X4 task brief; 
 | カラー以外で区別 | ✅ Declarable | R-series state-not-color polish + this audit's §5 cross-references confirm every state-conveying low-contrast pair has a non-color cue. |
 | さらに大きな文字 | ✅ Declarable | R-series Dynamic Type sweep (R4) + R-series heading polish. |
 | VoiceOver / 音声コントロール | ✅ Declarable | R1a–R1c label coverage + ADR-025 chart-canvas surfaces. |
-| **十分なコントラスト** | ⚠ **NOT declarable today** — pending R6 | §5.1 — 1 real BLOCKER (light-theme AccentColor as text fails 1.4.3 by 0.30). |
+| **十分なコントラスト** | ✅ **Declarable** | **Closed 2026-05-19 (Y4 / R6)**. Light-theme AccentColor darkened `#7B61FF` → `#6B50EB`; all 26 measured pairs now pass their applicable WCAG threshold (see §3/§5/§6). |
 | キャプション | N/A | Knitting app — no captioned media. |
 | バリアフリー音声ガイド | N/A | Same — no narrated media. |
 
-**Bottom line**: **5/6 declarable safely today; 6/6 after R6 lands.** App Store Review will not reject a 5/6 declaration as long as "十分なコントラスト" is left unchecked (Apple compliance is "verified end-to-end for declared features", not "all features must be declared"). Operator may ship Phase 40 GA with the partial declaration and add "十分なコントラスト" via a post-GA update once R6 closes.
+**Bottom line**: **✅ 6/6 declarable safely as of 2026-05-19 (Y4)**. With R6 closed, every Skeinly-defined color now passes its applicable WCAG threshold (1.4.3 normal-text ≥ 4.5:1 or 1.4.11 UI ≥ 3.0:1 as appropriate). Operator may include "十分なコントラスト" in the Phase 40 GA App Store Connect "アプリのアクセシビリティ 申告" declaration at first GA submission.
 
 ### Verdict text for tech-debt.md ASC bullet (paste-ready)
 
 Replace the current `(d)` clause in `docs/en/phase/tech-debt.md:64` with:
 
-> `(d) sufficient-contrast verification across Liquid Glass tokens in both light + dark — ⚠ **AUDIT COMPLETE / DECLARABLE-WITH-REMEDIATION 2026-05-19** → [audits/contrast-verification-2026-05-19.md](../../audits/contrast-verification-2026-05-19.md). 25/26 measured pairs pass; 1 BLOCKER (light-theme AccentColor `#7B61FF` as text on white fails WCAG 1.4.3 normal-text by 0.30 — passes 1.4.11 UI). R6 backlog: AccentColor light-variant darkening OR restrict-to-UI usage (3 viable approaches; ADR deferred). **Today's safe declarations: 5/6** — 十分なコントラスト deferred pending R6.`
+> `(d) sufficient-contrast verification across Liquid Glass tokens in both light + dark — ✅ **AUDIT COMPLETE + REMEDIATED 2026-05-19** → [audits/contrast-verification-2026-05-19.md](../../audits/contrast-verification-2026-05-19.md). All 26 measured pairs pass their applicable WCAG threshold (1.4.3 normal text ≥ 4.5:1 OR 1.4.11 UI ≥ 3.0:1). Light-theme AccentColor remediated via Y4 / R6 (Option 1 — `#7B61FF` → `#6B50EB`, single xcassets light-entry change; dark variant unchanged). **All 6/6 ASC accessibility declarations safely declarable** — 十分なコントラスト included.`
 
 ## 8. Maintenance
 
@@ -285,3 +295,4 @@ This audit is a **point-in-time** snapshot (2026-05-19) of the rendered palette 
 ### Remediation log
 
 - **2026-05-19** — audit shipped (X4, this file). One BLOCKER documented (§5.1); R6 candidate written (§6). No code changes.
+- **2026-05-19** — **Y4 / R6 closed**. Light variant `AccentColor` darkened `#7B61FF` → `#6B50EB` in `iosApp/iosApp/Assets.xcassets/AccentColor.colorset/Contents.json` (light entry only; dark variant unchanged). Inline `#7B61FF` brand comments updated in `iosApp/iosApp/Core/DesignTokens.swift:29` + `iosApp/iosApp/Screens/DiscoveryScreen.swift:144`. Re-measured: L10/L10b = 5.03:1, L11/L11b = 5.29:1 (all ≥ 4.5:1 WCAG 1.4.3 normal text AA, see §3 rows). §5.1 BLOCKER cleared, §5.4 LOW updated (L10b/L11b added as new thin-margin entries), §5.5 OK highlights revised, §6 R6 marked CLOSED with Option 1 selected, §7 Verdict shifted to ✅ 6/6 declarable. Re-ran §2 script verified.

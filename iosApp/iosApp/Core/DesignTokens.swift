@@ -26,7 +26,7 @@ enum DesignTokens {
 
     // MARK: - Brand
 
-    /// Brand accent color (#7B61FF) sourced from `Assets.xcassets/AccentColor`.
+    /// Brand accent color (#6B50EB) sourced from `Assets.xcassets/AccentColor`.
     /// SwiftUI auto-applies this as the default tint across the app — explicit
     /// references are only needed when a child view's local context overrides
     /// the inherited tint (e.g. swipe-actions buttons, custom status indicators).
