@@ -254,8 +254,39 @@ private struct PatternRow: View {
                     .lineLimit(1...2)
                     .minimumScaleFactor(0.7)
             }
+
+            // Y2 (audit §3.3 M2 information-density parity): mirrors Compose
+            // PatternCard.buildPatternDetails() — gauge / yarnInfo / needleSize
+            // joined by " • ". Visual-only; VoiceOver reads the assembled
+            // string after title + description in source order.
+            // 記号列 ("Gauge: ... • Yarn: ... • Needle: ...") のため
+            // allowsTightening(true) を適用 (X1 description は自然言語のため不適用)。
+            let details = buildPatternDetails(pattern)
+            if !details.isEmpty {
+                Text(details)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1...2)
+                    .minimumScaleFactor(0.7)
+                    .allowsTightening(true)
+            }
         }
         .padding(.vertical, DesignTokens.listRowPaddingV)
+    }
+
+    private func buildPatternDetails(_ pattern: Pattern) -> String {
+        // Compose label_*_value keys are parametric "Label: %1$s" formats.
+        // Phase 33.1.7 precedent: parametric localization uses NSLocalizedString
+        // + String(format:) — LocalizedStringKey cannot accept format args via
+        // SwiftUI literal-promotion-table. Mirrors DiscoveryScreen.buildDetails()
+        // pattern (DiscoveryScreen.swift L433-441) for iOS internal consistency.
+        [
+            pattern.gauge.map { String(format: NSLocalizedString("label_gauge_value", comment: ""), $0) },
+            pattern.yarnInfo.map { String(format: NSLocalizedString("label_yarn_value", comment: ""), $0) },
+            pattern.needleSize.map { String(format: NSLocalizedString("label_needle_value", comment: ""), $0) },
+        ]
+        .compactMap { $0 }
+        .joined(separator: " \u{2022} ")
     }
 }
 
