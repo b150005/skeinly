@@ -62,6 +62,7 @@ import io.github.b150005.skeinly.domain.model.ChartComparison
 import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.LayerChange
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
+import io.github.b150005.skeinly.domain.symbol.localizedLabel
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.a11y_chart_blank_cells
 import io.github.b150005.skeinly.generated.resources.a11y_chart_row_position
@@ -821,14 +822,8 @@ private fun RectComparisonAccessibilityOverlay(
 
     val rowHeightDp = with(density) { cellSize.toDp() }
     val rowWidthDp = with(density) { widthPx.toDp() }
-    // X3 (R1b Follow-up #1) — catalog symbol-name resolver still reads the
-    // locale inline; cleaning catalog-side jaLabel/enLabel into a single
-    // locale-aware accessor is the X3 follow-up tech-debt "Catalog
-    // locale-aware symbol label resolver".
     val symbolNameResolver: (String) -> String = { id ->
-        catalog.get(id)?.let {
-            if (deviceContext.locale.startsWith("ja", ignoreCase = true)) it.jaLabel else it.enLabel
-        } ?: id
+        catalog.get(id)?.localizedLabel(deviceContext.locale) ?: id
     }
 
     descriptors.forEach { descriptor ->

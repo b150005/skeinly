@@ -84,6 +84,7 @@ import io.github.b150005.skeinly.domain.model.ChartExtents
 import io.github.b150005.skeinly.domain.model.ChartLayer
 import io.github.b150005.skeinly.domain.model.SegmentState
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
+import io.github.b150005.skeinly.domain.symbol.localizedLabel
 import io.github.b150005.skeinly.domain.usecase.ErrorMessage
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.a11y_chart_action_mark_row_done
@@ -749,14 +750,7 @@ private fun RectRowAccessibilityOverlay(
         val topPx = layout.originY + (gridHeight - descriptor.rowNumber) * layout.cellSize
         val spoken =
             ChartAccessibility.spokenLabel(descriptor, a11yStrings) { id ->
-                // X3 (R1b Follow-up #1) — catalog symbol-name resolver still
-                // reads the locale inline; cleaning catalog-side
-                // jaLabel/enLabel into a single locale-aware accessor is the
-                // X3 follow-up tech-debt "Catalog locale-aware symbol label
-                // resolver".
-                catalog.get(id)?.let {
-                    if (deviceContext.locale.startsWith("ja", ignoreCase = true)) it.jaLabel else it.enLabel
-                } ?: id
+                catalog.get(id)?.localizedLabel(deviceContext.locale) ?: id
             }
         Box(
             modifier =

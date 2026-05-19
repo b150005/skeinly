@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.b150005.skeinly.domain.symbol.SymbolCategory
 import io.github.b150005.skeinly.domain.symbol.SymbolDefinition
+import io.github.b150005.skeinly.domain.symbol.localizedLabel
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.a11y_action_eraser_tool
 import io.github.b150005.skeinly.generated.resources.a11y_label_palette_cell
@@ -178,10 +179,7 @@ private fun PaletteSymbolCell(
     // R2 (audit §3.2 H1) — was unlabeled; def.{en,ja}Label was unused.
     // Formats via the `a11y_label_palette_cell` placeholder so SR speaks
     // "Symbol: <name>" / "記号: <name>" with role=Button + selected state.
-    // X3 (R1b Follow-up #1) — inline locale evaluation; tracked as X3
-    // follow-up "Catalog locale-aware symbol label resolver".
-    val symbolName =
-        if (deviceContext.locale.startsWith("ja", ignoreCase = true)) def.jaLabel else def.enLabel
+    val symbolName = def.localizedLabel(deviceContext.locale)
     val cellDescription = stringResource(Res.string.a11y_label_palette_cell, symbolName)
     val isSelected = selected
     Box(
@@ -230,10 +228,7 @@ private fun LockedPaletteSymbolCell(
     // alone said "Pro symbol" but never the symbol name. The cell-level
     // semantic now composes "<Pro symbol> · <Symbol: name>" so SR speaks
     // both the locked state and which symbol is locked.
-    // X3 (R1b Follow-up #1) — inline locale evaluation; tracked as X3
-    // follow-up "Catalog locale-aware symbol label resolver".
-    val symbolName =
-        if (deviceContext.locale.startsWith("ja", ignoreCase = true)) def.jaLabel else def.enLabel
+    val symbolName = def.localizedLabel(deviceContext.locale)
     val cellDescription =
         lockedDescription + " · " +
             stringResource(Res.string.a11y_label_palette_cell, symbolName)

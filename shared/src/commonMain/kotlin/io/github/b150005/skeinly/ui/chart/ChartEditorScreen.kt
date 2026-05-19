@@ -99,6 +99,7 @@ import io.github.b150005.skeinly.domain.model.CraftType
 import io.github.b150005.skeinly.domain.model.ReadingConvention
 import io.github.b150005.skeinly.domain.symbol.SymbolCatalog
 import io.github.b150005.skeinly.domain.symbol.SymbolCategory
+import io.github.b150005.skeinly.domain.symbol.localizedLabel
 import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.a11y_chart_blank_cells
 import io.github.b150005.skeinly.generated.resources.a11y_chart_progress_done
@@ -1229,17 +1230,8 @@ private fun RectEditorAccessibilityOverlay(
     val gridHeight = rect.maxY - rect.minY + 1
     val rowHeightDp = with(density) { layout.cellSize.toDp() }
     val rowWidthDp = with(density) { contentWidthPx.toDp() }
-    // X3 (R1b Follow-up #1) — `val isJa` was hoisted at the top of this
-    // overlay to drive BOTH the (now-stringResource'd) cell a11y helper
-    // AND the catalog symbol-name resolver below. The cell helper is now
-    // resource-driven, so the only remaining `isJa` user is the resolver
-    // — pushed inline here. Cleaning catalog-side jaLabel/enLabel into a
-    // single locale-aware accessor is tracked as the new tech-debt
-    // "Catalog locale-aware symbol label resolver" (X3 follow-up).
     val symbolNameResolver: (String) -> String = { id ->
-        catalog.get(id)?.let {
-            if (deviceContext.locale.startsWith("ja", ignoreCase = true)) it.jaLabel else it.enLabel
-        } ?: id
+        catalog.get(id)?.localizedLabel(deviceContext.locale) ?: id
     }
     val placeOrEraseLabel =
         ChartAccessibility.placeOrEraseActionLabel(cellStrings, selectedSymbolId, symbolNameResolver)
