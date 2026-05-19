@@ -561,11 +561,13 @@ fun SettingsScreen(
                 // Pre-alpha A34 — Contact Support row. Opens the user's
                 // default mail composer with a mailto: URL pre-filled
                 // with the support email + diagnostic context block
-                // (app version / OS / device / locale). Distinct from
-                // the Beta-section "Send Feedback" entry: this is the
-                // general-purpose support channel (account questions,
-                // refunds, DMCA notices), Send Feedback is for
-                // structured bug reports.
+                // (app version / OS / device / locale). Sits alongside
+                // the Send Feedback row below — both are GA-visible in
+                // the About / Legal section. Contact Support is the
+                // general-purpose mailto: channel (account questions,
+                // refunds, DMCA notices); Send Feedback opens the in-app
+                // BugReportPreview screen with structured diagnostic
+                // context for issue triage.
                 ListItem(
                     headlineContent = { Text(stringResource(Res.string.action_contact_support)) },
                     supportingContent = {
@@ -578,6 +580,33 @@ fun SettingsScreen(
                             .clickable(role = Role.Button) {
                                 supportContactLauncher.openSupportEmail(deviceContext)
                             }.testTag("contactSupportButton"),
+                )
+
+                // Phase 40 GA opening (Y1) — Send Feedback row. Previously
+                // gated under the Beta section / [BuildFlags.isBeta]; now
+                // GA-visible so every user can file a structured bug
+                // report from Settings, not just Beta testers. The
+                // ViewModel dispatch keeps the surface symmetric with
+                // the Skeinly Pro entry above so a future engagement
+                // analytics breadcrumb is a one-line addition there.
+                //
+                // Gesture-based bug-report triggers (Android 3-finger
+                // long-press / iOS shake) intentionally REMAIN gated on
+                // `BuildFlags.isBeta && analyticsOptIn` — they exist as
+                // tester shortcuts, not a GA discovery path.
+                ListItem(
+                    headlineContent = { Text(stringResource(Res.string.action_send_feedback)) },
+                    supportingContent = {
+                        Text(stringResource(Res.string.body_send_feedback_explanation))
+                    },
+                    leadingContent = { Icon(Icons.Filled.Feedback, contentDescription = null) },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable(role = Role.Button) {
+                                viewModel.onEvent(SettingsEvent.SendFeedbackTapped)
+                                onSendFeedback()
+                            }.testTag("sendFeedbackButton"),
                 )
 
                 // Phase 41.3b (ADR-016 §5.1) — Skeinly Pro section. Always-on
@@ -622,12 +651,19 @@ fun SettingsScreen(
                 )
 
                 // Beta section — Phase 39.4 (ADR-015 §6). Holds diagnostic
-                // data sharing toggle + Send Feedback. Gated on
+                // data sharing toggle + Notifications row. Gated on
                 // [BuildFlags.isBeta] so production binaries surface
                 // neither — Phase 27a no-tracking stance for v1.0+. The
                 // pre-39.4 "Privacy" header / `label_allow_analytics`
                 // copy was renamed because what we collect on beta is
                 // diagnostic data, not "usage analytics" in general.
+                //
+                // Phase 40 GA opening (Y1) — Send Feedback was promoted
+                // out of this section into the About / Legal section
+                // above. The gesture-based bug-report triggers (Android
+                // 3-finger long-press / iOS shake) remain gated on
+                // `BuildFlags.isBeta && analyticsOptIn` as tester
+                // shortcuts.
                 if (BuildFlags.isBeta) {
                     Spacer(Modifier.height(24.dp))
                     HorizontalDivider()
@@ -712,34 +748,6 @@ fun SettingsScreen(
                     )
                     Text(
                         text = stringResource(Res.string.body_notifications_disabled_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-
-                    Spacer(Modifier.height(8.dp))
-
-                    // Phase 39.5 wires this to the BugReportPreviewScreen
-                    // + GitHub Issue prefill launcher. Today the callback
-                    // is a no-op (default `onSendFeedback = {}` at the
-                    // screen signature), so the entry renders correctly
-                    // and a tester can discover the feature without an
-                    // observable broken UX behind the row.
-                    ListItem(
-                        headlineContent = {
-                            Text(stringResource(Res.string.action_send_feedback))
-                        },
-                        leadingContent = {
-                            Icon(Icons.Filled.Feedback, contentDescription = null)
-                        },
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable(role = Role.Button) { onSendFeedback() }
-                                .testTag("sendFeedbackButton"),
-                    )
-                    Text(
-                        text = stringResource(Res.string.body_send_feedback_explanation),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp),

@@ -302,6 +302,57 @@ class SettingsViewModelTest {
             viewModel.onEvent(SettingsEvent.SubscribeToProTapped)
         }
 
+    /**
+     * Phase 40 GA opening (Y1) — `SendFeedbackTapped` is dispatched from the
+     * "Send Feedback" row that was promoted out of the Beta section into the
+     * About / Legal section. The handler must NOT mutate state and MUST NOT
+     * throw, regardless of whether an analytics tracker is wired. The first
+     * assertion catches a future regression where someone bolts analytics or
+     * a `_state.update {}` onto the branch without revisiting the row's GA
+     * contract (which is: the click is a navigation intent, not a state
+     * change).
+     */
+    @Test
+    fun `SendFeedbackTapped does not mutate state`() =
+        runTest {
+            authRepo.setAuthState(AuthState.Authenticated("user-1", "test@example.com"))
+            val viewModel = createViewModel()
+            viewModel.state.test {
+                val before = awaitItem()
+                viewModel.onEvent(SettingsEvent.SendFeedbackTapped)
+                expectNoEvents()
+                assertEquals(before, viewModel.state.value)
+            }
+        }
+
+    @Test
+    fun `SendFeedbackTapped is safe when analytics tracker is null`() =
+        runTest {
+            // Default-null analyticsTracker mirrors the SubscribeToProTapped
+            // null-safety guard; the handler MUST be callable in production
+            // builds that route analytics elsewhere as well as in tests that
+            // skip wiring a tracker.
+            val viewModel = createViewModel(analyticsTracker = null)
+            viewModel.onEvent(SettingsEvent.SendFeedbackTapped)
+        }
+
+    @Test
+    fun `SendFeedbackTapped does not emit any analytics event`() =
+        runTest {
+            // Phase 40 GA opening (Y1) — keeps the contract that engagement
+            // analytics on bug-report intent belong to BugReportPreviewScreen,
+            // not the Settings click. If a future change wants to emit
+            // `ClickAction(SendFeedback, Settings)` here, this guard must be
+            // updated in the same commit that adds `ClickActionId.SendFeedback`.
+            val tracker = RecordingAnalyticsTracker()
+            val viewModel = createViewModel(analyticsTracker = tracker)
+            viewModel.onEvent(SettingsEvent.SendFeedbackTapped)
+            assertTrue(
+                tracker.captured.isEmpty(),
+                "SendFeedbackTapped must not emit analytics today",
+            )
+        }
+
     // Phase 26.5 (ADR-022 §6.4) — MFA disable path coverage.
 
     @Test

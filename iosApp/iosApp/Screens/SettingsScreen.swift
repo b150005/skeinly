@@ -471,7 +471,12 @@ struct SettingsScreen: View {
                 // composer via the shared `SupportContactLauncher`
                 // Kotlin actual; the URL is built in commonMain with
                 // diagnostic context pre-filled (app version / OS /
-                // device / locale).
+                // device / locale). Sits alongside the Send Feedback
+                // row below — both are GA-visible in the About / Legal
+                // section. Contact Support is the general-purpose
+                // mailto: channel; Send Feedback opens the in-app
+                // BugReportPreview screen with structured diagnostic
+                // context.
                 Button {
                     KoinHelperKt.openSupportEmail()
                 } label: {
@@ -483,6 +488,27 @@ struct SettingsScreen: View {
                     }
                 }
                 .accessibilityIdentifier("contactSupportButton")
+
+                // Phase 40 GA opening (Y1) — Send Feedback row. Promoted
+                // out of the Beta section into About / Legal so every
+                // user (not just Beta testers) can file a structured bug
+                // report from Settings. The ViewModel dispatch mirrors
+                // the Skeinly Pro entry so a future engagement
+                // analytics breadcrumb is a one-line addition there.
+                // Shake-to-feedback in `AppRouter.swift` remains
+                // BuildFlags.isBeta-only as a tester shortcut.
+                Button {
+                    viewModel.onEvent(event: SettingsEventSendFeedbackTapped.shared)
+                    onSendFeedback()
+                } label: {
+                    VStack(alignment: .leading) {
+                        Label("action_send_feedback", systemImage: "exclamationmark.bubble")
+                        Text("body_send_feedback_explanation")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .accessibilityIdentifier("sendFeedbackButton")
             }
 
             // Phase 41.3b (ADR-016 §5.1) — Skeinly Pro section. Always-on,
@@ -507,12 +533,18 @@ struct SettingsScreen: View {
             }
 
             // Beta section — Phase 39.4 (ADR-015 §6). Holds diagnostic
-            // data sharing + Send Feedback. Gated on `BuildFlags.isBeta`
-            // so production binaries surface neither — Phase 27a
-            // no-tracking stance for v1.0+. The pre-39.4 "Privacy"
-            // section header / `label_allow_analytics` copy was renamed
-            // because what we collect on beta is diagnostic data, not
-            // "usage analytics" in general.
+            // data sharing + Notifications row. Gated on
+            // `BuildFlags.isBeta` so production binaries surface neither —
+            // Phase 27a no-tracking stance for v1.0+. The pre-39.4
+            // "Privacy" section header / `label_allow_analytics` copy was
+            // renamed because what we collect on beta is diagnostic data,
+            // not "usage analytics" in general.
+            //
+            // Phase 40 GA opening (Y1) — Send Feedback was promoted out of
+            // this section into the About / Legal section above. The
+            // shake-to-feedback gesture in `AppRouter.swift` remains
+            // gated on `BuildFlags.isBeta && analyticsOptInValue()` as a
+            // tester shortcut.
             if BuildFlags.isBeta {
                 Section {
                     Toggle(isOn: Binding(
@@ -544,21 +576,14 @@ struct SettingsScreen: View {
                         }
                     }
                     .accessibilityIdentifier("notificationsSettingsRow")
-
-                    Button {
-                        onSendFeedback()
-                    } label: {
-                        Label("action_send_feedback", systemImage: "exclamationmark.bubble")
-                    }
-                    .accessibilityIdentifier("sendFeedbackButton")
                 } header: {
                     Text("label_beta_section")
                 } footer: {
-                    // Section footer surfaces three paragraphs inline.
+                    // Section footer surfaces two paragraphs inline now
+                    // that Send Feedback moved to About.
                     VStack(alignment: .leading, spacing: 4) {
                         Text("body_diagnostic_data_explanation")
                         Text("body_notifications_setting_explanation")
-                        Text("body_send_feedback_explanation")
                     }
                 }
             }

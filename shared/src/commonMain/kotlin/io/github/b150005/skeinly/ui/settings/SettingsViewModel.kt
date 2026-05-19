@@ -105,6 +105,20 @@ sealed interface SettingsEvent {
     data object SubscribeToProTapped : SettingsEvent
 
     /**
+     * Phase 40 GA opening (Y1) — fired when the user taps the "Send Feedback"
+     * entry in the About / Legal section. Previously the row sat inside the
+     * Beta section and the click handler invoked only the screen-level
+     * `onSendFeedback` callback. The Settings entry is now GA-visible (see
+     * `SettingsScreen.kt`); routing the click through the ViewModel mirrors
+     * the [SubscribeToProTapped] pattern so a future analytics breadcrumb
+     * (e.g. `ClickAction(SendFeedback, Settings)`) only needs a `wireValue`
+     * row in `ClickActionId` and one line here — without touching the screen
+     * again. Today the handler is a no-op because analytics on bug-report
+     * intent belong to the BugReportPreview screen's own funnel.
+     */
+    data object SendFeedbackTapped : SettingsEvent
+
+    /**
      * Phase 26.5 (ADR-022 §6.4) — fires the disable-MFA RPC (auth.mfa.unenroll)
      * on the currently-enrolled factor. The Settings row pre-confirms via
      * an AlertDialog at the UI layer; this event executes the action.
@@ -244,6 +258,15 @@ class SettingsViewModel(
                 analyticsTracker?.track(
                     AnalyticsEvent.ClickAction(ClickActionId.SubscribeToPro, Screen.Settings),
                 )
+            SettingsEvent.SendFeedbackTapped -> {
+                // Phase 40 GA opening (Y1) — no state mutation, no analytics
+                // emission today. Routing the click through the ViewModel
+                // keeps the dispatch surface symmetric with the other
+                // Settings entry rows (SubscribeToProTapped, etc.) and gives
+                // a single edit site for a future bug-report engagement
+                // breadcrumb without re-touching the screen. The structured
+                // bug-report funnel itself lives on BugReportPreviewScreen.
+            }
             SettingsEvent.DisableMfaConfirmed -> performDisableMfa()
             SettingsEvent.ClearError -> _state.update { it.copy(error = null) }
         }
