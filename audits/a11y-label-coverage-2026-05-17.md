@@ -89,6 +89,32 @@ diff state) unblocks two declarations across three screens × two platforms.
 > slice per R4 worker scope cut). §5 progression table unchanged — `After R1`
 > remains gating on R1c.
 >
+> **R3 progress update (2026-05-19, audit §3.2 H9 + §3.4 LOW)**: the
+> systemic heading-semantics sweep is shipped (commit `57a96ab`).
+> **H9 CLOSED** — `Modifier.semantics { heading() }` applied to every
+> TopAppBar title (29 screens; `ProjectListScreen.kt` correctly skipped per
+> Sprint A audit's intentional empty `title = { }`) + 10 hero-typography
+> `Text` sites styled `displayLarge`/`headlineLarge`/`headlineMedium`/
+> `headlineSmall`/`titleLarge`/`displaySmall` that are screen titles or
+> section headers. 35 `*Screen*.kt` files touched, two semantics imports
+> per file, annotation-only (zero behavior/layout/focus-order change).
+> Data-text styled as hero typography correctly skipped (ProjectDetail row
+> counter `displayLarge` + +/- glyphs, MfaEnrollment recovery-code value
+> `titleLarge`, Connections invite-code value `headlineSmall`).
+> **§3.4 LOW iOS `.title2` headers CLOSED** on `OAuthProfileSetupScreen.swift`
+> + `PaywallScreen.swift` via `.accessibilityAddTraits(.isHeader)`
+> (mirrors the existing `LoginScreen.swift:353` `LinkIdentityForm`
+> precedent; the third `EmailConfirmationSentView` `.title2` site in the
+> same file is R3 Follow-up #2, deliberately out of declared scope per
+> the worker prompt). After R3 every R1–R4 closure prerequisite for the
+> three ASC accessibility declarations is met — **VoiceOver flips ✅**.
+> §1 declaration matrix becomes **5/6 ✅**: ダークインターフェイス +
+> 視差効果を減らす + さらに大きな文字 + カラー以外で区別 + VoiceOver are
+> declarable end-to-end; キャプション (closed-caption video) +
+> バリアフリー音声ガイド (audio description) remain N/A for a knitting app.
+> R5 (state-not-color polish) is the sole remaining residual; it does
+> **not** gate any ASC declaration.
+>
 > **R1c + R2 progress update (2026-05-18, ADR-025 + audit §4 R2)**: the
 > **Chart Comparison** final third of R1 + the icon-label + i18n sweep are
 > shipped. **B4 CLOSED** on both platforms (commit `8ca758d`) via the same
@@ -163,7 +189,7 @@ on **both** platforms in the same slice or the ASC declaration stays blocked.
 | H6 | SegmentProgressSummary not a button | Compose | `projectdetail/ProjectDetailScreen.kt:822-856` | Tappable `Text` via `Modifier.clickable` with **no `role = Role.Button`** — the deep-link into chart segment progress is announced as static text, not actionable. |
 | H7 | ProjectDetail row counter / +− fixed font | Both | KT `ProjectDetailScreen.kt:CounterSection` · SW `ProjectDetailScreen.swift:counterSection` | ✅ **CLOSED (R4, 2026-05-18)** — Compose: `displayLarge` (rowCounter) + `headlineMedium`/`displaySmall` (-/+) Material 3 typography + `Modifier.defaultMinSize(…)` containers (was `96.sp` / `28.sp` / `36.sp` fixed inside `Modifier.size`); SwiftUI: 3× `@ScaledMetric` reading `DesignTokens.*` through `UIFontMetrics` (relative to `.largeTitle`/`.title`). +2 androidInstrumentedTest at fontScale=2f confirm no clipping + reachable buttons. ~~Single most-used screen does not honor Larger Text.~~ No app-wide Dynamic Type cap applied — Follow-up: candidate ADR slot for cap policy decision pre-Phase-40 GA (R4 worker surfaced via Tech Debt). |
 | H8 | MFA code fields empty label | iOS | `MfaChallengeScreen.swift`, `MfaEnrollmentScreen.swift` (`TextField("label_mfa_code_input",…)`) | ✅ **CLOSED (R2, 2026-05-18, commit `5be0034`)** — empty-string `TextField` labels replaced with `"label_mfa_code_input"` (one new shared key, two call sites). ~~Auth-critical 6-digit code fields announce only "text field" — no hint.~~ |
-| H9 | No heading semantics (systemic) | Compose | every screen — **no** `Modifier.semantics{heading()}` | Section headers (Settings, ProjectDetail, ChartEditor, onboarding titles, TopAppBar titles) announce as body text; no rotor/heading navigation on long screens. One systemic HIGH, not per-screen. (iOS uses `Section` → framework-traited; mostly OK.) |
+| H9 | No heading semantics (systemic) | Compose | every screen | ✅ **CLOSED (R3, 2026-05-19, commit `57a96ab`)** — `Modifier.semantics { heading() }` applied to every TopAppBar title (29 of 30 inventoried `*Screen*.kt` files; `ProjectListScreen.kt` correctly skipped because Sprint A audit intentionally set `title = { }` empty so the brand wordmark could be collapsed into the overflow menu — no Text composable to annotate) + 10 hero-typography `Text` sites styled with `displayLarge`/`headlineLarge`/`headlineMedium`/`headlineSmall`/`titleLarge`/`displaySmall` that are screen titles or section headers (LoginScreen app-name + email-confirmation, ForceUpdate + Maintenance hero, OAuthProfileSetup hero, Onboarding per-page + diagnostic-consent, PaywallScreen Compose hero, ProfileScreen displayName, SuggestionDetail pr.title, SharedContent pattern.title, FriendInviteConfirm success message). Two semantics imports added per file (`androidx.compose.ui.semantics.{heading,semantics}`). Annotation-only with no behavior/layout/focus-order/rendering effect. Data-text styled as hero typography correctly skipped (ProjectDetail row counter `displayLarge` + +/- glyphs, MfaEnrollment recovery-code value `titleLarge`, Connections invite-code value `headlineSmall`). Rotor/heading navigation now works on long screens (Settings, ChartEditor, ProjectDetail, Onboarding). 35 `*Screen*.kt` files touched. ~~Section headers announce as body text...~~ |
 
 ### 3.3 MEDIUM (declarable with reservations / same-wave fix)
 
@@ -181,7 +207,7 @@ on **both** platforms in the same slice or the ASC declaration stays blocked.
 
 - **Good a11y infrastructure (positive inventory)**: Compose `ui/components/LiveSnackbarHost.kt` wires `liveRegion = Polite` (every toast announced — WCAG 4.1.3); `ui/components/SelectedCheckmarkIcon.kt` is a deliberate non-color selected-state cue used across PatternLibrary/ProjectList/Discovery/SuggestionList filter chips. iOS `Core/AccessibilityAnnouncements.swift` is the parallel toast announcer, widely used; `SuggestionListScreen`/`SuggestionDetailScreen` are exemplary (status = neutral-gray capsule + **text**, never color).
 - **Declaration-ready screens (verified clean, both platforms)**: Auth (ForgotPassword, MfaChallenge-on-Compose, OAuthProfileSetup), Settings, Profile, Suggestion list/detail, ChartConflictResolution (Compose), ChartHistory, ChartVariationPicker, Comments, all Moderation (Report/Block/BlockedUsers), Connections, FriendInvite, SharedWithMe, SharedContent, SymbolGallery, Paywall, PackManagement, BugReport, ForceUpdate, Maintenance, ActivityFeed (text carries type), EmptyStateView, all leaf dialogs. The non-chart surface is in good shape.
-- **LOW**: in-button spinner replaces text label while submitting (no `contentDescription` mid-submit) — repeated across Login/ForgotPassword/Profile/Settings dialogs/Paywall (Compose); iOS `.font(.title3, design:.monospaced)` on the MFA secret correctly uses the *text-style* form so it **does** scale (recorded as the correct pattern); ad-hoc `.font(.title2)` headers missing `.isHeader` on OAuthProfileSetup/Paywall (iOS).
+- **LOW**: in-button spinner replaces text label while submitting (no `contentDescription` mid-submit) — repeated across Login/ForgotPassword/Profile/Settings dialogs/Paywall (Compose); iOS `.font(.title3, design:.monospaced)` on the MFA secret correctly uses the *text-style* form so it **does** scale (recorded as the correct pattern); ad-hoc `.font(.title2)` headers ✅ **CLOSED (R3, 2026-05-19, commit `57a96ab`)** on `OAuthProfileSetupScreen.swift` + `PaywallScreen.swift` via `.accessibilityAddTraits(.isHeader)` (matches `LoginScreen.swift:353` `LinkIdentityForm` precedent). `LoginScreen.swift` `EmailConfirmationSentView` `.font(.title2)` parity polish recorded as R3 Follow-up #2 (out of declared scope per the worker prompt; non-gating).
 - **Honesty note (carried from the Compose pass)**: 4 small Settings-family leaf files (`DataExportScreen`, `OssLicensesScreen`, `WipeDataConfirmPhraseScreen`, `WipeDataExplanationDialog` on the Compose side) were enumerated but not opened in the Compose pass; their iOS counterparts **were** read and are clean, and the Settings-family pattern is consistent. Marked **assumed-OK, not exhaustively verified** — a remediation slice touching Settings should spot-confirm them.
 
 ---
@@ -212,18 +238,24 @@ R5 is the closeout.
 
 ## 5. What the operator can declare *today* vs after each slice
 
-| Declaration | Today | After R2+R3 | After R1 | After R4 |
-|---|---|---|---|---|
-| ダークインターフェイス | ✅ (Phase 18) | ✅ | ✅ | ✅ |
-| 視差効果を減らす (Reduce Motion) | ✅ (A25 closed) | ✅ | ✅ | ✅ |
-| VoiceOver | ❌ | ❌ (chart still opaque) | ✅ (if R2/R3 also done) | ✅ |
-| カラー以外で区別 | ❌ | ❌ | ✅ (R1 carries the non-color text) | ✅ |
-| さらに大きな文字 (Dynamic Type) | ⚠️ reservations | ⚠️ | ⚠️ | ✅ |
+(Table updated 2026-05-19 after R3 close — R1/R2/R3/R4 all shipped; only R5
+state-not-color polish remains and it gates no declaration.)
+
+| Declaration | Today (post-R3) | After R5 (closeout) |
+|---|---|---|
+| ダークインターフェイス | ✅ (Phase 18) | ✅ |
+| 視差効果を減らす (Reduce Motion) | ✅ (A25 closed) | ✅ |
+| カラー以外で区別 | ✅ (R1a B2 + R1c B4) | ✅ |
+| さらに大きな文字 (Dynamic Type) | ✅ (R4) | ✅ |
+| VoiceOver | ✅ (B1–B4 via R1a/R1b/R1c + H1–H5 + H8 via R2 + H9 via R3) | ✅ |
+| キャプション / バリアフリー音声ガイド | N/A (knitting app, no media) | N/A |
 
 Declaring only what passes is mandatory (Apple: "verified end-to-end for core
 tasks"; false declarations are App-Review-rejectable, per the CLAUDE.md
-Phase-40 entry). **Today's safe declarations: ダークインターフェイス +
-視差効果を減らす only.**
+Phase-40 entry). **Today's safe declarations: 5/6 ✅** — ダークインターフェイス
++ 視差効果を減らす + カラー以外で区別 + さらに大きな文字 + VoiceOver. The
+remaining 1/6 (キャプション / バリアフリー音声ガイド bundled) is N/A. R5 is
+closeout polish — it does NOT gate any declaration.
 
 ---
 
@@ -266,6 +298,37 @@ Phase-40 entry). **Today's safe declarations: ダークインターフェイス 
   Dynamic Type cap policy ADR slot, DesignTokens.swift re-definition,
   PatternList/Discovery `.lineLimit(1)` (M2) clamp, ProjectDetail
   18dp status-badge icons (R5 candidate).
+- **2026-05-19 — R3** (audit §3.2 H9 + §3.4 LOW): **H9 + iOS `.title2`
+  CLOSED** on both platforms (commit `57a96ab`). Compose:
+  `Modifier.semantics { heading() }` applied to every TopAppBar title (29
+  screens — `ProjectListScreen.kt` correctly skipped, empty `title` per
+  Sprint A audit) + 10 hero-typography `Text` sites that are screen titles
+  or section headers (`displayLarge`/`headlineLarge`/`headlineMedium`/
+  `headlineSmall`/`titleLarge`/`displaySmall`). 35 `*Screen*.kt` files
+  touched; two new semantics imports per file. Data-text styled as hero
+  typography correctly skipped (ProjectDetail row counter + +/- glyphs,
+  MfaEnrollment recovery-code value, Connections invite-code value). iOS:
+  `.accessibilityAddTraits(.isHeader)` on `OAuthProfileSetupScreen.swift`
+  + `PaywallScreen.swift` (matches `LoginScreen.swift:353` `LinkIdentityForm`
+  precedent). Annotation-only — zero behavior/layout/focus-order change;
+  `make ci-local` 9/9 green. **§1 declaration matrix becomes 5/6 ✅** —
+  VoiceOver flips ✅ (B1–B4 + H1–H5 + H8 + H9 all closed). **Today's safe
+  declarations: ダークインターフェイス + 視差効果を減らす + さらに大きな文字 +
+  カラー以外で区別 + VoiceOver**. キャプション / バリアフリー音声ガイド N/A
+  for a knitting app. §5 progression table updated. R3 surfaced Tech Debt:
+  (viii) `LoginScreen.swift` `EmailConfirmationSentView` `.font(.title2)`
+  parity polish (third title2 site in the same file; out of R3 declared
+  scope per the worker prompt — `OAuthProfileSetup` + `Paywall` only);
+  (ix) Compose `titleMedium` section-header second-tier inventory
+  (`SettingsScreen` ships 7 such headers + `ChartEditor` / `ProjectDetail`
+  similar — worker-prompt baseline scoped to `headline*` / `titleLarge` /
+  `displaySmall` / `TopAppBar` only; deliberate scope cut, NOT gating);
+  (x) `PaywallScreen.kt` `PackageRow` `.titleMedium` `selected`
+  state-description polish (R5-adjacent polish surface). R5 is the sole
+  remaining R-series slice; it closes M1/M3/M5/M6/M7 state-not-color polish
+  and does **not** gate any ASC declaration. **R-series wave closure**:
+  promotes the entire R1a/R1b/R1c/R2/R3/R4/R5 trail from `tech-debt.md`
+  into `completed-archive.md` when R5 lands (Archive Policy: wave-close).
 - **2026-05-18 — R1c (ADR-025) + R2** (audit §4 R2): **B4 + H1/H2/H3/H4/H5/H8 +
   M4 CLOSED** on both platforms.
   - **R1c** (commit `8ca758d`): shared `ChartAccessibility` extended
