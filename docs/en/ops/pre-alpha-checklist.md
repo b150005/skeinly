@@ -36,7 +36,7 @@ Tracker for the closed-alpha launch readiness audit. Every item below maps to a 
 
 - **A2** Review demo account + reproduction docs — user-side seed data + App Store / Play Console wiring
 - **A6** Play Console Data Safety form — user-side (per A6 matrix in §2.1)
-- **A9 / V13** Enable HIBP leaked-password protection in Supabase Dashboard — user-side toggle
+- **A9 / V13** Enable HIBP leaked-password protection in Supabase Dashboard — ⚠ **Pro plan required, DEFERRED 2026-05-19** (operator directive — see V17 / tech-debt.md). Substituted via strong password policy (V14): min 12 chars + lowercase + uppercase + digits + symbols.
 - **A36** User-prioritized golden-path verification — user prioritization pending
 
 ## Outstanding Needs Verification Items (user-side)
@@ -53,8 +53,12 @@ Tracker for the closed-alpha launch readiness audit. Every item below maps to a 
 - **V10** Android `assetlinks.json` deployment verification — already confirmed at `https://b150005.github.io/.well-known/assetlinks.json` per Section 25.1
 - **V11** Subscription cancellation deep link verification — closed by A30
 - **V12** `shares.share_token` entropy audit (cryptographic RNG verification)
-- **V13-V16** Supabase Auth Dashboard verifications (HIBP, password policy, rate limits, session timeout)
-- **V17** Supabase Pro tier verification for PITR
+- **V13-V16** Supabase Auth Dashboard verifications — ✅ **CLOSED 2026-05-19** (operator-side):
+  - **V13** HIBP leaked-password protection: ⚠ **Pro plan required**, deferred per V17 decision below — substituted via strong password policy (V14)
+  - **V14** Password policy: ✅ enforced — minimum length 12, requirements = lowercase + uppercase + digits + symbols, Secure password change ON, Require current password when updating ON
+  - **V15** Rate limits: ✅ reviewed — Skeinly 用途で default 適切 (token refreshes 150/5min, token verifications 30/5min, sign-ups/sign-ins 30/5min); SMS / Web3 / anonymous は default のまま (未使用); **Email rate (2/h)** は Phase 40 GA HARD-GATE = custom SMTP provider 配線で対応
+  - **V16** Session settings: ✅ reviewed — Refresh Token compromise detection ON + Reuse interval 10s; User Sessions セクション (single-session / time-box / inactivity) は Pro-gated だが Skeinly の mobile multi-device UX で Pro upgrade 後も変更不要と判定済
+- **V17** Supabase Pro tier verification for PITR — ⏳ **DEFERRED 2026-05-19** (operator directive). Upgrade triggers: (1) post-GA revenue justifies $25/month, OR (2) HIBP regulatory necessity, OR (3) PITR 14-day backup window needed, OR (4) free-tier rate-limit hit. None gate Phase 40 GA submission. See tech-debt.md `### Phase 40 GA release prep` "Supabase Pro tier upgrade — deferred" for full rationale.
 - **V18** Apple Sandbox + Play License tester registration
 - **V19-V21** App Store Connect + Play Console listing setup + demo account
 - **V22** Family Sharing enable on Pro subscription
