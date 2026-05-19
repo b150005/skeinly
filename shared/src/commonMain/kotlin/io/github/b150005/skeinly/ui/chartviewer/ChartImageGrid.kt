@@ -25,6 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.github.b150005.skeinly.generated.resources.Res
@@ -43,6 +47,7 @@ fun ChartImageGrid(
     onDeleteClick: (storagePath: String) -> Unit,
     onAddClick: () -> Unit,
     modifier: Modifier = Modifier,
+    selectedIndex: Int? = null,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
@@ -61,6 +66,7 @@ fun ChartImageGrid(
                     imageUrl = url,
                     onClick = { onImageClick(index) },
                     onDelete = { onDeleteClick(path) },
+                    isSelected = index == selectedIndex,
                 )
             }
 
@@ -79,13 +85,18 @@ private fun ChartImageThumbnail(
     imageUrl: String,
     onClick: () -> Unit,
     onDelete: () -> Unit,
+    isSelected: Boolean = false,
 ) {
     Box(
         modifier =
             Modifier
                 .size(100.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .clickable(onClick = onClick),
+                .clickable(onClick = onClick)
+                .semantics {
+                    role = Role.Button
+                    if (isSelected) selected = true
+                },
     ) {
         AsyncImage(
             model = imageUrl,
