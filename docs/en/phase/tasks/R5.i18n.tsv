@@ -1,7 +1,0 @@
-key	en	ja	xcstrings_value
-a11y_state_page_indicator_x_of_y	Page %1$d of %2$d	%2$dページ中%1$dページ目	Page %1$d of %2$d
-a11y_action_copy_recovery_code	Copy recovery code	復旧コードをコピー	Copy recovery code
-state_recovery_code_copied	Recovery code copied	復旧コードをコピーしました	Recovery code copied
-a11y_progress_rows_completed_x_of_y	%1$d of %2$d rows completed	%2$d段中%1$d段完了	%1$d of %2$d rows completed
-state_selected	Selected	選択中	Selected
-state_not_selected	Not selected	未選択	Not selected

@@ -52,17 +52,17 @@ import io.github.b150005.skeinly.generated.resources.action_terms_of_service
 import io.github.b150005.skeinly.generated.resources.body_paywall_features
 import io.github.b150005.skeinly.generated.resources.body_paywall_pitch
 import io.github.b150005.skeinly.generated.resources.body_paywall_trial_disclosure
+import io.github.b150005.skeinly.generated.resources.state_not_selected
 import io.github.b150005.skeinly.generated.resources.state_paywall_package_unavailable
 import io.github.b150005.skeinly.generated.resources.state_paywall_unavailable
 import io.github.b150005.skeinly.generated.resources.state_purchase_failed
 import io.github.b150005.skeinly.generated.resources.state_purchase_in_progress
 import io.github.b150005.skeinly.generated.resources.state_restore_failed
 import io.github.b150005.skeinly.generated.resources.state_restoring
+import io.github.b150005.skeinly.generated.resources.state_selected
 import io.github.b150005.skeinly.generated.resources.title_paywall
-import io.github.b150005.skeinly.platform.DeviceContextProvider
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -348,22 +348,14 @@ private fun PackageRow(
     pkg: PaywallPackage,
     selected: Boolean,
     onSelect: () -> Unit,
-    deviceContext: DeviceContextProvider = koinInject(),
 ) {
-    // R5 (bundled R3 Follow-up #4, WCAG 1.4.1 Use of Color + 4.1.2
-    // Name/Role/Value): the selected row was distinguishable only by
-    // `primaryContainer` vs `surfaceVariant` fill — invisible to
-    // color-blind users + invisible to TalkBack/VoiceOver. (a) `role =
-    // Role.RadioButton` on the clickable surfaces the row as a radio
-    // option (announces "radio button" + the selected state). (b)
-    // `selected` semantics value flips the SR-state to selected /
-    // unselected. (c) `stateDescription` provides explicit localized
-    // "Selected" / "Not selected" copy. Bilingual fallback inline until
-    // R5.i18n.tsv splices `state_selected` + `state_not_selected` into
-    // the 3 shared i18n files (parallel-worktree i18n-fragment protocol).
-    val isJa = deviceContext.locale.startsWith("ja", ignoreCase = true)
-    val selectedStateLabel = if (isJa) "選択中" else "Selected"
-    val notSelectedStateLabel = if (isJa) "未選択" else "Not selected"
+    // R5 (bundled R3 Follow-up #4, WCAG 1.4.1 + 4.1.2): selected row was
+    // distinguishable only by container-color. `role = Role.RadioButton`
+    // surfaces the radio option; `selected` semantics value flips the
+    // SR-state; `stateDescription` provides explicit "Selected" /
+    // "Not selected" copy.
+    val selectedStateLabel = stringResource(Res.string.state_selected)
+    val notSelectedStateLabel = stringResource(Res.string.state_not_selected)
     val labelKey =
         when (pkg.period) {
             PaywallPeriod.MONTHLY -> Res.string.action_subscribe_monthly

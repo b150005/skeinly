@@ -83,6 +83,7 @@ import io.github.b150005.skeinly.domain.model.User
 import io.github.b150005.skeinly.domain.model.Visibility
 import io.github.b150005.skeinly.domain.repository.AuthRepository
 import io.github.b150005.skeinly.generated.resources.Res
+import io.github.b150005.skeinly.generated.resources.a11y_progress_rows_completed_x_of_y
 import io.github.b150005.skeinly.generated.resources.action_add
 import io.github.b150005.skeinly.generated.resources.action_add_note
 import io.github.b150005.skeinly.generated.resources.action_add_photo
@@ -138,7 +139,6 @@ import io.github.b150005.skeinly.generated.resources.state_project_not_found
 import io.github.b150005.skeinly.generated.resources.state_uploading_photo
 import io.github.b150005.skeinly.generated.resources.title_chart_history
 import io.github.b150005.skeinly.generated.resources.title_suggestions
-import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.ui.chartviewer.ChartImageGrid
 import io.github.b150005.skeinly.ui.chartviewer.ChartImageViewer
 import io.github.b150005.skeinly.ui.comments.CommentSection
@@ -621,16 +621,11 @@ private fun CounterSection(
     totalRows: Int?,
     onIncrement: () -> Unit,
     onDecrement: () -> Unit,
-    deviceContext: DeviceContextProvider = koinInject(),
 ) {
     // R5 (audit §3.3 M7, WCAG 4.1.2 Name/Role/Value): the
-    // LinearProgressIndicator carried no `progressBarRangeInfo` and no
-    // `contentDescription`, so TalkBack/VoiceOver announced "progress
-    // bar" with no value. Bind value + spoken label to the bar itself.
-    // Bilingual fallback inline until R5.i18n.tsv splices
-    // `a11y_progress_rows_completed_x_of_y` into the 3 shared i18n files
-    // (parallel-worktree i18n-fragment protocol).
-    val isJa = deviceContext.locale.startsWith("ja", ignoreCase = true)
+    // LinearProgressIndicator carried no `progressBarRangeInfo` /
+    // `contentDescription`, so SR announced "progress bar" with no value.
+    // Bind value + spoken label to the bar itself.
     Column(
         modifier =
             Modifier
@@ -675,11 +670,11 @@ private fun CounterSection(
             )
             Spacer(modifier = Modifier.height(16.dp))
             val progressA11yLabel =
-                if (isJa) {
-                    "${totalRows}段中${currentRow}段完了"
-                } else {
-                    "$currentRow of $totalRows rows completed"
-                }
+                stringResource(
+                    Res.string.a11y_progress_rows_completed_x_of_y,
+                    currentRow,
+                    totalRows,
+                )
             LinearProgressIndicator(
                 progress = {
                     if (totalRows > 0) {

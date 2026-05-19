@@ -195,19 +195,19 @@ on **both** platforms in the same slice or the ASC declaration stays blocked.
 
 | # | Surface | Platform | `file:line` | Gap |
 |---|---|---|---|---|
-| M1 | Onboarding page-indicator dots color-only | Compose | `onboarding/OnboardingScreen.kt:320-347` | Bare `Box`+`background(color)` dots, no semantics; current page = primary-vs-outlineVariant color only. First-run surface. |
+| M1 | Onboarding page-indicator dots color-only | Compose | `onboarding/OnboardingScreen.kt:320-347` | ✅ **CLOSED (R5, 2026-05-19, commit `ebe101d`)** — `border(1.5.dp, onSurface, CircleShape)` outline ring on the active dot (non-color identifier) + parent `Row` `semantics { contentDescription = stringResource(a11y_state_page_indicator_x_of_y); liveRegion = Polite }` so the rotor announces page transitions. ~~Bare `Box`+`background(color)` dots, no semantics.~~ |
 | M2 | Pattern/Discovery description ellipsis at large type | Both | KT `PatternLibraryScreen.kt:538,550` (`maxLines=1`), `DiscoveryScreen.kt:499,511` · SW `PatternLibraryScreen.swift:251`, `DiscoveryScreen.swift:409,417` (`.lineLimit(1/2)`) | Essential metadata hard-truncates at large Dynamic Type; no `.minimumScaleFactor`. (VoiceOver still reads full string — visual only.) |
-| M3 | Recovery-code copy-tap affordance hidden | Both | KT `MfaEnrollmentScreen.kt:276-302` · SW `MfaEnrollmentScreen.swift:163-172` | Code is readable but the tap-to-copy interaction has no role/hint/action — undiscoverable by SR. |
+| M3 | Recovery-code copy-tap affordance hidden | Both | KT `MfaEnrollmentScreen.kt:276-302` · SW `MfaEnrollmentScreen.swift:163-172` | ✅ **CLOSED (R5, 2026-05-19, commit `ebe101d`)** — Compose `clickable(onClickLabel = stringResource(a11y_action_copy_recovery_code), role = Role.Button)` + post-copy polite `liveRegion` Text via `state_recovery_code_copied`. iOS parity via SwiftUI `.accessibilityAddTraits(.isButton) + .accessibilityHint + .accessibilityValue` (worker scope, same SHA). ~~No role/hint/action — undiscoverable by SR.~~ |
 | M4 | WipeData confirm-phrase field empty label | iOS | `WipeDataConfirmPhraseView.swift` (`TextField("label_wipe_confirm_phrase",…)`) | ✅ **CLOSED (R2, 2026-05-18, commit `5be0034`)** — empty-string `TextField` replaced with `"label_wipe_confirm_phrase"`. ~~Destructive-action gate announces bare "text field".~~ |
-| M5 | ChartConflictResolution picked = style weight only | iOS | `ChartConflictResolutionScreen.swift:259` | Selected resolution signaled only by `.borderedProminent` vs `.bordered`; no `.accessibilityAddTraits(.isSelected)`/value. (Row text carries conflict identity — not a color-alone blocker, but selection state is weak for SR.) |
-| M6 | Decorative icons not hidden (VoiceOver noise) | iOS | `LoginScreen.swift:126-128` (Google `g.circle.fill`), `OnboardingScreen.swift:128-130,174` (hero), `ActivityFeedScreen.swift:52-89` (type icon) | Decorative `Image`s lack `.accessibilityHidden(true)` → VoiceOver reads junk SF Symbol names before the real text. Login is the canonical sign-in surface (declaration-sensitive). |
-| M7 | LinearProgressIndicator no value | Compose | `projectlist/ProjectListScreen.kt:660`, `projectdetail/ProjectDetailScreen.kt:660` | Announces a generic progress bar with no percent/value (adjacent "X of Y rows" text mitigates — borderline MEDIUM/LOW). |
+| M5 | ChartConflictResolution picked = style weight only | iOS | `ChartConflictResolutionScreen.swift:259` | ✅ **CLOSED (R5, 2026-05-19, commit `ebe101d`)** — `.accessibilityAddTraits(isSelected ? .isSelected : [])` on `pickerButton`; VoiceOver announces the OS-translated "Selected" trait on the picked row. ~~Selected resolution signaled only by `.borderedProminent` vs `.bordered`.~~ |
+| M6 | Decorative icons not hidden (VoiceOver noise) | iOS | `LoginScreen.swift:126-128` (Google `g.circle.fill`), `OnboardingScreen.swift:128-130,174` (hero), `ActivityFeedScreen.swift:52-89` (type icon) | ✅ **CLOSED (R5, 2026-05-19, commit `ebe101d`)** — `.accessibilityHidden(true)` applied to all 3 sites; adjacent Text carries the semantic load. ~~SF Symbol names leaking before the real text.~~ |
+| M7 | LinearProgressIndicator no value | Compose | `projectlist/ProjectListScreen.kt:660`, `projectdetail/ProjectDetailScreen.kt:660` | ✅ **CLOSED (R5, 2026-05-19, commit `ebe101d`)** — `Modifier.semantics { progressBarRangeInfo = ProgressBarRangeInfo(currentRow, 0f..totalRows); contentDescription = stringResource(a11y_progress_rows_completed_x_of_y, …) }` on both bars; SR now announces "X of Y rows completed" with bound value. ~~Announces a generic progress bar with no percent/value.~~ |
 
 ### 3.4 LOW / OK highlights
 
 - **Good a11y infrastructure (positive inventory)**: Compose `ui/components/LiveSnackbarHost.kt` wires `liveRegion = Polite` (every toast announced — WCAG 4.1.3); `ui/components/SelectedCheckmarkIcon.kt` is a deliberate non-color selected-state cue used across PatternLibrary/ProjectList/Discovery/SuggestionList filter chips. iOS `Core/AccessibilityAnnouncements.swift` is the parallel toast announcer, widely used; `SuggestionListScreen`/`SuggestionDetailScreen` are exemplary (status = neutral-gray capsule + **text**, never color).
 - **Declaration-ready screens (verified clean, both platforms)**: Auth (ForgotPassword, MfaChallenge-on-Compose, OAuthProfileSetup), Settings, Profile, Suggestion list/detail, ChartConflictResolution (Compose), ChartHistory, ChartVariationPicker, Comments, all Moderation (Report/Block/BlockedUsers), Connections, FriendInvite, SharedWithMe, SharedContent, SymbolGallery, Paywall, PackManagement, BugReport, ForceUpdate, Maintenance, ActivityFeed (text carries type), EmptyStateView, all leaf dialogs. The non-chart surface is in good shape.
-- **LOW**: in-button spinner replaces text label while submitting (no `contentDescription` mid-submit) — repeated across Login/ForgotPassword/Profile/Settings dialogs/Paywall (Compose); iOS `.font(.title3, design:.monospaced)` on the MFA secret correctly uses the *text-style* form so it **does** scale (recorded as the correct pattern); ad-hoc `.font(.title2)` headers ✅ **CLOSED (R3, 2026-05-19, commit `57a96ab`)** on `OAuthProfileSetupScreen.swift` + `PaywallScreen.swift` via `.accessibilityAddTraits(.isHeader)` (matches `LoginScreen.swift:353` `LinkIdentityForm` precedent). `LoginScreen.swift` `EmailConfirmationSentView` `.font(.title2)` parity polish recorded as R3 Follow-up #2 (out of declared scope per the worker prompt; non-gating).
+- **LOW**: in-button spinner replaces text label while submitting (no `contentDescription` mid-submit) — repeated across Login/ForgotPassword/Profile/Settings dialogs/Paywall (Compose); iOS `.font(.title3, design:.monospaced)` on the MFA secret correctly uses the *text-style* form so it **does** scale (recorded as the correct pattern); ad-hoc `.font(.title2)` headers ✅ **CLOSED (R3, 2026-05-19, commit `57a96ab`)** on `OAuthProfileSetupScreen.swift` + `PaywallScreen.swift` via `.accessibilityAddTraits(.isHeader)` (matches `LoginScreen.swift:353` `LinkIdentityForm` precedent). `LoginScreen.swift` `EmailConfirmationSentView` `.font(.title2)` parity polish recorded as R3 Follow-up #2 — ✅ **CLOSED (R5, 2026-05-19, commit `ebe101d`)** via `.accessibilityAddTraits(.isHeader)` on L289-292; all 3 iOS `.title2` heading sites (LinkIdentityForm + OAuthProfileSetup + Paywall + EmailConfirmationSentView) now carry the trait.
 - **Honesty note (carried from the Compose pass)**: 4 small Settings-family leaf files (`DataExportScreen`, `OssLicensesScreen`, `WipeDataConfirmPhraseScreen`, `WipeDataExplanationDialog` on the Compose side) were enumerated but not opened in the Compose pass; their iOS counterparts **were** read and are clean, and the Settings-family pattern is consistent. Marked **assumed-OK, not exhaustively verified** — a remediation slice touching Settings should spot-confirm them.
 
 ---
@@ -236,26 +236,27 @@ implementation is sub-slices R1a (Viewer) → R1b (Editor) → R1c
 slice**. R2/R3/R4 are independent and can proceed in parallel/any order.
 R5 is the closeout.
 
-## 5. What the operator can declare *today* vs after each slice
+## 5. What the operator can declare *today*
 
-(Table updated 2026-05-19 after R3 close — R1/R2/R3/R4 all shipped; only R5
-state-not-color polish remains and it gates no declaration.)
+(Table simplified 2026-05-19 — R-series wave fully closed; no future column.
+R1a/R1b/R1c/R2/R3/R4/R5 all shipped. R5 was non-gating closeout polish.)
 
-| Declaration | Today (post-R3) | After R5 (closeout) |
-|---|---|---|
-| ダークインターフェイス | ✅ (Phase 18) | ✅ |
-| 視差効果を減らす (Reduce Motion) | ✅ (A25 closed) | ✅ |
-| カラー以外で区別 | ✅ (R1a B2 + R1c B4) | ✅ |
-| さらに大きな文字 (Dynamic Type) | ✅ (R4) | ✅ |
-| VoiceOver | ✅ (B1–B4 via R1a/R1b/R1c + H1–H5 + H8 via R2 + H9 via R3) | ✅ |
-| キャプション / バリアフリー音声ガイド | N/A (knitting app, no media) | N/A |
+| Declaration | Today |
+|---|---|
+| ダークインターフェイス | ✅ (Phase 18) |
+| 視差効果を減らす (Reduce Motion) | ✅ (A25 closed) |
+| カラー以外で区別 | ✅ (R1a B2 + R1c B4 + R5 M5/R3#4) |
+| さらに大きな文字 (Dynamic Type) | ✅ (R4 + R5 R4#4 icon-scale) |
+| VoiceOver | ✅ (B1–B4 via R1a/R1b/R1c + H1–H5 + H8 via R2 + H9 via R3 + M1/M3/M5/M6/M7 + R3#2 via R5) |
+| キャプション / バリアフリー音声ガイド | N/A (knitting app, no media) |
 
 Declaring only what passes is mandatory (Apple: "verified end-to-end for core
 tasks"; false declarations are App-Review-rejectable, per the CLAUDE.md
 Phase-40 entry). **Today's safe declarations: 5/6 ✅** — ダークインターフェイス
 + 視差効果を減らす + カラー以外で区別 + さらに大きな文字 + VoiceOver. The
-remaining 1/6 (キャプション / バリアフリー音声ガイド bundled) is N/A. R5 is
-closeout polish — it does NOT gate any declaration.
+remaining 1/6 (キャプション / バリアフリー音声ガイド bundled) is N/A. **R-series
+wave closed 2026-05-19** — see [completed-archive.md `## R-series wave closure
+— Accessibility (2026-05-18/-19)`](../docs/en/phase/completed-archive.md#r-series-wave-closure--accessibility-2026-05-18-19).
 
 ---
 
@@ -370,3 +371,69 @@ closeout polish — it does NOT gate any declaration.
     (unlike R1b's `Locale.current.language` bilingual fallback), causing
     the splice to be a mechanical compile-fix prerequisite. Recorded as a
     tech-debt process item.
+- **2026-05-19 — R5** (audit §3.3 M1+M3+M5+M6+M7 + §3.4 LOW R3 Follow-up #2
+  + tech-debt (viii)+(x) + R4 Follow-up #4): **M1 / M3 / M5 / M6 / M7 +
+  iOS EmailConfirmationSentView `.title2` + PaywallScreen PackageRow selected
+  + ProjectDetail icon-scale CLOSED** on both platforms (commit `ebe101d`).
+  - **M1** Compose `OnboardingScreen.kt` page indicator: non-color outline
+    ring (`border(1.5.dp, onSurface, CircleShape)`) on the active dot +
+    parent `Row` `semantics { contentDescription = stringResource(
+    a11y_state_page_indicator_x_of_y, currentPage + 1, pageCount);
+    liveRegion = Polite }` so the rotor announces page transitions.
+  - **M3** Compose `MfaEnrollmentScreen.kt` recovery-code copy-tap:
+    `clickable(onClickLabel = stringResource(a11y_action_copy_recovery_code),
+    role = Role.Button)` + post-copy polite `liveRegion` Text via
+    `state_recovery_code_copied`. iOS parity in the same SHA.
+  - **M5** iOS `ChartConflictResolutionScreen.swift`:
+    `.accessibilityAddTraits(isSelected ? .isSelected : [])` on
+    `pickerButton`; OS-translated "Selected" trait.
+  - **M6** iOS decorative-icon `.accessibilityHidden(true)` at 3 sites
+    (LoginScreen Google `g.circle.fill` L126 / OnboardingScreen hero
+    L128 + DiagnosticConsentPageView L174 / ActivityFeedScreen type
+    icon L52). Adjacent Text carries the semantic load in every case.
+  - **M7** Compose `LinearProgressIndicator` (ProjectListScreen ProjectCard
+    L660-663 + ProjectDetail CounterSection L670-684):
+    `Modifier.semantics { progressBarRangeInfo = ProgressBarRangeInfo(
+    currentRow.toFloat(), 0f..totalRows.toFloat()); contentDescription =
+    stringResource(a11y_progress_rows_completed_x_of_y, currentRow,
+    totalRows) }`. Mirrors `ChartEditorScreen.kt` R3 precedent.
+  - **R3 Follow-up #2** iOS `LoginScreen.swift` `EmailConfirmationSentView`
+    L289-292: `.accessibilityAddTraits(.isHeader)`. All 3 iOS `.title2`
+    heading sites (`LinkIdentityForm` + `OAuthProfileSetup` + `Paywall` +
+    `EmailConfirmationSentView`) now carry the trait.
+  - **R3 Follow-up #4 / tech-debt (x)** Compose `PaywallScreen.kt`
+    `PackageRow` L342-405: `clickable(role = Role.RadioButton, onClick =
+    onSelect).semantics { this.selected = selected; stateDescription = if
+    (selected) stringResource(state_selected) else stringResource(
+    state_not_selected) }`. Pattern source: `BiometricSettingsScreen.kt`
+    R1c `Role.RadioButton` precedent.
+  - **R4 Follow-up #4** Compose `ProjectDetailScreen.kt` fixed-dp
+    button-content icons scale via `with(LocalDensity.current) { N.sp.toDp()
+    }`: `StatusToggleButton` L896/L907 (Refresh + CheckCircle 18.dp) +
+    `ResetProgressButton` L933 (Refresh 18.dp) + `AddNoteDialog`
+    photo-attached row L982 (Check 16.dp) + add-photo TextButton L1009 (Add
+    16.dp). Out-of-scope: L997 IconButton-inner Close 16.dp (touch-target
+    redesign) + L1021 CircularProgressIndicator (spinner, not Icon).
+  - i18n: 6 new keys (`a11y_state_page_indicator_x_of_y` /
+    `a11y_action_copy_recovery_code` / `state_recovery_code_copied` /
+    `a11y_progress_rows_completed_x_of_y` / `state_selected` /
+    `state_not_selected`) — `verifyI18nKeys` 647 → 653 parity. Worker
+    shipped R1b-style `if (isJa)` inline fallback; orchestrator splice
+    cleaned both fallback blocks + per-function `deviceContext = koinInject()`
+    parameter at consolidation (replace-and-clean precedent, R1b model).
+  - Tests: +0 / +0 / +0 (annotation-only + inline ternary string assembly;
+    no new logic). Verified end-to-end via `make ci-local` 9/9 green
+    (worker) + i18n splice re-verified at consolidation (`verifyI18nKeys`
+    + `:shared:ktlintCheck`).
+  - **§1 declaration matrix unchanged: 5/6 ✅** — R5 was non-gating closeout
+    polish. R-series goal (Phase-40 ASC prerequisite (c)) met end-to-end.
+  - **R-series wave closure**: trail R1a/R1b/R1c/R2/R3/R4/R5 promoted to
+    `completed-archive.md ## R-series wave closure — Accessibility
+    (2026-05-18/-19)` per Archive Policy wave-close cadence at this
+    consolidation. Standing residual polish (R1b Follow-up #1 if not
+    closed by R2 splice / R1c (v) silent-drop union-extents / R2 (vi)
+    ChartImageThumbnail polish / R2 (vii) i18n-fragment process tech debt
+    / R3 Follow-up #3 = (ix) Compose `titleMedium` 2nd-tier inventory /
+    R4 Follow-up #3 = M2 PatternList/Discovery `.lineLimit(1)` clamp)
+    remains in `tech-debt.md` as non-gating bullets; none gates any ASC
+    declaration.

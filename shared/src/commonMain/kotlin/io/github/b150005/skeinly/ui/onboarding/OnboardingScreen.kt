@@ -49,6 +49,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.generated.resources.Res
+import io.github.b150005.skeinly.generated.resources.a11y_state_page_indicator_x_of_y
 import io.github.b150005.skeinly.generated.resources.action_get_started
 import io.github.b150005.skeinly.generated.resources.action_next
 import io.github.b150005.skeinly.generated.resources.action_skip
@@ -62,7 +63,6 @@ import io.github.b150005.skeinly.generated.resources.title_diagnostic_consent
 import io.github.b150005.skeinly.generated.resources.title_onboarding_count
 import io.github.b150005.skeinly.generated.resources.title_onboarding_library
 import io.github.b150005.skeinly.generated.resources.title_onboarding_track
-import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.ui.a11y.ReduceMotionDetector
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
@@ -330,25 +330,13 @@ private fun PageIndicator(
     pageCount: Int,
     currentPage: Int,
     modifier: Modifier = Modifier,
-    deviceContext: DeviceContextProvider = koinInject(),
 ) {
     // R5 (audit §3.3 M1, WCAG 1.4.1 Use of Color + 4.1.2 Name/Role/Value):
-    // the active page was distinguishable only by `primary` vs
-    // `outlineVariant` fill — invisible to color-blind users + invisible
-    // to TalkBack/VoiceOver. (a) Add a non-color outline ring on the active
-    // dot (works for tritan/protan + monochrome). (b) Wrap the row with a
-    // single SR contentDescription that announces "Page X of Y" as a polite
-    // LiveRegion so swiping the pager updates the announcement.
-    // Bilingual fallback inline until R5.i18n.tsv splices
-    // `a11y_state_page_indicator_x_of_y` into the 3 shared i18n files
-    // (parallel-worktree i18n-fragment protocol).
-    val isJa = deviceContext.locale.startsWith("ja", ignoreCase = true)
+    // active page was distinguishable only by `primary` vs `outlineVariant`
+    // fill. (a) Non-color outline ring on the active dot. (b) Row-level
+    // contentDescription announcing "Page X of Y" via a polite LiveRegion.
     val pageIndicatorLabel =
-        if (isJa) {
-            "${pageCount}ページ中${currentPage + 1}ページ目"
-        } else {
-            "Page ${currentPage + 1} of $pageCount"
-        }
+        stringResource(Res.string.a11y_state_page_indicator_x_of_y, currentPage + 1, pageCount)
     val outlineColor = MaterialTheme.colorScheme.onSurface
     Row(
         modifier =
