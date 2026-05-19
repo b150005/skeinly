@@ -430,14 +430,13 @@ All 4 sub-slices shipped and archived (Phase 27.0 ADR-023 + 27.1 migration 033 /
 **Worker / orchestrator coordination signal**: R1b worker piloted in-source `Locale.current.language` bilingual fallback (R1b Follow-up #1 in [tech-debt.md](tech-debt.md)); R2 broke the protocol and surfaced (vii) i18n-fragment process tech debt; R5 returned to the R1b model and pushed CI-green at consolidation. The recommended CLAUDE.md `### i18n-fragment + orchestrator-merge rule` amendment (require bilingual fallback OR mixed-scope worker commit when worker references a not-yet-spliced key) carries forward in [tech-debt.md](tech-debt.md) as standing process debt.
 
 **Standing residual polish (not closed by wave; tracked in [tech-debt.md](tech-debt.md))**:
-- R1b Follow-up #1 — bilingual fallback cleanup in editor-cell path (R2 splice resolver hand-off check pending)
 - R1c (v) — target extents silent-drop on shrink edges (union-extents future consideration; minor impact)
-- R2 (vi) — Compose `ChartImageThumbnail` Role.Button + selected polish (non-gating, optional)
 - R2 (vii) — i18n-fragment worker-protocol gap (CLAUDE.md amendment pending; process debt)
 - R3 Follow-up #3 = (ix) — Compose `titleMedium` section-header second-tier inventory (non-gating polish, ~35+ sites)
 - R4 Follow-up #1 — Dynamic Type cap policy ADR (candidate ADR-026)
 - R4 Follow-up #2 — `DesignTokens.swift` 72/48/64pt constants token-layer migration
-- R4 Follow-up #3 = M2 — PatternList/Discovery `.lineLimit(1)` clamp closure (visual-only Dynamic Type residual, non-gating)
+
+**2026-05-19 追補** (post-wave-closure cleanup consolidation): 3 件 CLOSED via parallel workers X1+X2+X3 — R4 Follow-up #3 = M2 (PatternList/Discovery `.lineLimit(1)` visual-only clamp, X1 feat `0b401c6`) + R2 (vi) (Compose `ChartImageThumbnail` Role.Button + selected polish, X2 feat `865ff61`) + R1b Follow-up #1 (bilingual fallback cleanup across 4 shared chart a11y sites, X3 refactor `8af5906`). Phase 40 ASC prerequisite (d) sufficient-contrast verification audit も X4 audit `7cf819f` で完了 (`audits/contrast-verification-2026-05-19.md`; verdict ⚠ DECLARABLE-WITH-REMEDIATION → 5/6 ASC 申告可、6/6 は post-GA update で R6 close 後に昇格)。R-series residual の 3 件 close、残 5 件 (R1c (v) / R2 (vii) / R3 Follow-up #3 / R4 Follow-up #1 / R4 Follow-up #2) は tech-debt.md で個別追跡継続。R6 (NEW, X4-surfaced, AccentColor light variant remediation) は forward-tracking として tech-debt.md で記録(本 R-series wave 系列外の post-closure surface のため archive 遡及記載なし)。
 
 None of the standing items gates any ASC declaration; the 5/6 ✅ matrix holds end-to-end. Operator may declare ダークインターフェイス + 視差効果を減らす + さらに大きな文字 + カラー以外で区別 + VoiceOver at the Phase 40 GA ASC submission window.
 

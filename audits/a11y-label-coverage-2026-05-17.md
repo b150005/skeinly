@@ -196,7 +196,7 @@ on **both** platforms in the same slice or the ASC declaration stays blocked.
 | # | Surface | Platform | `file:line` | Gap |
 |---|---|---|---|---|
 | M1 | Onboarding page-indicator dots color-only | Compose | `onboarding/OnboardingScreen.kt:320-347` | ✅ **CLOSED (R5, 2026-05-19, commit `ebe101d`)** — `border(1.5.dp, onSurface, CircleShape)` outline ring on the active dot (non-color identifier) + parent `Row` `semantics { contentDescription = stringResource(a11y_state_page_indicator_x_of_y); liveRegion = Polite }` so the rotor announces page transitions. ~~Bare `Box`+`background(color)` dots, no semantics.~~ |
-| M2 | Pattern/Discovery description ellipsis at large type | Both | KT `PatternLibraryScreen.kt:538,550` (`maxLines=1`), `DiscoveryScreen.kt:499,511` · SW `PatternLibraryScreen.swift:251`, `DiscoveryScreen.swift:409,417` (`.lineLimit(1/2)`) | Essential metadata hard-truncates at large Dynamic Type; no `.minimumScaleFactor`. (VoiceOver still reads full string — visual only.) |
+| M2 | Pattern/Discovery description ellipsis at large type | Both | KT `PatternLibraryScreen.kt:538,550` (`maxLines=1`), `DiscoveryScreen.kt:499,511` · SW `PatternLibraryScreen.swift:251`, `DiscoveryScreen.swift:409,417` (`.lineLimit(1/2)`) | ✅ **CLOSED (R4 Follow-up #3 = M2 [X1], 2026-05-19, commit `0b401c6`)** — visual-only Dynamic Type clamp closure on both platforms. Compose: `maxLines=1` → range + `softWrap` relaxation. iOS: `.lineLimit(1/2)` → range + `.minimumScaleFactor(0.7)`. VoiceOver behavior unchanged (already reads full string). XCUITest 21/21 green (fresh simulator erase + exclusive run protocol). ~~Essential metadata hard-truncates at large Dynamic Type; no `.minimumScaleFactor`. (VoiceOver still reads full string — visual only.)~~ |
 | M3 | Recovery-code copy-tap affordance hidden | Both | KT `MfaEnrollmentScreen.kt:276-302` · SW `MfaEnrollmentScreen.swift:163-172` | ✅ **CLOSED (R5, 2026-05-19, commit `ebe101d`)** — Compose `clickable(onClickLabel = stringResource(a11y_action_copy_recovery_code), role = Role.Button)` + post-copy polite `liveRegion` Text via `state_recovery_code_copied`. iOS parity via SwiftUI `.accessibilityAddTraits(.isButton) + .accessibilityHint + .accessibilityValue` (worker scope, same SHA). ~~No role/hint/action — undiscoverable by SR.~~ |
 | M4 | WipeData confirm-phrase field empty label | iOS | `WipeDataConfirmPhraseView.swift` (`TextField("label_wipe_confirm_phrase",…)`) | ✅ **CLOSED (R2, 2026-05-18, commit `5be0034`)** — empty-string `TextField` replaced with `"label_wipe_confirm_phrase"`. ~~Destructive-action gate announces bare "text field".~~ |
 | M5 | ChartConflictResolution picked = style weight only | iOS | `ChartConflictResolutionScreen.swift:259` | ✅ **CLOSED (R5, 2026-05-19, commit `ebe101d`)** — `.accessibilityAddTraits(isSelected ? .isSelected : [])` on `pickerButton`; VoiceOver announces the OS-translated "Selected" trait on the picked row. ~~Selected resolution signaled only by `.borderedProminent` vs `.bordered`.~~ |
@@ -437,3 +437,57 @@ wave closed 2026-05-19** — see [completed-archive.md `## R-series wave closure
     R4 Follow-up #3 = M2 PatternList/Discovery `.lineLimit(1)` clamp)
     remains in `tech-debt.md` as non-gating bullets; none gates any ASC
     declaration.
+- **2026-05-19 — R4 Follow-up #3 = M2 [X1]** (audit §3.3 M2 visual-only
+  clamp residual): **M2 CLOSED** on both platforms (commit `0b401c6`).
+  Compose `PatternLibraryScreen.kt` + `DiscoveryScreen.kt` `maxLines=1`
+  hard-clamp on essential metadata → range + `softWrap` relaxation so
+  large Dynamic Type wraps to additional lines instead of ellipsis-
+  truncating. iOS `PatternLibraryScreen.swift` + `DiscoveryScreen.swift`
+  `.lineLimit(1/2)` → range + `.minimumScaleFactor(0.7)` (worker chose
+  0.7 over HIG-conventional 0.8 for stronger Dynamic Type compression
+  on dense list rows — flagged as polish follow-up in tech-debt.md).
+  VoiceOver behavior unchanged (M2 was visual-only — full string was
+  already read aloud). XCUITest 21/21 green (fresh simulator erase +
+  exclusive run protocol — required because parallel-worktree iOS
+  Simulator state contamination caused stochastic failures; the
+  parallel-worktree protocol gap is recorded as tech-debt). Closes the
+  last "essential metadata hard-truncates at large type" visual residual
+  flagged by §3.3 M2. R-series residual count: 6 → 5 (with X2 + X3 also
+  closing in this consolidation, 6 → 3 after wave). Annotation-equivalent
+  changes only — no semantics/logic delta.
+- **2026-05-19 — R1b Follow-up #1 [X3]** (R1b residual, §6 bilingual
+  fallback carryover): **R1b Follow-up #1 CLOSED** on both platforms
+  (commit `8af5906`). Removed inline `Locale.current.language == "ja"`
+  ternary fallbacks from 4 shared chart a11y sites: `ChartEditorScreen.kt`
+  + `ChartViewerScreen.kt` + `ChartComparisonScreen.kt` +
+  `SymbolPaletteStrip.kt` (Compose), and 4 iOS sites:
+  `ChartEditorScreen.swift` + `ChartEditorAccessibility.swift` +
+  `ChartViewerAccessibility.swift` + `ChartComparisonAccessibility.swift`.
+  Replaced with `stringResource()` (Compose) / `NSLocalizedString()` (iOS)
+  calls against existing R1a/R1c-spliced `a11y_*` keys (no new keys
+  required — i18n parity already at 653 from R5 splice). 46/46
+  `ChartAccessibilityTest` commonTest green; no behavior delta verified
+  by annotation-equivalent output. Surfaces NEW tech-debt: locale-aware
+  symbol-label resolver consolidation (10 sites / 8 files still inline
+  `isJa ? catalog.jaLabel : catalog.enLabel` ternary; target accessor
+  `SymbolCatalog.localizedLabel(locale)` — tracked in tech-debt.md
+  Phase 40 GA prep). R-series residual count: 5 → 4 with this slice.
+- **2026-05-19 — Prerequisite (d) contrast audit [X4]** (Phase-40 ASC
+  declaration gate, not a §3 audit finding): sufficient-contrast
+  verification audit complete (commit `7cf819f`, file
+  `audits/contrast-verification-2026-05-19.md`). 25/26 WCAG 1.4.3 /
+  1.4.11 token pairs PASS across Liquid Glass tokens in both light + dark
+  themes. **1 BLOCKER**: light-theme `AccentColor` `#7B61FF` as text on
+  white = **4.20:1** (fails normal-text 4.5:1 threshold by 0.30;
+  large-text 3.0:1 threshold passes). Dark-theme `AccentColor` variant
+  passes. **Verdict: ⚠ DECLARABLE-WITH-REMEDIATION** — 5/6 ASC
+  declarations safe at Phase 40 GA today (ダークインターフェイス + 視差効果
+  を減らす + さらに大きな文字 + カラー以外で区別 + VoiceOver). The 6th
+  declaration "十分なコントラスト" is deferred until **R6 (NEW standing
+  debt, X4-surfaced)** — AccentColor light variant remediation — closes;
+  3 candidate approaches documented in audit §6 (darken token / restrict-
+  to-dark / restrict-to-large-text). Operator may ship Phase 40 GA with
+  5/6 declaration + add "十分なコントラスト" via post-GA update once R6
+  closes (Apple ASC policy = "verified end-to-end for declared features",
+  partial declaration permitted). This closes Phase-40 ASC prerequisite
+  (d) for declaration purposes; R6 is the path to full 6/6 declaration.
