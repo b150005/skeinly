@@ -69,10 +69,13 @@ fun SymbolPaletteStrip(
 ) {
     // R2 (audit §3.2 H1) — palette cells speak locale-appropriate symbol
     // names. Resolves once at the strip level (same pattern as
-    // ChartViewerScreen line 712) and threads down via the cell composables
-    // so the inner cells stay pure of Koin lookups.
+    // ChartViewerScreen) and threads `deviceContext` down via the cell
+    // composables so the inner cells stay pure of Koin lookups. (X3 cleanup:
+    // `val isJa` was removed in favour of passing `deviceContext` and
+    // evaluating the locale at the point of use — the catalog jaLabel /
+    // enLabel resolver is the only remaining caller; tracked as the X3
+    // follow-up "Catalog locale-aware symbol label resolver".)
     val deviceContext: DeviceContextProvider = koinInject()
-    val isJa = deviceContext.locale.startsWith("ja", ignoreCase = true)
     Column(modifier = modifier.fillMaxWidth()) {
         LazyRow(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -104,7 +107,7 @@ fun SymbolPaletteStrip(
                 PaletteSymbolCell(
                     def = def,
                     selected = def.id == selectedSymbolId,
-                    isJa = isJa,
+                    deviceContext = deviceContext,
                     onClick = { onSymbolSelected(def.id) },
                 )
             }
@@ -117,7 +120,7 @@ fun SymbolPaletteStrip(
             items(lockedProSymbols, key = { "locked_${it.id}" }) { def ->
                 LockedPaletteSymbolCell(
                     def = def,
-                    isJa = isJa,
+                    deviceContext = deviceContext,
                     onClick = onLockedSymbolTap,
                 )
             }
@@ -166,7 +169,7 @@ private fun EraserCell(
 private fun PaletteSymbolCell(
     def: SymbolDefinition,
     selected: Boolean,
-    isJa: Boolean,
+    deviceContext: DeviceContextProvider,
     onClick: () -> Unit,
 ) {
     val borderColor =
@@ -175,7 +178,10 @@ private fun PaletteSymbolCell(
     // R2 (audit §3.2 H1) — was unlabeled; def.{en,ja}Label was unused.
     // Formats via the `a11y_label_palette_cell` placeholder so SR speaks
     // "Symbol: <name>" / "記号: <name>" with role=Button + selected state.
-    val symbolName = if (isJa) def.jaLabel else def.enLabel
+    // X3 (R1b Follow-up #1) — inline locale evaluation; tracked as X3
+    // follow-up "Catalog locale-aware symbol label resolver".
+    val symbolName =
+        if (deviceContext.locale.startsWith("ja", ignoreCase = true)) def.jaLabel else def.enLabel
     val cellDescription = stringResource(Res.string.a11y_label_palette_cell, symbolName)
     val isSelected = selected
     Box(
@@ -214,7 +220,7 @@ private fun PaletteSymbolCell(
 @Composable
 private fun LockedPaletteSymbolCell(
     def: SymbolDefinition,
-    isJa: Boolean,
+    deviceContext: DeviceContextProvider,
     onClick: () -> Unit,
 ) {
     val outlineColor = MaterialTheme.colorScheme.outlineVariant
@@ -224,7 +230,10 @@ private fun LockedPaletteSymbolCell(
     // alone said "Pro symbol" but never the symbol name. The cell-level
     // semantic now composes "<Pro symbol> · <Symbol: name>" so SR speaks
     // both the locked state and which symbol is locked.
-    val symbolName = if (isJa) def.jaLabel else def.enLabel
+    // X3 (R1b Follow-up #1) — inline locale evaluation; tracked as X3
+    // follow-up "Catalog locale-aware symbol label resolver".
+    val symbolName =
+        if (deviceContext.locale.startsWith("ja", ignoreCase = true)) def.jaLabel else def.enLabel
     val cellDescription =
         lockedDescription + " · " +
             stringResource(Res.string.a11y_label_palette_cell, symbolName)

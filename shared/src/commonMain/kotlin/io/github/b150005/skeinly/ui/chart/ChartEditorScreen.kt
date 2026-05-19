@@ -108,6 +108,10 @@ import io.github.b150005.skeinly.generated.resources.a11y_chart_row_position
 import io.github.b150005.skeinly.generated.resources.a11y_chart_run_separator
 import io.github.b150005.skeinly.generated.resources.a11y_chart_section_separator
 import io.github.b150005.skeinly.generated.resources.a11y_chart_symbol_run
+import io.github.b150005.skeinly.generated.resources.a11y_editor_action_erase
+import io.github.b150005.skeinly.generated.resources.a11y_editor_action_place
+import io.github.b150005.skeinly.generated.resources.a11y_editor_cell_blank
+import io.github.b150005.skeinly.generated.resources.a11y_editor_cell_with_symbol
 import io.github.b150005.skeinly.generated.resources.action_add_layer
 import io.github.b150005.skeinly.generated.resources.action_back
 import io.github.b150005.skeinly.generated.resources.action_cancel
@@ -1205,10 +1209,9 @@ private fun RectEditorAccessibilityOverlay(
     // list is `remember`-keyed so the O(rows × layers × cells) projection
     // is not recomputed on every recomposition (e.g. cursor moves).
     val deviceContext: DeviceContextProvider = koinInject()
-    val isJa = deviceContext.locale.startsWith("ja", ignoreCase = true)
     val density = LocalDensity.current
     val rowStrings = rememberEditorRowA11yStrings()
-    val cellStrings = rememberEditorCellA11yStrings(isJa)
+    val cellStrings = rememberEditorCellA11yStrings()
     // Per-row cursor (chartY → chartX). Reset when extents change so a
     // resize doesn't leave a cursor pointing outside the new grid.
     val cursorByRow = remember(rect) { mutableStateMapOf<Int, Int>() }
@@ -1226,8 +1229,17 @@ private fun RectEditorAccessibilityOverlay(
     val gridHeight = rect.maxY - rect.minY + 1
     val rowHeightDp = with(density) { layout.cellSize.toDp() }
     val rowWidthDp = with(density) { contentWidthPx.toDp() }
+    // X3 (R1b Follow-up #1) — `val isJa` was hoisted at the top of this
+    // overlay to drive BOTH the (now-stringResource'd) cell a11y helper
+    // AND the catalog symbol-name resolver below. The cell helper is now
+    // resource-driven, so the only remaining `isJa` user is the resolver
+    // — pushed inline here. Cleaning catalog-side jaLabel/enLabel into a
+    // single locale-aware accessor is tracked as the new tech-debt
+    // "Catalog locale-aware symbol label resolver" (X3 follow-up).
     val symbolNameResolver: (String) -> String = { id ->
-        catalog.get(id)?.let { if (isJa) it.jaLabel else it.enLabel } ?: id
+        catalog.get(id)?.let {
+            if (deviceContext.locale.startsWith("ja", ignoreCase = true)) it.jaLabel else it.enLabel
+        } ?: id
     }
     val placeOrEraseLabel =
         ChartAccessibility.placeOrEraseActionLabel(cellStrings, selectedSymbolId, symbolNameResolver)
@@ -1292,35 +1304,32 @@ private fun RectEditorAccessibilityOverlay(
 }
 
 /**
- * R1b — bilingual fallback strings for the editor cell-cursor + place /
- * erase action. These keys do NOT yet exist in the 3 shared i18n files
- * (parallel-worktree i18n-fragment protocol — see
- * `## Parallel-Worktree Workflow Protocol` in CLAUDE.md): R1b ships them
- * as `R1b.i18n.tsv` for the orchestrator to splice into the shared files
- * at consolidation, and a subsequent commit can replace this helper with
- * `stringResource(Res.string.a11y_editor_*)`. Pattern mirrors R1a's
- * `catalog.{jaLabel,enLabel}` symbol fallback — a deliberate temporary
- * en/ja literal until the i18n splice lands.
+ * Resource-driven a11y strings for the editor cell-cursor + place / erase
+ * action. The four keys (`a11y_editor_cell_with_symbol` /
+ * `a11y_editor_cell_blank` / `a11y_editor_action_place` /
+ * `a11y_editor_action_erase`) were splice-shipped by R1b via the
+ * parallel-worktree i18n-fragment protocol and are now resolved through
+ * the standard `stringResource(...)` channel — Compose locale follows the
+ * device + sectionsKt-derived shared resource format. The remaining
+ * `catalog.{jaLabel,enLabel}` symbol-name fallback (one inline ternary
+ * above) is independently tracked: see "Catalog locale-aware symbol label
+ * resolver" tech-debt (X3 follow-up).
  */
 @Composable
-private fun rememberEditorCellA11yStrings(isJa: Boolean): ChartAccessibility.CellA11yStrings =
-    remember(isJa) {
-        if (isJa) {
-            ChartAccessibility.CellA11yStrings(
-                cellSymbolFormat = "%2\$d行中%1\$d行目、%4\$d列中%3\$d列目、%5\$s",
-                cellBlank = "空白",
-                actionPlaceFormat = "%1\$sを配置",
-                actionErase = "消去",
-            )
-        } else {
-            ChartAccessibility.CellA11yStrings(
-                cellSymbolFormat = "Row %1\$d of %2\$d, col %3\$d of %4\$d, %5\$s",
-                cellBlank = "blank",
-                actionPlaceFormat = "Place %1\$s",
-                actionErase = "Erase",
-            )
-        }
+private fun rememberEditorCellA11yStrings(): ChartAccessibility.CellA11yStrings {
+    val cellSymbolFormat = stringResource(Res.string.a11y_editor_cell_with_symbol)
+    val cellBlank = stringResource(Res.string.a11y_editor_cell_blank)
+    val actionPlaceFormat = stringResource(Res.string.a11y_editor_action_place)
+    val actionErase = stringResource(Res.string.a11y_editor_action_erase)
+    return remember(cellSymbolFormat, cellBlank, actionPlaceFormat, actionErase) {
+        ChartAccessibility.CellA11yStrings(
+            cellSymbolFormat = cellSymbolFormat,
+            cellBlank = cellBlank,
+            actionPlaceFormat = actionPlaceFormat,
+            actionErase = actionErase,
+        )
     }
+}
 
 /**
  * R1b — reuses the R1a `a11y_chart_*` keys (already present in the 3

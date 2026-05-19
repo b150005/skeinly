@@ -67,7 +67,6 @@ struct ChartRowAccessibilityOverlay: View {
            let geometry = cellGeometry(rect: rect) {
             let strings = Self.makeA11yStrings()
             let markRowDoneLabel = NSLocalizedString("a11y_chart_action_mark_row_done", comment: "")
-            let isJa = Locale.current.language.languageCode?.identifier == "ja"
             let progressAt: ((String, KotlinInt, KotlinInt) -> SegmentState?)? =
                 hasProgressContext
                     ? { layerId, x, y in segmentLookup(layerId, x.intValue, y.intValue) }
@@ -86,9 +85,14 @@ struct ChartRowAccessibilityOverlay: View {
                         label: ChartAccessibility.shared.spokenLabel(
                             descriptor: descriptor,
                             strings: strings,
+                            // X3 (R1b Follow-up #1) — catalog symbol-name
+                            // resolver reads locale inline; tracked as X3
+                            // follow-up "Catalog locale-aware symbol label
+                            // resolver".
                             symbolName: { id in
                                 if let def = catalog.get(id: id) {
-                                    return isJa ? def.jaLabel : def.enLabel
+                                    return (Locale.current.language.languageCode?.identifier == "ja")
+                                        ? def.jaLabel : def.enLabel
                                 }
                                 return id
                             }

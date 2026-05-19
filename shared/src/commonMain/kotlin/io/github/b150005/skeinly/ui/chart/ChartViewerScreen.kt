@@ -715,7 +715,6 @@ private fun RectRowAccessibilityOverlay(
     // descriptor list is `remember`-keyed so it is not recomputed
     // (O(rows×layers×cells)) on every recomposition.
     val deviceContext: DeviceContextProvider = koinInject()
-    val isJa = deviceContext.locale.startsWith("ja", ignoreCase = true)
     val density = LocalDensity.current
     val a11yStrings =
         ChartAccessibility.A11yStrings(
@@ -750,7 +749,14 @@ private fun RectRowAccessibilityOverlay(
         val topPx = layout.originY + (gridHeight - descriptor.rowNumber) * layout.cellSize
         val spoken =
             ChartAccessibility.spokenLabel(descriptor, a11yStrings) { id ->
-                catalog.get(id)?.let { if (isJa) it.jaLabel else it.enLabel } ?: id
+                // X3 (R1b Follow-up #1) — catalog symbol-name resolver still
+                // reads the locale inline; cleaning catalog-side
+                // jaLabel/enLabel into a single locale-aware accessor is the
+                // X3 follow-up tech-debt "Catalog locale-aware symbol label
+                // resolver".
+                catalog.get(id)?.let {
+                    if (deviceContext.locale.startsWith("ja", ignoreCase = true)) it.jaLabel else it.enLabel
+                } ?: id
             }
         Box(
             modifier =

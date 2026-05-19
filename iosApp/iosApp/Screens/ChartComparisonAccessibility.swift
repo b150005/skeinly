@@ -63,11 +63,14 @@ struct ChartComparisonAccessibilityOverlay: View {
         if let rect = diff.target.extents as? ChartExtentsRect,
            rect.maxX >= rect.minX, rect.maxY >= rect.minY,
            let geometry = cellGeometry(rect: rect) {
-            let isJa = Locale.current.language.languageCode?.identifier == "ja"
-            let strings = Self.makeDiffA11yStrings(isJa: isJa)
+            let strings = Self.makeDiffA11yStrings()
+            // X3 (R1b Follow-up #1) — catalog symbol-name resolver reads
+            // locale inline; tracked as X3 follow-up "Catalog locale-aware
+            // symbol label resolver".
             let symbolNameResolver: (String) -> String = { id in
                 if let def = catalog.get(id: id) {
-                    return isJa ? def.jaLabel : def.enLabel
+                    return (Locale.current.language.languageCode?.identifier == "ja")
+                        ? def.jaLabel : def.enLabel
                 }
                 return id
             }
@@ -123,40 +126,24 @@ struct ChartComparisonAccessibilityOverlay: View {
         return (gridHeight, cellSize, (size.height - drawH) / 2)
     }
 
-    /// R1c — bilingual fallback strings for the per-row Comparison spoken
-    /// text. `rowPositionFormat` / `sectionSeparator` / `blankCellsName`
-    /// reuse the R1a keys already shipped in the iOS `Localizable.xcstrings`
-    /// (`a11y_chart_row_position` / `a11y_chart_section_separator` /
-    /// `a11y_chart_blank_cells`). The change-format trio + change-separator
-    /// are R1c-new keys carried in `docs/en/phase/tasks/R1c.i18n.tsv` for
-    /// the orchestrator to splice into the shared `Localizable.xcstrings`
-    /// at consolidation; until then this method returns hardcoded en/ja
-    /// literals matching the TSV's `en` / `ja` columns. Format
-    /// placeholders use the SHARED Kotlin formatter's `%1$d`/`%2$s` syntax
-    /// (NOT xcstrings `%lld`/`%@`) because `ChartAccessibility.spokenDiffLabel`
-    /// does the substitution. Pattern mirrors the R1b
-    /// `makeCellA11yStrings(isJa:)` helper.
-    private static func makeDiffA11yStrings(isJa: Bool) -> ChartAccessibility.DiffA11yStrings {
-        if isJa {
-            return ChartAccessibility.DiffA11yStrings(
-                rowPositionFormat: NSLocalizedString("a11y_chart_row_position", comment: ""),
-                changeSeparator: "、",
-                changeAddedFormat: "%1$d列目に%2$sを追加",
-                changeRemovedFormat: "%1$d列目の%2$sを削除",
-                changeModifiedFormat: "%1$d列目を%2$sに変更",
-                sectionSeparator: NSLocalizedString("a11y_chart_section_separator", comment: ""),
-                blankCellsName: NSLocalizedString("a11y_chart_blank_cells", comment: "")
-            )
-        } else {
-            return ChartAccessibility.DiffA11yStrings(
-                rowPositionFormat: NSLocalizedString("a11y_chart_row_position", comment: ""),
-                changeSeparator: ", ",
-                changeAddedFormat: "col %1$d added %2$s",
-                changeRemovedFormat: "col %1$d removed %2$s",
-                changeModifiedFormat: "col %1$d modified to %2$s",
-                sectionSeparator: NSLocalizedString("a11y_chart_section_separator", comment: ""),
-                blankCellsName: NSLocalizedString("a11y_chart_blank_cells", comment: "")
-            )
-        }
+    /// R1c diff a11y strings, resource-driven (X3 closed R1b Follow-up #1).
+    /// All seven keys are splice-shipped: shared `a11y_chart_*` (R1a) for
+    /// row position / section separator / blank cells + R1c-new
+    /// `a11y_diff_change_*` quartet for the change-format / change-separator.
+    /// Format placeholders intentionally use the SHARED Kotlin formatter's
+    /// `%1$d`/`%2$s` syntax (NOT xcstrings `%lld`/`%@`) because
+    /// `ChartAccessibility.spokenDiffLabel` does the substitution at call-time;
+    /// the xcstrings entries were splice-stored with the Kotlin-shape format
+    /// strings for parity.
+    private static func makeDiffA11yStrings() -> ChartAccessibility.DiffA11yStrings {
+        ChartAccessibility.DiffA11yStrings(
+            rowPositionFormat: NSLocalizedString("a11y_chart_row_position", comment: ""),
+            changeSeparator: NSLocalizedString("a11y_diff_change_separator", comment: ""),
+            changeAddedFormat: NSLocalizedString("a11y_diff_change_added", comment: ""),
+            changeRemovedFormat: NSLocalizedString("a11y_diff_change_removed", comment: ""),
+            changeModifiedFormat: NSLocalizedString("a11y_diff_change_modified", comment: ""),
+            sectionSeparator: NSLocalizedString("a11y_chart_section_separator", comment: ""),
+            blankCellsName: NSLocalizedString("a11y_chart_blank_cells", comment: "")
+        )
     }
 }

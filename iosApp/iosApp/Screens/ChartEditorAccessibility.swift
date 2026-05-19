@@ -86,17 +86,20 @@ struct ChartEditorAccessibilityOverlay: View {
            rect.maxX >= rect.minX, rect.maxY >= rect.minY,
            let geometry = cellGeometry(rect: rect) {
             let rowStrings = Self.makeRowA11yStrings()
-            let isJa = Locale.current.language.languageCode?.identifier == "ja"
-            let cellStrings = Self.makeCellA11yStrings(isJa: isJa)
+            let cellStrings = Self.makeCellA11yStrings()
             let descriptors = ChartAccessibility.shared.rowDescriptors(
                 extents: rect,
                 layers: layers,
                 hiddenLayerIds: [],
                 progressAt: nil
             )
+            // X3 (R1b Follow-up #1) — catalog symbol-name resolver reads
+            // locale inline; tracked as X3 follow-up "Catalog locale-aware
+            // symbol label resolver".
             let symbolNameResolver: (String) -> String = { id in
                 if let def = catalog.get(id: id) {
-                    return isJa ? def.jaLabel : def.enLabel
+                    return (Locale.current.language.languageCode?.identifier == "ja")
+                        ? def.jaLabel : def.enLabel
                 }
                 return id
             }
@@ -206,30 +209,22 @@ struct ChartEditorAccessibilityOverlay: View {
         )
     }
 
-    /// R1b cell + action keys — NOT yet in the 3 shared i18n files
-    /// (parallel-worktree i18n-fragment protocol). R1b ships them as
-    /// `docs/en/phase/tasks/R1b.i18n.tsv` for the orchestrator to splice
-    /// into the shared files at consolidation; until then this method
-    /// returns hardcoded en/ja literals matching the TSV's `en` / `ja`
-    /// columns. The format placeholders use the SHARED Kotlin formatter's
-    /// `%1$d`/`%5$s` syntax (NOT `xcstrings`-style `%lld`/`%@`) because
-    /// `ChartAccessibility.spokenCellLabel` does the substitution. Pattern
-    /// mirrors the Kotlin `rememberEditorCellA11yStrings(isJa)`.
-    private static func makeCellA11yStrings(isJa: Bool) -> ChartAccessibility.CellA11yStrings {
-        if isJa {
-            return ChartAccessibility.CellA11yStrings(
-                cellSymbolFormat: "%2$d行中%1$d行目、%4$d列中%3$d列目、%5$s",
-                cellBlank: "空白",
-                actionPlaceFormat: "%1$sを配置",
-                actionErase: "消去"
-            )
-        } else {
-            return ChartAccessibility.CellA11yStrings(
-                cellSymbolFormat: "Row %1$d of %2$d, col %3$d of %4$d, %5$s",
-                cellBlank: "blank",
-                actionPlaceFormat: "Place %1$s",
-                actionErase: "Erase"
-            )
-        }
+    /// R1b cell + action keys, resource-driven (X3 closed R1b Follow-up
+    /// #1). The four keys (`a11y_editor_cell_with_symbol` /
+    /// `a11y_editor_cell_blank` / `a11y_editor_action_place` /
+    /// `a11y_editor_action_erase`) were splice-shipped by R1b and are now
+    /// read through `NSLocalizedString` (bundle-cached after first read).
+    /// The format placeholders intentionally use the SHARED Kotlin
+    /// formatter's `%1$d`/`%5$s` syntax (NOT `xcstrings`-style
+    /// `%lld`/`%@`) because `ChartAccessibility.spokenCellLabel` does the
+    /// substitution at call-time; the xcstrings entries were splice-stored
+    /// with the Kotlin-shape format strings for parity.
+    private static func makeCellA11yStrings() -> ChartAccessibility.CellA11yStrings {
+        ChartAccessibility.CellA11yStrings(
+            cellSymbolFormat: NSLocalizedString("a11y_editor_cell_with_symbol", comment: ""),
+            cellBlank: NSLocalizedString("a11y_editor_cell_blank", comment: ""),
+            actionPlaceFormat: NSLocalizedString("a11y_editor_action_place", comment: ""),
+            actionErase: NSLocalizedString("a11y_editor_action_erase", comment: "")
+        )
     }
 }

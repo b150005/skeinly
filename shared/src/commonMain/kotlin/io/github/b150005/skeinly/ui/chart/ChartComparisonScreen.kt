@@ -66,6 +66,10 @@ import io.github.b150005.skeinly.generated.resources.Res
 import io.github.b150005.skeinly.generated.resources.a11y_chart_blank_cells
 import io.github.b150005.skeinly.generated.resources.a11y_chart_row_position
 import io.github.b150005.skeinly.generated.resources.a11y_chart_section_separator
+import io.github.b150005.skeinly.generated.resources.a11y_diff_change_added
+import io.github.b150005.skeinly.generated.resources.a11y_diff_change_modified
+import io.github.b150005.skeinly.generated.resources.a11y_diff_change_removed
+import io.github.b150005.skeinly.generated.resources.a11y_diff_change_separator
 import io.github.b150005.skeinly.generated.resources.action_back
 import io.github.b150005.skeinly.generated.resources.label_comparison_added
 import io.github.b150005.skeinly.generated.resources.label_comparison_modified
@@ -795,9 +799,8 @@ private fun RectComparisonAccessibilityOverlay(
     // recomposition (pan / zoom of the underlying Canvas, which the overlay
     // does NOT inherit).
     val deviceContext: DeviceContextProvider = koinInject()
-    val isJa = deviceContext.locale.startsWith("ja", ignoreCase = true)
     val density = LocalDensity.current
-    val diffStrings = rememberDiffA11yStrings(isJa)
+    val diffStrings = rememberDiffA11yStrings()
     val descriptors =
         remember(rect, cellChanges, layerChanges) {
             ChartAccessibility.rowDiffDescriptors(rect, cellChanges, layerChanges)
@@ -818,8 +821,14 @@ private fun RectComparisonAccessibilityOverlay(
 
     val rowHeightDp = with(density) { cellSize.toDp() }
     val rowWidthDp = with(density) { widthPx.toDp() }
+    // X3 (R1b Follow-up #1) — catalog symbol-name resolver still reads the
+    // locale inline; cleaning catalog-side jaLabel/enLabel into a single
+    // locale-aware accessor is the X3 follow-up tech-debt "Catalog
+    // locale-aware symbol label resolver".
     val symbolNameResolver: (String) -> String = { id ->
-        catalog.get(id)?.let { if (isJa) it.jaLabel else it.enLabel } ?: id
+        catalog.get(id)?.let {
+            if (deviceContext.locale.startsWith("ja", ignoreCase = true)) it.jaLabel else it.enLabel
+        } ?: id
     }
 
     descriptors.forEach { descriptor ->
@@ -844,42 +853,41 @@ private fun RectComparisonAccessibilityOverlay(
 }
 
 /**
- * R1c — bilingual fallback strings for the per-row Comparison spoken text.
- * `rowPositionFormat` / `sectionSeparator` / `blankCellsName` reuse the R1a
- * keys already shipped in the 3 shared i18n files (`a11y_chart_*`); the
- * change-format trio + change-separator are R1c-new keys carried in
- * `R1c.i18n.tsv` for the orchestrator to splice into the shared files at
- * consolidation (parallel-worktree i18n-fragment protocol — see
- * `## Parallel-Worktree Workflow Protocol` in CLAUDE.md). Pattern mirrors
- * R1b's `rememberEditorCellA11yStrings` — a deliberate temporary en/ja
- * literal until the i18n splice lands.
+ * Resource-driven a11y strings for the per-row Comparison spoken text. The
+ * shared R1a keys (`a11y_chart_row_position` / `a11y_chart_section_separator`
+ * / `a11y_chart_blank_cells`) plus the R1c change-format quartet
+ * (`a11y_diff_change_added` / `a11y_diff_change_removed` /
+ * `a11y_diff_change_modified` / `a11y_diff_change_separator`) are all
+ * splice-shipped and resolved through the standard `stringResource(...)`
+ * channel. `ChartAccessibility.spokenDiffLabel` does the `%1$d`/`%2$s`
+ * substitution at call-time.
  */
 @Composable
-private fun rememberDiffA11yStrings(isJa: Boolean): ChartAccessibility.DiffA11yStrings {
+private fun rememberDiffA11yStrings(): ChartAccessibility.DiffA11yStrings {
     val rowPositionFormat = stringResource(Res.string.a11y_chart_row_position)
     val sectionSeparator = stringResource(Res.string.a11y_chart_section_separator)
     val blankCellsName = stringResource(Res.string.a11y_chart_blank_cells)
-    return remember(isJa, rowPositionFormat, sectionSeparator, blankCellsName) {
-        if (isJa) {
-            ChartAccessibility.DiffA11yStrings(
-                rowPositionFormat = rowPositionFormat,
-                changeSeparator = "、",
-                changeAddedFormat = "%1\$d列目に%2\$sを追加",
-                changeRemovedFormat = "%1\$d列目の%2\$sを削除",
-                changeModifiedFormat = "%1\$d列目を%2\$sに変更",
-                sectionSeparator = sectionSeparator,
-                blankCellsName = blankCellsName,
-            )
-        } else {
-            ChartAccessibility.DiffA11yStrings(
-                rowPositionFormat = rowPositionFormat,
-                changeSeparator = ", ",
-                changeAddedFormat = "col %1\$d added %2\$s",
-                changeRemovedFormat = "col %1\$d removed %2\$s",
-                changeModifiedFormat = "col %1\$d modified to %2\$s",
-                sectionSeparator = sectionSeparator,
-                blankCellsName = blankCellsName,
-            )
-        }
+    val changeSeparator = stringResource(Res.string.a11y_diff_change_separator)
+    val changeAddedFormat = stringResource(Res.string.a11y_diff_change_added)
+    val changeRemovedFormat = stringResource(Res.string.a11y_diff_change_removed)
+    val changeModifiedFormat = stringResource(Res.string.a11y_diff_change_modified)
+    return remember(
+        rowPositionFormat,
+        sectionSeparator,
+        blankCellsName,
+        changeSeparator,
+        changeAddedFormat,
+        changeRemovedFormat,
+        changeModifiedFormat,
+    ) {
+        ChartAccessibility.DiffA11yStrings(
+            rowPositionFormat = rowPositionFormat,
+            changeSeparator = changeSeparator,
+            changeAddedFormat = changeAddedFormat,
+            changeRemovedFormat = changeRemovedFormat,
+            changeModifiedFormat = changeModifiedFormat,
+            sectionSeparator = sectionSeparator,
+            blankCellsName = blankCellsName,
+        )
     }
 }
