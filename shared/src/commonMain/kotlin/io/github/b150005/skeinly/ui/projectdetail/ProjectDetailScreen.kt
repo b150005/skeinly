@@ -63,12 +63,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import io.github.b150005.skeinly.domain.model.CommentTargetType
 import io.github.b150005.skeinly.domain.model.Pattern
@@ -133,6 +138,7 @@ import io.github.b150005.skeinly.generated.resources.state_project_not_found
 import io.github.b150005.skeinly.generated.resources.state_uploading_photo
 import io.github.b150005.skeinly.generated.resources.title_chart_history
 import io.github.b150005.skeinly.generated.resources.title_suggestions
+import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.ui.chartviewer.ChartImageGrid
 import io.github.b150005.skeinly.ui.chartviewer.ChartImageViewer
 import io.github.b150005.skeinly.ui.comments.CommentSection
@@ -615,7 +621,16 @@ private fun CounterSection(
     totalRows: Int?,
     onIncrement: () -> Unit,
     onDecrement: () -> Unit,
+    deviceContext: DeviceContextProvider = koinInject(),
 ) {
+    // R5 (audit §3.3 M7, WCAG 4.1.2 Name/Role/Value): the
+    // LinearProgressIndicator carried no `progressBarRangeInfo` and no
+    // `contentDescription`, so TalkBack/VoiceOver announced "progress
+    // bar" with no value. Bind value + spoken label to the bar itself.
+    // Bilingual fallback inline until R5.i18n.tsv splices
+    // `a11y_progress_rows_completed_x_of_y` into the 3 shared i18n files
+    // (parallel-worktree i18n-fragment protocol).
+    val isJa = deviceContext.locale.startsWith("ja", ignoreCase = true)
     Column(
         modifier =
             Modifier
@@ -659,6 +674,12 @@ private fun CounterSection(
                 modifier = Modifier.testTag("rowTotalLabel"),
             )
             Spacer(modifier = Modifier.height(16.dp))
+            val progressA11yLabel =
+                if (isJa) {
+                    "${totalRows}段中${currentRow}段完了"
+                } else {
+                    "$currentRow of $totalRows rows completed"
+                }
             LinearProgressIndicator(
                 progress = {
                     if (totalRows > 0) {
@@ -670,7 +691,15 @@ private fun CounterSection(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(8.dp),
+                        .height(8.dp)
+                        .semantics {
+                            progressBarRangeInfo =
+                                ProgressBarRangeInfo(
+                                    current = currentRow.toFloat(),
+                                    range = 0f..totalRows.toFloat(),
+                                )
+                            contentDescription = progressA11yLabel
+                        },
             )
         } else {
             Text(
@@ -880,6 +909,12 @@ private fun StatusToggleButton(
     onComplete: () -> Unit,
     onReopen: () -> Unit,
 ) {
+    // R5 (bundled R4 Follow-up #4, WCAG 1.4.4 Resize Text): the
+    // leading icon glyphs sat at a fixed 18.dp and ignored fontScale,
+    // so at Largest accessibility size the text wrapped while the icon
+    // stayed tiny. `with(LocalDensity.current) { 18.sp.toDp() }` makes
+    // the glyph scale alongside the label.
+    val iconSize = with(LocalDensity.current) { 18.sp.toDp() }
     Row(
         modifier =
             Modifier
@@ -893,7 +928,7 @@ private fun StatusToggleButton(
                     Icon(
                         Icons.Default.Refresh,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(iconSize),
                     )
                     Spacer(modifier = Modifier.size(8.dp))
                     Text(stringResource(Res.string.action_reopen))
@@ -904,7 +939,7 @@ private fun StatusToggleButton(
                     Icon(
                         Icons.Default.CheckCircle,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(iconSize),
                     )
                     Spacer(modifier = Modifier.size(8.dp))
                     Text(stringResource(Res.string.action_mark_complete))
@@ -916,6 +951,9 @@ private fun StatusToggleButton(
 
 @Composable
 private fun ResetProgressButton(onClick: () -> Unit) {
+    // R5 (bundled R4 Follow-up #4, WCAG 1.4.4): same fontScale-aware
+    // icon sizing as StatusToggleButton.
+    val iconSize = with(LocalDensity.current) { 18.sp.toDp() }
     Row(
         modifier =
             Modifier
@@ -930,7 +968,7 @@ private fun ResetProgressButton(onClick: () -> Unit) {
             Icon(
                 Icons.Default.Refresh,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(iconSize),
                 tint = MaterialTheme.colorScheme.error,
             )
             Spacer(modifier = Modifier.size(8.dp))
@@ -971,6 +1009,17 @@ private fun AddNoteDialog(
                 )
 
                 if (selectedPhoto != null) {
+                    // R5 (bundled R4 Follow-up #4): the inline status-line
+                    // glyph (Check) + add-photo TextButton glyph (Add)
+                    // scale with fontScale via sp-based density math.
+                    // The inner IconButton-Close pair stays at fixed
+                    // dp because the IconButton itself is the
+                    // touch-target and is sized at the WCAG floor
+                    // (24.dp); scaling that pair would either grow the
+                    // touch surface unnecessarily (Largest = 48.dp Close
+                    // glyph inside a 24.dp IconButton looks broken) or
+                    // require touch-target redesign (out of R5 scope).
+                    val statusIconSize = with(LocalDensity.current) { 16.sp.toDp() }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -979,7 +1028,7 @@ private fun AddNoteDialog(
                             Icons.Default.Check,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(statusIconSize),
                         )
                         Text(
                             text = stringResource(Res.string.label_photo_attached),
@@ -999,6 +1048,7 @@ private fun AddNoteDialog(
                         }
                     }
                 } else {
+                    val addPhotoIconSize = with(LocalDensity.current) { 16.sp.toDp() }
                     TextButton(
                         onClick = { imagePickerLauncher.launch() },
                         modifier = Modifier.testTag("addPhotoButton"),
@@ -1006,7 +1056,7 @@ private fun AddNoteDialog(
                         Icon(
                             Icons.Default.Add,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(addPhotoIconSize),
                         )
                         Spacer(modifier = Modifier.size(4.dp))
                         Text(stringResource(Res.string.action_add_photo))

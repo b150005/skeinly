@@ -2,6 +2,7 @@ package io.github.b150005.skeinly.ui.onboarding
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,8 +40,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -58,6 +62,7 @@ import io.github.b150005.skeinly.generated.resources.title_diagnostic_consent
 import io.github.b150005.skeinly.generated.resources.title_onboarding_count
 import io.github.b150005.skeinly.generated.resources.title_onboarding_library
 import io.github.b150005.skeinly.generated.resources.title_onboarding_track
+import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.ui.a11y.ReduceMotionDetector
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
@@ -325,15 +330,39 @@ private fun PageIndicator(
     pageCount: Int,
     currentPage: Int,
     modifier: Modifier = Modifier,
+    deviceContext: DeviceContextProvider = koinInject(),
 ) {
+    // R5 (audit §3.3 M1, WCAG 1.4.1 Use of Color + 4.1.2 Name/Role/Value):
+    // the active page was distinguishable only by `primary` vs
+    // `outlineVariant` fill — invisible to color-blind users + invisible
+    // to TalkBack/VoiceOver. (a) Add a non-color outline ring on the active
+    // dot (works for tritan/protan + monochrome). (b) Wrap the row with a
+    // single SR contentDescription that announces "Page X of Y" as a polite
+    // LiveRegion so swiping the pager updates the announcement.
+    // Bilingual fallback inline until R5.i18n.tsv splices
+    // `a11y_state_page_indicator_x_of_y` into the 3 shared i18n files
+    // (parallel-worktree i18n-fragment protocol).
+    val isJa = deviceContext.locale.startsWith("ja", ignoreCase = true)
+    val pageIndicatorLabel =
+        if (isJa) {
+            "${pageCount}ページ中${currentPage + 1}ページ目"
+        } else {
+            "Page ${currentPage + 1} of $pageCount"
+        }
+    val outlineColor = MaterialTheme.colorScheme.onSurface
     Row(
-        modifier = modifier,
+        modifier =
+            modifier.semantics {
+                contentDescription = pageIndicatorLabel
+                liveRegion = LiveRegionMode.Polite
+            },
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
     ) {
         repeat(pageCount) { index ->
+            val isActive = index == currentPage
             val color by animateColorAsState(
                 targetValue =
-                    if (index == currentPage) {
+                    if (isActive) {
                         MaterialTheme.colorScheme.primary
                     } else {
                         MaterialTheme.colorScheme.outlineVariant
@@ -344,7 +373,14 @@ private fun PageIndicator(
                     Modifier
                         .size(10.dp)
                         .clip(CircleShape)
-                        .background(color),
+                        .background(color)
+                        .then(
+                            if (isActive) {
+                                Modifier.border(1.5.dp, outlineColor, CircleShape)
+                            } else {
+                                Modifier
+                            },
+                        ),
             )
         }
     }

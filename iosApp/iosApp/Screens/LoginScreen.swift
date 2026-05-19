@@ -123,9 +123,16 @@ struct LoginScreen: View {
                     // iOS 17.2+ which matches our deployment target.
                     // Color is the Google red brand color (#EA4335) when
                     // the symbol renders.
+                    //
+                    // R5 (audit §3.3 M6): the SF Symbol name
+                    // "g.circle.fill" was leaking into VoiceOver's
+                    // announcement before the adjacent "Continue with
+                    // Google" text. Hiding the decorative Image lets the
+                    // Text carry the meaning alone.
                     Image(systemName: "g.circle.fill")
                         .foregroundStyle(Color(red: 0.918, green: 0.263, blue: 0.208))
                         .imageScale(.large)
+                        .accessibilityHidden(true)
                     Text(LocalizedStringKey("action_continue_with_google"))
                         .font(.body.weight(.medium))
                         .foregroundStyle(.primary)
@@ -286,9 +293,15 @@ private struct EmailConfirmationSentView: View {
         VStack(spacing: 24) {
             Spacer()
 
+            // R5 (bundled R3 Follow-up #2, WCAG 1.3.1 Info and
+            // Relationships): the `.title2` heading was rendered as a
+            // plain text node so VoiceOver could not surface it via the
+            // headings rotor. Matches the parity treatment already
+            // applied to `LinkIdentityForm`'s `.title2` below.
             Text(LocalizedStringKey("title_email_confirmation_sent"))
                 .font(.title2)
                 .fontWeight(.semibold)
+                .accessibilityAddTraits(.isHeader)
 
             VStack(spacing: 12) {
                 Text(String(format: NSLocalizedString("body_email_confirmation_sent", comment: ""), email))

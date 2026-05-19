@@ -27,11 +27,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -53,7 +59,9 @@ import io.github.b150005.skeinly.generated.resources.label_mfa_manual_secret
 import io.github.b150005.skeinly.generated.resources.title_mfa_confirm_code
 import io.github.b150005.skeinly.generated.resources.title_mfa_enroll
 import io.github.b150005.skeinly.generated.resources.title_mfa_recovery_code
+import io.github.b150005.skeinly.platform.DeviceContextProvider
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
@@ -268,8 +276,25 @@ private fun ConfirmContent(
 private fun RecoveryCodeContent(
     recoveryCode: String,
     onDismiss: () -> Unit,
+    deviceContext: DeviceContextProvider = koinInject(),
 ) {
     val clipboard = LocalClipboardManager.current
+    // R5 (audit §3.3 M3, WCAG 4.1.2 Name/Role/Value): the recovery-code
+    // Card was a `Modifier.clickable { setText(...) }` with no role,
+    // no `onClickLabel`, and no SR feedback on copy. (a) `role =
+    // Role.Button` + `onClickLabel` surfaces it as a button ("Double
+    // tap to copy") via TalkBack/VoiceOver instead of "annotation,
+    // double tap to activate". (b) `copiedAnnouncement` + a polite
+    // `liveRegion` Text fires a one-shot SR announcement after the
+    // clipboard write so users without sight know the copy succeeded.
+    // Bilingual fallback inline until R5.i18n.tsv splices
+    // `a11y_action_copy_recovery_code` + `state_recovery_code_copied`
+    // into the 3 shared i18n files (parallel-worktree i18n-fragment
+    // protocol).
+    val isJa = deviceContext.locale.startsWith("ja", ignoreCase = true)
+    val copyActionLabel = if (isJa) "復旧コードをコピー" else "Copy recovery code"
+    val copiedMessage = if (isJa) "復旧コードをコピーしました" else "Recovery code copied"
+    var copiedAnnouncement by remember { mutableStateOf("") }
     Text(
         text = stringResource(Res.string.body_mfa_recovery_code_warning),
         style = MaterialTheme.typography.bodyMedium,
@@ -280,8 +305,12 @@ private fun RecoveryCodeContent(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable {
+                .clickable(
+                    onClickLabel = copyActionLabel,
+                    role = Role.Button,
+                ) {
                     clipboard.setText(AnnotatedString(recoveryCode))
+                    copiedAnnouncement = copiedMessage
                 }.testTag("mfaRecoveryCodeBox"),
     ) {
         Card(
@@ -302,6 +331,18 @@ private fun RecoveryCodeContent(
                         .padding(24.dp),
             )
         }
+    }
+    if (copiedAnnouncement.isNotEmpty()) {
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = copiedAnnouncement,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier =
+                Modifier
+                    .testTag("mfaRecoveryCodeCopiedAnnouncement")
+                    .semantics { liveRegion = LiveRegionMode.Polite },
+        )
     }
     Spacer(Modifier.height(24.dp))
     Button(

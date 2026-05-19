@@ -255,9 +255,16 @@ struct ChartConflictResolutionScreen: View {
         tag: String,
         onTap: @escaping () -> Void
     ) -> some View {
+        // R5 (audit §3.3 M5, WCAG 1.4.1 Use of Color + 4.1.2 Name/Role/
+        // Value): the picked resolution was distinguishable only by
+        // `.borderedProminent` vs `.bordered` styling (filled accent vs
+        // outline). Surfacing `.isSelected` to VoiceOver makes "Selected"
+        // an explicit trait announcement so non-sighted + color-blind
+        // users can identify which option is currently picked.
         Button(label, action: onTap)
             .buttonStyle(isSelected ? AnyButtonStyle(.borderedProminent) : AnyButtonStyle(.bordered))
             .accessibilityIdentifier(tag)
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     @ViewBuilder

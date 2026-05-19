@@ -49,9 +49,15 @@ private struct ActivityRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            // R5 (audit §3.3 M6): the activity-type icon is decorative
+            // — the adjacent `headline` carries the type
+            // ("Project started by X", "Pattern shared by X"). Hiding
+            // it from VoiceOver suppresses SF Symbol-name leaks like
+            // "plus.circle" before the meaningful headline.
             Image(systemName: iconName)
                 .foregroundStyle(iconColor)
                 .frame(width: 28)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(headline)

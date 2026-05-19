@@ -29,8 +29,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.data.analytics.PaywallTrigger
@@ -56,8 +59,10 @@ import io.github.b150005.skeinly.generated.resources.state_purchase_in_progress
 import io.github.b150005.skeinly.generated.resources.state_restore_failed
 import io.github.b150005.skeinly.generated.resources.state_restoring
 import io.github.b150005.skeinly.generated.resources.title_paywall
+import io.github.b150005.skeinly.platform.DeviceContextProvider
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -343,7 +348,22 @@ private fun PackageRow(
     pkg: PaywallPackage,
     selected: Boolean,
     onSelect: () -> Unit,
+    deviceContext: DeviceContextProvider = koinInject(),
 ) {
+    // R5 (bundled R3 Follow-up #4, WCAG 1.4.1 Use of Color + 4.1.2
+    // Name/Role/Value): the selected row was distinguishable only by
+    // `primaryContainer` vs `surfaceVariant` fill — invisible to
+    // color-blind users + invisible to TalkBack/VoiceOver. (a) `role =
+    // Role.RadioButton` on the clickable surfaces the row as a radio
+    // option (announces "radio button" + the selected state). (b)
+    // `selected` semantics value flips the SR-state to selected /
+    // unselected. (c) `stateDescription` provides explicit localized
+    // "Selected" / "Not selected" copy. Bilingual fallback inline until
+    // R5.i18n.tsv splices `state_selected` + `state_not_selected` into
+    // the 3 shared i18n files (parallel-worktree i18n-fragment protocol).
+    val isJa = deviceContext.locale.startsWith("ja", ignoreCase = true)
+    val selectedStateLabel = if (isJa) "選択中" else "Selected"
+    val notSelectedStateLabel = if (isJa) "未選択" else "Not selected"
     val labelKey =
         when (pkg.period) {
             PaywallPeriod.MONTHLY -> Res.string.action_subscribe_monthly
@@ -383,8 +403,11 @@ private fun PackageRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onSelect)
-                .testTag("subscribe${testTagSuffix.replaceFirstChar { it.uppercase() }}Button"),
+                .clickable(role = Role.RadioButton, onClick = onSelect)
+                .semantics {
+                    this.selected = selected
+                    stateDescription = if (selected) selectedStateLabel else notSelectedStateLabel
+                }.testTag("subscribe${testTagSuffix.replaceFirstChar { it.uppercase() }}Button"),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(

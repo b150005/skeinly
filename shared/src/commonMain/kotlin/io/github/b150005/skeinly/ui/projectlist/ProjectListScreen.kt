@@ -65,7 +65,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.b150005.skeinly.domain.model.Project
 import io.github.b150005.skeinly.domain.model.ProjectStatus
@@ -103,6 +107,7 @@ import io.github.b150005.skeinly.generated.resources.state_no_matching_projects
 import io.github.b150005.skeinly.generated.resources.state_no_matching_projects_body
 import io.github.b150005.skeinly.generated.resources.state_no_projects
 import io.github.b150005.skeinly.generated.resources.state_no_projects_body
+import io.github.b150005.skeinly.platform.DeviceContextProvider
 import io.github.b150005.skeinly.ui.components.EmptyStateView
 import io.github.b150005.skeinly.ui.components.LiveSnackbarHost
 import io.github.b150005.skeinly.ui.components.localized
@@ -111,6 +116,7 @@ import io.github.b150005.skeinly.ui.platform.dialogTestTagsAsResourceId
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -606,7 +612,17 @@ private fun ProjectCard(
     project: Project,
     onClick: () -> Unit,
     onLongClick: () -> Unit = {},
+    deviceContext: DeviceContextProvider = koinInject(),
 ) {
+    // R5 (audit §3.3 M7, WCAG 4.1.2 Name/Role/Value): the
+    // LinearProgressIndicator carried no `progressBarRangeInfo` and no
+    // `contentDescription`, so TalkBack announced "progress bar" without
+    // a value. Adjacent "X of Y rows" Text reads as a separate node and
+    // does not bind to the indicator. Adding the range info + a spoken
+    // label binds the value to the bar. Bilingual fallback inline until
+    // R5.i18n.tsv splices `a11y_progress_rows_completed_x_of_y` into the
+    // 3 shared i18n files (parallel-worktree i18n-fragment protocol).
+    val isJa = deviceContext.locale.startsWith("ja", ignoreCase = true)
     Card(
         modifier =
             Modifier
@@ -657,9 +673,27 @@ private fun ProjectCard(
 
             if (project.totalRows != null && project.totalRows > 0) {
                 Spacer(modifier = Modifier.height(4.dp))
+                val totalRows = project.totalRows
+                val currentRow = project.currentRow
+                val progressA11yLabel =
+                    if (isJa) {
+                        "${totalRows}段中${currentRow}段完了"
+                    } else {
+                        "$currentRow of $totalRows rows completed"
+                    }
                 LinearProgressIndicator(
-                    progress = { project.currentRow.toFloat() / project.totalRows.toFloat() },
-                    modifier = Modifier.fillMaxWidth(),
+                    progress = { currentRow.toFloat() / totalRows.toFloat() },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .semantics {
+                                progressBarRangeInfo =
+                                    ProgressBarRangeInfo(
+                                        current = currentRow.toFloat(),
+                                        range = 0f..totalRows.toFloat(),
+                                    )
+                                contentDescription = progressA11yLabel
+                            },
                 )
             }
         }

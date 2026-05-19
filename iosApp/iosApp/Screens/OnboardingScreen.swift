@@ -125,9 +125,15 @@ private struct OnboardingPageView: View {
         VStack(spacing: 16) {
             Spacer()
 
+            // R5 (audit §3.3 M6): decorative hero icon — meaning lives
+            // in the adjacent title/body text. Hiding it from
+            // VoiceOver keeps SF Symbol names (e.g. "house",
+            // "plus.circle") from being announced before the real
+            // copy.
             Image(systemName: mapIconName(page.iconName))
                 .font(.system(size: 64))
                 .foregroundStyle(.tint)
+                .accessibilityHidden(true)
 
             Text(titleKey)
                 .font(.title)
@@ -171,9 +177,13 @@ private struct DiagnosticConsentPageView: View {
         VStack(spacing: 16) {
             Spacer()
 
+            // R5 (audit §3.3 M6): decorative hero icon — title +
+            // body below carry the meaning; SF Symbol name
+            // "chart.bar.doc.horizontal" was leaking into VoiceOver.
             Image(systemName: "chart.bar.doc.horizontal")
                 .font(.system(size: 64))
                 .foregroundStyle(.tint)
+                .accessibilityHidden(true)
 
             Text(LocalizedStringKey("title_diagnostic_consent"))
                 .font(.title)
