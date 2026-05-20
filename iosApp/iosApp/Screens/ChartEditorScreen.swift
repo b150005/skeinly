@@ -1164,11 +1164,12 @@ private struct PaletteSymbolCell: View {
 /// `PaletteSymbolCell` and `LockedPaletteSymbolCell` so the SR-spoken
 /// shape stays consistent for entitled vs locked cells.
 private func paletteSymbolAccessibilityLabel(for def: SymbolDefinition) -> String {
-    // X3 (R1b Follow-up #1) — `let isJa` hoisted out of this resolver; the
-    // remaining locale check is the catalog symbol-name fallback, tracked
-    // as the X3 follow-up "Catalog locale-aware symbol label resolver".
-    let symbolName = (Locale.current.language.languageCode?.identifier == "ja")
-        ? def.jaLabel : def.enLabel
+    // Y3-iOS — consolidated locale resolution through
+    // `SymbolDefinition.localizedLabel(locale:)` (Bridging/SymbolDefinition+Localized.swift)
+    // mirroring the Y3 Kotlin half. Predicate matches `startsWith("ja",
+    // ignoreCase = true)` exactly.
+    let locale = Locale.current.language.languageCode?.identifier ?? "en"
+    let symbolName = def.localizedLabel(locale: locale)
     return String(
         format: NSLocalizedString("a11y_label_palette_cell", comment: ""),
         symbolName

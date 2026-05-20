@@ -77,6 +77,12 @@ struct ChartRowAccessibilityOverlay: View {
                 hiddenLayerIds: hiddenLayerIds,
                 progressAt: progressAt
             )
+            // Y3-iOS — consolidated locale resolution through
+            // `SymbolDefinition.localizedLabel(locale:)`
+            // (Bridging/SymbolDefinition+Localized.swift) mirroring the Y3
+            // Kotlin half. Hoisted out of the per-row ForEach body so it is
+            // evaluated once per overlay layout rather than once per row.
+            let locale = Locale.current.language.languageCode?.identifier ?? "en"
             ZStack(alignment: .topLeading) {
                 ForEach(descriptors, id: \.chartY) { descriptor in
                     let topY = geometry.originY
@@ -85,14 +91,9 @@ struct ChartRowAccessibilityOverlay: View {
                         label: ChartAccessibility.shared.spokenLabel(
                             descriptor: descriptor,
                             strings: strings,
-                            // X3 (R1b Follow-up #1) — catalog symbol-name
-                            // resolver reads locale inline; tracked as X3
-                            // follow-up "Catalog locale-aware symbol label
-                            // resolver".
                             symbolName: { id in
                                 if let def = catalog.get(id: id) {
-                                    return (Locale.current.language.languageCode?.identifier == "ja")
-                                        ? def.jaLabel : def.enLabel
+                                    return def.localizedLabel(locale: locale)
                                 }
                                 return id
                             }

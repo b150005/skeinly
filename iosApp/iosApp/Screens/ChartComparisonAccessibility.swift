@@ -64,13 +64,14 @@ struct ChartComparisonAccessibilityOverlay: View {
            rect.maxX >= rect.minX, rect.maxY >= rect.minY,
            let geometry = cellGeometry(rect: rect) {
             let strings = Self.makeDiffA11yStrings()
-            // X3 (R1b Follow-up #1) — catalog symbol-name resolver reads
-            // locale inline; tracked as X3 follow-up "Catalog locale-aware
-            // symbol label resolver".
+            // Y3-iOS — consolidated locale resolution through
+            // `SymbolDefinition.localizedLabel(locale:)`
+            // (Bridging/SymbolDefinition+Localized.swift) mirroring the Y3
+            // Kotlin half.
+            let locale = Locale.current.language.languageCode?.identifier ?? "en"
             let symbolNameResolver: (String) -> String = { id in
                 if let def = catalog.get(id: id) {
-                    return (Locale.current.language.languageCode?.identifier == "ja")
-                        ? def.jaLabel : def.enLabel
+                    return def.localizedLabel(locale: locale)
                 }
                 return id
             }
